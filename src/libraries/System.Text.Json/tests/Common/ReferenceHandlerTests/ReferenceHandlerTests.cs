@@ -818,14 +818,14 @@ namespace System.Text.Json.Serialization.Tests
 
         public class ClassWithObjectProperty
         {
-            public ClassWithObjectProperty Child { get; set; }
-            public object Sibling { get; set; }
+            public ClassWithObjectProperty? Child { get; set; }
+            public object? Sibling { get; set; }
         }
 
         public class ClassWithListOfObjectProperty
         {
-            public ClassWithListOfObjectProperty Child { get; set; }
-            public List<object> ListOfObjects { get; set; }
+            public ClassWithListOfObjectProperty? Child { get; set; }
+            public List<object>? ListOfObjects { get; set; }
         }
 
         public interface IBoxedStructWithObjectProperty

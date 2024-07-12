@@ -215,6 +215,7 @@ namespace System.Reflection
                 scope.GetCustomAttributeProps(tkCustomAttributeTokens[i],
                     out records[i].tkCtor.Value, out records[i].blob);
             }
+            GC.KeepAlive(module);
 
             return records;
         }
@@ -250,13 +251,13 @@ namespace System.Reflection
         private RuntimeCustomAttributeData(RuntimeModule scope, MetadataToken caCtorToken, in ConstArray blob)
         {
             m_scope = scope;
-            m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(scope, caCtorToken)!;
+            m_ctor = (RuntimeConstructorInfo)RuntimeType.GetMethodBase(m_scope, caCtorToken)!;
 
             if (m_ctor!.DeclaringType!.IsGenericType)
             {
-                MetadataImport metadataScope = scope.MetadataImport;
-                Type attributeType = scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
-                m_ctor = (RuntimeConstructorInfo)scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
+                MetadataImport metadataScope = m_scope.MetadataImport;
+                Type attributeType = m_scope.ResolveType(metadataScope.GetParentToken(caCtorToken), null, null)!;
+                m_ctor = (RuntimeConstructorInfo)m_scope.ResolveMethod(caCtorToken, attributeType.GenericTypeArguments, null)!.MethodHandle.GetMethodInfo();
             }
 
             ReadOnlySpan<ParameterInfo> parameters = m_ctor.GetParametersAsSpan();
@@ -542,7 +543,7 @@ namespace System.Reflection
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
-            RuntimeType type = TypeNameParser.GetTypeReferencedByCustomAttribute(typeName, scope);
+            RuntimeType type = TypeNameResolver.GetTypeReferencedByCustomAttribute(typeName, scope);
             Debug.Assert(type is not null);
             return type;
         }
@@ -898,7 +899,7 @@ namespace System.Reflection
                     throw new BadImageFormatException();
                 }
 
-                enumType = TypeNameParser.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
+                enumType = TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
                 if (!enumType.IsEnum)
                 {
                     throw new BadImageFormatException();
@@ -1466,6 +1467,7 @@ namespace System.Reflection
                     }
                 }
             }
+            GC.KeepAlive(decoratedModule);
 
             return false;
         }
@@ -1542,11 +1544,13 @@ namespace System.Reflection
                     else
                     {
                         int data = Unsafe.ReadUnaligned<int>((void*)blobStart);
-#if BIGENDIAN
-                        // Metadata is always written in little-endian format. Must account for this on
-                        // big-endian platforms.
-                        data = BinaryPrimitives.ReverseEndianness(data);
-#endif
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            // Metadata is always written in little-endian format. Must account for this on
+                            // big-endian platforms.
+                            data = BinaryPrimitives.ReverseEndianness(data);
+                        }
+
                         const int CustomAttributeVersion = 0x0001;
                         if ((data & 0xffff) != CustomAttributeVersion)
                         {
@@ -1615,6 +1619,7 @@ namespace System.Reflection
 
                 attributes.Add(attribute);
             }
+            GC.KeepAlive(decoratedModule);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -2194,10 +2199,11 @@ namespace System.Reflection
             if ((method.Attributes & MethodAttributes.PinvokeImpl) == 0)
                 return null;
 
-            MetadataImport scope = ModuleHandle.GetMetadataImport(method.Module.ModuleHandle.GetRuntimeModule());
+            RuntimeModule module = method.Module.ModuleHandle.GetRuntimeModule();
+            MetadataImport scope = module.MetadataImport;
             int token = method.MetadataToken;
-
             scope.GetPInvokeMap(token, out PInvokeAttributes flags, out string entryPoint, out string dllName);
+            GC.KeepAlive(module);
 
             CharSet charSet = CharSet.None;
 
@@ -2252,7 +2258,7 @@ namespace System.Reflection
 
         private static MarshalAsAttribute? GetMarshalAsCustomAttribute(int token, RuntimeModule scope)
         {
-            ConstArray nativeType = ModuleHandle.GetMetadataImport(scope).GetFieldMarshal(token);
+            ConstArray nativeType = scope.MetadataImport.GetFieldMarshal(token);
 
             if (nativeType.Length == 0)
                 return null;
@@ -2262,10 +2268,15 @@ namespace System.Reflection
 
         private static FieldOffsetAttribute? GetFieldOffsetCustomAttribute(RuntimeFieldInfo field)
         {
-            if (field.DeclaringType is not null &&
-                field.GetRuntimeModule().MetadataImport.GetFieldOffset(field.DeclaringType.MetadataToken, field.MetadataToken, out int fieldOffset))
-                return new FieldOffsetAttribute(fieldOffset);
-
+            if (field.DeclaringType is not null)
+            {
+                RuntimeModule module = field.GetRuntimeModule();
+                if (module.MetadataImport.GetFieldOffset(field.DeclaringType.MetadataToken, field.MetadataToken, out int fieldOffset))
+                {
+                    return new FieldOffsetAttribute(fieldOffset);
+                }
+                GC.KeepAlive(module);
+            }
             return null;
         }
 
@@ -2291,7 +2302,9 @@ namespace System.Reflection
                 case TypeAttributes.UnicodeClass: charSet = CharSet.Unicode; break;
                 default: Debug.Fail("Unreachable code"); break;
             }
-            type.GetRuntimeModule().MetadataImport.GetClassLayout(type.MetadataToken, out int pack, out int size);
+            RuntimeModule module = type.GetRuntimeModule();
+            module.MetadataImport.GetClassLayout(type.MetadataToken, out int pack, out int size);
+            GC.KeepAlive(module);
 
             StructLayoutAttribute attribute = new StructLayoutAttribute(layoutKind);
 

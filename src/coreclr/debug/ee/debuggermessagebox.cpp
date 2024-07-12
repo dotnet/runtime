@@ -126,8 +126,8 @@ static int UtilMessageBoxNonLocalized(
             NULL,                   // no user security identifier
             message.GetUnicode());
 
-        WszOutputDebugString(lpTitle);
-        WszOutputDebugString(lpText);
+        OutputDebugString(lpTitle);
+        OutputDebugString(lpText);
 #endif // HOST_UNIX
 #endif //!defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
 

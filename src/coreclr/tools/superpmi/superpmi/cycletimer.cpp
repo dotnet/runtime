@@ -22,7 +22,7 @@ void CycleTimer::Start()
     if (retVal == FALSE)
     {
         LogError("CycleTimer::Start unable to QPC. error was 0x%08x", ::GetLastError());
-        ::__debugbreak();
+        DEBUG_BREAK;
     }
 }
 
@@ -33,20 +33,20 @@ void CycleTimer::Stop()
     if (retVal == FALSE)
     {
         LogError("CycleTimer::Stop unable to QPC. error was 0x%08x", ::GetLastError());
-        ::__debugbreak();
+        DEBUG_BREAK;
     }
 }
 
-unsigned __int64 CycleTimer::GetCycles()
+uint64_t CycleTimer::GetCycles()
 {
     return stop - start - overhead;
 }
 
-unsigned __int64 CycleTimer::QueryOverhead()
+uint64_t CycleTimer::QueryOverhead()
 {
-    unsigned __int64 tot = 0;
-    unsigned __int64 startCycles;
-    unsigned __int64 endCycles;
+    uint64_t tot = 0;
+    uint64_t startCycles;
+    uint64_t endCycles;
     const int        N = 1000;
     for (int i = 0; i < N; i++)
     {

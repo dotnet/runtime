@@ -67,6 +67,16 @@ FCIMPL11(FC_BOOL_RET, MetaDataImport::GetMarshalAs,
 }
 FCIMPLEND
 
+FCIMPL1(IMDInternalImport*, MetaDataImport::GetMetadataImport, ReflectModuleBaseObject * pModuleUNSAFE)
+{
+    FCALL_CONTRACT;
+
+    REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
+    Module *pModule = refModule->GetModule();
+    return pModule->GetMDImport();
+}
+FCIMPLEND
+
 FCIMPL6(HRESULT, MetaDataImport::GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType)
 {
     FCALL_CONTRACT;

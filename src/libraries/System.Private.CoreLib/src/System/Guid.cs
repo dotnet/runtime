@@ -28,7 +28,18 @@ namespace System
           ISpanParsable<Guid>,
           IUtf8SpanFormattable
     {
+        private const byte Variant10xxMask = 0xC0;
+        private const byte Variant10xxValue = 0x80;
+
+        private const ushort VersionMask = 0xF000;
+        private const ushort Version4Value = 0x4000;
+        private const ushort Version7Value = 0x7000;
+
         public static readonly Guid Empty;
+
+        /// <summary>Gets a <see cref="Guid" /> where all bits are set.</summary>
+        /// <remarks>This returns the value: FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF</remarks>
+        public static Guid AllBitsSet => new Guid(uint.MaxValue, ushort.MaxValue, ushort.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
 
         private readonly int _a;   // Do not rename (binary serialization)
         private readonly short _b; // Do not rename (binary serialization)
@@ -259,6 +270,60 @@ namespace System
             Debug.Assert(success, "GuidParseThrowStyle.All means throw on all failures");
 
             this = result.ToGuid();
+        }
+
+        /// <summary>Gets the value of the variant field for the <see cref="Guid" />.</summary>
+        /// <remarks>
+        ///     <para>This corresponds to the most significant 4 bits of the 8th byte: 00000000-0000-0000-F000-000000000000. The "don't-care" bits are not masked out.</para>
+        ///     <para>See RFC 9562 for more information on how to interpret this value.</para>
+        /// </remarks>
+        public int Variant => _d >> 4;
+
+        /// <summary>Gets the value of the version field for the <see cref="Guid" />.</summary>
+        /// <remarks>
+        ///     <para>This corresponds to the most significant 4 bits of the 6th byte: 00000000-0000-F000-0000-000000000000.</para>
+        ///     <para>See RFC 9562 for more information on how to interpret this value.</para>
+        /// </remarks>
+        public int Version => _c >>> 12;
+
+        /// <summary>Creates a new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</summary>
+        /// <returns>A new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</returns>
+        /// <remarks>
+        ///     <para>This uses <see cref="DateTimeOffset.UtcNow" /> to determine the Unix Epoch timestamp source.</para>
+        ///     <para>This seeds the rand_a and rand_b sub-fields with random data.</para>
+        /// </remarks>
+        public static Guid CreateVersion7() => CreateVersion7(DateTimeOffset.UtcNow);
+
+        /// <summary>Creates a new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</summary>
+        /// <param name="timestamp">The date time offset used to determine the Unix Epoch timestamp.</param>
+        /// <returns>A new <see cref="Guid" /> according to RFC 9562, following the Version 7 format.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timestamp" /> represents an offset prior to <see cref="DateTimeOffset.UnixEpoch" />.</exception>
+        /// <remarks>
+        ///     <para>This seeds the rand_a and rand_b sub-fields with random data.</para>
+        /// </remarks>
+        public static Guid CreateVersion7(DateTimeOffset timestamp)
+        {
+            // This isn't the most optimal way, but we don't have an easy way to get
+            // secure random bytes in corelib without doing this since the secure rng
+            // is in a different layer.
+            Guid result = NewGuid();
+
+            // 2^48 is roughly 8925.5 years, which from the Unix Epoch means we won't
+            // overflow until around July of 10,895. So there isn't any need to handle
+            // it given that DateTimeOffset.MaxValue is December 31, 9999. However, we
+            // can't represent timestamps prior to the Unix Epoch since UUIDv7 explicitly
+            // stores a 48-bit unsigned value, so we do need to throw if one is passed in.
+
+            long unix_ts_ms = timestamp.ToUnixTimeMilliseconds();
+            ArgumentOutOfRangeException.ThrowIfNegative(unix_ts_ms, nameof(timestamp));
+
+            Unsafe.AsRef(in result._a) = (int)(unix_ts_ms >> 16);
+            Unsafe.AsRef(in result._b) = (short)(unix_ts_ms);
+
+            Unsafe.AsRef(in result._c) = (short)((result._c & ~VersionMask) | Version7Value);
+            Unsafe.AsRef(in result._d) = (byte)((result._d & ~Variant10xxMask) | Variant10xxValue);
+
+            return result;
         }
 
         public static Guid Parse(string input)
@@ -958,68 +1023,11 @@ namespace System
             {
                 return 1;
             }
-            if (!(value is Guid))
+            if (value is not Guid other)
             {
                 throw new ArgumentException(SR.Arg_MustBeGuid, nameof(value));
             }
-            Guid g = (Guid)value;
-
-            if (g._a != _a)
-            {
-                return GetResult((uint)_a, (uint)g._a);
-            }
-
-            if (g._b != _b)
-            {
-                return GetResult((uint)_b, (uint)g._b);
-            }
-
-            if (g._c != _c)
-            {
-                return GetResult((uint)_c, (uint)g._c);
-            }
-
-            if (g._d != _d)
-            {
-                return GetResult(_d, g._d);
-            }
-
-            if (g._e != _e)
-            {
-                return GetResult(_e, g._e);
-            }
-
-            if (g._f != _f)
-            {
-                return GetResult(_f, g._f);
-            }
-
-            if (g._g != _g)
-            {
-                return GetResult(_g, g._g);
-            }
-
-            if (g._h != _h)
-            {
-                return GetResult(_h, g._h);
-            }
-
-            if (g._i != _i)
-            {
-                return GetResult(_i, g._i);
-            }
-
-            if (g._j != _j)
-            {
-                return GetResult(_j, g._j);
-            }
-
-            if (g._k != _k)
-            {
-                return GetResult(_k, g._k);
-            }
-
-            return 0;
+            return CompareTo(other);
         }
 
         public int CompareTo(Guid value)

@@ -563,7 +563,7 @@ namespace System.Text.RegularExpressions
             }
 
             return
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
                 string
 #else
                 StringExtensions
@@ -1304,7 +1304,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 uint[]? cache = asciiLazyCache ?? Interlocked.CompareExchange(ref asciiLazyCache, new uint[CacheArrayLength], null) ?? asciiLazyCache;
-#if NET5_0_OR_GREATER
+#if NET
                 Interlocked
 #else
                 InterlockedExtensions
@@ -1594,7 +1594,7 @@ namespace System.Text.RegularExpressions
 #pragma warning disable CS8500 // takes address of managed type
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
             return
-#if NETCOREAPP2_1_OR_GREATER
+#if NET
                 string
 #else
                 StringExtensions

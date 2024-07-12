@@ -32,7 +32,8 @@
 
   <PropertyGroup>
     <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
-    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == ''">$(Scenario)-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' != 'true'">$(Scenario)-ST-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(WasmEnableThreads)' == 'true'">$(Scenario)-MT-</WorkItemPrefix>
 
     <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'WasmTestOnV8' or 
@@ -51,8 +52,7 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
-    <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\browser\emsdk\</EMSDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'browser', 'emsdk'))</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\emsdk</EmSdkDirForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
@@ -95,10 +95,6 @@
 
   <ItemGroup Condition="'$(WindowsShell)' != 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
-    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnChrome' and '$(Scenario)' != 'WasmTestOnFirefox'" Include="export XHARNESS_COMMAND=test" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnChrome'" Include="export XHARNESS_COMMAND=test-browser" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnFirefox'" Include="export XHARNESS_COMMAND=&quot;test-browser --browser=Firefox&quot;" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="export JS_ENGINE=--engine=NodeJS" />
 
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
@@ -112,10 +108,6 @@
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
-    <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnChrome' and '$(Scenario)' != 'WasmTestOnFirefox'" Include="set XHARNESS_COMMAND=test" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnChrome'" Include="set XHARNESS_COMMAND=test-browser" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnFirefox'" Include="set &quot;XHARNESS_COMMAND=test-browser --browser=Firefox&quot;" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="set &quot;JS_ENGINE=--engine^=NodeJS&quot;" />
 
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
@@ -182,7 +174,13 @@
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
-    <Error Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal'" Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment." />
+    <Error Condition="'$(Scenario)' != 'WasmTestOnV8' and 
+                      '$(Scenario)' != 'WasmTestOnChrome' and 
+                      '$(Scenario)' != 'WasmTestOnFirefox' and 
+                      '$(Scenario)' != 'WasmTestOnNodeJS' and 
+                      '$(Scenario)' != 'WasmDebuggerTests' and 
+                      '$(Scenario)' != 'BuildWasmApps'" 
+                      Text="Only supported scenarios are WasmTestOnV8, WasmTestOnNodeJS, WasmTestOnChrome, WasmTestOnFirefox, WasmDebuggerTests and BuildWasmApps at the moment. It was $(Scenario)." />
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
     <Error Condition="'$(NeedsToRunOnChrome)' == 'true' and '$(DebuggerHost)' == 'chrome' and !Exists($(ChromeDir))"
@@ -244,25 +242,20 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <!--
-          These WASM tests are problematic and slow right now, in this section it's about nodejs and chrome.
-          Below is same section for V8. There is also Xharness timeout override in the test project.
-        -->
-        <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 
     <!-- Create work items for run-only WASM sample apps  -->
     <ItemGroup>
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnV8'"                 Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
-      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJS'"              Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
+      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJS'"             Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnChrome'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+      <!-- xharness -> selenium -> firefox doesn't support forwarding console without dotnet.withConsoleForwarding()
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnFirefox'"            Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
+      -->
 
-      <HelixWorkItem Include="@(_WasmSampleZipFile -> '%(FileName)')">
+      <HelixWorkItem Include="@(_WasmSampleZipFile -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
@@ -275,11 +268,6 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <!-- These WASM tests are problematic and slow right now, in this section it's about V8. Above is same section for nodejs and chrome -->
-        <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
       </HelixWorkItem>
 
     </ItemGroup>

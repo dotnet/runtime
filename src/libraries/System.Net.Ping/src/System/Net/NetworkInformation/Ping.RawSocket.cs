@@ -98,15 +98,24 @@ namespace System.Net.NetworkInformation
 #pragma warning disable 618
             // Disable warning about obsolete property. We could use GetAddressBytes but that allocates.
             // IPv4 multicast address starts with 1110 bits so mask rest and test if we get correct value e.g. 0xe0.
-            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(addrFamily == AddressFamily.InterNetwork && (ep.Address.Address & 0xf0) == 0xe0))
+            bool ipv4 = addrFamily == AddressFamily.InterNetwork;
+            if (NeedsConnect && !ep.Address.IsIPv6Multicast && !(ipv4 && (ep.Address.Address & 0xf0) == 0xe0))
             {
                 // If it is not multicast, use Connect to scope responses only to the target address.
                 socket.Connect(socketConfig.EndPoint);
                 unsafe
                 {
                     int opt = 1;
-                    // setsockopt(fd, IPPROTO_IP, IP_RECVERR, &value, sizeof(int))
-                    socket.SetRawSocketOption(0, 11, new ReadOnlySpan<byte>(&opt, sizeof(int)));
+                    if (ipv4)
+                    {
+                        // setsockopt(fd, IPPROTO_IP, IP_RECVERR, &value, sizeof(int))
+                        socket.SetRawSocketOption(0, 11, new ReadOnlySpan<byte>(&opt, sizeof(int)));
+                    }
+                    else
+                    {
+                        // setsockopt(fd, IPPROTO_IPV6, IPV6_RECVERR, &value, sizeof(int))
+                        socket.SetRawSocketOption(41, 25, new ReadOnlySpan<byte>(&opt, sizeof(int)));
+                    }
                 }
             }
 #pragma warning restore 618
@@ -243,7 +252,6 @@ namespace System.Net.NetworkInformation
             SocketConfig socketConfig = GetSocketConfig(address, buffer, timeout, options);
             using (Socket socket = GetRawSocket(socketConfig))
             {
-                Span<byte> socketAddress = stackalloc byte[SocketAddress.GetMaximumAddressSize(address.AddressFamily)];
                 int ipHeaderLength = socketConfig.IsIpv4 ? MinIpHeaderLengthInBytes : 0;
                 try
                 {
@@ -281,29 +289,34 @@ namespace System.Net.NetworkInformation
                 {
                     // This happens on Linux where we explicitly subscribed to error messages
                     // We should be able to get more info by getting extended socket error from error queue.
-
-                    Interop.Sys.MessageHeader header = default;
-
-                    SocketError result;
-                    fixed (byte* sockAddr = &MemoryMarshal.GetReference(socketAddress))
-                    {
-                        header.SocketAddress = sockAddr;
-                        header.SocketAddressLen = socketAddress.Length;
-                        header.IOVectors = null;
-                        header.IOVectorCount = 0;
-
-                        result = Interop.Sys.ReceiveSocketError(socket.SafeHandle, &header);
-                    }
-
-                    if (result == SocketError.Success && header.SocketAddressLen > 0)
-                    {
-                        return CreatePingReply(IPStatus.TtlExpired, IPEndPointExtensions.GetIPAddress(socketAddress.Slice(0, header.SocketAddressLen)));
-                    }
+                    return CreatePingReplyForUnreachableHost(address, socket);
                 }
 
                 // We have exceeded our timeout duration, and no reply has been received.
                 return CreatePingReply(IPStatus.TimedOut);
             }
+        }
+
+        private static PingReply CreatePingReplyForUnreachableHost(IPAddress address, Socket socket)
+        {
+            Span<byte> socketAddress = stackalloc byte[SocketAddress.GetMaximumAddressSize(address.AddressFamily)];
+            unsafe
+            {
+                Interop.Sys.MessageHeader header = default;
+
+                SocketError result;
+                fixed (byte* sockAddr = &MemoryMarshal.GetReference(socketAddress))
+                {
+                    header.SocketAddress = sockAddr;
+                    header.SocketAddressLen = socketAddress.Length;
+                    result = Interop.Sys.ReceiveSocketError(socket.SafeHandle, &header);
+                }
+                if (result == SocketError.Success && header.SocketAddressLen > 0)
+                {
+                     return CreatePingReply(IPStatus.TtlExpired, IPEndPointExtensions.GetIPAddress(socketAddress.Slice(0, header.SocketAddressLen)));
+                }
+            }
+            return CreatePingReply(IPStatus.TimedOut);
         }
 
         private async Task<PingReply> SendIcmpEchoRequestOverRawSocketAsync(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
@@ -359,6 +372,12 @@ namespace System.Net.NetworkInformation
             }
             catch (OperationCanceledException) when (!_canceled)
             {
+            }
+            catch (SocketException ex) when (ex.SocketErrorCode == SocketError.HostUnreachable)
+            {
+                // This happens on Linux where we explicitly subscribed to error messages
+                // We should be able to get more info by getting extended socket error from error queue.
+                return CreatePingReplyForUnreachableHost(address, socket);
             }
 
             // We have exceeded our timeout duration, and no reply has been received.

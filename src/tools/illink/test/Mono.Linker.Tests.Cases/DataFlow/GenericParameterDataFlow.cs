@@ -408,7 +408,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 			public TypeRequiresPublicFields<TOuter> PublicFieldsField;
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsField;
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsProperty {
@@ -417,23 +417,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsProperty {
-				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 				get => null;
-				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
+				[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 				set { }
 			}
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer, CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "", CompilerGeneratedCode = true)] // NativeAOT_StorageSpaceType
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsImplicitGetter => null;
 
 			public void PublicFieldsMethodParameter (TypeRequiresPublicFields<TOuter> param) { }
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public void PublicMethodsMethodParameter (TypeRequiresPublicMethods<TOuter> param) { }
 
 			public TypeRequiresPublicFields<TOuter> PublicFieldsMethodReturnValue () { return null; }
 
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public TypeRequiresPublicMethods<TOuter> PublicMethodsMethodReturnValue () { return null; }
 
 			public void PublicFieldsMethodLocalVariable ()
@@ -442,7 +442,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// The analyzer matches NativeAot behavior for local variables - it doesn't warn on generic types of local variables.
-			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), ProducedBy = Tool.Trimmer)] // NativeAOT_StorageSpaceType
+			[ExpectedWarning ("IL2091", nameof (TypeRequiresPublicMethods<TOuter>), Tool.Trimmer, "")] // NativeAOT_StorageSpaceType
 			public void PublicMethodsMethodLocalVariable ()
 			{
 				TypeRequiresPublicMethods<TOuter> t = null;
@@ -711,17 +711,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2091",
-				nameof (TOuter),
+				[nameof (TOuter),
 				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter<TOuter>",
 				"TMethods",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()",
-				ProducedBy = Tool.Analyzer)]
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams<TFields, TMethods>()"], Tool.Analyzer, "")]
 			[ExpectedWarning ("IL2091",
-				"'TOuter'",
+				["'TOuter'",
 				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.TypeWithInstantiatedGenericMethodViaGenericParameter",
 				"'TMethods'",
-				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams",
-				ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				"Mono.Linker.Tests.Cases.DataFlow.GenericParameterDataFlow.BaseTypeWithGenericMethod.StaticRequiresMultipleGenericParams"], Tool.Trimmer | Tool.NativeAot, "")]
 			public static void StaticPartialInstantiationUnrecognized ()
 			{
 				StaticRequiresMultipleGenericParams<TestType, TOuter> ();
@@ -833,10 +831,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // StaticMethodRequiresPublicMethods<T>
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // StaticMethodRequiresPublicMethods<U>
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // RUCTypeRequiresPublicFields<T> ctor
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", ProducedBy = Tool.Trimmer)] // RUCTypeRequiresPublicFields<T> local, // NativeAOT_StorageSpaceType
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", ProducedBy = Tool.Trimmer)] // InstanceMethod, // NativeAOT_StorageSpaceType
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", Tool.Trimmer, "")] // RUCTypeRequiresPublicFields<T> local, // NativeAOT_StorageSpaceType
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", Tool.Trimmer, "")] // InstanceMethod, // NativeAOT_StorageSpaceType
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // InstanceMethodRequiresPublicMethods<T>
-		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", ProducedBy = Tool.Trimmer)] // VirtualMethod, // NativeAOT_StorageSpaceType
+		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields", Tool.Trimmer, "")] // VirtualMethod, // NativeAOT_StorageSpaceType
 		[ExpectedWarning ("IL2091", "RUCTypeRequiresPublicFields")] // VirtualMethodRequiresPublicMethods<T>
 		static void TestNoWarningsInRUCType<T, U> ()
 		{
@@ -908,9 +906,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>))]
 		// NativeAOT_StorageSpaceType: illink warns about the type of 'instance' local variable
-		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), Tool.Trimmer, "")]
 		// NativeAOT_StorageSpaceType: illink warns about the declaring type of 'InstanceMethod' on ldftn
-		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), ProducedBy = Tool.Trimmer)]
+		[ExpectedWarning ("IL2091", nameof (DelegateMethodTypeRequiresFields<T>), Tool.Trimmer, "")]
 		static void TestGenericParameterFlowsToDelegateMethodDeclaringTypeInstance<T> ()
 		{
 			var instance = new DelegateMethodTypeRequiresFields<T> ();

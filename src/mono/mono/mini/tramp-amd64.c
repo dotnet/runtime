@@ -1162,6 +1162,8 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 		amd64_mov_membase_reg (code, AMD64_RBP, off_ctxregs - i * sizeof (target_mgreg_t), i + CTX_REGS_OFFSET, sizeof (target_mgreg_t));
 		amd64_mov_reg_membase (code, i + CTX_REGS_OFFSET, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), sizeof (target_mgreg_t));		
 	}
+	// Move R10 to RAX before the native call as R10 is used as a proxy for SwiftIndirectResult.
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, gregs) + 10 * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
 #endif
 
 	/* load target addr */
@@ -1263,6 +1265,15 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FLOAT_PARAM_REGS; i++)
 		amd64_sse_movsd_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double), i);
 
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/* set context registers to CallContext */
+	for (i = 0; i < CTX_REGS; i++)
+		amd64_mov_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), i + CTX_REGS_OFFSET, sizeof (target_mgreg_t));
+
+	// Move RAX to R10 before the managed call as R10 is used as a proxy for SwiftIndirectResult.
+	amd64_mov_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + 10 * sizeof (target_mgreg_t), AMD64_RAX, sizeof (target_mgreg_t));
+#endif
+
 	/* set the stack pointer to the value at call site */
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RBP, sizeof (target_mgreg_t));
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, 2 * sizeof (target_mgreg_t));
@@ -1282,6 +1293,12 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 
 	for (i = 0; i < FLOAT_RETURN_REGS; i++)
 		amd64_sse_movsd_reg_membase (code, i, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
+
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	/* set the context registers from CallContext */
+	for (i = 0; i < CTX_REGS; i++)
+		amd64_mov_reg_membase (code, i + CTX_REGS_OFFSET, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + (i + CTX_REGS_OFFSET) * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+#endif
 
 	/* reset stack and return */
 #if TARGET_WIN32

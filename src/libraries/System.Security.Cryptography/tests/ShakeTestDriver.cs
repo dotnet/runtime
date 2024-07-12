@@ -51,8 +51,8 @@ namespace System.Security.Cryptography.Tests
         {
             get
             {
-                const long OpenSsl_3_2_0 = 0x30200000L;
-                return IsSupported && (PlatformDetection.IsWindows || SafeEvpPKeyHandle.OpenSslVersion >= OpenSsl_3_2_0);
+                const long OpenSsl_3_3_0 = 0x30300000L;
+                return IsSupported && (PlatformDetection.IsWindows || SafeEvpPKeyHandle.OpenSslVersion >= OpenSsl_3_3_0);
             }
         }
 

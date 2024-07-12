@@ -24,13 +24,14 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
+    <UseSystemZlib Condition="!Exists('$(IlcSdkPath)libz.a')">true</UseSystemZlib>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <PropertyGroup>
       <FullRuntimeName>libRuntime.WorkstationGC</FullRuntimeName>
-      <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
+      <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(IlcLinkServerGC)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
       <CrossCompileRid Condition="'$(_hostOS)' != '$(_originalTargetOS)' or '$(_hostArchitecture)' != '$(_targetArchitecture)'">$(RuntimeIdentifier)</CrossCompileRid>
@@ -74,9 +75,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsiOSLikePlatform)' == 'true'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst' and '$(_targetArchitecture)' == 'x64'">13.5</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">14.2</AppleMinOSVersion>
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">11.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and '$(_targetOS)' == 'maccatalyst'">15.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == '' and ($(_targetOS.StartsWith('ios')) or $(_targetOS.StartsWith('tvos')))">12.2</AppleMinOSVersion>
 
       <_AppleSdkName Condition="'$(_targetOS)' == 'ios'">iphoneos</_AppleSdkName>
       <_AppleSdkName Condition="'$(_targetOS)' == 'iossimulator'">iphonesimulator</_AppleSdkName>
@@ -96,7 +96,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_targetOS)' == 'osx'">
-      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">11.0</AppleMinOSVersion>
+      <AppleMinOSVersion Condition="'$(AppleMinOSVersion)' == ''">12.0</AppleMinOSVersion>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'x64'">x86_64-apple-macos$(AppleMinOSVersion)</TargetTriple>
       <TargetTriple Condition="'$(_targetArchitecture)' == 'arm64'">arm64-apple-macos$(AppleMinOSVersion)</TargetTriple>
     </PropertyGroup>
@@ -130,6 +130,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
+      <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcSdkPath)libz.a" />
     </ItemGroup>
 
     <ItemGroup>
@@ -189,7 +190,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="objc" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftCore" Condition="'$(_targetOS)' == 'osx'" />
       <NativeSystemLibrary Include="swiftFoundation" Condition="'$(_targetOS)' == 'osx'" />
-      <NativeSystemLibrary Include="z" />
+      <NativeSystemLibrary Include="z" Condition="'$(UseSystemZlib)' == 'true'" />
       <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
@@ -286,12 +287,11 @@ The .NET Foundation licenses this file to you under the MIT license.
     <Error Condition="'$(_WhereLinker)' != '0' and '$(CppCompilerAndLinkerAlternative)' == '' and '$(_IsApplePlatform)' != 'true'"
       Text="Requested linker ('$(CppLinker)') not found in PATH." />
 
-    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">
-      <Output TaskParameter="ExitCode" PropertyName="_LinkerVersionStringExitCode" />
+    <Exec Command="&quot;$(CppLinker)&quot; -fuse-ld=lld -Wl,--version" Condition="'$(LinkerFlavor)' == 'lld'" StandardOutputImportance="Low" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="_LinkerVersionString" />
     </Exec>
 
-    <PropertyGroup Condition="'$(_LinkerVersionStringExitCode)' == '0' and '$(_LinkerVersionString)' != ''">
+    <PropertyGroup Condition="'$(_LinkerVersionString)' != ''">
       <_LinkerVersion>$([System.Text.RegularExpressions.Regex]::Match($(_LinkerVersionString), '[1-9]\d*'))</_LinkerVersion>
     </PropertyGroup>
 

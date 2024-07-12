@@ -54,7 +54,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private static Type FieldWithAnnotationMismatch;
 		}
 
-		[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer)]
+		[UnexpectedWarning ("IL2111", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
 		extern static void MethodWithAnnotatedParameter (Target target, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type);
 
@@ -63,23 +63,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		extern static Type StaticMethodWithAnnotatedReturnValue (Target target);
 
-		[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer)]
+		[UnexpectedWarning ("IL2111", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.Method)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		extern static Type VirtualMethodWithAnnotatedReturnValue (Target target);
 
-		[ExpectedWarning ("IL2110", ProducedBy = Tool.Trimmer)]
+		[UnexpectedWarning ("IL2110", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 		extern static ref Type AnnotatedField (Target target);
 
-		[ExpectedWarning ("IL2111", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2067", ProducedBy = Tool.NativeAot)]
+		[UnexpectedWarning ("IL2111", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
+		[ExpectedWarning ("IL2067", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
 		extern static void MethodWithAnnotationMismatch (Target target, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)] Type type);
 
-		[ExpectedWarning ("IL2110", ProducedBy = Tool.Trimmer)]
-		[ExpectedWarning ("IL2078", ProducedBy = Tool.NativeAot)]
+		[UnexpectedWarning ("IL2110", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/101195")]
+		[ExpectedWarning ("IL2078", Tool.NativeAot, "https://github.com/dotnet/runtime/issues/101195")]
 		[UnsafeAccessor (UnsafeAccessorKind.StaticField)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicFields)]
 		extern static ref Type FieldWithAnnotationMismatch (Target target);

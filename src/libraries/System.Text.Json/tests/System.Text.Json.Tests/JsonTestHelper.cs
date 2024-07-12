@@ -186,6 +186,12 @@ namespace System.Text.Json
             return new ReadOnlySequence<byte>(firstSegment, 0, thirdSegment, thirdMem.Length);
         }
 
+        public static ReadOnlySequence<byte> GetSequence(string json, int segmentSize)
+        {
+            byte[] encoding = Encoding.UTF8.GetBytes(json);
+            return GetSequence(encoding, segmentSize);
+        }
+
         public static ReadOnlySequence<byte> GetSequence(byte[] dataUtf8, int segmentSize)
         {
             int numberOfSegments = dataUtf8.Length / segmentSize + 1;
@@ -754,7 +760,7 @@ namespace System.Text.Json
             throw ex is null ? ThrowsException.ForNoException(typeof(TException)) : ThrowsException.ForIncorrectExceptionType(typeof(TException), ex);
         }
 
-#if NETCOREAPP
+#if NET
         // This is needed due to the fact that git might normalize line endings when checking-out files
         public static string NormalizeLineEndings(this string value) => value.ReplaceLineEndings();
 #else

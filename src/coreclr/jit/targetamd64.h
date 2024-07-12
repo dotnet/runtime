@@ -295,13 +295,14 @@
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (9)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
+  #define CNT_CALL_GC_REGS         (CNT_CALLEE_SAVED + 2)
 
   #define CNT_CALLEE_SAVED_FLOAT   (0)
   #define CNT_CALLEE_TRASH_FLOAT_INIT (16)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
   /* NOTE: Sync with variable name defined in compiler.h */
-  #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+  #define RBM_CALL_GC_REGS_ORDER   RBM_EBX,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15,RBM_INTRET,RBM_INTRET_1
+  #define RBM_CALL_GC_REGS         (RBM_EBX|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_INTRET|RBM_INTRET_1)
 
   // For SysV we have more volatile registers so we do not save any callee saves for EnC.
   #define RBM_ENC_CALLEE_SAVED     0
@@ -309,13 +310,14 @@
   #define CNT_CALLEE_SAVED         (7 + REG_ETW_FRAMED_EBP_COUNT)
   #define CNT_CALLEE_TRASH         (7)
   #define CNT_CALLEE_ENREG         (CNT_CALLEE_SAVED)
+  #define CNT_CALL_GC_REGS         (CNT_CALLEE_SAVED + 1)
 
   #define CNT_CALLEE_SAVED_FLOAT        (10)
   #define CNT_CALLEE_TRASH_FLOAT_INIT   (6)
   #define CNT_CALLEE_TRASH_HIGHFLOAT    (16)
   /* NOTE: Sync with variable name defined in compiler.h */
-  #define REG_CALLEE_SAVED_ORDER   REG_EBX,REG_ESI,REG_EDI,REG_ETW_FRAMED_EBP_LIST REG_R12,REG_R13,REG_R14,REG_R15
-  #define RBM_CALLEE_SAVED_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15
+  #define RBM_CALL_GC_REGS_ORDER   RBM_EBX,RBM_ESI,RBM_EDI,RBM_ETW_FRAMED_EBP_LIST RBM_R12,RBM_R13,RBM_R14,RBM_R15,RBM_INTRET
+  #define RBM_CALL_GC_REGS         (RBM_EBX|RBM_ESI|RBM_EDI|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15|RBM_INTRET)
 
   // Callee-preserved registers we always save and allow use of for EnC code, since there are quite few volatile registers.
   #define RBM_ENC_CALLEE_SAVED     (RBM_RSI | RBM_RDI)
@@ -380,14 +382,6 @@
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM    REG_R10
   #define RBM_SECRET_STUB_PARAM    RBM_R10
-
-  // Registers used by PInvoke frame setup
-  #define REG_PINVOKE_FRAME        REG_EDI
-  #define RBM_PINVOKE_FRAME        RBM_EDI
-  #define REG_PINVOKE_TCB          REG_EAX
-  #define RBM_PINVOKE_TCB          RBM_EAX
-  #define REG_PINVOKE_SCRATCH      REG_EAX
-  #define RBM_PINVOKE_SCRATCH      RBM_EAX
 
   // The following defines are useful for iterating a regNumber
   #define REG_FIRST                REG_EAX

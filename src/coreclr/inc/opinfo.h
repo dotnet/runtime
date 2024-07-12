@@ -32,8 +32,8 @@ enum OpFlow {
 	// These are all the possible arguments for the instruction
 /****************************************************************************/
 union OpArgsVal {
-	__int32  i;
-	__int64 i8;
+	int32_t  i;
+	int64_t i8;
 	double   r;
 	struct {
 		unsigned count;

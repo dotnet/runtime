@@ -35,7 +35,6 @@ class Dictionary;
 class GCCoverageInfo;
 class DynamicMethodDesc;
 class ReJitManager;
-class CodeVersionManager;
 class PrepareCodeConfig;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
@@ -101,15 +100,6 @@ enum MethodClassification
                         // for both shared and unshared code (see InstantiatedMethodDesc)
 
 #ifdef FEATURE_COMINTEROP
-    // This needs a little explanation.  There are MethodDescs on MethodTables
-    // which are Interfaces.  These have the mdcInterface bit set.  Then there
-    // are MethodDescs on MethodTables that are Classes, where the method is
-    // exposed through an interface.  These do not have the mdcInterface bit set.
-    //
-    // So, today, a dispatch through an 'mdcInterface' MethodDesc is either an
-    // error (someone forgot to look up the method in a class' VTable) or it is
-    // a case of COM Interop.
-
     mcComInterop    = 6,
 #endif // FEATURE_COMINTEROP
     mcDynamic       = 7, // for method desc with no metadata behind
@@ -119,57 +109,63 @@ enum MethodClassification
 
 // All flags in the MethodDesc now reside in a single 16-bit field.
 
-enum MethodDescClassification
+enum MethodDescFlags
 {
     // Method is IL, FCall etc., see MethodClassification above.
-    mdcClassification                   = 0x0007,
-    mdcClassificationCount              = mdcClassification+1,
+    mdfClassification                   = 0x0007,
+    mdfClassificationCount              = mdfClassification+1,
 
     // Note that layout of code:MethodDesc::s_ClassificationSizeTable depends on the exact values
-    // of mdcHasNonVtableSlot and mdcMethodImpl
+    // of mdfHasNonVtableSlot and mdfMethodImpl
 
     // Has local slot (vs. has real slot in MethodTable)
-    mdcHasNonVtableSlot                 = 0x0008,
+    mdfHasNonVtableSlot                 = 0x0008,
 
     // Method is a body for a method impl (MI_MethodDesc, MI_NDirectMethodDesc, etc)
     // where the function explicitly implements IInterface.foo() instead of foo().
-    mdcMethodImpl                       = 0x0010,
+    mdfMethodImpl                       = 0x0010,
 
     // Has slot for native code
-    mdcHasNativeCodeSlot                = 0x0020,
+    mdfHasNativeCodeSlot                = 0x0020,
 
     // Method was added via Edit And Continue
-    mdcEnCAddedMethod                   = 0x0040,
+    mdfEnCAddedMethod                   = 0x0040,
 
     // Method is static
-    mdcStatic                           = 0x0080,
+    mdfStatic                           = 0x0080,
 
-    mdcValueTypeParametersWalked        = 0x0100, // Indicates that all typeref's in the signature of the method have been resolved
+    mdfValueTypeParametersWalked        = 0x0100, // Indicates that all typeref's in the signature of the method have been resolved
                                                   // to typedefs (or that process failed).
 
-    mdcValueTypeParametersLoaded        = 0x0200, // Indicates if the valuetype parameter types have been loaded.
+    mdfValueTypeParametersLoaded        = 0x0200, // Indicates if the valuetype parameter types have been loaded.
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
     // method table, because it could not be packed into one slot. For eg, a method
     // providing implementation for two interfaces, MethodImpl, etc
-    mdcDuplicate                        = 0x0400,
+    mdfDuplicate                        = 0x0400,
 
-    mdcDoesNotHaveEquivalentValuetypeParameters = 0x0800, // Indicates that we have verified that there are no equivalent valuetype parameters
+    mdfDoesNotHaveEquivalentValuetypeParameters = 0x0800, // Indicates that we have verified that there are no equivalent valuetype parameters
                                                           // for this method.
 
-    mdcRequiresCovariantReturnTypeChecking = 0x1000,
+    mdfRequiresCovariantReturnTypeChecking = 0x1000,
 
     // Is this method ineligible for inlining?
-    mdcNotInline                        = 0x2000,
+    mdfNotInline                        = 0x2000,
 
     // Is the method synchronized
-    mdcSynchronized                     = 0x4000,
+    mdfSynchronized                     = 0x4000,
 
-    mdcIsIntrinsic                      = 0x8000  // Jit may expand method as an intrinsic
+    mdfIsIntrinsic                      = 0x8000  // Jit may expand method as an intrinsic
 };
 
-#define METHOD_MAX_RVA                          0x7FFFFFFF
+// Used for storing additional items related to native code
+struct MethodDescCodeData final
+{
+    PTR_MethodDescVersioningState VersioningState;
 
+    // [TODO] Move temporary entry points here.
+};
+using PTR_MethodDescCodeData = DPTR(MethodDescCodeData);
 
 // The size of this structure needs to be a multiple of MethodDesc::ALIGNMENT
 //
@@ -189,18 +185,6 @@ enum MethodDescClassification
 // It also knows how to get at its IL code (code:IMAGE_COR_ILMETHOD)
 class MethodDesc
 {
-    friend class EEClass;
-    friend class MethodTableBuilder;
-    friend class ArrayClass;
-    friend class NDirect;
-    friend class MethodDescChunk;
-    friend class InstantiatedMethodDesc;
-    friend class MethodImpl;
-    friend class CheckAsmOffsets;
-    friend class ClrDataAccess;
-
-    friend class MethodDescCallSite;
-
 public:
 
 #ifdef TARGET_64BIT
@@ -210,20 +194,6 @@ public:
 #endif
     static const size_t ALIGNMENT = (1 << ALIGNMENT_SHIFT);
     static const size_t ALIGNMENT_MASK = (ALIGNMENT - 1);
-
-#ifdef _DEBUG
-
-    // These are set only for MethodDescs but every time we want to use the debugger
-    // to examine these fields, the code has the thing stored in a MethodDesc*.
-    // So...
-    LPCUTF8         m_pszDebugMethodName;
-    LPCUTF8         m_pszDebugClassName;
-    LPCUTF8         m_pszDebugMethodSignature;
-    PTR_MethodTable m_pDebugMethodTable;
-
-    PTR_GCCoverageInfo m_GcCover;
-
-#endif // _DEBUG
 
     inline BOOL HasStableEntryPoint()
     {
@@ -390,13 +360,13 @@ public:
 
     inline void SetHasMethodImplSlot()
     {
-        m_wFlags |= mdcMethodImpl;
+        m_wFlags |= mdfMethodImpl;
     }
 
     inline BOOL HasMethodImplSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (mdcMethodImpl & m_wFlags);
+        return (mdfMethodImpl & m_wFlags);
     }
 
     FORCEINLINE BOOL IsMethodImpl()
@@ -415,21 +385,21 @@ public:
         // accesses metadata that is not compatible with contracts of this method. The metadata access can fail, the metadata
         // are not available during shutdown, the metadata access can take locks. It is not worth it to code around all these
         // just for the assert.
-        // _ASSERTE((((m_wFlags & mdcStatic) != 0) == (IsMdStatic(flags) != 0)));
+        // _ASSERTE((((m_wFlags & mdfStatic) != 0) == (IsMdStatic(flags) != 0)));
 
-        return (m_wFlags & mdcStatic) != 0;
+        return (m_wFlags & mdfStatic) != 0;
     }
 
     inline void SetStatic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcStatic;
+        m_wFlags |= mdfStatic;
     }
 
     inline void ClearStatic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags &= ~mdcStatic;
+        m_wFlags &= ~mdfStatic;
     }
 
     inline BOOL IsIL()
@@ -631,14 +601,14 @@ public:
     BOOL ShouldSuppressGCTransition();
 
 #ifdef FEATURE_COMINTEROP
-    inline DWORD IsComPlusCall()
+    inline DWORD IsCLRToCOMCall()
     {
         WRAPPER_NO_CONTRACT;
         return mcComInterop == GetClassification();
     }
 #else // !FEATURE_COMINTEROP
      // hardcoded to return FALSE to improve code readability
-    inline DWORD IsComPlusCall()
+    inline DWORD IsCLRToCOMCall()
     {
         LIMITED_METHOD_CONTRACT;
         return FALSE;
@@ -662,13 +632,13 @@ public:
     inline BOOL IsNotInline()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_wFlags & mdcNotInline);
+        return (m_wFlags & mdfNotInline);
     }
 
     inline void SetNotInline(BOOL set)
     {
         WRAPPER_NO_CONTRACT;
-        InterlockedUpdateFlags(mdcNotInline, set);
+        InterlockedUpdateFlags(mdfNotInline, set);
     }
 
 #ifndef DACCESS_COMPILE
@@ -897,13 +867,13 @@ public:
     inline void SetSynchronized()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcSynchronized;
+        m_wFlags |= mdfSynchronized;
     }
 
     inline DWORD IsSynchronized()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcSynchronized) != 0;
+        return (m_wFlags & mdfSynchronized) != 0;
     }
 
     //==================================================================
@@ -942,14 +912,14 @@ public:
     void SetHasNonVtableSlot()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcHasNonVtableSlot;
+        m_wFlags |= mdfHasNonVtableSlot;
     }
 
     // duplicate methods
     inline BOOL  IsDuplicate()
     {
         LIMITED_METHOD_CONTRACT;
-        return (m_wFlags & mdcDuplicate) == mdcDuplicate;
+        return (m_wFlags & mdfDuplicate) == mdfDuplicate;
     }
 
     void SetDuplicate()
@@ -957,7 +927,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         // method table is not setup yet
         //_ASSERTE(!GetClass()->IsInterface());
-        m_wFlags |= mdcDuplicate;
+        m_wFlags |= mdfDuplicate;
     }
 
     //==================================================================
@@ -1249,7 +1219,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
-        _ASSERTE(entryPoint != NULL);
+        _ASSERTE(entryPoint != (PCODE)NULL);
         _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
         // At the moment this is the only case, see MayHaveEntryPointSlotsToBackpatch(). If that changes in the future, this
@@ -1545,7 +1515,7 @@ public:
     // This method is used to restore ReturnKind using the class handle, it is fully supported only on x64 Ubuntu,
     // other platforms do not support multi-reg return case with pointers.
     // Use this method only when you can't hit this case
-    // (like ComPlusMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
+    // (like CLRToCOMMethodFrame::GcScanRoots) or when you can tolerate RT_Illegal return.
     // Also, on the other platforms for a single field struct return case
     // the function can't distinguish RT_Object and RT_ByRef.
     ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
@@ -1616,6 +1586,20 @@ private:
     //================================================================
     // The actual data stored in a MethodDesc follows.
 
+#ifdef _DEBUG
+public:
+    // These are set only for MethodDescs but every time we want to use the debugger
+    // to examine these fields, the code has the thing stored in a MethodDesc*.
+    // So...
+    LPCUTF8         m_pszDebugMethodName;
+    LPCUTF8         m_pszDebugClassName;
+    LPCUTF8         m_pszDebugMethodSignature;
+    PTR_MethodTable m_pDebugMethodTable;
+
+    PTR_GCCoverageInfo m_GcCover;
+
+#endif // _DEBUG
+
 protected:
     enum {
         // There are flags available for use here (currently 4 flags bits are available); however, new bits are hard to come by, so any new flags bits should
@@ -1634,9 +1618,9 @@ protected:
     BYTE        m_chunkIndex;
     BYTE        m_methodIndex; // Used to hold the index into the chunk of this MethodDesc. Currently all 8 bits are used, but we could likely work with only 7 bits
 
-    // The slot number of this MethodDesc in the vtable array.
-    WORD m_wSlotNumber;
-    WORD m_wFlags;
+    WORD m_wSlotNumber; // The slot number of this MethodDesc in the vtable array.
+    WORD m_wFlags; // See MethodDescFlags
+    PTR_MethodDescCodeData m_codeData;
 
 public:
 #ifdef DACCESS_COMPILE
@@ -1645,53 +1629,63 @@ public:
 
     BYTE GetMethodDescIndex()
     {
+        LIMITED_METHOD_CONTRACT;
         return m_methodIndex;
     }
 
     void SetMethodDescIndex(COUNT_T index)
     {
+        LIMITED_METHOD_CONTRACT;
         _ASSERTE(index <= 255);
         m_methodIndex = (BYTE)index;
     }
+
+#ifndef DACCESS_COMPILE
+    HRESULT EnsureCodeDataExists();
+
+    HRESULT SetMethodDescVersionState(PTR_MethodDescVersioningState state);
+#endif //!DACCESS_COMPILE
+
+    PTR_MethodDescVersioningState GetMethodDescVersionState();
 
 public:
     inline DWORD GetClassification() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_wFlags & mdcClassification);
+        return (m_wFlags & mdfClassification);
     }
 
     inline void SetClassification(DWORD classification)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE((m_wFlags & mdcClassification) == 0);
+        _ASSERTE((m_wFlags & mdfClassification) == 0);
         m_wFlags |= classification;
     }
 
     inline BOOL HasNativeCodeSlot()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcHasNativeCodeSlot) != 0;
+        return (m_wFlags & mdfHasNativeCodeSlot) != 0;
     }
 
     inline void SetHasNativeCodeSlot()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcHasNativeCodeSlot;
+        m_wFlags |= mdfHasNativeCodeSlot;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
     inline BOOL IsEnCAddedMethod()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcEnCAddedMethod) != 0;
+        return (m_wFlags & mdfEnCAddedMethod) != 0;
     }
 
     inline void SetIsEnCAddedMethod()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcEnCAddedMethod;
+        m_wFlags |= mdfEnCAddedMethod;
     }
 #else
     inline BOOL IsEnCAddedMethod()
@@ -1704,26 +1698,26 @@ public:
     inline BOOL IsIntrinsic()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcIsIntrinsic) != 0;
+        return (m_wFlags & mdfIsIntrinsic) != 0;
     }
 
     inline void SetIsIntrinsic()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcIsIntrinsic;
+        m_wFlags |= mdfIsIntrinsic;
     }
 
     BOOL RequiresCovariantReturnTypeChecking()
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_wFlags & mdcRequiresCovariantReturnTypeChecking) != 0;
+        return (m_wFlags & mdfRequiresCovariantReturnTypeChecking) != 0;
     }
 
     void SetRequiresCovariantReturnTypeChecking()
     {
         LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcRequiresCovariantReturnTypeChecking;
+        m_wFlags |= mdfRequiresCovariantReturnTypeChecking;
     }
 
     static const BYTE s_ClassificationSizeTable[];
@@ -1731,7 +1725,7 @@ public:
     static SIZE_T GetBaseSize(DWORD classification)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(classification < mdcClassificationCount);
+        _ASSERTE(classification < mdfClassificationCount);
         return s_ClassificationSizeTable[classification];
     }
 
@@ -1748,38 +1742,38 @@ public:
     inline BOOL HaveValueTypeParametersBeenWalked()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcValueTypeParametersWalked) != 0;
+        return (m_wFlags & mdfValueTypeParametersWalked) != 0;
     }
 
     inline void SetValueTypeParametersWalked()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags(mdcValueTypeParametersWalked, TRUE);
+        InterlockedUpdateFlags(mdfValueTypeParametersWalked, TRUE);
     }
 
     inline BOOL HaveValueTypeParametersBeenLoaded()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcValueTypeParametersLoaded) != 0;
+        return (m_wFlags & mdfValueTypeParametersLoaded) != 0;
     }
 
     inline void SetValueTypeParametersLoaded()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags(mdcValueTypeParametersLoaded, TRUE);
+        InterlockedUpdateFlags(mdfValueTypeParametersLoaded, TRUE);
     }
 
 #ifdef FEATURE_TYPEEQUIVALENCE
     inline BOOL DoesNotHaveEquivalentValuetypeParameters()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wFlags & mdcDoesNotHaveEquivalentValuetypeParameters) != 0;
+        return (m_wFlags & mdfDoesNotHaveEquivalentValuetypeParameters) != 0;
     }
 
     inline void SetDoesNotHaveEquivalentValuetypeParameters()
     {
         LIMITED_METHOD_CONTRACT;
-        InterlockedUpdateFlags(mdcDoesNotHaveEquivalentValuetypeParameters, TRUE);
+        InterlockedUpdateFlags(mdfDoesNotHaveEquivalentValuetypeParameters, TRUE);
     }
 #endif // FEATURE_TYPEEQUIVALENCE
 
@@ -2121,7 +2115,6 @@ public:
 class MethodDescChunk
 {
     friend class MethodDesc;
-    friend class CheckAsmOffsets;
 
     enum {
         enum_flag_TokenRangeMask                           = 0x0FFF, // This must equal METHOD_TOKEN_RANGE_MASK calculated higher in this file
@@ -2424,9 +2417,7 @@ typedef DPTR(DynamicResolver)         PTR_DynamicResolver;
 class DynamicMethodDesc : public StoredSigMethodDesc
 {
     friend class ILStubCache;
-    friend class ILStubState;
     friend class DynamicMethodTable;
-    friend class MethodDesc;
 
 protected:
     PTR_CUTF8           m_pszMethodName;
@@ -2441,12 +2432,8 @@ public:
         StubNativeToCLRInterop,
         StubCOMToCLRInterop,
         StubStructMarshalInterop,
-#ifdef FEATURE_ARRAYSTUB_AS_IL
         StubArrayOp,
-#endif
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
         StubMulticastDelegate,
-#endif
         StubWrapperDelegate,
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
         StubUnboxingIL,
@@ -2509,6 +2496,7 @@ public:
     void SetILStubType(ILStubType type)
     {
         _ASSERTE(HasFlags(FlagIsILStub));
+        m_dwExtendedFlags &= ~ILStubTypeMask;
         m_dwExtendedFlags |= type;
     }
 
@@ -2597,14 +2585,12 @@ public:
             && GetILStubType() == StubCLRToNativeInterop;
     }
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     bool IsMulticastStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return GetILStubType() == DynamicMethodDesc::StubMulticastDelegate;
     }
-#endif
     bool IsWrapperDelegateStub() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -3004,7 +2990,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         MethodTable * pMT = GetMethodTable();
         // Try to avoid touching the EEClass if possible
-        if (pMT->IsClassPreInited())
+        if (!pMT->HasClassConstructor())
             return FALSE;
         return !pMT->GetClass()->IsBeforeFieldInit();
     }
@@ -3024,13 +3010,13 @@ class EEImplMethodDesc : public StoredSigMethodDesc
 #ifdef FEATURE_COMINTEROP
 
 // This is the extra information needed to be associated with a method in order to use it for
-// CLR->COM calls. It is currently used by code:ComPlusCallMethodDesc (ordinary CLR->COM calls).
-typedef DPTR(struct ComPlusCallInfo) PTR_ComPlusCallInfo;
-struct ComPlusCallInfo
+// CLR->COM calls. It is currently used by code:CLRToCOMCallMethodDesc (ordinary CLR->COM calls).
+typedef DPTR(struct CLRToCOMCallInfo) PTR_CLRToCOMCallInfo;
+struct CLRToCOMCallInfo
 {
-    // Returns ComPlusCallInfo associated with a method. pMD must be a ComPlusCallMethodDesc or
+    // Returns CLRToCOMCallInfo associated with a method. pMD must be a CLRToCOMCallMethodDesc or
     // EEImplMethodDesc that has already been initialized for COM interop.
-    inline static ComPlusCallInfo *FromMethodDesc(MethodDesc *pMD);
+    inline static CLRToCOMCallInfo *FromMethodDesc(MethodDesc *pMD);
 
     union
     {
@@ -3111,14 +3097,14 @@ struct ComPlusCallInfo
 
 
 //-----------------------------------------------------------------------
-// Operations specific to ComPlusCall methods. We use a derived class to get
+// Operations specific to CLRToCOMCall methods. We use a derived class to get
 // the compiler involved in enforcing proper method type usage.
 // DO NOT ADD FIELDS TO THIS CLASS.
 //-----------------------------------------------------------------------
-class ComPlusCallMethodDesc : public MethodDesc
+class CLRToCOMCallMethodDesc : public MethodDesc
 {
 public:
-    ComPlusCallInfo *m_pComPlusCallInfo; // initialized in code:ComPlusCall.PopulateComPlusCallMethodDesc
+    CLRToCOMCallInfo *m_pCLRToCOMCallInfo; // initialized in code:CLRToCOMCall.PopulateCLRToCOMCallMethodDesc
 
     void InitRetThunk();
     void InitComEventCallInfo();
@@ -3126,21 +3112,21 @@ public:
     PCODE * GetAddrOfILStubField()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pComPlusCallInfo->GetAddrOfILStubField();
+        return m_pCLRToCOMCallInfo->GetAddrOfILStubField();
     }
 
     MethodTable* GetInterfaceMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pComPlusCallInfo->m_pInterfaceMT != NULL);
-        return m_pComPlusCallInfo->m_pInterfaceMT;
+        _ASSERTE(m_pCLRToCOMCallInfo->m_pInterfaceMT != NULL);
+        return m_pCLRToCOMCallInfo->m_pInterfaceMT;
     }
 
     MethodDesc* GetEventProviderMD()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pComPlusCallInfo->m_pEventProviderMD;
+        return m_pCLRToCOMCallInfo->m_pEventProviderMD;
     }
 
 
@@ -3148,27 +3134,27 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (m_pComPlusCallInfo->m_flags & ComPlusCallInfo::kRequiresArgumentWrapping) != 0;
+        return (m_pCLRToCOMCallInfo->m_flags & CLRToCOMCallInfo::kRequiresArgumentWrapping) != 0;
     }
 
     void SetLateBoundFlags(BYTE newFlags)
     {
         LIMITED_METHOD_CONTRACT;
 
-        InterlockedOr((LONG*)&m_pComPlusCallInfo->m_flags, newFlags);
+        InterlockedOr((LONG*)&m_pCLRToCOMCallInfo->m_flags, newFlags);
     }
 
 #ifdef TARGET_X86
     WORD GetStackArgumentSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pComPlusCallInfo->GetStackArgumentSize();
+        return m_pCLRToCOMCallInfo->GetStackArgumentSize();
     }
 
     void SetStackArgumentSize(WORD cbDstBuffer)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pComPlusCallInfo->SetStackArgumentSize(cbDstBuffer);
+        m_pCLRToCOMCallInfo->SetStackArgumentSize(cbDstBuffer);
     }
 #else // TARGET_X86
     void SetStackArgumentSize(WORD cbDstBuffer)
@@ -3493,7 +3479,7 @@ inline BOOL MethodDesc::HasNonVtableSlot()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (m_wFlags & mdcHasNonVtableSlot) != 0;
+    return (m_wFlags & mdfHasNonVtableSlot) != 0;
 }
 
 inline Instantiation MethodDesc::GetMethodInstantiation() const

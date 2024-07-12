@@ -11,8 +11,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// Implementation of ISOSDacInterface* interfaces intended to be passed out to consumers
 /// interacting with the DAC via those COM interfaces.
 /// </summary>
+/// <remarks>
+/// Functions on <see cref="ISOSDacInterface"/> are defined with PreserveSig. Target and Contracts
+/// throw on errors. Implementations in this class should wrap logic in a try-catch and return the
+/// corresponding error code.
+/// </remarks>
 [GeneratedComClass]
-internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
+internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface9
 {
     private readonly Target _target;
 
@@ -35,8 +40,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
     public int GetBreakingChangeVersion()
     {
-        // TODO: Return non-hard-coded version
-        return 4;
+        return _target.ReadGlobal<byte>(Constants.Globals.SOSBreakingChangeVersion);
     }
 
     public unsafe int GetCCWData(ulong ccw, void* data) => HResults.E_NOTIMPL;
@@ -77,17 +81,167 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescTransparencyData(ulong methodDesc, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodTableData(ulong mt, void* data) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodTableData(ulong mt, DacpMethodTableData* data)
+    {
+        if (mt == 0 || data == null)
+            return HResults.E_INVALIDARG;
+
+        try
+        {
+            Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodTableHandle methodTable = contract.GetMethodTableHandle(mt);
+
+            DacpMethodTableData result = default;
+            result.baseSize = contract.GetBaseSize(methodTable);
+            // [compat] SOS DAC APIs added this base size adjustment for strings
+            // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+            // which changed StringBuilder not to use a String as an internal buffer and in the process
+            // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+            // which is apparently not expected by SOS.
+            if (contract.IsString(methodTable))
+                result.baseSize -= sizeof(char);
+
+            result.componentSize = contract.GetComponentSize(methodTable);
+            bool isFreeObjectMT = contract.IsFreeObjectMethodTable(methodTable);
+            result.bIsFree = isFreeObjectMT ? 1 : 0;
+            if (!isFreeObjectMT)
+            {
+                result.module = contract.GetModule(methodTable);
+                // Note: really the canonical method table, not the EEClass, which we don't expose
+                result.klass = contract.GetCanonicalMethodTable(methodTable);
+                result.parentMethodTable = contract.GetParentMethodTable(methodTable);
+                result.wNumInterfaces = contract.GetNumInterfaces(methodTable);
+                result.wNumMethods = contract.GetNumMethods(methodTable);
+                result.wNumVtableSlots = 0; // always return 0 since .NET 9
+                result.wNumVirtuals = 0; // always return 0 since .NET 9
+                result.cl = contract.GetTypeDefToken(methodTable);
+                result.dwAttrClass = contract.GetTypeDefTypeAttributes(methodTable);
+                result.bContainsGCPointers = contract.ContainsGCPointers(methodTable) ? 1 : 0;
+                result.bIsShared = 0;
+                result.bIsDynamic = contract.IsDynamicStatics(methodTable) ? 1 : 0;
+            }
+            *data = result;
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
     public unsafe int GetMethodTableFieldData(ulong mt, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodTableForEEClass(ulong eeClass, ulong* value) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodTableForEEClass(ulong eeClassReallyCanonMT, ulong* value)
+    {
+        if (eeClassReallyCanonMT == 0 || value == null)
+            return HResults.E_INVALIDARG;
+
+        try
+        {
+            Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodTableHandle methodTableHandle = contract.GetMethodTableHandle(eeClassReallyCanonMT);
+            *value = methodTableHandle.Address;
+            return HResults.S_OK;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
     public unsafe int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableSlot(ulong mt, uint slot, ulong* value) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetModule(ulong addr, void** mod) => HResults.E_NOTIMPL;
-    public unsafe int GetModuleData(ulong moduleAddr, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException) => HResults.E_NOTIMPL;
+
+    public unsafe int GetModuleData(ulong moduleAddr, DacpModuleData* data)
+    {
+        if (moduleAddr == 0 || data == null)
+            return HResults.E_INVALIDARG;
+
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+
+            data->Address = moduleAddr;
+            data->PEAssembly = moduleAddr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
+            data->Assembly = contract.GetAssembly(handle);
+
+            Contracts.ModuleFlags flags = contract.GetFlags(handle);
+            bool isReflectionEmit = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit);
+            data->isReflection = (uint)(isReflectionEmit ? 1 : 0);
+            data->isPEFile = (uint)(isReflectionEmit ? 0 : 1);      // ReflectionEmit module means it is not a PE file
+            data->dwTransientFlags = (uint)flags;
+
+            data->ilBase = contract.GetILBase(handle);
+            data->metadataStart = contract.GetMetadataAddress(handle, out ulong metadataSize);
+            data->metadataSize = metadataSize;
+
+            data->LoaderAllocator = contract.GetLoaderAllocator(handle);
+            data->ThunkHeap = contract.GetThunkHeap(handle);
+
+            Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
+            data->FieldDefToDescMap = tables.FieldDefToDesc;
+            data->ManifestModuleReferencesMap = tables.ManifestModuleReferences;
+            data->MemberRefToDescMap = tables.MemberRefToDesc;
+            data->MethodDefToDescMap = tables.MethodDefToDesc;
+            data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable;
+            data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable;
+
+            // Always 0 - .NET no longer has these concepts
+            data->dwModuleID = 0;
+            data->dwBaseClassIndex = 0;
+            data->dwModuleIndex = 0;
+        }
+        catch (Exception e)
+        {
+            return e.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
+    public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException)
+    {
+        try
+        {
+            Contracts.IException contract = _target.Contracts.Exception;
+            TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
+            *exceptionObject = exceptionObjectLocal;
+            *nextNestedException = nextNestedExceptionLocal;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)
+    {
+        try
+        {
+            Contracts.IException contract = _target.Contracts.Exception;
+            Contracts.ExceptionData exceptionData = contract.GetExceptionData(objectAddress);
+            data->Message = exceptionData.Message;
+            data->InnerException = exceptionData.InnerException;
+            data->StackTrace = exceptionData.StackTrace;
+            data->WatsonBuckets = exceptionData.WatsonBuckets;
+            data->StackTraceString = exceptionData.StackTraceString;
+            data->RemoteStackTraceString = exceptionData.RemoteStackTraceString;
+            data->HResult = exceptionData.HResult;
+            data->XCode = exceptionData.XCode;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
@@ -103,14 +257,75 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetSyncBlockCleanupData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetSyncBlockData(uint number, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadAllocData(ulong thread, void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetThreadData(ulong thread, DacpThreadData* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetThreadData(ulong thread, DacpThreadData* data)
+    {
+        try
+        {
+            Contracts.IThread contract = _target.Contracts.Thread;
+            Contracts.ThreadData threadData = contract.GetThreadData(thread);
+            data->corThreadId = (int)threadData.Id;
+            data->osThreadId = (int)threadData.OSId.Value;
+            data->state = (int)threadData.State;
+            data->preemptiveGCDisabled = (uint)(threadData.PreemptiveGCDisabled ? 1 : 0);
+            data->allocContextPtr = threadData.AllocContextPointer;
+            data->allocContextLimit = threadData.AllocContextLimit;
+            data->fiberData = 0;    // Always set to 0 - fibers are no longer supported
+
+            TargetPointer appDomainPointer = _target.ReadGlobalPointer(Constants.Globals.AppDomain);
+            TargetPointer appDomain = _target.ReadPointer(appDomainPointer);
+            data->context = appDomain;
+            data->domain = appDomain;
+
+            data->lockCount = -1;   // Always set to -1 - lock count was .NET Framework and no longer needed
+            data->pFrame = threadData.Frame;
+            data->firstNestedException = threadData.FirstNestedException;
+            data->teb = threadData.TEB;
+            data->lastThrownObjectHandle = threadData.LastThrownObjectHandle;
+            data->nextThread = threadData.NextThread;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
     public unsafe int GetThreadFromThinlockID(uint thinLockId, ulong* pThread) => HResults.E_NOTIMPL;
     public unsafe int GetThreadLocalModuleData(ulong thread, uint index, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadpoolData(void* data) => HResults.E_NOTIMPL;
-    public unsafe int GetThreadStoreData(DacpThreadStoreData* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetThreadStoreData(DacpThreadStoreData* data)
+    {
+        try
+        {
+            Contracts.IThread thread = _target.Contracts.Thread;
+            Contracts.ThreadStoreData threadStoreData = thread.GetThreadStoreData();
+            data->threadCount = threadStoreData.ThreadCount;
+            data->firstThread = threadStoreData.FirstThread;
+            data->finalizerThread = threadStoreData.FinalizerThread;
+            data->gcThread = threadStoreData.GCThread;
+
+            Contracts.ThreadStoreCounts threadCounts = thread.GetThreadCounts();
+            data->unstartedThreadCount = threadCounts.UnstartedThreadCount;
+            data->backgroundThreadCount = threadCounts.BackgroundThreadCount;
+            data->pendingThreadCount = threadCounts.PendingThreadCount;
+            data->deadThreadCount = threadCounts.DeadThreadCount;
+
+            data->fHostConfig = 0; // Always 0 for non-Framework
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
     public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;
+    public unsafe int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy) => HResults.E_NOTIMPL;
     public unsafe int TraverseEHInfo(ulong ip, void* pCallback, void* token) => HResults.E_NOTIMPL;
     public unsafe int TraverseLoaderHeap(ulong loaderHeapAddr, void* pCallback) => HResults.E_NOTIMPL;
     public unsafe int TraverseModuleMap(int mmt, ulong moduleAddr, void* pCallback, void* token) => HResults.E_NOTIMPL;

@@ -46,7 +46,7 @@ inline gc_alloc_context* GetThreadAllocContext()
 
     assert(GCHeapUtilities::UseThreadAllocationContexts());
 
-    return & GetThread()->m_alloc_context;
+    return &t_runtime_thread_locals.alloc_context;
 }
 
 // When not using per-thread allocation contexts, we (the EE) need to take care that
@@ -127,7 +127,7 @@ public:
         lock->Release();
     }
 
-    typedef Holder<GlobalAllocLock *, GlobalAllocLock::AcquireLock, GlobalAllocLock::ReleaseLock> Holder;
+    typedef class Holder<GlobalAllocLock *, GlobalAllocLock::AcquireLock, GlobalAllocLock::ReleaseLock> Holder;
 };
 
 typedef GlobalAllocLock::Holder GlobalAllocLockHolder;
@@ -413,7 +413,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    if (pArrayMT->ContainsPointers())
+    if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
     ArrayBase* orArray = NULL;
@@ -513,7 +513,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
 
     // The initial validation is copied from AllocateSzArray impl
 
-    if (pArrayMT->ContainsPointers() && cElements > 0)
+    if (pArrayMT->ContainsGCPointers() && cElements > 0)
     {
         // For arrays with GC pointers we can only work with empty arrays
         return NULL;
@@ -720,7 +720,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
-    if (pArrayMT->ContainsPointers())
+    if (pArrayMT->ContainsGCPointers())
         flags |= GC_ALLOC_CONTAINS_REF;
 
     ArrayBase* orArray = NULL;
@@ -1066,7 +1066,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
 #endif // FEATURE_COMINTEROP
     else
     {
-        if (pMT->ContainsPointers())
+        if (pMT->ContainsGCPointers())
             flags |= GC_ALLOC_CONTAINS_REF;
 
         if (pMT->HasFinalizer())
@@ -1122,7 +1122,7 @@ OBJECTREF TryAllocateFrozenObject(MethodTable* pObjMT)
 
     SetTypeHandleOnThreadForAlloc(TypeHandle(pObjMT));
 
-    if (pObjMT->ContainsPointers() || pObjMT->IsComObjectType())
+    if (pObjMT->ContainsGCPointers() || pObjMT->IsComObjectType())
     {
         return NULL;
     }
@@ -1485,38 +1485,3 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
         }
     }
 }
-
-//----------------------------------------------------------------------------
-//
-// Write Barrier Support for bulk copy ("Clone") operations
-//
-// StartPoint is the target bulk copy start point
-// len is the length of the bulk copy (in bytes)
-//
-//
-// Performance Note:
-//
-// This is implemented somewhat "conservatively", that is we
-// assume that all the contents of the bulk copy are object
-// references.  If they are not, and the value lies in the
-// ephemeral range, we will set false positives in the card table.
-//
-// We could use the pointer maps and do this more accurately if necessary
-
-#if defined(_MSC_VER) && defined(TARGET_X86)
-#pragma optimize("y", on)        // Small critical routines, don't put in EBP frame
-#endif //_MSC_VER && TARGET_X86
-
-void
-SetCardsAfterBulkCopy(Object **start, size_t len)
-{
-    // If the size is smaller than a pointer, no write barrier is required.
-    if (len >= sizeof(uintptr_t))
-    {
-        InlinedSetCardsAfterBulkCopyHelper(start, len);
-    }
-}
-
-#if defined(_MSC_VER) && defined(TARGET_X86)
-#pragma optimize("", on)        // Go back to command line default optimizations
-#endif //_MSC_VER && TARGET_X86

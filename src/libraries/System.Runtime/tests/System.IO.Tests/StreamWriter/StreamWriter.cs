@@ -7,7 +7,8 @@ namespace System.IO.Tests
 {
     public partial class WriteTests
     {
-        [Fact]
+        // Browser bypasses SyncTextWriter for faster startup
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public void Synchronized_NewObject()
         {
             using (Stream str = CreateStream())
@@ -58,20 +59,28 @@ namespace System.IO.Tests
             Assert.Equal(2, writer.WriteCalls);
             writer.Write("{0}{1}{2}", "Zero", "One", "Two");
             Assert.Equal(3, writer.WriteCalls);
-            writer.Write("{0}{1}{2}{3}", "Zero", "One", "Two", "Three");
+            writer.Write("{0}{1}{2}{3}", new object[] { "Zero", "One", "Two", "Three" });
             Assert.Equal(4, writer.WriteCalls);
-            writer.Write("{0}{1}{2}{3}{4}", "Zero", "One", "Two", "Three", "Four");
+            writer.Write("{0}{1}{2}{3}", (ReadOnlySpan<object>)new object[] { "Zero", "One", "Two", "Three" });
             Assert.Equal(5, writer.WriteCalls);
+            writer.Write("{0}{1}{2}{3}{4}", new object[] { "Zero", "One", "Two", "Three", "Four" });
+            Assert.Equal(6, writer.WriteCalls);
+            writer.Write("{0}{1}{2}{3}{4}", (ReadOnlySpan<object>)new object[] { "Zero", "One", "Two", "Three", "Four" });
+            Assert.Equal(7, writer.WriteCalls);
             writer.WriteLine("{0}", "Zero");
             Assert.Equal(1, writer.WriteLineCalls);
             writer.WriteLine("{0}{1}", "Zero", "One");
             Assert.Equal(2, writer.WriteLineCalls);
             writer.WriteLine("{0}{1}{2}", "Zero", "One", "Two");
             Assert.Equal(3, writer.WriteLineCalls);
-            writer.WriteLine("{0}{1}{2}{3}", "Zero", "One", "Two", "Three");
+            writer.WriteLine("{0}{1}{2}{3}", new object[] { "Zero", "One", "Two", "Three" });
             Assert.Equal(4, writer.WriteLineCalls);
-            writer.WriteLine("{0}{1}{2}{3}{4}", "Zero", "One", "Two", "Three", "Four");
+            writer.WriteLine("{0}{1}{2}{3}", (ReadOnlySpan<object>)new object[] { "Zero", "One", "Two", "Three" });
             Assert.Equal(5, writer.WriteLineCalls);
+            writer.WriteLine("{0}{1}{2}{3}{4}", new object[] { "Zero", "One", "Two", "Three", "Four" });
+            Assert.Equal(6, writer.WriteLineCalls);
+            writer.WriteLine("{0}{1}{2}{3}{4}", (ReadOnlySpan<object>)new object[] { "Zero", "One", "Two", "Three", "Four" });
+            Assert.Equal(7, writer.WriteLineCalls);
         }
     }
 }

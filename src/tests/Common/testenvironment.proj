@@ -84,6 +84,7 @@
       DOTNET_JitEnableOptRepeat;
       DOTNET_JitOptRepeat;
       DOTNET_JitOptRepeatCount;
+      DOTNET_JitDoReversePostOrderLayout;
     </DOTNETVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -243,6 +244,7 @@
     <TestEnvironment Include="syntheticpgo_blend" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitSynthesizeCounts="3" JitCheckSynthesizedCounts="1" />
     <TestEnvironment Include="jitrlcse" JitRLCSEGreedy="1" />
     <TestEnvironment Include="jitoptrepeat" JitEnableOptRepeat="1" JitOptRepeat="*" JitOptRepeatCount="2"/>
+    <TestEnvironment Include="jitoldlayout" JitDoReversePostOrderLayout="0"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>

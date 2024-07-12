@@ -590,6 +590,7 @@ private:
     bool m_isAllocator[CORINFO_HELP_COUNT];
     bool m_mutatesHeap[CORINFO_HELP_COUNT];
     bool m_mayRunCctor[CORINFO_HELP_COUNT];
+    bool m_isNoEscape[CORINFO_HELP_COUNT];
 
     void init();
 
@@ -646,6 +647,13 @@ public:
         assert(helperId > CORINFO_HELP_UNDEF);
         assert(helperId < CORINFO_HELP_COUNT);
         return m_mayRunCctor[helperId];
+    }
+
+    bool IsNoEscape(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_isNoEscape[helperId];
     }
 };
 
@@ -752,8 +760,8 @@ public:
 class CycleCount
 {
 private:
-    double           cps;         // cycles per second
-    unsigned __int64 beginCycles; // cycles at stop watch construction
+    double   cps;         // cycles per second
+    uint64_t beginCycles; // cycles at stop watch construction
 public:
     CycleCount();
 
@@ -766,7 +774,7 @@ public:
 
 private:
     // Return true if successful.
-    bool GetCycles(unsigned __int64* time);
+    bool GetCycles(uint64_t* time);
 };
 
 // Uses win API QueryPerformanceCounter/QueryPerformanceFrequency.
@@ -802,11 +810,11 @@ unsigned CountDigits(double num, unsigned base = 10);
 class FloatingPointUtils
 {
 public:
-    static double convertUInt64ToDouble(unsigned __int64 u64);
+    static double convertUInt64ToDouble(uint64_t u64);
 
-    static float convertUInt64ToFloat(unsigned __int64 u64);
+    static float convertUInt64ToFloat(uint64_t u64);
 
-    static unsigned __int64 convertDoubleToUInt64(double d);
+    static uint64_t convertDoubleToUInt64(double d);
 
     static double convertToDouble(float f);
 

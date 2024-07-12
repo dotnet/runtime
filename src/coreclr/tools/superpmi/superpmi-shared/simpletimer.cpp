@@ -14,7 +14,7 @@ SimpleTimer::SimpleTimer()
     if (retVal == FALSE)
     {
         LogDebug("SimpleTimer::SimpleTimer unable to QPF. error was 0x%08x", ::GetLastError());
-        ::__debugbreak();
+        DEBUG_BREAK;
     }
 }
 
@@ -28,7 +28,7 @@ void SimpleTimer::Start()
     if (retVal == FALSE)
     {
         LogDebug("SimpleTimer::Start unable to QPC. error was 0x%08x", ::GetLastError());
-        ::__debugbreak();
+        DEBUG_BREAK;
     }
 }
 
@@ -38,7 +38,7 @@ void SimpleTimer::Stop()
     if (retVal == FALSE)
     {
         LogDebug("SimpleTimer::Stop unable to QPC. error was 0x%08x", ::GetLastError());
-        ::__debugbreak();
+        DEBUG_BREAK;
     }
 }
 

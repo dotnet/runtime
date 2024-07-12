@@ -34,12 +34,21 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, new string[] { "እ", "ሰ", "ማ", "ረ", "ሐ", "ዓ", "ቅ" } };
             yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, new string[] { "н", "п", "в", "с", "ч", "п", "с" } };
             yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, new string[] { "র", "সো", "ম", "বু", "বৃ", "শু", "শ" } };
-            yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, new string[] { "dg", "dl", "dt", "dc", "dj", "dv", "ds" } };
+            if (PlatformDetection.IsFirefox || PlatformDetection.IsNodeJS)
+            {
+                yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, new string[] { "dg", "dl", "dt", "dc", "dj", "dv", "ds" } };
+                yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "Su.", "M.", "Tu.", "W.", "Th.", "F.", "Sa." } };
+            }
+            else
+            {
+                 yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, new string[] { "dg.", "dl.", "dt.", "dc.", "dj.", "dv.", "ds." } };
+                 yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "S", "M", "T", "W", "T", "F", "S" } }; // "Su.", "M.", "Tu.", "W.", "Th.", "F.", "Sa."
+            }
+
             yield return new object[] { new CultureInfo("cs-CZ").DateTimeFormat, new string[] { "N", "P", "Ú", "S", "Č", "P", "S" } };
             yield return new object[] { new CultureInfo("da-DK").DateTimeFormat, new string[] { "S", "M", "T", "O", "T", "F", "L" } };
             yield return new object[] { new CultureInfo("de-LU").DateTimeFormat, new string[] { "S", "M", "D", "M", "D", "F", "S" } };
             yield return new object[] { new CultureInfo("el-CY").DateTimeFormat, new string[] { "Κ", "Δ", "Τ", "Τ", "Π", "Π", "Σ" } };
-            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "Su.", "M.", "Tu.", "W.", "Th.", "F.", "Sa." } };
             yield return new object[] { new CultureInfo("en-GB").DateTimeFormat, new string[] { "S", "M", "T", "W", "T", "F", "S" } };
             yield return new object[] { new CultureInfo("es-419").DateTimeFormat, new string[] { "D", "L", "M", "M", "J", "V", "S" } };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, new string[] { "D", "L", "M", "X", "J", "V", "S" } };

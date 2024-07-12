@@ -698,6 +698,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "zabcaaaaaaa", RegexOptions.RightToLeft, 0, 11, true, "aaaa");
                 yield return (@"(...)(?(1)\w*|\s*)[a1 ]", "----       ", RegexOptions.RightToLeft, 0, 11, true, "---       ");
                 yield return (@"(aaa)(?(1)aaa|b?)*", "aaaaaa", RegexOptions.None, 0, 6, true, "aaaaaa");
+
+                yield return (@"AAB|AAC", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAC");
+                yield return (@"AAB|AA\d", "AABAACD", RegexOptions.RightToLeft, 0, 6, true, "AAB");
+                yield return (@"(AB){3,}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABABAB");
+                yield return (@"(AB){1,3}", "1234ABABABAB5678", RegexOptions.RightToLeft, 0, 16, true, "ABABAB");
             }
 
             // Character Class Subtraction
@@ -865,6 +870,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty);
                 yield return ("aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty);
                 yield return ("abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def");
+                yield return (@"^says?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^says?$", "say", RegexOptions.RightToLeft, 0, 3, true, "say");
+                yield return (@"^say(s?)$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(say)s?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(.+?) (says?),\s'(.+)'$", "User says, 'adventure'", RegexOptions.RightToLeft, 0, 22, true, "User says, 'adventure'");
 
                 // .* : RTL, Case-sensitive
                 yield return (@".*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");
@@ -1167,6 +1177,7 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> Match_DeepNesting_MemberData()
         {
+            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (RegexHelpers.IsNonBacktracking(engine))
@@ -1175,15 +1186,15 @@ namespace System.Text.RegularExpressions.Tests
                     continue;
                 }
 
-                yield return new object[] { engine, 1 };
-                yield return new object[] { engine, 10 };
-                yield return new object[] { engine, 100 };
+                yield return new object[] { engine, options, 1 };
+                yield return new object[] { engine, options, 10 };
+                yield return new object[] { engine, options, 100 };
             }
         }
 
         [Theory]
         [MemberData(nameof(Match_DeepNesting_MemberData))]
-        public async Task Match_DeepNesting(RegexEngine engine, int count)
+        public async Task Match_DeepNesting(RegexEngine engine, RegexOptions options, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";
@@ -1191,7 +1202,7 @@ namespace System.Text.RegularExpressions.Tests
             string pattern = string.Concat(Enumerable.Repeat(Start, count)) + string.Concat(Enumerable.Repeat(End, count));
             string input = string.Concat(Enumerable.Repeat(Match, count));
 
-            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             Match m = r.Match(input);
 
             Assert.True(m.Success);
@@ -1321,7 +1332,7 @@ namespace System.Text.RegularExpressions.Tests
             }, ((int)engine).ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void Match_InstanceMethods_DefaultTimeout_SourceGenerated_Throws()
         {
@@ -1391,7 +1402,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             // This constant must be at least as large as the one in the implementation that sets the maximum number
             // of innermost loop iterations between timeout checks.
-            const int CharsToTriggerTimeoutCheck = 10000;
+            const int CharsToTriggerTimeoutCheck = 200_000;
             // Check that it is indeed large enough to trigger timeouts. If this fails the constant above needs to be larger.
             Assert.Throws<RegexMatchTimeoutException>(() => new Regex("a*", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromTicks(1))
                 .Match(new string('a', CharsToTriggerTimeoutCheck)));
@@ -1879,7 +1890,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input, startat));
-#if NET7_0_OR_GREATER
+#if NET
             Assert.Equal(expectedSuccessStartAt, r.IsMatch(input.AsSpan(), startat));
 #endif
 
@@ -2063,7 +2074,7 @@ namespace System.Text.RegularExpressions.Tests
             Regex r1 = await RegexHelpers.GetRegexAsync(engine, "[\u012F-\u0130]", RegexOptions.IgnoreCase);
             Regex r2 = await RegexHelpers.GetRegexAsync(engine, "[\u012F\u0130]", RegexOptions.IgnoreCase);
             Assert.Equal(r1.IsMatch("\u0130"), r2.IsMatch("\u0130"));
-#if NET7_0_OR_GREATER
+#if NET
             Assert.Equal(r1.IsMatch("\u0130".AsSpan()), r2.IsMatch("\u0130".AsSpan()));
 #endif
 
@@ -2485,14 +2496,14 @@ namespace System.Text.RegularExpressions.Tests
             if (r == null)
             {
                 Assert.Throws<T>(() => timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input, pattern, options) : Regex.IsMatch(input, pattern, options, timeout));
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Throws<T>(() => timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input.AsSpan(), pattern, options) : Regex.IsMatch(input.AsSpan(), pattern, options, timeout));
 #endif
             }
             else
             {
                 Assert.Throws<T>(() => r.IsMatch(input));
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Throws<T>(() => r.IsMatch(input.AsSpan()));
 #endif
             }
@@ -2507,7 +2518,7 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     Assert.Equal(expected, Regex.IsMatch(input, pattern));
                 }
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Equal(expected, timeout == Regex.InfiniteMatchTimeout ? Regex.IsMatch(input.AsSpan(), pattern, options) : Regex.IsMatch(input.AsSpan(), pattern, options, timeout));
                 if (options == RegexOptions.None)
                 {
@@ -2518,7 +2529,7 @@ namespace System.Text.RegularExpressions.Tests
             else
             {
                 Assert.Equal(expected, r.IsMatch(input));
-#if NET7_0_OR_GREATER
+#if NET
                 Assert.Equal(expected, r.IsMatch(input.AsSpan()));
 #endif
             }
@@ -2640,6 +2651,26 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, RegexOptions.Multiline, @"^\w{10,}\b", "this is a\ncomplicated word in a\nnontrivial sentence", new (int, int)[] { (10, 11), (32, 10) } };
                 yield return new object[] { engine, RegexOptions.None, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "date 10/12/1966 and 10/12/66 are the same", new (int, int)[] { (5, 10), (20, 8) } };
                 yield return new object[] { engine, RegexOptions.Multiline, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}$", "date 10/12/1966\nand 10/12/66\nare the same", new (int, int)[] { (5, 10), (20, 8) } };
+            }
+        }
+
+        [Fact]
+        public async Task MatchNonBacktrackingOver255Minterms()
+        {
+            // While valid on all engines, this test in particular is designed to exercise the rare case
+            // of more than 255 unique minterms case in the non-backtracking engine's minterm classifier.
+
+            IEnumerable<char> chars = Enumerable.Range(128, 400 - 128).Select(i => (char)i);
+            string patternString = string.Concat(chars.Select(c => $"{c}{c}?")); // adding an optional char as well just so it's not a string literal
+            string inputString = string.Concat(chars);
+
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                Regex r = await RegexHelpers.GetRegexAsync(engine, patternString);
+                MatchCollection ms = r.Matches(inputString);
+                Assert.Equal(1, ms.Count);
+                Assert.Equal(0, ms[0].Index);
+                Assert.Equal(272, ms[0].Length);
             }
         }
     }

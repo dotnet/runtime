@@ -77,6 +77,8 @@
     <!-- by default, do dynamic components -->
     <!-- TODO: Change to dynamic as default once package/deploy is fixed for all targets -->
     <MonoComponentsStatic Condition="'$(MonoComponentsStatic)' == ''">true</MonoComponentsStatic>
+    <NeedEmscriptenPackages Condition="'$(TargetsBrowser)' == 'true' or '$(MonoGenerateOffsetsOSGroups)' == 'browser'">true</NeedEmscriptenPackages>
+    <NeedEmscriptenPackages Condition="'$(NeedEmscriptenPackages)' == ''">false</NeedEmscriptenPackages>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
@@ -85,6 +87,20 @@
                       PrivateAssets="all"
                       Version="$(MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version)"
                       GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(NeedEmscriptenPackages)' == 'true'">
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Cache.$(_portableHostOS)-$(BuildArchitecture)"
+                      PrivateAssets="all"
+                      Version="$(EmsdkPackageVersion)"
+                      PackageArch="$(BuildArchitecture)" />
+    <PackageReference Include="runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport"
+                      Version="$(NodePackageVersion)"
+                      PackageArch="$(BuildArchitecture)" />
+    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Sdk.$(_portableHostOS)-$(BuildArchitecture)"
+                      PrivateAssets="all"
+                      Version="$(EmsdkPackageVersion)"
+                      PackageArch="$(BuildArchitecture)" />
   </ItemGroup>
 
   <!--
@@ -145,7 +161,7 @@
 
   <!-- Sets up emscripten if you don't have the EMSDK_PATH env variable set -->
   <Target Name="ProvisionEmscripten"
-          Condition="'$(ShouldProvisionEmscripten)' == 'true' and '$(SkipMonoCrossJitConfigure)' != 'true'">
+          Condition="'$(ShouldProvisionEmscripten)' == 'true'">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)\browser\emscripten-version.txt">
       <Output TaskParameter="Lines" ItemName="_VersionLines" />
     </ReadLinesFromFile>
@@ -157,25 +173,133 @@
       <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'browser'))</BrowserLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+      <_EmsdkPaths Condition="'$(HostOS)' != 'windows'">
+CURRENT_SCRIPT=
+DIR="."
 
-      <InstallCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
-      <ActivateCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
-      <InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
-      <ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
-      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
+# use shell specific method to get the path
+# to the current file being source'd.
+#
+# To add a shell, add another conditional below,
+# then add tests to scripts/test_source_env.sh
+
+if [ -n "%24{BASH_SOURCE-}" ]%3B then
+  CURRENT_SCRIPT="%24BASH_SOURCE"
+elif [ -n "%24{ZSH_VERSION-}" ]%3B then
+  CURRENT_SCRIPT="%24{(%):-%x}"
+elif [ -n "%24{KSH_VERSION-}" ]%3B then
+  CURRENT_SCRIPT=%24{.sh.file}
+fi
+
+if [ -n "%24{CURRENT_SCRIPT-}" ]%3B then
+  DIR=%24(dirname "%24CURRENT_SCRIPT")
+  if [ -h "%24CURRENT_SCRIPT" ]%3B then
+    # Now work out actual DIR since this is part of a symlink.
+    # Since we can't be sure that readlink or realpath
+    # are available, use tools more likely to be installed.
+    # (This will still fail if sed is not available.)
+    SYMDIR=%24(dirname "%24(ls -l "%24CURRENT_SCRIPT" | sed -n "s/.*-&gt; //p")")
+    if [ -z "%24SYMDIR" ]%3B then
+      SYMDIR="."
+    fi
+    FULLDIR="%24DIR/%24SYMDIR"
+    DIR=%24(cd "%24FULLDIR" &gt; /dev/null 2&gt;&amp;1%3B /bin/pwd)
+    unset SYMDIR
+    unset FULLDIR
+  fi
+fi
+unset CURRENT_SCRIPT
+
+if [ ! -f "%24DIR/emscripten/emcmake.py" ]%3B then
+  echo "Error: unable to determine 'emsdk' directory. Perhaps you are using a shell or" 1&gt;&amp;2
+  echo "       environment that this script does not support." 1&gt;&amp;2
+  echo 1&gt;&amp;2
+  echo "A possible solution is to source this script while in the 'emsdk' directory." 1&gt;&amp;2
+  echo 1&gt;&amp;2
+  unset DIR
+  return
+fi
+
+export EMSDK_PATH=%24{DIR}/
+unset DIR
+
+export DOTNET_EMSCRIPTEN_LLVM_ROOT=%24{EMSDK_PATH}bin/
+export DOTNET_EMSCRIPTEN_NODE_JS=%24{EMSDK_PATH}node/bin/node
+export DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%24{EMSDK_PATH}
+
+      </_EmsdkPaths>
+      <_EmsdkPaths Condition="'$(HostOS)' == 'windows'">
+@echo off
+
+set CURRENT_SCRIPT=%~dp0
+set EMSDK_PATH=%CURRENT_SCRIPT:~0,-1%\
+
+set EMSDK_PYTHON=%EMSDK_PATH%python\python.exe
+set DOTNET_EMSCRIPTEN_LLVM_ROOT=%EMSDK_PATH%bin\
+set DOTNET_EMSCRIPTEN_NODE_JS=%EMSDK_PATH%node\bin\node
+set DOTNET_EMSCRIPTEN_NODE_PATH=%EMSDK_PATH%node\bin\
+set DOTNET_EMSCRIPTEN_BINARYEN_ROOT=%EMSDK_PATH%
+
+      </_EmsdkPaths>
+      <_EmscriptenPaths>
+import os
+
+emsdk_path = os.path.dirname(os.path.dirname(os.path.realpath(os.getenv('EM_CONFIG')).replace('\\', '/')))
+
+LLVM_ROOT = emsdk_path + '/bin'
+NODE_JS = emsdk_path + '/node/bin/node'
+BINARYEN_ROOT = emsdk_path
+
+FROZEN_CACHE = bool(os.getenv('FROZEN_CACHE', 'True'))
+
+COMPILER_ENGINE = NODE_JS
+JS_ENGINES = [NODE_JS]
+      </_EmscriptenPaths>
+      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
-    <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
-          WorkingDirectory="$(BrowserLocalPath)"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
-          WorkingDirectory="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="$(PythonCmd) -m pip install certifi &amp;&amp; $(PythonCmd) -m pip install pip-system-certs"
-          Condition="'$(HostOS)' == 'windows'"
-          WorkingDirectory="$(EMSDK_PATH)"
-          IgnoreStandardErrorWarningFormat="true" />
+    
+    <ItemGroup>
+      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-$(BuildArchitecture)'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+      <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(_portableHostOS)-$(BuildArchitecture)\**" />
+      <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-$(BuildArchitecture)'"
+                    Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(EmsdkFiles)" DestinationFolder="$(EMSDK_PATH)/%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <Copy SourceFiles="@(NodeFiles)" DestinationFolder="$(EMSDK_PATH)node/%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <Copy Condition="'$(HostOS)' == 'windows'" SourceFiles="@(PythonFiles)" DestinationFolder="$(EMSDK_PATH)python/%(RecursiveDir)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites"/>
+    </Copy>
+    <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
+      <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
+    </ReadLinesFromFile>
+    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)" 
+                      Overwrite="true"
+                      Lines="$(_EmsdkPaths);$(_EmsdkEnvFileText)" />
+    <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
+                      Overwrite="true"
+                      Lines="$(_EmscriptenPaths)" />
+    <!-- Fixup files that were symlinks originally (on Linux/Mac, Windows has an equivalent already) -->
+    <ItemGroup>
+      <NodeModulesBinFiles Include="$(EMSDK_PATH)node\bin\npm.js" />
+    </ItemGroup>
+    <WriteLinesToFile
+      Condition="$([MSBuild]::IsOSPlatform(Linux)) or $([MSBuild]::IsOSPlatform(OSX))"
+      Lines="#!/usr/bin/env node;require('../lib/node_modules/%(Filename)/lib/cli.js')(process)"
+      File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
+      Overwrite="true" />
+
+    <PropertyGroup>
+      <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
+    </PropertyGroup>    
   </Target>
 
   <!-- Sets up WASI SDK if you don't have the WASI_SDK_PATH env variable set -->
@@ -190,11 +314,22 @@
       <WasiSdkVersion>%(_VersionLines.Identity)</WasiSdkVersion>
       <WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-linux.tar.gz</WasiSdkUrl>
       <WasiSdkUrl Condition="'$(HostOS)' == 'osx'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0-macos.tar.gz</WasiSdkUrl>
-      <WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0.m-mingw.tar.gz</WasiSdkUrl>
+      <WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(WasiSdkVersion)/wasi-sdk-$(WasiSdkVersion).0.m-mingw64.tar.gz</WasiSdkUrl>
     </PropertyGroup>
 
     <RemoveDir Directories="$(WASI_SDK_PATH)" />
-    <Exec Command="curl -L -o wasi-sdk-$(WasiSdkVersion).0.tar.gz $(WasiSdkUrl) &amp;&amp; mkdir -p $(WASI_SDK_PATH) &amp;&amp; tar --strip-components=1 -xzf wasi-sdk-$(WasiSdkVersion).0.tar.gz -C $(WASI_SDK_PATH) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)/wasi-sdk-version.txt"
+    <Exec Command="curl -L -o wasi-sdk-$(WasiSdkVersion).0.tar.gz $(WasiSdkUrl) &amp;&amp; mkdir -p $(WASI_SDK_PATH) &amp;&amp; tar --strip-components=1 -xzf wasi-sdk-$(WasiSdkVersion).0.tar.gz -C $(WASI_SDK_PATH) &amp;&amp; cp $(WasiLocalPath)/wasi-sdk-version.txt $(WASI_SDK_PATH)wasi-sdk-version.txt"
+          Condition="'$(HostOS)' != 'windows'"
+          WorkingDirectory="$(ArtifactsObjDir)"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <!--
+    Temporary WASI-SDK 22 workaround #2: The version of `wasm-component-ld` that
+    ships with WASI-SDK 22 contains a
+    [bug](https://github.com/bytecodealliance/wasm-component-ld/issues/22) which
+    has been fixed in a v0.5.3 of that utility, so we upgrade it here.
+    -->
+    <Exec Command="curl -L -o wasm-component-ld-v0.5.4-x86_64-linux.tar.gz https://github.com/bytecodealliance/wasm-component-ld/releases/download/v0.5.4/wasm-component-ld-v0.5.4-x86_64-linux.tar.gz &amp;&amp; mkdir -p $(WASI_SDK_PATH)wasm-component &amp;&amp; tar --strip-components=1 -xzf wasm-component-ld-v0.5.4-x86_64-linux.tar.gz -C $(WASI_SDK_PATH)wasm-component &amp;&amp; cp $(WASI_SDK_PATH)wasm-component/wasm-component-ld $(WASI_SDK_PATH)bin/wasm-component-ld"
           Condition="'$(HostOS)' != 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
@@ -203,10 +338,15 @@
           Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
+
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/share/wasi-sysroot/include/wasm32-wasi-threads/pthread.h"
+          DestinationFiles="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/share/wasi-sysroot/include/wasm32-wasip2/pthread.h"
+          />
+
   </Target>
 
   <Target Name="ValidateWasiSdk" Condition="'$(SkipMonoCrossJitConfigure)' != 'true'">
-    <ReadLinesFromFile File="$(WASI_SDK_PATH)/wasi-sdk-version.txt">
+    <ReadLinesFromFile File="$(WASI_SDK_PATH)wasi-sdk-version.txt">
       <Output TaskParameter="Lines" ItemName="_ActualVersionLines" />
     </ReadLinesFromFile>
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)/wasi/wasi-sdk-version.txt">
@@ -283,9 +423,9 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(HostOS)' == 'Linux' and '$(MonoEnableLLVM)' == 'true' and '$(TargetArchitecture)' != 'wasm' and '$(MonoUseLibCxx)' == 'true'">
-      <_MonoCXXFLAGS Include="-I$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
+      <_MonoCXXFLAGS Include="-isystem $(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\include\c++\v1" />
       <_MonoCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
-      <_MonoCXXFLAGS Include="-stdlib=libc++" />
+      <_MonoCXXFLAGS Include="-lc++;-lc++abi" />
       <_MonoCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
     </ItemGroup>
 
@@ -401,11 +541,11 @@
       <_MonoCMakeArgs Include="-DCMAKE_SYSTEM_VARIANT=maccatalyst" />
       <!-- https://gitlab.kitware.com/cmake/cmake/-/issues/20132 -->
       <_MonoCPPFLAGS Include="-Wno-overriding-t-option" />
-      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
-      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
+      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios$(MacCatalystVersionMin)-macabi" />
+      <_MonoCFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios$(MacCatalystVersionMin)-macabi" />
       <_MonoCFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
-      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios14.2-macabi" />
-      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios13.5-macabi" />
+      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'arm64'" Include="-target arm64-apple-ios$(MacCatalystVersionMin)-macabi" />
+      <_MonoCXXFlags Condition="'$(TargetArchitecture)' == 'x64'" Include="-target x86_64-apple-ios$(MacCatalystVersionMin)-macabi" />
       <_MonoCXXFLAGS Condition="'$(TargetArchitecture)' == 'arm64'" Include="-arch arm64" />
       <!-- Force running as arm64 even when invoked from an x64 msbuild process -->
       <_MonoBuildEnv Condition="'$(BuildArchitecture)' == 'arm64'" Include="arch -arch arm64" />
@@ -598,15 +738,16 @@
 
     <PropertyGroup>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)').Replace('\', '/'))</EMSDK_PATH>
-      <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+      <_EmsdkEnvScriptPath>$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env$(ScriptExt)'))</_EmsdkEnvScriptPath>
+
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoSkipInitCompiler)' != 'true' and '$(HostOS)' != 'windows'">sh -c 'build_arch=&quot;$(_CompilerTargetArch)&quot; compiler=&quot;$(MonoCCompiler)&quot; . &quot;$(RepositoryEngineeringCommonDir)native/init-compiler.sh&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(_MonoSkipInitCompiler)' == 'true' and '$(HostOS)' != 'windows'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true'">$(_MonoCMakeConfigureCommand) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot -DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_PATH)share/cmake/wasi-sdk.cmake -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' != 'windows'">bash -c 'source $(_EmsdkEnvScriptPath) 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$(_EmsdkEnvScriptPath)&quot; &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsWasi)' == 'true' and '$(HostOS)' == 'windows'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; cmake $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
 
       <_MonoCMakeBuildCommand>cmake --build . --target install --config $(Configuration)</_MonoCMakeBuildCommand>
@@ -680,7 +821,8 @@
 
     <!-- Linux specific options -->
     <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
-      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*"/>
+      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib/libclang.so" Condition=" Exists('$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib/libclang.so') "/>
+      <_LibClang Include="$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/lib64/libclang.so.*" Condition=" '$(_LibClang)' == '' "/>
     </ItemGroup>
     <PropertyGroup Condition="'$(TargetsLinux)' == 'true' and '$(Platform)' == 'arm64'">
       <MonoUseCrossTool>true</MonoUseCrossTool>
@@ -796,8 +938,8 @@
       <MonoAotCrossOffsetsToolParams Include="--libclang=&quot;$(MonoLibClang)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotOffsetsPrefix)' != ''" Include="--prefix=&quot;$(MonoAotOffsetsPrefix)&quot;" />
       <MonoAotCrossOffsetsToolParams Condition="'$(MonoAotCMakeSysroot)' != ''" Include="--sysroot=&quot;$(MonoAotCMakeSysroot)&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'upstream', 'emscripten').TrimEnd('\/'))&quot;" />
-      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)').TrimEnd('\/'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsBrowser)' == 'true'" Include="--emscripten-sdk=&quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emscripten').TrimEnd('\/'))&quot;" />
+      <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--sysroot=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)', 'share/wasi-sysroot'))&quot; --wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)').TrimEnd('\/'))&quot;" />
     </ItemGroup>
 
     <!--
@@ -1061,6 +1203,9 @@
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)out\lib\libmono-wasm-nosimd.a">
         <Destination>$(RuntimeBinDir)libmono-wasm-nosimd.a</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Condition="('$(TargetsBrowser)' == 'true'  or '$(TargetsWasi)' == 'true') and '$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(MonoObjDir)_deps\fetchzlibng-build\libz.a">
+        <Destination>$(RuntimeBinDir)libz.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoICorDebugArtifacts Condition="'$(MonoMsCorDbi)' == 'true'" Include="$(MonoObjDir)out\lib\$(LibPrefix)mscordbi$(LibSuffix)">
         <Destination>$(RuntimeBinDir)$(LibPrefix)mscordbi$(LibSuffix)</Destination>

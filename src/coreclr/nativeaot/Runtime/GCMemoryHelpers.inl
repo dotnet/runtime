@@ -172,6 +172,8 @@ static const uint32_t INVALIDGCVALUE = 0xcccccccd;
 
 FORCEINLINE void InlineWriteBarrier(void * dst, void * ref)
 {
+    ASSERT(((uint8_t*)dst >= g_lowest_address) && ((uint8_t*)dst < g_highest_address))
+
     if (((uint8_t*)ref >= g_ephemeral_low) && ((uint8_t*)ref < g_ephemeral_high))
     {
         // volatile is used here to prevent fetch of g_card_table from being reordered
@@ -226,14 +228,9 @@ FORCEINLINE void InlineCheckedWriteBarrier(void * dst, void * ref)
 
 FORCEINLINE void InlinedBulkWriteBarrier(void* pMemStart, size_t cbMemSize)
 {
-    // Check whether the writes were even into the heap. If not there's no card update required.
-    // Also if the size is smaller than a pointer, no write barrier is required.
-    // This case can occur with universal shared generic code where the size
-    // is not known at compile time.
-    if (pMemStart < g_lowest_address || (pMemStart >= g_highest_address) || (cbMemSize < sizeof(uintptr_t)))
-    {
-        return;
-    }
+    // Caller is expected to check whether the writes were even into the heap
+    ASSERT(cbMemSize >= sizeof(uintptr_t));
+    ASSERT((pMemStart >= g_lowest_address) && (pMemStart < g_highest_address));
 
 #ifdef WRITE_BARRIER_CHECK
     // Perform shadow heap updates corresponding to the gc heap updates that immediately preceded this helper

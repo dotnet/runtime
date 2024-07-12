@@ -26,7 +26,7 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     /// <remarks>
     /// The PE/COFF object format is described in the official specifciation at
-    /// https://learn.microsoft.com/en-us/windows/win32/debug/pe-format. However,
+    /// https://learn.microsoft.com/windows/win32/debug/pe-format. However,
     /// numerous extensions are missing in the specification. The most notable
     /// ones are listed below.
     ///
@@ -354,6 +354,8 @@ namespace ILCompiler.ObjectWriter
                                     IMAGE_REL_BASED_ARM64_BRANCH26 => IMAGE_REL_ARM64_BRANCH26,
                                     IMAGE_REL_BASED_ARM64_PAGEBASE_REL21 => IMAGE_REL_ARM64_PAGEBASE_REL21,
                                     IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A => IMAGE_REL_ARM64_PAGEOFFSET_12A,
+                                    IMAGE_REL_ARM64_TLS_SECREL_HIGH12A => IMAGE_REL_ARM64_SECREL_HIGH12A,
+                                    IMAGE_REL_ARM64_TLS_SECREL_LOW12L => IMAGE_REL_ARM64_SECREL_LOW12L,
                                     IMAGE_REL_SECREL => IMAGE_REL_ARM64_SECREL,
                                     IMAGE_REL_SECTION => IMAGE_REL_ARM64_SECTION,
                                     _ => throw new NotSupportedException($"Unsupported relocation: {relocation.Type}")

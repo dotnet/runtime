@@ -36,6 +36,7 @@ RiscV64Classifier::RiscV64Classifier(const ClassifierInfo& info)
     , m_intRegs(intArgRegs, ArrLen(intArgRegs))
     , m_floatRegs(fltArgRegs, ArrLen(fltArgRegs))
 {
+    assert(!m_info.IsVarArgs); // TODO: varargs currently not supported on RISC-V
 }
 
 //-----------------------------------------------------------------------------
@@ -57,8 +58,6 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    assert(!m_info.IsVarArgs); // TODO: varargs currently not supported on RISC-V
-
     StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
     unsigned                  intFields = 0, floatFields = 0;
     unsigned                  passedSize;
@@ -93,35 +92,12 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
     }
     else
     {
-        assert(genTypeSize(type) <= TARGET_POINTER_SIZE);
-
-        if (varTypeIsFloating(type))
-            floatFields = 1;
-
         passedSize = genTypeSize(type);
+        assert(passedSize <= TARGET_POINTER_SIZE);
+        floatFields = varTypeIsFloating(type) ? 1 : 0;
     }
 
     assert((floatFields > 0) || (intFields == 0));
-
-    auto PassSlot = [this](bool inFloatReg, unsigned offset, unsigned size) -> ABIPassingSegment {
-        assert(size > 0);
-        assert(size <= TARGET_POINTER_SIZE);
-        if (inFloatReg)
-        {
-            return ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), offset, size);
-        }
-        else if (m_intRegs.Count() > 0)
-        {
-            return ABIPassingSegment::InRegister(m_intRegs.Dequeue(), offset, size);
-        }
-        else
-        {
-            assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
-            ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
-            m_stackArgSize += TARGET_POINTER_SIZE;
-            return seg;
-        }
-    };
 
     if ((floatFields > 0) && (m_floatRegs.Count() >= floatFields) && (m_intRegs.Count() >= intFields))
     {
@@ -151,27 +127,50 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
             bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
             assert(isFirstFloat || isSecondFloat);
 
-            return {2, new (comp, CMK_ABI) ABIPassingSegment[]{PassSlot(isFirstFloat, 0, firstSize),
-                                                               PassSlot(isSecondFloat, offset, secondSize)}};
+            regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
+            regNumber secondReg = (isSecondFloat ? m_floatRegs : m_intRegs).Dequeue();
+
+            return ABIPassingInformation::FromSegments(comp, ABIPassingSegment::InRegister(firstReg, 0, firstSize),
+                                                       ABIPassingSegment::InRegister(secondReg, offset, secondSize));
         }
     }
     else
     {
         // Integer calling convention
-        if (passedSize <= TARGET_POINTER_SIZE)
+        auto passOnStack = [this](unsigned offset, unsigned size) -> ABIPassingSegment {
+            assert(size > 0);
+            assert(size <= 2 * TARGET_POINTER_SIZE);
+            assert((m_stackArgSize % TARGET_POINTER_SIZE) == 0);
+            ABIPassingSegment seg = ABIPassingSegment::OnStack(m_stackArgSize, offset, size);
+            m_stackArgSize += (size > TARGET_POINTER_SIZE) ? (2 * TARGET_POINTER_SIZE) : TARGET_POINTER_SIZE;
+            return seg;
+        };
+
+        if (m_intRegs.Count() > 0)
         {
-            return ABIPassingInformation::FromSegment(comp, PassSlot(false, 0, passedSize));
+            if (passedSize <= TARGET_POINTER_SIZE)
+            {
+                ABIPassingSegment seg = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, passedSize);
+                return ABIPassingInformation::FromSegment(comp, seg);
+            }
+            else
+            {
+                assert(varTypeIsStruct(type));
+                unsigned int tailSize = passedSize - TARGET_POINTER_SIZE;
+
+                ABIPassingSegment head = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE);
+                ABIPassingSegment tail =
+                    (m_intRegs.Count() > 0)
+                        ? ABIPassingSegment::InRegister(m_intRegs.Dequeue(), TARGET_POINTER_SIZE, tailSize)
+                        : passOnStack(TARGET_POINTER_SIZE, tailSize);
+                return ABIPassingInformation::FromSegments(comp, head, tail);
+            }
         }
         else
         {
-            assert(varTypeIsStruct(type));
-            return {2, new (comp, CMK_ABI)
-                           ABIPassingSegment[]{PassSlot(false, 0, TARGET_POINTER_SIZE),
-                                               PassSlot(false, TARGET_POINTER_SIZE, passedSize - TARGET_POINTER_SIZE)}};
+            return ABIPassingInformation::FromSegment(comp, passOnStack(0, passedSize));
         }
     }
-
-    unreached();
 }
 
 #endif // TARGET_RISCV64
