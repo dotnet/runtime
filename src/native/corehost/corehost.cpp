@@ -64,7 +64,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     // Check if the path exceeds the max allowed size
     if (binding.size() > EMBED_MAX - 1) // -1 for null terminator
     {
-        trace::verbose(_X("The managed DLL bound to this executable is longer than the max allowed length (%d)"), EMBED_MAX - 1);
+        trace::error(_X("The managed DLL bound to this executable is longer than the max allowed length (%d)"), EMBED_MAX - 1);
         return false;
     }
 

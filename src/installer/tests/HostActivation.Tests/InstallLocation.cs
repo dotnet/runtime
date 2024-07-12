@@ -344,6 +344,23 @@ namespace HostActivation.Tests
             }
         }
 
+        [Fact]
+        public void AppHost_AppRelative_MissingPath()
+        {
+            TestApp app = sharedTestState.App.Copy();
+            app.CreateAppHost(dotNetRootOptions: new HostWriter.DotNetSearchOptions()
+            {
+                Location = SearchLocation.AppRelative
+            });
+            Command.Create(app.AppExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining("The app-relative .NET path is not embedded.")
+                .And.ExitWith(Constants.ErrorCode.AppHostExeNotBoundFailure);
+        }
+
         [Theory]
         [InlineData("./dir")]
         [InlineData("../dir")]

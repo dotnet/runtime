@@ -293,7 +293,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 throw new AppRelativePathTooLongException(searchOptions.AppRelativeDotNet, MaxAppRelativeDotNetSizeInBytes);
 
             // <search_location> 0 <app_relative_dotnet_root> 0
-            byte[] searchOptionsBytes = new byte[pathBytes.Length + 3]; // +2 for search location + null, +2 for null terminator
+            byte[] searchOptionsBytes = new byte[pathBytes.Length + 3]; // +2 for search location + null, +1 for null terminator
             searchOptionsBytes[0] = (byte)searchOptions.Location;
             searchOptionsBytes[1] = 0;
             searchOptionsBytes[searchOptionsBytes.Length - 1] = 0;

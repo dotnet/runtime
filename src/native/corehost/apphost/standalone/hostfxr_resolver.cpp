@@ -17,6 +17,8 @@ namespace
     // <fxr_resolver::search_location_default> \0 <app_relative_dotnet_placeholder>
     #define EMBED_DOTNET_SEARCH_FULL_UTF8    ("\0\0" EMBED_DOTNET_SEARCH_HI_PART_UTF8 EMBED_DOTNET_SEARCH_LO_PART_UTF8)
 
+    // Get the .NET search options that should be used
+    // Returns false if options are invalid - for example, app-relative search was specified, but the path is invalid or not embedded
     bool try_get_dotnet_search_options(fxr_resolver::search_location& out_search_location, pal::string_t& out_app_relative_dotnet)
     {
         constexpr int EMBED_SIZE = 512;
@@ -27,46 +29,46 @@ namespace
 
         out_search_location = (fxr_resolver::search_location)embed[0];
         assert(embed[1] == 0); // NUL separates the search location and embedded .NET root value
-        bool is_configured = out_search_location != fxr_resolver::search_location_default;
-        if ((out_search_location & fxr_resolver::search_location_app_relative) != 0)
+        if ((out_search_location & fxr_resolver::search_location_app_relative) == 0)
+            return true;
+
+        // Get the embedded app-relative .NET path
+        std::string binding(&embed[2]); // Embedded path is null-terminated
+
+        // Check if the path exceeds the max allowed size
+        constexpr int EMBED_APP_RELATIVE_DOTNET_MAX_SIZE = EMBED_SIZE - 3; // -2 for search location + null, -1 for null terminator
+        if (binding.size() > EMBED_APP_RELATIVE_DOTNET_MAX_SIZE)
         {
-            std::string binding(&embed[2]); // Embedded path is null-terminated
-
-            // Check if the path exceeds the max allowed size
-            constexpr int EMBED_APP_RELATIVE_DOTNET_MAX_SIZE = EMBED_SIZE - 3; // -2 for search location + null, -1 for null terminator
-            if (binding.size() > EMBED_APP_RELATIVE_DOTNET_MAX_SIZE)
-            {
-                trace::verbose(_X("The app-relative .NET path is longer than the max allowed length (%d)"), EMBED_APP_RELATIVE_DOTNET_MAX_SIZE);
-                return is_configured;
-            }
-
-            // Check if the value is the same as the placeholder
-            // Since the single static string is replaced by editing the executable, a reference string is needed to do the compare.
-            // So use two parts of the string that will be unaffected by the edit.
-            static const char hi_part[] = EMBED_DOTNET_SEARCH_HI_PART_UTF8;
-            static const char lo_part[] = EMBED_DOTNET_SEARCH_LO_PART_UTF8;
-            size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
-            size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
-            if (binding.size() >= (hi_len + lo_len)
-                && binding.compare(0, hi_len, &hi_part[0]) == 0
-                && binding.compare(hi_len, lo_len, &lo_part[0]) == 0)
-            {
-                trace::verbose(_X("The app-relative .NET path is not embedded."));
-                return is_configured;
-            }
-
-            pal::string_t app_relative_dotnet;
-            if (!pal::clr_palstring(binding.c_str(), &app_relative_dotnet))
-            {
-                trace::error(_X("The app-relative .NET path could not be retrieved from the executable image."));
-                return is_configured;
-            }
-
-            trace::info(_X("Embedded app-relative .NET path: '%s'"), app_relative_dotnet.c_str());
-            out_app_relative_dotnet = std::move(app_relative_dotnet);
+            trace::error(_X("The app-relative .NET path is longer than the max allowed length (%d)"), EMBED_APP_RELATIVE_DOTNET_MAX_SIZE);
+            return false;
         }
 
-        return is_configured;
+        // Check if the value is empty or the same as the placeholder
+        // Since the single static string is replaced by editing the executable, a reference string is needed to do the compare.
+        // So use two parts of the string that will be unaffected by the edit.
+        static const char hi_part[] = EMBED_DOTNET_SEARCH_HI_PART_UTF8;
+        static const char lo_part[] = EMBED_DOTNET_SEARCH_LO_PART_UTF8;
+        size_t hi_len = (sizeof(hi_part) / sizeof(hi_part[0])) - 1;
+        size_t lo_len = (sizeof(lo_part) / sizeof(lo_part[0])) - 1;
+        if (binding.empty()
+            || (binding.size() >= (hi_len + lo_len)
+                && binding.compare(0, hi_len, &hi_part[0]) == 0
+                && binding.compare(hi_len, lo_len, &lo_part[0]) == 0))
+        {
+            trace::error(_X("The app-relative .NET path is not embedded."));
+            return false;
+        }
+
+        pal::string_t app_relative_dotnet;
+        if (!pal::clr_palstring(binding.c_str(), &app_relative_dotnet))
+        {
+            trace::error(_X("The app-relative .NET path could not be retrieved from the executable image."));
+            return false;
+        }
+
+        trace::info(_X("Embedded app-relative .NET path: '%s'"), app_relative_dotnet.c_str());
+        out_app_relative_dotnet = std::move(app_relative_dotnet);
+        return true;
     }
 }
 
@@ -99,14 +101,17 @@ hostfxr_resolver_t::hostfxr_resolver_t(const pal::string_t& app_root)
     fxr_resolver::search_location search_location = fxr_resolver::search_location_default;
     pal::string_t app_relative_dotnet;
     pal::string_t app_relative_dotnet_path;
-    if (try_get_dotnet_search_options(search_location, app_relative_dotnet))
+    if (!try_get_dotnet_search_options(search_location, app_relative_dotnet))
     {
-        trace::info(_X(".NET root search location options: %d"), search_location);
-        if (!app_relative_dotnet.empty())
-        {
-            app_relative_dotnet_path = app_root;
-            append_path(&app_relative_dotnet_path, app_relative_dotnet.c_str());
-        }
+        m_status_code = StatusCode::AppHostExeNotBoundFailure;
+        return;
+    }
+
+    trace::info(_X(".NET root search location options: %d"), search_location);
+    if (!app_relative_dotnet.empty())
+    {
+        app_relative_dotnet_path = app_root;
+        append_path(&app_relative_dotnet_path, app_relative_dotnet.c_str());
     }
 
     if (!fxr_resolver::try_get_path(app_root, search_location, &app_relative_dotnet_path, &m_dotnet_root, &m_fxr_path))
