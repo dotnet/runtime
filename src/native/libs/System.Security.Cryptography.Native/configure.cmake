@@ -1,5 +1,6 @@
 include(CheckLibraryExists)
 include(CheckFunctionExists)
+include(CheckSourceCompiles)
 
 set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
 set(CMAKE_REQUIRED_LIBRARIES ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
