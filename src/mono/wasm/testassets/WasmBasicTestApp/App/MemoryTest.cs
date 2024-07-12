@@ -43,7 +43,7 @@ public partial class MemoryTest
         {
             AssertJoinCorrect(testArray, response);
         }
-        if (!string.IsNullOrEmpty(error))
+        if (!string.IsNullOrEmpty(errors))
         {
             TestOutput.WriteLine(errors);
             throw new Exception(errors);
