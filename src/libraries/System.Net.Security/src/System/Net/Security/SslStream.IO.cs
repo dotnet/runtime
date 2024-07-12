@@ -18,7 +18,7 @@ namespace System.Net.Security
         private const string ActivitySourceName = "Experimental.System.Net.Security";
         private const string ActivityName = ActivitySourceName + ".TlsHandshake";
 
-        private static readonly ActivitySource s_activitySource = new(ActivitySourceName);
+        private static readonly ActivitySource s_activitySource = new ActivitySource(ActivitySourceName);
 
         private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
         private int _nestedAuth;
