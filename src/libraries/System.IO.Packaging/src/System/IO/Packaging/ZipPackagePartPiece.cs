@@ -24,7 +24,7 @@ namespace System.IO.Packaging
         /// </remarks>
         internal static bool TryParse(ZipArchiveEntry zipArchiveEntry, [NotNullWhen(true)] out ZipPackagePartPiece? partPiece)
         {
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if NET
             ArgumentNullException.ThrowIfNull(zipArchiveEntry);
 #else
             if (zipArchiveEntry == null)
@@ -155,7 +155,7 @@ namespace System.IO.Packaging
 
         internal ZipPackagePartPiece(ZipArchiveEntry zipArchiveEntry, PackUriHelper.ValidatedPartUri? partUri, string prefixName, int pieceNumber, bool isLastPiece)
         {
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if NET
             ArgumentNullException.ThrowIfNull(zipArchiveEntry);
             ArgumentNullException.ThrowIfNull(prefixName);
             ArgumentOutOfRangeException.ThrowIfNegative(pieceNumber);

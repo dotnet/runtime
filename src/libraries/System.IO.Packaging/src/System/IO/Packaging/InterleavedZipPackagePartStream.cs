@@ -73,7 +73,7 @@ namespace System.IO.Packaging
         public override int Read(byte[] buffer, int offset, int count)
             => ReadCore(new Span<byte>(buffer, offset, count));
 
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if NET
         /// <inheritdoc/>
         public override int Read(Span<byte> buffer)
             => ReadCore(buffer);
@@ -101,7 +101,7 @@ namespace System.IO.Packaging
 
             // .NET Standard 2.0 doesn't support the Read(Span<byte>) method. Instead, we rent a temporary
             // buffer of the same length, read into that and perform a copy into the span.
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if !NET
             byte[] tempInputBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
 #endif
 
@@ -128,7 +128,7 @@ namespace System.IO.Packaging
                 {
                     while (totalBytesRead < buffer.Length)
                     {
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if NET
                         int numBytesRead = pieceStream.Read(buffer.Slice(totalBytesRead));
 #else
                         int numBytesRead = pieceStream.Read(
@@ -169,7 +169,7 @@ namespace System.IO.Packaging
                 }
                 finally
                 {
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if !NET
                     ArrayPool<byte>.Shared.Return(tempInputBuffer);
 #endif
                 }
@@ -231,7 +231,7 @@ namespace System.IO.Packaging
             CheckClosed();
 
             // Check argument and stream capabilities.
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if NET
             ArgumentOutOfRangeException.ThrowIfNegative(newLength);
 #else
             if (newLength < 0)
@@ -283,7 +283,7 @@ namespace System.IO.Packaging
         public override void Write(byte[] buffer, int offset, int count)
             => WriteCore(new ReadOnlySpan<byte>(buffer, offset, count));
 
-#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if NET
         /// <inheritdoc/>
         /// <remarks>
         /// Zip streams can be assumed seekable so the length will be available for chaining
@@ -319,7 +319,7 @@ namespace System.IO.Packaging
             // .NET Standard 2.0 doesn't support the Write(ReadOnlySpan<byte>) method. Instead, rent a temporary
             // buffer of a specific length, write into that and write that to the underlying stream.
             // To slightly reduce memory usage, this buffer is reallocated with every new piece.
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if !NET
             byte[] tempInputBuffer = null;
 #endif
 
@@ -345,7 +345,7 @@ namespace System.IO.Packaging
                         }
                     }
 
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if !NET
                     // Allocate memory to tempInputBuffer, copy the correct segment from the ReadOnlySpan, and
                     // do the write to pieceStream.
                     tempInputBuffer ??= ArrayPool<byte>.Shared.Rent(numBytesToWriteInCurrentPiece);
@@ -371,7 +371,7 @@ namespace System.IO.Packaging
                         //Seek inorder to set the correct pointer for the next piece stream
                         pieceStream.Seek(0, SeekOrigin.Begin);
 
-#if NETFRAMEWORK || NETSTANDARD2_0
+#if !NET
                         // Return and unset tempInputBuffer, forcing it to be reallocated with the size of
                         // the next piece.
                         ArrayPool<byte>.Shared.Return(tempInputBuffer);
