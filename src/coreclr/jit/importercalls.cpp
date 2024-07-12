@@ -3804,7 +3804,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 // because Tier0 is not able to remove the box itself.
                 //
                 GenTree* arg = impStackTop(1).val;
-                if (arg->OperIs(GT_BOX))
+                if (arg->OperIs(GT_BOX) && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
                 {
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spill side effects for ThrowIfNull"));
                     gtTryRemoveBoxUpstreamEffects(arg, BR_REMOVE_AND_NARROW);
