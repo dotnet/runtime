@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
-    public static class Debugger
+    public static partial class Debugger
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         [DebuggerHidden] // this helps VS appear to stop on the source line calling Debugger.Break() instead of inside it
@@ -73,17 +73,6 @@ namespace System.Diagnostics
                 throw new NotImplementedException(); // TODO: Implement Debugger.Log, IsLogging
             }
             return false;
-        }
-
-        /// <summary>
-        /// If a .NET Debugger is attached with break on user-unhandled exception enabled and a method attributed with
-        /// DebuggerDisableUserUnhandledExceptionsAttribute calls this method, the debugger will break with the
-        /// <paramref name="exception"/> details.
-        /// </summary>
-        /// <param name="exception">The user-unhandled exception.</param>
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        public static void BreakForUserUnhandledException(Exception exception)
-        {
         }
     }
 }

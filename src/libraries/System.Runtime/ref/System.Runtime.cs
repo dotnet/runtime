@@ -8666,7 +8666,7 @@ namespace System.Diagnostics
         public static readonly string? DefaultCategory;
         public static bool IsAttached { get { throw null; } }
         public static void Break() { }
-        public static void BreakForUserUnhandledException(Exception exception) { }
+        public static void BreakForUserUnhandledException(System.Exception exception) { }
         public static bool IsLogging() { throw null; }
         public static bool Launch() { throw null; }
         public static void Log(int level, string? category, string? message) { }
@@ -8684,8 +8684,8 @@ namespace System.Diagnostics
         Collapsed = 2,
         RootHidden = 3,
     }
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class DebuggerDisableUserUnhandledExceptionsAttribute : Attribute
+    [System.AttributeUsage(System.AttributeTargets.Method)]
+    public sealed class DebuggerDisableUserUnhandledExceptionsAttribute : System.Attribute
     {
         public DebuggerDisableUserUnhandledExceptionsAttribute() { }
     }

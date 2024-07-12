@@ -91,16 +91,5 @@ namespace System.Diagnostics
         // report the notification depending on its settings.
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void CustomNotification(ICustomDebuggerNotification data);
-
-        /// <summary>
-        /// If a .NET Debugger is attached with break on user-unhandled exception enabled and a method attributed with
-        /// DebuggerDisableUserUnhandledExceptionsAttribute calls this method, the debugger will break with the
-        /// <paramref name="exception"/> details.
-        /// </summary>
-        /// <param name="exception">The user-unhandled exception.</param>
-        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-        public static void BreakForUserUnhandledException(Exception exception)
-        {
-        }
     }
 }
