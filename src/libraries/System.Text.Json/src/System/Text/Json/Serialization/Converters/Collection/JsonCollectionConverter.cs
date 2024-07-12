@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization
 
         /// <summary>
         /// When overridden, converts the temporary collection held in state.Current.ReturnValue to the final collection.
-        /// This is used with immutable collections. The <see cref="JsonConverter.IsImmutableCollectionType"/> property must be set to <see langword="true"/>.
+        /// The <see cref="JsonConverter.IsConvertibleCollection"/> property must also be set to <see langword="true"/>.
         /// </summary>
         protected virtual void ConvertCollection(ref ReadStack state, JsonSerializerOptions options) { }
 
@@ -282,8 +282,8 @@ namespace System.Text.Json.Serialization
 
             ConvertCollection(ref state, options);
             object returnValue = state.Current.ReturnValue!;
-            value = (TCollection)returnValue;
             jsonTypeInfo.OnDeserialized?.Invoke(returnValue);
+            value = (TCollection)returnValue;
 
             return true;
         }

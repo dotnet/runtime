@@ -415,9 +415,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableCollectionType(Type type)
+        public static void ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type type)
         {
-            throw new InvalidOperationException(SR.Format(SR.InvalidJsonTypeInfoOperationForImmutableCollectionType, type));
+            throw new InvalidOperationException(SR.Format(SR.OnDeserializingCallbacksNotSupported, type));
         }
 
         [DoesNotReturn]

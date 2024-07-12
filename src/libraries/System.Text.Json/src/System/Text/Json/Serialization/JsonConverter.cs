@@ -179,6 +179,13 @@ namespace System.Text.Json.Serialization
         /// </summary>
         internal bool IsInternalConverterForNumberType { get; init; }
 
+        /// <summary>
+        /// Whether the converter handles collection deserialization by converting from
+        /// an intermediate buffer such as immutable collections, arrays or memory types.
+        /// Used in conjunction with <see cref="JsonCollectionConverter{TCollection, TElement}.ConvertCollection(ref ReadStack, JsonSerializerOptions)"/>.
+        /// </summary>
+        internal virtual bool IsConvertibleCollection => false;
+
         internal static bool ShouldFlush(ref WriteStack state, Utf8JsonWriter writer)
         {
             Debug.Assert(state.FlushThreshold == 0 || (state.PipeWriter is { CanGetUnflushedBytes: true }),
@@ -227,10 +234,5 @@ namespace System.Text.Json.Serialization
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal virtual void ConfigureJsonTypeInfoUsingReflection(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options) { }
-
-        /// <summary>
-        /// Whether the converter handles an immutable collection or dictionary type.
-        /// </summary>
-        internal virtual bool IsImmutableCollectionType => false;
     }
 }

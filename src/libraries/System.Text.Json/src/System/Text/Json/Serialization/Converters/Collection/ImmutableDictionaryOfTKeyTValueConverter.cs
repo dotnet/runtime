@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
-        internal sealed override bool IsImmutableCollectionType => true;
+        internal sealed override bool IsConvertibleCollection => true;
         protected sealed override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             Func<IEnumerable<KeyValuePair<TKey, TValue>>, TDictionary>? creator =

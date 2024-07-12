@@ -306,8 +306,8 @@ namespace System.Text.Json.Serialization
 
             ConvertCollection(ref state, options);
             object result = state.Current.ReturnValue!;
-            value = (TDictionary)result;
             jsonTypeInfo.OnDeserialized?.Invoke(result);
+            value = (TDictionary)result;
 
             return true;
 

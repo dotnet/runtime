@@ -188,9 +188,10 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                if (Converter.IsImmutableCollectionType)
+                if (Converter.IsConvertibleCollection)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForImmutableCollectionType(Type);
+                    // The values for convertible collections aren't available at the start of deserialization.
+                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type);
                 }
 
                 _onDeserializing = value;
