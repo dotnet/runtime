@@ -113,7 +113,7 @@ Simply edit the PATH variable's value and add the directory (with a semicolon se
 
 The Windows on Arm64 development experience has improved substantially over the last few years, however there are still a few steps you should take to improve performance when developing dotnet/runtime on an ARM device.
 
-During preview releases, runtime libraries source their compilers from the [Microsoft.NET.Compilers.Toolset](https://www.nuget.org/packages/Microsoft.Net.Compilers.Toolset/) package which currently doesn't bundle native Arm64 bits. This can result in [suboptimal performance](https://github.com/dotnet/runtime/issues/104548) when working on libraries from Visual Studio. The issue can be worked around by [configuring the registry](https://github.com/dotnet/runtime/issues/104548#issuecomment-2214581797) to run the compiler bits as Arm64 processes.
+During preview releases, the repo sources its compilers from the [Microsoft.NET.Compilers.Toolset](https://www.nuget.org/packages/Microsoft.Net.Compilers.Toolset/) package which currently doesn't bundle bits that have been configured for the ARM64 build of .NET framework. This can result in [suboptimal performance](https://github.com/dotnet/runtime/issues/104548) when working on libraries in Visual Studio. The issue can be worked around by [configuring the registry](https://github.com/dotnet/runtime/issues/104548#issuecomment-2214581797) to run the compiler bits as Arm64 processes. The proper fix that will make this workaround unnecessary is being worked on in [this PR](https://github.com/dotnet/roslyn/pull/74285).
 
 Using an Administrator Powershell prompt run the script:
 
