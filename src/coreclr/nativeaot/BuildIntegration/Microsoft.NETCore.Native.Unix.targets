@@ -24,7 +24,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
-    <UseSystemZlib Condition="!Exists('$(IlcFrameworkNativePath)libz.a')">true</UseSystemZlib>
+    <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcFrameworkNativePath)libz.a')">true</UseSystemZlib>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
