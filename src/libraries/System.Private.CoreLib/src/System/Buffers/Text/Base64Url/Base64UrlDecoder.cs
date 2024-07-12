@@ -490,8 +490,10 @@ namespace System.Buffers.Text
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+#endif
             public bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,
@@ -527,7 +529,9 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
+#endif
             public bool TryDecode256Core(
                 Vector256<sbyte> str,
                 Vector256<sbyte> hiNibbles,
@@ -566,7 +570,9 @@ namespace System.Buffers.Text
                 default(Base64DecoderByte).TryLoadVector512(src, srcStart, sourceLength, out str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
+#endif
             public unsafe bool TryLoadAvxVector256(byte* src, byte* srcStart, int sourceLength, out Vector256<sbyte> str) =>
                 default(Base64DecoderByte).TryLoadAvxVector256(src, srcStart, sourceLength, out str);
 
@@ -574,12 +580,14 @@ namespace System.Buffers.Text
             public unsafe bool TryLoadVector128(byte* src, byte* srcStart, int sourceLength, out Vector128<byte> str) =>
                 default(Base64DecoderByte).TryLoadVector128(src, srcStart, sourceLength, out str);
 
+#if NET9_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe bool TryLoadArmVector128x4(byte* src, byte* srcStart, int sourceLength,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4) =>
                 default(Base64DecoderByte).TryLoadArmVector128x4(src, srcStart, sourceLength, out str1, out str2, out str3, out str4);
-#endif
+#endif // NET9_0_OR_GREATER
+#endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe int DecodeFourElements(byte* source, ref sbyte decodingMap) =>
@@ -634,14 +642,18 @@ namespace System.Buffers.Text
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+#endif
             public bool TryDecode128Core(Vector128<byte> str, Vector128<byte> hiNibbles, Vector128<byte> maskSlashOrUnderscore, Vector128<byte> mask8F,
                 Vector128<byte> lutLow, Vector128<byte> lutHigh, Vector128<sbyte> lutShift, Vector128<byte> shiftForUnderscore, out Vector128<byte> result) =>
                 default(Base64UrlDecoderByte).TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
+#endif
             public bool TryDecode256Core(Vector256<sbyte> str, Vector256<sbyte> hiNibbles, Vector256<sbyte> maskSlashOrUnderscore, Vector256<sbyte> lutLow,
                 Vector256<sbyte> lutHigh, Vector256<sbyte> lutShift, Vector256<sbyte> shiftForUnderscore, out Vector256<sbyte> result) =>
                 default(Base64UrlDecoderByte).TryDecode256Core(str, hiNibbles, maskSlashOrUnderscore, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);
@@ -652,8 +664,11 @@ namespace System.Buffers.Text
                 AssertRead<Vector512<ushort>>(src, srcStart, sourceLength);
                 Vector512<ushort> utf16VectorLower = Vector512.Load(src);
                 Vector512<ushort> utf16VectorUpper = Vector512.Load(src + 32);
-
+#if NET9_0_OR_GREATER
                 if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+#else
+                if (Base64Helper.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+#endif
                 {
                     str = default;
                     return false;
@@ -664,14 +679,20 @@ namespace System.Buffers.Text
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NET9_0_OR_GREATER
             [CompExactlyDependsOn(typeof(Avx2))]
+#endif
             public unsafe bool TryLoadAvxVector256(ushort* src, ushort* srcStart, int sourceLength, out Vector256<sbyte> str)
             {
                 AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
                 Vector256<ushort> utf16VectorLower = Avx.LoadVector256(src);
                 Vector256<ushort> utf16VectorUpper = Avx.LoadVector256(src + 16);
 
+#if NET9_0_OR_GREATER
                 if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+#else
+                if (Base64Helper.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+#endif
                 {
                     str = default;
                     return false;
@@ -687,6 +708,7 @@ namespace System.Buffers.Text
                 AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
                 Vector128<ushort> utf16VectorLower = Vector128.LoadUnsafe(ref *src);
                 Vector128<ushort> utf16VectorUpper = Vector128.LoadUnsafe(ref *src, 8);
+#if NET9_0_OR_GREATER
                 if (Ascii.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
                 {
                     str = default;
@@ -694,9 +716,18 @@ namespace System.Buffers.Text
                 }
 
                 str = Ascii.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper);
+#else
+                if (Base64Helper.VectorContainsNonAsciiChar(utf16VectorLower | utf16VectorUpper))
+                {
+                    str = default;
+                    return false;
+                }
+
+                str = Base64Helper.ExtractAsciiVector(utf16VectorLower, utf16VectorUpper);
+#endif
                 return true;
             }
-
+#if NET9_0_OR_GREATER
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             public unsafe bool TryLoadArmVector128x4(ushort* src, ushort* srcStart, int sourceLength,
@@ -719,7 +750,8 @@ namespace System.Buffers.Text
 
                 return true;
             }
-#endif
+#endif // NET9_0_OR_GREATER
+#endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public unsafe int DecodeFourElements(ushort* source, ref sbyte decodingMap)
