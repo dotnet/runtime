@@ -12,7 +12,7 @@ namespace System.Net.Sockets
     {
         private const string ActivitySourceName = "Experimental.System.Net.Sockets";
         private const string ConnectActivityName = ActivitySourceName + ".Connect";
-        private static readonly ActivitySource s_connectActivitySource = new(ActivitySourceName);
+        private static readonly ActivitySource s_connectActivitySource = new ActivitySource(ActivitySourceName);
 
         public static readonly SocketsTelemetry Log = new SocketsTelemetry();
 
