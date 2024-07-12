@@ -355,7 +355,7 @@
   <!--
       Helix tasks will attempt to write a .payload file to the payload directory. But if the
       directory is not writable, for example when it is a system installed dependency like
-        `WASI_SDK22_PATH=/usr/local/wasi-sdk`
+        `WASI_SDK_PATH=/usr/local/wasi-sdk`
       .. then we need to stage that before passing the path to helix like under `artifacts/obj/helix-staging`
   -->
   <Target Name="StageDependenciesForHelix" Condition="@(__HelixDependenciesToStageThatDontExist->Count()) > 0">
