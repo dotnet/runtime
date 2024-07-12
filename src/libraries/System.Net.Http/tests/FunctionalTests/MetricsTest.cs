@@ -371,7 +371,6 @@ namespace System.Net.Http.Functional.Tests
                 throw new SkipTestException("No remote HTTP/3 server available for testing.");
             }
 
-            using HttpMessageInvoker client = CreateHttpMessageInvoker();
             using InstrumentRecorder<double> requestDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.RequestDuration);
             using InstrumentRecorder<double> connectionDurationRecorder = SetupInstrumentRecorder<double>(InstrumentNames.ConnectionDuration);
             using InstrumentRecorder<long> openConnectionsRecorder = SetupInstrumentRecorder<long>(InstrumentNames.OpenConnections);
@@ -382,10 +381,13 @@ namespace System.Net.Http.Functional.Tests
             IPAddress[] addresses = await Dns.GetHostAddressesAsync(uri.Host);
             addresses = addresses.Union(addresses.Select(a => a.MapToIPv6())).ToArray();
 
-            using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-            using HttpResponseMessage response = await SendAsync(client, request);
-            client.Dispose();
-            
+            using (HttpMessageInvoker client = CreateHttpMessageInvoker())
+            {
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                using HttpResponseMessage response = await SendAsync(client, request);
+                await WaitForEnvironmentTicksToAdvance();
+            }
+
             VerifyRequestDuration(Assert.Single(requestDurationRecorder.GetMeasurements()), uri, UseVersion, 200, "GET");
             Measurement<double> cd = Assert.Single(connectionDurationRecorder.GetMeasurements());
             VerifyConnectionDuration(InstrumentNames.ConnectionDuration, cd.Value, cd.Tags.ToArray(), uri, UseVersion, addresses);
