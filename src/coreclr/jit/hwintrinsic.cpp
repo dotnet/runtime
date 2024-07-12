@@ -1925,7 +1925,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
 #if defined(TARGET_ARM64)
-    auto convertToMaskIfPossible = [&](GenTree*& op) {
+    auto convertToMaskIfNeeded = [&](GenTree*& op) {
         if (!varTypeIsMask(op))
         {
             op = gtNewSimdCvtVectorToMaskNode(TYP_MASK, op, simdBaseJitType, simdSize);
@@ -1950,7 +1950,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_TestLastTrue:
             {
                 // HWInstrinsic requires a mask for op2
-                convertToMaskIfPossible(retNode->AsHWIntrinsic()->Op(2));
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
                 break;
             }
 
@@ -1964,7 +1964,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case NI_Sve_CreateBreakBeforePropagateMask:
             {
                 // HWInstrinsic requires a mask for op3
-                convertToMaskIfPossible(retNode->AsHWIntrinsic()->Op(3));
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(3));
                 break;
             }
 
@@ -1973,7 +1973,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         // HWInstrinsic requires a mask for op1
-        convertToMaskIfPossible(retNode->AsHWIntrinsic()->Op(1));
+        convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
 
         if (HWIntrinsicInfo::IsMultiReg(intrinsic))
         {
@@ -1990,8 +1990,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         {
             case NI_Sve_CreateBreakPropagateMask:
             {
-                convertToMaskIfPossible(retNode->AsHWIntrinsic()->Op(1));
-                convertToMaskIfPossible(retNode->AsHWIntrinsic()->Op(2));
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(1));
+                convertToMaskIfNeeded(retNode->AsHWIntrinsic()->Op(2));
                 break;
             }
 

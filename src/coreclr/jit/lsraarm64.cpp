@@ -1956,6 +1956,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 // Special-case, CreateBreakPropagateMask's op2 is the RMW node.
                 case NI_Sve_CreateBreakPropagateMask:
                     assert(tgtPrefEmbOp2OfOp2);
+                    assert(intrin.op3->isContained());
+                    assert(intrin.op3->IsVectorZero());
                     tgtPrefUse = BuildUse(embOp2Node->Op(2));
                     srcCount += 1;
                     srcCount += BuildDelayFreeUses(embOp2Node->Op(1), embOp2Node->Op(2));
