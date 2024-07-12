@@ -21,7 +21,7 @@ public class MemoryTests : AppTestBase
 
     [Theory]
     [InlineData("Release", true)]
-    [InlineData("Debug", false)]
+    [InlineData("Release", false)]
     public async Task AllocateLargeHeapThenRepeatedlyInterop(string config, bool buildNative)
     {
         // native build triggers passing value form EmccMaximumHeapSize to MAXIMUM_MEMORY that is set in emscripten
