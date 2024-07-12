@@ -171,6 +171,7 @@ namespace System.Text.Json.Serialization.Converters
                         // Read method would have thrown if otherwise.
                         Debug.Assert(tokenType == JsonTokenType.PropertyName);
 
+                        jsonTypeInfo.ValidateCanBeUsedForPropertyMetadataSerialization();
                         ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
                         if (isAlreadyReadMetadataProperty)
                         {
@@ -185,7 +186,6 @@ namespace System.Text.Json.Serialization.Converters
                             unescapedPropertyName,
                             ref state,
                             options,
-                            out byte[] _,
                             out bool useExtensionProperty);
 
                         state.Current.UseExtensionProperty = useExtensionProperty;
@@ -257,10 +257,10 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(obj != null);
             value = (T)obj;
 
-            // Check if we are trying to build the sorted cache.
-            if (state.Current.PropertyRefCache != null)
+            // Check if we are trying to update the UTF-8 property cache.
+            if (state.Current.PropertyRefCacheBuilder != null)
             {
-                jsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
+                jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }
 
             return true;
@@ -292,12 +292,12 @@ namespace System.Text.Json.Serialization.Converters
                 ReadOnlySpan<byte> unescapedPropertyName = JsonSerializer.GetPropertyName(ref state, ref reader, options, out bool isAlreadyReadMetadataProperty);
                 Debug.Assert(!isAlreadyReadMetadataProperty, "Only possible for types that can read metadata, which do not call into the fast-path method.");
 
+                jsonTypeInfo.ValidateCanBeUsedForPropertyMetadataSerialization();
                 JsonPropertyInfo jsonPropertyInfo = JsonSerializer.LookupProperty(
                     obj,
                     unescapedPropertyName,
                     ref state,
                     options,
-                    out byte[] _,
                     out bool useExtensionProperty);
 
                 ReadPropertyValue(obj, ref state, ref reader, jsonPropertyInfo, useExtensionProperty);
@@ -306,10 +306,10 @@ namespace System.Text.Json.Serialization.Converters
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
-            // Check if we are trying to build the sorted cache.
-            if (state.Current.PropertyRefCache != null)
+            // Check if we are trying to update the UTF-8 property cache.
+            if (state.Current.PropertyRefCacheBuilder != null)
             {
-                jsonTypeInfo.UpdateSortedPropertyCache(ref state.Current);
+                jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }
         }
 

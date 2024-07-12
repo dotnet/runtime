@@ -1640,6 +1640,32 @@ public:
 
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
 
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
+        return false;
+#endif // FEATURE_HW_INTRINSICS
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
+        return false;
+#endif // FEATURE_HW_INTRINSICS
+    }
+
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
@@ -1761,6 +1787,7 @@ public:
     inline bool IsVectorAllBitsSet() const;
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
+    inline bool IsMaskZero() const;
     inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
@@ -1971,7 +1998,7 @@ public:
                       unsigned*             pSize     = nullptr);
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
-    GenTreeLclVar*       IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
+    GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr, target_ssize_t* offset);
 
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
 
@@ -2317,6 +2344,7 @@ public:
     bool Precedes(GenTree* other);
 
     bool IsInvariant() const;
+    bool IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const;
 
     bool IsNeverNegative(Compiler* comp) const;
     bool IsNeverNegativeOne(Compiler* comp) const;
@@ -2632,6 +2660,11 @@ struct GenTreeFieldList : public GenTree
         UseIterator(Use* use)
             : use(use)
         {
+        }
+
+        Use* GetUse()
+        {
+            return use;
         }
 
         Use& operator*()
@@ -4651,7 +4684,7 @@ struct NewCallArg
     // The class handle if SignatureType == TYP_STRUCT.
     CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
     // The type of well known arg
-    enum class WellKnownArg WellKnownArg = ::WellKnownArg::None;
+    enum WellKnownArg WellKnownArg = ::WellKnownArg::None;
 
     NewCallArg WellKnown(::WellKnownArg type) const
     {
@@ -4701,8 +4734,6 @@ class CallArg
 
     // The class handle for the signature type (when varTypeIsStruct(SignatureType)).
     CORINFO_CLASS_HANDLE m_signatureClsHnd;
-    // The LclVar number if we had to force evaluation of this arg.
-    unsigned m_tmpNum;
     // The type of the argument in the signature.
     var_types m_signatureType : 5;
     // The type of well-known argument this is.
@@ -4711,8 +4742,6 @@ class CallArg
     bool m_needTmp : 1;
     // True when we must replace this argument with a placeholder node.
     bool m_needPlace : 1;
-    // True when we setup a temp LclVar for this argument.
-    bool m_isTmp : 1;
     // True when we have decided the evaluation order for this argument in LateArgs
     bool m_processed : 1;
 
@@ -4723,12 +4752,10 @@ private:
         , m_next(nullptr)
         , m_lateNext(nullptr)
         , m_signatureClsHnd(NO_CLASS_HANDLE)
-        , m_tmpNum(BAD_VAR_NUM)
         , m_signatureType(TYP_UNDEF)
         , m_wellKnownArg(WellKnownArg::None)
         , m_needTmp(false)
         , m_needPlace(false)
-        , m_isTmp(false)
         , m_processed(false)
     {
     }
@@ -4765,7 +4792,6 @@ public:
     CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
     var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
-    bool IsTemp() { return m_isTmp; }
     // clang-format on
 
     // Get the real argument node, i.e. not a setup or placeholder node.
@@ -4877,8 +4903,7 @@ public:
     void SetNeedsTemp(CallArg* arg);
     bool IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg);
 
-    GenTree* MakeTmpArgNode(Compiler* comp, CallArg* arg);
-    void     SetTemp(CallArg* arg, unsigned tmpNum);
+    GenTree* MakeTmpArgNode(Compiler* comp, CallArg* arg, unsigned lclNum);
 
     // clang-format off
     bool HasThisPointer() const { return m_hasThisPointer; }
@@ -6500,28 +6525,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
 
-    bool OperIsConvertMaskToVector() const
-    {
-#if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_EVEX_ConvertMaskToVector;
-#elif defined(TARGET_ARM64)
-        return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
-#else
-        return false;
-#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
-    }
-
-    bool OperIsConvertVectorToMask() const
-    {
-#if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_EVEX_ConvertVectorToMask;
-#elif defined(TARGET_ARM64)
-        return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
-#else
-        return false;
-#endif
-    }
-
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
     bool OperRequiresGlobRefFlag() const;
@@ -6617,7 +6620,28 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 
     static bool Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2);
 
-    genTreeOps HWOperGet(bool* isScalar) const;
+    static NamedIntrinsic GetHWIntrinsicIdForUnOp(
+        Compiler* comp, genTreeOps oper, GenTree* op1, var_types simdBaseType, unsigned simdSize, bool isScalar);
+    static NamedIntrinsic GetHWIntrinsicIdForBinOp(Compiler*  comp,
+                                                   genTreeOps oper,
+                                                   GenTree*   op1,
+                                                   GenTree*   op2,
+                                                   var_types  simdBaseType,
+                                                   unsigned   simdSize,
+                                                   bool       isScalar);
+    static NamedIntrinsic GetHWIntrinsicIdForCmpOp(Compiler*  comp,
+                                                   genTreeOps oper,
+                                                   GenTree*   op1,
+                                                   GenTree*   op2,
+                                                   var_types  simdBaseType,
+                                                   unsigned   simdSize,
+                                                   bool       isScalar);
+    static genTreeOps     GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
+
+    genTreeOps GetOperForHWIntrinsicId(bool* isScalar) const
+    {
+        return GetOperForHWIntrinsicId(GetHWIntrinsicId(), GetSimdBaseType(), isScalar);
+    }
 
     bool ShouldConstantProp(GenTree* operand, GenTreeVecCon* vecCon);
 
@@ -9669,6 +9693,31 @@ inline bool GenTree::IsMaskAllBitsSet() const
         }
         return ((id == NI_Sve_CreateTrueMaskAll) ||
                 ((id >= NI_Sve_CreateTrueMaskByte) && (id <= NI_Sve_CreateTrueMaskUInt64)));
+    }
+
+#endif
+    return false;
+}
+
+inline bool GenTree::IsMaskZero() const
+{
+#ifdef TARGET_ARM64
+    static_assert_no_msg(AreContiguous(NI_Sve_CreateFalseMaskByte, NI_Sve_CreateFalseMaskDouble,
+                                       NI_Sve_CreateFalseMaskInt16, NI_Sve_CreateFalseMaskInt32,
+                                       NI_Sve_CreateFalseMaskInt64, NI_Sve_CreateFalseMaskSByte,
+                                       NI_Sve_CreateFalseMaskSingle, NI_Sve_CreateFalseMaskUInt16,
+                                       NI_Sve_CreateFalseMaskUInt32, NI_Sve_CreateFalseMaskUInt64));
+
+    if (OperIsHWIntrinsic())
+    {
+        NamedIntrinsic id = AsHWIntrinsic()->GetHWIntrinsicId();
+        if (id == NI_Sve_ConvertMaskToVector)
+        {
+            GenTree* op1 = AsHWIntrinsic()->Op(1);
+            assert(op1->OperIsHWIntrinsic());
+            id = op1->AsHWIntrinsic()->GetHWIntrinsicId();
+        }
+        return ((id >= NI_Sve_CreateFalseMaskByte) && (id <= NI_Sve_CreateFalseMaskUInt64));
     }
 
 #endif

@@ -2483,7 +2483,7 @@ ClrDataModule::GetFlags(
     {
         *flags = 0;
 
-        if (m_module->IsReflection())
+        if (m_module->IsReflectionEmit())
         {
             (*flags) |= CLRDATA_MODULE_IS_DYNAMIC;
         }
@@ -2706,7 +2706,7 @@ ClrDataModule::RequestGetModuleData(
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
     outGMD->PEAssembly = TO_CDADDR(PTR_HOST_TO_TADDR(pModule));
-    outGMD->IsDynamic = pModule->IsReflection();
+    outGMD->IsDynamic = pModule->IsReflectionEmit();
 
     if (pPEAssembly != NULL)
     {

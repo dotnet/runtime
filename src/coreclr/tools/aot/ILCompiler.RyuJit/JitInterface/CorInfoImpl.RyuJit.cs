@@ -2001,12 +2001,12 @@ namespace Internal.JitInterface
                 //  m_RIP (1)
                 //  m_FramePointer (1)
                 //  m_pThread
-                //  m_Flags + align (no align for ARM64 that has 64 bit m_Flags)
+                //  m_Flags + align (no align for ARM64/LoongArch64 that has 64 bit m_Flags)
                 //  m_PreservedRegs - RSP / R9 (2)
                 //      No need to save other preserved regs because of the JIT ensures that there are
                 //      no live GC references in callee saved registers around the PInvoke callsite.
                 //
-                // (1) On ARM32/ARM64 the order of m_RIP and m_FramePointer is reverse
+                // (1) On ARM32/ARM64/LoongArch64 the order of m_RIP and m_FramePointer is reverse
                 // (2) R9 is saved for ARM32 because it needs to be preserved for methods with stackalloc
                 int size = 5 * this.PointerSize;
 
@@ -2165,7 +2165,7 @@ namespace Internal.JitInterface
                     else if (field.IsThreadStatic)
                     {
                         var target = MethodBeingCompiled.Context.Target;
-                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64) ||
+                        if ((target.IsWindows && target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64) ||
                             ((target.OperatingSystem == TargetOS.Linux) &&
                             (target.Architecture is TargetArchitecture.X64 or TargetArchitecture.ARM64)))
                         {
