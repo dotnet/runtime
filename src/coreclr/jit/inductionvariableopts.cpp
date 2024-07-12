@@ -67,6 +67,8 @@ public:
 
     template <typename TFunc>
     bool VisitStatementsWithOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum, TFunc func);
+
+    void Invalidate(FlowGraphNaturalLoop* loop);
 };
 
 LoopLocalOccurrences::LoopLocalOccurrences(FlowGraphNaturalLoops* loops)
@@ -184,7 +186,7 @@ bool LoopLocalOccurrences::VisitLoopNestMaps(FlowGraphNaturalLoop* loop, TFunc& 
 //   Visit all occurrences of the specified local inside the loop.
 //
 // Type parameters:
-//   TFunc - Functor of type bool(Block*, Statement*, GenTree*)
+//   TFunc - Functor of type bool(Block*, Statement*, GenTreeLclVarCommon*)
 //
 // Parameters:
 //   loop   - The loop
@@ -240,7 +242,7 @@ bool LoopLocalOccurrences::VisitOccurrences(FlowGraphNaturalLoop* loop, unsigned
 //
 bool LoopLocalOccurrences::HasAnyOccurrences(FlowGraphNaturalLoop* loop, unsigned lclNum)
 {
-    if (!VisitOccurrences(loop, lclNum, [](BasicBlock* block, Statement* stmt, GenTree* tree) {
+    if (!VisitOccurrences(loop, lclNum, [](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
         return false;
     }))
     {
@@ -312,6 +314,32 @@ bool LoopLocalOccurrences::VisitStatementsWithOccurrences(FlowGraphNaturalLoop* 
     };
 
     return VisitLoopNestMaps(loop, visitor);
+}
+
+//------------------------------------------------------------------------
+// Invalidate: Invalidate all information about locals in the specified loop
+// and its child loops.
+//
+// Parameters:
+//   loop - The loop
+//
+void LoopLocalOccurrences::Invalidate(FlowGraphNaturalLoop* loop)
+{
+    for (FlowGraphNaturalLoop* child = loop->GetChild(); child != nullptr; child = child->GetSibling())
+    {
+        Invalidate(child);
+    }
+
+    if (m_maps[loop->GetIndex()] != nullptr)
+    {
+        m_maps[loop->GetIndex()] = nullptr;
+
+        BitVecTraits poTraits = m_loops->GetDfsTree()->PostOrderTraits();
+        loop->VisitLoopBlocks([=, &poTraits](BasicBlock* block) {
+            BitVecOps::RemoveElemD(&poTraits, m_visitedBlocks, block->bbPostorderNum);
+            return BasicBlockVisit::Continue;
+        });
+    }
 }
 
 //------------------------------------------------------------------------
@@ -862,23 +890,17 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
 }
 
 //------------------------------------------------------------------------
-// optMakeLoopDownwardsCounted: Transform a loop to be downwards counted if
-// profitable and legal.
+// optVisitBoundingExitingBlocks: Visit all the exiting BBJ_COND blocks of the
+// loop that dominate all the loop's backedges. These exiting blocks bound the
+// trip count of the loop.
 //
 // Parameters:
-//   scevContext - Context for scalar evolution
-//   loop        - Loop to transform
-//   loopLocals  - Data structure that tracks occurrences of locals in the loop
+//   loop - The loop
+//   func - The functor, of type void(BasicBlock*).
 //
-// Returns:
-//   True if the loop was made downwards counted; otherwise false.
-//
-bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
-                                           FlowGraphNaturalLoop*   loop,
-                                           LoopLocalOccurrences*   loopLocals)
+template <typename TFunctor>
+void Compiler::optVisitBoundingExitingCondBlocks(FlowGraphNaturalLoop* loop, TFunctor func)
 {
-    JITDUMP("Checking if we should make " FMT_LP " downwards counted\n", loop->GetIndex());
-
     BasicBlock* dominates = nullptr;
 
     for (FlowEdge* backEdge : loop->BackEdges())
@@ -899,13 +921,37 @@ bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
         if (dominates->KindIs(BBJ_COND) &&
             (!loop->ContainsBlock(dominates->GetTrueTarget()) || !loop->ContainsBlock(dominates->GetFalseTarget())))
         {
-            JITDUMP("  Considering exiting block " FMT_BB "\n", dominates->bbNum);
             // 'dominates' is an exiting block that dominates all backedges.
-            changed |= optMakeExitTestDownwardsCounted(scevContext, loop, dominates, loopLocals);
+            func(dominates);
         }
 
         dominates = dominates->bbIDom;
     }
+}
+
+//------------------------------------------------------------------------
+// optMakeLoopDownwardsCounted: Transform a loop to be downwards counted if
+// profitable and legal.
+//
+// Parameters:
+//   scevContext - Context for scalar evolution
+//   loop        - Loop to transform
+//   loopLocals  - Data structure that tracks occurrences of locals in the loop
+//
+// Returns:
+//   True if the loop was made downwards counted; otherwise false.
+//
+bool Compiler::optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
+                                           FlowGraphNaturalLoop*   loop,
+                                           LoopLocalOccurrences*   loopLocals)
+{
+    JITDUMP("Checking if we should make " FMT_LP " downwards counted\n", loop->GetIndex());
+
+    bool changed = false;
+    optVisitBoundingExitingCondBlocks(loop, [=, &scevContext, &changed](BasicBlock* exiting) {
+        JITDUMP("  Considering exiting block " FMT_BB "\n", exiting->bbNum);
+        changed |= optMakeExitTestDownwardsCounted(scevContext, loop, exiting, loopLocals);
+    });
 
     return changed;
 }
@@ -1147,6 +1193,676 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     return true;
 }
 
+struct CursorInfo
+{
+    BasicBlock* Block;
+    Statement*  Stmt;
+    GenTree*    Tree;
+    ScevAddRec* IV;
+    bool        IsInsideExitTest = false;
+
+    CursorInfo(BasicBlock* block, Statement* stmt, GenTree* tree, ScevAddRec* iv, bool isInsideExitTest)
+        : Block(block)
+        , Stmt(stmt)
+        , Tree(tree)
+        , IV(iv)
+        , IsInsideExitTest(isInsideExitTest)
+    {
+    }
+};
+
+class StrengthReductionContext
+{
+    Compiler*               m_comp;
+    ScalarEvolutionContext& m_scevContext;
+    FlowGraphNaturalLoop*   m_loop;
+    LoopLocalOccurrences&   m_loopLocals;
+
+    ArrayStack<Scev*>         m_backEdgeBounds;
+    SimplificationAssumptions m_simplAssumptions;
+    ArrayStack<CursorInfo>    m_cursors1;
+    ArrayStack<CursorInfo>    m_cursors2;
+
+    void        InitializeSimplificationAssumptions();
+    bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
+    void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
+    bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, int derivedLevel, ScevAddRec** nextIV);
+    bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
+    BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors);
+
+    bool StressProfitability()
+    {
+        return m_comp->compStressCompile(Compiler::STRESS_STRENGTH_REDUCTION_PROFITABILITY, 50);
+    }
+
+public:
+    StrengthReductionContext(Compiler*               comp,
+                             ScalarEvolutionContext& scevContext,
+                             FlowGraphNaturalLoop*   loop,
+                             LoopLocalOccurrences&   loopLocals)
+        : m_comp(comp)
+        , m_scevContext(scevContext)
+        , m_loop(loop)
+        , m_loopLocals(loopLocals)
+        , m_backEdgeBounds(comp->getAllocator(CMK_LoopIVOpts))
+        , m_cursors1(comp->getAllocator(CMK_LoopIVOpts))
+        , m_cursors2(comp->getAllocator(CMK_LoopIVOpts))
+    {
+    }
+
+    bool TryStrengthReduce();
+};
+
+//------------------------------------------------------------------------
+// TryStrengthReduce: Check for legal and profitable derived IVs to introduce
+// new primary IVs for.
+//
+// Returns:
+//   True if any new primary IV was introduced; otherwise false.
+//
+bool StrengthReductionContext::TryStrengthReduce()
+{
+    JITDUMP("Considering " FMT_LP " for strength reduction...\n", m_loop->GetIndex());
+
+    if ((JitConfig.JitEnableStrengthReduction() == 0) &&
+        !m_comp->compStressCompile(Compiler::STRESS_STRENGTH_REDUCTION, 50))
+    {
+        JITDUMP("  Disabled: no stress mode\n");
+        return false;
+    }
+
+    // Compute information about the loop used to simplify SCEVs.
+    InitializeSimplificationAssumptions();
+
+    JITDUMP("  Considering primary IVs\n");
+
+    // We strength reduce only candidates where we see that we'll be able to
+    // remove all uses of a primary IV by introducing a different primary IV.
+    //
+    // The algorithm here works in the following way: we process each primary
+    // IV in turn. For every primary IV, we create a 'cursor' pointing to every
+    // use of that primary IV. We then continuously advance each cursor to the
+    // parent node as long as all cursors represent the same derived IV. Once we
+    // find out that the cursors are no longer the same derived IV we stop.
+    //
+    // We keep two lists here so that we can keep track of the most advanced
+    // cursor where all cursors pointed to the same derived IV, in which case
+    // we can strength reduce.
+
+    bool strengthReducedAny = false;
+    for (Statement* stmt : m_loop->GetHeader()->Statements())
+    {
+        if (!stmt->IsPhiDefnStmt())
+        {
+            break;
+        }
+
+        DISPSTMT(stmt);
+
+        GenTreeLclVarCommon* primaryIVLcl = stmt->GetRootNode()->AsLclVarCommon();
+        Scev*                candidate    = m_scevContext.Analyze(m_loop->GetHeader(), primaryIVLcl);
+        if (candidate == nullptr)
+        {
+            JITDUMP("  Could not analyze header PHI\n");
+            continue;
+        }
+
+        candidate = m_scevContext.Simplify(candidate, m_simplAssumptions);
+
+        JITDUMP("  => ");
+        DBEXEC(m_comp->verbose, candidate->Dump(m_comp));
+
+        JITDUMP("\n");
+        if (!candidate->OperIs(ScevOper::AddRec))
+        {
+            JITDUMP("  Not an addrec\n");
+            continue;
+        }
+
+        ScevAddRec* primaryIV = static_cast<ScevAddRec*>(candidate);
+
+        InitializeCursors(primaryIVLcl, primaryIV);
+
+        ArrayStack<CursorInfo>* cursors     = &m_cursors1;
+        ArrayStack<CursorInfo>* nextCursors = &m_cursors2;
+
+        int         derivedLevel = 0;
+        ScevAddRec* currentIV    = primaryIV;
+
+        while (true)
+        {
+            JITDUMP("  Advancing cursors to be %d-derived\n", derivedLevel + 1);
+
+            // Advance cursors and store the result in 'nextCursors'
+            AdvanceCursors(cursors, nextCursors);
+
+            // Verify that all cursors still represent the same IV
+            ScevAddRec* nextIV = nullptr;
+            if (!CheckAdvancedCursors(nextCursors, derivedLevel + 1, &nextIV))
+            {
+                break;
+            }
+            assert(nextIV != nullptr);
+
+            // We need more sanity checks to allow materializing GC-typed add
+            // recs. Otherwise we may eagerly form a GC pointer that was only
+            // lazily formed under some conditions before, which can be
+            // illegal. For now we just bail.
+            if (varTypeIsGC(nextIV->Type))
+            {
+                JITDUMP("    Next IV has type %s. Bailing.\n", varTypeName(nextIV->Type));
+                break;
+            }
+
+            derivedLevel++;
+            std::swap(cursors, nextCursors);
+            currentIV = nextIV;
+        }
+
+        if (derivedLevel <= 0)
+        {
+            continue;
+        }
+
+        JITDUMP("  All uses of primary IV V%02u are used to compute a %d-derived IV ", primaryIVLcl->GetLclNum(),
+                derivedLevel);
+        DBEXEC(VERBOSE, currentIV->Dump(m_comp));
+        JITDUMP("\n");
+
+        if (Scev::Equals(currentIV->Step, primaryIV->Step) && !StressProfitability())
+        {
+            JITDUMP("    Skipping: candidate has same step as primary IV\n");
+            continue;
+        }
+
+        if (TryReplaceUsesWithNewPrimaryIV(cursors, currentIV))
+        {
+            strengthReducedAny = true;
+            m_loopLocals.Invalidate(m_loop);
+        }
+    }
+
+    return strengthReducedAny;
+}
+
+//------------------------------------------------------------------------
+// InitializeSimplificationAssumptions: Compute assumptions that can be used
+// when simplifying SCEVs.
+//
+void StrengthReductionContext::InitializeSimplificationAssumptions()
+{
+    m_comp->optVisitBoundingExitingCondBlocks(m_loop, [=](BasicBlock* exiting) {
+        Scev* exitNotTakenCount = m_scevContext.ComputeExitNotTakenCount(exiting);
+        if (exitNotTakenCount != nullptr)
+        {
+            m_backEdgeBounds.Push(exitNotTakenCount);
+        }
+    });
+
+    m_simplAssumptions.BackEdgeTakenBound    = m_backEdgeBounds.Data();
+    m_simplAssumptions.NumBackEdgeTakenBound = static_cast<unsigned>(m_backEdgeBounds.Height());
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        printf("  Bound on backedge taken count is ");
+        if (m_simplAssumptions.NumBackEdgeTakenBound == 0)
+        {
+            printf("<unknown>\n");
+        }
+
+        const char* pref = m_simplAssumptions.NumBackEdgeTakenBound > 1 ? "min(" : "";
+        for (unsigned i = 0; i < m_simplAssumptions.NumBackEdgeTakenBound; i++)
+        {
+            printf("%s", pref);
+            m_simplAssumptions.BackEdgeTakenBound[i]->Dump(m_comp);
+        }
+
+        printf("%s\n", m_simplAssumptions.NumBackEdgeTakenBound > 1 ? ")" : "");
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// InitializeCursors: Reset and initialize both cursor lists with information about all
+// uses of the specified primary IV.
+//
+// Parameters:
+//   primaryIVLcl - Local representing a candidate primary IV for strength reduction
+//   primaryIV    - SCEV for the candidate
+//
+// Returns:
+//   True if all uses were analyzed and cursors could be introduced for them
+//   all; otherwise false.
+//
+// Remarks:
+//   A cursor is created for a use when it represents the same value as the
+//   primary IV passed. The function will allow mismatching uses if the use is
+//   expected to be removed in the downwards loop transformation. Otherwise the
+//   function will fail.
+//
+//   It is not a correctness requirement that we remove all uses; if we end up
+//   not doing so (e.g. because a cursor was not created by this function),
+//   then we may just end up with extra primary IVs in the loop.
+//
+bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV)
+{
+    m_cursors1.Reset();
+    m_cursors2.Reset();
+
+    auto visitor = [=](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
+        if (stmt->GetRootNode()->OperIsLocalStore())
+        {
+            GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
+            if ((lcl->GetLclNum() == primaryIVLcl->GetLclNum()) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
+            {
+                // Store to the primary IV without side effects; if we end
+                // up strength reducing, then this store is expected to be
+                // removed by making the loop downwards counted.
+                return true;
+            }
+        }
+
+        if (!tree->OperIs(GT_LCL_VAR))
+        {
+            return false;
+        }
+
+        bool isInsideExitTest =
+            block->KindIs(BBJ_COND) && (stmt == block->lastStmt()) &&
+            (!m_loop->ContainsBlock(block->GetTrueTarget()) || !m_loop->ContainsBlock(block->GetFalseTarget()));
+
+        if (tree->GetSsaNum() != primaryIVLcl->GetSsaNum())
+        {
+            // Most likely a post-incremented use of the primary IV; we
+            // could replace these as well, but currently we only handle
+            // the cases where we expect the use to be removed.
+            return isInsideExitTest;
+        }
+
+        Scev* iv = m_scevContext.Analyze(block, tree);
+        if (iv == nullptr)
+        {
+            // May not be able to analyze the use if it's mistyped (e.g.
+            // LCL_VAR<byref>(TYP_I_IMPL LclVarDsc)), or an int use of a long
+            // local.
+            // Just bail on these cases.
+            return false;
+        }
+
+        // If we _did_ manage to analyze it then we expect it to be the same IV
+        // as the primary IV.
+        assert(Scev::Equals(m_scevContext.Simplify(iv, m_simplAssumptions), primaryIV));
+
+        m_cursors1.Emplace(block, stmt, tree, primaryIV, isInsideExitTest);
+        m_cursors2.Emplace(block, stmt, tree, primaryIV, isInsideExitTest);
+        return true;
+    };
+
+    if (!m_loopLocals.VisitOccurrences(m_loop, primaryIVLcl->GetLclNum(), visitor) || (m_cursors1.Height() <= 0))
+    {
+        JITDUMP("  Could not create cursors for all loop uses of primary IV");
+        return false;
+    }
+
+    JITDUMP("  Found %d cursors using primary IV V%02u\n", m_cursors1.Height(), primaryIVLcl->GetLclNum());
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        for (int i = 0; i < m_cursors1.Height(); i++)
+        {
+            CursorInfo& cursor = m_cursors1.BottomRef(i);
+            printf("    [%d] [%06u]%s: ", i, Compiler::dspTreeID(cursor.Tree),
+                   cursor.IsInsideExitTest ? " (in-test)" : "");
+            cursor.IV->Dump(m_comp);
+            printf("\n");
+        }
+    }
+#endif
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// AdvanceCursors: Advance cursors stored in "cursors" and store the advanced
+// result in "nextCursors".
+//
+// Parameters:
+//   cursors     - [in] List of current cursors. Unmodified.
+//   nextCursors - [in, out] List of next cursors. The "Tree" and "IV" fields
+//                 of these cursors will be updated to point to the next derived
+//                 IV.
+//
+void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors)
+{
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor     = cursors->BottomRef(i);
+        CursorInfo& nextCursor = nextCursors->BottomRef(i);
+
+        assert((nextCursor.Block == cursor.Block) && (nextCursor.Stmt == cursor.Stmt) &&
+               (nextCursor.IsInsideExitTest == cursor.IsInsideExitTest));
+
+        nextCursor.Tree = cursor.Tree;
+        do
+        {
+            GenTree* cur    = nextCursor.Tree;
+            nextCursor.Tree = cur->gtGetParent(nullptr);
+
+            if ((nextCursor.Tree == nullptr) ||
+                (nextCursor.Tree->OperIs(GT_COMMA) && (nextCursor.Tree->gtGetOp1() == cur)))
+            {
+                nextCursor.IV = nullptr;
+                break;
+            }
+
+            // TODO-CQ: If this is now the source to a store, we can
+            // look for uses of the LHS local and add those as cursors
+            // as well.
+            Scev* parentIV = m_scevContext.Analyze(nextCursor.Block, nextCursor.Tree);
+            if (parentIV == nullptr)
+            {
+                nextCursor.IV = nullptr;
+                break;
+            }
+
+            parentIV = m_scevContext.Simplify(parentIV, m_simplAssumptions);
+            assert(parentIV != nullptr);
+            if (!parentIV->OperIs(ScevOper::AddRec))
+            {
+                nextCursor.IV = nullptr;
+                break;
+            }
+
+            nextCursor.IV = static_cast<ScevAddRec*>(parentIV);
+        } while (Scev::Equals(nextCursor.IV, cursor.IV));
+    }
+
+#ifdef DEBUG
+    if (m_comp->verbose)
+    {
+        for (int i = 0; i < nextCursors->Height(); i++)
+        {
+            CursorInfo& nextCursor = nextCursors->BottomRef(i);
+            printf("    [%d] [%06u]%s: ", i, nextCursor.Tree == nullptr ? 0 : Compiler::dspTreeID(nextCursor.Tree),
+                   nextCursor.IsInsideExitTest ? " (in-test)" : "");
+            if (nextCursor.IV == nullptr)
+            {
+                printf("<null IV>");
+            }
+            else
+            {
+                nextCursor.IV->Dump(m_comp);
+            }
+            printf("\n");
+        }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// CheckAdvancedCursors: Check whether the specified advanced cursors still
+// represent a valid set of cursors to introduce a new primary IV for.
+//
+// Parameters:
+//   cursors      - List of cursors that were advanced.
+//   derivedLevel - The derived level of the advanced IVs. That is, the number
+//                  of times they are derived from the primary IV.
+//   nextIV       - [out] The next derived IV from the subset of advanced
+//                  cursors to now consider strength reducing.
+//
+// Returns:
+//   True if all cursors still represent a common derived IV and would be
+//   replacable by a new primary IV computing it.
+//
+// Remarks:
+//   This function may remove cursors from m_cursors1 and m_cursors2 if it
+//   decides to no longer consider some cursors for strength reduction.
+//
+bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors,
+                                                    int                     derivedLevel,
+                                                    ScevAddRec**            nextIV)
+{
+    *nextIV = nullptr;
+
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor = cursors->BottomRef(i);
+
+        // Uses inside the exit test only need to opportunistically
+        // match. We check these after.
+        if (cursor.IsInsideExitTest)
+        {
+            continue;
+        }
+
+        if ((cursor.IV != nullptr) && ((*nextIV == nullptr) || Scev::Equals(cursor.IV, *nextIV)))
+        {
+            *nextIV = cursor.IV;
+            continue;
+        }
+
+        JITDUMP("    [%d] does not match; will not advance\n", i);
+        return false;
+    }
+
+    // Now check all exit test uses.
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor = cursors->BottomRef(i);
+
+        if (!cursor.IsInsideExitTest)
+        {
+            continue;
+        }
+
+        if ((cursor.IV != nullptr) && ((*nextIV == nullptr) || Scev::Equals(cursor.IV, *nextIV)))
+        {
+            *nextIV = cursor.IV;
+            continue;
+        }
+
+        // Use inside exit test does not match.
+        if (derivedLevel <= 1)
+        {
+            // We weren't able to advance the match in the exit test at all; in
+            // this situation we expect the downwards optimization to be able
+            // to remove the use of the primary IV, so this is ok. Remove the
+            // cursor pointing to the use inside the test.
+            JITDUMP("    [%d] does not match, but is inside loop test; ignoring mismatch and removing cursor\n", i);
+
+            std::swap(m_cursors1.BottomRef(i), m_cursors1.TopRef(0));
+            std::swap(m_cursors2.BottomRef(i), m_cursors2.TopRef(0));
+
+            m_cursors1.Pop();
+            m_cursors2.Pop();
+
+            i--;
+        }
+        else
+        {
+            // We already found a derived IV in the exit test that matches, so
+            // stop here and allow the replacement to replace the uses of the
+            // current derived IV, including the one in the exit test
+            // statement.
+            JITDUMP("    [%d] does not match; will not advance\n", i);
+            return false;
+        }
+    }
+
+    return *nextIV != nullptr;
+}
+
+//------------------------------------------------------------------------
+// TryReplaceUsesWithNewPrimaryIV: Perform final sanity checks before
+// introducing a new primary IV and replacing the uses represented by the
+// specified cursors with it.
+//
+// Parameters:
+//   cursors - List of cursors representing uses to replace
+//   iv      - IV to introduce a primary IV for
+//
+// Returns:
+//   True if the IV was introduced and uses were rewritten.
+//
+bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv)
+{
+    int64_t stepCns;
+    if (!iv->Step->GetConstantValue(m_comp, &stepCns))
+    {
+        // For other cases it's non-trivial to know if we can materialize
+        // the value as IR in the step block.
+        JITDUMP("    Skipping: step value is not a constant\n");
+        return false;
+    }
+
+    BasicBlock* insertionPoint = FindUpdateInsertionPoint(cursors);
+    if (insertionPoint == nullptr)
+    {
+        JITDUMP("    Skipping: could not find a legal insertion point for the new IV update\n");
+        return false;
+    }
+
+    BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
+    GenTree*    initValue = m_scevContext.Materialize(iv->Start);
+    if (initValue == nullptr)
+    {
+        JITDUMP("    Skipping: init value could not be materialized\n");
+        return false;
+    }
+
+    JITDUMP("    Strength reducing\n");
+
+    GenTree* stepValue = m_scevContext.Materialize(iv->Step);
+    assert(stepValue != nullptr);
+
+    unsigned   newPrimaryIV = m_comp->lvaGrabTemp(false DEBUGARG("Strength reduced derived IV"));
+    GenTree*   initStore    = m_comp->gtNewTempStore(newPrimaryIV, initValue);
+    Statement* initStmt     = m_comp->fgNewStmtFromTree(initStore);
+    m_comp->fgInsertStmtNearEnd(preheader, initStmt);
+
+    JITDUMP("    Inserting init statement in preheader " FMT_BB "\n", preheader->bbNum);
+    DISPSTMT(initStmt);
+
+    GenTree* nextValue =
+        m_comp->gtNewOperNode(GT_ADD, iv->Type, m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type), stepValue);
+    GenTree*   stepStore = m_comp->gtNewTempStore(newPrimaryIV, nextValue);
+    Statement* stepStmt  = m_comp->fgNewStmtFromTree(stepStore);
+    m_comp->fgInsertStmtNearEnd(insertionPoint, stepStmt);
+
+    JITDUMP("    Inserting step statement in " FMT_BB "\n", insertionPoint->bbNum);
+    DISPSTMT(stepStmt);
+
+    // Replace uses.
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor = cursors->BottomRef(i);
+        GenTree*    newUse = m_comp->gtNewLclVarNode(newPrimaryIV, iv->Type);
+
+        JITDUMP("    Replacing use [%06u] with [%06u]. Before:\n", Compiler::dspTreeID(cursor.Tree),
+                Compiler::dspTreeID(newUse));
+        DISPSTMT(cursor.Stmt);
+
+        GenTree** use = nullptr;
+        if (cursor.Stmt->GetRootNode() == cursor.Tree)
+        {
+            use = cursor.Stmt->GetRootNodePointer();
+        }
+        else
+        {
+            cursor.Tree->gtGetParent(&use);
+            assert(use != nullptr);
+        }
+
+        GenTree* sideEffects = nullptr;
+        m_comp->gtExtractSideEffList(cursor.Tree, &sideEffects);
+        if (sideEffects != nullptr)
+        {
+            *use = m_comp->gtNewOperNode(GT_COMMA, newUse->TypeGet(), sideEffects, newUse);
+        }
+        else
+        {
+            *use = newUse;
+        }
+        JITDUMP("\n      After:\n\n");
+        DISPSTMT(cursor.Stmt);
+
+        m_comp->gtSetStmtInfo(cursor.Stmt);
+        m_comp->fgSetStmtSeq(cursor.Stmt);
+        m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// FindUpdateInsertionPoint: Find a block at which to insert the "self-update"
+// of a new primary IV introduced by strength reduction.
+//
+// Parameters:
+//   cursors - The list of cursors pointing to uses that are being replaced by
+//             the new IV
+//
+// Returns:
+//   Basic block; the insertion point is the end (before a potential
+//   terminator) of this basic block. May return null if no insertion point
+//   could be found.
+//
+BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors)
+{
+    // Find insertion point. It needs to post-dominate all uses we are going to
+    // replace and it needs to dominate all backedges.
+    // TODO-CQ: Canonicalizing backedges would make this simpler and work in
+    // more cases.
+
+    BasicBlock* insertionPoint = nullptr;
+    for (FlowEdge* backEdge : m_loop->BackEdges())
+    {
+        if (insertionPoint == nullptr)
+        {
+            insertionPoint = backEdge->getSourceBlock();
+        }
+        else
+        {
+            insertionPoint = m_comp->m_domTree->Intersect(insertionPoint, backEdge->getSourceBlock());
+        }
+    }
+
+    while ((insertionPoint != nullptr) && m_loop->ContainsBlock(insertionPoint) &&
+           m_loop->MayExecuteBlockMultipleTimesPerIteration(insertionPoint))
+    {
+        insertionPoint = insertionPoint->bbIDom;
+    }
+
+    if ((insertionPoint == nullptr) || !m_loop->ContainsBlock(insertionPoint))
+    {
+        return nullptr;
+    }
+
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor = cursors->BottomRef(i);
+
+        if (insertionPoint == cursor.Block)
+        {
+            if (insertionPoint->HasTerminator() && (cursor.Stmt == insertionPoint->lastStmt()))
+            {
+                return nullptr;
+            }
+        }
+        else
+        {
+            if (!m_loop->IsPostDominatedOnLoopIteration(cursor.Block, insertionPoint))
+            {
+                return nullptr;
+            }
+        }
+    }
+
+    return insertionPoint;
+}
+
 //------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
 //
@@ -1200,6 +1916,13 @@ PhaseStatus Compiler::optInductionVariables()
             continue;
         }
 
+        StrengthReductionContext strengthReductionContext(this, scevContext, loop, loopLocals);
+        if (strengthReductionContext.TryStrengthReduce())
+        {
+            Metrics.LoopsStrengthReduced++;
+            changed = true;
+        }
+
         if (optMakeLoopDownwardsCounted(scevContext, loop, &loopLocals))
         {
             Metrics.LoopsMadeDownwardsCounted++;
@@ -1211,6 +1934,8 @@ PhaseStatus Compiler::optInductionVariables()
         // for free.
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
         int numWidened = 0;
+
+        JITDUMP("Considering primary IVs of " FMT_LP " for widening\n", loop->GetIndex());
 
         for (Statement* stmt : loop->GetHeader()->Statements())
         {

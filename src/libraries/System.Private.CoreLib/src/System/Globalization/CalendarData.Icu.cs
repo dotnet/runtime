@@ -92,12 +92,14 @@ namespace System.Globalization
             int count;
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
+            {
                 count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
+            }
             else
-                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
-#else
-            count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
 #endif
+            {
+                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+            }
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)
@@ -434,7 +436,12 @@ namespace System.Globalization
 #pragma warning disable CS8500 // takes address of managed type
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, IcuEnumCalendarsData* callbackContext)
         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            callbackContext->Results.AddRange(GetCalendarInfoNative(localeName, calendarId, dataType).Split("||"));
+            return callbackContext->Results.Count > 0;
+#else
             return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)callbackContext);
+#endif
         }
 #pragma warning restore CS8500
 

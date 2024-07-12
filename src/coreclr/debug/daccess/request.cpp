@@ -161,11 +161,6 @@ BOOL DacValidateMethodTable(PTR_MethodTable pMT, BOOL &bIsFree)
             // In rare cases, we've seen the standard check above pass when it shouldn't.
             // Insert additional/ad-hoc tests below.
 
-            // Metadata token should look valid for a class
-            mdTypeDef td = pMT->GetCl();
-            if (td != mdTokenNil && TypeFromToken(td) != mdtTypeDef)
-                goto BadMethodTable;
-
             // BaseSize should always be greater than 0 for valid objects (unless it's an interface)
             // For strings, baseSize is not ptr-aligned
             if (!pMT->IsInterface() && !pMT->IsString())
@@ -1711,13 +1706,62 @@ ClrDataAccess::GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod)
 }
 
 HRESULT
-ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
+ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData* moduleData)
 {
-    if (addr == 0 || ModuleData == NULL)
+    if (addr == 0 || moduleData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetModuleData(addr, moduleData);
+        if (FAILED(hr))
+        {
+            hr = GetModuleDataImpl(addr, moduleData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpModuleData moduleDataLocal;
+            HRESULT hrLocal = GetModuleDataImpl(addr, &moduleDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(moduleData->Address == moduleDataLocal.Address);
+            _ASSERTE(moduleData->PEAssembly == moduleDataLocal.PEAssembly);
+            _ASSERTE(moduleData->ilBase == moduleDataLocal.ilBase);
+            _ASSERTE(moduleData->metadataStart == moduleDataLocal.metadataStart);
+            _ASSERTE(moduleData->metadataSize == moduleDataLocal.metadataSize);
+            _ASSERTE(moduleData->Assembly == moduleDataLocal.Assembly);
+            _ASSERTE(moduleData->bIsReflection == moduleDataLocal.bIsReflection);
+            _ASSERTE(moduleData->bIsPEFile == moduleDataLocal.bIsPEFile);
+            _ASSERTE(moduleData->dwBaseClassIndex == moduleDataLocal.dwBaseClassIndex);
+            _ASSERTE(moduleData->dwModuleID == moduleDataLocal.dwModuleID);
+            _ASSERTE(moduleData->dwTransientFlags == moduleDataLocal.dwTransientFlags);
+            _ASSERTE(moduleData->TypeDefToMethodTableMap == moduleDataLocal.TypeDefToMethodTableMap);
+            _ASSERTE(moduleData->TypeRefToMethodTableMap == moduleDataLocal.TypeRefToMethodTableMap);
+            _ASSERTE(moduleData->MethodDefToDescMap == moduleDataLocal.MethodDefToDescMap);
+            _ASSERTE(moduleData->FieldDefToDescMap == moduleDataLocal.FieldDefToDescMap);
+            _ASSERTE(moduleData->MemberRefToDescMap == moduleDataLocal.MemberRefToDescMap);
+            _ASSERTE(moduleData->FileReferencesMap == moduleDataLocal.FileReferencesMap);
+            _ASSERTE(moduleData->ManifestModuleReferencesMap == moduleDataLocal.ManifestModuleReferencesMap);
+            _ASSERTE(moduleData->LoaderAllocator == moduleDataLocal.LoaderAllocator);
+            _ASSERTE(moduleData->ThunkHeap == moduleDataLocal.ThunkHeap);
+            _ASSERTE(moduleData->dwModuleIndex == moduleDataLocal.dwModuleIndex);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetModuleDataImpl(addr, moduleData);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
+{
     Module* pModule = PTR_Module(TO_TADDR(addr));
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
@@ -1726,7 +1770,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     COUNT_T metadataSize = 0;
     if (!pModule->IsReflectionEmit())
     {
-        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
+        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
     }
 
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
@@ -1759,8 +1803,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     }
     EX_END_CATCH(SwallowAllExceptions)
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT
@@ -1785,40 +1828,85 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
         return E_INVALIDARG;
 
     SOSDacEnter();
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodTableData(mt, MTData);
+        if (FAILED(hr))
+        {
+            hr = GetMethodTableDataImpl(mt, MTData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpMethodTableData mtDataLocal;
+            HRESULT hrLocal = GetMethodTableDataImpl(mt, &mtDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(MTData->BaseSize == mtDataLocal.BaseSize);
+            _ASSERTE(MTData->ComponentSize == mtDataLocal.ComponentSize);
+            _ASSERTE(MTData->bIsFree == mtDataLocal.bIsFree);
+            _ASSERTE(MTData->Module == mtDataLocal.Module);
+            _ASSERTE(MTData->Class == mtDataLocal.Class);
+            _ASSERTE(MTData->ParentMethodTable == mtDataLocal.ParentMethodTable);
+            _ASSERTE(MTData->wNumInterfaces == mtDataLocal.wNumInterfaces);
+            _ASSERTE(MTData->wNumMethods == mtDataLocal.wNumMethods);
+            _ASSERTE(MTData->wNumVtableSlots == mtDataLocal.wNumVtableSlots);
+            _ASSERTE(MTData->wNumVirtuals == mtDataLocal.wNumVirtuals);
+            _ASSERTE(MTData->cl == mtDataLocal.cl);
+            _ASSERTE(MTData->dwAttrClass = mtDataLocal.dwAttrClass);
+            _ASSERTE(MTData->bContainsPointers == mtDataLocal.bContainsPointers);
+            _ASSERTE(MTData->bIsShared == mtDataLocal.bIsShared);
+            _ASSERTE(MTData->bIsDynamic == mtDataLocal.bIsDynamic);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetMethodTableDataImpl (mt, MTData);
+    }
+    SOSDacLeave();
+    return hr;
+}
 
+HRESULT
+ClrDataAccess::GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *MTData)
+{
     PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL bIsFree = FALSE;
     if (!DacValidateMethodTable(pMT, bIsFree))
     {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        ZeroMemory(MTData,sizeof(DacpMethodTableData));
-        MTData->BaseSize = pMT->GetBaseSize();
-        if(pMT->IsString())
-            MTData->BaseSize -= sizeof(WCHAR);
-        MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
-        MTData->bIsFree = bIsFree;
-        if(!bIsFree)
-        {
-            MTData->Module = HOST_CDADDR(pMT->GetModule());
-            MTData->Class = HOST_CDADDR(pMT->GetClass());
-            MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
-            MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
-            MTData->wNumMethods = pMT->GetNumMethods();
-            MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
-            MTData->wNumVirtuals = pMT->GetNumVirtuals();
-            MTData->cl = pMT->GetCl();
-            MTData->dwAttrClass = pMT->GetAttrClass();
-            MTData->bContainsPointers = pMT->ContainsPointers();
-            MTData->bIsShared = FALSE;
-            MTData->bIsDynamic = pMT->IsDynamicStatics();
-        }
+        return E_INVALIDARG;
     }
 
-    SOSDacLeave();
-    return hr;
+    ZeroMemory(MTData,sizeof(DacpMethodTableData));
+    MTData->BaseSize = pMT->GetBaseSize();
+    // [compat] SOS DAC APIs added this base size adjustment for strings
+    // due to: "2008/09/25 Title: New implementation of StringBuilder and improvements in String class"
+    // which changed StringBuilder not to use a String as an internal buffer and in the process
+    // changed the String internals so that StringObject::GetBaseSize() now includes the nul terminator character,
+    // which is apparently not expected by SOS.
+    if(pMT->IsString())
+        MTData->BaseSize -= sizeof(WCHAR);
+    MTData->ComponentSize = (DWORD)pMT->GetComponentSize();
+    MTData->bIsFree = bIsFree;
+    if(!bIsFree)
+    {
+        MTData->Module = HOST_CDADDR(pMT->GetModule());
+        // Note: DacpMethodTableData::Class is really a pointer to the canonical method table
+        MTData->Class = HOST_CDADDR(pMT->GetClass()->GetMethodTable());
+        MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
+        MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
+        MTData->wNumMethods = pMT->GetNumMethods(); // printed as "number of vtable slots" and used to iterate over method slots
+        MTData->wNumVtableSlots = 0; // always return 0 since .NET 9
+        MTData->wNumVirtuals = 0; // always return 0 since .NET 9
+        MTData->cl = pMT->GetCl();
+        MTData->dwAttrClass = pMT->GetAttrClass();
+        MTData->bContainsPointers = pMT->ContainsGCPointers();
+        MTData->bIsShared = FALSE;
+        MTData->bIsDynamic = pMT->IsDynamicStatics();
+    }
+    return S_OK;
 }
 
 HRESULT
@@ -2063,25 +2151,51 @@ ClrDataAccess::GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMet
 }
 
 HRESULT
-ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClass, CLRDATA_ADDRESS *value)
+ClrDataAccess::GetMethodTableForEEClass(CLRDATA_ADDRESS eeClassReallyCanonMT, CLRDATA_ADDRESS *value)
 {
-    if (eeClass == 0 || value == NULL)
+    if (eeClassReallyCanonMT == 0 || value == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
-
-    PTR_EEClass pClass = PTR_EEClass(TO_TADDR(eeClass));
-    if (!DacValidateEEClass(pClass))
+    if (m_cdacSos != NULL)
     {
-        hr = E_INVALIDARG;
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodTableForEEClass(eeClassReallyCanonMT, value);
+        if (FAILED(hr))
+        {
+            hr = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, value);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            CLRDATA_ADDRESS valueLocal;
+            HRESULT hrLocal = GetMethodTableForEEClassImpl(eeClassReallyCanonMT, &valueLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*value == valueLocal);
+        }
+#endif
     }
     else
     {
-        *value = HOST_CDADDR(pClass->GetMethodTable());
+        hr = GetMethodTableForEEClassImpl (eeClassReallyCanonMT, value);
     }
-
     SOSDacLeave();
     return hr;
+}
+
+HRESULT
+ClrDataAccess::GetMethodTableForEEClassImpl(CLRDATA_ADDRESS eeClassReallyCanonMT, CLRDATA_ADDRESS *value)
+{
+    PTR_MethodTable pCanonMT = PTR_MethodTable(TO_TADDR(eeClassReallyCanonMT));
+    BOOL bIsFree;
+    if (!DacValidateMethodTable(pCanonMT, bIsFree))
+    {
+        return E_INVALIDARG;
+    }
+
+    *value = HOST_CDADDR(pCanonMT);
+    return S_OK;
 }
 
 HRESULT
@@ -2142,32 +2256,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _In
     }
     else if (!pPEAssembly->IsReflectionEmit())
     {
-        StackSString displayName;
-        pPEAssembly->GetDisplayName(displayName, 0);
-
-        if (displayName.IsEmpty())
-        {
-            if (fileName)
-                fileName[0] = 0;
-
-            if (pNeeded)
-                *pNeeded = 1;
-        }
-        else
-        {
-            unsigned int len = displayName.GetCount()+1;
-
-            if (fileName)
-            {
-                wcsncpy_s(fileName, count, displayName.GetUnicode(), _TRUNCATE);
-
-                if (count < len)
-                    len = count;
-            }
-
-            if (pNeeded)
-                *pNeeded = len;
-        }
+        hr = E_NOTIMPL;
     }
     else
     {
@@ -2191,12 +2280,11 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
     SOSDacEnter();
 
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
-    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
-    if (!pPEAssembly->IsReflectionEmit())
+    if (!pModule->IsReflectionEmit())
     {
-        *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
+        *base = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
     }
     else
     {
@@ -2711,19 +2799,7 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
     }
     else if (!pAssembly->GetPEAssembly()->IsReflectionEmit())
     {
-        StackSString displayName;
-        pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
-
-        const WCHAR *val = displayName.GetUnicode();
-
-        if (pNeeded)
-            *pNeeded = displayName.GetCount() + 1;
-
-        if (name && count)
-        {
-            wcsncpy_s(name, count, val, _TRUNCATE);
-            name[count-1] = 0;
-        }
+        hr = E_NOTIMPL;
     }
     else
     {
@@ -3239,7 +3315,6 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
     return hr;
 }
 
-
 HRESULT
 ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException)
 {
@@ -3248,6 +3323,39 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetNestedExceptionData(exception, exceptionObject, nextNestedException);
+        if (FAILED(hr))
+        {
+            hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            CLRDATA_ADDRESS exceptionObjectLocal;
+            CLRDATA_ADDRESS nextNestedExceptionLocal;
+            HRESULT hrLocal = GetNestedExceptionDataImpl(exception, &exceptionObjectLocal, &nextNestedExceptionLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(*exceptionObject == exceptionObjectLocal);
+            _ASSERTE(*nextNestedException == nextNestedExceptionLocal);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetNestedExceptionDataImpl(exception, exceptionObject, nextNestedException);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException)
+{
 #ifdef FEATURE_EH_FUNCLETS
     ExceptionTrackerBase *pExData = PTR_ExceptionTrackerBase(TO_TADDR(exception));
 #else
@@ -3255,19 +3363,12 @@ ClrDataAccess::GetNestedExceptionData(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS
 #endif // FEATURE_EH_FUNCLETS
 
     if (!pExData)
-    {
-        hr = E_INVALIDARG;
-    }
-    else
-    {
-        *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
-        *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
-    }
+        return E_INVALIDARG;
 
-    SOSDacLeave();
-    return hr;
+    *exceptionObject = TO_CDADDR(*PTR_TADDR(pExData->m_hThrowable));
+    *nextNestedException = PTR_HOST_TO_TADDR(pExData->m_pPrevNestedInfo);
+    return S_OK;
 }
-
 
 HRESULT
 ClrDataAccess::GetDomainLocalModuleData(CLRDATA_ADDRESS addr, struct DacpDomainLocalModuleData *pLocalModuleData)
@@ -4546,8 +4647,42 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
 
     SOSDacEnter();
 
-    PTR_ExceptionObject pObj = dac_cast<PTR_ExceptionObject>(TO_TADDR(objAddr));
+    if (m_cdacSos2 != NULL)
+    {
+        hr = m_cdacSos2->GetObjectExceptionData(objAddr, data);
+        if (FAILED(hr))
+        {
+            hr = GetObjectExceptionDataImpl(objAddr, data);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpExceptionObjectData dataLocal;
+            HRESULT hrLocal = GetObjectExceptionDataImpl(objAddr, &dataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(data->Message == dataLocal.Message);
+            _ASSERTE(data->InnerException == dataLocal.InnerException);
+            _ASSERTE(data->StackTrace == dataLocal.StackTrace);
+            _ASSERTE(data->WatsonBuckets == dataLocal.WatsonBuckets);
+            _ASSERTE(data->StackTraceString == dataLocal.StackTraceString);
+            _ASSERTE(data->RemoteStackTraceString == dataLocal.RemoteStackTraceString);
+            _ASSERTE(data->HResult == dataLocal.HResult);
+            _ASSERTE(data->XCode == dataLocal.XCode);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetObjectExceptionDataImpl(objAddr, data);
+    }
 
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data)
+{
+    PTR_ExceptionObject pObj = dac_cast<PTR_ExceptionObject>(TO_TADDR(objAddr));
     data->Message         = TO_CDADDR(dac_cast<TADDR>(pObj->GetMessage()));
     data->InnerException  = TO_CDADDR(dac_cast<TADDR>(pObj->GetInnerException()));
     data->StackTrace      = TO_CDADDR(dac_cast<TADDR>(pObj->GetStackTraceArrayObject()));
@@ -4556,10 +4691,7 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
     data->RemoteStackTraceString = TO_CDADDR(dac_cast<TADDR>(pObj->GetRemoteStackTraceString()));
     data->HResult         = pObj->GetHResult();
     data->XCode           = pObj->GetXCode();
-
-    SOSDacLeave();
-
-    return hr;
+    return S_OK;
 }
 
 HRESULT ClrDataAccess::IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy)

@@ -122,7 +122,7 @@ jobs:
         helixType: 'build/tests/'
         helixQueues: ${{ join(',', parameters.helixQueues) }}
         creator: dotnet-bot
-        WorkItemTimeout: 3:00 # 3 hours
+        WorkItemTimeout: 5:00 # 5 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
         helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-diffs.proj'

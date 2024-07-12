@@ -7563,7 +7563,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
     if (IsVNConstant(arg0VN))
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (oper != GT_NONE)
         {
@@ -7915,7 +7915,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
         assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
 
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (oper != GT_NONE)
         {
@@ -8045,7 +8045,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     else if (cnsVN != NoVN)
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (isScalar)
         {
@@ -8395,7 +8395,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     else if (arg0VN == arg1VN)
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (isScalar)
         {
@@ -8573,61 +8573,108 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
     var_types      baseType = tree->GetSimdBaseType();
     NamedIntrinsic ni       = tree->GetHWIntrinsicId();
 
-    if (IsVNConstant(arg0VN) && IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
+    switch (ni)
     {
-        switch (ni)
-        {
-            case NI_Vector128_WithElement:
-#ifdef TARGET_ARM64
-            case NI_Vector64_WithElement:
-#else
-            case NI_Vector256_WithElement:
-            case NI_Vector512_WithElement:
+        case NI_Vector128_ConditionalSelect:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_ConditionalSelect:
+        case NI_Vector512_ConditionalSelect:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_ConditionalSelect:
+        case NI_Sve_ConditionalSelect:
 #endif
+        {
+            if (IsVNConstant(arg0VN))
             {
-                int32_t index = GetConstantInt32(arg1VN);
+                // Handle `0 ? x : y`
+                ValueNum zeroVN = VNZeroForType(type);
 
-                if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(genTypeSize(type), baseType))
+                if (arg0VN == zeroVN)
                 {
-                    // Nothing to fold for out of range indexes
-                    break;
+                    return arg2VN;
                 }
 
-                if (varTypeIsFloating(baseType))
-                {
-                    double value;
+                // Handle `AllBitsSet ? x : y`
+                ValueNum allBitsVN = VNAllBitsForType(type);
 
-                    if (baseType == TYP_FLOAT)
-                    {
-                        value = GetConstantSingle(arg2VN);
-                    }
-                    else
-                    {
-                        value = GetConstantDouble(arg2VN);
-                    }
-                    return EvaluateSimdWithElementFloating(this, type, baseType, arg0VN, index, value);
+                if (arg0VN == allBitsVN)
+                {
+                    return arg1VN;
                 }
-                else
-                {
-                    assert(varTypeIsIntegral(baseType));
-                    int64_t value;
 
-                    if (varTypeIsLong(baseType))
-                    {
-                        value = GetConstantInt64(arg2VN);
-                    }
-                    else
-                    {
-                        value = GetConstantInt32(arg2VN);
-                    }
-                    return EvaluateSimdWithElementIntegral(this, type, baseType, arg0VN, index, value);
+                if (IsVNConstant(arg1VN) && IsVNConstant(arg2VN))
+                {
+                    // (y & x) | (z & ~x)
+
+                    ValueNum trueVN  = EvaluateBinarySimd(this, GT_AND, false, type, baseType, arg1VN, arg0VN);
+                    ValueNum falseVN = EvaluateBinarySimd(this, GT_AND_NOT, false, type, baseType, arg2VN, arg0VN);
+
+                    return EvaluateBinarySimd(this, GT_OR, false, type, baseType, trueVN, falseVN);
                 }
             }
+            else if (arg1VN == arg2VN)
+            {
+                // Handle `x ? y : y`
+                return arg1VN;
+            }
+            break;
+        }
 
-            default:
+        case NI_Vector128_WithElement:
+#ifdef TARGET_ARM64
+        case NI_Vector64_WithElement:
+#else
+        case NI_Vector256_WithElement:
+        case NI_Vector512_WithElement:
+#endif
+        {
+            if (!IsVNConstant(arg0VN) || !IsVNConstant(arg1VN) || !IsVNConstant(arg2VN))
             {
                 break;
             }
+
+            int32_t index = GetConstantInt32(arg1VN);
+
+            if (static_cast<uint32_t>(index) >= GenTreeVecCon::ElementCount(genTypeSize(type), baseType))
+            {
+                // Nothing to fold for out of range indexes
+                break;
+            }
+
+            if (varTypeIsFloating(baseType))
+            {
+                double value;
+
+                if (baseType == TYP_FLOAT)
+                {
+                    value = GetConstantSingle(arg2VN);
+                }
+                else
+                {
+                    value = GetConstantDouble(arg2VN);
+                }
+                return EvaluateSimdWithElementFloating(this, type, baseType, arg0VN, index, value);
+            }
+            else
+            {
+                assert(varTypeIsIntegral(baseType));
+                int64_t value;
+
+                if (varTypeIsLong(baseType))
+                {
+                    value = GetConstantInt64(arg2VN);
+                }
+                else
+                {
+                    value = GetConstantInt32(arg2VN);
+                }
+                return EvaluateSimdWithElementIntegral(this, type, baseType, arg0VN, index, value);
+            }
+        }
+
+        default:
+        {
+            break;
         }
     }
 
@@ -13355,6 +13402,10 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_UNBOX:
             vnf = VNF_Unbox;
+            break;
+
+        case CORINFO_HELP_UNBOX_TYPETEST:
+            vnf = VNF_Unbox_TypeTest;
             break;
 
         // A constant within any method.

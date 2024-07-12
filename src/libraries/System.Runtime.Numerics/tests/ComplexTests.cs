@@ -70,6 +70,120 @@ namespace System.Numerics.Tests
             Assert.Equal(Complex.Sqrt(-1.0), Complex.ImaginaryOne);
         }
 
+        public static IEnumerable<object[]> Parse_Valid_TestData()
+        {
+            NumberStyles defaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
+
+            NumberFormatInfo emptyFormat = NumberFormatInfo.CurrentInfo;
+
+            var dollarSignCommaSeparatorFormat = new NumberFormatInfo()
+            {
+                CurrencySymbol = "$",
+                CurrencyGroupSeparator = ","
+            };
+
+            var decimalSeparatorFormat = new NumberFormatInfo()
+            {
+                NumberDecimalSeparator = "."
+            };
+
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+
+            yield return new object[] { "-123", defaultStyle, null, -123.0 };
+            yield return new object[] { "0", defaultStyle, null, 0.0 };
+            yield return new object[] { "123", defaultStyle, null, 123.0 };
+            yield return new object[] { "  123  ", defaultStyle, null, 123.0 };
+            yield return new object[] { (567.89).ToString(), defaultStyle, null, 567.89 };
+            yield return new object[] { (-567.89).ToString(), defaultStyle, null, -567.89 };
+            yield return new object[] { "1E23", defaultStyle, null, 1E23 };
+            yield return new object[] { "9007199254740997.0", defaultStyle, invariantFormat, 9007199254740996.0 };
+            yield return new object[] { "9007199254740997.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 9007199254740996.0 };
+            yield return new object[] { "9007199254740997.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 9007199254740996.0 };
+            yield return new object[] { "9007199254740997.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 9007199254740998.0 };
+            yield return new object[] { "9007199254740997.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 9007199254740998.0 };
+            yield return new object[] { "9007199254740997.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 9007199254740998.0 };
+            yield return new object[] { "5.005", defaultStyle, invariantFormat, 5.005 };
+            yield return new object[] { "5.050", defaultStyle, invariantFormat, 5.05 };
+            yield return new object[] { "5.005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005 };
+            yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, 5.0 };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005 };
+
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, 0.234 };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 234.0 };
+            yield return new object[] { new string('0', 458) + "1" + new string('0', 308) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 1E308 };
+            yield return new object[] { new string('0', 459) + "1" + new string('0', 308) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 1E308 };
+
+            yield return new object[] { "5005.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5005.0 };
+            yield return new object[] { "50050.0", defaultStyle, invariantFormat, 50050.0 };
+            yield return new object[] { "5005", defaultStyle, invariantFormat, 5005.0 };
+            yield return new object[] { "050050", defaultStyle, invariantFormat, 50050.0 };
+            yield return new object[] { "0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 0.0 };
+            yield return new object[] { "0.005", defaultStyle, invariantFormat, 0.005 };
+            yield return new object[] { "0.0500", defaultStyle, invariantFormat, 0.05 };
+            yield return new object[] { "6250000000000000000000000000000000e-12", defaultStyle, invariantFormat, 6.25e21 };
+            yield return new object[] { "6250000e0", defaultStyle, invariantFormat, 6.25e6 };
+            yield return new object[] { "6250100e-5", defaultStyle, invariantFormat, 62.501 };
+            yield return new object[] { "625010.00e-4", defaultStyle, invariantFormat, 62.501 };
+            yield return new object[] { "62500e-4", defaultStyle, invariantFormat, 6.25 };
+            yield return new object[] { "62500", defaultStyle, invariantFormat, 62500.0 };
+            yield return new object[] { "10e-3", defaultStyle, invariantFormat, 0.01 };
+
+            yield return new object[] { (123.1).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1 };
+            yield return new object[] { (1000.0).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0 };
+
+            yield return new object[] { "123", NumberStyles.Any, emptyFormat, 123.0 };
+            yield return new object[] { (123.567).ToString(), NumberStyles.Any, emptyFormat, 123.567 };
+            yield return new object[] { "123", NumberStyles.Float, emptyFormat, 123.0 };
+            yield return new object[] { "$1,000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, 1000.0 };
+            yield return new object[] { "$1000", NumberStyles.Currency, dollarSignCommaSeparatorFormat, 1000.0 };
+            yield return new object[] { "123.123", NumberStyles.Float, decimalSeparatorFormat, 123.123 };
+            yield return new object[] { "(123)", NumberStyles.AllowParentheses, decimalSeparatorFormat, -123.0 };
+
+            yield return new object[] { "NaN", NumberStyles.Any, invariantFormat, double.NaN };
+            yield return new object[] { "Infinity", NumberStyles.Any, invariantFormat, double.PositiveInfinity };
+            yield return new object[] { "-Infinity", NumberStyles.Any, invariantFormat, double.NegativeInfinity };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Valid_TestData))]
+        public static void Parse(string valueScalar, NumberStyles style, IFormatProvider provider, double expectedScalar)
+        {
+            string value = $"<{valueScalar}; {valueScalar}>";
+            Complex expected = new Complex(expectedScalar, expectedScalar);
+
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            Complex result;
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(Complex.TryParse(value, null, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, Complex.Parse(value, null));
+                }
+
+                Assert.Equal(expected, Complex.Parse(value, provider));
+            }
+
+            // Use Parse(string, NumberStyles, IFormatProvider)
+            Assert.True(Complex.TryParse(value, style, provider, out result));
+            Assert.Equal(expected, result);
+
+            Assert.Equal(expected, Complex.Parse(value, style, provider));
+
+            if (isDefaultProvider)
+            {
+                // Use Parse(string, NumberStyles) or Parse(string, NumberStyles, IFormatProvider)
+                Assert.True(Complex.TryParse(value, style, NumberFormatInfo.CurrentInfo, out result));
+                Assert.Equal(expected, result);
+
+                Assert.Equal(expected, Complex.Parse(value, style, null));
+                Assert.Equal(expected, Complex.Parse(value, style, NumberFormatInfo.CurrentInfo));
+            }
+        }
+
         public static IEnumerable<object[]> Valid_2_TestData()
         {
             foreach (double real in s_validDoubleValues)
@@ -225,7 +339,7 @@ namespace System.Numerics.Tests
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
                     yield return new object[] { RandomPositiveDouble(), invalidImaginary, Math.Abs(invalidImaginary) }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, (double.IsNaN(invalidReal) || double.IsNaN(invalidImaginary)) ? double.NaN : double.PositiveInfinity }; // Invalid real, invalid imaginary
+                    yield return new object[] { invalidReal, invalidImaginary, (double.IsNaN(invalidReal) && double.IsNaN(invalidImaginary)) ? double.NaN : double.PositiveInfinity }; // Invalid real, invalid imaginary
                 }
             }
 
@@ -245,11 +359,16 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MaxValue, double.NegativeInfinity, double.PositiveInfinity };
             yield return new object[] { double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity };
 
-            // NaN in any slot returns NaN.
+            // NaN and +-inf returns inf
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.PositiveInfinity };
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.PositiveInfinity };
+
+            // Otherwise, NaN in any slot returns NaN.
             yield return new object[] { double.NaN, 0, double.NaN };  // Regression test: Complex.Abs() is inconsistent on NaN / Complex
             yield return new object[] { 0.0, double.NaN, double.NaN };
             yield return new object[] { double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN };
         }
 
@@ -1560,12 +1679,20 @@ namespace System.Numerics.Tests
             yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
             yield return new object[] { RandomNegativeDouble(), double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
 
-            // NaN in any component produces NaNs in both components (except arguably on real line).
+            // (Nan, +-inf) returns (inf, +-inf)
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
+
+            // (inf, NaN) returns (inf, NaN)
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.PositiveInfinity };
+
+            // (-inf, NaN) returns (NaN, inf)
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.PositiveInfinity, double.NaN };
+
+            // Otherwise, NaN in any component produces NaNs in both components.
             yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.MaxValue, double.NaN, double.NaN, double.NaN };
-            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.NaN, -double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
             yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
 
         }
