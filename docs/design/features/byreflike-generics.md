@@ -9,8 +9,8 @@ Using ByRefLike types in Generic parameters is possible by building upon support
 
 Supporting ByRefLike type as Generic parameters will impact the following IL instructions.
 
-When used with a ByRefLike type these instructions result in undefined behavior (the method containing the IL instruction may fail to execute partially or in its entirety):
-- `box` &ndash; When applied to ByRefLike types used in fields cannot be boxed.
+Providing a ByRefLike type with these instructions remains invalid and `InvalidProgramException` will be thrown as described below.
+- `box` &ndash; When applied to ByRefLike types.
 - `constrained.callvirt` &ndash; If this IL sequence resolves to a method implemented on `object` or a default interface method.
 
 Throws `TypeLoadException` when pass a ByRefLike type.
