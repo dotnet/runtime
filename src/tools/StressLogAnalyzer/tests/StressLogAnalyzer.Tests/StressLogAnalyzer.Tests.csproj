@@ -11,4 +11,7 @@
     <ProjectReference Include="..\..\src\StressLogAnalyzer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Moq" Version="$(MoqVersion)" />
+  </ItemGroup>
 </Project>

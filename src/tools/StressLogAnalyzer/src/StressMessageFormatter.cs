@@ -15,14 +15,14 @@ public sealed class StressMessageFormatter
     private record struct PaddingFormat(int Width, char FormatChar);
 
     private readonly Target _target;
-
+    private readonly ISpecialPointerFormatter _pointerFormatter;
     private readonly Dictionary<string, Action<TargetPointer, PaddingFormat, StringBuilder>> _formatActions;
     private readonly Dictionary<string, Action<TargetPointer, PaddingFormat, StringBuilder>> _alternateActions;
 
-    public StressMessageFormatter(Target target)
+    public StressMessageFormatter(Target target, ISpecialPointerFormatter pointerFormatter)
     {
         _target = target;
-
+        _pointerFormatter = pointerFormatter;
         _formatActions = new()
         {
             { "pM", FormatMethodDesc },
@@ -61,28 +61,24 @@ public sealed class StressMessageFormatter
         };
     }
 
-    private static void FormatMethodDesc(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
+    private void FormatMethodDesc(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
     {
-        // TODO: Implement MethodDesc formatting
-        FormatHexWithPrefix(ptr, paddingFormat, builder);
+        builder.Append(_pointerFormatter.FormatMethodDesc(ptr));
     }
 
-    private static void FormatMethodTable(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
+    private void FormatMethodTable(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
     {
-        // TODO: Implement MethodTable formatting
-        FormatHexWithPrefix(ptr, paddingFormat, builder);
+        builder.Append(_pointerFormatter.FormatMethodTable(ptr));
     }
 
-    private static void FormatVTable(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
+    private void FormatVTable(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
     {
-        // TODO: Implement VTable formatting
-        FormatHexWithPrefix(ptr, paddingFormat, builder);
+        builder.Append(_pointerFormatter.FormatVTable(ptr));
     }
 
-    private static void FormatStackTrace(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
+    private void FormatStackTrace(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
     {
-        // TODO: Implement StackTrace formatting
-        FormatHexWithPrefix(ptr, paddingFormat, builder);
+        builder.Append(_pointerFormatter.FormatStackTrace(ptr));
     }
 
     private void FormatAsciiString(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
