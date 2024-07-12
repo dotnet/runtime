@@ -117,12 +117,6 @@ namespace System.Text.RegularExpressions.Symbolic
         public byte[]? ByteLookup => _lookup;
 
         /// <summary>
-        /// Gets a mapping from char to minterm for the rare case when there are &gt;= 255 minterms.
-        /// Null in the common case where there are fewer than 255 minterms.
-        /// </summary>
-        public int[]? IntLookup => _intLookup;
-
-        /// <summary>
         /// Maximum ordinal character for a non-0 minterm, used to conserve memory
         /// </summary>
         public int MaxChar => (_lookup?.Length ?? _intLookup!.Length) - 1;

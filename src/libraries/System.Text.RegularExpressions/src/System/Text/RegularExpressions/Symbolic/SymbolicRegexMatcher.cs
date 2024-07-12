@@ -374,7 +374,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // The Z anchor and over 255 minterms are rare enough to consider them separate edge cases.
             int matchEnd;
-            if (!_containsEndZAnchor && _mintermClassifier.IntLookup is null)
+            if (!_containsEndZAnchor && _mintermClassifier.ByteLookup is not null)
             {
                 // Optimize processing for the common case of no Z anchor and <= 255 minterms. Specialize each call with different generic method arguments.
                 matchEnd = (_findOpts is not null, _containsAnyAnchor) switch
