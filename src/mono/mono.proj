@@ -324,8 +324,8 @@ JS_ENGINES = [NODE_JS]
           IgnoreStandardErrorWarningFormat="true" />
 
     <!--
-    Temporary WASI-SDK 22 workaround #2: The version of `wasm-component-ld` that
-    ships with WASI-SDK 22 contains a
+    TODO https://github.com/dotnet/runtime/issues/104773
+    Temporary WASI-SDK 22 workaround: The version of `wasm-component-ld` that ships with WASI-SDK 22 contains a
     [bug](https://github.com/bytecodealliance/wasm-component-ld/issues/22) which
     has been fixed in a v0.5.3 of that utility, so we upgrade it here.
     -->
@@ -339,8 +339,11 @@ JS_ENGINES = [NODE_JS]
           WorkingDirectory="$(ArtifactsObjDir)"
           IgnoreStandardErrorWarningFormat="true" />
 
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/share/wasi-sysroot/include/wasm32-wasi-threads/pthread.h"
-          DestinationFiles="$(MSBuildThisFileDirectory)/wasi/wasi-sdk/share/wasi-sysroot/include/wasm32-wasip2/pthread.h"
+    <!-- Temporary in WASI-SDK 22
+    TODO https://github.com/dotnet/runtime/issues/104773
+    -->
+    <Copy SourceFiles="$(WASI_SDK_PATH)/share/wasi-sysroot/include/wasm32-wasi-threads/pthread.h"
+          DestinationFiles="$(WASI_SDK_PATH)/share/wasi-sysroot/include/wasm32-wasip2/pthread.h"
           />
 
   </Target>

@@ -1,4 +1,5 @@
-# TODO: WASI-SDK doesn't provide a CMake toolchain file for `wasm32-wasip2`, so
+# TODO: https://github.com/dotnet/runtime/issues/104773
+# WASI-SDK doesn't provide a CMake toolchain file for `wasm32-wasip2`, so
 # we must provide it ourselves.  Once
 # https://github.com/WebAssembly/wasi-sdk/pull/430 is merged and included in an
 # upcoming release, we'll be able to remove this file and use that instead.
