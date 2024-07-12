@@ -3256,6 +3256,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // to avoid some unnecessary boxing
             case NI_System_Enum_HasFlag:
 
+            // This one is made intrinsic specifically to avoid boxing in Tier0
+            case NI_System_ArgumentNullException_ThrowIfNull:
+
             // Most atomics are compiled to single instructions
             case NI_System_Threading_Interlocked_And:
             case NI_System_Threading_Interlocked_Or:
@@ -3782,6 +3785,32 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     // Retry optimizing these later
                     isSpecial = true;
+                }
+                break;
+            }
+
+            case NI_System_ArgumentNullException_ThrowIfNull:
+            {
+                // void ThrowIfNull(object? argument, string? paramName = null)
+                // void ThrowIfNull(object? argument, ExceptionArgument paramName)
+                assert(sig->numArgs == 2);
+                assert(sig->retType == CORINFO_TYPE_VOID);
+
+                // if we see:
+                //
+                //   ArgumentNullException_ThrowIfNull(GT_BOX(...), ...)
+                //
+                // We should be able to remove the call (and the box). It is done via intrinsic only
+                // because Tier0 is not able to remove the box itself.
+                //
+                GenTree* arg = impStackTop(1).val;
+                if (arg->OperIs(GT_BOX))
+                {
+                    impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spill side effects for ThrowIfNull"));
+                    gtTryRemoveBoxUpstreamEffects(arg, BR_REMOVE_AND_NARROW);
+                    impPopStack();
+                    impPopStack();
+                    retNode = gtNewNothingNode();
                 }
                 break;
             }
@@ -9823,6 +9852,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "DefaultConstructorOf") == 0)
                         {
                             result = NI_System_Activator_DefaultConstructorOf;
+                        }
+                    }
+                    else if (strcmp(className, "ArgumentNullException") == 0)
+                    {
+                        if (strcmp(methodName, "ThrowIfNull") == 0)
+                        {
+                            result = NI_System_ArgumentNullException_ThrowIfNull;
                         }
                     }
                     else if (strcmp(className, "Array") == 0)
