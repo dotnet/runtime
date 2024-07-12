@@ -1262,8 +1262,12 @@ void DisplayNowayAssertMap()
             fout = _wfopen(strJitMeasureNowayAssertFile, W("a"));
             if (fout == nullptr)
             {
+#if !defined(HOST_WINDOWS)
+                // TODO: how do we print a `const char16_t*` portably?
+#else
                 fprintf(jitstdout(), "Failed to open JitMeasureNowayAssertFile \"%ws\"\n",
                         strJitMeasureNowayAssertFile);
+#endif
                 return;
             }
         }
@@ -1295,7 +1299,7 @@ void DisplayNowayAssertMap()
 
         for (i = 0; i < count; i++)
         {
-            fprintf(fout, "%u, %s, %u, \"%s\"\n", nacp[i].count, nacp[i].fl.m_file, nacp[i].fl.m_line,
+            fprintf(fout, "%zu, %s, %u, \"%s\"\n", nacp[i].count, nacp[i].fl.m_file, nacp[i].fl.m_line,
                     nacp[i].fl.m_condStr);
         }
 
@@ -3389,7 +3393,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         compMaxUncheckedOffsetForNullObject = (size_t)JitConfig.JitMaxUncheckedOffset();
         if (verbose)
         {
-            printf("STRESS_NULL_OBJECT_CHECK: compMaxUncheckedOffsetForNullObject=0x%X\n",
+            printf("STRESS_NULL_OBJECT_CHECK: compMaxUncheckedOffsetForNullObject=0x%zX\n",
                    compMaxUncheckedOffsetForNullObject);
         }
     }
@@ -9548,7 +9552,7 @@ void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars)
 
     bool first = true;
     printf("{");
-    for (size_t varNum = 0; varNum < comp->lvaCount; varNum++)
+    for (unsigned varNum = 0; varNum < comp->lvaCount; varNum++)
     {
         if (pVarNumSet[varNum] == 1)
         {
