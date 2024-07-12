@@ -394,7 +394,7 @@ namespace System.Text.Json.Tests
             });
 
             string json = JsonSerializer.Serialize(data, s_indentedOption);
-            Assert.Equal(@"{
+            JsonTestHelper.AssertJsonEqual(@"{
   ""1"": ""One"",
   ""2"": ""II"",
   ""3"": ""3""
