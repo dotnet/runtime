@@ -72,6 +72,8 @@ namespace System.Net.Http
         // _shutdown above is true, and requests in flight have been (or are being) failed.
         private Exception? _abortException;
 
+        private Http2ProtocolErrorCode? _goAwayErrorCode;
+
         private const int MaxStreamId = int.MaxValue;
 
         // Temporary workaround for request burst handling on connection start.
@@ -410,7 +412,11 @@ namespace System.Net.Http
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0)
                     {
-                        if (_incomingBuffer.ActiveLength == 0)
+                        if (_goAwayErrorCode is not null)
+                        {
+                            ThrowProtocolError(_goAwayErrorCode.Value, SR.net_http_http2_connection_close);
+                        }
+                        else if (_incomingBuffer.ActiveLength == 0)
                         {
                             ThrowMissingFrame();
                         }
@@ -1070,6 +1076,7 @@ namespace System.Net.Http
 
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode, SR.net_http_http2_connection_close);
+            _goAwayErrorCode = errorCode;
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();

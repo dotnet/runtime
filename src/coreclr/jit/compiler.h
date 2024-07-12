@@ -2232,6 +2232,8 @@ public:
 
     bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
 
+    bool IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator);
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
 #endif // DEBUG

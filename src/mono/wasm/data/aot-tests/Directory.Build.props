@@ -10,7 +10,7 @@
     <_WasmTargetsDir>$(WasmBuildSupportDir)\wasm\</_WasmTargetsDir>
     <_WasmSharedDir>$(WasmBuildSupportDir)\wasm-shared\</_WasmSharedDir>
     <EMSDK_PATH>$(WasmBuildSupportDir)\emsdk\</EMSDK_PATH>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">$(WasmBuildSupportDir)/wasi-sdk/</WASI_SDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')">$(WasmBuildSupportDir)/wasi-sdk/</WASI_SDK_PATH>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeSrcDir)' != ''">
