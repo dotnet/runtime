@@ -283,6 +283,9 @@ namespace System.Net.Http
                     CreateConnectTimeoutException(oce) :
                     e;
 
+                // On success path connectionSetupActivity is stopped before calling InitQuicConnection().
+                // This assertion makes sure that InitQuicConnection() does not throw unexpectedly.
+                Debug.Assert(connectionSetupActivity?.IsStopped is not true);
                 if (connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, connectionException, null);
 
                 // If the connection hasn't been initialized with QuicConnection, get rid of it.
