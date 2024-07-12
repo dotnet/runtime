@@ -1966,8 +1966,8 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
-    // No point duplicating this block if it would not remove (part of) the joint.
-    if ((target->GetTrueTarget() == target) || (target->GetFalseTarget() == target))
+    // No point duplicating this block if it would not remove (part of) the join.
+    if (target->TrueTargetIs(target) || target->FalseTargetIs(target))
     {
         return false;
     }
