@@ -1254,6 +1254,129 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicDot(node);
         }
 
+        case NI_Vector64_GetElement:
+        case NI_Vector128_GetElement:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            bool isContainableMemory = IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1);
+
+            if (isContainableMemory || !op2->OperIsConst())
+            {
+                unsigned    simdSize        = node->GetSimdSize();
+                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+                var_types   simdBaseType    = node->GetSimdBaseType();
+                var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
+
+                // We're either already loading from memory or we need to since
+                // we don't know what actual index is going to be retrieved.
+
+                unsigned lclNum  = BAD_VAR_NUM;
+                unsigned lclOffs = 0;
+
+                if (!isContainableMemory)
+                {
+                    // We aren't already in memory, so we need to spill there
+
+                    comp->getSIMDInitTempVarNum(simdType);
+                    lclNum = comp->lvaSIMDInitTempVarNum;
+
+                    GenTree* storeLclVar = comp->gtNewStoreLclVarNode(lclNum, op1);
+                    BlockRange().InsertBefore(node, storeLclVar);
+                    LowerNode(storeLclVar);
+                }
+                else if (op1->IsLocal())
+                {
+                    // We're an existing local that is loaded from memory
+                    GenTreeLclVarCommon* lclVar = op1->AsLclVarCommon();
+
+                    lclNum  = lclVar->GetLclNum();
+                    lclOffs = lclVar->GetLclOffs();
+
+                    BlockRange().Remove(op1);
+                }
+
+                if (lclNum != BAD_VAR_NUM)
+                {
+                    // We need to get the address of the local
+                    op1 = comp->gtNewLclAddrNode(lclNum, lclOffs, TYP_BYREF);
+                    BlockRange().InsertBefore(node, op1);
+                    LowerNode(op1);
+                }
+                else
+                {
+                    assert(op1->isIndir());
+
+                    // We need to get the underlying address
+                    GenTree* addr = op1->AsIndir()->Addr();
+                    BlockRange().Remove(op1);
+                    op1 = addr;
+                }
+
+                GenTree* offset       = op2;
+                unsigned baseTypeSize = genTypeSize(simdBaseType);
+
+                if (offset->OperIsConst())
+                {
+                    // We have a constant index, so scale it up directly
+                    GenTreeIntConCommon* index = offset->AsIntCon();
+                    index->SetIconValue(index->IconValue() * baseTypeSize);
+                }
+                else
+                {
+                    // We have a non-constant index, so scale it up via mul but
+                    // don't lower the GT_MUL node since the indir will try to
+                    // create an addressing mode and will do folding itself. We
+                    // do, however, skip the multiply for scale == 1
+
+                    if (baseTypeSize != 1)
+                    {
+                        GenTreeIntConCommon* scale = comp->gtNewIconNode(baseTypeSize);
+                        BlockRange().InsertBefore(node, scale);
+
+                        offset = comp->gtNewOperNode(GT_MUL, offset->TypeGet(), offset, scale);
+                        BlockRange().InsertBefore(node, offset);
+                    }
+                }
+
+                // Add the offset, don't lower the GT_ADD node since the indir will
+                // try to create an addressing mode and will do folding itself. We
+                // do, however, skip the add for offset == 0
+                GenTree* addr = op1;
+
+                if (!offset->IsIntegralConst(0))
+                {
+                    addr = comp->gtNewOperNode(GT_ADD, addr->TypeGet(), addr, offset);
+                    BlockRange().InsertBefore(node, addr);
+                }
+                else
+                {
+                    BlockRange().Remove(offset);
+                }
+
+                // Finally we can indirect the memory address to get the actual value
+                GenTreeIndir* indir = comp->gtNewIndir(JITtype2varType(simdBaseJitType), addr);
+                BlockRange().InsertBefore(node, indir);
+
+                LIR::Use use;
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(indir);
+                }
+                else
+                {
+                    indir->SetUnusedValue();
+                }
+
+                BlockRange().Remove(node);
+                return LowerNode(indir);
+            }
+
+            assert(op2->OperIsConst());
+            break;
+        }
+
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
@@ -1331,12 +1454,18 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
         GenTree*    trueMask        = comp->gtNewSimdAllTrueMaskNode(simdBaseJitType, simdSize);
         GenTree*    falseVal        = comp->gtNewZeroConNode(simdType);
+        var_types   nodeType        = simdType;
+
+        if (HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()))
+        {
+            nodeType = TYP_MASK;
+        }
 
         BlockRange().InsertBefore(node, trueMask);
         BlockRange().InsertBefore(node, falseVal);
 
         GenTreeHWIntrinsic* condSelNode =
-            comp->gtNewSimdHWIntrinsicNode(simdType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
+            comp->gtNewSimdHWIntrinsicNode(nodeType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
                                            simdBaseJitType, simdSize);
         BlockRange().InsertAfter(node, condSelNode);
         if (foundUse)
@@ -2211,7 +2340,8 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
             MakeSrcContained(indirNode, addr);
         }
     }
-    else if (addr->OperIs(GT_LCL_ADDR) && IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
+    else if (addr->OperIs(GT_LCL_ADDR) && !indirNode->OperIs(GT_NULLCHECK) &&
+             IsContainableLclAddr(addr->AsLclFld(), indirNode->Size()))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.
@@ -3318,24 +3448,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector64_GetElement:
             case NI_Vector128_GetElement:
             {
-                assert(varTypeIsIntegral(intrin.op2));
+                assert(!IsContainableMemoryOp(intrin.op1) || !IsSafeToContainMem(node, intrin.op1));
+                assert(intrin.op2->OperIsConst());
 
-                if (intrin.op2->IsCnsIntOrI())
-                {
-                    MakeSrcContained(node, intrin.op2);
-                }
-
-                // TODO: Codegen isn't currently handling this correctly
-                //
-                // if (IsContainableMemoryOp(intrin.op1) && IsSafeToContainMem(node, intrin.op1))
-                // {
-                //     MakeSrcContained(node, intrin.op1);
-                //
-                //     if (intrin.op1->OperIs(GT_IND))
-                //     {
-                //         intrin.op1->AsIndir()->Addr()->ClearContained();
-                //     }
-                // }
+                // Loading a constant index from register
+                MakeSrcContained(node, intrin.op2);
                 break;
             }
 

@@ -101,7 +101,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' and '$(WasiSdkRoot)' == ''">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
+      <_ToolchainMissingErrorMessage Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">Could not find wasi-sdk. Install wasi-sdk and set %24(WASI_SDK_PATH) . It can be obtained from https://github.com/WebAssembly/wasi-sdk/releases</_ToolchainMissingErrorMessage>
       <_ToolchainMissingErrorMessage Condition="'$(_ToolchainMissingErrorMessage)' == '' and '$(_ToolchainMissingPaths)' != ''">Using WASI_SDK_PATH=$(WASI_SDK_PATH), cannot find $(_ToolchainMissingPaths) .</_ToolchainMissingErrorMessage>
       <_IsToolchainMissing Condition="'$(_ToolchainMissingErrorMessage)' != ''">true</_IsToolchainMissing>
     </PropertyGroup>
@@ -159,6 +159,8 @@
        <!--TODOWASI this needs similar AOT logic as EMCC in https://github.com/dotnet/runtime/pull/80507-->
       <WasmInitialHeapSize Condition="'$(WasmInitialHeapSize)' == ''">52428800</WasmInitialHeapSize>
       <WasmClang>$(WasiClang)</WasmClang>
+      <_WasiAfterRuntimeLoadedDeclarations>@(WasiAfterRuntimeLoadedDeclarations, ' ')</_WasiAfterRuntimeLoadedDeclarations>
+      <_WasiAfterRuntimeLoadedCalls>@(WasiAfterRuntimeLoadedCalls, ' ')</_WasiAfterRuntimeLoadedCalls>
     </PropertyGroup>
 
     <ItemGroup>
@@ -182,7 +184,7 @@
 
       <_WasiClangCommonFlags Include="$(_DefaultWasiClangFlags)" />
       <_WasiClangCommonFlags Include="$(WasiClangFlags)" />
-      <_WasiClangCommonFlags Include="--sysroot=&quot;$(WasiSdkRoot.Replace('\', '/'))/share/wasi-sysroot&quot;" />
+      <_WasiClangCommonFlags Include="--sysroot=&quot;$(WASI_SDK_PATH.Replace('\', '/'))share/wasi-sysroot&quot;" />
       <_WasiClangCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_WasiClangCommonFlags Include="-v"                                Condition="'$(WasiClangVerbose)' != 'false'" />
       <!--<_WasiClangCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />-->
@@ -204,10 +206,10 @@
 
       <_WasiClangCFlags Include="-g" Condition="'$(WasmNativeDebugSymbols)' == 'true'" />
 
-      <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedDeclarations)' != ''"
-                         Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;@(WasiAfterRuntimeLoadedDeclarations, ' ')&quot;" />
-      <_WasiClangCFlags Condition="'@(WasiAfterRuntimeLoadedCalls)' != ''"
-                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;@(WasiAfterRuntimeLoadedCalls, ' ')&quot;" />
+      <_WasiClangCFlags Condition="'$(_WasiAfterRuntimeLoadedDeclarations)' != ''"
+                         Include="-D WASI_AFTER_RUNTIME_LOADED_DECLARATIONS=&quot;$(_WasiAfterRuntimeLoadedDeclarations)&quot;" />
+      <_WasiClangCFlags Condition="'$(_WasiAfterRuntimeLoadedCalls)' != ''"
+                         Include="-D WASI_AFTER_RUNTIME_LOADED_CALLS=&quot;$(_WasiAfterRuntimeLoadedCalls)&quot;" />
 
       <_WasiClangLDFlags Include="$(WasiClangLinkOptimizationFlag)" />
       <_WasiClangLDFlags Include="@(_WasiClangCommonFlags)" />

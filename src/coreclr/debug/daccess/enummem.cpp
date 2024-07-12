@@ -533,7 +533,7 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     DumpManagedExcepObject(flags, exceptRef->GetInnerException());
 
     // Dump the stack trace array object and its underlying type
-    I1ARRAYREF stackTraceArrayObj = exceptRef->GetStackTraceArrayObject();
+    OBJECTREF stackTraceArrayObj = exceptRef->GetStackTraceArrayObject();
 
     // There are cases where a managed exception does not have a stack trace.
     // These cases are:
@@ -558,6 +558,22 @@ HRESULT ClrDataAccess::DumpManagedExcepObject(CLRDataEnumMemoryFlags flags, OBJE
     // MD this happens.
     StackTraceArray stackTrace;
     exceptRef->GetStackTrace(stackTrace);
+
+    // The stackTraceArrayObj can be either a byte[] with the actual stack trace array or an object[] where the first element is the actual stack trace array.
+    // In case it was the latter, we need to dump the actual stack trace array object here too.
+    OBJECTREF actualStackTraceArrayObj = (OBJECTREF)stackTrace.Get();
+    if (actualStackTraceArrayObj != stackTraceArrayObj)
+    {
+        // first dump the array's element type
+        TypeHandle arrayTypeHandle = actualStackTraceArrayObj->GetTypeHandle();
+        TypeHandle elementTypeHandle = arrayTypeHandle.GetArrayElementTypeHandle();
+        elementTypeHandle.AsMethodTable()->EnumMemoryRegions(flags);
+        elementTypeHandle.AsMethodTable()->GetClass()->EnumMemoryRegions(flags, elementTypeHandle.AsMethodTable());
+
+        // now dump the actual stack trace array object
+        DumpManagedObject(flags, actualStackTraceArrayObj);
+    }
+
     for(size_t i = 0; i < stackTrace.Size(); i++)
     {
         MethodDesc* pMD = stackTrace[i].pFunc;

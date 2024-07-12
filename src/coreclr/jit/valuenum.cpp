@@ -7589,7 +7589,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
     if (IsVNConstant(arg0VN))
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (oper != GT_NONE)
         {
@@ -7941,7 +7941,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
         assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
 
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (oper != GT_NONE)
         {
@@ -8071,7 +8071,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     else if (cnsVN != NoVN)
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (isScalar)
         {
@@ -8421,7 +8421,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     else if (arg0VN == arg1VN)
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (isScalar)
         {
