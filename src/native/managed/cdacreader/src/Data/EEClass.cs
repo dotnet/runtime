@@ -21,6 +21,14 @@ public sealed class EEClass : IData<EEClass>
     public TargetPointer MethodTable { get; init; }
     public ushort NumMethods { get; init; }
     public uint CorTypeAttr { get; init; }
+
+    // An InternalCorElementType uses the enum values of a CorElementType to
+    // indicate some of the information about the type of the type which uses
+    // the EEClass
+    //
+    // In particular. All reference types are ELEMENT_TYPE_CLASS
+    // Enums are the element type of their underlying type
+    // ValueTypes which can exactly be represented as an element type are represented as such
     public byte InternalCorElementType { get; init; }
 }
 

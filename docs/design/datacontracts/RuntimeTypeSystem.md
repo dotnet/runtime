@@ -21,41 +21,11 @@ struct TypeHandle
 {
 }
 
-
 internal enum CorElementType
 {
-    Void = 1,
-    Boolean = 2,
-    Char = 3,
-    I1 = 4,
-    U1 = 5,
-    I2 = 6,
-    U2 = 7,
-    I4 = 8,
-    U4 = 9,
-    I8 = 0xa,
-    U8 = 0xb,
-    R4 = 0xc,
-    R8 = 0xd,
-    String = 0xe,
-    Ptr = 0xf,
-    Byref = 0x10,
-    ValueType = 0x11,
-    Class = 0x12,
-    Var = 0x13,
-    Array = 0x14,
-    GenericInst = 0x15,
-    TypedByRef = 0x16,
-    I = 0x18,
-    U = 0x19,
-    FnPtr = 0x1b,
-    Object = 0x1c,
-    SzArray = 0x1d,
-    MVar = 0x1e,
-    CModReqd = 0x1f,
-    CModOpt = 0x20,
-    Internal = 0x21,
-    Sentinel = 0x41,
+    // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
+    // + 
+    Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata separate from a live process.
 }
 ```
 
@@ -135,6 +105,8 @@ internal partial struct RuntimeTypeSystem_1
     {
         Category_Mask = 0x000F0000,
         Category_ElementType_Mask = 0x000E0000,
+        Category_Array_Mask = 0x000C0000,
+
         Category_IfArrayThenSzArray = 0x00020000,
         Category_Array = 0x00080000,
         Category_ValueType = 0x00040000,
@@ -142,7 +114,7 @@ internal partial struct RuntimeTypeSystem_1
         Category_PrimitiveValueType = 0x00060000,
         Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
-        Category_Array_Mask = 0x000C0000,
+
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
@@ -248,17 +220,24 @@ struct TypeHandle
 ```
 
 The contract depends on the global pointer value `FreeObjectMethodTablePointer`.
+
 The contract additionally depends on these data descriptors
 
-| Data Descriptor Name |
-| --- |
-| `EEClass` |
-| `ArraayClass` |
-| `TypeDesc` |
-| `ParamTypeDesc` |
-| `TypeVarTypeDesc` |
-| `FnPtrTypeDesc` |
-| `GenericsDictInfo` |
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `EEClass` | `InternalCorElementType` | An InternalCorElementType uses the enum values of a CorElementType to indicate some of the information about the type of the type which uses the EEClass In particular, all reference types are CorElementType.Class, Enums are the element type of their underlying type and ValueTypes which can exactly be represented as an element type are represented as such, all other values types are represented as CorElementType.ValueType. |
+| `EEClass` | `MethodTable` | Pointer to the canonical MethodTable of this type |
+| `EEClass` | `NumMethods` | Count of methods attached to the EEClass |
+| `EEClass` | `CorTypeAttr` | Various flags |
+| `ArrayClass` | `Rank` | Rank of the associated array MethodTable |
+| `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
+| `ParamTypeDesc` | `TypeArg` | Associated type argument |
+| `TypeVarTypeDesc` | `Module` | Pointer to module which defines the type variable |
+| `TypeVarTypeDesc` | `Token` | Token of the type variable |
+| `FnPtrTypeDesc` | `NumArgs` | Number of arguments to the function described by the `TypeDesc` |
+| `FnPtrTypeDesc` | `CallConv` | Lower 8 bits is the calling convention bit as extracted by the signature that defines this `TypeDesc` |
+| `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
+| `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
 
 
 ```csharp
@@ -346,7 +325,7 @@ The contract additionally depends on these data descriptors
     {
         // validate that address points to something that looks like a TypeHandle.
 
-        if (address & 2 == 2)
+        if (address & 2 != 0)
         {
             return new TypeHandle(new TypeDescHandle(address - 2));
         }

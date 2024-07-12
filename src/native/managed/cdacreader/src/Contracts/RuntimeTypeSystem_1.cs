@@ -182,7 +182,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (address == 0)
             return default;
 
-        if (((ulong)address & 2) == (ulong)2)
+        if (((ulong)address & 2) != 0)
         {
             return new TypeHandle(new TypeDescHandle(address - 2));
         }
