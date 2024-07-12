@@ -10415,10 +10415,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[DONT_CSE]");
         }
-        if (tree->gtFlags & GTF_BOOLEAN)
-        {
-            chars += printf("[BOOLEAN]");
-        }
         if (tree->gtFlags & GTF_UNSIGNED)
         {
             chars += printf("[SMALL_UNSIGNED]");

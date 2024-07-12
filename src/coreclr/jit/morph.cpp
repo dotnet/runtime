@@ -3330,14 +3330,6 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
             return;
         }
 
-        if ((tree->gtFlags | op2->gtFlags) & GTF_BOOLEAN)
-        {
-            // We could deal with this, but we were always broken and just hit the assert
-            // below regarding flags, which means it's not frequent, so will just bail out.
-            // See #195514
-            return;
-        }
-
         noway_assert(!tree->gtOverflowEx() && !op2->gtOverflowEx());
 
         GenTree* ad1 = op2->AsOp()->gtOp1;

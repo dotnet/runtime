@@ -1251,11 +1251,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     assert(m_cmpOp != GT_NONE && m_c1 != nullptr && m_c2 != nullptr);
 
     GenTree* cmpOp1 = m_foldOp == GT_NONE ? m_c1 : m_comp->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
-    if (m_testInfo1.isBool && m_testInfo2.isBool)
-    {
-        // When we 'OR'/'AND' two booleans, the result is boolean as well
-        cmpOp1->gtFlags |= GTF_BOOLEAN;
-    }
 
     GenTree* t1Comp = m_testInfo1.compTree;
     t1Comp->SetOper(m_cmpOp);
@@ -1743,11 +1738,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     // Is the value a boolean?
     // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
 
-    if (opr1->gtFlags & GTF_BOOLEAN)
-    {
-        pOptTest->isBool = true;
-    }
-    else if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
+    if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
     {
         pOptTest->isBool = true;
     }
