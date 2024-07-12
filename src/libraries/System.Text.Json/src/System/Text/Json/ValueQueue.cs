@@ -10,6 +10,7 @@ namespace System.Text.Json
     /// <summary>
     /// A struct variant of <see cref="Queue{T}"/> that only allocates for Counts > 1.
     /// </summary>
+    [StructLayout(LayoutKind.Auto)]
     internal struct ValueQueue<T>
     {
         private byte _state; // 0 = empty, 1 = single, 2 = multiple
