@@ -6,7 +6,6 @@ parameters:
   container: ''
   testGroup: ''
   crossBuild: false
-  crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
   crossgen2: false
@@ -40,7 +39,6 @@ jobs:
     container: ${{ parameters.container }}
     testGroup: ${{ parameters.testGroup }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     stagedBuild: ${{ parameters.stagedBuild }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'build/tests/'

@@ -1,21 +1,13 @@
 # dotnet-pgo Spec
 Utilize trace data for improving application performance
 
-NOTE: This documentation page contains information on some features that are still work-in-progress.
-
 ## Intro
 
 The dotnet-pgo tool is a cross-platform CLI global tool that enables conversion of traces of .NET Core applications collected via dotnet-trace, ETW, perfview, perfcollect, LTTNG to be used to improve the performance of an application or library.
 
 ## Installing dotnet-pgo
 
-The first step is to install the dotnet-pgo CLI global tool.
-
-```cmd
-$ dotnet tool install --global dotnet-pgo
-You can invoke the tool using the following command: dotnet-pgo
-Tool 'dotnet-pgo' (version '6.0.47001') was successfully installed.
-```
+The only way to use dotnet-pgo is to build it in the runtime repo. To learn how to build the runtime, consult the [how to build](https://github.com/dotnet/runtime/tree/main/docs/workflow/building/coreclr) docs for Windows, macOS, or Linux.
 
 ## Using dotnet-pgo to optimize an application
 
@@ -37,14 +29,14 @@ set COMPLUS_TC_QuickJitForLoops=1
 set COMPLUS_TC_CallCountThreshold=10000
 set COMPLUS_ReadyToRun=0
 
-dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4 -- bin\Release\net6.0\pgotest.exe
+dotnet-trace collect --providers Microsoft-Windows-DotNETRuntime:0x1E000080018:4 -- bin\Release\net{version-number-goes-here}.0\pgotest.exe
 
 set COMPLUS_TieredPGO=
 set COMPLUS_TC_QuickJitForLoops=
 set COMPLUS_TC_CallCountThreshold=
 set COMPLUS_ReadyToRun=
 
-dotnet-pgo create-mibc --trace trace.nettrace --output trace.mibc
+${YOUR-REPO-ROOT}\artifacts\bin\coreclr\{OS}.{ARCHITECTURE}.{CONFIGURATION}\dotnet-pgo create-mibc --trace trace.nettrace --output trace.mibc
 
 dotnet publish --runtime win-x64 -p:PublishReadyToRun=true -p:ReadyToRunOptimizationData=trace.mibc
 ```

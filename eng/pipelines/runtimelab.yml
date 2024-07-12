@@ -49,178 +49,182 @@ variables:
     - name: TeamName
       value: dotnet-core
 
-stages:
-- stage: Build
-  jobs:
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
 
-  #
-  # Build with Debug config and Checked runtimeConfiguration
-  #
-  - ${{ if ne(variables.isOfficialBuild, true) }}:
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/global-build-job.yml
-        buildConfig: Checked
-        platforms:
-        - Linux_x64
-        - windows_x64
-        jobParameters:
-          timeoutInMinutes: 100
-          testGroup: innerloop
-          buildArgs: -s clr+libs+host+packs -c debug -runtimeConfiguration Checked
-          postBuildSteps:
-            - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
-              parameters:
-                uploadRuntimeTests: true
+      #
+      # Build with Debug config and Checked runtimeConfiguration
+      #
+      - ${{ if ne(variables.isOfficialBuild, true) }}:
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: Checked
+            platforms:
+            - Linux_x64
+            - windows_x64
+            jobParameters:
+              timeoutInMinutes: 100
+              testGroup: innerloop
+              buildArgs: -s clr+libs+host+packs -c debug -runtimeConfiguration Checked
+              postBuildSteps:
+                - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+                  parameters:
+                    uploadRuntimeTests: true
 
-  #
-  # Build with Release config and Release runtimeConfiguration
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      platforms:
-      - Linux_x64
-      - windows_x64
-      jobParameters:
-        timeoutInMinutes: 100
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        testGroup: innerloop
-        postBuildSteps:
-          - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
-            parameters:
-              uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
-              uploadIntermediateArtifacts: false
-            ${{ if eq(variables.isOfficialBuild, false) }}:
-              buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
+      #
+      # Build with Release config and Release runtimeConfiguration
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - Linux_x64
+          - windows_x64
+          jobParameters:
+            timeoutInMinutes: 100
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            testGroup: innerloop
+            postBuildSteps:
+              - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+                parameters:
+                  uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
+                  uploadIntermediateArtifacts: false
+                ${{ if eq(variables.isOfficialBuild, false) }}:
+                  buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
+                ${{ if eq(variables.isOfficialBuild, true) }}:
+                  buildArgs: -s clr+libs -c $(_BuildConfig)
+
+      #
+      # Build with Release allConfigurations to produce packages
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - windows_x64
+          jobParameters:
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            testGroup: innerloop
+            nameSuffix: AllConfigurations
+            buildArgs: -s libs -c $(_BuildConfig) -allConfigurations
             ${{ if eq(variables.isOfficialBuild, true) }}:
-              buildArgs: -s clr+libs -c $(_BuildConfig)
+              postBuildSteps:
+                - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
+                  parameters:
+                    uploadIntermediateArtifacts: true
+                    isOfficialBuild: true
+                    librariesBinArtifactName: libraries_bin_official_allconfigurations
 
-  #
-  # Build with Release allConfigurations to produce packages
-  #
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: Release
-      platforms:
-      - windows_x64
-      jobParameters:
-        isOfficialBuild: ${{ variables.isOfficialBuild }}
-        testGroup: innerloop
-        nameSuffix: AllConfigurations
-        buildArgs: -s libs -c $(_BuildConfig) -allConfigurations
-        ${{ if eq(variables.isOfficialBuild, true) }}:
-          postBuildSteps:
-            - template: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
-              parameters:
-                uploadIntermediateArtifacts: true
-                isOfficialBuild: true
-                librariesBinArtifactName: libraries_bin_official_allconfigurations
+      # Installer official builds need to build installers and need the libraries all configurations build
+      - ${{ if eq(variables.isOfficialBuild, true) }}:
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+            jobParameters:
+              liveRuntimeBuildConfig: Release
+              liveLibrariesBuildConfig: Release
+              isOfficialBuild: ${{ variables.isOfficialBuild }}
+              useOfficialAllConfigurations: true
+              dependsOnGlobalBuild: true
+            platforms:
+            - Linux_x64
+            - windows_x64
 
-  # Installer official builds need to build installers and need the libraries all configurations build
-  - ${{ if eq(variables.isOfficialBuild, true) }}:
-    - template: /eng/pipelines/installer/installer-matrix.yml
-      parameters:
-        jobParameters:
-          liveRuntimeBuildConfig: Release
-          liveLibrariesBuildConfig: Release
+      - ${{ if ne(variables.isOfficialBuild, true) }}:
+        #
+        # CoreCLR Test builds using live libraries release build
+        #
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+            buildConfig: Checked
+            platforms:
+            - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+            jobParameters:
+              testGroup: innerloop
+              liveLibrariesBuildConfig: Release
+              dependsOn:
+              - build_Linux_x64_Checked_
+              - build_Linux_x64_Release_
+
+        #
+        # CoreCLR Test executions using live libraries
+        #
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+            buildConfig: Checked
+            platforms:
+            - Linux_x64
+            helixQueueGroup: pr
+            helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+            jobParameters:
+              testGroup: innerloop
+              liveLibrariesBuildConfig: Release
+              dependsOn:
+              - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
+
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+            buildConfig: Checked
+            platforms:
+            - windows_x64
+            helixQueueGroup: pr
+            helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+            jobParameters:
+              testGroup: innerloop
+              liveLibrariesBuildConfig: Release
+              dependsOn:
+              - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
+              - build_windows_x64_Checked_
+              - build_windows_x64_Release_
+
+        #
+        # Libraries Release Test Execution against a release coreclr runtime
+        #
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+            buildConfig: Release
+            platforms:
+            - Linux_x64
+            helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+            jobParameters:
+              isFullMatrix: false
+              isOfficialBuild: false
+              testScope: innerloop
+              liveRuntimeBuildConfig: Release
+              dependsOnTestBuildConfiguration: Release
+              dependsOnTestArchitecture: x64
+              dependsOn:
+              - build_Linux_x64_Release_
+
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/libraries/run-test-job.yml
+            buildConfig: Release
+            platforms:
+            - windows_x64
+            helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+            jobParameters:
+              isFullMatrix: false
+              isOfficialBuild: false
+              testScope: innerloop
+              liveRuntimeBuildConfig: Release
+              dependsOnTestBuildConfiguration: Release
+              dependsOnTestArchitecture: x64
+              dependsOn:
+              - build_windows_x64_Release_
+
+    - ${{ if eq(variables.isOfficialBuild, true) }}:
+      - template: /eng/pipelines/official/stages/publish.yml
+        parameters:
           isOfficialBuild: ${{ variables.isOfficialBuild }}
-          useOfficialAllConfigurations: true
-          dependsOnGlobalBuild: true
-        platforms:
-        - Linux_x64
-        - windows_x64
-
-  - ${{ if ne(variables.isOfficialBuild, true) }}:
-    #
-    # CoreCLR Test builds using live libraries release build
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-        buildConfig: Checked
-        platforms:
-        - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-        jobParameters:
-          testGroup: innerloop
-          liveLibrariesBuildConfig: Release
-          dependsOn:
-          - build_Linux_x64_Checked_
-          - build_Linux_x64_Release_
-
-    #
-    # CoreCLR Test executions using live libraries
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-        buildConfig: Checked
-        platforms:
-        - Linux_x64
-        helixQueueGroup: pr
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-        jobParameters:
-          testGroup: innerloop
-          liveLibrariesBuildConfig: Release
-          dependsOn:
-          - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
-
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-        buildConfig: Checked
-        platforms:
-        - windows_x64
-        helixQueueGroup: pr
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-        jobParameters:
-          testGroup: innerloop
-          liveLibrariesBuildConfig: Release
-          dependsOn:
-          - coreclr_common_test_build_p0_AnyOS_AnyCPU_Checked
-          - build_windows_x64_Checked_
-          - build_windows_x64_Release_
-
-    #
-    # Libraries Release Test Execution against a release coreclr runtime
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-        buildConfig: Release
-        platforms:
-        - Linux_x64
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        jobParameters:
-          isFullMatrix: false
-          isOfficialBuild: false
-          testScope: innerloop
-          liveRuntimeBuildConfig: Release
-          dependsOnTestBuildConfiguration: Release
-          dependsOnTestArchitecture: x64
-          dependsOn:
-          - build_Linux_x64_Release_
-
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-        buildConfig: Release
-        platforms:
-        - windows_x64
-        helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-        jobParameters:
-          isFullMatrix: false
-          isOfficialBuild: false
-          testScope: innerloop
-          liveRuntimeBuildConfig: Release
-          dependsOnTestBuildConfiguration: Release
-          dependsOnTestArchitecture: x64
-          dependsOn:
-          - build_windows_x64_Release_
-
-- ${{ if eq(variables.isOfficialBuild, true) }}:
-  - template: /eng/pipelines/official/stages/publish.yml
-    parameters:
-      isOfficialBuild: ${{ variables.isOfficialBuild }}

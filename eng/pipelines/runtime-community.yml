@@ -12,50 +12,55 @@ schedules:
 variables:
   - template: /eng/pipelines/common/variables.yml
 
-jobs:
-#
-# Evaluate paths
-#
-- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
-  - template: /eng/pipelines/common/evaluate-default-paths.yml
-
-#
-# s390x
-# Build the whole product using Mono and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: mono
-    platforms:
-    - Linux_s390x
-    variables:
-      # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
-      timeoutInMinutes: 180
-      condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
-      # extra steps, run tests
-      postBuildSteps:
-        - template: /eng/pipelines/libraries/helix.yml
-          parameters:
-            creator: dotnet-bot
-            testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+    stages:
+    - stage: Build
+      jobs:
+      #
+      # Evaluate paths
+      #
+      - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
+        - template: /eng/pipelines/common/evaluate-default-paths.yml
+
+      #
+      # s390x
+      # Build the whole product using Mono and run libraries tests
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: mono
+          platforms:
+          - Linux_s390x
+          variables:
+            # map dependencies variables to local variables
+            - name: librariesContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+            - name: monoContainsChange
+              value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: AllSubsets_Mono
+            buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+            timeoutInMinutes: 180
             condition: >-
               or(
-              eq(variables['librariesContainsChange'], true),
-              eq(variables['monoContainsChange'], true),
-              eq(variables['isRollingBuild'], true))
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+                eq(variables['isFullMatrix'], true))
+            # extra steps, run tests
+            postBuildSteps:
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+                  condition: >-
+                    or(
+                    eq(variables['librariesContainsChange'], true),
+                    eq(variables['monoContainsChange'], true),
+                    eq(variables['isRollingBuild'], true))
