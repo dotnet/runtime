@@ -4206,26 +4206,20 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 			MonoType *ptype = csig->params [i];
 			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 
-			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) 
-			{
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
 				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
 				swift_lowering [i] = lowered_swift_struct;
-				if (!lowered_swift_struct.by_reference) 
-				{
+				if (!lowered_swift_struct.by_reference) {
 					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; idx_lowered++) {
 						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 						new_param_count++;
 					}
-				}
-				else
-				{
+				} else {
 					ptype = mono_class_get_byref_type (klass);
 					g_array_append_val (new_params, ptype);
 					new_param_count++;
 				}
-			}
-			else
-			{
+			} else {
 				g_array_append_val (new_params, ptype);
 				new_param_count++;
 			}

@@ -2839,20 +2839,17 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		} else {
 			switch (t->type) {
 			case MONO_TYPE_VALUETYPE:
-				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL))
-				{
+				if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 					if (swift_lowering [i].num_lowered_elements > 0) {
 						tmp_locals [i] = mono_mb_add_local (mb, sig->params [i]);
 						emit_swift_lowered_struct_load (mb, csig, swift_lowering [i], tmp_locals [i], csig_argnum);
 						break;
-					}
-					else if (swift_lowering [i].by_reference) {
+					} else if (swift_lowering [i].by_reference) {
 						/* Structs passed by reference are handled during arg loading emission */
 						tmp_locals [i] = 0;
 						break;
 					}
-				}
-				/* else fallthru */
+				} /* else fallthru */
 			case MONO_TYPE_OBJECT:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
@@ -2886,19 +2883,16 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 		int csig_argnum = get_csig_argnum (i, m);
-		if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_lowering [i].by_reference)
-		{
+		if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_lowering [i].by_reference) {
 			mono_mb_emit_ldarg (mb, csig_argnum);
 			MonoClass* klass = mono_class_from_mono_type_internal (sig->params [i]);
 			mono_mb_emit_op (mb, CEE_LDOBJ, klass);
-		}
-		else if (tmp_locals [i]) {
+		} else if (tmp_locals [i]) {
 			if (m_type_is_byref (t))
 				mono_mb_emit_ldloc_addr (mb, tmp_locals [i]);
 			else
 				mono_mb_emit_ldloc (mb, tmp_locals [i]);
-		}
-		else
+		} else
 			mono_mb_emit_ldarg (mb, csig_argnum);
 	}
 
