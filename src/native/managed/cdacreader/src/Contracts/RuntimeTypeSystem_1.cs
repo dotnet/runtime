@@ -48,7 +48,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             PerInstInfo = data.PerInstInfo;
         }
 
-        // this MethodTable is a canonical MethodTable if it's EEClassOrCanonMT is an EEClass
+        // this MethodTable is a canonical MethodTable if its EEClassOrCanonMT is an EEClass
         internal bool IsCanonMT => GetEEClassOrCanonMTBits(EEClassOrCanonMT) == EEClassOrCanonMTBits.EEClass;
     }
 
