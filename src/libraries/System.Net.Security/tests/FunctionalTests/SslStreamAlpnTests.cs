@@ -121,15 +121,11 @@ namespace System.Net.Security.Tests
 
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
 
-                    Console.WriteLine("HANDSGHAKLE DONE ####################################");
-
                     Assert.Equal(expected, client.NegotiatedApplicationProtocol);
                     Assert.Equal(expected, server.NegotiatedApplicationProtocol);
 
                     await TestHelper.PingPong(client, server);
-                    Console.WriteLine("PING PIONG DONE ####################################");
                     await TestHelper.PingPong(server, client);
-                    Console.WriteLine("PING PONG  DONE ####################################");
 
                     Assert.Equal(expected, client.NegotiatedApplicationProtocol);
                     Assert.Equal(expected, server.NegotiatedApplicationProtocol);
@@ -254,7 +250,7 @@ namespace System.Net.Security.Tests
         public SslStreamAlpnTest_Async(ITestOutputHelper output)
             : base(output) { }
     }
-/*
+
     public sealed class SslStreamAlpnTest_Sync : SslStreamAlpnTestBase
     {
         public override bool TestAuthenticateAsync => false;
@@ -262,5 +258,4 @@ namespace System.Net.Security.Tests
         public SslStreamAlpnTest_Sync(ITestOutputHelper output)
             : base(output) { }
     }
-*/
 }

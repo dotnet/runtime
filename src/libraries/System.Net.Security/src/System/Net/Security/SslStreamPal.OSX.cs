@@ -110,7 +110,7 @@ namespace System.Net.Security
             return HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
         }
 
-          public static ProtocolToken Renegotiate(
+        public static ProtocolToken Renegotiate(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
@@ -147,23 +147,7 @@ namespace System.Net.Security
                         if (securityContext.UseNwFramework)
                         {
 
-                            Console.WriteLine("EncryptMessage called with {0} bytes of data", input.Length);
                             securityContext.Encrypt(memHandle.Pointer, input.Length, ref token);
-                            //securityContext._writeWaiter!.Reset();
-                            //Interop.AppleCrypto.NwSendToConnection(sslHandle, GCHandle.ToIntPtr(securityContext.gcHandle), (byte*)memHandle.Pointer, input.Length);
-
-                            //Interop.AppleCrypto.SslProcessInputData(securityContext._framer, (byte*)memHandle.Pointer, input.Length);
-                            //Console.WriteLine("EncryptMessage waiting???");
-                            //securityContext._writeWaiter!.Wait();
-                            //Console.WriteLine("EncryptMessage wait done!!! {0}");
-                            //if _writeStatus
-
-
-                            //token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
-
-                            //securityContext.ReadPendingWrites(ref token);
-                            //Console.WriteLine("EncryptMessage have {0} encrypted bytes", token.Size);
-
                             return token;
 
                         }
@@ -226,28 +210,9 @@ namespace System.Net.Security
 
                 if (securityContext.UseNwFramework)
                 {
-                        Console.WriteLine("PAL Called dectrypt with {0} bytes!!!!", buffer.Length);
-                        //securityContext._waiter!.Reset();
-                       // unsafe
-                      //  {
-                        if (buffer.Length == 0)
-                        {
-                            // received EOF.
+                    count = securityContext.Decrypt(buffer);
 
 
-                        }
-                           // Debug.Assert(buffer.Length > 0);
-                            count = securityContext.Decrypt(buffer);
-
-
-                            //TlsFrameHelper.TlsFrameInfo info;
-                            TlsFrameHeader header = default;
-                            TlsFrameHelper.TryGetFrameHeader(buffer, ref header);
-                            if (header.Type == TlsContentType.Alert)
-                            {
-                                Console.WriteLine("DecryptMessage GOT ALLTER!!!!!");
-                                //securityContext.Decrypt(Span<byte>.Empty);
-                            }
 
                             if (GetAvailableDecryptedBytes(securityContext) == 0 && securityContext.Tcs == null)
                             {
@@ -256,34 +221,6 @@ namespace System.Net.Security
                                   Console.WriteLine("ALlocated new DECRYPT task {0} and styarted read count {1}", securityContext.Tcs!.Task.GetHashCode(), count);
                             }
                             return new SecurityStatusPal(count > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinuePendig);
-
-                          //  fixed (byte* ptr = buffer)
-                         //   {
-
-/* OK ASYNC
-
-                                //securityContext._readWaiter!.Reset();
-        //                        lock (securityContext)
-                                {
-                                    //securityContext.Tcs ??= new TaskCompletionSource<SecurityStatusPalErrorCode>();
-                                    if (buffer.Length > 0)
-                                    {
-                                         Console.WriteLine("PAL Called dectrypt calling NwProcessInputData!!!! 0x{0:x}", sslHandle.DangerousGetHandle());
-                                         Interop.AppleCrypto.NwProcessInputData(sslHandle, securityContext._framer, ptr, buffer.Length);
-                                         Console.WriteLine("PAL Called dectrypt NwProcessInputData is done 0x{0:x}!!!!!", sslHandle.DangerousGetHandle());
-                                    }
-
-                                    if (securityContext.Tcs == null)
-                                    {
-                                        securityContext.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
-                                        Interop.AppleCrypto.NwReadFromConnection(securityContext.SslContext, GCHandle.ToIntPtr(securityContext.gcHandle), ptr, buffer.Length);
-                                        Console.WriteLine("ALlocated new task {0} and styarted read", securityContext.Tcs.Task.GetHashCode());
-                                    }
-                                    return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
-*/
-                 //               }
-                      //      }
-                     //   }
                 }
 
                 securityContext.Write(buffer);

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -20,7 +19,7 @@ namespace System.Net
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
     {
         public static readonly unsafe bool CanUseNwFramework = Interop.AppleCrypto.NwInit(&FramerStatusUpdate, &ReadFromConnection, &WriteToConnection) == 0;
-        public bool UseNwFramework;
+        public readonly bool UseNwFramework;
         // mapped from OSX error codes
         private const int OSStatus_writErr = -20;
         private const int OSStatus_readErr = -19;
@@ -42,11 +41,9 @@ namespace System.Net
         public ManualResetEventSlim? _readWaiter;
         private int _readStatus;
         public IntPtr _framer;
-        public SecurityStatusPalErrorCode state = SecurityStatusPalErrorCode.ContinueNeeded;
         public bool handshakeStarted;
 
         public TaskCompletionSource<SecurityStatusPalErrorCode>? Tcs;
-       //public TaskCompletionSource<SecurityStatusPalErrorCode>? WriteTcs;
 
         public SafeSslHandle SslContext => _sslContext;
         public SslApplicationProtocol SelectedApplicationProtocol;
@@ -55,15 +52,6 @@ namespace System.Net
         private bool _handshakeDone;
         private bool _disposed;
 
-/*
-        static unsafe SafeDeleteSslContext()
-        {
-            if (Interop.AppleCrypto.NwInit(&FramerStatusUpdate, &ReadFromConnection, &WriteToConnection) == 0)
-            {
-                CanUseNwFramework = true;
-            }
-        }
-*/
         public unsafe SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
             : base(IntPtr.Zero)
         {
@@ -71,6 +59,22 @@ namespace System.Net
             {
                 int osStatus;
 
+                switch (sslAuthenticationOptions.EncryptionPolicy)
+                {
+                    case EncryptionPolicy.RequireEncryption:
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
+
+                    case EncryptionPolicy.AllowNoEncryption:
+                        // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
+                        // since AllowNoEncryption intersect OS-supported isn't nothing,
+                        // let it pass.
+                        break;
+#pragma warning restore SYSLIB0040
+                    default:
+                        throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
+                }
+
+                // NW freamewoprk still does not support all features and server side
                 UseNwFramework = CanUseNwFramework && sslAuthenticationOptions.IsClient &&
                                     sslAuthenticationOptions.CipherSuitesPolicy == null &&
                                     sslAuthenticationOptions.ApplicationProtocols == null &&
@@ -80,26 +84,12 @@ namespace System.Net
 
                 if (UseNwFramework)
                 {
-                    //Console.WriteLine("SafeDeleteSslContext creating {0} connection to {1} with ")
                     gcHandle = GCHandle.Alloc(this, GCHandleType.Weak);
                     _sslContext = Interop.AppleCrypto.NwCreateContext(0, GCHandle.ToIntPtr(gcHandle));
-
-                    Console.WriteLine("SafeDeleteSslContext creating {0} connection to {1} with {2} {3}", sslAuthenticationOptions.IsClient, sslAuthenticationOptions.TargetHost, GCHandle.ToIntPtr(gcHandle), _sslContext );
-
                     Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
                     _writeWaiter = new ManualResetEventSlim();
                     _readWaiter = new ManualResetEventSlim();
-                }
-                else
-                {
-                    _sslContext = CreateSslContext(sslAuthenticationOptions, UseNwFramework);
-                    // Make sure the class instance is associated to the session and is provided
-                    // in the Read/Write callback connection parameter
-                    SslSetConnection(_sslContext);
-                }
 
-                if (UseNwFramework)
-                {
                     SslProtocols minProtocolId = SslProtocols.None;
                     SslProtocols maxProtocolId = SslProtocols.None;
 
@@ -113,6 +103,7 @@ namespace System.Net
                     osStatus = Interop.AppleCrypto.NwSetTlsOptions(_sslContext, GCHandle.ToIntPtr(gcHandle),
                                     sslAuthenticationOptions.TargetHost,
                                     minProtocolId, maxProtocolId);
+
                     if (osStatus != 0)
                     {
                         throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
@@ -120,6 +111,11 @@ namespace System.Net
 
                     return;
                 }
+
+                _sslContext = CreateSslContext(sslAuthenticationOptions);
+                // Make sure the class instance is associated to the session and is provided
+                // in the Read/Write callback connection parameter
+                SslSetConnection(_sslContext);
 
                 unsafe
                 {
@@ -217,23 +213,8 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions, bool useNwFramework)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            switch (sslAuthenticationOptions.EncryptionPolicy)
-            {
-                case EncryptionPolicy.RequireEncryption:
-#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
-
-                case EncryptionPolicy.AllowNoEncryption:
-                    // SecureTransport doesn't allow TLS_NULL_NULL_WITH_NULL, but
-                    // since AllowNoEncryption intersect OS-supported isn't nothing,
-                    // let it pass.
-                    break;
-#pragma warning restore SYSLIB0040
-                default:
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
-            }
-
             SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(sslAuthenticationOptions.IsServer ? 1 : 0);
 
             try
@@ -258,12 +239,9 @@ namespace System.Net
                     SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }
 
-                if (!useNwFramework)
-                {
-                    Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
-                    Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
-                    Interop.AppleCrypto.SslBreakOnClientAuth(sslContext, true);
-                }
+                Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
+                Interop.AppleCrypto.SslBreakOnServerAuth(sslContext, true);
+                Interop.AppleCrypto.SslBreakOnClientAuth(sslContext, true);
             }
             catch
             {
@@ -277,6 +255,7 @@ namespace System.Net
         private void SslSetConnection(SafeSslHandle sslContext)
         {
             GCHandle handle = GCHandle.Alloc(this, GCHandleType.Weak);
+
             Interop.AppleCrypto.SslSetConnection(sslContext, GCHandle.ToIntPtr(handle));
         }
 
@@ -284,19 +263,16 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            Console.WriteLine("DISPOSE OMN {0} handle {1} !!!!!!!", GetHashCode(), disposing);
             if (disposing)
             {
-                _disposed = true;
                 SafeSslHandle sslContext = _sslContext;
-
                 if (null != sslContext)
                 {
-                    if (UseNwFramework)
+                    if (UseNwFramework && !_disposed)
                     {
                         lock (SslContext)
                         {
-                        // Interop.AppleCrypto.NwStartHandshake(SslContext, GCHandle.ToIntPtr(gcHandle));
+                            // alternativelly we can inject Framer errro
                             Interop.AppleCrypto.NwCancelConnection(_sslContext);
                         }
                     }
@@ -306,12 +282,10 @@ namespace System.Net
                         _inputBuffer.Dispose();
                         _outputBuffer.Dispose();
                     }
-                    //slContext.Dispose();
+                    sslContext.Dispose();
                 }
-                if (gcHandle.IsAllocated)
-                {
-                    //gcHandle.Free();
-                }
+
+                _disposed = true;
             }
 
             base.Dispose(disposing);
@@ -319,7 +293,10 @@ namespace System.Net
 
         protected override bool ReleaseHandle()
         {
-            Console.WriteLine("RELEASE CALLED on {0} handle {1}", GetHashCode(), GCHandle.ToIntPtr(gcHandle));
+            if (gcHandle.IsAllocated)
+            {
+                gcHandle.Free();
+            }
             return true;
         }
 
@@ -329,49 +306,29 @@ namespace System.Net
             // we should not ever throw in unmanaged callback
             try
             {
-                Console.WriteLine("FramerStatusUpdate called with {0} {1} {2} and {3}", gcHandle, status, data1, data2);
-
                 SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(gcHandle).Target;
                 if (context == null)
                 {
-                    Console.WriteLine("WTF !!!! failed to get conext from {0}", gcHandle);
                     return -1;
                 }
-            //Debug.Assert(context != null);
+Console.WriteLine("FramerStatusUpdate called for {0} on {1}", status, context.GetHashCode());
                 switch (status)
                 {
                     case PAL_NwStatusUpdates.FramerStart:
                             context._framer = data1;
                             break;
                     case PAL_NwStatusUpdates.HandshakeFinished:
-                        Console.WriteLine("FramerStatusUpdate TLS handshake completed !!!!!! '{0}'", context.Tcs?.Task.GetHashCode());
-                        context.state = SecurityStatusPalErrorCode.OK;
-                        //context._waiter!.Set();
-                        bool result = context.Tcs!.TrySetResult(SecurityStatusPalErrorCode.OK);
-                        Console.WriteLine("FramerStatusUpdate TLS handshake completed : notification with {0}", result);
+                        context.Tcs!.TrySetResult(SecurityStatusPalErrorCode.OK);
                         context.Tcs = null;
                         context._handshakeDone = true;
                         break;
                     case PAL_NwStatusUpdates.HandshakeFailed:
                         int osStatus = data1.ToInt32();
-                        Console.WriteLine("FramerStatusUpdate TLS handshake failed with {0} !!!!!!", osStatus);
-                        //context.state = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, new Win32Exception((int)data));
-                        context.state = SecurityStatusPalErrorCode.InternalError;
-                        //context._waiter!.Set();
-                        //context.Tcs!.TrySetException(new Win32Exception(data1.ToInt32()));
-                        if (context.Tcs != null)
-                        {
-                            context.Tcs.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus));
-                            context.Tcs = null;
-                        }
-                        else
-                        {
-                            Console.WriteLine("FramerStatusUpdate TCS is NULL WTF!!!!  0x{0:x}", context._sslContext.DangerousGetHandle());
-                        }
+                        context.Tcs!.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus));
+                        context.Tcs = null;
                         context._handshakeDone = true;
                         break;
                     case PAL_NwStatusUpdates.ConnectionCancelled:
-                        //context._waiter!.Set();
                         context.Tcs?.TrySetException(new OperationCanceledException());
                         context.Tcs = null;
                         context._handshakeDone = true;
@@ -379,73 +336,47 @@ namespace System.Net
                         context._writeWaiter?.Set();
                         context._readStatus = OSStatus_errSecUserCanceled;
                         context._readWaiter?.Set();
-                        Console.WriteLine("FramerStatusUpdate  ALL DONE!!!");
                         break;
                     case PAL_NwStatusUpdates.ConnectionReadFinished:
                         Span<byte> data = new Span<byte>((void*)data2, data1.ToInt32());
-                        Console.WriteLine("ConnectionReadFinished with {0} bytes and {1} bytes ready {2}",  data1.ToInt32(), context._inputBuffer.ActiveLength, context.Tcs?.Task.GetHashCode());
-                        //ontext._inputBuffer.EnsureAvailableSpace(data1.ToInt32());
-
-
-                        //lock (context)
-                        //{
-                    // We are using the input buffer in reverse way here
-
-
-                            //Console.WriteLine("ConnectionReadFinished with {0} and {1} bytes readyi Tsc = {2} status = {3}",  data1.ToInt32(), context._inputBuffer.ActiveLength, context.Tcs?.Task.GetHashCode(), context._readStatus);
-                            //Console.WriteLine("ConnectionReadFinished Tsc = {0} {1}", context.Tcs, context.Tcs?.Task.GetHashCode());
-
-
-//                            context._readStatus = data1 > 0 ? OSStatus_noErr : OSStatus_eofErr;
-
-                            //Debug.Assert(context.Tcs != null);
-                            lock (context)
-                            {
-                                if (data1 > 0)
-                                {
-                                    context.Write(data);
-                                    context._readStatus = OSStatus_noErr;
-                                }
-                                else
-                                {
-                                    context._readStatus = OSStatus_eofErr;
-                                }
-
-                                context.Tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
-                            //    context.Tcs = null;
-                                context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
-            // We can get zero byte reands and Aplle crypto does not really like zero buffers:w!
-                            }
-
+                        lock (context)
+                        {
                             if (data1 > 0)
                             {
-                                // schedule next read unless we got EOF
-                                Interop.AppleCrypto.NwReadFromConnection(context.SslContext, GCHandle.ToIntPtr(context.gcHandle), null, int.MaxValue);
-
+                                context.Write(data);
+                                context._readStatus = OSStatus_noErr;
+                            }
+                            else
+                            {
+                                context._readStatus = OSStatus_eofErr;
                             }
 
-                            //context._readStatus = data1 > 0 ? OSStatus_noErr : OSStatus_eofErr;
-                            context._readWaiter!.Set();
-                            //context.StartDecrypt(1);
-                        //}
+                            context.Tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
+                            context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                        }
+
+                        if (data1 > 0)
+                        {
+                            // schedule next read unless we got EOF
+                            Interop.AppleCrypto.NwReadFromConnection(context.SslContext, GCHandle.ToIntPtr(context.gcHandle), null, int.MaxValue);
+                        }
+
+                        context._readWaiter!.Set();
                         break;
                     case PAL_NwStatusUpdates.ConnectionWriteFinished:
                     case PAL_NwStatusUpdates.ConnectionWriteFailed:
                         context._writeStatus = data1.ToInt32();
                         Console.WriteLine("FramerStatusUpdate ConnectionWriteFinished on {0}", context._writeWaiter!.GetHashCode());
-                        //context._writeWaiter!.Set();
                         break;
                     default:
-                        Console.WriteLine("FramerStatusUpdate WTF!!!! {0}", status);
                         Debug.Assert(false);
                         break;
                 }
 
                 return 0;
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine(ex);
                 return -1;
             }
         }
@@ -456,20 +387,12 @@ namespace System.Net
 
             GCHandle gcHandle = GCHandle.FromIntPtr(connection);
 
-
-
-    //if (context.UseNwFramework) Console.WriteLine("WriteToConnection called with 0x{0:x} allocated {1} ?????", connection, gcHandle.IsAllocated);
             SafeDeleteSslContext? context = (SafeDeleteSslContext?)GCHandle.FromIntPtr(connection).Target;
             if (context == null || context._disposed)
             {
                 //*dataLength = 0;
                 return -1;
             }
-if (context.UseNwFramework)
-{
-    Console.WriteLine("WriteToConnection OUT1 called for {0} wioyj {1} bytes", context, (ulong)*dataLength);
-}
-
 
             // We don't pool these buffers and we can't because there's a race between their us in the native
             // read/write callbacks and being disposed when the SafeHandle is disposed. This race is benign currently,
@@ -588,11 +511,6 @@ if (context.UseNwFramework)
                 _inputBuffer.EnsureAvailableSpace(buf.Length);
                 buf.CopyTo(_inputBuffer.AvailableSpan);
                 _inputBuffer.Commit(buf.Length);
-
-                //return 0;
-
-                Console.WriteLine("++Write {0} bytes, {1} total {2} buffer available", buf.Length, _inputBuffer.ActiveLength, _inputBuffer.AvailableLength);
-
                 return 0;
             }
         }
@@ -602,15 +520,8 @@ if (context.UseNwFramework)
             lock (this)
             {
                 int length = Math.Min(_inputBuffer.ActiveLength, buf.Length);
-                //_inputBuffer.EnsureAvailableSpace(buf.Length);
-                //buf.CopyTo(_inputBuffer.AvailableSpan);
-                //_inputBuffer.Commit(buf.Length);
                 _inputBuffer.ActiveSpan.Slice(0, length).CopyTo(buf);
                 _inputBuffer.Discard(length);
-
-                //Console.WriteLine("READ >>>{0}<<<", System.Text.Encoding.UTF8.GetString(buf.Slice(length)));
-
-                Console.WriteLine("______Read {0} bytes, {1} remaining", length, _inputBuffer.ActiveLength);
                 return length;
             }
         }
@@ -621,7 +532,6 @@ if (context.UseNwFramework)
             if (buffer.Length == 0)
             {
                 Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, null, 0);
-                Console.WriteLine("CLOSING!!!!!! {0} {1}",  SslContext.DangerousGetHandle(), _framer);
                 return 0;
             }
 
@@ -866,12 +776,7 @@ Console.WriteLine("PerformNwHandshake called with {0} bytes framer is {1}", inpu
                 }
                 Console.WriteLine("PerformNwHandshake finished");
             }
-            //nsole.WriteLine("PerformNwHandshake waiting for response");
-            //_waiter!.Wait();
-            //_waiter.Reset();
-            Console.WriteLine("PerformNwHandshake  wait is doen state is {0}!!!!", state);
             return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
-            //return new SecurityStatusPal(state);
         }
     }
 }

@@ -50,7 +50,6 @@ namespace System.Net.Security.Tests
         }
     }
 
-
     public sealed class SslStreamMemoryConformanceTests : SslStreamConformanceTests
     {
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
@@ -64,7 +63,7 @@ namespace System.Net.Security.Tests
         protected override Task<StreamPair> CreateConnectedStreamsAsync() =>
             CreateWrappedConnectedStreamsAsync(TestHelper.GetConnectedTcpStreams());
     }
-/*
+
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls11))]
     public sealed class SslStreamTls11NetworkConformanceTests : SslStreamDefaultNetworkConformanceTests
     {
@@ -84,5 +83,4 @@ namespace System.Net.Security.Tests
     {
         protected override SslProtocols GetSslProtocols() => SslProtocols.Tls13;
     }
-*/
 }

@@ -793,9 +793,9 @@ namespace System.Net.Security
         {
             ThrowIfExceptionalOrNotAuthenticated();
             ValidateBufferArguments(buffer, offset, count);
-
-            Task<int> t =  ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken), isSync: true).AsTask();
-            return t.GetAwaiter().GetResult();
+            ValueTask<int> vt =  ReadAsyncInternal<SyncReadWriteAdapter>(new Memory<byte>(buffer, offset, count), default(CancellationToken), isSync: true);
+            Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+            return vt.GetAwaiter().GetResult();
         }
 
         public override void WriteByte(byte value) => Write(new ReadOnlySpan<byte>(ref value));

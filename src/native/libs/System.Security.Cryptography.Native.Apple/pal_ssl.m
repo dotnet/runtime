@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_ssl.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
+//#include <sys/socket.h>
+//#include <netinet/in.h>
 
 #define _DARWIN_C_SOURCE 1
 #include <pthread.h>
-//#include <pthread_np.h>
 
 #include <Foundation/Foundation.h>
 
@@ -19,29 +18,22 @@ static nw_protocol_definition_t _tlsDefinition;
 static dispatch_queue_t _tlsQueue;
 static dispatch_queue_t _inputQueue;
 
-static uint64_t GetThreadId(void)
-{
-    uint64_t tid;
-    pthread_threadid_np(NULL, &tid);
-    return tid;
-}
-
 nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer, size_t gcHandle)
 {
-    struct sockaddr_in6  socketAddress = { .sin6_family = AF_INET6, .sin6_port = 42 };
+//    struct sockaddr_in6  socketAddress = { .sin6_family = AF_INET6, .sin6_port = 42 };
 
     if (isServer != 0)  // only client supported at this point.
         return NULL;
 
     nw_parameters_t nw_parameters = nw_parameters_create_secure_udp(NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
-
+/*
     // store GCHandle to fields in sockaddr_in6 and attach it as EndPoint. 
     // This can be revisited if we find better way how to attach arbitrary data to connection.
     socketAddress.sin6_flowinfo - (uint32_t)(gcHandle);
     socketAddress.sin6_scope_id =  (uint32_t)(gcHandle >> 32);
     socketAddress.sin6_addr.__u6_addr.__u6_addr8[15] =  1;
     socketAddress.sin6_port = htons(42);
-
+*/
     //upper = (uint32_t)(gcHandle >> 32);
     //ower = (uint32_t)(gcHandle);
     // printf("%s:%d: nw_connection_create lower = 0x%x and upper = 0x%x\n", __func__, __LINE__, upper, lower);
@@ -49,20 +41,13 @@ nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer, size_t gcHan
      //socketAddress.sin6_scope_id = (uint32_t)(gcHandle);
 
 
-    socketAddress.sin6_len = (uint8_t)sizeof(struct sockaddr_in6);
+ //   socketAddress.sin6_len = (uint8_t)sizeof(struct sockaddr_in6);
 
-    //nw_endpoint_t nw_endpoint = nw_endpoint_create_host("127.0.0.1", "42");
-    nw_endpoint_t nw_endpoint = nw_endpoint_create_address((struct sockaddr*)&socketAddress);
-
-    printf("%s:%d: nw_connection_create endpoint is %p %zu with 0x%0x 0x%0x\n", __func__, __LINE__, (void*)nw_endpoint, gcHandle, socketAddress.sin6_flowinfo,  socketAddress.sin6_scope_id);
-    if (nw_endpoint == NULL)
-    {
-//        nw_endpoint = nw_endpoint_create_host("::1", "42");
-    }
-
+    nw_endpoint_t nw_endpoint = nw_endpoint_create_host("127.0.0.1", "42");
+    //nw_endpoint_t nw_endpoint = nw_endpoint_create_address((struct sockaddr*)&socketAddress);
 
     nw_connection_t connection = nw_connection_create(nw_endpoint, nw_parameters);
-    printf("%s:%d: nw_connection_create is %p\n", __func__, __LINE__, (void*)connection);
+    printf("%s:%d: nw_connection_create is %p handle %lu\n", __func__, __LINE__, (void*)connection, gcHandle);
 
     return connection;
 }
@@ -200,9 +185,9 @@ int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_fram
     //nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
 
    int c = ++count;
-    printf("%s:%d called for %p with frame %p %d bytes of data %llu, %d options = \n", __func__, __LINE__, (void*) connection, (void*)framer, dataLength, GetThreadId(), c);
+    //printf("%s:%d called for %p with frame %p %d bytes of data %llu, %d options = \n", __func__, __LINE__, (void*) connection, (void*)framer, dataLength, GetThreadId(), c);
     nw_framer_message_t message = nw_framer_message_create(framer);
-    printf("%s:%d called for %p with frame %p %d bytes of data %llu, %d\n", __func__, __LINE__, (void*) connection, (void*)framer, dataLength, GetThreadId(), c);
+    //printf("%s:%d called for %p with frame %p %d bytes of data %llu, %d\n", __func__, __LINE__, (void*) connection, (void*)framer, dataLength, GetThreadId(), c);
 
 
    dispatch_semaphore_t sem = dispatch_semaphore_create(42);
@@ -234,7 +219,7 @@ int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_fram
 printf("%s:%d: caleld with mesage %p\n", __func__, __LINE__,  (void*)b2);
     if (data == NULL || message == NULL)
     {
-        printf("%s:%d: WTF !!!!!!!!!!!!!!!!!!!!! %p %p on %p %llu c= %d\n", __func__, __LINE__, (void*)data, (void*)message, (void*) connection,  GetThreadId(), c);
+        //printf("%s:%d: WTF !!!!!!!!!!!!!!!!!!!!! %p %p on %p %llu c= %d\n", __func__, __LINE__, (void*)data, (void*)message, (void*) connection,  GetThreadId(), c);
     }
     nw_framer_async(framer, ^(void) 
 //    dispatch_sync(_tlsQueue, ^(void) 
@@ -247,7 +232,7 @@ printf("%s:%d: caleld with mesage %p\n", __func__, __LINE__,  (void*)b2);
     });
 
     dispatch_semaphore_wait(sem,  DISPATCH_TIME_FOREVER);
-    printf("%s:%d done %p %llu c= %d!!!!\n", __func__, __LINE__, (void*) connection,  GetThreadId(), c);
+    //printf("%s:%d done %p %llu c= %d!!!!\n", __func__, __LINE__, (void*) connection,  GetThreadId(), c);
     fflush(stdout);
 
     return 0;

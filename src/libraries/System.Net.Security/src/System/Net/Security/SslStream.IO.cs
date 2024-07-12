@@ -475,8 +475,6 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
                 }
 
                 CompleteHandshake(_sslAuthenticationOptions);
-
-                Console.WriteLine("$$$$$$$$$$$$$$$$$$$$$$$$$$ Handshake is done reamining {0}", _buffer.ActiveLength);
             }
             finally
             {
@@ -946,7 +944,6 @@ Console.WriteLine("DecryptData: on Decrypt called!!!!!");
         {
             Debug.Assert(_securityContext != null);
 
-Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYPTED DATA {2} EOF {3} isSync {4} on {5}", buffer.Length, _buffer.DecryptedLength, SslStreamPal.GetAvailableDecryptedBytes(_securityContext!), _receivedEOF, isSync, GetHashCode());
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
@@ -1018,10 +1015,10 @@ Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYP
                     int payloadBytes = 0;
 
                     if (decryptTask != null)
-                    {
+                    {Console.WriteLine("Decrypt task ??? {0} farmeTask {1} isSync {2} _frameTask = {3} EOF {4} on {5}", decryptTask.GetHashCode(), _frameTask?.GetHashCode(), isSync, _frameTask, _receivedEOF, GetHashCode());
                         if (!_receivedEOF)
                         {
-                            Console.WriteLine("Decrypt task ??? {0} farmeTask {1} isSync {2} _frameTask = {3} EOF {4} on {5}", decryptTask.GetHashCode(), _frameTask?.GetHashCode(), isSync, _frameTask, _receivedEOF, GetHashCode());
+
                             if (isSync)
                             {
                                 frameTask = _frameTask ?? Task<int>.Run(() => {
@@ -1037,23 +1034,25 @@ Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYP
                                 frameTask = _frameTask ?? EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).AsTask();
                             }
     Console.WriteLine("ReadAsyncInternal: decryptTask2 {0} farmeTask {1}", decryptTask.GetHashCode(), frameTask.GetHashCode());
+
+                            _frameTask = frameTask;
                         }
 
 
-                        if (frameTask == null)
+                        if (_frameTask == null)
                         {
                             // We received EOF and we are only waiting for previous dectrypt to finish
                             decryptTask.Wait(cancellationToken);
                         }
                         else if (isSync)
                         {
-                            Task[] tasks = new Task[] { decryptTask, frameTask };
+                            Task[] tasks = new Task[] { decryptTask, _frameTask };
                             int index = Task.WaitAny(tasks, cancellationToken);
                             Console.WriteLine("ReadAsyncInternal:  WaitAny Finished with {0}", index);
                         }
                         else
                         {
-                            await Task.WhenAny(frameTask, decryptTask).ConfigureAwait(false);
+                            await Task.WhenAny(_frameTask, decryptTask).ConfigureAwait(false);
                         }
 Console.WriteLine("!!!!!!!ReadAsyncInternal: decryptTask3 {0} farmeTask {1} on {2}", decryptTask.IsCompleted, frameTask?.IsCompleted, GetHashCode());
 
@@ -1116,7 +1115,7 @@ Console.WriteLine("!!!!!!!ReadAsyncInternal: decryptTask3 {0} farmeTask {1} on {
                     }
 
                     Console.WriteLine("##################################ReadAsyncInternal: payloadBytes = {0} {1} on {2}", payloadBytes,  _buffer.ActiveLength, GetHashCode());
- ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
+ //ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
 
                     if (payloadBytes == 0)
                     {

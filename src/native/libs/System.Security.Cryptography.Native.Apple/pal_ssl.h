@@ -5,9 +5,6 @@
 
 #include "pal_compiler.h"
 #include <pal_ssl_types.h>
-
-//#include <sys/socket.h>
-//#include <netinet/in.h>
 #include <Network/Network.h>
 #include <Security/Security.h>
 #include <Security/SecureTransport.h>
