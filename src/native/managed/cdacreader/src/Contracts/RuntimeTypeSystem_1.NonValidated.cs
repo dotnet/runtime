@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -88,10 +89,10 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         internal struct MethodDesc
         {
-            public readonly Target _target;
-            public TargetPointer Address { get; init; }
-            public readonly Data.MethodDesc _desc;
-            public readonly Data.MethodDescChunk _chunk;
+            private readonly Target _target;
+            private TargetPointer Address { get; init; }
+            private readonly Data.MethodDesc _desc;
+            private readonly Data.MethodDescChunk _chunk;
             internal MethodDesc(Target target, TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
             {
                 _target = target;
@@ -228,25 +229,27 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return new TargetPointer(chunkAddress);
     }
 
-    private Data.MethodDescChunk GetMethodDescChunkMayThrow(TargetPointer methodDescPointer, Data.MethodDesc md)
+    private Data.MethodDescChunk GetMethodDescChunkMayThrow(TargetPointer methodDescPointer, Data.MethodDesc md, out TargetPointer methodDescChunkPointer)
     {
-        return new Data.MethodDescChunk(_target, GetMethodDescChunkPointerMayThrow(methodDescPointer, md));
+        methodDescChunkPointer = GetMethodDescChunkPointerMayThrow(methodDescPointer, md);
+        return new Data.MethodDescChunk(_target, methodDescChunkPointer);
     }
 
-    private NonValidated.MethodDesc GetMethodDescMayThrow(TargetPointer methodDescPointer)
+    private NonValidated.MethodDesc GetMethodDescMayThrow(TargetPointer methodDescPointer, out TargetPointer methodDescChunkPointer)
     {
         // may throw if the method desc at methodDescPointer is corrupted
         // we bypass the target data cache here because we don't want to cache non-validated data
         Data.MethodDesc desc = new Data.MethodDesc(_target, methodDescPointer);
-        Data.MethodDescChunk chunk = GetMethodDescChunkMayThrow(methodDescPointer, desc);
+        Data.MethodDescChunk chunk = GetMethodDescChunkMayThrow(methodDescPointer, desc, out methodDescChunkPointer);
         return new NonValidated.MethodDesc(_target, methodDescPointer, desc, chunk);
     }
 
-    private bool ValidateMethodDescPointer(TargetPointer methodDescPointer)
+    private bool ValidateMethodDescPointer(TargetPointer methodDescPointer, [NotNullWhen(true)] out TargetPointer methodDescChunkPointer)
     {
+        methodDescChunkPointer = TargetPointer.Null;
         try
         {
-            NonValidated.MethodDesc umd = GetMethodDescMayThrow(methodDescPointer);
+            NonValidated.MethodDesc umd = GetMethodDescMayThrow(methodDescPointer, out methodDescChunkPointer);
             TargetPointer methodTablePointer = umd.MethodTable;
             if (methodTablePointer == TargetPointer.Null
                 || methodTablePointer == new TargetPointer(0xffffffff_fffffffful)
@@ -261,6 +264,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 return false;
             }
             // TODO: request.cpp
+            // TODO[cdac]: this needs a Precode lookup
+            // see MethodDescChunk::GetTemporaryEntryPoint
 #if false
             MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
 
@@ -268,8 +273,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 retval = FALSE;
             }
-        }
+#endif
 
+            // TODO: request.cpp
+            // TODO[cdac]: needs MethodDesc::GetNativeCode and MethodDesc::GetMethodEntryPoint()
+#if false
         if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
         {
             PCODE jitCodeAddr = pMD->GetNativeCode();

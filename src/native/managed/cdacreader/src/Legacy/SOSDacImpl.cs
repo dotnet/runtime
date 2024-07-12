@@ -100,6 +100,8 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
             Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
 
+            data->MethodTablePtr = rtsContract.GetMethodTable(methodDescHandle);
+
             return HResults.E_NOTIMPL;
         }
         catch (Exception ex)

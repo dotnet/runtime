@@ -80,7 +80,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal struct MethodDesc
     {
+        private readonly Data.MethodDesc _desc;
+        private readonly Data.MethodDescChunk _chunk;
+        internal TargetPointer Address { get; init; }
+        internal MethodDesc(TargetPointer methodDescPointer, Data.MethodDesc desc, Data.MethodDescChunk chunk)
+        {
+            _desc = desc;
+            _chunk = chunk;
+            Address = methodDescPointer;
+        }
 
+        public TargetPointer MethodTable => _chunk.MethodTable;
+        public ushort Slot => _desc.Slot;
     }
 
     internal RuntimeTypeSystem_1(Target target, TargetPointer freeObjectMethodTablePointer, ulong methodDescAlignment)
@@ -452,27 +463,36 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             return new MethodDescHandle(methodDescPointer);
         }
-#if false // TODO
         // Check if we cached the underlying data already
-        if (_target.ProcessedData.TryGet(methodTablePointer, out Data.MethodTable? methodTableData))
+        if (_target.ProcessedData.TryGet(methodDescPointer, out Data.MethodDesc? methodDescData))
         {
             // we already cached the data, we must have validated the address, create the representation struct for our use
-            MethodTable trustedMethodTable = new MethodTable(methodTableData);
-            _ = _methodTables.TryAdd(methodTablePointer, trustedMethodTable);
-            return new MethodTableHandle(methodTablePointer);
+            TargetPointer mdescChunkPtr = GetMethodDescChunkPointerMayThrow(methodDescPointer, methodDescData);
+            // FIXME[cdac]: this isn't threadsafe
+            if (!_target.ProcessedData.TryGet(mdescChunkPtr, out Data.MethodDescChunk? methodDescChunkData))
+            {
+                throw new InvalidOperationException("cached MethodDesc data but not its containing MethodDescChunk");
+            }
+            MethodDesc validatedMethodDesc = new MethodDesc(methodDescPointer, methodDescData, methodDescChunkData);
+            _ = _methodDescs.TryAdd(methodDescPointer, validatedMethodDesc);
+            return new MethodDescHandle(methodDescPointer);
         }
-#endif
 
-        if (!ValidateMethodDescPointer(methodDescPointer))
+        if (!ValidateMethodDescPointer(methodDescPointer, out TargetPointer methodDescChunkPointer))
         {
             throw new InvalidOperationException("Invalid method desc pointer");
         }
-        // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
-#if false // TODO
-        Data.MethodDesc trustedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
-#endif
-        MethodDesc trustedMethodDescF = default; // new MethodDesc(trustedMethodTableData); // TODO
-        _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
-        return new MethodDescHandle(methodDescPointer);
+        else
+        {
+            // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
+            Data.MethodDescChunk validatedMethodDescChunkData = _target.ProcessedData.GetOrAdd<Data.MethodDescChunk>(methodDescChunkPointer);
+            Data.MethodDesc validatedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
+
+            MethodDesc trustedMethodDescF = new MethodDesc(methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
+            _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
+            return new MethodDescHandle(methodDescPointer);
+        }
     }
+
+    public TargetPointer GetMethodTable(MethodDescHandle methodDescHandle) => _methodDescs[methodDescHandle.Address].MethodTable;
 }
