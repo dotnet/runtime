@@ -244,11 +244,11 @@ namespace System.Net
                                 return false;
                             }
 
-                            if (!IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(name + lastSequence, end - lastSequence), out int ipv4AddressLength, true, false, false))
+                            i = end;
+                            if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
                             {
                                 return false;
                             }
-                            i = lastSequence + ipv4AddressLength;
                             // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
                             ++sequenceCount;
                             haveIPv4Address = true;

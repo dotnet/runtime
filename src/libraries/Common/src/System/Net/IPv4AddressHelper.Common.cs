@@ -52,6 +52,16 @@ namespace System.Net
         //  <argument>  name
         //      string containing possible IPv4 address
         //
+        //  <argument>  start
+        //      offset in <name> to start checking for IPv4 address
+        //
+        //  <argument>  end
+        //      offset in <name> of the last character we can touch in the check
+        //
+        // Outputs:
+        //  <argument>  end
+        //      index of last character in <name> we checked
+        //
         //  <argument>  allowIPv6
         //      enables parsing IPv4 addresses embedded in IPv6 address literals
         //
@@ -60,10 +70,6 @@ namespace System.Net
         //
         //  <argument>  unknownScheme
         //      the check is made on an unknown scheme (suppress IPv4 canonicalization)
-        //
-        // Outputs:
-        //  <argument>  charsConsumed
-        //      index of last character in <name> we checked
         //
         // Assumes:
         // The address string is terminated by either
@@ -78,17 +84,17 @@ namespace System.Net
         //
 
         //Remark: MUST NOT be used unless all input indexes are verified and trusted.
-        internal static bool IsValid<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
+        internal static unsafe bool IsValid<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile, bool unknownScheme)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // IPv6 can only have canonical IPv4 embedded. Unknown schemes will not attempt parsing of non-canonical IPv4 addresses.
             if (allowIPv6 || unknownScheme)
             {
-                return IsValidCanonical(name, out charsConsumed, allowIPv6, notImplicitFile);
+                return IsValidCanonical(name, start, ref end, allowIPv6, notImplicitFile);
             }
             else
             {
-                return ParseNonCanonical(name, out charsConsumed, notImplicitFile) != Invalid;
+                return ParseNonCanonical(name, start, ref end, notImplicitFile) != Invalid;
             }
         }
 
@@ -105,21 +111,19 @@ namespace System.Net
         //                 / "2" %x30-34 DIGIT     ; 200-249
         //                 / "25" %x30-35          ; 250-255
         //
-        internal static bool IsValidCanonical<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool allowIPv6, bool notImplicitFile)
+        internal static unsafe bool IsValidCanonical<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int dots = 0;
             int number = 0;
             bool haveNumber = false;
             bool firstCharIsZero = false;
-            int current;
 
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            charsConsumed = 0;
-            for (current = 0; current < name.Length; current++)
+            while (start < end)
             {
-                TChar ch = name[current];
+                TChar ch = name[start];
 
                 if (allowIPv6)
                 {
@@ -144,7 +148,7 @@ namespace System.Net
                     // A number starting with zero should be interpreted in base 8 / octal
                     if (!haveNumber && parsedCharacter == 0)
                     {
-                        if (current + 1 < name.Length && name[current + 1] == TChar.CreateTruncating('0'))
+                        if ((start + 1 < end) && name[start + 1] == TChar.CreateTruncating('0'))
                         {
                             // 00 is not allowed as a prefix.
                             return false;
@@ -177,11 +181,12 @@ namespace System.Net
                 {
                     return false;
                 }
+                ++start;
             }
             bool res = (dots == 3) && haveNumber;
             if (res)
             {
-                charsConsumed = current;
+                end = start;
             }
             return res;
         }
@@ -190,7 +195,7 @@ namespace System.Net
         // Return Invalid (-1) for failures.
         // If the address has less than three dots, only the rightmost section is assumed to contain the combined value for
         // the missing sections: 0xFF00FFFF == 0xFF.0x00.0xFF.0xFF == 0xFF.0xFFFF
-        internal static long ParseNonCanonical<TChar>(ReadOnlySpan<TChar> name, out int charsConsumed, bool notImplicitFile)
+        internal static unsafe long ParseNonCanonical<TChar>(TChar* name, int start, ref int end, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int numberBase = IPv4AddressHelper.Decimal;
@@ -204,8 +209,7 @@ namespace System.Net
 
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-            charsConsumed = 0;
-            for (current = 0; current < name.Length; current++)
+            for (current = start; current < end; current++)
             {
                 TChar ch = name[current];
                 int maxCharacterValue = '9';
@@ -219,7 +223,7 @@ namespace System.Net
                 {
                     current++;
                     atLeastOneChar = true;
-                    if (current < name.Length)
+                    if (current < end)
                     {
                         ch = name[current];
 
@@ -239,7 +243,7 @@ namespace System.Net
                 }
 
                 // Parse this section
-                for (; current < name.Length; current++)
+                for (; current < end; current++)
                 {
                     ch = name[current];
                     int characterValue = int.CreateTruncating(ch);
@@ -302,7 +306,7 @@ namespace System.Net
             {
                 return Invalid;  // Empty trailing segment: 1.1.1.
             }
-            else if (current >= name.Length)
+            else if (current >= end)
             {
                 // end of string, allowed
             }
@@ -320,7 +324,7 @@ namespace System.Net
             }
 
             parts[dotCount] = unchecked((uint)currentValue);
-            charsConsumed = current;
+            end = current;
 
             // Parsed, reassemble and check for overflows in the last part. Previous parts have already been checked in the loop
             switch (dotCount)

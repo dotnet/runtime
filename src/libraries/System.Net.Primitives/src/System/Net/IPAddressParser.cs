@@ -45,10 +45,16 @@ namespace System.Net
             throw new FormatException(SR.dns_bad_ip_address, new SocketException(SocketError.InvalidArgument));
         }
 
-        private static bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
+        private static unsafe bool TryParseIpv4<TChar>(ReadOnlySpan<TChar> ipSpan, out long address)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
+            int end = ipSpan.Length;
+            long tmpAddr;
+
+            fixed (TChar* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
+            {
+                tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
+            }
 
             if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
             {
@@ -63,14 +69,20 @@ namespace System.Net
             return false;
         }
 
-        private static bool TryParseIPv6<TChar>(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
+        private static unsafe bool TryParseIPv6<TChar>(ReadOnlySpan<TChar> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
+            int end = ipSpan.Length;
+            bool isValid = false;
+            fixed (TChar* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
+            {
+                isValid = IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
+            }
             scope = 0;
-            if (IPv6AddressHelper.IsValidStrict(ipSpan))
+            if (isValid || (end != ipSpan.Length))
             {
                 IPv6AddressHelper.Parse(ipSpan, numbers, out ReadOnlySpan<TChar> scopeIdSpan);
 

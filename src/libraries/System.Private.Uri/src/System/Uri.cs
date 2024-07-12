@@ -1281,11 +1281,12 @@ namespace System
                             return UriHostNameType.IPv6;
                         }
                     }
-                }
 
-                if (IPv4AddressHelper.IsValid(name.AsSpan(), out end, false, false, false) && end == name.Length)
-                {
-                    return UriHostNameType.IPv4;
+                    end = name.Length;
+                    if (IPv4AddressHelper.IsValid(fixedName, 0, ref end, false, false, false) && end == name.Length)
+                    {
+                        return UriHostNameType.IPv4;
+                    }
                 }
 
                 if (DomainNameHelper.IsValid(name, iri: false, notImplicitFile: false, out int length) && length == name.Length)
@@ -3861,9 +3862,8 @@ namespace System
                 }
             }
             else if (char.IsAsciiDigit(ch) && syntax.InFact(UriSyntaxFlags.AllowIPv4Host) &&
-                IPv4AddressHelper.IsValid(new ReadOnlySpan<char>(pString + start, end - start), out int charsConsumed, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
+                IPv4AddressHelper.IsValid(pString, start, ref end, false, StaticNotAny(flags, Flags.ImplicitFile), syntax.InFact(UriSyntaxFlags.V1_UnknownUri)))
             {
-                end = start + charsConsumed;
                 flags |= Flags.IPv4HostType;
 
                 if (hasUnicode)

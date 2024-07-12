@@ -96,7 +96,7 @@ namespace System.Net
 
         //  Remarks: MUST NOT be used unless all input indexes are verified and trusted.
         //           start must be next to '[' position, or error is reported
-        internal static bool IsValidStrict<TChar>(ReadOnlySpan<TChar> name)
+        internal static unsafe bool IsValidStrict<TChar>(TChar* name, int start, ref int end)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // Number of components in this IPv6 address
@@ -110,11 +110,10 @@ namespace System.Net
             int lastSequence = 1;
 
             bool needsClosingBracket = false;
-            int start = 0;
 
             // An IPv6 address may begin with a start character ('['). If it does, it must end with an end
             // character (']').
-            if (start < name.Length && name[start] == TChar.CreateTruncating('['))
+            if (start < end && name[start] == TChar.CreateTruncating('['))
             {
                 start++;
                 needsClosingBracket = true;
@@ -122,17 +121,17 @@ namespace System.Net
                 // IsValidStrict() is only called if there is a ':' in the name string, i.e.
                 // it is a possible IPv6 address. So, if the string starts with a '[' and
                 // the pointer is advanced here there are still more characters to parse.
-                Debug.Assert(start < name.Length);
+                Debug.Assert(start < end);
             }
 
             // Starting with a colon character is only valid if another colon follows.
-            if (name[start] == TChar.CreateTruncating(':') && (start + 1 >= name.Length || name[start + 1] != TChar.CreateTruncating(':')))
+            if (name[start] == TChar.CreateTruncating(':') && (start + 1 >= end || name[start + 1] != TChar.CreateTruncating(':')))
             {
                 return false;
             }
 
             int i;
-            for (i = start; i < name.Length; ++i)
+            for (i = start; i < end; ++i)
             {
                 int hexCh = int.CreateTruncating(name[i]) | 0x20;
 
@@ -162,7 +161,7 @@ namespace System.Net
                     {
                         bool moveToNextCharacter = true;
 
-                        while (i + 1 < name.Length)
+                        while (i + 1 < end)
                         {
                             i++;
 
@@ -190,7 +189,7 @@ namespace System.Net
 
                         // If there's more after the closing bracket, it must be a port.
                         // We don't use the port, but we still validate it.
-                        if (i + 1 < name.Length && name[i + 1] != TChar.CreateTruncating(':'))
+                        if (i + 1 < end && name[i + 1] != TChar.CreateTruncating(':'))
                         {
                             return false;
                         }
@@ -201,14 +200,14 @@ namespace System.Net
                         i += 2;
                         // If there is a port, it must either be a hexadecimal or decimal number.
                         // If the next two characters are '0x' or '0X' then it's a hexadecimal number. Skip the prefix.
-                        if (i + 1 < name.Length && name[i] == TChar.CreateTruncating('0') && (name[i + 1] | TChar.CreateTruncating(0x20)) == TChar.CreateTruncating('x'))
+                        if (i + 1 < end && name[i] == TChar.CreateTruncating('0') && (name[i + 1] | TChar.CreateTruncating(0x20)) == TChar.CreateTruncating('x'))
                         {
                             i += 2;
 
                             numericBase = IPv6AddressHelper.Hex;
                         }
 
-                        for (; i < name.Length; i++)
+                        for (; i < end; i++)
                         {
                             int ch = int.CreateTruncating(name[i]) | 0x20;
 
@@ -261,11 +260,11 @@ namespace System.Net
                             return false;
                         }
 
-                        if (!IPv4AddressHelper.IsValid(name.Slice(lastSequence), out int ipv4AddressLength, true, false, false))
+                        i = end;
+                        if (!IPv4AddressHelper.IsValid(name, lastSequence, ref i, true, false, false))
                         {
                             return false;
                         }
-                        i = lastSequence + ipv4AddressLength;
                         // ipv4 address takes 2 slots in ipv6 address, one was just counted meeting the '.'
                         ++sequenceCount;
                         lastSequence = i - sequenceLength;

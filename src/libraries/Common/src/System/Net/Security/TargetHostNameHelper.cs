@@ -40,7 +40,7 @@ namespace System.Net.Security
 
         // Simplified version of IPAddressParser.Parse to avoid allocations and dependencies.
         // It purposely ignores scopeId as we don't really use so we do not need to map it to actual interface id.
-        internal static bool IsValidAddress(string? hostname)
+        internal static unsafe bool IsValidAddress(string? hostname)
         {
             if (string.IsNullOrEmpty(hostname))
             {
@@ -49,17 +49,27 @@ namespace System.Net.Security
 
             ReadOnlySpan<char> ipSpan = hostname.AsSpan();
 
+            int end = ipSpan.Length;
+
             if (ipSpan.Contains(':'))
             {
                 // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
                 // we don't support/parse a port specification at the end of an IPv4 address.
                 Span<ushort> numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
 
-                return IPv6AddressHelper.IsValidStrict(ipSpan);
+                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
+                {
+                    return IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
+                }
             }
             else if (char.IsDigit(ipSpan[0]))
             {
-                long tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipSpan, out int end, notImplicitFile: true);
+                long tmpAddr;
+
+                fixed (char* ipStringPtr = &MemoryMarshal.GetReference(ipSpan))
+                {
+                    tmpAddr = IPv4AddressHelper.ParseNonCanonical(ipStringPtr, 0, ref end, notImplicitFile: true);
+                }
 
                 if (tmpAddr != IPv4AddressHelper.Invalid && end == ipSpan.Length)
                 {

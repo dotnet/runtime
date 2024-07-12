@@ -11,9 +11,8 @@ namespace System.Net
         internal static unsafe (int longestSequenceStart, int longestSequenceLength) FindCompressionRange(
             ReadOnlySpan<ushort> numbers) => (-1, -1);
         internal static unsafe bool ShouldHaveIpv4Embedded(ReadOnlySpan<ushort> numbers) => false;
-        internal static unsafe bool IsValidStrict<TChar>(ReadOnlySpan<TChar> name)
-            where TChar : unmanaged, IBinaryInteger<TChar>
-            => false;
+        internal static unsafe bool IsValidStrict<TChar>(TChar* name, int start, ref int end)
+            where TChar : unmanaged, IBinaryInteger<TChar> => false;
         internal static unsafe bool Parse<TChar>(ReadOnlySpan<TChar> address, Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {

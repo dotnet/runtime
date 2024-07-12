@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace System.Net
 {
@@ -36,11 +37,16 @@ namespace System.Net
         //
         //  Convert this IPv4 address into a sequence of 4 8-bit numbers
         //
-        private static bool Parse(ReadOnlySpan<char> name, Span<byte> numbers)
+        private static unsafe bool Parse(ReadOnlySpan<char> name, Span<byte> numbers)
         {
-            // "name" parameter includes ports, so charsConsumed may be different from span length
-            long result = ParseNonCanonical(name, out _, true);
+            int changedEnd = name.Length;
+            long result;
 
+            fixed (char* ipString = &MemoryMarshal.GetReference(name))
+            {
+                // "name" parameter includes ports, so changedEnd may be different from span length
+                result = ParseNonCanonical(ipString, 0, ref changedEnd, true);
+            }
             Debug.Assert(result != Invalid, $"Failed to parse after already validated: {name}");
 
             BinaryPrimitives.WriteUInt32BigEndian(numbers, (uint)result);
