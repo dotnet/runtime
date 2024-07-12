@@ -7566,7 +7566,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 							}
 						} else {
-							// For structs that cannot be lowered, we change the argument to byref type
+							// For structs that cannot be lowered, we change the argument to a byref type.
+							// The mono_defaults.int_class type here is arbitrary and 
+							// is not meant to capture the exact type but to represent a pointer-like argument type.
 							if (gklass && (gklass->container_class == swift_self_t))
 								ptype = mono_class_get_byref_type (swift_self);
 							else
@@ -7580,10 +7582,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							// Load the address of the struct
 							if (gklass && (gklass->container_class == swift_self_t))
 							{
-								MonoClassField *klass_fields = m_class_get_fields (klass);
 								MonoInst *swift_self_base_address = struct_base_address;
 								struct_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-								MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, klass_fields->offset);
+								MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, sizeof(MonoObject));
 							}
 
 							*sp++ = struct_base_address;
