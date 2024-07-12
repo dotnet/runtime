@@ -15,11 +15,6 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private const string ActivitySourceName = "Experimental.System.Net.Security";
-        private const string ActivityName = ActivitySourceName + ".TlsHandshake";
-
-        private static readonly ActivitySource s_activitySource = new ActivitySource(ActivitySourceName);
-
         private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
         private int _nestedAuth;
         private bool _isRenego;
@@ -111,7 +106,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (NetSecurityTelemetry.Log.IsEnabled() || s_activitySource.HasListeners())
+            if (NetSecurityTelemetry.AnyTelemetryEnabled())
             {
                 return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
             }
@@ -136,18 +131,8 @@ namespace System.Net.Security
                 startingTimestamp = 0;
             }
 
-            using Activity? activity = s_activitySource.StartActivity(ActivityName);
-            if (activity is not null)
-            {
-                activity.DisplayName = IsServer ? "TLS server handshake" : $"TLS client handshake {TargetHostName}";
-                if (activity.IsAllDataRequested && !IsServer)
-                {
-                    activity.SetTag("server.address", TargetHostName);
-                }
-            }
-
+            Activity? activity = NetSecurityTelemetry.StartActivity(this);
             Exception? exception = null;
-            SslProtocols? protocol = null;
             try
             {
                 Task task = isAsync ?
@@ -161,8 +146,8 @@ namespace System.Net.Security
                     // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
                     // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
                     bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
-                    protocol = GetSslProtocolInternal();
-                    NetSecurityTelemetry.Log.HandshakeCompleted(protocol.Value, startingTimestamp, connectionOpen);
+                    SslProtocols protocol = GetSslProtocolInternal();
+                    NetSecurityTelemetry.Log.HandshakeCompleted(protocol, startingTimestamp, connectionOpen);
                 }
             }
             catch (Exception ex)
@@ -177,39 +162,8 @@ namespace System.Net.Security
             }
             finally
             {
-                if (activity is not null && activity.IsAllDataRequested)
-                {
-                    protocol ??= GetSslProtocolInternal();
-                    (string? protocolName, string? protocolVersion) = GetNameAndVersionString(protocol.Value);
-
-                    if (protocolName is not null)
-                    {
-                        Debug.Assert(protocolVersion is not null);
-                        activity.SetTag("tls.protocol.name", protocolName);
-                        activity.SetTag("tls.protocol.version", protocolVersion);
-                    }
-
-                    if (exception is not null)
-                    {
-                        activity.SetStatus(ActivityStatusCode.Error);
-                        activity.SetTag("error.type", exception.GetType().FullName);
-                    }
-                }
+                NetSecurityTelemetry.StopActivity(activity, exception, this);
             }
-
-            static (string?, string?) GetNameAndVersionString(SslProtocols protocol) => protocol switch
-            {
-#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
-                SslProtocols.Ssl2 => ("ssl", "2"),
-                SslProtocols.Ssl3 => ("ssl", "3"),
-#pragma warning restore 0618
-#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete.
-                SslProtocols.Tls => ("tls", "1"),
-                SslProtocols.Tls12 => ("tls", "1.2"),
-#pragma warning restore SYSLIB0039
-                SslProtocols.Tls13 => ("tls", "1.3"),
-                _ => (null, null)
-            };
         }
 
         //
