@@ -50,7 +50,7 @@ namespace System.Runtime.Intrinsics
             return (degrees * TVector.Create(T.Pi)) / TVector.Create(T.CreateTruncating(180));
         }
 
-        public static TVectorDouble ExpDouble<TVectorDouble, TVectorInt64, TVectorUInt64>(TVectorDouble x)
+        public static TVectorDouble ExpDouble<TVectorDouble, TVectorUInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorUInt64 : unmanaged, ISimdVector<TVectorUInt64, ulong>
         {

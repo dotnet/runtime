@@ -1572,7 +1572,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpDouble<Vector512<double>, Vector512<long>, Vector512<ulong>>(vector);
+                return VectorMath.ExpDouble<Vector512<double>, Vector512<ulong>>(vector);
             }
             else
             {

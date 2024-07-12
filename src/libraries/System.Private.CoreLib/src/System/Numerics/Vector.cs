@@ -807,7 +807,7 @@ namespace System.Numerics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpDouble<Vector<double>, Vector<long>, Vector<ulong>>(vector);
+                return VectorMath.ExpDouble<Vector<double>, Vector<ulong>>(vector);
             }
             else
             {

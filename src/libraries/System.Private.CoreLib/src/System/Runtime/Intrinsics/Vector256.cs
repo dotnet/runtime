@@ -1509,7 +1509,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpDouble<Vector256<double>, Vector256<long>, Vector256<ulong>>(vector);
+                return VectorMath.ExpDouble<Vector256<double>, Vector256<ulong>>(vector);
             }
             else
             {
