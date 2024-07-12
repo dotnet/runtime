@@ -13,11 +13,19 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
     }
 
+    let assemblyNameWithoutExtension = assemblyNameToLoad;
+    if (assemblyNameToLoad.endsWith(".dll"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 4);
+    else if (assemblyNameToLoad.endsWith(".wasm"))
+        assemblyNameWithoutExtension = assemblyNameToLoad.substring(0, assemblyNameToLoad.length - 5);
+
+    const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
+    const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
     if (loaderHelpers.config.resources!.fingerprinting) {
         const map = loaderHelpers.config.resources!.fingerprinting;
         for (const fingerprintedName in map) {
             const nonFingerprintedName = map[fingerprintedName];
-            if (nonFingerprintedName == assemblyNameToLoad) {
+            if (nonFingerprintedName == assemblyNameToLoadDll || nonFingerprintedName == assemblyNameToLoadWasm) {
                 assemblyNameToLoad = fingerprintedName;
                 break;
             }
@@ -25,7 +33,13 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
     }
 
     if (!lazyAssemblies[assemblyNameToLoad]) {
-        throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+        if (lazyAssemblies[assemblyNameToLoadDll]) {
+            assemblyNameToLoad = assemblyNameToLoadDll;
+        } else if (lazyAssemblies[assemblyNameToLoadWasm]) {
+            assemblyNameToLoad = assemblyNameToLoadWasm;
+        } else {
+            throw new Error(`${assemblyNameToLoad} must be marked with 'BlazorWebAssemblyLazyLoad' item group in your project file to allow lazy-loading.`);
+        }
     }
 
     const dllAsset: AssetEntry = {
