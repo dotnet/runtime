@@ -617,6 +617,7 @@ if (context.UseNwFramework)
 
         internal unsafe int Decrypt(Span<byte> buffer)
         {
+            // notify TLS we received EOF
             if (buffer.Length == 0)
             {
                 Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, null, 0);

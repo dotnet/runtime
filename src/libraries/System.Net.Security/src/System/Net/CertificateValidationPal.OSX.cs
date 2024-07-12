@@ -71,18 +71,7 @@ namespace System.Net
             {
                 SafeCFArrayHandle certificates;
 
-                int osStatus = Interop.AppleCrypto.NwCopyCertChain(sslContext, out certificates, out int chainSize);
-
-                Console.WriteLine("GetRemoteCertificate!!!!!! {0} {1} {2}", osStatus, certificates, chainSize);
-                /*
-                for (int i = 0; i < chainSize; i++)
-                {
-                    IntPtr certHandle = Interop.CoreFoundation.CFArrayGetValueAtIndex(certificates, i);
-                    Console.WriteLine("Got cert handle 0x{0:x} at indedx {1}", certHandle, i);
-                    var c = new X509Certificate2(certHandle);
-                    Console.WriteLine(c);
-                }
-                */
+                Interop.AppleCrypto.NwCopyCertChain(sslContext, out certificates, out int chainSize);
 
                 if (retrieveChainCertificates && chainSize > 1)
                 {

@@ -778,9 +778,8 @@ namespace System.Net.Security
 
                 try
                 {
-#pragma warning disable CA2012
                     ValueTask<int> vt = ReadAsyncInternal<SyncReadWriteAdapter>(memoryManager.Memory, default(CancellationToken), isSync: true);
-                    Debug.Assert(vt.IsCompleted, $"Sync operation must have completed synchronously on {GetHashCode()}");
+                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
                     return vt.GetAwaiter().GetResult();
                 }
                 finally

@@ -283,29 +283,6 @@ internal static partial class Interop
             throw new SslException();
         }
 
-/*
-        internal static SafeX509ChainHandle NwCopyCertChain(SafeSslHandle sslHandle)
-        {
-            SafeX509ChainHandle chainHandle;
-            int osStatus;
-            int result = AppleCryptoNative_NwCopyCertChain(sslHandle, out chainHandle, out osStatus);
-
-            if (result == 1)
-            {
-                return chainHandle;
-            }
-
-            chainHandle.Dispose();
-
-            if (result == 0)
-            {
-                throw CreateExceptionForOSStatus(osStatus);
-            }
-
-            Debug.Fail($"AppleCryptoNative_SslCopyCertChain returned {result}");
-            throw new SslException();
-        }
-*/
         internal static SafeCFArrayHandle SslCopyCADistinguishedNames(SafeSslHandle sslHandle)
         {
             SafeCFArrayHandle dnArray;

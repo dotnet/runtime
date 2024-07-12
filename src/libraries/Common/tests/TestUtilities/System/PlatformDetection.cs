@@ -531,7 +531,7 @@ namespace System
 
             }
 
-            return ((IsLinux && OpenSslVersion < new Version(1, 0, 2) && !IsDebian));
+            return (IsOpenSslSupported && OpenSslVersion < new Version(1, 0, 2));
         }
 
         private static bool OpenSslGetTlsSupport(SslProtocols protocol)

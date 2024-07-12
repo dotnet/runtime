@@ -236,7 +236,7 @@ namespace System.Net.Security
 
 
                         }
-                            Debug.Assert(buffer.Length > 0);
+                           // Debug.Assert(buffer.Length > 0);
                             count = securityContext.Decrypt(buffer);
 
 
