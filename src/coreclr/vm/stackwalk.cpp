@@ -1561,7 +1561,7 @@ void StackFrameIterator::SkipTo(StackFrameIterator *pOtherStackFrameIterator)
     *pRD->pCurrentContextPointers = *pOtherRD->pCurrentContextPointers;
     SetIP(pRD->pCurrentContext, GetIP(pOtherRD->pCurrentContext));
     SetSP(pRD->pCurrentContext, GetSP(pOtherRD->pCurrentContext));
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     pRD->SSP = pOtherRD->SSP;
 #endif
 

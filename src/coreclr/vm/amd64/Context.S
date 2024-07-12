@@ -44,7 +44,7 @@ NESTED_ENTRY ClrRestoreNonvolatileContextWorker, _TEXT, NoHandler
         rdsspq  rax
         sub     r11, rax
         shr     r11, 3
-        ; the incsspq instruction uses only the lowest 8 bits of the argument, so we need to loop in case the increment is larger than 255
+        // the incsspq instruction uses only the lowest 8 bits of the argument, so we need to loop in case the increment is larger than 255
         mov     rax, 255
     Update_Loop:
         cmp     r11, rax
