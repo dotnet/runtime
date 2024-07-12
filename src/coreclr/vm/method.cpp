@@ -3089,20 +3089,13 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         // can continue assuming it was successful, similarly to it successfully updating the target and another thread
         // updating the target again shortly afterwards.
     }
-    else if (HasPrecode())
+    else if (RequiresStableEntryPoint())
     {
-        GetPrecode()->SetTargetInterlocked(entryPoint);
+        GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
     }
     else if (!HasStableEntryPoint())
     {
-        if (RequiresStableEntryPoint())
-        {
-            GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
-        }
-        else
-        {
-            SetStableEntryPointInterlocked(entryPoint);
-        }
+        SetStableEntryPointInterlocked(entryPoint);
     }
 }
 
