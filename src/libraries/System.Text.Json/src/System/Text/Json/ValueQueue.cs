@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
@@ -17,7 +18,7 @@ namespace System.Text.Json
         private T? _single;
         private Queue<T>? _multiple;
 
-        public readonly int Count => _state is < 2 ? _state : _multiple!.Count;
+        public readonly int Count => _state < 2 ? _state : _multiple!.Count;
 
         public void Enqueue(T value)
         {
@@ -29,6 +30,7 @@ namespace System.Text.Json
                     break;
 
                 case 1:
+                    // Once a queue gets allocated the struct will always remain in the multiple state.
                     (_multiple ??= new()).Enqueue(_single!);
                     _single = default;
                     _state = 2;

@@ -1312,6 +1312,7 @@ namespace System.Text.Json
                         }
                     }
 
+                    Debug.Assert(!arrayEnumerator2.MoveNext());
                     return true;
 
                 default:
@@ -1352,6 +1353,7 @@ namespace System.Text.Json
                         count--;
                     }
 
+                    Debug.Assert(!objectEnumerator2.MoveNext());
                     return true;
 
                     static bool UnorderedObjectDeepEquals(ObjectEnumerator objectEnumerator1, ObjectEnumerator objectEnumerator2, int remainingProps)
