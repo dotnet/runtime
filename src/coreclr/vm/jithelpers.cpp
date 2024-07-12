@@ -1680,11 +1680,13 @@ HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 
     BYTE *allocPtr = allocContext->alloc_ptr;
     _ASSERTE(allocPtr <= eeAllocContext->combined_limit);
-    if (size > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr))
+    if ((allocPtr == nullptr) || (size > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr)))
     {
         // Tail call to the slow helper
         return HCCALL1(JIT_New, typeHnd_);
     }
+
+    _ASSERTE(eeAllocContext->combined_limit <= allocContext->alloc_limit);
 
     allocContext->alloc_ptr = allocPtr + size;
 
@@ -1801,11 +1803,14 @@ HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 
     BYTE *allocPtr = allocContext->alloc_ptr;
     _ASSERTE(allocPtr <= eeAllocContext->combined_limit);
-    if (totalSize > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr))
+    if ((allocPtr == nullptr) || (totalSize > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr)))
     {
         // Tail call to the slow helper
         return HCCALL1(FramedAllocateString, stringLength);
     }
+
+    _ASSERTE(eeAllocContext->combined_limit <= allocContext->alloc_limit);
+
     allocContext->alloc_ptr = allocPtr + totalSize;
 
     _ASSERTE(allocPtr != nullptr);
@@ -1923,11 +1928,14 @@ HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT
 
     BYTE *allocPtr = allocContext->alloc_ptr;
     _ASSERTE(allocPtr <= eeAllocContext->combined_limit);
-    if (totalSize > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr))
+    if ((allocPtr == nullptr) || (totalSize > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr)))
     {
         // Tail call to the slow helper
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
+
+    _ASSERTE(eeAllocContext->combined_limit <= allocContext->alloc_limit);
+
     allocContext->alloc_ptr = allocPtr + totalSize;
 
     _ASSERTE(allocPtr != nullptr);
@@ -1977,11 +1985,14 @@ HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayM
     gc_alloc_context* allocContext = &eeAllocContext->gc_allocation_context;
     BYTE *allocPtr = allocContext->alloc_ptr;
     _ASSERTE(allocPtr <= eeAllocContext->combined_limit);
-    if (totalSize > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr))
+    if ((allocPtr == nullptr) || (totalSize > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr)))
     {
         // Tail call to the slow helper
         return HCCALL2(JIT_NewArr1, arrayMT, size);
     }
+
+    _ASSERTE(eeAllocContext->combined_limit <= allocContext->alloc_limit);
+
     allocContext->alloc_ptr = allocPtr + totalSize;
 
     _ASSERTE(allocPtr != nullptr);
@@ -2145,11 +2156,13 @@ HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* u
 
     BYTE *allocPtr = allocContext->alloc_ptr;
     _ASSERTE(allocPtr <= eeAllocContext->combined_limit);
-    if (size > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr))
+    if ((allocPtr == nullptr) || (size > static_cast<SIZE_T>(eeAllocContext->combined_limit - allocPtr)))
     {
         // Tail call to the slow helper
         return HCCALL2(JIT_Box, type, unboxedData);
     }
+
+    _ASSERTE(eeAllocContext->combined_limit <= allocContext->alloc_limit);
 
     allocContext->alloc_ptr = allocPtr + size;
 
