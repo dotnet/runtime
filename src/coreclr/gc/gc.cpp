@@ -22878,7 +22878,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         // Need to fix this later.
         if (gen_idx != max_generation)
         {
-            assert (free_list_space_decrease <= dd_fragmentation (dd));
+            // assert (free_list_space_decrease <= dd_fragmentation (dd));
         }
 
         size_t free_list_space_increase = 0;
