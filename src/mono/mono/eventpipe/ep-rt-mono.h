@@ -1988,12 +1988,13 @@ struct _EventPipeMonoThreadData {
 	bool prevent_profiler_event_recursion;
 };
 
+extern gboolean _ep_rt_mono_runtime_initialized;
+
 static
 inline
 bool
 ep_rt_mono_is_runtime_initialized (void)
 {
-	extern gboolean _ep_rt_mono_runtime_initialized;
 	return !!_ep_rt_mono_runtime_initialized;
 }
 
