@@ -142,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
             double value = Assert.IsType<double>(measurement);
 
             // This flakes for remote requests on CI.
-            if (validPeerAddresses != null)
+            if (validPeerAddresses is null)
             {
                 Assert.InRange(value, double.Epsilon, 60);
             }
