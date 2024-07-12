@@ -79,7 +79,7 @@
              Link="SocketCommon\SocketImplementationType.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)System\Net\ActivityRecorder.cs"
-                 Link="Common\System\Net\ActivityRecorder.cs" />
+             Link="Common\System\Net\ActivityRecorder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs"
              Link="Common\System\Net\TestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\VerboseTestLogging.cs"
