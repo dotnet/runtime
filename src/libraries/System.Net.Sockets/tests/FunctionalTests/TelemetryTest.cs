@@ -154,6 +154,7 @@ namespace System.Net.Sockets.Tests
             ActivityAssert.HasTag(activity, "network.peer.address", address);
             ActivityAssert.HasTag(activity, "network.peer.port", port);
             ActivityAssert.HasTag(activity, "network.type", ipv6 ? "ipv6" : "ipv4");
+            ActivityAssert.HasTag(activity, "network.transport", "tcp");
         }
 
         [OuterLoop("Connection failure takes long on Windows.")]
@@ -225,6 +226,7 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(ActivityName, activity.OperationName);
                 Assert.Equal($"socket connect {endPoint}", activity.DisplayName);
                 ActivityAssert.HasTag(activity, "network.peer.address", endPoint.ToString());
+                ActivityAssert.HasTag(activity, "network.transport", "unix");
 
             }, connectMethod).DisposeAsync();
         }

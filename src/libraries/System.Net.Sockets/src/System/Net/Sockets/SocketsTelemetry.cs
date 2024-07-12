@@ -81,7 +81,7 @@ namespace System.Net.Sockets
         }
 
         [NonEvent]
-        public Activity? ConnectStart(SocketAddress address, EndPoint endPoint, bool keepActivityCurrent)
+        public Activity? ConnectStart(SocketAddress address, ProtocolType protocolType, EndPoint endPoint, bool keepActivityCurrent)
         {
             Interlocked.Increment(ref _currentOutgoingConnectAttempts);
 
@@ -113,6 +113,14 @@ namespace System.Net.Sockets
                         activity.SetTag("network.peer.address", ipEndPoint.Address.ToString());
                         activity.SetTag("network.peer.port", port);
                         activity.SetTag("network.type", ipEndPoint.AddressFamily == AddressFamily.InterNetwork ? "ipv4" : "ipv6");
+                        if (protocolType is ProtocolType.Tcp)
+                        {
+                            SetNetworkTransport(activity, "tcp");
+                        }
+                        else if (protocolType is ProtocolType.Udp)
+                        {
+                            SetNetworkTransport(activity, "udp");
+                        }
                     }
                 }
                 else if (endPoint is UnixDomainSocketEndPoint udsEndPoint)
@@ -123,9 +131,12 @@ namespace System.Net.Sockets
                     if (activity.IsAllDataRequested)
                     {
                         activity.SetTag("network.peer.address", peerAddress);
+                        SetNetworkTransport(activity, "unix");
                     }
                 }
             }
+
+            static void SetNetworkTransport(Activity activity, string transportType) => activity.SetTag("network.transport", transportType);
 
             return activity;
         }
