@@ -6,7 +6,8 @@
     <_SampleProject Condition="'$(_SampleProject)' == ''">$(MSBuildProjectFile)</_SampleProject>
     <_SampleAssembly Condition="'$(_SampleAssembly)' == ''">$(TargetFileName)</_SampleAssembly>
     <_SampleProjectName>$([System.String]::Copy('$(_SampleProject)').Replace('.csproj',''))</_SampleProjectName>
-    <MONO_LOG_LEVEL Condition="false">--env MONO_LOG_LEVEL=debug --env MONO_LOG_MASK=all</MONO_LOG_LEVEL>
+    <_MONO_LOG_LEVEL Condition="false">--env MONO_LOG_LEVEL=debug --env MONO_LOG_MASK=all</_MONO_LOG_LEVEL>
+    <_DOTNET_WASI_PRINT_EXIT_CODE>--env DOTNET_WASI_PRINT_EXIT_CODE=1</_DOTNET_WASI_PRINT_EXIT_CODE>
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">.exe</_ExeExt>
   </PropertyGroup>
 
@@ -14,15 +15,19 @@
     <!--
       TODOWASI - - tcplisten localhost:64000 - - env DEBUGGER_FD=4
     -->
-    <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
-          Condition="'$(WasmBuildNative)' != 'true'"
-          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) --dir . dotnet.wasm $(_SampleProjectName)" IgnoreExitCode="true" />
-    <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
-          Condition="'$(WasmBuildNative)' == 'true' and '$(WasmSingleFileBundle)' != 'true'"
-          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) --dir . dotnet.wasm" IgnoreExitCode="true" />
-    <Exec WorkingDirectory="bin/wasi-wasm/AppBundle"
-          Condition="'$(WasmSingleFileBundle)' == 'true'"
-          Command="$(WasmtimeDir)wasmtime$(_ExeExt) $(MONO_LOG_LEVEL) $([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))" IgnoreExitCode="true" />
+
+    <PropertyGroup>
+      <_DotnetWasmName>dotnet.wasm</_DotnetWasmName>
+      <_DotnetWasmName Condition="'$(WasmSingleFileBundle)' == 'true'">$([System.IO.Path]::ChangeExtension($(_SampleAssembly), '.wasm'))</_DotnetWasmName>
+      <_AppBundlePath>$([MSBuild]::NormalizeDirectory('bin/wasi-wasm/AppBundle'))</_AppBundlePath>
+      <WasiCommand>$(WasmtimeDir)wasmtime$(_ExeExt) $(_MONO_LOG_LEVEL) $(_DOTNET_WASI_PRINT_EXIT_CODE)</WasiCommand>
+      <WasiCommand Condition="'$(WasmBuildNative)' != 'true'"                                        >$(WasiCommand) --dir . $(_DotnetWasmName) $(_SampleProjectName)</WasiCommand>
+      <WasiCommand Condition="'$(WasmBuildNative)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">$(WasiCommand) --dir . $(_DotnetWasmName)</WasiCommand>
+      <WasiCommand Condition="'$(WasmSingleFileBundle)' == 'true'"                                   >$(WasiCommand) $(_DotnetWasmName)</WasiCommand>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="$(_AppBundlePath)> $(WasiCommand)" />
+    <Exec WorkingDirectory="$(_AppBundlePath)" Command="$(WasiCommand)" IgnoreExitCode="true" />
   </Target>
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasi-provisioning.targets" />

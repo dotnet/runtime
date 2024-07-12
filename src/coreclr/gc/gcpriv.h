@@ -141,7 +141,10 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for standalone GC and macOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+// For SunOS or illumos this is temporary, until we can add MAP_PRIVATE
+// to the mmap() calls in unix/gcenv.unix.cpp  More details here:
+//    https://github.com/dotnet/runtime/issues/104211
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(__sun)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE && !__APPLE__
 
