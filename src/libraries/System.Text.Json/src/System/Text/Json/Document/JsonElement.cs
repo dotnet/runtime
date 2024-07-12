@@ -1242,8 +1242,8 @@ namespace System.Text.Json
         /// <summary>
         /// Compares the values of two <see cref="JsonElement"/> values for equality, including the values of all descendant elements.
         /// </summary>
-        /// <param name="element1">The <see cref="JsonElement"/> to compare.</param>
-        /// <param name="element2">The <see cref="JsonElement"/> to compare.</param>
+        /// <param name="element1">The first <see cref="JsonElement"/> to compare.</param>
+        /// <param name="element2">The second <see cref="JsonElement"/> to compare.</param>
         /// <returns><see langword="true"/> if the two values are equal; otherwise <see langword="false"/>.</returns>
         /// <remarks>
         /// Deep equality of two JSON values is defined as follows:
