@@ -64,9 +64,9 @@ namespace Wasm.Build.Tests
             {
                 s_buildEnv = new BuildEnvironment();
                 if (EnvironmentVariables.WasiSdkPath is null)
-                    throw new Exception($"Error: WASI_SDK22_PATH is not set");
+                    throw new Exception($"Error: WASI_SDK_PATH is not set");
 
-                s_buildEnv.EnvVars["WASI_SDK22_PATH"] = EnvironmentVariables.WasiSdkPath;
+                s_buildEnv.EnvVars["WASI_SDK_PATH"] = EnvironmentVariables.WasiSdkPath;
                 s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
                 s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
