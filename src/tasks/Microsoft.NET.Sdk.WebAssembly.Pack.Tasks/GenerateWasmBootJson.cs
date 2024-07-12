@@ -433,10 +433,6 @@ public class GenerateWasmBootJson : Task
         if (!IsFingerprintingEnabled || !IsTargeting90OrLater())
             return;
 
-        Console.WriteLine($"MF Should not be reached!");
-        if (!IsFingerprintingEnabled)
-            throw new NotSupportedException("MF Should not be reached!");
-
         resources.fingerprinting[resourceRoute] = resourceName;
     }
 
