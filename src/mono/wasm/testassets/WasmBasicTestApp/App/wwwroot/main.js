@@ -177,13 +177,7 @@ try {
             setModuleImports('main.js', {
                 joinStringArray
             });
-            const errors = exports.MemoryTest.Run();
-            if (errors == "") {
-                exit(0);
-            } else {
-                testOutput(errors);
-                exit(1);
-            }
+            exports.MemoryTest.Run();
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);

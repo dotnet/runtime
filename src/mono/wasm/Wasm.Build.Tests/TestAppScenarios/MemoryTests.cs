@@ -20,22 +20,18 @@ public class MemoryTests : AppTestBase
     }
 
     [Theory]
-    [InlineData("Release", true, false)]
-    [InlineData("Release", false, false)]
-    [InlineData("Release", false, true)]
-    public async Task AllocateLargeHeapThenRepeatedlyInterop(string config, bool buildNative, bool useWorkaround)
+    [InlineData("Release", true)]
+    [InlineData("Debug", false)]
+    public async Task AllocateLargeHeapThenRepeatedlyInterop(string config, bool buildNative)
     {
         // native build triggers passing value form EmccMaximumHeapSize to MAXIMUM_MEMORY that is set in emscripten
         // in non-native build EmccMaximumHeapSize does not have an effect, so the test will fail with "out of memory"
-        // a workaround is to set <EmccFlags> manually
         CopyTestAsset("WasmBasicTestApp", "MemoryTests", "App");
         string extraArgs = $"-p:EmccMaximumHeapSize=4294901760 -p:WasmBuildNative={buildNative}";
-        if (useWorkaround)
-            extraArgs += $"-p:EmccFlags=4294901760";
-        BuildProject(config, assertAppBundle: false, extraArgs: $"-p:EmccMaximumHeapSize=4294901760 -p:WasmBuildNative={buildNative}");
+        BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
 
         var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop", ExpectedExitCode: buildNative ? 0 : 1));
-        if (!buildNative && !useWorkaround)
+        if (!buildNative)
             Assert.Contains(result.TestOutput, item => item.Contains("Exception System.OutOfMemoryException: Out of memory"));
     }
 }

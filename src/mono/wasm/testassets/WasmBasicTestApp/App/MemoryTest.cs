@@ -12,7 +12,7 @@ public partial class MemoryTest
     internal static partial string JoinStringArray(string[] testArray);
 
     [JSExport]
-    internal static string Run()
+    internal static void Run()
     {
         // Allocate a 2GB space (20 int arrays of 100MB, 100MB = 4 * 1024 * 1024 * 25)
         const int arrayCnt = 20;
@@ -43,7 +43,11 @@ public partial class MemoryTest
         {
             AssertJoinCorrect(testArray, response);
         }
-        return errors;
+        if (!string.IsNullOrEmpty(error))
+        {
+            TestOutput.WriteLine(errors);
+            throw new Exception(errors);
+        }
     }
 
     private static bool AssertJoinCorrect(string[] testArray, string expected)
