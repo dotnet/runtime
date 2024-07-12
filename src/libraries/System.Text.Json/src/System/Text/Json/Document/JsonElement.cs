@@ -1249,7 +1249,7 @@ namespace System.Text.Json
         /// Deep equality of two JSON values is defined as follows:
         /// <list type="bullet">
         /// <item>JSON values of different kinds are not equal.</item>
-        /// <item>JSON constants <see langword="null"/>, <see langword="false"/> and <see langword="true"/> only equal themselves.</item>
+        /// <item>JSON constants <see langword="null"/>, <see langword="false"/>, and <see langword="true"/> only equal themselves.</item>
         /// <item>JSON numbers are equal if and only if they have they have equivalent decimal representations, with no rounding being used.</item>
         /// <item>JSON strings are equal if and only if they are equal using ordinal string comparison.</item>
         /// <item>JSON arrays are equal if and only if they are of equal length and each of their elements are pairwise equal.</item>
