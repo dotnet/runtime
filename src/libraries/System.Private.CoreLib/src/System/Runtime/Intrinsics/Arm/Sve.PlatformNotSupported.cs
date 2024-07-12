@@ -2831,6 +2831,21 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> ExtractVector(Vector<ulong> upper, Vector<ulong> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Floating-point exponential accelerator
+
+        /// <summary>
+        /// svfloat64_t svexpa[_f64](svuint64_t op)
+        ///   FEXPA Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> FloatingPointExponentialAccelerator(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svexpa[_f32](svuint32_t op)
+        ///   FEXPA Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> FloatingPointExponentialAccelerator(Vector<uint> value) { throw new PlatformNotSupportedException(); }
+
+
         ///  FusedMultiplyAdd : Multiply-add, addend first
 
         /// <summary>
