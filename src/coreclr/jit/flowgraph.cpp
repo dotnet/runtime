@@ -7,6 +7,8 @@
 #pragma hdrstop
 #endif
 
+#include "lower.h" // for LowerRange()
+
 // Flowgraph Miscellany
 
 //------------------------------------------------------------------------
@@ -3608,7 +3610,9 @@ void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
     }
     else
     {
-        LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(this, tree));
+        LIR::AsRange(block).InsertAtEnd(tree);
+        LIR::ReadOnlyRange range(tree, tree);
+        m_pLowering->LowerRange(block, range);
     }
 }
 
