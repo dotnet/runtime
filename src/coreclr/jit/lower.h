@@ -44,6 +44,8 @@ public:
         lowerer.LowerRange(range);
     }
 
+    void FinalizeOutgoingArgSpace();
+
 private:
     // LowerRange handles new code that is introduced by or after Lowering.
     void LowerRange(LIR::ReadOnlyRange& range)
@@ -602,7 +604,6 @@ private:
     }
 
     void RequireOutgoingArgSpace(GenTree* node, unsigned numBytes);
-    void FinalizeOutgoingArgSpace();
 
     LinearScan*           m_lsra;
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls

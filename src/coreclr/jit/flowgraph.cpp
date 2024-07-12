@@ -3534,69 +3534,82 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         // graph optimizations. Note that no target block points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
-
-        // Figure out what code to insert
-        //
-        int helper = CORINFO_HELP_UNDEF;
-
-        switch (add->acdKind)
-        {
-            case SCK_RNGCHK_FAIL:
-                helper = CORINFO_HELP_RNGCHKFAIL;
-                break;
-
-            case SCK_DIV_BY_ZERO:
-                helper = CORINFO_HELP_THROWDIVZERO;
-                break;
-
-            case SCK_ARITH_EXCPN:
-                helper = CORINFO_HELP_OVERFLOW;
-                noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
-                break;
-
-            case SCK_ARG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
-                break;
-
-            case SCK_ARG_RNG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
-                break;
-
-            case SCK_FAIL_FAST:
-                helper = CORINFO_HELP_FAIL_FAST;
-                break;
-
-            default:
-                noway_assert(!"unexpected code addition kind");
-        }
-
-        noway_assert(helper != CORINFO_HELP_UNDEF);
-
-        // Add the appropriate helper call.
-        //
-        GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
-
-        // There are no args here but fgMorphArgs has side effects
-        // such as setting the outgoing arg area (which is necessary
-        // on AMD if there are any calls).
-        //
-        tree = fgMorphArgs(tree);
-
-        // Store the tree in the new basic block.
-        //
-        if (fgNodeThreading != NodeThreading::LIR)
-        {
-            fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
-        }
-        else
-        {
-            LIR::AsRange(newBlk).InsertAtEnd(LIR::SeqTree(this, tree));
-        }
     }
 
     fgRngChkThrowAdded = true;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgCreateThrowHelperBlockCode: create the code for throw helper blocks
+//
+void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
+{
+    assert(add->acdUsed);
+
+    // Find the block created earlier. It should be empty.
+    //
+    BasicBlock* const block = add->acdDstBlk;
+    assert(block->isEmpty());
+
+    // Figure out what code to insert
+    //
+    int helper = CORINFO_HELP_UNDEF;
+
+    switch (add->acdKind)
+    {
+        case SCK_RNGCHK_FAIL:
+            helper = CORINFO_HELP_RNGCHKFAIL;
+            break;
+
+        case SCK_DIV_BY_ZERO:
+            helper = CORINFO_HELP_THROWDIVZERO;
+            break;
+
+        case SCK_ARITH_EXCPN:
+            helper = CORINFO_HELP_OVERFLOW;
+            noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
+            break;
+
+        case SCK_ARG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
+            break;
+
+        case SCK_ARG_RNG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+            break;
+
+        case SCK_FAIL_FAST:
+            helper = CORINFO_HELP_FAIL_FAST;
+            break;
+
+        default:
+            noway_assert(!"unexpected code addition kind");
+    }
+
+    noway_assert(helper != CORINFO_HELP_UNDEF);
+
+    // Add the appropriate helper call.
+    //
+    GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
+
+    // There are no args here but fgMorphArgs has side effects
+    // such as setting the outgoing arg area (which is necessary
+    // on AMD if there are any calls).
+    //
+    tree = fgMorphArgs(tree);
+
+    // Store the tree in the new basic block.
+    //
+    if (fgNodeThreading != NodeThreading::LIR)
+    {
+        fgInsertStmtAtEnd(block, fgNewStmtFromTree(tree));
+    }
+    else
+    {
+        LIR::AsRange(block).InsertAtEnd(LIR::SeqTree(this, tree));
+    }
 }
 
 //------------------------------------------------------------------------
