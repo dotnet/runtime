@@ -206,7 +206,7 @@ public sealed class StressMessageFormatter
                     operand = formatString[startIndex++];
                 }
 
-                while (operand > '0' && operand <= '9')
+                while (operand >= '0' && operand <= '9')
                 {
                     paddingFormat = paddingFormat with { Width = paddingFormat.Width * 10 + (operand - '0') };
                     operand = formatString[startIndex++];

@@ -28,26 +28,58 @@ public unsafe class StressMessageFormatterTests
         }
     }
 
-    public static IEnumerable<object[]> SignedIntegerSpecifierTestCases()
+    [Fact]
+    public void UnsupportedWidthSpecifier()
     {
-        foreach (string specifier in new[] { "%d", "%i", "%lld", "%lli", "%zd", "%zi" })
+        var (target, message, data) = CreateFixture("The answer is %ld", new StressMessageArgument.SignedInteger(42));
+        using (data)
         {
-            foreach (long value in new[] { 0, int.MaxValue, long.MaxValue, long.MaxValue - 1, long.MinValue, int.MinValue, 42 })
+            StressMessageFormatter formatter = new(target);
+            Assert.Throws<InvalidOperationException>(() => formatter.GetFormattedMessage(message));
+        }
+    }
+
+    [Fact]
+    public void UnsupportedFormatSpecifier()
+    {
+        var (target, message, data) = CreateFixture("The answer is %f", new StressMessageArgument.SignedInteger(0));
+        using (data)
+        {
+            StressMessageFormatter formatter = new(target);
+            Assert.Throws<InvalidOperationException>(() => formatter.GetFormattedMessage(message));
+        }
+    }
+
+    public static IEnumerable<object?[]> SignedIntegerSpecifierTestCases()
+    {
+        foreach (string specifier in new[] { "d", "i", "lld", "lli", "zd", "zi" })
+        {
+            foreach (int? width in new int?[] { null, 4, 40 })
             {
-                yield return [specifier, value];
+                foreach (long value in new[] { 0, int.MaxValue, long.MaxValue, long.MaxValue - 1, long.MinValue, int.MinValue, 42 })
+                {
+                    yield return [$"%0{width?.ToString() ?? ""}{specifier}", value, width, '0'];
+                    yield return [$"%{width?.ToString() ?? ""}{specifier}", value, width, ' '];
+                }
             }
         }
     }
 
     [Theory]
     [MemberData(nameof(SignedIntegerSpecifierTestCases))]
-    public void SignedIntegerSpecifier(string specifier, long value)
+    public void SignedIntegerSpecifier(string specifier, long value, int? width, char paddingChar)
     {
         var (target, message, data) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.SignedInteger(value));
         using (data)
         {
             StressMessageFormatter formatter = new(target);
-            Assert.Equal($"The answer is {value}", formatter.GetFormattedMessage(message));
+            string formattedValue = (width, paddingChar) switch
+            {
+                (null, _) => value.ToString(),
+                (int specifiedWidth, '0') => value.ToString($"D{specifiedWidth}"),
+                (int specifiedWidth, char padChar) => value.ToString().PadLeft(specifiedWidth, padChar),
+            };
+            Assert.Equal($"The answer is {formattedValue}", formatter.GetFormattedMessage(message));
         }
     }
 
@@ -121,6 +153,17 @@ public unsafe class StressMessageFormatterTests
         }
     }
 
+    [Fact]
+    public void HexWithPrefixIntegerSpecifierWithPadding()
+    {
+        var (target, message, data) = CreateFixture("The answer is %#010x", new StressMessageArgument.UnsignedInteger(0x50));
+        using (data)
+        {
+            StressMessageFormatter formatter = new(target);
+            Assert.Equal("The answer is 0x00000050", formatter.GetFormattedMessage(message));
+        }
+    }
+
     public static IEnumerable<object[]> StringSpecifierTestCases()
     {
         foreach (string value in new[] {
@@ -151,6 +194,7 @@ public unsafe class StressMessageFormatterTests
             Assert.Equal($"The answer is '{value}'", formatter.GetFormattedMessage(message));
         }
     }
+
     struct DisposableGCHandle(GCHandle handle) : IDisposable
     {
         public void Dispose() => handle.Free();
