@@ -1526,7 +1526,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpSingle<Vector256<float>, Vector256<uint>, Vector256<double>, Vector256<ulong>>(vector);
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.ExpSingle<Vector256<float>, Vector256<uint>, Vector512<double>, Vector512<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.ExpSingle<Vector256<float>, Vector256<uint>, Vector256<double>, Vector256<ulong>>(vector);
+                }
             }
             else
             {
@@ -1771,7 +1778,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.HypotSingle<Vector256<float>, Vector256<double>>(x, y);
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    return VectorMath.HypotSingle<Vector256<float>, Vector512<double>>(x, y);
+                }
+                else
+                {
+                    return VectorMath.HypotSingle<Vector256<float>, Vector256<double>>(x, y);
+                }
             }
             else
             {

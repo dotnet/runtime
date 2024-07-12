@@ -153,7 +153,7 @@ namespace System.Runtime.Intrinsics
 
             // m = (n - j) / 64
             // result = polynomial * 2^m
-            TVectorDouble ret = poly * Unsafe.BitCast<TVectorUInt64, TVectorDouble>((n + TVectorUInt64.Create(V_DP64_BIAS)) << 52);
+            TVectorDouble result = poly * Unsafe.BitCast<TVectorUInt64, TVectorDouble>((n + TVectorUInt64.Create(V_DP64_BIAS)) << 52);
 
             // Check if -709 < vx < 709
             if (TVectorUInt64.GreaterThanAny(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(TVectorDouble.Abs(x)), TVectorUInt64.Create(V_ARG_MAX)))
@@ -161,17 +161,17 @@ namespace System.Runtime.Intrinsics
                 // (x > V_EXPF_MAX) ? double.PositiveInfinity : x
                 TVectorDouble infinityMask = TVectorDouble.GreaterThan(x, TVectorDouble.Create(V_EXPF_MAX));
 
-                ret = TVectorDouble.ConditionalSelect(
+                result = TVectorDouble.ConditionalSelect(
                     infinityMask,
                     TVectorDouble.Create(double.PositiveInfinity),
-                    ret
+                    result
                 );
 
                 // (x < V_EXPF_MIN) ? 0 : x
-                ret = TVectorDouble.AndNot(ret, TVectorDouble.LessThan(x, TVectorDouble.Create(V_EXPF_MIN)));
+                result = TVectorDouble.AndNot(result, TVectorDouble.LessThan(x, TVectorDouble.Create(V_EXPF_MIN)));
             }
 
-            return ret;
+            return result;
         }
 
         public static TVectorSingle ExpSingle<TVectorSingle, TVectorUInt32, TVectorDouble, TVectorUInt64>(TVectorSingle x)
@@ -224,71 +224,21 @@ namespace System.Runtime.Intrinsics
             const double C5 = 0.009676036358193323;
             const double C6 = 0.001341000536524434;
 
-            // Convert x to double precision
-            (TVectorDouble xl, TVectorDouble xu) = Widen<TVectorSingle, TVectorDouble>(x);
+            TVectorSingle result;
 
-            // x * (64.0 / ln(2))
-            TVectorDouble v_tbl_ln2 = TVectorDouble.Create(V_TBL_LN2);
-
-            TVectorDouble zl = xl * v_tbl_ln2;
-            TVectorDouble zu = xu * v_tbl_ln2;
-
-            TVectorDouble v_expf_huge = TVectorDouble.Create(V_EXPF_HUGE);
-
-            TVectorDouble dnl = zl + v_expf_huge;
-            TVectorDouble dnu = zu + v_expf_huge;
-
-            // n = (int)z
-            TVectorUInt64 nl = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(dnl);
-            TVectorUInt64 nu = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(dnu);
-
-            // dn = (double)n
-            dnl -= v_expf_huge;
-            dnu -= v_expf_huge;
-
-            // r = z - dn
-            TVectorDouble c1 = TVectorDouble.Create(C1);
-            TVectorDouble c2 = TVectorDouble.Create(C2);
-            TVectorDouble c3 = TVectorDouble.Create(C3);
-            TVectorDouble c4 = TVectorDouble.Create(C4);
-            TVectorDouble c5 = TVectorDouble.Create(C5);
-            TVectorDouble c6 = TVectorDouble.Create(C6);
-
-            TVectorDouble rl = zl - dnl;
-
-            TVectorDouble rl2 = rl * rl;
-            TVectorDouble rl4 = rl2 * rl2;
-
-            TVectorDouble polyl = TVectorDouble.MultiplyAddEstimate(
-                rl4,
-                TVectorDouble.MultiplyAddEstimate(c6, rl, c5),
-                TVectorDouble.MultiplyAddEstimate(
-                    rl2,
-                    TVectorDouble.MultiplyAddEstimate(c4, rl, c3),
-                    TVectorDouble.MultiplyAddEstimate(c2, rl, c1)
-                )
-            );
-
-            TVectorDouble ru = zu - dnu;
-
-            TVectorDouble ru2 = ru * ru;
-            TVectorDouble ru4 = ru2 * ru2;
-
-            TVectorDouble polyu = TVectorDouble.MultiplyAddEstimate(
-                ru4,
-                TVectorDouble.MultiplyAddEstimate(c6, ru, c5),
-                TVectorDouble.MultiplyAddEstimate(
-                    ru2,
-                    TVectorDouble.MultiplyAddEstimate(c4, ru, c3),
-                    TVectorDouble.MultiplyAddEstimate(c2, ru, c1)
-                )
-            );
-
-            // result = (float)(poly + (n << 52))
-            TVectorSingle ret = Narrow<TVectorDouble, TVectorSingle>(
-                Unsafe.BitCast<TVectorUInt64, TVectorDouble>(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(polyl) + (nl << 52)),
-                Unsafe.BitCast<TVectorUInt64, TVectorDouble>(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(polyu) + (nu << 52))
-            );
+            if (TVectorSingle.Count == TVectorDouble.Count)
+            {
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    CoreImpl(Widen<TVectorSingle, TVectorDouble>(x))
+                );
+            }
+            else
+            {
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    CoreImpl(WidenLower<TVectorSingle, TVectorDouble>(x)),
+                    CoreImpl(WidenUpper<TVectorSingle, TVectorDouble>(x))
+                );
+            }
 
             // Check if -103 < |x| < 88
             if (TVectorUInt32.GreaterThanAny(Unsafe.BitCast<TVectorSingle, TVectorUInt32>(TVectorSingle.Abs(x)), TVectorUInt32.Create(V_ARG_MAX)))
@@ -296,17 +246,49 @@ namespace System.Runtime.Intrinsics
                 // (x > V_EXPF_MAX) ? float.PositiveInfinity : x
                 TVectorSingle infinityMask = TVectorSingle.GreaterThan(x, TVectorSingle.Create(V_EXPF_MAX));
 
-                ret = TVectorSingle.ConditionalSelect(
+                result = TVectorSingle.ConditionalSelect(
                     infinityMask,
                     TVectorSingle.Create(float.PositiveInfinity),
-                    ret
+                    result
                 );
 
                 // (x < V_EXPF_MIN) ? 0 : x
-                ret = TVectorSingle.AndNot(ret, TVectorSingle.LessThan(x, TVectorSingle.Create(V_EXPF_MIN)));
+                result = TVectorSingle.AndNot(result, TVectorSingle.LessThan(x, TVectorSingle.Create(V_EXPF_MIN)));
             }
 
-            return ret;
+            return result;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static TVectorDouble CoreImpl(TVectorDouble x)
+            {
+                // x * (64.0 / ln(2))
+                TVectorDouble z = x * TVectorDouble.Create(V_TBL_LN2);
+
+                TVectorDouble v_expf_huge = TVectorDouble.Create(V_EXPF_HUGE);
+                TVectorDouble dn = z + v_expf_huge;
+
+                // n = (int)z
+                TVectorUInt64 n = Unsafe.BitCast<TVectorDouble, TVectorUInt64>(dn);
+
+                // r = z - n
+                TVectorDouble r = z - (dn - v_expf_huge);
+
+                TVectorDouble r2 = r * r;
+                TVectorDouble r4 = r2 * r2;
+
+                TVectorDouble poly = TVectorDouble.MultiplyAddEstimate(
+                    r4,
+                    TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C6), r, TVectorDouble.Create(C5)),
+                    TVectorDouble.MultiplyAddEstimate(
+                        r2,
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C4), r, TVectorDouble.Create(C3)),
+                        TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(C2), r, TVectorDouble.Create(C1))
+                    )
+                );
+
+                // result = poly + (n << 52)
+                return Unsafe.BitCast<TVectorUInt64, TVectorDouble>(Unsafe.BitCast<TVectorDouble, TVectorUInt64>(poly) + (n << 52));
+            }
         }
 
         public static TVectorDouble HypotDouble<TVectorDouble, TVectorUInt64>(TVectorDouble x, TVectorDouble y)
@@ -455,13 +437,21 @@ namespace System.Runtime.Intrinsics
             TVectorSingle infinityMask = TVectorSingle.IsPositiveInfinity(ax) | TVectorSingle.IsPositiveInfinity(ay);
             TVectorSingle nanMask = TVectorSingle.IsNaN(ax) | TVectorSingle.IsNaN(ay);
 
-            (TVectorDouble xxLower, TVectorDouble xxUpper) = Widen<TVectorSingle, TVectorDouble>(ax);
-            (TVectorDouble yyLower, TVectorDouble yyUpper) = Widen<TVectorSingle, TVectorDouble>(ay);
+            TVectorSingle result;
 
-            TVectorSingle result = Narrow<TVectorDouble, TVectorSingle>(
-                TVectorDouble.Sqrt(TVectorDouble.MultiplyAddEstimate(xxLower, xxLower, yyLower * yyLower)),
-                TVectorDouble.Sqrt(TVectorDouble.MultiplyAddEstimate(xxUpper, xxUpper, yyUpper * yyUpper))
-            );
+            if (TVectorSingle.Count == TVectorDouble.Count)
+            {
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    CoreImpl(Widen<TVectorSingle, TVectorDouble>(ax), Widen<TVectorSingle, TVectorDouble>(ay))
+                );
+            }
+            else
+            {
+                result = Narrow<TVectorDouble, TVectorSingle>(
+                    CoreImpl(WidenLower<TVectorSingle, TVectorDouble>(ax), WidenLower<TVectorSingle, TVectorDouble>(ay)),
+                    CoreImpl(WidenUpper<TVectorSingle, TVectorDouble>(ax), WidenUpper<TVectorSingle, TVectorDouble>(ay))
+                );
+            }
 
             // IEEE 754 requires that we return +Infinity
             // if either input is Infinity, even if one of
@@ -472,6 +462,12 @@ namespace System.Runtime.Intrinsics
             result = TVectorSingle.ConditionalSelect(infinityMask, TVectorSingle.Create(float.PositiveInfinity), result);
 
             return result;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static TVectorDouble CoreImpl(TVectorDouble x, TVectorDouble y)
+            {
+                return TVectorDouble.Sqrt(TVectorDouble.MultiplyAddEstimate(x, x, y * y));
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1535,6 +1531,63 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVectorSingle Narrow<TVectorDouble, TVectorSingle>(TVectorDouble vector)
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+        {
+            Unsafe.SkipInit(out TVectorSingle result);
+
+            if (typeof(TVectorDouble) == typeof(Vector128<double>))
+            {
+                Debug.Assert(typeof(TVectorSingle) == typeof(Vector64<float>));
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    result = (TVectorSingle)(object)AdvSimd.Arm64.ConvertToSingleLower((Vector128<double>)(object)vector);
+                }
+                else
+                {
+                    Vector128<double> value = (Vector128<double>)(object)vector;
+                    result = (TVectorSingle)(object)Vector64.Narrow(value.GetLower(), value.GetUpper());
+                }
+            }
+            else if (typeof(TVectorDouble) == typeof(Vector256<double>))
+            {
+                Debug.Assert(typeof(TVectorSingle) == typeof(Vector128<float>));
+
+                if (Avx.IsSupported)
+                {
+                    result = (TVectorSingle)(object)Avx.ConvertToVector128Single((Vector256<double>)(object)vector);
+                }
+                else
+                {
+                    Vector256<double> value = (Vector256<double>)(object)vector;
+                    result = (TVectorSingle)(object)Vector128.Narrow(value.GetLower(), value.GetUpper());
+                }
+            }
+            else if (typeof(TVectorDouble) == typeof(Vector512<double>))
+            {
+                Debug.Assert(typeof(TVectorSingle) == typeof(Vector256<float>));
+
+                if (Avx512F.IsSupported)
+                {
+                    result = (TVectorSingle)(object)Avx512F.ConvertToVector256Single((Vector512<double>)(object)vector);
+                }
+                else
+                {
+                    Vector512<double> value = (Vector512<double>)(object)vector;
+                    result = (TVectorSingle)(object)Vector256.Narrow(value.GetLower(), value.GetUpper());
+                }
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static TVectorSingle Narrow<TVectorDouble, TVectorSingle>(TVectorDouble lower, TVectorDouble upper)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
@@ -1575,36 +1628,145 @@ namespace System.Runtime.Intrinsics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static (TVectorDouble Lower, TVectorDouble Upper) Widen<TVectorSingle, TVectorDouble>(TVectorSingle vector)
+        private static TVectorDouble Widen<TVectorSingle, TVectorDouble>(TVectorSingle vector)
             where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
         {
-            Unsafe.SkipInit(out (TVectorDouble, TVectorDouble) result);
+            Unsafe.SkipInit(out TVectorDouble result);
+
+            if (typeof(TVectorSingle) == typeof(Vector64<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector128<double>));
+
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    result = (TVectorDouble)(object)AdvSimd.Arm64.ConvertToDouble((Vector64<float>)(object)vector);
+                }
+                else
+                {
+                    Vector64<float> value = (Vector64<float>)(object)vector;
+
+                    Vector64<double> lower = Vector64.WidenLower(value);
+                    Vector64<double> upper = Vector64.WidenUpper(value);
+
+                    result = (TVectorDouble)(object)Vector128.Create(lower, upper);
+                }
+            }
+            else if (typeof(TVectorSingle) == typeof(Vector128<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector256<double>));
+
+                if (Avx.IsSupported)
+                {
+                    result = (TVectorDouble)(object)Avx.ConvertToVector256Double((Vector128<float>)(object)vector);
+                }
+                else
+                {
+                    Vector128<float> value = (Vector128<float>)(object)vector;
+
+                    Vector128<double> lower = Vector128.WidenLower(value);
+                    Vector128<double> upper = Vector128.WidenUpper(value);
+
+                    result = (TVectorDouble)(object)Vector256.Create(lower, upper);
+                }
+            }
+            else if (typeof(TVectorSingle) == typeof(Vector256<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector512<double>));
+
+                if (Avx512F.IsSupported)
+                {
+                    result = (TVectorDouble)(object)Avx512F.ConvertToVector512Double((Vector256<float>)(object)vector);
+                }
+                else
+                {
+                    Vector256<float> value = (Vector256<float>)(object)vector;
+
+                    Vector256<double> lower = Vector256.WidenLower(value);
+                    Vector256<double> upper = Vector256.WidenUpper(value);
+
+                    result = (TVectorDouble)(object)Vector512.Create(lower, upper);
+                }
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVectorDouble WidenLower<TVectorSingle, TVectorDouble>(TVectorSingle vector)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            Unsafe.SkipInit(out TVectorDouble result);
 
             if (typeof(TVectorSingle) == typeof(Vector<float>))
             {
                 Debug.Assert(typeof(TVectorDouble) == typeof(Vector<double>));
-                result = ((TVectorDouble, TVectorDouble))(object)Vector.Widen((Vector<float>)(object)vector);
+                result = (TVectorDouble)(object)Vector.WidenLower((Vector<float>)(object)vector);
             }
             else if (typeof(TVectorSingle) == typeof(Vector64<float>))
             {
                 Debug.Assert(typeof(TVectorDouble) == typeof(Vector64<double>));
-                result = ((TVectorDouble, TVectorDouble))(object)Vector64.Widen((Vector64<float>)(object)vector);
+                result = (TVectorDouble)(object)Vector64.WidenLower((Vector64<float>)(object)vector);
             }
             else if (typeof(TVectorSingle) == typeof(Vector128<float>))
             {
                 Debug.Assert(typeof(TVectorDouble) == typeof(Vector128<double>));
-                result = ((TVectorDouble, TVectorDouble))(object)Vector128.Widen((Vector128<float>)(object)vector);
+                result = (TVectorDouble)(object)Vector128.WidenLower((Vector128<float>)(object)vector);
             }
             else if (typeof(TVectorSingle) == typeof(Vector256<float>))
             {
                 Debug.Assert(typeof(TVectorDouble) == typeof(Vector256<double>));
-                result = ((TVectorDouble, TVectorDouble))(object)Vector256.Widen((Vector256<float>)(object)vector);
+                result = (TVectorDouble)(object)Vector256.WidenLower((Vector256<float>)(object)vector);
             }
             else if (typeof(TVectorSingle) == typeof(Vector512<float>))
             {
                 Debug.Assert(typeof(TVectorDouble) == typeof(Vector512<double>));
-                result = ((TVectorDouble, TVectorDouble))(object)Vector512.Widen((Vector512<float>)(object)vector);
+                result = (TVectorDouble)(object)Vector512.WidenLower((Vector512<float>)(object)vector);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static TVectorDouble WidenUpper<TVectorSingle, TVectorDouble>(TVectorSingle vector)
+            where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
+            where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
+        {
+            Unsafe.SkipInit(out TVectorDouble result);
+
+            if (typeof(TVectorSingle) == typeof(Vector<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector<double>));
+                result = (TVectorDouble)(object)Vector.WidenUpper((Vector<float>)(object)vector);
+            }
+            else if (typeof(TVectorSingle) == typeof(Vector64<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector64<double>));
+                result = (TVectorDouble)(object)Vector64.WidenUpper((Vector64<float>)(object)vector);
+            }
+            else if (typeof(TVectorSingle) == typeof(Vector128<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector128<double>));
+                result = (TVectorDouble)(object)Vector128.WidenUpper((Vector128<float>)(object)vector);
+            }
+            else if (typeof(TVectorSingle) == typeof(Vector256<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector256<double>));
+                result = (TVectorDouble)(object)Vector256.WidenUpper((Vector256<float>)(object)vector);
+            }
+            else if (typeof(TVectorSingle) == typeof(Vector512<float>))
+            {
+                Debug.Assert(typeof(TVectorDouble) == typeof(Vector512<double>));
+                result = (TVectorDouble)(object)Vector512.WidenUpper((Vector512<float>)(object)vector);
             }
             else
             {
