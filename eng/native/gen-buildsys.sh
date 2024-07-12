@@ -98,7 +98,7 @@ if [[ "$host_arch" == "wasm" ]]; then
     if [[ "$target_os" == "browser" ]]; then
         cmake_command="emcmake $cmake_command"
     elif [[ "$target_os" == "wasi" ]]; then
-        cmake_extra_defines=("$cmake_extra_defines" "-DCLR_CMAKE_TARGET_OS=wasi" "-DCLR_CMAKE_TARGET_ARCH=wasm" "-DWASI_SDK_PREFIX=$WASI_SDK_PATH" "-DCMAKE_TOOLCHAIN_FILE=$WASI_SDK_PATH/share/cmake/wasi-sdk.cmake" "-DCMAKE_SYSROOT=${WASI_SDK_PATH}share/wasi-sysroot" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
+        cmake_extra_defines=("$cmake_extra_defines" "-DCLR_CMAKE_TARGET_OS=wasi" "-DCLR_CMAKE_TARGET_ARCH=wasm" "-DWASI_SDK_PREFIX=$WASI_SDK_PATH" "-DCMAKE_TOOLCHAIN_FILE=$reporoot/src/native/external/wasi-sdk-p2.cmake" "-DCMAKE_SYSROOT=${WASI_SDK_PATH}share/wasi-sysroot" "-DCMAKE_CROSSCOMPILING_EMULATOR=node --experimental-wasm-bigint --experimental-wasi-unstable-preview1")
     else
         echo "target_os was not specified"
         exit 1
