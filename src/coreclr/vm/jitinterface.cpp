@@ -9535,11 +9535,10 @@ void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRU
     FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(TypeHandle(structHnd));
     if (info.flags != FpStruct::UseIntCallConv)
     {
-        *pLowering = {
-            .byIntegerCallConv = false,
-            .offsets = { info.offset1st, info.offset2nd },
-            .numLoweredElements = (info.flags & FpStruct::OnlyOne) ? 1ul : 2ul,
-        };
+        pLowering->byIntegerCallConv = false;
+        pLowering->offsets[0] = info.offset1st;
+        pLowering->offsets[1] = info.offset2nd;
+        pLowering->numLoweredElements = (info.flags & FpStruct::OnlyOne) ? 1ul : 2ul;
 
         if (info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::OnlyOne))
             pLowering->loweredElements[0] = (info.SizeShift1st() == 3) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
@@ -9562,7 +9561,7 @@ void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRU
     }
     else
     {
-        *pLowering = { .byIntegerCallConv = true };
+        pLowering->byIntegerCallConv = true;
     }
 #endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 

@@ -3460,12 +3460,10 @@ namespace Internal.JitInterface
                 HandleToObject(structHnd), _compilation.TypeSystemContext.Target.Architecture);
             if (info.flags != FpStruct.UseIntCallConv)
             {
-                lowering = new CORINFO_FPSTRUCT_LOWERING {
-                    byIntegerCallConv = false,
-                    numLoweredElements = ((info.flags & FpStruct.OnlyOne) != 0) ? 1 : 2,
-                };
+                lowering.byIntegerCallConv = false;
                 lowering.Offsets[0] = info.offset1st;
                 lowering.Offsets[1] = info.offset2nd;
+                lowering.numLoweredElements = ((info.flags & FpStruct.OnlyOne) != 0) ? 1 : 2;
 
                 if ((info.flags & (FpStruct.BothFloat | FpStruct.FloatInt | FpStruct.OnlyOne)) != 0)
                     lowering.LoweredElements[0] = (info.SizeShift1st() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
@@ -3488,7 +3486,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                lowering = new CORINFO_FPSTRUCT_LOWERING{ byIntegerCallConv = true };
+                lowering.byIntegerCallConv = true;
             }
         }
 

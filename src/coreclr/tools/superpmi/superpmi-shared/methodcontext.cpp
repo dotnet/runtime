@@ -6337,9 +6337,12 @@ void MethodContext::dmpGetSwiftLowering(
 {
     printf("GetSwiftLowering key structHnd-%016" PRIX64 ", value byReference-%u numLoweredElements-%u", key,
         value.byReference, value.numLoweredElements);
-    for (size_t i = 0; i < value.numLoweredElements; i++)
+    if (!value.byReference)
     {
-        printf(" [%zu] %u", i, value.loweredElements[i]);
+        for (size_t i = 0; i < value.numLoweredElements; i++)
+        {
+            printf(" [%zu] %u", i, value.loweredElements[i]);
+        }
     }
 }
 void MethodContext::repGetSwiftLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_SWIFT_LOWERING* pLowering)
@@ -6387,9 +6390,12 @@ void MethodContext::dmpGetFpStructLowering(
 {
     printf("GetFpStructLowering key structHnd-%016" PRIX64 ", value byIntegerCallConv-%u numLoweredElements-%u", key,
         value.byIntegerCallConv, value.numLoweredElements);
-    for (size_t i = 0; i < value.numLoweredElements; i++)
+    if (!value.byIntegerCallConv)
     {
-        printf(" [%zu] %u", i, value.loweredElements[i]);
+        for (size_t i = 0; i < value.numLoweredElements; i++)
+        {
+            printf(" [%zu] %u", i, value.loweredElements[i]);
+        }
     }
 }
 void MethodContext::repGetFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)

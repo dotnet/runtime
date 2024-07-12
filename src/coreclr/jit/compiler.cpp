@@ -931,17 +931,20 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
         const CORINFO_FPSTRUCT_LOWERING* lowering = GetFpStructLowering(clsHnd);
-        if (lowering->numLoweredElements == 1)
+        if (!lowering->byIntegerCallConv)
         {
-            useType = JITtype2varType(lowering->loweredElements[0]);
-            assert(varTypeIsFloating(useType));
-            howToReturnStruct = SPK_PrimitiveType;
-        }
-        else if (!lowering->byIntegerCallConv)
-        {
-            assert(lowering->numLoweredElements == 2);
-            howToReturnStruct = SPK_ByValue;
-            useType           = TYP_STRUCT;
+            if (lowering->numLoweredElements == 1)
+            {
+                useType = JITtype2varType(lowering->loweredElements[0]);
+                assert(varTypeIsFloating(useType));
+                howToReturnStruct = SPK_PrimitiveType;
+            }
+            else
+            {
+                assert(lowering->numLoweredElements == 2);
+                howToReturnStruct = SPK_ByValue;
+                useType           = TYP_STRUCT;
+            }
         }
     }
 
