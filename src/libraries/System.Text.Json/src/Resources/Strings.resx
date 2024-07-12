@@ -246,6 +246,9 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
+  <data name="JsonNumberExponentTooLarge" xml:space="preserve">
+    <value>The exponent value in the specified JSON number is too large.</value>
+  </data>
   <data name="DefaultTypeInfoResolverImmutable" xml:space="preserve">
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
   </data>
@@ -749,7 +752,10 @@
   <data name="ConstructorParameterDisallowNull" xml:space="preserve">
     <value>The constructor parameter '{0}' on type '{1}' doesn't allow null values. Consider updating its nullability annotation.</value>
   </data>
-  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
-    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
+  <data name="JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported" xml:space="preserve">
+    <value>JSON schema generation is not supported for contracts using ReferenceHandler.Preserve.</value>
+  </data>
+  <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
+    <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
   </data>
 </root>

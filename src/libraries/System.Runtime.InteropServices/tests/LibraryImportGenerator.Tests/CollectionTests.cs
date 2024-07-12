@@ -5,6 +5,7 @@ using SharedTypes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
@@ -115,12 +116,23 @@ namespace LibraryImportGenerator.IntegrationTests
                 [return: MarshalUsing(typeof(ListMarshallerStateful<,>), CountElementName = "numValues")]
                 public static partial List<int> CreateRange(int start, int end, out int numValues);
 
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array")]
+                [return: MarshalUsing(CountElementName = nameof(numValues))]
+                public static partial ReadOnlySpan<int> CreateRangeReadOnlySpan(int start, int end, out int numValues);
+
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
                 public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalUsing(typeof(ListMarshallerStateful<,>), CountElementName = "numValues")] out List<int> res);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "create_range_array_out")]
+                public static partial void CreateRange_Out_ReadOnlySpan(int start, int end, out int numValues, [MarshalUsing(CountElementName = nameof(numValues))] out ReadOnlySpan<int> res);
 
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
                 [return: MarshalUsing(typeof(ListMarshallerStateful<,>), ConstantElementCount = sizeof(long))]
                 public static partial List<byte> GetLongBytes(long l);
+
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
+                [return: MarshalUsing(ConstantElementCount = sizeof(long))]
+                public static partial ReadOnlySpan<byte> GetLongBytesReadOnlySpan(long l);
 
                 [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
                 [return: MarshalAs(UnmanagedType.U1)]
@@ -171,7 +183,7 @@ namespace LibraryImportGenerator.IntegrationTests
                         public Span<T> GetManagedValuesDestination(int length) => default;
                         public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int length) => default;
                         public void FromUnmanaged(byte* value) { }
-                        public void Free() {}
+                        public void Free() { }
                     }
                 }
             }
@@ -235,20 +247,25 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             int start = 5;
             int end = 20;
-            IEnumerable<int> expected = Enumerable.Range(start, end - start);
+            int[] expected = Enumerable.Range(start, end - start).ToArray();
 
             Assert.Equal(expected, NativeExportsNE.Collections.Stateless.CreateRange(start, end, out _));
             Assert.Equal(expected, NativeExportsNE.Collections.Stateful.CreateRange(start, end, out _));
+            Assert.Equal(expected, NativeExportsNE.Collections.Stateful.CreateRangeReadOnlySpan(start, end, out _));
 
+            List<int> res;
+            ReadOnlySpan<int> resSpan;
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateless.CreateRange_Out(start, end, out _, out res);
                 Assert.Equal(expected, res);
             }
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateful.CreateRange_Out(start, end, out _, out res);
                 Assert.Equal(expected, res);
+            }
+            {
+                NativeExportsNE.Collections.Stateful.CreateRange_Out_ReadOnlySpan(start, end, out _, out resSpan);
+                Assert.Equal(expected, resSpan);
             }
         }
 
@@ -258,15 +275,19 @@ namespace LibraryImportGenerator.IntegrationTests
             Assert.Null(NativeExportsNE.Collections.Stateless.CreateRange(1, 0, out _));
             Assert.Null(NativeExportsNE.Collections.Stateful.CreateRange(1, 0, out _));
 
+            List<int> res;
+            ReadOnlySpan<int> resSpan;
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateless.CreateRange_Out(1, 0, out _, out res);
                 Assert.Null(res);
             }
             {
-                List<int> res;
                 NativeExportsNE.Collections.Stateful.CreateRange_Out(1, 0, out _, out res);
                 Assert.Null(res);
+            }
+            {
+                NativeExportsNE.Collections.Stateful.CreateRange_Out_ReadOnlySpan(1, 0, out _, out resSpan);
+                Assert.True(resSpan.IsEmpty);
             }
         }
 
@@ -289,6 +310,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
             Assert.Equal(longVal, MemoryMarshal.Read<long>(CollectionsMarshal.AsSpan(NativeExportsNE.Collections.Stateless.GetLongBytes(longVal))));
             Assert.Equal(longVal, MemoryMarshal.Read<long>(CollectionsMarshal.AsSpan(NativeExportsNE.Collections.Stateful.GetLongBytes(longVal))));
+            Assert.Equal(longVal, MemoryMarshal.Read<long>(NativeExportsNE.Collections.Stateful.GetLongBytesReadOnlySpan(longVal)));
         }
 
         [Theory]

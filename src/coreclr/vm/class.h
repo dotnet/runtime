@@ -1798,6 +1798,14 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<> struct cdac_offsets<EEClass>
+{
+    static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
+    static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1984,10 +1992,8 @@ public:
                                       PCCOR_SIGNATURE *ppSig, // Generated signature
                                       DWORD * pcSig,      // Generated signature size
                                       LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-                                      ,BOOL fForStubAsIL
-#endif
+                                      AllocMemTracker *pamTracker,
+                                      BOOL fForStubAsIL
     );
 
 

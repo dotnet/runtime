@@ -225,4 +225,7 @@
   <data name="Argument_IncompatibleDimensions" xml:space="preserve">
     <value>Incompatible dimensions for provided tensors. left.Lengths[1] == {0} while right.Lengths[1] == {1}.</value>
   </data>
+  <data name="ThrowArgument_StackShapesNotSame" xml:space="preserve">
+    <value>All tensors must have the same shape.</value>
+  </data>
 </root>

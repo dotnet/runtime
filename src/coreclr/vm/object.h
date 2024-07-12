@@ -732,9 +732,7 @@ public:
     }
 
     friend class StubLinkerCPU;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
     friend class ArrayOpLinker;
-#endif
 public:
     OBJECTREF    m_Array[1];
 };
@@ -1346,12 +1344,6 @@ public:
         m_StartHelper = NULL;
     }
 
-    void ResetName()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_Name = NULL;
-    }
-
     void SetPriority(INT32 priority)
     {
         LIMITED_METHOD_CONTRACT;
@@ -1913,7 +1905,8 @@ class StackTraceArray
 {
     struct ArrayHeader
     {
-        size_t m_size;
+        uint32_t m_size;
+        uint32_t m_keepAliveItemsCount;
         Thread * m_thread;
     };
 
@@ -1932,7 +1925,7 @@ public:
         LIMITED_METHOD_CONTRACT;
     }
 
-    void Swap(StackTraceArray & rhs)
+    void Set(I1ARRAYREF array)
     {
         CONTRACTL
         {
@@ -1942,12 +1935,10 @@ public:
         }
         CONTRACTL_END;
         SUPPORTS_DAC;
-        I1ARRAYREF t = m_array;
-        m_array = rhs.m_array;
-        rhs.m_array = t;
+        m_array = array;
     }
 
-    size_t Size() const
+    uint32_t Size() const
     {
         WRAPPER_NO_CONTRACT;
         if (!m_array)
@@ -1959,7 +1950,9 @@ public:
     StackTraceElement const & operator[](size_t index) const;
     StackTraceElement & operator[](size_t index);
 
-    void Append(StackTraceElement const * begin, StackTraceElement const * end);
+    size_t Capacity() const;
+    void Append(StackTraceElement const * element);
+    void Allocate(size_t size);
 
     I1ARRAYREF Get() const
     {
@@ -1967,42 +1960,60 @@ public:
         return m_array;
     }
 
-    // Deep copies the array
-    void CopyFrom(StackTraceArray const & src);
+    uint32_t CopyDataFrom(StackTraceArray const & src);
+
+    Thread * GetObjectThread() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return GetHeader()->m_thread;
+    }
+
+    void SetSize(uint32_t size)
+    {
+        WRAPPER_NO_CONTRACT;
+        VolatileStore(&GetHeader()->m_size, size);
+    }
+
+    void SetKeepAliveItemsCount(uint32_t count)
+    {
+        WRAPPER_NO_CONTRACT;
+        VolatileStore(&GetHeader()->m_keepAliveItemsCount, count);
+    }
+
+    uint32_t GetKeepAliveItemsCount() const
+    {
+        WRAPPER_NO_CONTRACT;
+        return VolatileLoad(&GetHeader()->m_keepAliveItemsCount);
+    }
+
+    // Compute the number of methods in the stack trace that can be collected. We need to store keepAlive
+    // objects (Resolver / LoaderAllocator) for these methods.
+    uint32_t ComputeKeepAliveItemsCount();
+
+    void MarkAsFrozen()
+    {
+        if (m_array != NULL)
+        {
+            GetHeader()->m_thread = (Thread *)(size_t)1;
+        }
+    }
+
+    bool IsFrozen() const
+    {
+        return GetHeader()->m_thread == (Thread *)(size_t)1;
+    }
 
 private:
     StackTraceArray(StackTraceArray const & rhs) = delete;
 
     StackTraceArray & operator=(StackTraceArray const & rhs) = delete;
 
-    void Grow(size_t size);
-    void EnsureThreadAffinity();
     void CheckState() const;
 
-    size_t Capacity() const
+    uint32_t GetSize() const
     {
         WRAPPER_NO_CONTRACT;
-        assert(!!m_array);
-
-        return m_array->GetNumComponents();
-    }
-
-    size_t GetSize() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->m_size;
-    }
-
-    void SetSize(size_t size)
-    {
-        WRAPPER_NO_CONTRACT;
-        GetHeader()->m_size = size;
-    }
-
-    Thread * GetObjectThread() const
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetHeader()->m_thread;
+        return VolatileLoad(&GetHeader()->m_size);
     }
 
     void SetObjectThread()
@@ -2028,7 +2039,7 @@ private:
     CLR_I1 const * GetRaw() const
     {
         WRAPPER_NO_CONTRACT;
-        assert(!!m_array);
+        _ASSERTE(!!m_array);
 
         return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
     }
@@ -2037,7 +2048,7 @@ private:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        assert(!!m_array);
+        _ASSERTE(!!m_array);
 
         return dac_cast<PTR_INT8>(m_array->GetDirectPointerToNonObjectElements());
     }
@@ -2089,29 +2100,21 @@ class LoaderAllocatorObject : public Object
     friend class CoreLibBinder;
 
 public:
-    PTRARRAYREF GetHandleTable()
+    // All uses of this api must be safe lock-free reads used only for reading from the handle table
+    // The normal GetHandleTable can only be called while holding the handle table lock, but
+    // this is for use in lock-free scenarios
+    PTRARRAYREF DangerousGetHandleTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (PTRARRAYREF)m_pSlots;
+        return (PTRARRAYREF)ObjectToOBJECTREF(VolatileLoadWithoutBarrier((Object**)&m_pSlots));
     }
 
-    void SetHandleTable(PTRARRAYREF handleTable)
-    {
-        LIMITED_METHOD_CONTRACT;
-        SetObjectReference(&m_pSlots, (OBJECTREF)handleTable);
-    }
-
-    INT32 GetSlotsUsed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_slotsUsed;
-    }
-
-    void SetSlotsUsed(INT32 newSlotsUsed)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_slotsUsed = newSlotsUsed;
-    }
+#ifndef DACCESS_COMPILE
+    PTRARRAYREF GetHandleTable();
+    void SetHandleTable(PTRARRAYREF handleTable);
+    INT32 GetSlotsUsed();
+    void SetSlotsUsed(INT32 newSlotsUsed);
+#endif // DACCESS_COMPILE
 
     void SetNativeLoaderAllocator(LoaderAllocator * pLoaderAllocator)
     {
@@ -2137,11 +2140,6 @@ typedef PTR_LoaderAllocatorObject LOADERALLOCATORREF;
 #endif // USE_CHECKED_OBJECTREFS
 
 #endif // FEATURE_COLLECTIBLE_TYPES
-
-#if !defined(DACCESS_COMPILE)
-// Define the lock used to access stacktrace from an exception object
-EXTERN_C SpinLock g_StackTraceArrayLock;
-#endif // !defined(DACCESS_COMPILE)
 
 // This class corresponds to Exception on the managed side.
 typedef DPTR(class ExceptionObject) PTR_ExceptionObject;
@@ -2187,11 +2185,13 @@ public:
         return _xptrs;
     }
 
-    void SetStackTrace(I1ARRAYREF stackTrace, PTRARRAYREF dynamicMethodArray);
+    void SetStackTrace(OBJECTREF stackTrace);
 
-    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outDynamicMethodArray = NULL) const;
+    void GetStackTrace(StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray = NULL) const;
 
-    I1ARRAYREF GetStackTraceArrayObject() const
+    static void GetStackTraceParts(OBJECTREF stackTraceObj, StackTraceArray & stackTrace, PTRARRAYREF * outKeepaliveArray);
+
+    OBJECTREF GetStackTraceArrayObject() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return _stackTrace;
@@ -2345,17 +2345,31 @@ private:
     OBJECTREF   _data;
     OBJECTREF   _innerException;
     STRINGREF   _helpURL;
-    I1ARRAYREF  _stackTrace;
+    OBJECTREF   _stackTrace;
     U1ARRAYREF  _watsonBuckets;
     STRINGREF   _stackTraceString; //Needed for serialization.
     STRINGREF   _remoteStackTraceString;
-    PTRARRAYREF _dynamicMethods;
     STRINGREF   _source;         // Mainly used by VB.
 
     UINT_PTR    _ipForWatsonBuckets; // Contains the IP of exception for watson bucketing
     void*       _xptrs;
     INT32       _xcode;
     INT32       _HResult;
+
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<ExceptionObject>
+{
+    static constexpr size_t _message = offsetof(ExceptionObject, _message);
+    static constexpr size_t _innerException = offsetof(ExceptionObject, _innerException);
+    static constexpr size_t _stackTrace = offsetof(ExceptionObject, _stackTrace);
+    static constexpr size_t _watsonBuckets = offsetof(ExceptionObject, _watsonBuckets);
+    static constexpr size_t _stackTraceString = offsetof(ExceptionObject, _stackTraceString);
+    static constexpr size_t _remoteStackTraceString = offsetof(ExceptionObject, _remoteStackTraceString);
+    static constexpr size_t _HResult = offsetof(ExceptionObject, _HResult);
+    static constexpr size_t _xcode = offsetof(ExceptionObject, _xcode);
 };
 
 // Defined in Contracts.cs

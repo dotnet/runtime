@@ -9,6 +9,7 @@ class Program
 {
     static int Main()
     {
+        BodyFoldingTest.Run();
         DiagnosticMethodInfoTests.Run();
 
         string stackTrace = Environment.StackTrace;

@@ -638,7 +638,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
         case CORINFO_TYPE_UNDEF:
         case CORINFO_TYPE_VOID:
         default:
-            __debugbreak();
+            DEBUG_BREAK;
             return 0;
     }
     return -1;
@@ -1937,6 +1937,30 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBox(CORINFO_CLASS_HANDLE cls)
     DWORDLONG key = CastHandle(cls);
     DWORDLONG value = LookupByKeyOrMiss(GetTypeForBox, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpGetTypeForBox(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
+void MethodContext::recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetTypeForBoxOnStack == nullptr)
+        GetTypeForBoxOnStack = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetTypeForBoxOnStack->Add(key, value);
+    DEBUG_REC(dmpGetTypeForBoxOnStack(key, value));
+}
+void MethodContext::dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetTypeForBoxOnStack key cls-%016" PRIX64 ", value res-%016" PRIX64 "", key, value);
+}
+
+CORINFO_CLASS_HANDLE MethodContext::repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeForBoxOnStack, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetTypeForBoxOnStack(key, value));
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
     return result;
 }
@@ -5924,6 +5948,28 @@ bool MethodContext::repIsExactType(CORINFO_CLASS_HANDLE cls)
     DWORD value = LookupByKeyOrMiss(IsExactType, key, ": key %016" PRIX64 "", key);
     DEBUG_REP(dmpIsExactType(key, value));
     return value != 0;
+}
+
+void MethodContext::recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)
+{
+    if (IsGenericType == nullptr)
+        IsGenericType = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = (DWORD)result;
+    IsGenericType->Add(key, value);
+    DEBUG_REC(dmpIsGenericType(key, value));
+}
+void MethodContext::dmpIsGenericType(DWORDLONG key, DWORD value)
+{
+    printf("IsGenericType key cls-%016" PRIX64 ", value res-%d", key, value);
+}
+TypeCompareState MethodContext::repIsGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORD value = LookupByKeyOrMiss(IsGenericType, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpIsGenericType(key, value));
+    return (TypeCompareState)value;
 }
 
 void MethodContext::recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result)

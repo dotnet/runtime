@@ -360,6 +360,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool PropertyMetadataSerializationNotSupported { get; set; }
 
         internal bool IsNullable => Converter.NullableElementConverter is not null;
+        internal bool CanBeNull => PropertyInfoForTypeInfo.PropertyTypeCanBeNull;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ValidateCanBeUsedForPropertyMetadataSerialization()
@@ -504,6 +505,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        internal JsonNumberHandling EffectiveNumberHandling => _numberHandling ?? Options.NumberHandling;
         private JsonNumberHandling? _numberHandling;
 
         /// <summary>
@@ -877,45 +879,6 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool DetermineUsesParameterizedConstructor()
             => Converter.ConstructorIsParameterized && CreateObject is null;
 
-#if DEBUG
-        internal string GetPropertyDebugInfo(ReadOnlySpan<byte> unescapedPropertyName)
-        {
-            string propertyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
-            return $"propertyName = {propertyName}; DebugInfo={GetDebugInfo()}";
-        }
-
-        internal string GetDebugInfo()
-        {
-            ConverterStrategy converterStrategy = Converter.ConverterStrategy;
-            string jtiTypeName = GetType().Name;
-            string typeName = Type.FullName!;
-            bool propCacheInitialized = PropertyCache != null;
-
-            StringBuilder sb = new();
-            sb.AppendLine("{");
-            sb.AppendLine($"  GetType: {jtiTypeName},");
-            sb.AppendLine($"  Type: {typeName},");
-            sb.AppendLine($"  ConverterStrategy: {converterStrategy},");
-            sb.AppendLine($"  IsConfigured: {IsConfigured},");
-            sb.AppendLine($"  HasPropertyCache: {propCacheInitialized},");
-
-            if (propCacheInitialized)
-            {
-                sb.AppendLine("  Properties: {");
-                foreach (JsonPropertyInfo pi in PropertyCache!.Values)
-                {
-                    sb.AppendLine($"    {pi.Name}:");
-                    sb.AppendLine($"{pi.GetDebugInfo(indent: 6)},");
-                }
-
-                sb.AppendLine("  },");
-            }
-
-            sb.AppendLine("}");
-            return sb.ToString();
-        }
-#endif
-
         /// <summary>
         /// Creates a blank <see cref="JsonTypeInfo{T}"/> instance.
         /// </summary>
@@ -1003,7 +966,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Type jsonTypeInfoType = typeof(JsonTypeInfo<>).MakeGenericType(type);
                 jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
-                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
+                    parameterTypes: [typeof(JsonConverter), typeof(JsonSerializerOptions)],
                     parameters: new object[] { converter, options })!;
             }
 
@@ -1046,6 +1009,38 @@ namespace System.Text.Json.Serialization.Metadata
             return propertyInfo;
         }
 
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        internal JsonPropertyInfo CreatePropertyUsingReflection(Type propertyType, Type? declaringType)
+        {
+            JsonPropertyInfo jsonPropertyInfo;
+
+            if (Options.TryGetTypeInfoCached(propertyType, out JsonTypeInfo? jsonTypeInfo))
+            {
+                // If a JsonTypeInfo has already been cached for the property type,
+                // avoid reflection-based initialization by delegating construction
+                // of JsonPropertyInfo<T> construction to the property type metadata.
+                jsonPropertyInfo = jsonTypeInfo.CreateJsonPropertyInfo(declaringTypeInfo: this, declaringType, Options);
+            }
+            else
+            {
+                // Metadata for `propertyType` has not been registered yet.
+                // Use reflection to instantiate the correct JsonPropertyInfo<T>
+                Type propertyInfoType = typeof(JsonPropertyInfo<>).MakeGenericType(propertyType);
+                jsonPropertyInfo = (JsonPropertyInfo)propertyInfoType.CreateInstanceNoWrapExceptions(
+                    parameterTypes: [typeof(Type), typeof(JsonTypeInfo), typeof(JsonSerializerOptions)],
+                    parameters: new object[] { declaringType ?? Type, this, Options })!;
+            }
+
+            Debug.Assert(jsonPropertyInfo.PropertyType == propertyType);
+            return jsonPropertyInfo;
+        }
+
+        /// <summary>
+        /// Creates a JsonPropertyInfo whose property type matches the type of this JsonTypeInfo instance.
+        /// </summary>
+        private protected abstract JsonPropertyInfo CreateJsonPropertyInfo(JsonTypeInfo declaringTypeInfo, Type? declaringType, JsonSerializerOptions options);
+
         private protected Dictionary<ParameterLookupKey, JsonParameterInfoValues>? _parameterInfoValuesIndex;
 
         // Untyped, root-level serialization methods
@@ -1079,11 +1074,14 @@ namespace System.Text.Json.Serialization.Metadata
         internal void ConfigureProperties()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
-            Debug.Assert(PropertyCache is null);
+            Debug.Assert(_propertyCache is null);
+            Debug.Assert(_propertyIndex is null);
             Debug.Assert(ExtensionDataProperty is null);
 
             JsonPropertyInfoList properties = PropertyList;
-            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = CreatePropertyCache(capacity: properties.Count);
+            StringComparer comparer = Options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+            Dictionary<string, JsonPropertyInfo> propertyIndex = new(properties.Count, comparer);
+            List<JsonPropertyInfo> propertyCache = new(properties.Count);
 
             int numberOfRequiredProperties = 0;
             bool arePropertiesSorted = true;
@@ -1120,10 +1118,12 @@ namespace System.Text.Json.Serialization.Metadata
                         previousPropertyOrder = property.Order;
                     }
 
-                    if (!propertyCache.TryAddValue(property.Name, property))
+                    if (!propertyIndex.TryAdd(property.Name, property))
                     {
                         ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(Type, property.Name);
                     }
+
+                    propertyCache.Add(property);
                 }
 
                 property.Configure();
@@ -1133,11 +1133,12 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Properties have been configured by the user and require sorting.
                 properties.SortProperties();
-                propertyCache.List.StableSortByKey(static propInfo => propInfo.Value.Order);
+                propertyCache.StableSortByKey(static propInfo => propInfo.Order);
             }
 
             NumberOfRequiredProperties = numberOfRequiredProperties;
-            PropertyCache = propertyCache;
+            _propertyCache = propertyCache.ToArray();
+            _propertyIndex = propertyIndex;
 
             // Override global UnmappedMemberHandling configuration
             // if type specifies an extension data property.
@@ -1188,15 +1189,14 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);
             Debug.Assert(DetermineUsesParameterizedConstructor());
-            Debug.Assert(PropertyCache is not null);
-            Debug.Assert(ParameterCache is null);
+            Debug.Assert(_propertyCache is not null);
+            Debug.Assert(_parameterCache is null);
 
             List<JsonParameterInfo> parameterCache = new(ParameterCount);
             Dictionary<ParameterLookupKey, JsonParameterInfo> parameterIndex = new(ParameterCount);
 
-            foreach (KeyValuePair<string, JsonPropertyInfo> kvp in PropertyCache.List)
+            foreach (JsonPropertyInfo propertyInfo in _propertyCache)
             {
-                JsonPropertyInfo propertyInfo = kvp.Value;
                 JsonParameterInfo? parameterInfo = propertyInfo.AssociatedParameter;
                 if (parameterInfo is null)
                 {
@@ -1223,7 +1223,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.MemberName, ExtensionDataProperty);
             }
 
-            ParameterCache = parameterCache;
+            _parameterCache = parameterCache.ToArray();
             _parameterInfoValuesIndex = null;
         }
 
@@ -1334,11 +1334,6 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(IDictionary<string, JsonElement>).IsAssignableFrom(propertyType) ||
                 // Avoid a reference to typeof(JsonNode) to support trimming.
                 (propertyType.FullName == JsonObjectTypeName && ReferenceEquals(propertyType.Assembly, typeof(JsonTypeInfo).Assembly));
-        }
-
-        internal JsonPropertyDictionary<JsonPropertyInfo> CreatePropertyCache(int capacity)
-        {
-            return new JsonPropertyDictionary<JsonPropertyInfo>(Options.PropertyNameCaseInsensitive, capacity);
         }
 
         private static JsonTypeInfoKind GetTypeInfoKind(Type type, JsonConverter converter)

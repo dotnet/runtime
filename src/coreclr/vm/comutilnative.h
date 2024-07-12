@@ -42,9 +42,7 @@ public:
     static FCDECL1(FC_BOOL_RET, IsTransient, INT32 hresult);
     static FCDECL3(StringObject *, StripFileInfo, Object *orefExcepUNSAFE, StringObject *orefStrUNSAFE, CLR_BOOL isRemoteStackTrace);
     static FCDECL0(VOID, PrepareForForeignExceptionRaise);
-    static FCDECL3(VOID, GetStackTracesDeepCopy, Object* pExceptionObjectUnsafe, Object **pStackTraceUnsafe, Object **pDynamicMethodsUnsafe);
-    static FCDECL3(VOID, SaveStackTracesFromDeepCopy, Object* pExceptionObjectUnsafe, Object *pStackTraceUnsafe, Object *pDynamicMethodsUnsafe);
-
+    static FCDECL1(Object *, GetFrozenStackTrace, Object* pExceptionObjectUnsafe);
 
 #ifdef FEATURE_COMINTEROP
     // NOTE: caller cleans up any partially initialized BSTRs in pED
@@ -198,6 +196,8 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalMemory();
 
 extern "C" void QCALLTYPE GCInterface_Collect(INT32 generation, INT32 mode);
 
+extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHandleOnStack pObj);
+
 extern "C" void QCALLTYPE GCInterface_WaitForPendingFinalizers();
 #ifdef FEATURE_BASICFREEZE
 extern "C" void* QCALLTYPE GCInterface_RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
@@ -245,10 +245,12 @@ extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
 class MethodTableNative {
 public:
     static FCDECL1(UINT32, GetNumInstanceFieldBytes, MethodTable* mt);
+    static FCDECL1(CorElementType, GetPrimitiveCorElementType, MethodTable* mt);
 };
 
 extern "C" BOOL QCALLTYPE MethodTable_AreTypesEquivalent(MethodTable* mta, MethodTable* mtb);
 extern "C" BOOL QCALLTYPE MethodTable_CanCompareBitsOrUseFastGetHashCode(MethodTable* mt);
+extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, void* toTypeHnd);
 extern "C" INT32 QCALLTYPE ValueType_GetHashCodeStrategy(MethodTable* mt, QCall::ObjectHandleOnStack objHandle, UINT32* fieldOffset, UINT32* fieldSize, MethodTable** fieldMT);
 
 class StreamNative {

@@ -111,12 +111,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define Thread_m_pFrame OFFSETOF__Thread__m_pFrame
 
 
-#define               OFFSET__Thread__m_alloc_context__alloc_ptr 0x48
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_ptr == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
-
-#define               OFFSET__Thread__m_alloc_context__alloc_limit 0x50
-ASMCONSTANTS_C_ASSERT(OFFSET__Thread__m_alloc_context__alloc_limit == offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
-
 #define               OFFSETOF__gc_alloc_context__alloc_ptr 0x0
 ASMCONSTANT_OFFSETOF_ASSERT(gc_alloc_context, alloc_ptr);
 
@@ -182,9 +176,9 @@ ASMCONSTANTS_C_ASSERT(METHODTABLE_EQUIVALENCE_FLAGS
 #define               METHODTABLE_EQUIVALENCE_FLAGS 0x0
 #endif
 
-#define               MethodTable__enum_flag_ContainsPointers 0x01000000
-ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers
-                    == MethodTable::enum_flag_ContainsPointers);
+#define               MethodTable__enum_flag_ContainsGCPointers 0x01000000
+ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers
+                    == MethodTable::enum_flag_ContainsGCPointers);
 
 #define               OFFSETOF__InterfaceInfo_t__m_pMethodTable  0
 ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
@@ -208,21 +202,9 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
 ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
                       == CORINFO_NullReferenceException);
 
-#define                  CORINFO_InvalidCastException_ASM 2
-ASMCONSTANTS_C_ASSERT(   CORINFO_InvalidCastException_ASM
-                      == CORINFO_InvalidCastException);
-
 #define                  CORINFO_IndexOutOfRangeException_ASM 3
 ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
                       == CORINFO_IndexOutOfRangeException);
-
-#define                  CORINFO_ArrayTypeMismatchException_ASM 6
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArrayTypeMismatchException_ASM
-                      == CORINFO_ArrayTypeMismatchException);
-
-#define                  CORINFO_ArgumentNullException_ASM 8
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentNullException_ASM
-                      == CORINFO_ArgumentNullException);
 
 #define                  CORINFO_ArgumentException_ASM 9
 ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM

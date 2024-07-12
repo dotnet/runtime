@@ -48,6 +48,9 @@
     <!-- Use .dwarf files instead of .dsym files since our symbol exporting may not safely handle folders. -->
     <NativeSymbolExt Condition="'$(_IsApplePlatform)' == 'true'">.dwarf</NativeSymbolExt>
     <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
+    <!-- Prevent getting DynamicCodeSupport=true default from ILLink targets that are imported
+         with the Sdk.targets import above, before Native AOT defaults get a chance to set it -->
+    <DynamicCodeSupport>false</DynamicCodeSupport>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseNativeAotForComponents)' == 'true'">

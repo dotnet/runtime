@@ -230,15 +230,15 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
                  && "EAX should contain size for allocation and it doesnt!!!");
 
         // Fetch current thread into EDX, preserving EAX and ECX
-        psl->X86EmitCurrentThreadFetch(kEDX, (1 << kEAX) | (1 << kECX));
+        psl->X86EmitCurrentThreadAllocContextFetch(kEDX, (1 << kEAX) | (1 << kECX));
 
         // Try the allocation.
 
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
-            // MOV EBX, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // MOV EBX, [edx]gc_alloc_context.alloc_ptr
+            psl->X86EmitOffsetModRM(0x8B, kEBX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
             // add EAX, EBX
             psl->Emit16(0xC303);
             if (flags & ALIGN8)
@@ -246,20 +246,20 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         }
         else
         {
-            // add             eax, [edx]Thread.m_alloc_context.alloc_ptr
-            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr));
+            // add             eax, [edx]gc_alloc_context.alloc_ptr
+            psl->X86EmitOffsetModRM(0x03, kEAX, kEDX, offsetof(gc_alloc_context, alloc_ptr));
         }
 
-        // cmp             eax, [edx]Thread.m_alloc_context.alloc_limit
-        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_limit));
+        // cmp             eax, [edx]gc_alloc_context.alloc_limit
+        psl->X86EmitOffsetModRM(0x3b, kEAX, kEDX, offsetof(gc_alloc_context, alloc_limit));
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
 
-        // mov             [edx]Thread.m_alloc_context.alloc_ptr, eax
-        psl->X86EmitIndexRegStore(kEDX, offsetof(Thread, m_alloc_context) + offsetof(gc_alloc_context, alloc_ptr), kEAX);
+        // mov             [edx]gc_alloc_context.alloc_ptr, eax
+        psl->X86EmitIndexRegStore(kEDX, offsetof(gc_alloc_context, alloc_ptr), kEAX);
 
         if (flags & (ALIGN8 | SIZE_IN_EAX | ALIGN8OBJ))
         {
@@ -421,9 +421,9 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     // Here we are at the end of the success case
 
     // Check whether the object contains pointers
-    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsPointers
+    // test [ecx]MethodTable.m_dwFlags,MethodTable::enum_flag_ContainsGCPointers
     sl.X86EmitOffsetModRM(0xf7, (X86Reg)0x0, kECX, offsetof(MethodTable, m_dwFlags));
-    sl.Emit32(MethodTable::enum_flag_ContainsPointers);
+    sl.Emit32(MethodTable::enum_flag_ContainsGCPointers);
 
     CodeLabel *pointerLabel = sl.NewCodeLabel();
 

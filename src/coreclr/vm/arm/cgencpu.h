@@ -363,7 +363,6 @@ inline PCODE decodeBackToBackJump(PCODE pBuffer)
 
 //----------------------------------------------------------------------
 #include "stublink.h"
-struct ArrayOpScript;
 
 inline BOOL IsThumbCode(PCODE pCode)
 {
