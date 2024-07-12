@@ -1853,16 +1853,8 @@ BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<Cursor
         }
         else
         {
-            if (m_comp->optReachable(cursor.Block, m_loop->GetHeader(), insertionPoint))
+            if (!m_loop->IsPostDominatedOnLoopIteration(cursor.Block, insertionPoint))
             {
-                // Header is reachable without going through the insertion
-                // point, meaning that the insertion point does not
-                // post-dominate the use of an IV we want to replace.
-                //
-                // TODO-CQ: We only need to check whether the header is
-                // reachable from inside the loop, which is both cheaper and
-                // less conservative to check.
-                //
                 return nullptr;
             }
         }
