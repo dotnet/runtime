@@ -1,3 +1,2 @@
 wasi-sdk/**
 wasmtime/**
-mono-include/pthread.h

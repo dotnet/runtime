@@ -19,7 +19,7 @@
     <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
     <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi-sdk'))</WASI_SDK_PATH>
     <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
     <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>
     <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
@@ -30,7 +30,7 @@
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'wasi'" Text="Expected TargetOS==wasi, got '$(TargetOS)'"/>
-    <Error Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir and match expected version."/>
+    <Error Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir and match expected version."/>
   </Target>
 
   <ItemGroup>

@@ -34,9 +34,9 @@
 
   <!-- Directory to provision and use WASI sdk if WASI_SDK_PATH env variable is not set -->
   <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
-    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
     <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
-    <ShouldProvisionWasiSdk Condition="!Exists('$(WASI_SDK_PATH)/VERSION')">true</ShouldProvisionWasiSdk>
+    <ShouldProvisionWasiSdk Condition="!Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')">true</ShouldProvisionWasiSdk>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -345,9 +345,11 @@ JS_ENGINES = [NODE_JS]
     <Copy SourceFiles="$(WASI_SDK_PATH)/share/wasi-sysroot/include/wasm32-wasi-threads/pthread.h"
           DestinationFiles="$(WASI_SDK_PATH)/share/wasi-sysroot/include/wasm32-wasip2/pthread.h"
           />
-    <Copy SourceFiles="$(WASI_SDK_PATH)/share/wasi-sysroot/include/wasm32-wasi-threads/pthread.h"
-          DestinationFiles="wasi/mono-include/pthread.h"
-          />
+
+    <!-- Temporary in WASI-SDK 22
+    TODO https://github.com/dotnet/runtime/issues/104773
+    -->
+    <Touch Files="$(WASI_SDK_PATH)/VERSION22PATCHED" />
 
   </Target>
 
