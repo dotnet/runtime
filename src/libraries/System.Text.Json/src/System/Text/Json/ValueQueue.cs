@@ -17,7 +17,7 @@ namespace System.Text.Json
         private T? _single;
         private Queue<T>? _multiple;
 
-        public readonly int Count => _state is < 2 and byte state ? state : _multiple!.Count;
+        public readonly int Count => _state is < 2 ? _state : _multiple!.Count;
 
         public void Enqueue(T value)
         {
