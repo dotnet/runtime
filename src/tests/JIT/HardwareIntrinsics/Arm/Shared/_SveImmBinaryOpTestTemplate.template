@@ -224,6 +224,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
                     {InvalidImm}
                 );
+                Console.WriteLine(result);
             }
             catch (ArgumentOutOfRangeException)
             {
