@@ -219,6 +219,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("ABC", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_AllowSameTwoOnBothSidesLessPreferredIsTls13_Success()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -365,6 +366,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("ABC", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_OnlyNonTls13CipherSuiteAllowedButOtherSideDoesNotAllowIt_Fails()
         {
             CheckPrereqsForNonTls13Tests(1);

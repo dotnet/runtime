@@ -277,6 +277,7 @@ namespace System.Net.Security
                 {
                     token = NextMessage(reAuthenticationData);
 Console.WriteLine("ForceAuthenticationAsync initial token is {0} size {1} isAsync {2}", token.Status.ErrorCode, token.Size,  isAsync);
+/*
                     if (token.Status.ErrorCode == SecurityStatusPalErrorCode.ContinuePendig)
                     {
                         handshakeTask = SslStreamPal.GetHandshakeTask(_credentialsHandle!, _securityContext!);
@@ -284,7 +285,7 @@ Console.WriteLine("ForceAuthenticationAsync initial token is {0} size {1} isAsyn
                         token.Status =  new SecurityStatusPal(handshakeTask.Result);
                         SslStreamPal.GetPendingWriteData(_securityContext!, ref token);
                     }
-
+*/
                     if (token.Size > 0)
                     {
                         Debug.Assert(token.Payload != null);
@@ -336,14 +337,29 @@ Console.WriteLine("ForceAuthenticationAsync initial token is {0} size {1} isAsyn
                                 return vt.GetAwaiter().GetResult();
                             });
                         }
-                         Console.WriteLine("ForceAuthenticationAsync frame {0} handshake {1}", _frameTask.GetHashCode(), handshakeTask.GetHashCode());
+                        Console.WriteLine(" frame {0} handshake {1}", _frameTask.GetHashCode(), handshakeTask.GetHashCode());
 
-                        await Task.WhenAny(handshakeTask, _frameTask).ConfigureAwait(false);
+                        if (isAsync)
+                        {
+                            await Task.WhenAny(handshakeTask, _frameTask).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                           Task[] tasks = new Task[] { handshakeTask, _frameTask };
+                           int index = Task.WaitAny(tasks, cancellationToken);
+                        }
 
                         Console.WriteLine("ForceAuthenticationAsync frame {0} handshake {1}", _frameTask.IsCompleted, handshakeTask.IsCompleted);
                         if (handshakeTask.IsCompleted)
                         {
-                            token.Status =  new SecurityStatusPal(handshakeTask.Result);
+                            if (handshakeTask.IsFaulted)
+                            {
+                                 token.Status =  new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, handshakeTask.Exception);
+                            }
+                            else
+                            {
+                                token.Status =  new SecurityStatusPal(handshakeTask.Result);
+                            }
                             //_securityContext!.ReadPendingWrites(ref token);
                             SslStreamPal.GetPendingWriteData(_securityContext!, ref token);
                             handshakeTask = null;
@@ -377,6 +393,21 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
                             }
 
                             token.ReleasePayload();
+
+                            if (token.Failed)
+                            {
+                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, token.Status);
+
+                                if (_lastFrame.Header.Type == TlsContentType.Alert && _lastFrame.AlertDescription != TlsAlertDescription.CloseNotify &&
+                                    token.Status.ErrorCode == SecurityStatusPalErrorCode.IllegalMessage)
+                                {
+                                    // Improve generic message and show details if we failed because of TLS Alert.
+                                    throw new AuthenticationException(SR.Format(SR.net_auth_tls_alert, _lastFrame.AlertDescription.ToString()), token.GetException());
+                                }
+
+                                throw new AuthenticationException(SR.net_auth_SSPI, token.GetException());
+                            }
+
                             continue;
                         }
                     }
@@ -444,6 +475,8 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
                 }
 
                 CompleteHandshake(_sslAuthenticationOptions);
+
+                Console.WriteLine("$$$$$$$$$$$$$$$$$$$$$$$$$$ Handshake is done reamining {0}", _buffer.ActiveLength);
             }
             finally
             {
@@ -858,7 +891,16 @@ Console.WriteLine("HANDSHAKE updated!!!!!!! ????? {0} with  is {1} frameTask {2}
                 ThrowIfExceptionalOrNotAuthenticated();
 
                 // Decrypt will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-                status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
+
+                int decryptedOffset;  int decryptedCount;
+                try {
+                    status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out decryptedOffset, out decryptedCount);
+                } catch (Exception ex)
+                {
+                    Console.WriteLine("WTF slice {0} length availabla {1} _nestedRead {2}", frameSize, _buffer.ActiveLength, _nestedRead);
+                    Console.WriteLine(ex);
+                    throw;
+                }
 
                 Console.WriteLine("DecryptData: finished with {0} and {1} bytes opf data {2}", status.ErrorCode, decryptedCount, frameSize);
 
@@ -904,7 +946,7 @@ Console.WriteLine("DecryptData: on Decrypt called!!!!!");
         {
             Debug.Assert(_securityContext != null);
 
-Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYPTED DATA {2} EOF {3}", buffer.Length, _buffer.DecryptedLength, SslStreamPal.GetAvailableDecryptedBytes(_securityContext!), _receivedEOF);
+Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYPTED DATA {2} EOF {3} isSync {4} on {5}", buffer.Length, _buffer.DecryptedLength, SslStreamPal.GetAvailableDecryptedBytes(_securityContext!), _receivedEOF, isSync, GetHashCode());
             // Throw first if we already have exception.
             // Check for disposal is not atomic so we will check again below.
             ThrowIfExceptionalOrNotAuthenticated();
@@ -946,7 +988,8 @@ Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYP
                     _receivedEOF = true;
                 }
 
-                if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength)
+                if (_receivedEOF && nextTlsFrameLength == UnknownTlsFrameLength &&
+                        (!SslStreamPal.UseAsyncDecrypt || SslStreamPal.GetAvailableDecryptedBytes(_securityContext) < 0))
                 {
                     // there should be no frames waiting for processing
                     Debug.Assert(_buffer.EncryptedLength == 0);
@@ -966,34 +1009,53 @@ Console.WriteLine("ReadAsyncInternal called with {0} buffer dectypted {1} DECRYP
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     decryptTask = SslStreamPal.GetDecryptTask(_securityContext, buffer.Length);
+                    //Debug.Assert(decryptTask != null);
                 }
 #pragma warning restore CS0162
-                Task<int> frameTask;
+                Task<int>? frameTask = null;
                 while (true)
                 {
                     int payloadBytes = 0;
 
                     if (decryptTask != null)
                     {
-                        Console.WriteLine("Decrypt task ??? {0} farmeTask {1} isSync {2} _frameTask = {3}", decryptTask.GetHashCode(), _frameTask?.GetHashCode(), isSync, _frameTask);
-                        if (isSync)
+                        if (!_receivedEOF)
                         {
-                           frameTask = _frameTask ?? Task<int>.Run(() => {
-                                ValueTask<int> vt = EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize);
-                                Console.WriteLine("EnsureFullTlsFrameAsync VT {0} {1}", vt.IsCompleted, vt.IsFaulted);
-                                Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
-                                return vt.GetAwaiter().GetResult();
-                           });
+                            Console.WriteLine("Decrypt task ??? {0} farmeTask {1} isSync {2} _frameTask = {3} EOF {4} on {5}", decryptTask.GetHashCode(), _frameTask?.GetHashCode(), isSync, _frameTask, _receivedEOF, GetHashCode());
+                            if (isSync)
+                            {
+                                frameTask = _frameTask ?? Task<int>.Run(() => {
+                                    ValueTask<int> vt = EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize);
+                                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                                    return vt.GetAwaiter().GetResult();
+                                });
+                            }
+                            else
+                            {
+    Console.WriteLine("ReadAsyncInternal: decryptTask1 {0} farmeTask {1}", decryptTask.GetHashCode(), _frameTask?.GetHashCode());
+
+                                frameTask = _frameTask ?? EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).AsTask();
+                            }
+    Console.WriteLine("ReadAsyncInternal: decryptTask2 {0} farmeTask {1}", decryptTask.GetHashCode(), frameTask.GetHashCode());
+                        }
+
+
+                        if (frameTask == null)
+                        {
+                            // We received EOF and we are only waiting for previous dectrypt to finish
+                            decryptTask.Wait(cancellationToken);
+                        }
+                        else if (isSync)
+                        {
+                            Task[] tasks = new Task[] { decryptTask, frameTask };
+                            int index = Task.WaitAny(tasks, cancellationToken);
+                            Console.WriteLine("ReadAsyncInternal:  WaitAny Finished with {0}", index);
                         }
                         else
                         {
-                            frameTask = _frameTask ?? EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).AsTask();
+                            await Task.WhenAny(frameTask, decryptTask).ConfigureAwait(false);
                         }
-Console.WriteLine("ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTask.GetHashCode(), frameTask.GetHashCode());
-
-                        await Task.WhenAny(frameTask, decryptTask).ConfigureAwait(false);
-
-Console.WriteLine("!!!!!!!ReadAsyncInternal: decryptTask {0} farmeTask {1}", decryptTask.IsCompleted, frameTask.IsCompleted);
+Console.WriteLine("!!!!!!!ReadAsyncInternal: decryptTask3 {0} farmeTask {1} on {2}", decryptTask.IsCompleted, frameTask?.IsCompleted, GetHashCode());
 
                         if (decryptTask.IsCompleted)
                         {
@@ -1036,23 +1098,35 @@ Console.WriteLine("!!!!!!!ReadAsyncInternal: decryptTask {0} farmeTask {1}", dec
 
                     if (_frameTask != null)
                     {
-                        payloadBytes = await _frameTask.ConfigureAwait(false);
-                        _frameTask = null;
+                        //Debug.Assert(isSync == false);
+                        if (isSync)
+                        {
+                            _frameTask.Wait(cancellationToken);
+                            payloadBytes = _frameTask.Result;
+                        }
+                        else
+                        {
+                            payloadBytes = await _frameTask.ConfigureAwait(false);
+                        }
+                         _frameTask = null;
                     }
                     else
                     {
                         payloadBytes = await EnsureFullTlsFrameAsync<TIOAdapter>(cancellationToken, ReadBufferSize).ConfigureAwait(false);
                     }
 
-                    Console.WriteLine("##################################ReadAsyncInternal: payloadBytes = {0}", payloadBytes);
+                    Console.WriteLine("##################################ReadAsyncInternal: payloadBytes = {0} {1} on {2}", payloadBytes,  _buffer.ActiveLength, GetHashCode());
+ ObjectDisposedException.ThrowIf(_nestedRead == StreamDisposed, this);
 
                     if (payloadBytes == 0)
                     {
+                        _receivedEOF = true;
                         if (decryptTask != null)
                         {
-                                SslStreamPal.DecryptMessage(_securityContext, Span<byte>.Empty, out int _1, out int _2);
+                            // if we have decrypt pending east EOF and submit it to TLS
+                            SslStreamPal.DecryptMessage(_securityContext, Span<byte>.Empty, out int _1, out int _2);
+                            continue;
                         }
-                        _receivedEOF = true;
                         break;
                     }
 

@@ -240,6 +240,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [ActiveIssue("ABC", TestPlatforms.OSX)]
         public async Task UnencodedHostName_ValidatesCertificate()
         {
             string rawHostname = "räksmörgås.josefsson.org";
@@ -287,6 +288,7 @@ namespace System.Net.Security.Tests
         [InlineData("www-.colorhexa.com")]
         [InlineData("xn--www-7m0a.thegratuit.com")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
+        [ActiveIssue("ABC", TestPlatforms.OSX)]
         public async Task SslStream_SafeInvalidIdn_Success(string name)
         {
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();

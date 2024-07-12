@@ -489,13 +489,15 @@ int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcH
     }
 
     tls_protocol_version_t version = PalSslProtocolToTlsProtocolVersion(minTlsProtocol);
-    if ((int)version!= 0)
+    if ((int)version != 0)
     {
+    printf("%s:%d: setting min %d from %d\n", __func__, __LINE__, version, minTlsProtocol);
         sec_protocol_options_set_min_tls_protocol_version(sec_options, version);
     }
     version = PalSslProtocolToTlsProtocolVersion(maxTlsProtocol);
-    if ((int)version!= 0)
+    if ((int)version != 0)
     {
+    printf("%s:%d: setting max %d from %d\n", __func__, __LINE__, version, maxTlsProtocol);
         sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
     }
 

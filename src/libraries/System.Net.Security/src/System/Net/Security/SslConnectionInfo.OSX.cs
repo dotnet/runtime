@@ -25,12 +25,16 @@ namespace System.Net.Security
 
                 if (osStatus != 0)
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
-Console.WriteLine("UpdateSslConnectionInfo with {0} {1}", protocol, cipherSuite);
+Console.WriteLine("UpdateSslConnectionInfo with {0} {1} ALPN {2} {3}", protocol, cipherSuite, alpnPtr, alpnLength );
 
                 if (alpnPtr != IntPtr.Zero && alpnLength > 0)
                 {
                     Span<byte> alpn = new Span<byte>((void*)alpnPtr, alpnLength);
                     ApplicationProtocol = alpn.ToArray();
+                }
+                else
+                {
+                    ApplicationProtocol = null;
                 }
             }
             else

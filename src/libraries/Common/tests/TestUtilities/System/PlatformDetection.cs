@@ -580,13 +580,13 @@ namespace System
                 // It is enabled on other versions unless explicitly disabled.
                 return GetProtocolSupportFromWindowsRegistry(SslProtocols.Tls11, defaultProtocolSupport: true) && !IsWindows10Version20348OrGreater;
             }
-            // on macOS and Android TLS 1.1 is supported.
-            else if (IsApplePlatform || IsAndroid)
+            // on Android TLS 1.1 is supported.
+            else if (IsAndroid)
             {
                 return true;
             }
 
-            return OpenSslGetTlsSupport(SslProtocols.Tls11);
+            return IsOpenSslSupported && OpenSslGetTlsSupport(SslProtocols.Tls11);
         }
 #pragma warning restore SYSLIB0039
 

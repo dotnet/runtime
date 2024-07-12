@@ -682,11 +682,11 @@ Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}"
             }
         }
 
+        // returns of available decrypted bytes or -1 if EOF was reached
         internal int BytesReadyFromConnection {
             get {
                 lock (this)
                 {
-                    Console.WriteLine("BytesReadyFromConnection {0} {1}", _inputBuffer.ActiveLength, _readStatus);
                     if (_inputBuffer.ActiveLength > 0)
                     {
                         return  _inputBuffer.ActiveLength;
@@ -696,6 +696,7 @@ Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}"
                 }
             }
         }
+
         internal int BytesReadyForConnection => _outputBuffer.ActiveLength;
 
         internal void ReadPendingWrites(ref ProtocolToken token)
