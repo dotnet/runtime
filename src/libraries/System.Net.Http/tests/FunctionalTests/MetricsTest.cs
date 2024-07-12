@@ -384,7 +384,9 @@ namespace System.Net.Http.Functional.Tests
             using (HttpMessageInvoker client = CreateHttpMessageInvoker())
             {
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                request.Headers.ConnectionClose = true;
                 using HttpResponseMessage response = await SendAsync(client, request);
+                await response.Content.LoadIntoBufferAsync();
                 await WaitForEnvironmentTicksToAdvance();
             }
 
