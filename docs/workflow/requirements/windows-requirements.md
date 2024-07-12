@@ -108,3 +108,33 @@ You can also temporarily add a directory to the PATH environment variable with t
 You can make your change to the PATH variable persistent by going to _Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables_, and select the `Path` variable under `System Variables` (if you want to change it for all users) or `User Variables` (if you only want to change it for the current user).
 
 Simply edit the PATH variable's value and add the directory (with a semicolon separator).
+
+### Windows on Arm64
+
+The Windows on Arm64 development experience has improved substantially over the last few years, however there are still a few steps you should take to improve performance when developing runtime libraries on an ARM device.
+
+Runtime libraries source their compilers from the [Microsoft.NET.Compilers.Toolset](https://www.nuget.org/packages/Microsoft.Net.Compilers.Toolset/) package which currently doesn't bundle native Arm64 bits. This can result in [suboptimal performance](https://github.com/dotnet/runtime/issues/104548) when working on libraries from Visual Studio. The issue can be worked around by [configuring the registry](https://github.com/dotnet/runtime/issues/104548#issuecomment-2214581797) to run the compiler bits as Arm64 processes.
+
+Using an Administrator Powershell prompt run the script:
+
+```powershell
+function SetPreferredMachineToArm64($imageName)
+{
+    $RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\${imageName}"
+    $Name = "PreferredMachine"
+    $Value = [convert]::ToInt32("aa64", 16)
+
+    # Create the key if it does not exist
+    If (-NOT (Test-Path $RegistryPath)) {
+        New-Item -Path $RegistryPath -Force | Out-Null
+    }
+
+    # Now set the value
+    New-ItemProperty -Path $RegistryPath -Name $Name -Value $Value -PropertyType DWORD -Force
+}
+
+SetPreferredMachineToArm64('csc.exe')
+SetPreferredMachineToArm64('VBCSCompiler.exe')
+```
+
+Then restart any open Visual Studio applications.
