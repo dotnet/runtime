@@ -20,7 +20,7 @@ public class LazyLoadingTests : AppTestBase
     {
     }
 
-    [Fact]
+    [Fact, TestCategory("no-fingerprinting")]
     public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");

@@ -19,7 +19,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [Theory]
+        [Theory, TestCategory("no-fingerprinting")]
         [BuildAndRun]
         public void SimpleNativeBuild(BuildArgs buildArgs, RunHost host, string id)
         {

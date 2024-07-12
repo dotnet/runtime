@@ -107,7 +107,7 @@ namespace Wasm.Build.Tests
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
-        [Theory]
+        [Theory, TestCategory("no-fingerprinting")]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void BrowserBuildThenPublish(string config)
