@@ -26,6 +26,11 @@
     <ProjectReference Include="$(LibrariesProjectRoot)native-binplace.proj" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(TargetsWasi)' == 'true'">
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">
     <PackageReference Include="Microsoft.NETCore.Runtime.ICU.Transport" PrivateAssets="all" Version="$(MicrosoftNETCoreRuntimeICUTransportVersion)" GeneratePathProperty="true" />
   </ItemGroup>
