@@ -1645,11 +1645,21 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
         return true;
     }
 
-    /*if (funcAttr.m_func == VNF_Cast)
+    // TODO-VN: we can add more cases, e.g. "VNF_ADD(KnownNotNull, smallCns)"
+
+    if (funcAttr.m_func == VNF_Cast)
     {
-		// any cast on top of non-null/0 is non-null?
-        return IsKnownNonNull(funcAttr.m_args[0]);
-    }*/
+        var_types castFromType = TypeOfVN(vn);
+        var_types castToType;
+        bool      srcIsUnsigned;
+        GetCastOperFromVN(funcAttr.m_args[1], &castToType, &srcIsUnsigned);
+
+        // Any integral cast from a known non-null value is always non-null.
+        if (varTypeIsIntegralOrI(castFromType) && varTypeIsIntegralOrI(castToType))
+        {
+            return IsKnownNonNull(funcAttr.m_args[0]);
+        }
+    }
 
     return false;
 }

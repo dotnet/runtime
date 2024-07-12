@@ -6682,7 +6682,7 @@ PhaseStatus Compiler::optAssertionPropMain()
         fgRemoveRestOfBlock = false;
 
         // Walk the statement trees in this basic block
-        Statement* stmt = block->FirstNonPhiDef(); //firstStmt();
+        Statement* stmt = block->firstStmt();
         while (stmt != nullptr)
         {
             // Propagation tells us to remove the rest of the block. Remove it.
@@ -6700,8 +6700,8 @@ PhaseStatus Compiler::optAssertionPropMain()
 
             optAssertionPropagatedCurrentStmt = false; // set to true if a assertion propagation took place
                                                        // and thus we must morph, set order, re-link
-            for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
-            {
+
+            auto runAssertPropForTree = [&](GenTree* tree) {
                 optDumpAssertionIndices("Propagating ", assertions, " ");
                 JITDUMP("for " FMT_BB ", stmt " FMT_STMT ", tree [%06d]", block->bbNum, stmt->GetID(), dspTreeID(tree));
                 JITDUMP(", tree -> ");
@@ -6721,6 +6721,19 @@ PhaseStatus Compiler::optAssertionPropMain()
                     AssertionInfo info = tree->GetAssertionInfo();
                     optImpliedAssertions(info.GetAssertionIndex(), assertions);
                     BitVecOps::AddElemD(apTraits, assertions, info.GetAssertionIndex() - 1);
+                }
+            };
+
+            if (stmt->IsPhiDefnStmt())
+            {
+                // For PHI statements, we're only interested in the root node (to save TP).
+                runAssertPropForTree(stmt->GetRootNode());
+            }
+            else
+            {
+                for (GenTree* tree = stmt->GetTreeList(); tree != nullptr; tree = tree->gtNext)
+                {
+                    runAssertPropForTree(tree);
                 }
             }
 
