@@ -41,7 +41,7 @@ namespace System.Net.NameResolution.Tests
             }).DisposeAsync();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static async Task DurationHistogram_HasBucketSizeHints()
         {
             await RemoteExecutor.Invoke(async () =>
