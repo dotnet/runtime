@@ -1012,34 +1012,10 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
             break;
         }
 
-        unsigned   candidateLclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* candidateVarDsc = lvaGetDesc(candidateLclNum);
-        if (candidateVarDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, candidateVarDsc->lvParentLcl))
+        unsigned candidateLclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
+
+        if (!optPrimaryIVHasNonLoopUses(candidateLclNum, loop, loopLocals))
         {
-            continue;
-        }
-
-        if (candidateVarDsc->lvDoNotEnregister)
-        {
-            // This filters out locals that may be live into exceptional exits.
-            continue;
-        }
-
-        BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
-            if (VarSetOps::IsMember(this, block->bbLiveIn, candidateVarDsc->lvVarIndex))
-            {
-                return BasicBlockVisit::Abort;
-            }
-
-            return BasicBlockVisit::Continue;
-        });
-
-        if (visitResult == BasicBlockVisit::Abort)
-        {
-            // Live into an exit.
-            // TODO-CQ: In some cases it may be profitable to materialize the final value after the loop.
-            // This requires analysis on whether the required expressions are available there
-            // (and whether it doesn't extend their lifetimes too much).
             continue;
         }
 
@@ -1098,9 +1074,6 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
         JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
         return false;
     }
-
-    // At this point we know that the single exit dominates all backedges.
-    JITDUMP("  All backedges are dominated by exiting block " FMT_BB "\n", exiting->bbNum);
 
     if (loop->MayExecuteBlockMultipleTimesPerIteration(exiting))
     {
@@ -1190,6 +1163,54 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     }
 
     JITDUMP("\n");
+    return true;
+}
+
+//------------------------------------------------------------------------
+// optPrimaryIVIsLoopScoped:
+//   Check if a primary IV may have uses outside the specified loop.
+//
+// Parameters:
+//   lclNum     - The primary IV
+//   loop       - The loop
+//   loopLocals - Data structure tracking local uses
+//
+// Returns:
+//   True if the primary IV may have non-loop uses (or if it is a field with
+//   uses of the parent struct).
+//
+bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals)
+{
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+    if (varDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, varDsc->lvParentLcl))
+    {
+        return false;
+    }
+
+    if (varDsc->lvDoNotEnregister)
+    {
+        // This filters out locals that may be live into exceptional exits.
+        return false;
+    }
+
+    BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
+        if (VarSetOps::IsMember(this, block->bbLiveIn, varDsc->lvVarIndex))
+        {
+            return BasicBlockVisit::Abort;
+        }
+
+        return BasicBlockVisit::Continue;
+    });
+
+    if (visitResult == BasicBlockVisit::Abort)
+    {
+        // Live into an exit.
+        // TODO-CQ: In some cases it may be profitable to materialize the final value after the loop.
+        // This requires analysis on whether the required expressions are available there
+        // (and whether it doesn't extend their lifetimes too much).
+        return false;
+    }
+
     return true;
 }
 
@@ -1316,6 +1337,13 @@ bool StrengthReductionContext::TryStrengthReduce()
         if (!candidate->OperIs(ScevOper::AddRec))
         {
             JITDUMP("  Not an addrec\n");
+            continue;
+        }
+
+        if (m_comp->optPrimaryIVHasNonLoopUses(primaryIVLcl->GetLclNum(), m_loop, &m_loopLocals))
+        {
+            // We won't be able to remove this primary IV
+            JITDUMP("  Has non-loop uses\n");
             continue;
         }
 

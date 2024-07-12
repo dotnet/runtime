@@ -7616,6 +7616,7 @@ public:
                                          FlowGraphNaturalLoop*   loop,
                                          BasicBlock*             exiting,
                                          LoopLocalOccurrences*   loopLocals);
+    bool optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals);
     bool optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
                            unsigned              lclNum,
                            ScevAddRec*           addRec,
