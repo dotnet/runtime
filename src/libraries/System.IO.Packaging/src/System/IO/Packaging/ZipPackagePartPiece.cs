@@ -11,10 +11,8 @@ namespace System.IO.Packaging
     /// </summary>
     internal sealed class ZipPackagePartPiece : IComparable<ZipPackagePartPiece>
     {
-        private const string PartPieceFileExtension = ".piece";
         private const string PartPieceLastExtension = "].last";
 
-        #region Internal Methods
         /// <summary>
         /// Return true and create a ZipPackagePartPiece if the name in the input ZipArchiveEntry parses
         /// as a piece name.
@@ -26,8 +24,12 @@ namespace System.IO.Packaging
         /// </remarks>
         internal static bool TryParse(ZipArchiveEntry zipArchiveEntry, [NotNullWhen(true)] out ZipPackagePartPiece? partPiece)
         {
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+            ArgumentNullException.ThrowIfNull(zipArchiveEntry);
+#else
             if (zipArchiveEntry == null)
                 throw new ArgumentNullException(nameof(zipArchiveEntry));
+#endif
 
             partPiece = null;
 
@@ -57,7 +59,7 @@ namespace System.IO.Packaging
             //  prefix_name "/" "[" 1*digit "]" [".last"] ".piece"
             // Work backwards from the end of the full path, extracting and checking this metadata in stages.
             // Stage 1: extract the file extension of ".piece".
-            int resultPosition = path.LastIndexOf(PartPieceFileExtension, StringComparison.OrdinalIgnoreCase);
+            int resultPosition = path.LastIndexOf(".piece", StringComparison.OrdinalIgnoreCase);
 
             isLastPiece = false;
             pieceNumber = -1;
@@ -104,8 +106,7 @@ namespace System.IO.Packaging
                 int digitStart;
 
                 // Iterate backwards, character by character, until we find a non-digit character.
-                for (digitStart = searchPosition; digitStart > 1 && char.IsDigit(path[digitStart - 1]); digitStart--)
-                    ;
+                for (digitStart = searchPosition; digitStart > 1 && char.IsDigit(path[digitStart - 1]); digitStart--) ;
 
                 success = int.TryParse(path.Substring(digitStart, searchPosition - digitStart), out pieceNumber);
                 if (success)
@@ -151,17 +152,21 @@ namespace System.IO.Packaging
 
             return new ZipPackagePartPiece(newPieceEntry, partUri, prefixName, pieceNumber, isLastPiece);
         }
-        #endregion
 
-        #region Internal Constructors
         internal ZipPackagePartPiece(ZipArchiveEntry zipArchiveEntry, PackUriHelper.ValidatedPartUri? partUri, string prefixName, int pieceNumber, bool isLastPiece)
         {
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+            ArgumentNullException.ThrowIfNull(zipArchiveEntry);
+            ArgumentNullException.ThrowIfNull(prefixName);
+            ArgumentOutOfRangeException.ThrowIfNegative(pieceNumber);
+#else
             if (zipArchiveEntry == null)
                 throw new ArgumentNullException(nameof(zipArchiveEntry));
             if (prefixName == null)
                 throw new ArgumentNullException(nameof(prefixName));
             if (pieceNumber < 0)
                 throw new ArgumentOutOfRangeException(nameof(pieceNumber));
+#endif
 
             ZipArchiveEntry = zipArchiveEntry;
 
@@ -171,9 +176,6 @@ namespace System.IO.Packaging
             PieceNumber = pieceNumber;
             IsLastPiece = isLastPiece;
         }
-        #endregion
-
-        #region Internal Properties
 
         internal string PrefixName { get; }
 
@@ -186,13 +188,13 @@ namespace System.IO.Packaging
         internal PackUriHelper.ValidatedPartUri? PartUri { get; }
 
         internal ZipArchiveEntry ZipArchiveEntry { get; }
-        #endregion
 
-        #region Private Methods
         int IComparable<ZipPackagePartPiece>.CompareTo(ZipPackagePartPiece? other)
         {
             if (other == null)
+            {
                 return 1;
+            }
 
             // When comparing part piece names, we only consider the prefix name and the piece numbers.
             // Pieces which are terminal and non-terminal (i.e. as represented by IsLastPiece) with the same
@@ -209,6 +211,5 @@ namespace System.IO.Packaging
 
             return result;
         }
-        #endregion
     }
 }

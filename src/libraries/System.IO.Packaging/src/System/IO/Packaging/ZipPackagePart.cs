@@ -57,13 +57,6 @@ namespace System.IO.Packaging
         /// This is called from the ZipPackage class as a result of GetPartCore,
         /// GetPartsCore or CreatePartCore methods
         /// </summary>
-        /// <param name="zipPackage"></param>
-        /// <param name="zipArchive"></param>
-        /// <param name="zipArchiveEntry"></param>
-        /// <param name="zipStreamManager"></param>
-        /// <param name="partUri"></param>
-        /// <param name="compressionOption"></param>
-        /// <param name="contentType"></param>
         internal ZipPackagePart(ZipPackage zipPackage,
             ZipArchive zipArchive,
             ZipArchiveEntry zipArchiveEntry,
@@ -84,13 +77,6 @@ namespace System.IO.Packaging
         /// Constructs a ZipPackagePart for an interleaved part. This is called outside of streaming
         /// production when an interleaved part is encountered in the package.
         /// </summary>
-        /// <param name="zipPackage"></param>
-        /// <param name="zipArchive"></param>
-        /// <param name="zipStreamManager"></param>
-        /// <param name="pieces"></param>
-        /// <param name="partUri"></param>
-        /// <param name="contentType"></param>
-        /// <param name="compressionOption"></param>
         internal ZipPackagePart(ZipPackage zipPackage,
             ZipArchive zipArchive,
             ZipStreamManager zipStreamManager,
@@ -113,24 +99,12 @@ namespace System.IO.Packaging
         /// <summary>
         /// Obtain the sorted list of piece descriptors for an interleaved part.
         /// </summary>
-        internal List<ZipPackagePartPiece> PieceDescriptors
-        {
-            get
-            {
-                return _pieces;
-            }
-        }
+        internal List<ZipPackagePartPiece> PieceDescriptors => _pieces;
 
         /// <summary>
         /// Obtain the ZipFileInfo descriptor of an atomic part.
         /// </summary>
-        internal ZipArchiveEntry? ZipArchiveEntry
-        {
-            get
-            {
-                return _zipArchiveEntry;
-            }
-        }
+        internal ZipArchiveEntry? ZipArchiveEntry => _zipArchiveEntry;
 
         #endregion Internal Properties
 

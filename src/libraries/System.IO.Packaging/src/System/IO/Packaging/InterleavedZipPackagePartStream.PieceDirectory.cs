@@ -26,6 +26,39 @@ namespace System.IO.Packaging
         private sealed class PieceDirectory
         {
             /// <summary>
+            /// List of PieceStreamInfo objects, ordered by piece-stream offset.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// A PieceStreamInfo is specific to this class. It is an [offset, stream] pair.
+            /// Note : If ever we invoke .Contains method on this list then we must implement
+            /// the IEquatable interface on the PieceStreamInfo class.
+            /// </para>
+            /// </remarks>
+            private int _indexOfLastPieceStreamInfoAccessed; // its _pieceStreamInfoList.Count - 1
+            private readonly List<PieceStreamInfo> _pieceStreamInfoList;
+
+            /// <summary>
+            /// Array of piece descriptors, sorted by file name ignoring case.
+            /// </summary>
+            /// <remarks>
+            /// A PieceInfo is a descriptor found in a ZipPackagePart. It is a
+            /// [ZipFileInfo, PieceNameInfo] pair.
+            /// </remarks>
+            private readonly List<ZipPackagePartPiece> _sortedPieceInfoList;
+
+            private readonly ZipStreamManager _zipStreamManager;
+
+            private readonly ZipArchive _zipArchive;
+            private readonly FileAccess _fileAccess;
+
+            private int _lastPieceIndex;
+            private bool _logicalEndPrecedesPhysicalEnd; // defaults to false;
+
+            // We need this stream on for creating dummy PieceInfo object for comparison purposes
+            private readonly Stream _temporaryMemoryStream = new MemoryStream(0);
+
+            /// <summary>
             /// PieceStreamInfo Descriptor.
             /// Provides access to piece's stream and start offset.
             /// </summary>
@@ -53,12 +86,10 @@ namespace System.IO.Packaging
                 /// </summary>
                 internal long StartOffset { get; }
 
-
                 /// <summary>
                 /// Returns the stream for this piece
                 /// </summary>
                 internal Stream Stream { get; set; }
-
 
                 /// <summary>
                 /// IComparable.CompareTo implementation which allows sorting
@@ -87,11 +118,11 @@ namespace System.IO.Packaging
                     new PieceStreamInfo(zipStreamManager.Open(sortedPieceInfoList[0].ZipArchiveEntry, access), pieceStart: 0)
                 ];
 
-                //Index of the last piece stream that has been accessed
+                // Index of the last piece stream that has been accessed
                 _indexOfLastPieceStreamInfoAccessed = 0;
 
-                //Last Piece number
-                //Its guaranteed to be non-negative based on the assert above
+                // Last Piece number
+                // It's guaranteed to be non-negative based on the assert above
                 _lastPieceIndex = sortedPieceInfoList.Count - 1;
 
                 // Store information necessary to build following piece streams.
@@ -129,7 +160,9 @@ namespace System.IO.Packaging
                 // If the list contains data about pieces following pieceNumber, then we know offset precedes those
                 // and is therefore in the scope of the piece at pieceNumber.
                 if (pieceNumber < _indexOfLastPieceStreamInfoAccessed)
+                {
                     return pieceNumber;
+                }
 
                 // The following tests may have to be repeated until we load enough descriptors to cover offset.
                 // If there is no error in part numbering, we'll eventually find either the last part
@@ -142,7 +175,9 @@ namespace System.IO.Packaging
                     // If the piece at pieceNumber is not expandable, then its length has to be taken into account.
                     // currentPieceInfo.Stream is guaranteed to be non-null
                     if (offset < checked(currentPieceInfo.StartOffset + currentPieceInfo.Stream.Length))
+                    {
                         break;
+                    }
                     // offset is not covered by any piece whose descriptor has been loaded.
                     // Keep loading piece descriptors.
                     checked
@@ -167,7 +202,7 @@ namespace System.IO.Packaging
             /// </remarks>
             internal Stream GetStream(int pieceNumber)
             {
-                //Make sure that the stream has been initialized for this piece number
+                // Make sure that the stream has been initialized for this piece number
                 PieceStreamInfo pieceStreamInfo = RetrievePiece(pieceNumber);
                 return pieceStreamInfo.Stream;
             }
@@ -184,7 +219,7 @@ namespace System.IO.Packaging
 
                 pieceStreamInfo.Stream.Dispose();
                 pieceStreamInfo.Stream = _zipStreamManager.Open(_sortedPieceInfoList[pieceNumber].ZipArchiveEntry,
-                        _fileAccess);
+                                                                _fileAccess);
                 return pieceStreamInfo.Stream;
             }
 
@@ -196,7 +231,7 @@ namespace System.IO.Packaging
             /// </remarks>
             internal long GetStartOffset(int pieceNumber)
             {
-                //Make sure that the stream has been initialized for this piece number
+                // Make sure that the stream has been initialized for this piece number
                 PieceStreamInfo pieceStreamInfo = RetrievePiece(pieceNumber);
                 return pieceStreamInfo.StartOffset;
             }
@@ -217,11 +252,11 @@ namespace System.IO.Packaging
             /// </summary>
             internal void SetLogicalLastPiece(int pieceNumber)
             {
-                //The Logical piece that we are setting should not be greater than the
-                //last piece index
+                // The Logical piece that we are setting should not be greater than the
+                // last piece index
                 Debug.Assert(pieceNumber <= _lastPieceIndex);
 
-                //Make sure that the stream has been initialized for this piece number
+                // Make sure that the stream has been initialized for this piece number
                 PieceStreamInfo _ = RetrievePiece(pieceNumber);
 
                 // Update _lastPiece and record whether this invalidates physical pieces.
@@ -295,10 +330,14 @@ namespace System.IO.Packaging
             private PieceStreamInfo RetrievePiece(int pieceNumber)
             {
                 if (pieceNumber > _lastPieceIndex)
+                {
                     throw new ArgumentException(SR.PieceDoesNotExist);
+                }
 
                 if (_indexOfLastPieceStreamInfoAccessed >= pieceNumber)
+                {
                     return _pieceStreamInfoList[pieceNumber];
+                }
 
                 // The search below supposes the list is initially non-empty.
                 // This invariant is enforced by the constructor.
@@ -307,12 +346,12 @@ namespace System.IO.Packaging
 
                 PieceStreamInfo currentPieceStreamInfo = _pieceStreamInfoList[_indexOfLastPieceStreamInfoAccessed];
 
-                //we retrieve piece streams "upto the requested piece number" rather than getting just the
-                //stream corresponding "to the requested piece number" for the following two reasons -
-                //a. We need to be able to calculate the correct startOffset and as such need the lengths
-                //   of all the intermediate streams
-                //b. We also want to make sure that the intermediate streams do exists as it would be an
-                //   error if they are missing or corrupt.
+                // We retrieve piece streams "up to the requested piece number" rather than getting just the
+                // stream corresponding "to the requested piece number" for the following two reasons -
+                // a. We need to be able to calculate the correct startOffset and as such need the lengths
+                //    of all the intermediate streams
+                // b. We also want to make sure that the intermediate streams do exist as it would be an
+                //    error if they are missing or corrupt.
                 for (int i = _indexOfLastPieceStreamInfoAccessed + 1; i <= pieceNumber; ++i)
                 {
                     // Compute StartOffset.
@@ -320,7 +359,7 @@ namespace System.IO.Packaging
 
                     // Compute pieceInfoStream.Stream.
                     Stream pieceStream = _zipStreamManager.Open(_sortedPieceInfoList[pieceNumber].ZipArchiveEntry,
-                        _fileAccess);
+                                                                _fileAccess);
 
                     // Update _pieceStreamInfoArray.
                     _indexOfLastPieceStreamInfoAccessed = i;
@@ -328,10 +367,10 @@ namespace System.IO.Packaging
 
                     // !!!Implementation Note!!!
                     // List<> always adds the new item at the end of the list.
-                    // _sortedPieceInfoList is sorted by the piecenumbers and so, when we add
+                    // _sortedPieceInfoList is sorted by the piece numbers and so, when we add
                     // members to _pieceStreamInfoList they also get added in a sorted manner.
                     // If every the implementation changes, we must make sure that the
-                    // _pieceStreamInfoList still remains sorted by the piecenumbers as we
+                    // _pieceStreamInfoList still remains sorted by the piece numbers as we
                     // perform a binary search on this list in GetPieceNumberFromOffset method
                     _pieceStreamInfoList.Add(currentPieceStreamInfo);
                 }
@@ -345,7 +384,9 @@ namespace System.IO.Packaging
             private void UpdatePhysicalEndIfNecessary()
             {
                 if (!_logicalEndPrecedesPhysicalEnd)
+                {
                     return;
+                }
 
                 // Close the pieces' streams for writing, then delete the invalidated pieces.
                 int pieceNumber = _lastPieceIndex + 1;
@@ -384,13 +425,14 @@ namespace System.IO.Packaging
                     lastPiece = 0; // Create "[0].last.piece"
                 }
 
-                // TODO: For correctness we should use nostore if first peice info specifies nostore. However that information is not available to us.
+                // TODO: For correctness we should use nostore if first piece info specifies nostore. However that information is not available to us.
                 ZipPackagePartPiece newLastPieceDescriptor = ZipPackagePartPiece.Create(_zipArchive, _sortedPieceInfoList[0].PartUri,
-                    _sortedPieceInfoList[0].PrefixName, lastPiece, true /* last piece */);
+                                                                                        _sortedPieceInfoList[0].PrefixName, lastPiece,
+                                                                                        isLastPiece: true);
 
                 _lastPieceIndex = lastPiece;
 
-                //We need to update the _sortedPieceInfoList with this new last piece information
+                // We need to update the _sortedPieceInfoList with this new last piece information
                 _sortedPieceInfoList[0] = newLastPieceDescriptor;
 
                 // If we have been creating [0].last.piece, create a stream descriptor for it.
@@ -400,49 +442,14 @@ namespace System.IO.Packaging
                     Stream pieceStream = _zipStreamManager.Open(newLastPieceDescriptor.ZipArchiveEntry, _fileAccess);
                     _indexOfLastPieceStreamInfoAccessed = 0;
 
-                    //The list should be empty at this point
+                    // The list should be empty at this point
                     Debug.Assert(_pieceStreamInfoList.Count == 0);
-                    _pieceStreamInfoList.Add(new PieceStreamInfo(pieceStream, 0 /*startOffset*/));
+                    _pieceStreamInfoList.Add(new PieceStreamInfo(pieceStream, pieceStart: 0));
                 }
 
                 // Mark update complete.
                 _logicalEndPrecedesPhysicalEnd = false;
             }
-
-            /// <summary>
-            /// List of PieceStreamInfo objects, ordered by piece-stream offset.
-            /// </summary>
-            /// <remarks>
-            /// <para>
-            /// A PieceStreamInfo is specific to this class. It is an [offset, stream] pair.
-            /// Note : If ever we invoke .Contains method on this list then we must implement
-            /// the IEquatable interface on the PieceStreamInfo class.
-            /// </para>
-            /// </remarks>
-            private int _indexOfLastPieceStreamInfoAccessed; // its _pieceStreamInfoList.Count - 1
-            private readonly List<PieceStreamInfo> _pieceStreamInfoList;
-
-            /// <summary>
-            /// Array of piece descriptors, sorted by file name ignoring case.
-            /// </summary>
-            /// <remarks>
-            /// A PieceInfo is a descriptor found in a ZipPackagePart. It is a
-            /// [ZipFileInfo, PieceNameInfo] pair.
-            /// </remarks>
-            private readonly List<ZipPackagePartPiece> _sortedPieceInfoList;
-
-            private readonly ZipStreamManager _zipStreamManager;
-
-            private readonly ZipArchive _zipArchive;
-            private readonly FileAccess _fileAccess;
-
-            private int _lastPieceIndex;
-            private bool _logicalEndPrecedesPhysicalEnd; //defaults to false;
-
-            //We need this stream on for creating dummy PieceInfo object for comparison purposes
-            private readonly Stream _temporaryMemoryStream = new MemoryStream(0);
-
         }
-
     }
 }

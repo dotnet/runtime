@@ -115,7 +115,7 @@ namespace System.IO.Packaging
             if (zipArchiveEntry != null)
             {
                 // Case of an atomic part.
-                zipArchiveEntry?.Delete();
+                zipArchiveEntry.Delete();
             }
             else
             {
@@ -130,12 +130,11 @@ namespace System.IO.Packaging
                 if (PartExists(validatedUri))
                 {
                     ZipPackagePart partToDelete = (ZipPackagePart)GetPart(validatedUri);
-                    // If the part has a non-null PieceDescriptors property, it is interleaved.
-                    List<ZipPackagePartPiece>? pieceDescriptors = partToDelete.PieceDescriptors;
 
-                    if (pieceDescriptors != null && pieceDescriptors.Count > 0)
+                    // If the part has one or more piece descriptors, it is interleaved.
+                    if (partToDelete.PieceDescriptors.Count > 0)
                     {
-                        DeleteInterleavedPartOrStream(pieceDescriptors);
+                        DeleteInterleavedPartOrStream(partToDelete.PieceDescriptors);
                     }
                 }
             }
@@ -145,7 +144,7 @@ namespace System.IO.Packaging
             // part.
             _ignoredItemHelper.Delete(validatedUri);
 
-            //Delete the content type for this part if it was specified as an override
+            // Delete the content type for this part if it was specified as an override
             _contentTypeHelper.DeleteContentType(validatedUri);
         }
 
@@ -546,8 +545,8 @@ namespace System.IO.Packaging
                     pieceInfo.ZipArchiveEntry.Delete();
                 }
             }
-            //Its okay for us to not clean up the sortedPieceInfoList datastructure, as the
-            //owning part is about to be deleted.
+            // It's okay for us to not clean up the sortedPieceInfoList datastructure, as the
+            // owning part is about to be deleted.
         }
 
         /// <summary>
@@ -571,7 +570,9 @@ namespace System.IO.Packaging
 
             // Exit if nothing to do.
             if (pieceSet.Count == 0)
+            {
                 return;
+            }
 
             string? normalizedPrefixNameForCurrentSequence = null;
             // Value is ignored as long as prefixNameForCurrentSequence is null.
@@ -1344,7 +1345,20 @@ namespace System.IO.Packaging
         /// </summary>
         private sealed class IgnoredItemHelper
         {
-            #region Constructor
+            private const int _dictionaryInitialSize = 8;
+            private const int _listInitialSize = 1;
+
+            //dictionary mapping a normalized prefix name to different items
+            //with the same prefix name.
+            private readonly Dictionary<string, List<string>> _ignoredItemDictionary;
+
+            //using an additional extension dictionary to map an extenstion to
+            //different prefix names with the same extension, in order to
+            //reduce the string parsing
+            private readonly Dictionary<string, List<string>> _extensionDictionary;
+
+
+            private readonly ZipArchive _zipArchive;
 
             /// <summary>
             /// IgnoredItemHelper - private class to keep track of all the items in the
@@ -1357,10 +1371,6 @@ namespace System.IO.Packaging
                 _ignoredItemDictionary = new Dictionary<string, List<string>>(_dictionaryInitialSize, StringComparer.Ordinal);
                 _zipArchive = zipArchive;
             }
-
-            #endregion Constructor
-
-            #region Internal Methods
 
             /// <summary>
             /// Adds a partUri and zipFilename pair that corresponds to one of the following -
@@ -1395,7 +1405,7 @@ namespace System.IO.Packaging
             /// <param name="count"></param>
             internal void AddItemsForInvalidSequence(string normalizedPrefixNameForThisSequence, List<ZipPackagePartPiece> pieces, int startIndex, int count)
             {
-                if (! _ignoredItemDictionary.TryGetValue(normalizedPrefixNameForThisSequence, out List<string>? zipFileInfoNameList))
+                if (!_ignoredItemDictionary.TryGetValue(normalizedPrefixNameForThisSequence, out List<string>? zipFileInfoNameList))
                 {
                     zipFileInfoNameList = new List<string>(count);
                     _ignoredItemDictionary.Add(normalizedPrefixNameForThisSequence, zipFileInfoNameList);
@@ -1456,10 +1466,6 @@ namespace System.IO.Packaging
                 }
             }
 
-            #endregion Internal Methods
-
-            #region Private Methods
-
             private void AddItem(PackUriHelper.ValidatedPartUri? partUri, string normalizedPrefixName, string zipFileName)
             {
                 if (!_ignoredItemDictionary.ContainsKey(normalizedPrefixName))
@@ -1482,27 +1488,6 @@ namespace System.IO.Packaging
 
                 _extensionDictionary[extension].Add(normalizedPrefixName);
             }
-
-            #endregion Private Methods
-
-            #region Private Member Variables
-
-            private const int _dictionaryInitialSize = 8;
-            private const int _listInitialSize = 1;
-
-            //dictionary mapping a normalized prefix name to different items
-            //with the same prefix name.
-            private readonly Dictionary<string, List<string>> _ignoredItemDictionary;
-
-            //using an additional extension dictionary to map an extenstion to
-            //different prefix names with the same extension, in order to
-            //reduce the string parsing
-            private readonly Dictionary<string, List<string>> _extensionDictionary;
-
-
-            private readonly ZipArchive _zipArchive;
-
-            #endregion Private Member Variables
         }
     }
 }

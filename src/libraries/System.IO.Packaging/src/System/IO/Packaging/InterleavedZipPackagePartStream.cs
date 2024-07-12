@@ -21,6 +21,22 @@ namespace System.IO.Packaging
     /// </remarks>
     internal sealed partial class InterleavedZipPackagePartStream : Stream
     {
+        // High-level object to access the collection of pieces by offset and pieceNumber.
+        private readonly PieceDirectory _dir;
+
+        // Cached value for the current piece number.
+        // (Lazily sync'ed to _currentOffset when GetCurrentPieceNumber() is invoked.)
+        private int _currentPieceNumber;
+
+        // Control value to decide whether to use _currentPieceNumber without updating it.
+        private long? _offsetForCurrentPieceNumber;
+
+        // This variable continuously tracks the current stream position.
+        private long _currentOffset;
+
+        // Closed status.
+        private bool _closed;
+
         /// <summary>
         /// Build a System.IO.Stream on a part that possibly consists of multiple files
         /// An InterleavedZipPackagePartStream gets created by ZipPackagePart.GetStreamCore when the part
@@ -34,7 +50,7 @@ namespace System.IO.Packaging
         /// </param>
         /// <param name="zipStreamManager"></param>
         internal InterleavedZipPackagePartStream(ZipPackagePart owningPart, ZipStreamManager zipStreamManager, FileAccess access)
-            : this(zipStreamManager, owningPart.PieceDescriptors!, access)
+            : this(zipStreamManager, owningPart.PieceDescriptors, access)
         {
         }
 
@@ -173,7 +189,9 @@ namespace System.IO.Packaging
             // Check stream capabilities. (Normally, CanSeek will be false only
             // when the stream is closed.)
             if (!CanSeek)
+            {
                 throw new NotSupportedException(SR.SeekNotSupported);
+            }
 
             // Convert offset to a start-based offset.
             switch (origin)
@@ -195,7 +213,9 @@ namespace System.IO.Packaging
 
             // Check offset validity.
             if (offset < 0)
+            {
                 throw new ArgumentException(SR.SeekNegative);
+            }
 
             // OK if _currentOffset points beyond end of stream.
 
@@ -211,12 +231,22 @@ namespace System.IO.Packaging
             CheckClosed();
 
             // Check argument and stream capabilities.
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+            ArgumentOutOfRangeException.ThrowIfNegative(newLength);
+#else
             if (newLength < 0)
+            {
                 throw new ArgumentOutOfRangeException(nameof(newLength));
+            }
+#endif
             if (!CanWrite)
+            {
                 throw new NotSupportedException(SR.StreamDoesNotSupportWrite);
+            }
             if (!CanSeek)
+            {
                 throw new NotSupportedException(SR.SeekNotSupported);
+            }
 
             // If some pieces are to be deleted, this is reflected only in memory at present.
             int lastPieceNumber;
@@ -268,14 +298,18 @@ namespace System.IO.Packaging
             CheckClosed();
 
             if (!CanWrite)
+            {
                 throw new NotSupportedException(SR.WriteNotSupported);
+            }
 
             // No check for FileAccess and stream capability (CanWrite). This is the responsibility
             // of the underlying stream(s).
 
             // A no-op if zero bytes to write.
             if (buffer.Length == 0)
+            {
                 return;
+            }
 
             // Write into piece streams, preserving all lengths in non-terminal pieces.
             int totalBytesWritten = 0;
@@ -385,13 +419,7 @@ namespace System.IO.Packaging
         /// is a descriptor for the 1st piece.
         /// </para>
         /// </remarks>
-        public override bool CanRead
-        {
-            get
-            {
-                return _closed ? false : _dir.GetStream(0).CanRead;
-            }
-        }
+        public override bool CanRead => _closed ? false : _dir.GetStream(0).CanRead;
 
         /// <inheritdoc/>
         /// <remarks>
@@ -407,13 +435,7 @@ namespace System.IO.Packaging
         /// is a descriptor for the 1st piece.
         /// </para>
         /// </remarks>
-        public override bool CanSeek
-        {
-            get
-            {
-                return _closed ? false : _dir.GetStream(0).CanSeek;
-            }
-        }
+        public override bool CanSeek => _closed ? false : _dir.GetStream(0).CanSeek;
 
         /// <inheritdoc/>
         /// <remarks>
@@ -430,13 +452,7 @@ namespace System.IO.Packaging
         /// </para>
         /// </remarks>
         //
-        public override bool CanWrite
-        {
-            get
-            {
-                return _closed ? false : _dir.GetStream(0).CanWrite;
-            }
-        }
+        public override bool CanWrite => _closed ? false : _dir.GetStream(0).CanWrite;
 
         /// <inheritdoc/>
         public override long Position
@@ -495,7 +511,9 @@ namespace System.IO.Packaging
         private void CheckClosed()
         {
             if (_closed)
+            {
                 throw new ObjectDisposedException(null, SR.StreamObjectDisposed);
+            }
         }
 
         /// <summary>
@@ -550,23 +568,5 @@ namespace System.IO.Packaging
                 throw new EndOfStreamException();
             }
         }
-
-        // High-level object to access the collection of pieces by offset and pieceNumber.
-        private readonly PieceDirectory _dir;
-
-        // Cached value for the current piece number.
-        // (Lazily sync'ed to _currentOffset when GetCurrentPieceNumber() is invoked.)
-        private int _currentPieceNumber;
-
-        // Control value to decide whether to use _currentPieceNumber without updating it.
-        private long? _offsetForCurrentPieceNumber;
-
-        // This variable continuously tracks the current stream position.
-        private long _currentOffset;
-
-        // Closed status.
-        private bool _closed;
-
     }
-
 }
