@@ -31,6 +31,7 @@ namespace System
 
         public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
         public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
+        public static bool IsQemuLinux => IsLinux && Environment.GetEnvironmentVariable("DOTNET_RUNNING_UNDER_QEMU") != null;
         public static bool IsNotQemuLinux => !IsQemuLinux;
 
         // OSX family
@@ -109,19 +110,6 @@ namespace System
                 }
 
                 return Interop.OpenSslNoInit.OpenSslIsAvailable;
-            }
-        }
-
-        public static bool IsQemuLinux
-        {
-            get
-            {
-                if (IsLinux)
-                {
-                    return Environment.GetEnvironmentVariable("DOTNET_RUNNING_UNDER_QEMU") != null;
-                }
-
-                return false;
             }
         }
 
