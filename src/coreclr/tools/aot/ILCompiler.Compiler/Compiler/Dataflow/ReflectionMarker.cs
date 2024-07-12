@@ -89,12 +89,13 @@ namespace ILCompiler.Dataflow
 
             List<ModuleDesc> referencedModules = new();
             TypeDesc foundType = CustomAttributeTypeNameParser.GetTypeByCustomAttributeTypeNameForDataFlow(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
-                referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
+                referencedModules, needsAssemblyName, out bool failedBecauseNotFullyQualified);
             if (foundType == null)
             {
-                if (needsAssemblyName && typeWasNotFoundInAssemblyNorBaseLibrary)
-                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
-
+                if (failedBecauseNotFullyQualified)
+                {
+                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeNameIsNotAssemblyQualified, typeName);
+                }
                 type = default;
                 return false;
             }
