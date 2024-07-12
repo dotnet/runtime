@@ -17,7 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// corresponding error code.
 /// </remarks>
 [GeneratedComClass]
-internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
+internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface9
 {
     private readonly Target _target;
 
@@ -204,7 +204,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
-            TargetPointer exceptionObjectLocal = contract.GetExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
+            TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
             *exceptionObject = exceptionObjectLocal;
             *nextNestedException = nextNestedExceptionLocal;
         }
@@ -218,6 +218,30 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)
+    {
+        try
+        {
+            Contracts.IException contract = _target.Contracts.Exception;
+            Contracts.ExceptionData exceptionData = contract.GetExceptionData(objectAddress);
+            data->Message = exceptionData.Message;
+            data->InnerException = exceptionData.InnerException;
+            data->StackTrace = exceptionData.StackTrace;
+            data->WatsonBuckets = exceptionData.WatsonBuckets;
+            data->StackTraceString = exceptionData.StackTraceString;
+            data->RemoteStackTraceString = exceptionData.RemoteStackTraceString;
+            data->HResult = exceptionData.HResult;
+            data->XCode = exceptionData.XCode;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
@@ -301,6 +325,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
     public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;
+    public unsafe int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy) => HResults.E_NOTIMPL;
     public unsafe int TraverseEHInfo(ulong ip, void* pCallback, void* token) => HResults.E_NOTIMPL;
     public unsafe int TraverseLoaderHeap(ulong loaderHeapAddr, void* pCallback) => HResults.E_NOTIMPL;
     public unsafe int TraverseModuleMap(int mmt, ulong moduleAddr, void* pCallback, void* token) => HResults.E_NOTIMPL;

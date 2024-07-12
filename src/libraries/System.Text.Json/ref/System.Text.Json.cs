@@ -4,6 +4,13 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System.Runtime.InteropServices
+{
+    public static partial class JsonMarshal
+    {
+        public static System.ReadOnlySpan<byte> GetRawUtf8Value(System.Text.Json.JsonElement element) { throw null; }
+    }
+}
 namespace System.Text.Json
 {
     public enum JsonCommentHandling : byte
@@ -914,6 +921,7 @@ namespace System.Text.Json.Schema
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo? BaseTypeInfo { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonPropertyInfo? PropertyInfo { get { throw null; } }
         public System.ReadOnlySpan<string> Path { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo TypeInfo { get { throw null; } }
