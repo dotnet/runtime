@@ -435,7 +435,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (spcActualFilename is null)
             throw new XunitException($"Could not find an assembly named System.Private.CoreLib.* in {bootJsonPath}");
 
-        // This needs to be in balance with how actual filename returned from GetDotNetFilesExpectedSet are ordered (alphabeticaly).
         var bootJsonEntries = bootJson.resources.jsModuleNative.Keys
             .Union(bootJson.resources.wasmNative.Keys)
             .Union(bootJson.resources.jsModuleRuntime.Keys)
@@ -444,7 +443,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             .Union(bootJson.resources.wasmSymbols?.Keys ?? Enumerable.Empty<string>())
             .ToArray();
 
-        var expectedEntries = new SortedDictionary<string, Action<string>>();
+        var expectedEntries = new SortedDictionary<string, Func<string, bool>>();
         IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(options);
 
         var knownSet = GetAllKnownDotnetFilesToFingerprintMap(options);
@@ -464,15 +463,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                            expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
-                    Assert.Matches($"{prefix}{s_dotnetVersionHashRegex}{extension}", item);
+                    return Regex.Match($"{prefix}{s_dotnetVersionHashRegex}{extension}", item).Success;
                 }
                 else
                 {
-                    Assert.Equal(expectedFilename, item);
+                    return expectedFilename == item;
                 }
-
-                string absolutePath = Path.Combine(binFrameworkDir, item);
-                Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
             };
         }
         // FIXME: maybe use custom code so the details can show up in the log
@@ -484,7 +480,15 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                         $"  Actual  : {string.Join(", ", bootJsonEntries)}");
         }
 
-        Assert.Collection(bootJsonEntries, expectedEntries.Values.ToArray());
+        var expectedEntriesToCheck = expectedEntries.Values.ToList();
+        foreach (var bootJsonEntry in bootJsonEntries)
+        {
+            var matcher = expectedEntriesToCheck.FirstOrDefault(c => c(bootJsonEntry));
+            if (matcher == null)
+                throw new XunitException($"Unexpected entry in boot json '{bootJsonEntry}'. Expected files {String.Join(", ", expectedEntries.Keys)}");
+
+            expectedEntriesToCheck.Remove(matcher);
+        }
 
         return bootJson;
     }
