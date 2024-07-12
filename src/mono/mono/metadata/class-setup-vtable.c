@@ -1040,6 +1040,37 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 	return TRUE;
 }
 
+/*
+ * Interface method `decl` is overridden in `klass` with `override`. In addition to overriding the method slot
+ * for this interface method, if parent klass implements a different variant compatible interface, then we also
+ * need to override the correpsonding method slot in this other interface.
+ */
+static void
+apply_override_variant_interface (MonoClass *klass, MonoMethod *decl, MonoMethod *override, MonoMethod **vtable)
+{
+	MonoClass *parent = klass->parent;
+
+	// This handles variant overrides for static virtual methods only
+	if (!m_method_is_static (decl))
+		return;
+
+	if (mono_class_has_variant_generic_params (decl->klass) && parent) {
+		for (int k = 0; k < klass->parent->interface_offsets_count; k++) {
+			MonoClass *impl_itf = parent->interfaces_packed [k];
+			if (decl->klass != impl_itf &&
+					mono_class_has_variant_generic_params (impl_itf) &&
+					mono_class_get_generic_type_definition (impl_itf) == mono_class_get_generic_type_definition (decl->klass)) {
+				if (mono_class_is_variant_compatible (impl_itf, decl->klass, FALSE)) {
+					int vt_slot = parent->interface_offsets_packed [k] + decl->slot;
+					vtable [vt_slot] = override;
+					TRACE_INTERFACE_VTABLE (printf ("\tvariance override slot %d with method %s\n", vt_slot, mono_method_full_name (override, TRUE)));
+					break;
+				}
+			}
+		}
+	}
+}
+
 static void
 handle_dim_conflicts (MonoMethod **vtable, MonoClass *klass, GHashTable *conflict_map)
 {
@@ -1793,6 +1824,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			g_assert (override->klass == klass);
 			if (!apply_override (klass, klass, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
+			apply_override_variant_interface (klass, decl, override, vtable);
 		}
 	}
 

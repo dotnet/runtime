@@ -1933,6 +1933,31 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
 	return -1;
 }
 
+static MonoClass*
+lookup_variant_compatible_interface (MonoClass *klass, MonoClass *itf)
+{
+	if (!m_class_is_interfaces_inited (klass)) {
+		ERROR_DECL(error);
+		mono_class_setup_interfaces (klass, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup (error);
+			return NULL;
+		}
+	}
+	for (int i = 0; i < m_class_get_interface_count (klass); i++) {
+		MonoClass *impl_itf = m_class_get_interfaces (klass) [i];
+		if (mono_class_is_variant_compatible (itf, impl_itf, FALSE))
+			return impl_itf;
+
+		// Look up also in all the interfaces it implements
+		impl_itf = lookup_variant_compatible_interface (impl_itf, itf);
+		if (impl_itf)
+			return impl_itf;
+	}
+
+	return NULL;
+}
+
 /**
  * mono_class_interface_offset_with_variance:
  *
@@ -1985,11 +2010,19 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 	if (!mono_class_has_variant_generic_params (itf))
 		return -1;
 
-	for (i = 0; i < klass_interface_offsets_count; i++) {
-		if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
+	// Look up first variant interface in the current class, and then in parent slots.
+	while (klass) {
+		MonoClass *impl_itf = lookup_variant_compatible_interface (klass, itf);
+		if (impl_itf) {
+			// Found compatible implemented interface. Look up its slot in the vtable
 			*non_exact_match = TRUE;
-			return m_class_get_interface_offsets_packed (klass) [i];
+			for (i = 0; i < klass_interface_offsets_count; i++) {
+				if (m_class_get_interfaces_packed (klass) [i] == impl_itf)
+					return m_class_get_interface_offsets_packed (klass) [i];
+			}
 		}
+
+		klass = m_class_get_parent (klass);
 	}
 
 	return -1;
