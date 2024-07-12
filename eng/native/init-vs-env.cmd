@@ -10,9 +10,10 @@ if /i "%PROCESSOR_ARCHITECTURE%" == "ARM64" (
     if /i "%~1" == "arm64" ( set __VCBuildArch=arm64 )
     if /i "%~1" == "wasm"  ( set __VCBuildArch=arm64 )
 ) else (
-    set __VCBuildArch=amd64
+    if /i "%~1" == "x64"   ( set __VCBuildArch=amd64 )
     if /i "%~1" == "x86"   ( set __VCBuildArch=amd64_x86 )
     if /i "%~1" == "arm64" ( set __VCBuildArch=amd64_arm64 )
+    if /i "%~1" == "wasm"  ( set __VCBuildArch=amd64 )
 )
 
 :: Default to highest Visual Studio version available that has Visual C++ tools.
