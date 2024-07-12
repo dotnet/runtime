@@ -1501,9 +1501,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                         if (cFPRegs > 0 && !IsVarArg)
                         {
+                            // If there's enough free registers, pass according to hardware floating-point calling convention
+
                             if ((info.flags & (FpStruct.FloatInt | FpStruct.IntFloat)) != 0)
                             {
                                 Debug.Assert(cFPRegs == 1);
+                                Debug.Assert((info.flags & (FpStruct.OnlyOne | FpStruct.BothFloat)) == 0);
 
                                 if ((1 + _riscv64IdxFPReg <= _transitionBlock.NumArgumentRegisters) && (1 + _riscv64IdxGenReg <= _transitionBlock.NumArgumentRegisters))
                                 {
@@ -1529,21 +1532,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
                             else if (cFPRegs + _riscv64IdxFPReg <= _transitionBlock.NumArgumentRegisters)
                             {
-                                // Each floating point register in the argument area is 8 bytes.
                                 int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _riscv64IdxFPReg * _transitionBlock.FloatRegisterSize;
-                                const FpStruct twoFloats = FpStruct.BothFloat
-                                    | (FpStruct)(2 << (int)FpStruct.PosSizeShift1st)
-                                    | (FpStruct)(2 << (int)FpStruct.PosSizeShift2nd);
-                                if (info.flags == twoFloats)
+                                if (info.flags != FpStruct.UseIntCallConv)
                                 {
-                                    // struct with two single-float fields.
+                                    Debug.Assert((info.flags & (FpStruct.OnlyOne | FpStruct.BothFloat)) != 0);
                                     _argLocDescForStructInRegs = new ArgLocDesc();
-                                    _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
-                                    _argLocDescForStructInRegs.m_cFloatReg = 2;
-                                    Debug.Assert(cFPRegs == 2);
-                                    Debug.Assert(argSize == 8);
-
                                     _hasArgLocDescForStructInRegs = true;
+                                    _argLocDescForStructInRegs.m_idxFloatReg = _riscv64IdxFPReg;
+                                    _argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                                     _argLocDescForStructInRegs.m_structFields = info;
                                 }
                                 _riscv64IdxFPReg += cFPRegs;
@@ -1552,26 +1548,33 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
 
                         {
+                            // Pass according to integer calling convention
                             Debug.Assert((cbArg % _transitionBlock.PointerSize) == 0);
 
                             int regSlots = ALIGN_UP(cbArg, _transitionBlock.PointerSize) / _transitionBlock.PointerSize;
-                            // Only a0-a7 are valid argument registers.
-                            if (_riscv64IdxGenReg + regSlots <= 8)
+                            if (_riscv64IdxGenReg + regSlots <= _transitionBlock.NumArgumentRegisters)
                             {
                                 // The entirety of the arg fits in the register slots.
-                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8;
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * _transitionBlock.PointerSize;
                                 _riscv64IdxGenReg += regSlots;
                                 return argOfsInner;
                             }
-                            else if (_riscv64IdxGenReg < 8)
+                            else if (_riscv64IdxGenReg < _transitionBlock.NumArgumentRegisters)
                             {
-                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + _riscv64IdxGenReg * 8;
-                                _riscv64IdxGenReg = 8;
-                                _riscv64OfsStack += 8;
+                                // Split argument
+                                Debug.Assert(regSlots == 2);
+                                int lastReg = _transitionBlock.NumArgumentRegisters - 1;
+                                Debug.Assert(_riscv64IdxGenReg == lastReg, "pass head in last register");
+                                Debug.Assert(_riscv64OfsStack == 0, "pass tail in first stack slot");
+
+                                int argOfsInner = _transitionBlock.OffsetOfArgumentRegisters + lastReg * _transitionBlock.PointerSize;
+                                _riscv64IdxGenReg = _transitionBlock.NumArgumentRegisters;
+                                _riscv64OfsStack = _transitionBlock.PointerSize;
                                 return argOfsInner;
                             }
                         }
 
+                        // Pass argument entirely on stack
                         argOfs = _transitionBlock.OffsetOfArgs + _riscv64OfsStack;
                         _riscv64OfsStack += cbArg;
                         return argOfs;
@@ -2059,6 +2062,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private bool _RETURN_HAS_RET_BUFFER; // Cached value of HasRetBuffArg
         private uint _fpReturnSize;
 
+        // Offsets of fields returned according to RISC-V/LoongArch hardware floating-point calling convention
+        // (FpStruct flags are in _fpReturnSize)
+        private uint _returnedFpFieldOffset1st;
+        private uint _returnedFpFieldOffset2nd;
+
         /*        ITERATION_STARTED               = 0x0001,   
                 SIZE_OF_ARG_STACK_COMPUTED      = 0x0002,
                 RETURN_FLAGS_COMPUTED           = 0x0004,
@@ -2088,7 +2096,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (!_RETURN_HAS_RET_BUFFER)
             {
-                _transitionBlock.ComputeReturnValueTreatment(type, thRetType, IsVarArg, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize);
+                _transitionBlock.ComputeReturnValueTreatment(type, thRetType, IsVarArg, out _RETURN_HAS_RET_BUFFER, out _fpReturnSize, out _returnedFpFieldOffset1st, out _returnedFpFieldOffset2nd);
             }
 
             _RETURN_FLAGS_COMPUTED = true;

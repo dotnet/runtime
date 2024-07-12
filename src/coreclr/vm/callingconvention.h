@@ -1869,25 +1869,26 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
                 m_argLocDescForStructInRegs.Init();
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
                 m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                int argOfs = (info.flags & FpStruct::IntFloat)
-                    ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8
-                    : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-                m_idxFPReg += 1;
 
                 m_argLocDescForStructInRegs.m_structFields = info;
 
                 m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
                 m_argLocDescForStructInRegs.m_cGenReg = 1;
-                m_idxGenReg += 1;
 
                 m_hasArgLocDescForStructInRegs = true;
 
+                int argOfs = (info.flags & FpStruct::IntFloat)
+                    ? TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * TARGET_POINTER_SIZE
+                    : TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
+
+                m_idxFPReg++;
+                m_idxGenReg++;
                 return argOfs;
             }
         }
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
-            int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
+            int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * FLOAT_REGISTER_SIZE;
             if (info.flags != FpStruct::UseIntCallConv)
             {
                 assert(info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat));
@@ -1904,23 +1905,32 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     {
         // Pass according to integer calling convention
+        assert((cbArg % TARGET_POINTER_SIZE) == 0);
+
         const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
         if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS)
         {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
+            // The entirety of the arg fits in the register slots.
+            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * TARGET_POINTER_SIZE;
             m_idxGenReg += regSlots;
             return argOfs;
         }
         else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS)
         {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_ofsStack += (m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS)*8;
-            assert(m_ofsStack == 8);
+            // Split argument
+            assert(regSlots == 2);
+            static const int lastReg = NUM_ARGUMENT_REGISTERS - 1;
+            assert(m_idxGenReg == lastReg); // pass head in last register
+            assert(m_ofsStack == 0); // pass tail in first stack slot
+
+            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + lastReg * TARGET_POINTER_SIZE;
             m_idxGenReg = NUM_ARGUMENT_REGISTERS;
+            m_ofsStack = TARGET_POINTER_SIZE;
             return argOfs;
         }
     }
 
+    // Pass argument entirely on stack
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
     m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
 
