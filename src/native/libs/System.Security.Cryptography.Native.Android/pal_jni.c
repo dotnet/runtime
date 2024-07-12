@@ -451,8 +451,6 @@ jmethodID g_ByteBufferGet;
 jmethodID g_ByteBufferLimit;
 jmethodID g_ByteBufferPosition;
 jmethodID g_ByteBufferPutBuffer;
-jmethodID g_ByteBufferPutByteArray;
-jmethodID g_ByteBufferPutByteArrayWithLength;
 jmethodID g_ByteBufferRemaining;
 
 // javax/net/ssl/SSLContext
@@ -1075,8 +1073,6 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
     g_ByteBufferLimit =                     GetMethod(env, false, g_ByteBuffer, "limit", "()I");
     g_ByteBufferPosition =                  GetMethod(env, false, g_ByteBuffer, "position", "()I");
     g_ByteBufferPutBuffer =                 GetMethod(env, false, g_ByteBuffer, "put", "(Ljava/nio/ByteBuffer;)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutByteArray =              GetMethod(env, false, g_ByteBuffer, "put", "([B)Ljava/nio/ByteBuffer;");
-    g_ByteBufferPutByteArrayWithLength =    GetMethod(env, false, g_ByteBuffer, "put", "([BII)Ljava/nio/ByteBuffer;");
     g_ByteBufferRemaining =                 GetMethod(env, false, g_ByteBuffer, "remaining", "()I");
 
     g_SSLContext =                        GetClassGRef(env, "javax/net/ssl/SSLContext");

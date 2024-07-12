@@ -287,14 +287,14 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
 {
     // if (netInBuffer.position() == 0)
     // {
-    //     byte[] tmp = new byte[netInBuffer.limit()];
-    //     int count = streamReader(tmp, 0, tmp.length);
-    //     netInBuffer.put(tmp, 0, count);
+    //     int netInBufferLimit = netInBuffer.limit();
+    //     ByteBuffer tmp = ByteBuffer.allocateDirect(netInBufferLimit);
+    //     int count = streamReader(tmp, 0, netInBufferLimit);
+    //     netInBuffer.put(tmp);
     // }
     if ((*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferPosition) == 0)
     {
         int netInBufferLimit = (*env)->CallIntMethod(env, sslStream->netInBuffer, g_ByteBufferLimit);
-        jbyteArray tmp = make_java_byte_array(env, netInBufferLimit);
         uint8_t* tmpNative = (uint8_t*)xmalloc((size_t)netInBufferLimit);
         int count = netInBufferLimit;
         // todo assert streamReader != 0 ?
@@ -302,13 +302,15 @@ ARGS_NON_NULL_ALL static PAL_SSLStreamStatus DoUnwrap(JNIEnv* env, SSLStream* ss
         if (status != SSLStreamStatus_OK)
         {
             free(tmpNative);
-            (*env)->DeleteLocalRef(env, tmp);
             return status;
         }
 
-        (*env)->SetByteArrayRegion(env, tmp, 0, count, (jbyte*)(tmpNative));
+        jobject tmp = (*env)->NewDirectByteBuffer(env, tmpNative, count);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
         IGNORE_RETURN(
-            (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPutByteArrayWithLength, tmp, 0, count));
+            (*env)->CallObjectMethod(env, sslStream->netInBuffer, g_ByteBufferPutBuffer, tmp));
+cleanup:
         free(tmpNative);
         (*env)->DeleteLocalRef(env, tmp);
     }
@@ -885,16 +887,16 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
     JNIEnv* env = GetJNIEnv();
     PAL_SSLStreamStatus ret = SSLStreamStatus_Error;
 
-    // byte[] data = new byte[arraySize];
-    // data.setByteArrayRegion(0, length, buffer);
-    jbyteArray data = make_java_byte_array(env, length);
-    (*env)->SetByteArrayRegion(env, data, 0, length, (jbyte*)buffer);
+    // ByteBuffer bufferByteBuffer = ...;
+    jobject bufferByteBuffer = (*env)->NewDirectByteBuffer(env, buffer, length);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     // appOutBuffer.compact();
-    // appOutBuffer.put(data, 0, length);
+    // appOutBuffer = EnsureRemaining(appOutBuffer, length);
+    // appOutBuffer.put(bufferByteBuffer);
     IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferCompact));
     sslStream->appOutBuffer = EnsureRemaining(env, sslStream->appOutBuffer, length);
-    IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutByteArrayWithLength, data, 0, length));
+    IGNORE_RETURN((*env)->CallObjectMethod(env, sslStream->appOutBuffer, g_ByteBufferPutBuffer, bufferByteBuffer));
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
     int32_t written = 0;
@@ -917,7 +919,7 @@ PAL_SSLStreamStatus AndroidCryptoNative_SSLStreamWrite(SSLStream* sslStream, uin
     }
 
 cleanup:
-    (*env)->DeleteLocalRef(env, data);
+    (*env)->DeleteLocalRef(env, bufferByteBuffer);
     return ret;
 }
 

@@ -465,8 +465,6 @@ extern jmethodID g_ByteBufferGet;
 extern jmethodID g_ByteBufferLimit;
 extern jmethodID g_ByteBufferPosition;
 extern jmethodID g_ByteBufferPutBuffer;
-extern jmethodID g_ByteBufferPutByteArray;
-extern jmethodID g_ByteBufferPutByteArrayWithLength;
 extern jmethodID g_ByteBufferRemaining;
 
 // javax/net/ssl/SSLContext
