@@ -25,6 +25,7 @@ namespace System.Net
         private byte[] _bytes;
         private int _activeStart;
         private int _availableStart;
+        private bool _disposed;
 
         // Invariants:
         // 0 <= _activeStart <= _availableStart <= bytes.Length
@@ -53,6 +54,7 @@ namespace System.Net
 
         public void Dispose()
         {
+        _disposed = true;
             _activeStart = 0;
             _availableStart = 0;
 
@@ -108,6 +110,11 @@ namespace System.Net
 
         public void Commit(int byteCount)
         {
+            ObjectDisposedException.ThrowIf(_bytes == null, this);
+            if (byteCount > AvailableLength)
+            {
+                Console.WriteLine("WTF commiting {0} bytes, available {1} active {2} bytes {3} disposed {4} active {5} avilable {6}, total{7}", byteCount, AvailableLength, ActiveLength, _bytes, _disposed, _activeStart, _availableStart, _bytes?.Length);
+            }
             Debug.Assert(byteCount <= AvailableLength);
             _availableStart += byteCount;
         }

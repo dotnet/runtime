@@ -814,9 +814,9 @@ namespace System.Net.Security
         }
 
         //
-        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer)
+        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer, out int consumed)
         {
-            ProtocolToken token = GenerateToken(incomingBuffer);
+            ProtocolToken token = GenerateToken(incomingBuffer, out consumed);
             if (NetEventSource.Log.IsEnabled())
             {
                 if (token.Failed)
@@ -841,7 +841,7 @@ namespace System.Net.Security
             Return:
                 token - ProtocolToken with status and optionally buffer.
         --*/
-        private ProtocolToken GenerateToken(ReadOnlySpan<byte> inputBuffer)
+        private ProtocolToken GenerateToken(ReadOnlySpan<byte> inputBuffer, out int consumed)
         {
             bool cachedCreds = false;
             bool sendTrustList = false;
@@ -875,10 +875,10 @@ namespace System.Net.Security
                         sendTrustList = _sslAuthenticationOptions.CertificateContext?.Trust?._sendTrustInHandshake ?? false;
 
                         token = SslStreamPal.AcceptSecurityContext(
-
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
+                                      out consumed,
                                       _sslAuthenticationOptions);
                         if (token.Status.ErrorCode == SecurityStatusPalErrorCode.HandshakeStarted)
                         {
@@ -894,6 +894,7 @@ namespace System.Net.Security
                                         ref _credentialsHandle!,
                                         ref _securityContext,
                                         ReadOnlySpan<byte>.Empty,
+                                        out _,
                                         _sslAuthenticationOptions);
                             }
                         }
@@ -906,6 +907,7 @@ namespace System.Net.Security
                                        ref _securityContext,
                                        hostName,
                                        inputBuffer,
+                                       out consumed,
                                        _sslAuthenticationOptions);
 
                         if (token.Status.ErrorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
@@ -921,6 +923,7 @@ namespace System.Net.Security
                                        ref _securityContext,
                                        hostName,
                                        ReadOnlySpan<byte>.Empty,
+                                       out _,
                                        _sslAuthenticationOptions);
                         }
                     }
@@ -1211,12 +1214,12 @@ namespace System.Net.Security
                 return default;
             }
 
-            return GenerateToken(default);
+            return GenerateToken(default, out _);
         }
 
         private ProtocolToken GenerateAlertToken()
         {
-            return GenerateToken(default);
+            return GenerateToken(default, out _);
         }
 
         private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)

@@ -41,9 +41,10 @@ namespace System.Net.Security
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(ref context, inputBuffer, out consumed, sslAuthenticationOptions);
         }
 
         public static ProtocolToken InitializeSecurityContext(
@@ -51,9 +52,10 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? context,
             string? _ /*targetName*/,
             ReadOnlySpan<byte> inputBuffer,
+            out int consumed,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(ref context, inputBuffer, sslAuthenticationOptions);
+            return HandshakeInternal(ref context, inputBuffer, out consumed, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
@@ -173,7 +175,7 @@ namespace System.Net.Security
             {
                 return default;
             }
-            return HandshakeInternal(ref context!, null, sslAuthenticationOptions);
+            return HandshakeInternal(ref context!, null, out _, sslAuthenticationOptions);
         }
 
         public static void QueryContextStreamSizes(SafeDeleteContext? _ /*securityContext*/, out StreamSizes streamSizes)
@@ -197,10 +199,12 @@ namespace System.Net.Security
         }
 
         private static ProtocolToken HandshakeInternal(ref SafeDeleteSslContext? context,
-           ReadOnlySpan<byte> inputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
+           ReadOnlySpan<byte> inputBuffer, out int consumed, SslAuthenticationOptions sslAuthenticationOptions)
         {
             ProtocolToken token = default;
             token.RentBuffer = true;
+            consumed = 0;
+
             try
             {
                 if ((null == context) || context.IsInvalid)
@@ -209,6 +213,7 @@ namespace System.Net.Security
                 }
 
                 SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, ref token);
+                consumed = inputBuffer.Length;
 
                 if (errorCode == SecurityStatusPalErrorCode.CredentialsNeeded)
                 {
