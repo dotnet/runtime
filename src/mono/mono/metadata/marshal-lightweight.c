@@ -2883,7 +2883,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 		int csig_argnum = get_csig_argnum (i, m);
-		if(mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_lowering [i].by_reference) {
+		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL) && swift_lowering [i].by_reference) {
 			mono_mb_emit_ldarg (mb, csig_argnum);
 			MonoClass* klass = mono_class_from_mono_type_internal (sig->params [i]);
 			mono_mb_emit_op (mb, CEE_LDOBJ, klass);
