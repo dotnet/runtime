@@ -307,11 +307,9 @@ namespace System.Net.Security
         {
             if (context.BytesReadyForConnection > 0)
             {
-                Console.WriteLine("GetHandshakeTask Returning comple task with {0}", context.BytesReadyForConnection );
                 return Task.FromResult<SecurityStatusPalErrorCode>(SecurityStatusPalErrorCode.ContinueNeeded);
             }
 
-            Console.WriteLine("GetHandshakeTask returning {0} {1}", context.Tcs, context.Tcs?.Task.GetHashCode());
             return context.Tcs?.Task;
         }
 

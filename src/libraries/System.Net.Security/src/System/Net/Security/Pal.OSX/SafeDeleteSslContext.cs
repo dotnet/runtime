@@ -311,7 +311,7 @@ namespace System.Net
                 {
                     return -1;
                 }
-Console.WriteLine("FramerStatusUpdate called for {0} on {1}", status, context.GetHashCode());
+
                 switch (status)
                 {
                     case PAL_NwStatusUpdates.FramerStart:
@@ -366,7 +366,6 @@ Console.WriteLine("FramerStatusUpdate called for {0} on {1}", status, context.Ge
                     case PAL_NwStatusUpdates.ConnectionWriteFinished:
                     case PAL_NwStatusUpdates.ConnectionWriteFailed:
                         context._writeStatus = data1.ToInt32();
-                        Console.WriteLine("FramerStatusUpdate ConnectionWriteFinished on {0}", context._writeWaiter!.GetHashCode());
                         break;
                     default:
                         Debug.Assert(false);
@@ -416,21 +415,10 @@ Console.WriteLine("FramerStatusUpdate called for {0} on {1}", status, context.Ge
 
                              if (!context._handshakeDone)
                             {
-//Console.WriteLine("WriteToConnection1: setting result {0} on {1} new one is {2}", SecurityStatusPalErrorCode.ContinueNeeded, Tcs!.Task.GetHashCode(), context.Tcs.Task.GetHashCode());
-
                                 // get new TCS before signalling completion to avoild race condition
                                 var Tcs = context.Tcs;
                                 context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
-
-                    //    context._waiter!.Set();
                                 Tcs!.TrySetResult(SecurityStatusPalErrorCode.ContinuePendig);
-
-                                Console.WriteLine("WriteToConnection2: setting result {0} on {1} new one is {2}", SecurityStatusPalErrorCode.ContinueNeeded, Tcs!.Task.GetHashCode(), context.Tcs.Task.GetHashCode());
-                            }
-                            else
-                            {
-                                Console.WriteLine("WriteToConnection: Waking up {0}", context._writeWaiter!.GetHashCode());
-                                //context._writeWaiter!.Set();
                             }
                         }
                         context._writeWaiter!.Set();
@@ -449,7 +437,6 @@ Console.WriteLine("FramerStatusUpdate called for {0} on {1}", status, context.Ge
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
                 if (NetEventSource.Log.IsEnabled())
                     NetEventSource.Error(context, $"WritingToConnection failed: {e.Message}");
                 return OSStatus_writErr;
@@ -535,59 +522,33 @@ Console.WriteLine("FramerStatusUpdate called for {0} on {1}", status, context.Ge
                 return 0;
             }
 
-            _readWaiter!.Reset();
-            Debug.Assert(buffer.Length > 0);
-            Debug.Assert(_framer != IntPtr.Zero);
-            //if (buffer.Length > 0)
-            //{
-                // We could decrypt just as much as we need. But the existing tests do make assumptions about decrypting more and being able to operate with that.
-                //StartDecrypt(int.MaxValue);
-                Console.WriteLine("Dectrypt calling NwProcessInputData!!!! 0x{0:x}", SslContext.DangerousGetHandle());
-                fixed (byte* ptr = buffer)
-                {
-                    Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, buffer.Length);
-                }
-                Console.WriteLine("Dectrypt NwProcessInputData 1  is done 0x{0:x} wait????!!!!!", SslContext.DangerousGetHandle());
-                //StartDecrypt(int.MaxValue);
-                //_readWaiter.Wait();
-                Console.WriteLine("Dectrypt NwProcessInputData 2 is done 0x{0:x}!!!!!", SslContext.DangerousGetHandle());
-                //_readWaiter.Wait();
-
-
-
-
-                //token.SetPayload(_outputBuffer.ActiveSpan);
-                //_outputBuffer.Discard(_outputBuffer.ActiveLength);
-Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}", 0, _inputBuffer.ActiveLength, _readStatus);
-
-/*
-                int length = Read(buffer);
-                Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}", length, _inputBuffer.ActiveLength, _readStatus);
-                if (length > 0)
-                {
-                    Console.WriteLine(new StackTrace(true));
-                }
-                */
-                return 0;
-                //token.Status = _readStatus == OSStatus_noErr ? new SecurityStatusPal(SecurityStatusPalErrorCode.OK) : new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError);
+            if (_framer == IntPtr.Zero)
+            {
+                // We are shutting down
+                return -1;
+            }
+           // _readWaiter!.Reset();
+            fixed (byte* ptr = buffer)
+            {
+                Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, buffer.Length);
+            }
+            return 0;
         }
 
         internal unsafe void Encrypt(void*  buffer, int bufferLength, ref ProtocolToken token)
         {
             _writeWaiter!.Reset();
             Interop.AppleCrypto.NwSendToConnection(SslContext, GCHandle.ToIntPtr(gcHandle), buffer, bufferLength);
-            Console.WriteLine("Encrypt waitiung for {0}", _writeWaiter.GetHashCode());
+            // this will be updated by WriteCompleted
             _writeWaiter!.Wait();
 
             if (_writeStatus == 0)
             {
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
                 ReadPendingWrites(ref token);
-                Console.WriteLine("Encrypt done for {0} with status {1} and {2} bytes of data", _writeWaiter.GetHashCode(), _writeStatus, token.Size);
             }
             else
             {
-                Console.WriteLine("Encrypt FVAILED ewitgh {0}", token.Status);
                 token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError,
                                         Interop.AppleCrypto.CreateExceptionForOSStatus((int)_writeStatus));
             }
@@ -670,11 +631,6 @@ Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}"
 
         private static void SetProtocols(SafeSslHandle sslContext, SslProtocols protocols)
         {
-            /*
-            (int minIndex, int maxIndex) = protocols.ValidateContiguous(s_orderedSslProtocols);
-            SslProtocols minProtocolId = s_orderedSslProtocols[minIndex];
-            SslProtocols maxProtocolId = s_orderedSslProtocols[maxIndex];
-*/
             (SslProtocols minProtocolId, SslProtocols maxProtocolId) = GetMinMaxProtocols(protocols);
             // Set the min and max.
             Interop.AppleCrypto.SslSetMinProtocolVersion(sslContext, minProtocolId);
@@ -723,7 +679,7 @@ Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}"
             return Tcs.Task;
         }
 
-         public unsafe SecurityStatusPal PerformNwHandshake(ReadOnlySpan<byte> inputBuffer)
+        public unsafe SecurityStatusPal PerformNwHandshake(ReadOnlySpan<byte> inputBuffer)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (handshakeStarted && inputBuffer.Length == 0)
@@ -731,47 +687,32 @@ Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}"
                 // We may be asked to generate Alter tokens and that is not supported on macOS
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
             }
-            //SafeSslHandle sslHandle = sslContext!.SslContext;
-            Console.WriteLine("--------------------- {0}", _handshakeDone);
+
             if (_handshakeDone)
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinueNeeded);
             }
-Console.WriteLine("PerformNwHandshake called with {0} bytes framer is {1}", inputBuffer.Length, _framer);
             if (_framer != IntPtr.Zero && inputBuffer.Length > 0)
             {
-          //      lock (SslContext)
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                fixed (byte* ptr = &MemoryMarshal.GetReference(inputBuffer))
                 {
-                    ObjectDisposedException.ThrowIf(_disposed, this);
-                    fixed (byte* ptr = &MemoryMarshal.GetReference(inputBuffer))
-                    {
-                        Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, inputBuffer.Length);
-                    }
+                    Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, inputBuffer.Length);
                 }
 
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
             }
 
-
             if (inputBuffer.Length == 0)
             {
-                if (handshakeStarted)
-                {
-                    Console.WriteLine(new StackTrace(true));
-                }
                 Debug.Assert(handshakeStarted == false);
 
                 handshakeStarted = true;
                 bool add = false;
                 // We grab reference to prevent disposal while handshake is pending.
                 this.DangerousAddRef(ref add);
-                Console.WriteLine("Starting handleke on {0} with gchandle {1}", GetHashCode(), GCHandle.ToIntPtr(gcHandle));
-                // (SslContext)
-                {
-                    ObjectDisposedException.ThrowIf(_disposed, this);
-                    Interop.AppleCrypto.NwStartHandshake(SslContext, GCHandle.ToIntPtr(gcHandle));
-                }
-                Console.WriteLine("PerformNwHandshake finished");
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                Interop.AppleCrypto.NwStartHandshake(SslContext, GCHandle.ToIntPtr(gcHandle));
             }
             return new SecurityStatusPal(SecurityStatusPalErrorCode.ContinuePendig);
         }

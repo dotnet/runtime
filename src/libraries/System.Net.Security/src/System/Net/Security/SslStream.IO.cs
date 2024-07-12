@@ -1093,8 +1093,6 @@ namespace System.Net.Security
                         int copyLength = SslStreamPal.ReadDecryptedData(_securityContext, buffer.Span);
                         processedLength += copyLength;
 
-                        Console.WriteLine("Git {0} bytes of decrypted NEW  data!!!!!", copyLength);
-
                         if (copyLength == buffer.Length)
                         {
                             // We have more decrypted data after we filled provided buffer.
@@ -1211,8 +1209,6 @@ namespace System.Net.Security
 
             if (_lastFrame.Header.Length < 0)
             {
-                Console.WriteLine("GetFrameSize WTF on {0} bytes", buffer.Length);
-
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "invalid TLS frame size");
                 throw new AuthenticationException(SR.net_frame_read_size);
             }
