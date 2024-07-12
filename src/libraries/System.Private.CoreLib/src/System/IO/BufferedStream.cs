@@ -1168,7 +1168,8 @@ namespace System.IO
 
             if (_writePos >= _bufferSize - 1)
             {
-                _stream.Write(_buffer, 0, _writePos);
+                Debug.Assert(_stream != null);
+                _stream.Write(_buffer!, 0, _writePos);
                 _writePos = 0;
             }
 
