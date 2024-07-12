@@ -27,6 +27,11 @@ check_function_exists(
     HAVE_OPENSSL_SHA3_SQUEEZE
 )
 
+check_source_compiles(C "
+#include <openssl/engine.h>
+int main(void) { ENGINE_init(NULL); return 1; }"
+HAVE_OPENSSL_ENGINE)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/pal_crypto_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/pal_crypto_config.h)
