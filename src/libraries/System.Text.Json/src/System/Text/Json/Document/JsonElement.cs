@@ -1284,8 +1284,8 @@ namespace System.Text.Json
                     {
                         if (element1.ValueIsEscaped)
                         {
-                            // Both values are escaped, force an allocation to unescape the RHS.
-                            return element1.ValueEquals(element2.GetString());
+                            // Need to unescape and compare both inputs.
+                            return JsonReaderHelper.UnescapeAndCompareBothInputs(element1.ValueSpan, element2.ValueSpan);
                         }
 
                         // Swap values so that unescaping is handled by the LHS.
@@ -1408,8 +1408,8 @@ namespace System.Text.Json
                         {
                             if (left.NameIsEscaped)
                             {
-                                // Both values are escaped, force an allocation to unescape the RHS.
-                                return left.NameEquals(right.Name);
+                                // Need to unescape and compare both inputs.
+                                return JsonReaderHelper.UnescapeAndCompareBothInputs(left.NameSpan, right.NameSpan);
                             }
 
                             // Swap values so that unescaping is handled by the LHS
