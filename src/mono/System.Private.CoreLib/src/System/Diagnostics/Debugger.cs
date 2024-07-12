@@ -41,5 +41,9 @@ namespace System.Diagnostics
         public static void NotifyOfCrossThreadDependency()
         {
         }
+
+        public static void BreakForUserUnhandledException(Exception exception)
+        {
+        }
     }
 }
