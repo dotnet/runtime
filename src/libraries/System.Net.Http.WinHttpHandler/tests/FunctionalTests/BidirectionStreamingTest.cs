@@ -326,7 +326,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         }
 
         [ConditionalFact(nameof(TestsBackwardsCompatibilityEnabled))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103754")]
         public async Task BackwardsCompatibility_DowngradeToHttp11()
         {
             TaskCompletionSource<object> completeStreamTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
