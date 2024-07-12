@@ -18,6 +18,11 @@ namespace System
 
         public bool MoveNext()
         {
+            if (_str == null)
+            {
+                throw new ObjectDisposedException(null);
+            }
+        
             int index = _index + 1;
             int length = _str.Length;
 
