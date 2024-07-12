@@ -2269,7 +2269,6 @@ public:
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
-    bool gtRequestSetFlags();
 
 #ifdef DEBUG
     static int         gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);

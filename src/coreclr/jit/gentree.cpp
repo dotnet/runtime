@@ -9961,81 +9961,7 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 
 bool GenTree::gtSetFlags() const
 {
-    //
-    // When FEATURE_SET_FLAGS (TARGET_ARM) is active the method returns true
-    //    when the gtFlags has the flag GTF_SET_FLAGS set
-    // otherwise the architecture will be have instructions that typically set
-    //    the flags and this method will return true.
-    //
-    //    Exceptions: GT_IND (load/store) is not allowed to set the flags
-    //                and on XARCH the GT_MUL/GT_DIV and all overflow instructions
-    //                do not set the condition flags
-    //
-    // Precondition we have a GTK_SMPOP
-    //
-    if (!varTypeIsIntegralOrI(TypeGet()) && (TypeGet() != TYP_VOID))
-    {
-        return false;
-    }
-
-    if (((gtFlags & GTF_SET_FLAGS) != 0) && (gtOper != GT_IND))
-    {
-        // GTF_SET_FLAGS is not valid on GT_IND and is overlaid with GTF_NONFAULTING_IND
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-bool GenTree::gtRequestSetFlags()
-{
-    bool result = false;
-
-#if FEATURE_SET_FLAGS
-    // This method is a Nop unless FEATURE_SET_FLAGS is defined
-
-    // In order to set GTF_SET_FLAGS
-    //              we must have a GTK_SMPOP
-    //          and we have a integer or machine size type (not floating point or TYP_LONG on 32-bit)
-    //
-    if (!OperIsSimple())
-        return false;
-
-    if (!varTypeIsIntegralOrI(TypeGet()))
-        return false;
-
-    switch (gtOper)
-    {
-        case GT_IND:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-            // These will turn into simple load from memory instructions
-            // and we can't force the setting of the flags on load from memory
-            break;
-
-        case GT_MUL:
-        case GT_DIV:
-            // These instructions don't set the flags (on x86/x64)
-            //
-            break;
-
-        default:
-            // Otherwise we can set the flags for this gtOper
-            // and codegen must set the condition flags.
-            //
-            gtFlags |= GTF_SET_FLAGS;
-            result = true;
-            break;
-    }
-#endif // FEATURE_SET_FLAGS
-
-    // Codegen for this tree must set the condition flags if
-    // this method returns true.
-    //
-    return result;
+    return (gtFlags & GTF_SET_FLAGS) != 0;
 }
 
 GenTreeUseEdgeIterator::GenTreeUseEdgeIterator()
@@ -10680,10 +10606,6 @@ bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
                                             : '-'); // H is for Hoist this expr
     printf("%c", (flags & GTF_REVERSE_OPS) ? 'R' : '-');
     printf("%c", (flags & GTF_UNSIGNED) ? 'U' : '-');
-#if FEATURE_SET_FLAGS
-    printf("%c", (flags & GTF_SET_FLAGS) ? 'S' : '-');
-    ++charsDisplayed;
-#endif
 
     // Both GTF_SPILL and GTF_SPILLED: '#'
     //               Only GTF_SPILLED: 'z'
@@ -13281,10 +13203,6 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
 
         // 60 spaces for alignment
         printf("%-60s", "");
-#if FEATURE_SET_FLAGS
-        // additional flag enlarges the flag field by one character
-        printf(" ");
-#endif
 
         indentStack.Push(operandArc);
         indentStack.print();
