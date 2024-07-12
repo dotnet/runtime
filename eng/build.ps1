@@ -31,7 +31,7 @@ function Get-Help() {
   Write-Host "Common settings:"
   Write-Host "  -arch (-a)                     Target platform: x86, x64, arm, arm64, or wasm."
   Write-Host "                                 Pass a comma-separated list to build for multiple architectures."
-  Write-Host ("                                 [Default: {0} (the OS architecture.)]" -f [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant())
+  Write-Host "                                 [Default: Your machine's architecture.]"
   Write-Host "  -binaryLog (-bl)               Output binary log."
   Write-Host "  -configuration (-c)            Build configuration: Debug, Release or Checked."
   Write-Host "                                 Checked is exclusive to the CLR subset. It is the same as Debug, except code is"
