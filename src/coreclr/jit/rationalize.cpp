@@ -372,6 +372,26 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
                     break;
                 }
 
+#if defined(TARGET_XARCH)
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
+                        {
+                            break;
+                        }
+                    }
+                    else if (!varTypeIsShort(simdBaseType))
+                    {
+                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                        {
+                            break;
+                        }
+                    }
+                }
+#endif // TARGET_XARCH
+
                 result = comp->gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
                 break;
             }

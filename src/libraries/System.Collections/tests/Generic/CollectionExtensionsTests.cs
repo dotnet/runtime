@@ -151,15 +151,6 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentNullException>("set", () => CollectionExtensions.TryGetAlternateLookup<int, long>((HashSet<int>)null, out _));
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/102906:
-        // Revise this test when EqualityComparer<string>.Default implements IAlternateEqualityComparer<ReadOnlySpan<char>, string>
-        [Fact]
-        public void GetAlternateLookup_FailsForDefaultComparer()
-        {
-            Assert.False(new Dictionary<string, string>().TryGetAlternateLookup<string, string, ReadOnlySpan<char>>(out _));
-            Assert.False(new HashSet<string>().TryGetAlternateLookup<string, ReadOnlySpan<char>>(out _));
-        }
-
         [Fact]
         public void GetAlternateLookup_FailsWhenIncompatible()
         {
@@ -189,26 +180,23 @@ namespace System.Collections.Tests
             Assert.False(hashSet.TryGetAlternateLookup<string, int>(out _));
         }
 
+        public static IEnumerable<object[]> Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData()
+        {
+            yield return new object[] { EqualityComparer<string>.Default };
+            yield return new object[] { StringComparer.Ordinal };
+            yield return new object[] { StringComparer.OrdinalIgnoreCase };
+            yield return new object[] { StringComparer.InvariantCulture };
+            yield return new object[] { StringComparer.InvariantCultureIgnoreCase };
+            yield return new object[] { StringComparer.CurrentCulture };
+            yield return new object[] { StringComparer.CurrentCultureIgnoreCase };
+        }
+
         [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        [InlineData(4)]
-        [InlineData(5)]
-        public void Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary(int mode)
+        [MemberData(nameof(Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary_MemberData))]
+        public void Dictionary_GetAlternateLookup_OperationsMatchUnderlyingDictionary(IEqualityComparer<string> comparer)
         {
             // Test with a variety of comparers to ensure that the alternate lookup is consistent with the underlying dictionary
-            Dictionary<string, int> dictionary = new(mode switch
-            {
-                0 => StringComparer.Ordinal,
-                1 => StringComparer.OrdinalIgnoreCase,
-                2 => StringComparer.InvariantCulture,
-                3 => StringComparer.InvariantCultureIgnoreCase,
-                4 => StringComparer.CurrentCulture,
-                5 => StringComparer.CurrentCultureIgnoreCase,
-                _ => throw new ArgumentOutOfRangeException(nameof(mode))
-            });
+            Dictionary<string, int> dictionary = new(comparer);
             Dictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> lookup = dictionary.GetAlternateLookup<string, int, ReadOnlySpan<char>>();
             Assert.Same(dictionary, lookup.Dictionary);
             Assert.Same(lookup.Dictionary, lookup.Dictionary);
@@ -241,7 +229,8 @@ namespace System.Collections.Tests
 
             // Ensure that case-sensitivity of the comparer is respected
             lookup["a".AsSpan()] = 42;
-            if (dictionary.Comparer.Equals(StringComparer.Ordinal) ||
+            if (dictionary.Comparer.Equals(EqualityComparer<string>.Default) ||
+                dictionary.Comparer.Equals(StringComparer.Ordinal) ||
                 dictionary.Comparer.Equals(StringComparer.InvariantCulture) ||
                 dictionary.Comparer.Equals(StringComparer.CurrentCulture))
             {
