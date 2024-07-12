@@ -85,7 +85,7 @@ namespace System.Net
                 if (UseNwFramework)
                 {
                     gcHandle = GCHandle.Alloc(this, GCHandleType.Weak);
-                    _sslContext = Interop.AppleCrypto.NwCreateContext(0, GCHandle.ToIntPtr(gcHandle));
+                    _sslContext = Interop.AppleCrypto.NwCreateContext(0);
                     Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
                     _writeWaiter = new ManualResetEventSlim();
                     _readWaiter = new ManualResetEventSlim();
@@ -358,7 +358,7 @@ Console.WriteLine("FramerStatusUpdate called for {0} on {1}", status, context.Ge
                         if (data1 > 0)
                         {
                             // schedule next read unless we got EOF
-                            Interop.AppleCrypto.NwReadFromConnection(context.SslContext, GCHandle.ToIntPtr(context.gcHandle), null, int.MaxValue);
+                            Interop.AppleCrypto.NwReadFromConnection(context.SslContext, GCHandle.ToIntPtr(context.gcHandle));
                         }
 
                         context._readWaiter!.Set();
@@ -710,18 +710,15 @@ Console.WriteLine("Decrypt DONE Decrypted {0} bytes {1} remaining status is {2}"
             Interop.AppleCrypto.SslSetCertificate(sslContext, ptrs);
         }
 
-        public unsafe Task<SecurityStatusPalErrorCode> StartDecrypt(int size)
+        public unsafe Task<SecurityStatusPalErrorCode> StartDecrypt()
         {
             //Debug.Assert(size > 0);
 
             if (Tcs == null)
             {
                 Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
-            // We can get zero byte reands and Aplle crypto does not really like zero buffers:w!
-                Interop.AppleCrypto.NwReadFromConnection(SslContext, GCHandle.ToIntPtr(gcHandle), null, size < 0 ? size : int.MaxValue);
-                Console.WriteLine("ALlocated new tDECRYPT ask {0} and styarted read", Tcs.Task.GetHashCode());
+                Interop.AppleCrypto.NwReadFromConnection(SslContext, GCHandle.ToIntPtr(gcHandle));
             }
-
 
             return Tcs.Task;
         }

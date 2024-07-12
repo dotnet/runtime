@@ -76,7 +76,7 @@ internal static partial class Interop
         internal static partial System.Net.SafeSslHandle SslCreateContext(int isServer);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwCreateContext")]
-        internal static partial System.Net.SafeSslHandle NwCreateContext(int isServer, nint gcHandle);
+        internal static partial System.Net.SafeSslHandle NwCreateContext(int isServer);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwInit")]
         internal static unsafe partial int NwInit(delegate* unmanaged<IntPtr, PAL_NwStatusUpdates, IntPtr, IntPtr, int> statusCallback, delegate* unmanaged<IntPtr, byte*, void**, int> readCallback, delegate* unmanaged<IntPtr, byte*, void**, int> writeCallback);
@@ -173,7 +173,7 @@ internal static partial class Interop
         internal static unsafe partial int NwSendToConnection(SafeSslHandle sslHandle, nint gcHandle, void* ptr, int length);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwReadFromConnection")]
-        internal static unsafe partial int NwReadFromConnection(SafeSslHandle sslHandle, nint gcHandle, void* ptr, int length);
+        internal static unsafe partial int NwReadFromConnection(SafeSslHandle sslHandle, nint gcHandle);
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwGetConnectionInfo")]
         internal static unsafe partial int NwGetConnectionInfo(SafeSslHandle sslHandle, out SslProtocols protocol, out TlsCipherSuite cipherSuite, ref IntPtr negotiatedAlpn, ref int alpnLength);

@@ -299,9 +299,9 @@ typedef int (*SslStatusUpdateFunc)(size_t gcHandle, PAL_NwStatusUpdates_en statu
 /* This will initialize Network Framework and it will setup basic handlers */
 PALEXPORT int32_t AppleCryptoNative_NwInit(SslStatusUpdateFunc statusFunc, SSLReadFunc readFunc, SSLWriteFunc writeFunc);
 
-PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer, size_t gcHandle);
+PALEXPORT nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer);
 PALEXPORT int32_t AppleCryptoNative_NwSendToConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, int length);
-PALEXPORT int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle, uint8_t* buffer, unsigned int length);
+PALEXPORT int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connection, size_t gcHandle);
 
 PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);
 

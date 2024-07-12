@@ -211,16 +211,11 @@ namespace System.Net.Security
                 if (securityContext.UseNwFramework)
                 {
                     count = securityContext.Decrypt(buffer);
-
-
-
-                            if (GetAvailableDecryptedBytes(securityContext) == 0 && securityContext.Tcs == null)
-                            {
-                                  securityContext.StartDecrypt(int.MaxValue);
-                                  //securityContext.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
-                                  Console.WriteLine("ALlocated new DECRYPT task {0} and styarted read count {1}", securityContext.Tcs!.Task.GetHashCode(), count);
-                            }
-                            return new SecurityStatusPal(count > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinuePendig);
+                    if (GetAvailableDecryptedBytes(securityContext) == 0 && securityContext.Tcs == null)
+                    {
+                        securityContext.StartDecrypt();
+                    }
+                    return new SecurityStatusPal(count > 0 ? SecurityStatusPalErrorCode.OK : SecurityStatusPalErrorCode.ContinuePendig);
                 }
 
                 securityContext.Write(buffer);
