@@ -42,6 +42,7 @@ namespace System.Diagnostics
         {
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
         public static void BreakForUserUnhandledException(Exception exception)
         {
         }
