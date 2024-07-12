@@ -59,15 +59,10 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-#elif defined(TARGET_SUNOS)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(TARGET_SUNOS)
+#include <procfs.h>
 #endif
 
 #ifdef __linux__

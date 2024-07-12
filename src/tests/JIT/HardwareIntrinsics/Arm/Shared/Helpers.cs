@@ -5248,6 +5248,82 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
+        public static float FPExponentialAccelerator(uint op1)
+        {
+            uint index = op1 & 0b111111;
+            uint coeff = index switch
+            {
+                 0 => 0x000000,
+                 1 => 0x0164d2,
+                 2 => 0x02cd87,
+                 3 => 0x043a29,
+                 4 => 0x05aac3,
+                 5 => 0x071f62,
+                 6 => 0x08980f,
+                 7 => 0x0a14d5,
+                 8 => 0x0b95c2,
+                 9 => 0x0d1adf,
+                10 => 0x0ea43a,
+                11 => 0x1031dc,
+                12 => 0x11c3d3,
+                13 => 0x135a2b,
+                14 => 0x14f4f0,
+                15 => 0x16942d,
+                16 => 0x1837f0,
+                17 => 0x19e046,
+                18 => 0x1b8d3a,
+                19 => 0x1d3eda,
+                20 => 0x1ef532,
+                21 => 0x20b051,
+                22 => 0x227043,
+                23 => 0x243516,
+                24 => 0x25fed7,
+                25 => 0x27cd94,
+                26 => 0x29a15b,
+                27 => 0x2b7a3a,
+                28 => 0x2d583f,
+                29 => 0x2f3b79,
+                30 => 0x3123f6,
+                31 => 0x3311c4,
+                32 => 0x3504f3,
+                33 => 0x36fd92,
+                34 => 0x38fbaf,
+                35 => 0x3aff5b,
+                36 => 0x3d08a4,
+                37 => 0x3f179a,
+                38 => 0x412c4d,
+                39 => 0x4346cd,
+                40 => 0x45672a,
+                41 => 0x478d75,
+                42 => 0x49b9be,
+                43 => 0x4bec15,
+                44 => 0x4e248c,
+                45 => 0x506334,
+                46 => 0x52a81e,
+                47 => 0x54f35b,
+                48 => 0x5744fd,
+                49 => 0x599d16,
+                50 => 0x5bfbb8,
+                51 => 0x5e60f5,
+                52 => 0x60ccdf,
+                53 => 0x633f89,
+                54 => 0x65b907,
+                55 => 0x68396a,
+                56 => 0x6ac0c7,
+                57 => 0x6d4f30,
+                58 => 0x6fe4ba,
+                59 => 0x728177,
+                60 => 0x75257d,
+                61 => 0x77d0df,
+                62 => 0x7a83b3,
+                63 => 0x7d3e0c,
+                 _ => 0x000000
+            };
+
+            uint result = ((op1 & 0b11111111000000) << 17) | coeff;
+            return BitConverter.UInt32BitsToSingle(result);
+        }
+
         public static float FPReciprocalStepFused(float op1, float op2) => FusedMultiplySubtract(2, op1, op2);
 
         public static float FPReciprocalSqrtStepFused(float op1, float op2) => FusedMultiplySubtract(3, op1, op2) / 2;
@@ -5320,6 +5396,82 @@ namespace JIT.HardwareIntrinsics.Arm
             }
 
             return result;
+        }
+        
+        public static double FPExponentialAccelerator(ulong op1)
+        {
+            ulong index = op1 & 0b111111;
+            ulong coeff = index switch
+            {
+                 0 => 0x0000000000000,
+                 1 => 0x02C9A3E778061,
+                 2 => 0x059B0D3158574,
+                 3 => 0x0874518759BC8,
+                 4 => 0x0B5586CF9890F,
+                 5 => 0x0E3EC32D3D1A2,
+                 6 => 0x11301D0125B51,
+                 7 => 0x1429AAEA92DE0,
+                 8 => 0x172B83C7D517B,
+                 9 => 0x1A35BEB6FCB75,
+                10 => 0x1D4873168B9AA,
+                11 => 0x2063B88628CD6,
+                12 => 0x2387A6E756238,
+                13 => 0x26B4565E27CDD,
+                14 => 0x29E9DF51FDEE1,
+                15 => 0x2D285A6E4030B,
+                16 => 0x306FE0A31B715,
+                17 => 0x33C08B26416FF,
+                18 => 0x371A7373AA9CB,
+                19 => 0x3A7DB34E59FF7,
+                20 => 0x3DEA64C123422,
+                21 => 0x4160A21F72E2A,
+                22 => 0x44E086061892D,
+                23 => 0x486A2B5C13CD0,
+                24 => 0x4BFDAD5362A27,
+                25 => 0x4F9B2769D2CA7,
+                26 => 0x5342B569D4F82,
+                27 => 0x56F4736B527DA,
+                28 => 0x5AB07DD485429,
+                29 => 0x5E76F15AD2148,
+                30 => 0x6247EB03A5585,
+                31 => 0x6623882552225,
+                32 => 0x6A09E667F3BCD,
+                33 => 0x6DFB23C651A2F,
+                34 => 0x71F75E8EC5F74,
+                35 => 0x75FEB564267C9,
+                36 => 0x7A11473EB0187,
+                37 => 0x7E2F336CF4E62,
+                38 => 0x82589994CCE13,
+                39 => 0x868D99B4492ED,
+                40 => 0x8ACE5422AA0DB,
+                41 => 0x8F1AE99157736,
+                42 => 0x93737B0CDC5E5,
+                43 => 0x97D829FDE4E50,
+                44 => 0x9C49182A3F090,
+                45 => 0xA0C667B5DE565,
+                46 => 0xA5503B23E255D,
+                47 => 0xA9E6B5579FDBF,
+                48 => 0xAE89F995AD3AD,
+                49 => 0xB33A2B84F15FB,
+                50 => 0xB7F76F2FB5E47,
+                51 => 0xBCC1E904BC1D2,
+                52 => 0xC199BDD85529C,
+                53 => 0xC67F12E57D14B,
+                54 => 0xCB720DCEF9069,
+                55 => 0xD072D4A07897C,
+                56 => 0xD5818DCFBA487,
+                57 => 0xDA9E603DB3285,
+                58 => 0xDFC97337B9B5F,
+                59 => 0xE502EE78B3FF6,
+                60 => 0xEA4AFA2A490DA,
+                61 => 0xEFA1BEE615A27,
+                62 => 0xF50765B6E4540,
+                63 => 0xFA7C1819E90D8,
+                 _ => 0x0000000000000
+            };
+
+            ulong result = ((op1 & 0b11111111111000000) << 46) | coeff;
+            return BitConverter.UInt64BitsToDouble(result);
         }
 
         public static double FPReciprocalStepFused(double op1, double op2) => FusedMultiplySubtract(2, op1, op2);
