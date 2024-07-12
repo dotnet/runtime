@@ -374,6 +374,10 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         m_dwFlags = 0;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+        m_returnedFpFieldOffsets[0] = 0;
+        m_returnedFpFieldOffsets[1] = 0;
+#endif
     }
 
     UINT SizeOfArgStack()
@@ -435,6 +439,21 @@ public:
             ComputeReturnFlags();
         return m_dwFlags >> RETURN_FP_SIZE_SHIFT;
     }
+
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    FpStructInRegistersInfo GetReturnFpStructInRegistersInfo()
+    {
+        WRAPPER_NO_CONTRACT;
+        if (!(m_dwFlags & RETURN_FLAGS_COMPUTED))
+            ComputeReturnFlags();
+
+        return {
+            FpStruct::Flags(m_dwFlags >> RETURN_FP_SIZE_SHIFT),
+            m_returnedFpFieldOffsets[0],
+            m_returnedFpFieldOffsets[1],
+        };
+    }
+#endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
 #ifdef TARGET_X86
     //=========================================================================
@@ -909,6 +928,11 @@ public:
 protected:
     DWORD               m_dwFlags;              // Cached flags
     int                 m_nSizeOfArgStack;      // Cached value of SizeOfArgStack
+#if defined(TARGET_RISCV64) || defined(TARGET_RISCV64)
+    // Cached offsets of struct fields returned according to hardware floating-point calling convention
+    // (FpStruct::Flags are packed in m_dwFlags)
+    unsigned m_returnedFpFieldOffsets[ENREGISTERED_RETURNTYPE_MAXSIZE / sizeof(ARG_SLOT)];
+#endif
 
     DWORD               m_argNum;
 
@@ -1833,6 +1857,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
 
     if (cFPRegs > 0 && !this->IsVarArg())
     {
+        // If there's enough free registers, pass according to hardware floating-point calling convention
+
         if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
         {
             assert(cFPRegs == 1);
@@ -1862,17 +1888,13 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
         {
             int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-            static const FpStruct::Flags twoFloats = FpStruct::Flags(FpStruct::BothFloat
-                | (2 << FpStruct::PosSizeShift1st)
-                | (2 << FpStruct::PosSizeShift2nd));
-            if (info.flags == twoFloats) // struct with two float-fields.
+            if (info.flags != FpStruct::UseIntCallConv)
             {
+                assert(info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat));
                 m_argLocDescForStructInRegs.Init();
                 m_hasArgLocDescForStructInRegs = true;
                 m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                assert(cFPRegs == 2);
-                m_argLocDescForStructInRegs.m_cFloatReg = 2;
-                assert(argSize == 8);
+                m_argLocDescForStructInRegs.m_cFloatReg = cFPRegs;
                 m_argLocDescForStructInRegs.m_structFields = info;
             }
             m_idxFPReg += cFPRegs;
@@ -1881,6 +1903,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     }
 
     {
+        // Pass according to integer calling convention
         const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
         if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS)
         {
@@ -2017,20 +2040,14 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
             }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
             {
                 assert(!thValueType.IsTypeDesc());
                 FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(thValueType);
                 flags |= info.flags << RETURN_FP_SIZE_SHIFT;
-                break;
-            }
-#elif defined(TARGET_RISCV64)
-            if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
-            {
-                assert(!thValueType.IsTypeDesc());
-                FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(thValueType);
-                flags |= info.flags << RETURN_FP_SIZE_SHIFT;
+                m_returnedFpFieldOffsets[0] = info.offset1st;
+                m_returnedFpFieldOffsets[1] = info.offset2nd;
                 break;
             }
 #else
