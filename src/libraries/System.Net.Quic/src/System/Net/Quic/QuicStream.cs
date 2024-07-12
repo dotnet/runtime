@@ -406,9 +406,10 @@ public sealed partial class QuicStream
             {
                 for (int i = 0; i < length; i++)
                 {
-                    if (buffer.ActiveSpan[bytesRead + i] != (byte)offset)
+                    byte expected = (byte)(offset % 128);
+                    if (buffer.ActiveSpan[bytesRead + i] != expected)
                     {
-                        Environment.FailFast($"Diverging at offset {offset}, expected 0x{(byte)offset:x2}, got 0x{buffer.ActiveSpan[bytesRead + i]:x2}");
+                        Environment.FailFast($"Diverging at offset {offset}, expected 0x{expected:x2}, got 0x{buffer.ActiveSpan[bytesRead + i]:x2}");
                     }
                     offset++;
                 }

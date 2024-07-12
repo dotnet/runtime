@@ -114,7 +114,7 @@ namespace HttpStress
             byte[] byteContent = new byte[length];
             for (int i = 0; i < length; i++)
             {
-                byteContent[i] = (byte)i;
+                byteContent[i] = (byte)(i % 128);
             }
 
             return byteContent;
@@ -375,6 +375,8 @@ namespace HttpStress
                 async ctx =>
                 {
                     byte[] byteContent = ctx.GetByteArray(0, ctx.MaxContentLength);
+                    // byte[] byteContent = ctx.GetByteArray(0, 20);
+                    // System.Console.WriteLine($"Sending {byteContent.Length} bytes");
                     ulong checksum = CRC.CalculateCRC(byteContent);
 
                     using var req = new HttpRequestMessage(HttpMethod.Post, "/duplexSlow") { Content = new ByteAtATimeNoLengthContent(byteContent) };
@@ -511,9 +513,10 @@ namespace HttpStress
         {
             for (int i = 0; i < content.Length; i++)
             {
-                if (content[i] != (byte)i)
+                byte expected = (byte)(i % 128);
+                if (content[i] != expected)
                 {
-                    throw new Exception($"Expected response content diverging at index {i}, expected 0x{(byte)i:X2} got 0x{content[i]:X2}. {details}");
+                    throw new Exception($"Expected response content diverging at index {i}, expected 0x{expected:x2} got 0x{content[i]:x2}. {details}");
                 }
             }
 
