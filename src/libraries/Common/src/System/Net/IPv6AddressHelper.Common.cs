@@ -8,7 +8,6 @@ namespace System.Net
 {
     internal static partial class IPv6AddressHelper
     {
-        private const int Decimal = 10;
         private const int Hex = 16;
         private const int NumberOfLabels = 8;
 
@@ -194,8 +193,6 @@ namespace System.Net
                             return false;
                         }
 
-                        int numericBase = IPv6AddressHelper.Decimal;
-
                         // Skip past the closing bracket and the port separator.
                         i += 2;
                         // If there is a port, it must either be a hexadecimal or decimal number.
@@ -204,23 +201,24 @@ namespace System.Net
                         {
                             i += 2;
 
-                            numericBase = IPv6AddressHelper.Hex;
-                        }
-
-                        for (; i < end; i++)
-                        {
-                            int ch = int.CreateTruncating(name[i]) | 0x20;
-
-                            if ((ch >= '0' && ch <= '9')
-                                || (numericBase == IPv6AddressHelper.Hex
-                                    && ch >= 'a'
-                                    && ch <= 'f'))
+                            for (; i < end; i++)
                             {
-                                continue;
+                                int ch = int.CreateTruncating(name[i]);
+
+                                if (HexConverter.FromChar(ch) == 0xFF)
+                                {
+                                    return false;
+                                }
                             }
-                            else
+                        }
+                        else
+                        {
+                            for (; i < end; i++)
                             {
-                                return false;
+                                if (name[i] < TChar.CreateTruncating('0') || name[i] > TChar.CreateTruncating('9'))
+                                {
+                                    return false;
+                                }
                             }
                         }
                         continue;
@@ -326,7 +324,7 @@ namespace System.Net
         internal static void Parse<TChar>(ReadOnlySpan<TChar> address, scoped Span<ushort> numbers, out ReadOnlySpan<TChar> scopeId)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            int number = 0;
+            ushort number = 0;
             int index = 0;
             int compressorIndex = -1;
             bool numberIsValid = true;
@@ -343,7 +341,7 @@ namespace System.Net
                 {
                     if (numberIsValid)
                     {
-                        numbers[index++] = (ushort)number;
+                        numbers[index++] = number;
                         numberIsValid = false;
                     }
 
@@ -365,7 +363,7 @@ namespace System.Net
                 // IPv6 address components are separated by at least one colon.
                 else if (address[i] == TChar.CreateTruncating(':'))
                 {
-                    numbers[index++] = (ushort)number;
+                    numbers[index++] = number;
                     number = 0;
                     // Two sequential colons form a compressor ('::').
                     ++i;
@@ -410,9 +408,10 @@ namespace System.Net
                             {
                                 ++j;
                             }
-                            number = IPv4AddressHelper.ParseHostNumber(address.Slice(i, j - i));
-                            numbers[index++] = (ushort)(number >> 16);
-                            numbers[index++] = (ushort)number;
+                            int ipv4Address = IPv4AddressHelper.ParseHostNumber(address.Slice(i, j - i));
+
+                            numbers[index++] = unchecked((ushort)(ipv4Address >> 16));
+                            numbers[index++] = unchecked((ushort)(ipv4Address & 0xFFFF));
                             i = j;
 
                             // set this to avoid adding another number to
@@ -426,17 +425,9 @@ namespace System.Net
                 else
                 {
                     TChar ch = address[i++];
-                    int characterValue = int.CreateTruncating(ch);
-                    int digitValue = characterValue - '0';
+                    int castCharacter = int.CreateTruncating(ch);
 
-                    if ((digitValue < 0) || (digitValue > 9))
-                    {
-                        int lowercaseCharacterValue = characterValue | 0x20;
-
-                        digitValue = 10 + lowercaseCharacterValue - 'a';
-                    }
-
-                    number = number * IPv6AddressHelper.Hex + digitValue;
+                    number = unchecked((ushort)(number * IPv6AddressHelper.Hex + HexConverter.FromChar(castCharacter)));
                 }
             }
 
@@ -444,7 +435,7 @@ namespace System.Net
             // an IPv4 address that's already been handled
             if (numberIsValid)
             {
-                numbers[index++] = (ushort)number;
+                numbers[index++] = number;
             }
 
             // if we had a compressor sequence ("::") then we need to expand the

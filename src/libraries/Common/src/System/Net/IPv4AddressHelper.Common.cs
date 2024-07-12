@@ -255,15 +255,8 @@ namespace System.Net
                     }
                     else if (numberBase == IPv4AddressHelper.Hex)
                     {
-                        if (characterValue >= 'a' && characterValue <= 'f')
-                        {
-                            digitValue = 10 + characterValue - 'a';
-                        }
-                        else if (characterValue >= 'A' && characterValue <= 'F')
-                        {
-                            digitValue = 10 + characterValue - 'A';
-                        }
-                        else
+                        digitValue = HexConverter.FromChar(characterValue);
+                        if (digitValue == 0xFF)
                         {
                             break; // Invalid/terminator
                         }
