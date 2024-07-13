@@ -30,7 +30,12 @@ struct REGDISPLAY
 #endif // TARGET_AMD64
 
     uintptr_t   SP;
-    PCODE        IP;
+    PCODE       IP;
+
+#ifdef TARGET_AMD64
+    uintptr_t   SSP;          // keep track of SSP for EH unwind
+                              // we do not adjust the original, so only need the value
+#endif
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     Fp128          Xmm[16-6]; // preserved xmm6..xmm15 regs for EH stackwalk
@@ -68,6 +73,7 @@ struct REGDISPLAY
     inline void SetEdiLocation(unsigned long *loc) { pRdi = (PTR_uintptr_t)loc; }
     inline void SetEbpLocation(unsigned long *loc) { pRbp = (PTR_uintptr_t)loc; }
 #endif
+
 };
 
 #ifdef TARGET_X86

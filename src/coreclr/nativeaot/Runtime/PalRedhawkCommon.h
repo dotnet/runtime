@@ -153,7 +153,7 @@ struct PAL_LIMITED_CONTEXT
     uintptr_t  R13;
     uintptr_t  R14;
     uintptr_t  R15;
-    uintptr_t  __explicit_padding__;
+    uintptr_t  SSP;
     Fp128       Xmm6;
     Fp128       Xmm7;
     Fp128       Xmm8;
