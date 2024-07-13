@@ -2,9 +2,10 @@
 
 * [Docker](#docker)
 * [Environment](#environment)
-  * [Toolchain Setup](#toolchain-setup)
+  * [Debian-based / Ubuntu](#debian-based--ubuntu)
     * [Additional Requirements for Cross-Building](#additional-requirements-for-cross-building)
-  * [Gentoo Special Case](#gentoo-special-case)
+  * [Fedora](#fedora)
+  * [Gentoo](#gentoo)
 
 This guide will walk you through the requirements to build _dotnet/runtime_ on Linux. Before building there is environment setup that needs to happen to pull in all the dependencies required by the build.
 
