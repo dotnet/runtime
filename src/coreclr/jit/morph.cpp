@@ -3330,14 +3330,6 @@ void Compiler::fgMoveOpsLeft(GenTree* tree)
             return;
         }
 
-        if ((tree->gtFlags | op2->gtFlags) & GTF_BOOLEAN)
-        {
-            // We could deal with this, but we were always broken and just hit the assert
-            // below regarding flags, which means it's not frequent, so will just bail out.
-            // See #195514
-            return;
-        }
-
         noway_assert(!tree->gtOverflowEx() && !op2->gtOverflowEx());
 
         GenTree* ad1 = op2->AsOp()->gtOp1;
@@ -9929,6 +9921,9 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
             genTreeOps oper       = actualOper;
 
+            // We shouldn't find AND_NOT nodes since it should only be produced in lowering
+            assert(oper != GT_AND_NOT);
+
             if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
             {
                 GenTree* op1 = node->Op(1);
@@ -9999,12 +9994,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                     case GT_AND:
                     {
                         maskIntrinsicId = NI_EVEX_AndMask;
-                        break;
-                    }
-
-                    case GT_AND_NOT:
-                    {
-                        maskIntrinsicId = NI_EVEX_AndNotMask;
                         break;
                     }
 
@@ -10087,91 +10076,6 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (oper)
     {
-        // Transforms:
-        // 1. (~v1 & v2) to VectorXxx.AndNot(v2, v1)
-        // 2. (v1 & ~v2) to VectorXxx.AndNot(v1, v2)
-        case GT_AND:
-        {
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
-            GenTree* lhs = nullptr;
-            GenTree* rhs = nullptr;
-
-            if (op1->OperIsHWIntrinsic())
-            {
-                // Try handle: ~op1 & op2
-                GenTreeHWIntrinsic* hw     = op1->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
-
-                if (isScalar)
-                {
-                    return node;
-                }
-
-#if defined(TARGET_ARM64)
-                if (hwOper == GT_NOT)
-                {
-                    lhs = op2;
-                    rhs = hw->Op(1);
-                }
-#elif defined(TARGET_XARCH)
-                if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
-                {
-                    lhs = op2;
-                    rhs = hw->Op(1);
-                }
-#endif // !TARGET_ARM64 && !TARGET_XARCH
-            }
-
-            if ((lhs == nullptr) && op2->OperIsHWIntrinsic())
-            {
-                // Try handle: op1 & ~op2
-                GenTreeHWIntrinsic* hw     = op2->AsHWIntrinsic();
-                genTreeOps          hwOper = hw->GetOperForHWIntrinsicId(&isScalar);
-
-                if (isScalar)
-                {
-                    return node;
-                }
-
-#if defined(TARGET_ARM64)
-                if (hwOper == GT_NOT)
-                {
-                    lhs = op1;
-                    rhs = hw->Op(1);
-                }
-#elif defined(TARGET_XARCH)
-                if ((hwOper == GT_XOR) && hw->Op(2)->IsVectorAllBitsSet())
-                {
-                    lhs = op1;
-                    rhs = hw->Op(1);
-                }
-#endif // !TARGET_ARM64 && !TARGET_XARCH
-            }
-
-            if (lhs == nullptr)
-            {
-                break;
-            }
-            assert(rhs != nullptr);
-
-            // Filter out side effecting cases for several reasons:
-            // 1. gtNewSimdBinOpNode may swap operand order.
-            // 2. The code above will swap operand order.
-            // 3. The code above does not handle GTF_REVERSE_OPS.
-            if (((lhs->gtFlags | rhs->gtFlags) & GTF_ALL_EFFECT) != 0)
-            {
-                break;
-            }
-
-            GenTree* andnNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, lhs, rhs, simdBaseJitType, simdSize);
-
-            DEBUG_DESTROY_NODE(node);
-            INDEBUG(andnNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
-
-            return andnNode;
-        }
-
 #if defined(TARGET_ARM64)
         // Transforms:
         // 1. -(-v1) to v1
