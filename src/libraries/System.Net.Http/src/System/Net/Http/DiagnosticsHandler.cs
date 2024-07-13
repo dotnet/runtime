@@ -16,7 +16,7 @@ namespace System.Net.Http
     internal sealed class DiagnosticsHandler : HttpMessageHandlerStage
     {
         private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
-        private static readonly ActivitySource s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.Namespace);
+        internal static readonly ActivitySource s_activitySource = new ActivitySource(DiagnosticsHandlerLoggingStrings.RequestNamespace);
 
         private readonly HttpMessageHandler _innerHandler;
         private readonly DistributedContextPropagator _propagator;
@@ -58,14 +58,14 @@ namespace System.Net.Http
             Activity? activity = null;
             if (s_activitySource.HasListeners())
             {
-                activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.ActivityName, ActivityKind.Client);
+                activity = s_activitySource.StartActivity(DiagnosticsHandlerLoggingStrings.RequestActivityName, ActivityKind.Client);
             }
 
             if (activity is null &&
                 (Activity.Current is not null ||
-                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)))
+                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityName, request)))
             {
-                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName).Start();
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.RequestActivityName).Start();
             }
 
             return activity;
@@ -134,9 +134,9 @@ namespace System.Net.Http
                 }
 
                 // Only send start event to users who subscribed for it.
-                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
+                if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStartName))
                 {
-                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStartName, new ActivityStartData(request));
+                    Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStartName, new ActivityStartData(request));
                 }
             }
 
@@ -214,10 +214,29 @@ namespace System.Net.Http
                         }
                     }
 
-                    // Only send stop event to users who subscribed for it.
-                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStopName))
+                    if (activity.IsAllDataRequested)
                     {
-                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.ActivityStopName, new ActivityStopData(response, request, taskStatus));
+                        // Add standard tags known at request completion.
+                        if (response is not null)
+                        {
+                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                            activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
+                        }
+
+                        if (DiagnosticsHelper.TryGetErrorType(response, exception, out string? errorType))
+                        {
+                            activity.SetTag("error.type", errorType);
+
+                            // The presence of error.type indicates that the conditions for setting Error status are also met.
+                            // https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/http/http-spans.md#status
+                            activity.SetStatus(ActivityStatusCode.Error);
+                        }
+                    }
+
+                    // Only send stop event to users who subscribed for it.
+                    if (diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestActivityStopName))
+                    {
+                        Write(diagnosticListener, DiagnosticsHandlerLoggingStrings.RequestActivityStopName, new ActivityStopData(response, request, taskStatus));
                     }
 
                     activity.Stop();

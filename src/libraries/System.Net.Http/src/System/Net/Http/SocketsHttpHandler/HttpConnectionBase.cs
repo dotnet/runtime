@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -37,20 +38,24 @@ namespace System.Net.Http
 
         public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
 
+        public Activity? ConnectionSetupActivity { get; private set; }
+
         public HttpConnectionBase(HttpConnectionPool pool)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool != null);
             _pool = pool;
         }
-        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
+
+        public HttpConnectionBase(HttpConnectionPool pool, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
             : this(pool)
         {
-            MarkConnectionAsEstablished(remoteEndPoint);
+            MarkConnectionAsEstablished(connectionSetupActivity, remoteEndPoint);
         }
 
-        protected void MarkConnectionAsEstablished(IPEndPoint? remoteEndPoint)
+        protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
         {
+            ConnectionSetupActivity = connectionSetupActivity;
             Debug.Assert(_pool.Settings._metrics is not null);
 
             SocketsHttpHandlerMetrics metrics = _pool.Settings._metrics;
