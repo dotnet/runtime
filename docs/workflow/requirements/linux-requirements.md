@@ -20,9 +20,8 @@ Below are the requirements for toolchain setup, depending on your environment. P
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([dotnet/runtime#4069](https://github.com/dotnet/runtime/issues/4069)).
 
-### Toolchain Setup
 
-#### Debian-based / Ubuntu
+### Debian-based / Ubuntu
 
 These instructions are written assuming the current Ubuntu LTS.
 
@@ -64,7 +63,7 @@ For the _Kitware APT feed_, follow its [instructions here](https://apt.kitware.c
 
 You now have all the required components.
 
-##### Additional Requirements for Cross-Building
+#### Additional Requirements for Cross-Building
 
 If you are planning to use your Linux environment to do cross-building for other architectures (e.g. Arm32, Arm64) and/or other operating systems (e.g. Alpine, FreeBSD), you need to install these additional dependencies:
 
@@ -75,7 +74,7 @@ If you are planning to use your Linux environment to do cross-building for other
 
 **NOTE**: These dependencies are used to build the `crossrootfs`, not the runtime itself.
 
-#### Fedora
+### Fedora
 
 These instructions are written assuming Fedora 40.
 
@@ -101,7 +100,7 @@ sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel opens
 krb5-devel zlib-devel lttng-ust-devel ninja-build
 ```
 
-#### Gentoo
+### Gentoo
 
 In case you have Gentoo you can run following command:
 
