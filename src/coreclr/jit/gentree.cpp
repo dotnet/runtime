@@ -10605,7 +10605,7 @@ bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
                      (flags & GTF_MAKE_CSE) ? 'H'
                                             : '-'); // H is for Hoist this expr
     printf("%c", (flags & GTF_REVERSE_OPS) ? 'R' : '-');
-    printf("%c", (flags & GTF_UNSIGNED) ? 'U' : (flags & GTF_BOOLEAN) ? 'B' : '-');
+    printf("%c", (flags & GTF_UNSIGNED) ? 'U' : '-');
 
     // Both GTF_SPILL and GTF_SPILLED: '#'
     //               Only GTF_SPILLED: 'z'
@@ -14284,21 +14284,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = NewZeroExtendNode(tree->TypeGet(), op, TYP_UINT);
                 goto DONE_FOLD;
             }
-            else
-            {
-                /* The GTF_BOOLEAN flag is set for nodes that are part
-                 * of a boolean expression, thus all their children
-                 * are known to evaluate to only 0 or 1 */
-
-                if (tree->gtFlags & GTF_BOOLEAN)
-                {
-
-                    /* The constant value must be 1
-                     * AND with 1 stays the same */
-                    assert(val == 1);
-                    goto DONE_FOLD;
-                }
-            }
             break;
         }
 
@@ -14306,16 +14291,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         {
             if (val == 0)
             {
-                goto DONE_FOLD;
-            }
-            else if (tree->gtFlags & GTF_BOOLEAN)
-            {
-                /* The constant value must be 1 - OR with 1 is 1 */
-
-                assert(val == 1);
-
-                // OR with one - return the 'one' node
-                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
