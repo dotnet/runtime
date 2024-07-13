@@ -24,7 +24,7 @@ namespace System.Net.Http.Metrics
             _protocolVersionTag = protocolVersion;
             _schemeTag = scheme;
             _hostTag = host;
-            _portTag = DiagnosticsHelper.GetBoxedInteger(port);
+            _portTag = DiagnosticsHelper.GetBoxedInt32(port);
             _peerAddressTag = peerAddress;
         }
 

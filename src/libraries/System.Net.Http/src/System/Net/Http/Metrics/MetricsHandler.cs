@@ -110,7 +110,7 @@ namespace System.Net.Http.Metrics
 
             if (response is not null)
             {
-                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedInteger((int)response.StatusCode));
+                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
                 tags.Add("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
             }
 
@@ -140,7 +140,7 @@ namespace System.Net.Http.Metrics
             {
                 tags.Add("url.scheme", requestUri.Scheme);
                 tags.Add("server.address", requestUri.Host);
-                tags.Add("server.port", DiagnosticsHelper.GetBoxedInteger(requestUri.Port));
+                tags.Add("server.port", DiagnosticsHelper.GetBoxedInt32(requestUri.Port));
             }
             tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
 

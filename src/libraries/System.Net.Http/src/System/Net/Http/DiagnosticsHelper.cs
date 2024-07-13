@@ -106,9 +106,9 @@ namespace System.Net.Http
         private static string[]? s_statusCodeStrings;
 
 #pragma warning disable CA1859 // we explictly box here
-        // Returns a pooled object if value is between 0-512.
-        // Saves allocations for status code and (default) port tag values.
-        public static object GetBoxedInteger(int value)
+        // Returns a pooled object if 'value' is between 0-512,
+        // saving allocations for standard HTTP status codes and small port tag values.
+        public static object GetBoxedInt32(int value)
         {
             object[] boxes = LazyInitializer.EnsureInitialized(ref s_boxedStatusCodes, static () => new object[512]);
 
