@@ -400,8 +400,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_NODE_MASK   = GTF_COLON_COND,
 
-    GTF_BOOLEAN     = 0x00004000, // value is known to be 0/1
-
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
@@ -413,7 +411,7 @@ enum GenTreeFlags : unsigned int
 // The only requirement of this flag is that it not overlap any of the
 // side-effect flags. The actual bit used is otherwise arbitrary.
 
-    GTF_IS_IN_CSE   = GTF_BOOLEAN,
+    GTF_IS_IN_CSE   = 0x00004000,
 
     GTF_COMMON_MASK = 0x0003FFFF, // mask of all the flags above
 
@@ -2272,7 +2270,6 @@ public:
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
-    bool gtRequestSetFlags();
 
 #ifdef DEBUG
     static int         gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
@@ -6531,7 +6528,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperRequiresGlobRefFlag() const;
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
-    uint8_t  GetTernaryControlByte(GenTreeHWIntrinsic* second) const;
 
     ClassLayout* GetLayout(Compiler* compiler) const;
 
