@@ -101,7 +101,7 @@ sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel opens
 krb5-devel zlib-devel lttng-ust-devel ninja-build
 ```
 
-### Gentoo Special Case
+#### Gentoo
 
 In case you have Gentoo you can run following command:
 
