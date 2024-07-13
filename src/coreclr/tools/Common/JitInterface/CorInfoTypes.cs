@@ -1509,12 +1509,52 @@ namespace Internal.JitInterface
         private struct SwiftLoweredTypes
         {
             public CorInfoType type;
+
+            public override bool Equals(object other)
+            {
+                if (other is SwiftLoweredTypes otherType)
+                {
+                    ReadOnlySpan<CorInfoType> self = this;
+                    return self.SequenceEqual(otherType);
+                }
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                var code = new HashCode();
+                foreach (var item in this)
+                {
+                    code.Add(item);
+                }
+                return code.ToHashCode();
+            }
         }
 
         [InlineArray(4)]
         private struct LoweredOffsets
         {
             public uint offset;
+            
+            public override bool Equals(object other)
+            {
+                if (other is LoweredOffsets otherType)
+                {
+                    ReadOnlySpan<uint> self = this;
+                    return self.SequenceEqual(otherType);
+                }
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                var code = new HashCode();
+                foreach (var item in this)
+                {
+                    code.Add(item);
+                }
+                return code.ToHashCode();
+            }
         }
 
         private SwiftLoweredTypes _loweredElements;
