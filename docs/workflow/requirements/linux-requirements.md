@@ -22,32 +22,6 @@ Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs (
 
 ### Toolchain Setup
 
-#### Fedora
-
-These instructions are written assuming Fedora 40.
-
-Install the following packages for the toolchain:
-
-* cmake
-* llvm
-* lld
-* lldb
-* clang
-* python
-* curl
-* git
-* libicu-devel
-* openssl-devel
-* krb5-devel
-* zlib-devel
-* lttng-ust-devel
-* ninja-build (optional, enables building native code with ninja instead of make)
-
-```bash
-sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
-krb5-devel zlib-devel lttng-ust-devel ninja-build
-```
-
 #### Debian-based / Ubuntu
 
 These instructions are written assuming the current Ubuntu LTS.
@@ -100,6 +74,32 @@ If you are planning to use your Linux environment to do cross-building for other
 * debootstrap
 
 **NOTE**: These dependencies are used to build the `crossrootfs`, not the runtime itself.
+
+#### Fedora
+
+These instructions are written assuming Fedora 40.
+
+Install the following packages for the toolchain:
+
+* cmake
+* llvm
+* lld
+* lldb
+* clang
+* python
+* curl
+* git
+* libicu-devel
+* openssl-devel
+* krb5-devel
+* zlib-devel
+* lttng-ust-devel
+* ninja-build (optional, enables building native code with ninja instead of make)
+
+```bash
+sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
+krb5-devel zlib-devel lttng-ust-devel ninja-build
+```
 
 ### Gentoo Special Case
 
