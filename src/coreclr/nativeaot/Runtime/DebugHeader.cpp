@@ -163,6 +163,9 @@ extern "C" void PopulateDebugHeaders()
     MAKE_DEBUG_FIELD_ENTRY(dac_gc_heap, finalize_queue);
     MAKE_DEBUG_FIELD_ENTRY(dac_gc_heap, generation_table);
 
+    MAKE_SIZE_ENTRY(ee_alloc_context);
+    MAKE_DEBUG_FIELD_ENTRY(ee_alloc_context, m_rgbAllocContextBuffer);
+
     MAKE_SIZE_ENTRY(gc_alloc_context);
     MAKE_DEBUG_FIELD_ENTRY(gc_alloc_context, alloc_ptr);
     MAKE_DEBUG_FIELD_ENTRY(gc_alloc_context, alloc_limit);
@@ -194,7 +197,7 @@ extern "C" void PopulateDebugHeaders()
 
     MAKE_SIZE_ENTRY(RuntimeThreadLocals);
     MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pNext);
-    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_rgbAllocContextBuffer);
+    MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_eeAllocContext);
     MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_threadId);
     MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pThreadStressLog);
     MAKE_DEBUG_FIELD_ENTRY(RuntimeThreadLocals, m_pExInfoStackHead);

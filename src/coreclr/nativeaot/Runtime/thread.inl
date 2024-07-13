@@ -2,6 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #ifndef DACCESS_COMPILE
+
+
+
+inline gc_alloc_context* ee_alloc_context::GetGCAllocContext()
+{
+    return (gc_alloc_context*)&m_rgbAllocContextBuffer;
+}
+
+inline uint8_t* ee_alloc_context::GetCombinedLimit()
+{
+    return combined_limit;
+}
+
+// It seems like there is a desire not to include a definition of gc_alloc_context in a more global place within
+// the NativeAOT runtime? Instead some individual files include their own definition as needed and others reference
+// gcinterface.h to get the official definition. This .inl file gets included from multiple places some of which
+// do define the type and others that do not. To avoid getting a redefinition error I added this private definition.
+struct _thread_inl_gc_alloc_context
+{
+    uint8_t* alloc_ptr;
+    uint8_t* alloc_limit;
+};
+
+inline void ee_alloc_context::UpdateCombinedLimit()
+{
+    // The randomized allocation sampling feature is being submitted in stages. For now sampling is never enabled so
+    // combined_limit is always the same as alloc_limit.
+    combined_limit = ((_thread_inl_gc_alloc_context*)GetGCAllocContext())->alloc_limit;
+}
+
 // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
 // in assembly code. Do not use anywhere else.
 inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransitionFrame)
@@ -59,9 +89,14 @@ inline void Thread::PopGCFrameRegistration(GCFrameRegistration* pRegistration)
     m_pGCFrameRegistrations = pRegistration->m_pNext;
 }
 
+inline ee_alloc_context* Thread::GetEEAllocContext()
+{
+    return &m_eeAllocContext;
+}
+
 inline gc_alloc_context* Thread::GetAllocContext()
 {
-    return (gc_alloc_context*)m_rgbAllocContextBuffer;
+    return GetEEAllocContext()->GetGCAllocContext();
 }
 
 inline bool Thread::IsStateSet(ThreadStateFlags flags)

@@ -68,6 +68,16 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 
     SyncClean::CleanUp();
 
+    // The GC may change allocation contexts during the GC using GcEnumAllocContexts() so we need to
+    // update the corresponding combined limits now that the GC is complete. Doing this within
+    // GcEnumAllocContexts() is challenging to do correctly or efficiently because multiple GC threads
+    // may enumerate and modify the allocation contexts concurrently.
+    FOREACH_THREAD(thread)
+    {
+        thread->GetEEAllocContext()->UpdateCombinedLimit();
+    }
+    END_FOREACH_THREAD
+
     GetThreadStore()->ResumeAllThreads(true);
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
     GetThreadStore()->UnlockThreadStore();

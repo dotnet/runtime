@@ -353,6 +353,7 @@ void Thread::Detach()
     gc_alloc_context* context = GetAllocContext();
     s_DeadThreadsNonAllocBytes += context->alloc_limit - context->alloc_ptr;
     GCHeapUtilities::GetGCHeap()->FixAllocContext(context, NULL, NULL);
+    GetEEAllocContext()->UpdateCombinedLimit();
 
     SetDetached();
 }
