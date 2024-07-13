@@ -16,11 +16,41 @@ Install Docker. For further installation instructions, see [here](https://docs.d
 
 ## Environment
 
-These instructions are written assuming the current Ubuntu LTS. Pull Requests are welcome to address other environments.
+Below are the requirements for toolchain setup, depending on your environment. Pull Requests are welcome to address other environments.
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([dotnet/runtime#4069](https://github.com/dotnet/runtime/issues/4069)).
 
 ### Toolchain Setup
+
+#### Fedora
+
+These instructions are written assuming Fedora 40.
+
+Install the following packages for the toolchain:
+
+* cmake
+* llvm
+* lld
+* lldb
+* clang
+* python
+* curl
+* git
+* libicu-devel
+* openssl-devel
+* krb5-devel
+* zlib-devel
+* lttng-ust-devel
+* ninja-build (optional, enables building native code with ninja instead of make)
+
+```bash
+sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
+krb5-devel zlib-devel lttng-ust-devel ninja-build
+```
+
+#### Debian-based / Ubuntu
+
+These instructions are written assuming the current Ubuntu LTS.
 
 Install the following packages for the toolchain:
 
@@ -60,7 +90,7 @@ For the _Kitware APT feed_, follow its [instructions here](https://apt.kitware.c
 
 You now have all the required components.
 
-#### Additional Requirements for Cross-Building
+##### Additional Requirements for Cross-Building
 
 If you are planning to use your Linux environment to do cross-building for other architectures (e.g. Arm32, Arm64) and/or other operating systems (e.g. Alpine, FreeBSD), you need to install these additional dependencies:
 
