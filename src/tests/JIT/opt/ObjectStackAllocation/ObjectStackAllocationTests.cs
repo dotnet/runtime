@@ -179,6 +179,8 @@ namespace ObjectStackAllocation
             Assembly objectAssembly = Assembly.GetAssembly(typeof(object));
             object[] attribs = objectAssembly.GetCustomAttributes(typeof(DebuggableAttribute),
                                                         false);
+            if (attribs.Length == 0)
+                return true; // Assume corelib is optimized in this case
             DebuggableAttribute debuggableAttribute = attribs[0] as DebuggableAttribute;
             return ((debuggableAttribute == null) || !debuggableAttribute.IsJITOptimizerDisabled);
         }

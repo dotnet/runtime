@@ -64,9 +64,9 @@ namespace Wasm.Build.Tests
             {
                 s_buildEnv = new BuildEnvironment();
                 if (EnvironmentVariables.WasiSdkPath is null)
-                    throw new Exception($"Error: WASI_SDK22_PATH is not set");
+                    throw new Exception($"Error: WASI_SDK_PATH is not set");
 
-                s_buildEnv.EnvVars["WASI_SDK22_PATH"] = EnvironmentVariables.WasiSdkPath;
+                s_buildEnv.EnvVars["WASI_SDK_PATH"] = EnvironmentVariables.WasiSdkPath;
                 s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
                 s_skipProjectCleanup = !string.IsNullOrEmpty(EnvironmentVariables.SkipProjectCleanup) && EnvironmentVariables.SkipProjectCleanup == "1";
@@ -162,8 +162,6 @@ namespace Wasm.Build.Tests
                 <TargetFramework>{DefaultTargetFramework}</TargetFramework>
                 <RuntimeIdentifier>wasi-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
-                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>
@@ -177,7 +175,6 @@ namespace Wasm.Build.Tests
             if (buildArgs.AOT)
             {
                 extraProperties = $"{extraProperties}\n<RunAOTCompilation>true</RunAOTCompilation>";
-                extraProperties += $"\n<EmccVerbose>{RuntimeInformation.IsOSPlatform(OSPlatform.Windows)}</EmccVerbose>\n";
             }
 
             string projectContents = projectTemplate
@@ -265,8 +262,6 @@ namespace Wasm.Build.Tests
                     AssertBasicAppBundle(bundleDir,
                                          buildArgs.ProjectName,
                                          buildArgs.Config,
-                                         options.MainJS ?? "test-main.js",
-                                         options.HasV8Script,
                                          options.TargetFramework ?? DefaultTargetFramework,
                                          options.HasIcudt,
                                          options.DotnetWasmFromRuntimePack ?? !buildArgs.AOT);
@@ -362,8 +357,6 @@ namespace Wasm.Build.Tests
         protected static void AssertBasicAppBundle(string bundleDir,
                                                    string projectName,
                                                    string config,
-                                                   string mainJS,
-                                                   bool hasV8Script,
                                                    string targetFramework,
                                                    bool hasIcudt = true,
                                                    bool dotnetWasmFromRuntimePack = true)
@@ -371,14 +364,11 @@ namespace Wasm.Build.Tests
 #if false
             AssertFilesExist(bundleDir, new []
             {
-                "index.html",
-                mainJS,
                 "dotnet.wasm",
                 "_framework/blazor.boot.json",
                 "dotnet.js"
             });
 
-            AssertFilesExist(bundleDir, new[] { "run-v8.sh" }, expectToExist: hasV8Script);
             AssertFilesExist(bundleDir, new[] { "icudt.dat" }, expectToExist: hasIcudt);
 
             string managedDir = Path.Combine(bundleDir, "managed");
@@ -705,10 +695,9 @@ namespace Wasm.Build.Tests
 
         protected CommandResult RunWithoutBuild(string config, string id)
         {
-            string runArgs = $"run --no-build -c {config}";
+            string runArgs = $"run --no-build -c {config} --forward-exit-code";
             runArgs += " x y z";
-            // ActiveIssue: https://github.com/dotnet/runtime/issues/82515
-            int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 1 : 42;
+            int expectedExitCode = 42;
             CommandResult res = new RunCommand(s_buildEnv, _testOutput, label: id)
                             .WithWorkingDirectory(_projectDir!)
                             .ExecuteWithCapturedOutput(runArgs)
@@ -740,11 +729,9 @@ namespace Wasm.Build.Tests
         bool    CreateProject             = true,
         bool    Publish                   = true,
         bool    BuildOnlyAfterPublish     = true,
-        bool    HasV8Script               = true,
         string? Verbosity                 = null,
         string? Label                     = null,
         string? TargetFramework           = null,
-        string? MainJS                    = null,
         IDictionary<string, string>? ExtraBuildEnvironmentVariables = null
     );
 
