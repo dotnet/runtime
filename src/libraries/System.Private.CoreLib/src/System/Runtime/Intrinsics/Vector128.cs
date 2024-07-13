@@ -824,6 +824,47 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
+        /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Cos(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosDouble<Vector128<double>, Vector128<long>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Cos(vector._lower),
+                    Vector64.Cos(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Cos(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Cos(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.CosSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.CosSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Cos(vector._lower),
+                    Vector64.Cos(vector._upper)
+                );
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance with all elements initialized to the specified value.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -3158,6 +3199,94 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        /// <inheritdoc cref="Vector64.Sin(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Sin(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosDouble<Vector128<double>, Vector128<long>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Sin(vector._lower),
+                    Vector64.Sin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Sin(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Sin(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.CosSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.CosSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Sin(vector._lower),
+                    Vector64.Sin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<double> Sin, Vector128<double> Cos) SinCos(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinCosDouble<Vector128<double>, Vector128<long>>(vector);
+            }
+            else
+            {
+                (Vector64<double> sinLower, Vector64<double> cosLower) = Vector64.SinCos(vector._lower);
+                (Vector64<double> sinUpper, Vector64<double> cosUpper) = Vector64.SinCos(vector._upper);
+
+                return (
+                    Create(sinLower, sinUpper),
+                    Create(cosLower, cosUpper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Cos(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<float> Sin, Vector128<float> Cos) SinCos(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.SinCosSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.SinCosSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                (Vector64<float> sinLower, Vector64<float> cosLower) = Vector64.SinCos(vector._lower);
+                (Vector64<float> sinUpper, Vector64<float> cosUpper) = Vector64.SinCos(vector._upper);
+
+                return (
+                    Create(sinLower, sinUpper),
+                    Create(cosLower, cosUpper)
+                );
+            }
         }
 
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
