@@ -92,14 +92,12 @@ ULONG32 ContextSizeForFlags(ULONG32 flags)
     else
 #endif // TARGET_X86
     {
-#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS)
-    #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if !defined(CROSS_COMPILE) && !defined(TARGET_WINDOWS) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
         if ((flags & CONTEXT_XSTATE) == CONTEXT_XSTATE)
         {
             return sizeof(T_CONTEXT);
         }
         return offsetof(T_CONTEXT, XStateFeaturesMask);
-    #endif
 #else
         return sizeof(T_CONTEXT);
 #endif
