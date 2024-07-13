@@ -112,10 +112,6 @@ namespace ObjectStackAllocation
                 Console.WriteLine("GCStress is enabled");
                 expectedAllocationKind = AllocationKind.Undefined;
             }
-            else if (!SPCOptimizationsEnabled() && !Crossgen2Test()) {
-                Console.WriteLine("System.Private.CoreLib.dll optimizations are disabled");
-                expectedAllocationKind = AllocationKind.Heap;
-            }
 
             if (expectedAllocationKind == AllocationKind.Stack)
             {
@@ -172,17 +168,6 @@ namespace ObjectStackAllocation
             CallTestAndVerifyAllocation(AllocateSimpleClassAndCast, 7, expectedAllocationKind);
 
             return methodResult;
-        }
-
-        static bool SPCOptimizationsEnabled()
-        {
-            Assembly objectAssembly = Assembly.GetAssembly(typeof(object));
-            object[] attribs = objectAssembly.GetCustomAttributes(typeof(DebuggableAttribute),
-                                                        false);
-            if (attribs.Length == 0)
-                return true; // Assume corelib is optimized in this case
-            DebuggableAttribute debuggableAttribute = attribs[0] as DebuggableAttribute;
-            return ((debuggableAttribute == null) || !debuggableAttribute.IsJITOptimizerDisabled);
         }
 
         static bool GCStressEnabled()

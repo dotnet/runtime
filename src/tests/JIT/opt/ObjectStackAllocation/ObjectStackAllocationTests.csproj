@@ -16,9 +16,5 @@
     <CLRTestEnvironmentVariable Include="DOTNET_JitNoForceFallback" Value="1" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitDebuggable" Value="0" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNamesNot" Value="STRESS_RANDOM_INLINE,STRESS_MIN_OPTS" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitObjectStackAllocation" Value="1" />
   </ItemGroup>
-  <PropertyGroup>
-    <CrossGen2TestExtraArguments>--codegenopt JitObjectStackAllocation=1</CrossGen2TestExtraArguments>
-  </PropertyGroup>
 </Project>
