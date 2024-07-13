@@ -211,30 +211,29 @@ namespace System.Runtime.Intrinsics
             const int ARG_SMALLER = 0x39000000; // 2^-27
 
             TVectorSingle ax = TVectorSingle.Abs(x);
-            TVectorInt32 ux = Unsafe.BitCast<TVectorSingle, TVectorInt32>(x);
+            TVectorInt32 ux = Unsafe.BitCast<TVectorSingle, TVectorInt32>(ax);
 
             TVectorSingle result;
 
-            if (TVectorSingle.LessThanOrEqualAll(ax, TVectorSingle.Create(ARG_LARGE)))
+            if (TVectorInt32.LessThanOrEqualAll(ux, TVectorInt32.Create(ARG_LARGE)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
 
                 if (TVectorInt32.GreaterThanAny(ux, TVectorInt32.Create(ARG_SMALL - 1)))
                 {
                     // at least one element is: |x| >= 2^-13
-                    TVectorSingle x2 = x * x;
 
                     if (TVectorSingle.Count == TVectorDouble.Count)
                     {
                         result = Narrow<TVectorDouble, TVectorSingle>(
-                            CosSingleSmall(Widen<TVectorSingle, TVectorDouble>(x2))
+                            CosSingleSmall(Widen<TVectorSingle, TVectorDouble>(x))
                         );
                     }
                     else
                     {
                         result = Narrow<TVectorDouble, TVectorSingle>(
-                            CosSingleSmall(WidenLower<TVectorSingle, TVectorDouble>(x2)),
-                            CosSingleSmall(WidenUpper<TVectorSingle, TVectorDouble>(x2))
+                            CosSingleSmall(WidenLower<TVectorSingle, TVectorDouble>(x)),
+                            CosSingleSmall(WidenUpper<TVectorSingle, TVectorDouble>(x))
                         );
                     }
                 }
@@ -1760,8 +1759,8 @@ namespace System.Runtime.Intrinsics
 
                 sinResult = TVectorDouble.ConditionalSelect(
                     Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    -sinResult, // negative in region 1 or 3, positive in region 0 or 2
-                    +sinResult  // negative in region 0 or 2, positive in region 1 or 3
+                    +sinResult, // negative in region 1 or 3, positive in region 0 or 2
+                    -sinResult  // negative in region 0 or 2, positive in region 1 or 3
                 );
 
                 cosResult = TVectorDouble.ConditionalSelect(
@@ -1806,12 +1805,12 @@ namespace System.Runtime.Intrinsics
             sinResult = TVectorDouble.ConditionalSelect(
                 argNotSmallerMask,
                 sinResult,          // for elements: |x| >= 2^-27, infinity, or NaN
-                TVectorDouble.One   // for elements: 2^-27 > |x|
+                x                   // for elements: 2^-27 > |x|
             );
 
             cosResult = TVectorDouble.ConditionalSelect(
                 argNotSmallerMask,
-                cosResult,             // for elements: |x| >= 2^-27, infinity, or NaN
+                cosResult,          // for elements: |x| >= 2^-27, infinity, or NaN
                 TVectorDouble.One   // for elements: 2^-27 > |x|
             );
 
@@ -1838,11 +1837,11 @@ namespace System.Runtime.Intrinsics
             const int ARG_SMALLER = 0x39000000; // 2^-27
 
             TVectorSingle ax = TVectorSingle.Abs(x);
-            TVectorInt32 ux = Unsafe.BitCast<TVectorSingle, TVectorInt32>(x);
+            TVectorInt32 ux = Unsafe.BitCast<TVectorSingle, TVectorInt32>(ax);
 
             TVectorSingle sinResult, cosResult;
 
-            if (TVectorSingle.LessThanOrEqualAll(ax, TVectorSingle.Create(ARG_LARGE)))
+            if (TVectorInt32.LessThanOrEqualAll(ux, TVectorInt32.Create(ARG_LARGE)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
 
@@ -1945,7 +1944,7 @@ namespace System.Runtime.Intrinsics
             sinResult = TVectorSingle.ConditionalSelect(
                 argNotSmallerMask,
                 sinResult,          // for elements: |x| >= 2^-27, infinity, or NaN
-                TVectorSingle.One   // for elements: 2^-27 > |x|
+                x                   // for elements: 2^-27 > |x|
             );
 
             cosResult = TVectorSingle.ConditionalSelect(
@@ -1982,8 +1981,8 @@ namespace System.Runtime.Intrinsics
 
                 sinResult = TVectorDouble.ConditionalSelect(
                     Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    -sinResult, // negative in region 1 or 3, positive in region 0 or 2
-                    +sinResult  // negative in region 0 or 2, positive in region 1 or 3
+                    +sinResult, // negative in region 1 or 3, positive in region 0 or 2
+                    -sinResult  // negative in region 0 or 2, positive in region 1 or 3
                 );
 
                 cosResult = TVectorDouble.ConditionalSelect(
@@ -2095,8 +2094,8 @@ namespace System.Runtime.Intrinsics
 
                 result = TVectorDouble.ConditionalSelect(
                     Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    -result,    // negative in region 1 or 3, positive in region 0 or 2
-                    +result     // negative in region 0 or 2, positive in region 1 or 3
+                    +result,    // negative in region 1 or 3, positive in region 0 or 2
+                    -result     // negative in region 0 or 2, positive in region 1 or 3
                 );
 
                 // Propagate the NaN that was passed in
@@ -2116,8 +2115,8 @@ namespace System.Runtime.Intrinsics
 
             return TVectorDouble.ConditionalSelect(
                 Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThan(ux, TVectorInt64.Create(ARG_SMALLER - 1))),
-                result,             // for elements: |x| >= 2^-27, infinity, or NaN
-                TVectorDouble.One   // for elements: 2^-27 > |x|
+                result,     // for elements: |x| >= 2^-27, infinity, or NaN
+                x           // for elements: 2^-27 > |x|
             );
         }
 
@@ -2183,11 +2182,11 @@ namespace System.Runtime.Intrinsics
             const int ARG_SMALLER = 0x39000000; // 2^-27
 
             TVectorSingle ax = TVectorSingle.Abs(x);
-            TVectorInt32 ux = Unsafe.BitCast<TVectorSingle, TVectorInt32>(x);
+            TVectorInt32 ux = Unsafe.BitCast<TVectorSingle, TVectorInt32>(ax);
 
             TVectorSingle result;
 
-            if (TVectorSingle.LessThanOrEqualAll(ax, TVectorSingle.Create(ARG_LARGE)))
+            if (TVectorInt32.LessThanOrEqualAll(ux, TVectorInt32.Create(ARG_LARGE)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
 
@@ -2251,8 +2250,8 @@ namespace System.Runtime.Intrinsics
 
             return TVectorSingle.ConditionalSelect(
                 Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThan(ux, TVectorInt32.Create(ARG_SMALLER - 1))),
-                result,             // for elements: |x| >= 2^-27, infinity, or NaN
-                TVectorSingle.One   // for elements: 2^-27 > |x|
+                result,     // for elements: |x| >= 2^-27, infinity, or NaN
+                x           // for elements: 2^-27 > |x|
             );
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2274,8 +2273,8 @@ namespace System.Runtime.Intrinsics
 
                 return TVectorDouble.ConditionalSelect(
                     Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    -result,    // negative in region 1 or 3, positive in region 0 or 2
-                    +result     // negative in region 0 or 2, positive in region 1 or 3
+                    +result,    // negative in region 1 or 3, positive in region 0 or 2
+                    -result     // negative in region 0 or 2, positive in region 1 or 3
                 );
             }
         }

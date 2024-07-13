@@ -3131,7 +3131,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.CosDouble<Vector512<double>, Vector512<long>>(vector);
+                return VectorMath.SinDouble<Vector512<double>, Vector512<long>>(vector);
             }
             else
             {
@@ -3148,7 +3148,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.CosSingle<Vector512<float>, Vector512<int>, Vector512<double>, Vector512<long>>(vector);
+                return VectorMath.SinSingle<Vector512<float>, Vector512<int>, Vector512<double>, Vector512<long>>(vector);
             }
             else
             {

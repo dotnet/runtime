@@ -4546,7 +4546,7 @@ namespace System.Numerics.Tests
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.CosSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void CosCosgleTest(float value, float expectedResult, float variance)
+        public void CosSingleTest(float value, float expectedResult, float variance)
         {
             Vector<float> actualResult = Vector.Cos(Vector.Create(value));
             AssertEqual(Vector.Create(expectedResult), actualResult, Vector.Create(variance));
