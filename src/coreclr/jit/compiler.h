@@ -6785,6 +6785,7 @@ private:
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
     PhaseStatus fgCreateThrowHelperBlocks();
 
+
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
 
@@ -6794,6 +6795,8 @@ public:
     {
         return fgAddCodeList;
     }
+
+    void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
 
 private:
     bool fgIsThrowHlpBlk(BasicBlock* block);

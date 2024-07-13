@@ -400,8 +400,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_NODE_MASK   = GTF_COLON_COND,
 
-    GTF_BOOLEAN     = 0x00004000, // value is known to be 0/1
-
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
     GTF_SPILL       = 0x00020000, // Needs to be spilled here

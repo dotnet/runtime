@@ -3,8 +3,10 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -16,6 +18,9 @@ namespace System.Net.Sockets.Tests
 {
     public class TelemetryTest
     {
+        private const string ActivitySourceName = "Experimental.System.Net.Sockets";
+        private const string ActivityName = ActivitySourceName + ".Connect";
+
         private static readonly Lazy<Task<bool>> s_remoteServerIsReachable = new Lazy<Task<bool>>(() => Task.Run(async () =>
         {
             try
@@ -71,8 +76,8 @@ namespace System.Net.Sockets.Tests
         public static IEnumerable<object[]> SocketMethods_WithBools_MemberData()
         {
             return from connectMethod in SocketMethods_MemberData()
-                   from useDnsEndPoint in new[] { true, false }
-                   select new[] { connectMethod[0], useDnsEndPoint };
+                   from boolValue in new[] { true, false }
+                   select new[] { connectMethod[0], boolValue };
         }
 
         private static async Task<EndPoint> GetRemoteEndPointAsync(string useDnsEndPointString, int port)
@@ -102,6 +107,128 @@ namespace System.Net.Sockets.Tests
                 "Eap" => new SocketHelperEap(),
                 _ => throw new ArgumentException(socketMethod)
             };
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SocketMethods_WithBools_MemberData))]
+        public async Task Connect_Success_ActivityRecorded(string connectMethod, bool ipv6)
+        {
+            if (ipv6 && !Socket.OSSupportsIPv6) return;
+
+            await RemoteExecutor.Invoke(static async (connectMethod, ipv6Str) =>
+            {
+                bool ipv6 = bool.Parse(ipv6Str);
+                using Socket server = new Socket(ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                server.BindToAnonymousPort(ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback);
+                server.Listen();
+
+                Activity parent = new Activity("parent").Start();
+
+                using Socket client = new Socket(ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName)
+                {
+                    ExpectedParent = parent
+                };
+
+                Task connectTask = GetHelperBase(connectMethod).ConnectAsync(client, server.LocalEndPoint);
+                await server.AcceptAsync();
+                await connectTask;
+
+                recorder.VerifyActivityRecorded(1);
+                Activity activity = recorder.LastFinishedActivity;
+                VerifyTcpConnectActivity(activity, (IPEndPoint)server.LocalEndPoint, ipv6);
+
+                Assert.Same(parent, Activity.Current);
+                parent.Stop();
+            }, connectMethod, ipv6.ToString()).DisposeAsync();
+        }
+
+        static void VerifyTcpConnectActivity(Activity activity, IPEndPoint remoteEndPoint, bool ipv6)
+        {
+            string address = remoteEndPoint.Address.ToString();
+            int port = remoteEndPoint.Port;
+            Assert.Equal(ActivityKind.Internal, activity.Kind);
+            Assert.Equal(ActivityName, activity.OperationName);
+            Assert.Equal($"socket connect {address}:{port}", activity.DisplayName);
+            ActivityAssert.HasTag(activity, "network.peer.address", address);
+            ActivityAssert.HasTag(activity, "network.peer.port", port);
+            ActivityAssert.HasTag(activity, "network.type", ipv6 ? "ipv6" : "ipv4");
+            ActivityAssert.HasTag(activity, "network.transport", "tcp");
+        }
+
+        [OuterLoop("Connection failure takes long on Windows.")]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(SocketMethods_WithBools_MemberData))]
+        public async Task Connect_Failure_ActivityRecorded(string connectMethod, bool ipv6)
+        {
+            await RemoteExecutor.Invoke(static async (connectMethod, ipv6Str) =>
+            {
+                bool ipv6 = bool.Parse(ipv6Str);
+                using Socket notListening = new Socket(ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                notListening.BindToAnonymousPort(ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback);
+
+                Activity parent = new Activity("parent").Start();
+
+                using Socket client = new Socket(ipv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName)
+                {
+                    ExpectedParent = parent
+                };
+
+                SocketException ex = await Assert.ThrowsAsync<SocketException>(() => GetHelperBase(connectMethod)
+                    .ConnectAsync(client, notListening.LocalEndPoint));
+
+                recorder.VerifyActivityRecorded(1);
+                Activity activity = recorder.LastFinishedActivity;
+                VerifyTcpConnectActivity(activity, (IPEndPoint)notListening.LocalEndPoint, ipv6);
+                string expectedErrorType = ActivityAssert.CamelToSnake(ex.SocketErrorCode.ToString());
+                ActivityAssert.HasTag(activity, "error.type", expectedErrorType);
+                Assert.Equal(ActivityStatusCode.Error, activity.Status);
+
+                Assert.Same(parent, Activity.Current);
+                parent.Stop();
+            }, connectMethod, ipv6.ToString()).DisposeAsync();
+        }
+
+        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
+        [MemberData(nameof(SocketMethods_MemberData))]
+        public async Task Socket_UDS_Success_ActivityRecorded(string connectMethod)
+        {
+            await RemoteExecutor.Invoke(static async connectMethod =>
+            {
+                Socket server = null;
+                UnixDomainSocketEndPoint endPoint = null;
+
+                //Path selection is contingent on a successful Bind().
+                //If it fails, the next iteration will try another path.
+                RetryHelper.Execute(() =>
+                {
+                    server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                    endPoint = new UnixDomainSocketEndPoint(UnixDomainSocketTest.GetRandomNonExistingFilePath());
+                    server.Bind(endPoint);
+                    server.Listen();
+                }, retryWhen: e => e is SocketException);
+
+                using Socket client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
+
+                Task connectTask = GetHelperBase(connectMethod).ConnectAsync(client, endPoint);
+                await server.AcceptAsync();
+                await connectTask;
+
+                recorder.VerifyActivityRecorded(1);
+                Activity activity = recorder.LastFinishedActivity;
+                Assert.Equal(ActivityKind.Internal, activity.Kind);
+                Assert.Equal(ActivityName, activity.OperationName);
+                Assert.Equal($"socket connect {endPoint}", activity.DisplayName);
+                ActivityAssert.HasTag(activity, "network.peer.address", endPoint.ToString());
+                ActivityAssert.HasTag(activity, "network.transport", "unix");
+
+            }, connectMethod).DisposeAsync();
         }
 
         [OuterLoop]
