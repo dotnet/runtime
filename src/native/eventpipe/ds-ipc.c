@@ -839,7 +839,11 @@ listen_port_reset (
 	ds_ipc_error_callback_func callback)
 {
 	EP_ASSERT (object != NULL);
-	return;
+#ifdef _WIN32
+	DiagnosticsListenPort *listen_port = (DiagnosticsListenPort *)object;
+	ds_ipc_reset (listen_port->port.ipc);
+	ds_ipc_listen (listen_port->port.ipc, callback);
+#endif // _WIN32
 }
 
 static DiagnosticsPortVtable listen_port_vtable = {

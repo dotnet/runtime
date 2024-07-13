@@ -173,6 +173,27 @@ ds_ipc_free (DiagnosticsIpc *ipc)
 	ep_rt_object_free (ipc);
 }
 
+void
+ds_ipc_reset (DiagnosticsIpc *ipc)
+{
+	if (!ipc)
+		return;
+
+	if (ipc->pipe != INVALID_HANDLE_VALUE) {
+		DisconnectNamedPipe (ipc->pipe);
+		CloseHandle (ipc->pipe);
+		ipc->pipe = INVALID_HANDLE_VALUE;
+	}
+
+	if (ipc->overlap.hEvent != INVALID_HANDLE_VALUE) {
+		CloseHandle (ipc->overlap.hEvent);
+	}
+
+	memset(&ipc->overlap, 0, sizeof(OVERLAPPED)); // clear the overlapped objects state
+	ipc->overlap.hEvent = INVALID_HANDLE_VALUE;
+	ipc->is_listening = false;
+}
+
 int32_t
 ds_ipc_poll (
 	DiagnosticsIpcPollHandle *poll_handles_data,
@@ -192,6 +213,10 @@ ds_ipc_poll (
 			// SERVER
 			EP_ASSERT (poll_handles_data [i].ipc->mode == DS_IPC_CONNECTION_MODE_LISTEN);
 			handles [i] = poll_handles_data [i].ipc->overlap.hEvent;
+			if (handles [i] == INVALID_HANDLE_VALUE) {
+				// Invalid handle, wait will fail. Signal error
+				poll_handles_data [i].events = DS_IPC_POLL_EVENTS_ERR;
+			}
 		} else {
 			// CLIENT
 			bool success = true;

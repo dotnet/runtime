@@ -454,7 +454,6 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(OCSP_cert_to_id) \
     REQUIRED_FUNCTION(OCSP_check_nonce) \
     REQUIRED_FUNCTION(OCSP_request_add0_id) \
-    REQUIRED_FUNCTION(OCSP_request_add1_nonce) \
     REQUIRED_FUNCTION(OCSP_REQUEST_free) \
     REQUIRED_FUNCTION(OCSP_REQUEST_new) \
     REQUIRED_FUNCTION(OCSP_resp_find_status) \
@@ -525,6 +524,7 @@ int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
     REQUIRED_FUNCTION(SSL_CTX_new) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_new_cb) \
     REQUIRED_FUNCTION(SSL_CTX_sess_set_remove_cb) \
+    REQUIRED_FUNCTION(SSL_CTX_remove_session) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_protos) \
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
@@ -968,7 +968,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OCSP_check_nonce OCSP_check_nonce_ptr
 #define OCSP_CERTID_free OCSP_CERTID_free_ptr
 #define OCSP_request_add0_id OCSP_request_add0_id_ptr
-#define OCSP_request_add1_nonce OCSP_request_add1_nonce_ptr
 #define OCSP_REQUEST_free OCSP_REQUEST_free_ptr
 #define OCSP_REQUEST_new OCSP_REQUEST_new_ptr
 #define OCSP_resp_find_status OCSP_resp_find_status_ptr
@@ -1040,6 +1039,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_new SSL_CTX_new_ptr
 #define SSL_CTX_sess_set_new_cb SSL_CTX_sess_set_new_cb_ptr
 #define SSL_CTX_sess_set_remove_cb SSL_CTX_sess_set_remove_cb_ptr
+#define SSL_CTX_remove_session SSL_CTX_remove_session_ptr
 #define SSL_CTX_set_alpn_protos SSL_CTX_set_alpn_protos_ptr
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr

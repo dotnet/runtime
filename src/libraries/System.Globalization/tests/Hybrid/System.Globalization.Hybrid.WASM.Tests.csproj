@@ -6,7 +6,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
-   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 because https://github.com/dotnet/runtime/pull/101671 -->
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>

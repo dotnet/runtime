@@ -1056,60 +1056,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [OuterLoop("May take several seconds")]
-        public async Task ByteMixingOrNativeAVE_MinimalFailingTest()
-        {
-            const int writeSize = 64 * 1024;
-            const int NumberOfWrites = 512;
-            byte[] data1 = new byte[writeSize * NumberOfWrites];
-            byte[] data2 = new byte[writeSize * NumberOfWrites];
-            Array.Fill(data1, (byte)1);
-            Array.Fill(data2, (byte)2);
-
-            Task t1 = RunTest(data1);
-            Task t2 = RunTest(data2);
-
-            async Task RunTest(byte[] data)
-            {
-                await RunClientServer(
-                    iterations: 20,
-                    serverFunction: async connection =>
-                    {
-                        await using QuicStream stream = await connection.AcceptInboundStreamAsync();
-
-                        byte[] buffer = new byte[data.Length];
-                        int bytesRead = await ReadAll(stream, buffer);
-                        Assert.Equal(data.Length, bytesRead);
-                        AssertExtensions.SequenceEqual(data, buffer);
-
-                        for (int pos = 0; pos < data.Length; pos += writeSize)
-                        {
-                            await stream.WriteAsync(data[pos..(pos + writeSize)]);
-                        }
-                        await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true);
-                    },
-                    clientFunction: async connection =>
-                    {
-                        await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-
-                        for (int pos = 0; pos < data.Length; pos += writeSize)
-                        {
-                            await stream.WriteAsync(data[pos..(pos + writeSize)]);
-                        }
-                        await stream.WriteAsync(Memory<byte>.Empty, completeWrites: true);
-
-                        byte[] buffer = new byte[data.Length];
-                        int bytesRead = await ReadAll(stream, buffer);
-                        Assert.Equal(data.Length, bytesRead);
-                        AssertExtensions.SequenceEqual(data, buffer);
-                    }
-                );
-            }
-
-            await (new[] { t1, t2 }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
-        }
-
-        [Fact]
         public async Task ManagedAVE_MinimalFailingTest()
         {
             async Task GetStreamIdWithoutStartWorks()

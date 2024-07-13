@@ -6334,7 +6334,7 @@ public:
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
-    void        optRemoveRedundantZeroInits();
+    void        optRemoveRedundantZeroInits(bool hasCycle);
     PhaseStatus optIfConversion(); // If conversion
 
 protected:

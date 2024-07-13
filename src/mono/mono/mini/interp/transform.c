@@ -4998,7 +4998,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		arg_locals = (guint32*) g_malloc ((!!signature->hasthis + signature->param_count) * sizeof (guint32));
 		/* Allocate locals to store inlined method args from stack */
 		for (int i = signature->param_count - 1; i >= 0; i--) {
-			MonoType *type = td->locals [td->sp [-1].local].type;
+			MonoType *type = get_type_from_stack (td->sp [-1].type, td->sp [-1].klass);
 			local = create_interp_local (td, type);
 			arg_locals [i + !!signature->hasthis] = local;
 			store_local (td, local);

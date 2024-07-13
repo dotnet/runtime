@@ -101,4 +101,6 @@ private:
     BitVec       m_visited;
 
     SsaRenameState m_renameStack;
+
+    bool m_hasCycle;
 };
