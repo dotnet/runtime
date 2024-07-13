@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Reflection;
 using System.Threading;
@@ -457,7 +458,6 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), TestAsync.ToString(), statusCode.ToString(), method).DisposeAsync();
         }
 
-
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(200, "GET")]
         [InlineData(404, "GET")]
@@ -575,6 +575,243 @@ namespace System.Net.Http.Functional.Tests
             else
             {
                 Assert.Equal(value, (T)tags.Single(t => t.Key == name).Value);
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SendAsync_Success_ConnectionSetupActivityGraphRecorded(bool useTls)
+        {
+            if (UseVersion == HttpVersion30 && !useTls) return;
+
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), useTls.ToString()).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync, string useTlsString)
+            {
+                bool useTls = bool.Parse(useTlsString);
+
+                Activity parentActivity = new Activity("parent").Start();
+
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                {
+                    VerifyParent = false
+                };
+
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+                using ActivityRecorder dnsRecorder = new("Experimental.System.Net.NameResolution", "Experimental.System.Net.NameResolution.DnsLookup") { VerifyParent = false };
+                using ActivityRecorder socketRecorder = new("Experimental.System.Net.Sockets", "Experimental.System.Net.Sockets.Connect") { VerifyParent = false };
+                using ActivityRecorder tlsRecorder = new("Experimental.System.Net.Security", "Experimental.System.Net.Security.TlsHandshake")
+                {
+                    VerifyParent = false
+                };
+
+                await GetFactoryForVersion(useVersion).CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        Version version = Version.Parse(useVersion);
+                        if (version != HttpVersion30)
+                        {
+                            uri = new Uri($"{uri.Scheme}://localhost:{uri.Port}");
+                        }
+                        
+                        using HttpClient client = new HttpClient(CreateHttpClientHandler(allowAllCertificates: true));
+
+                        await client.SendAsync(bool.Parse(testAsync), CreateRequest(HttpMethod.Get, uri, version, exactVersion: true));
+
+                        Activity req1 = requestRecorder.VerifyActivityRecordedOnce();
+                        Activity wait1 = waitForConnectionRecorder.VerifyActivityRecordedOnce();
+                        Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
+
+                        Activity? dns = null;
+                        Activity? sock = null;
+                        Activity? tls = null;
+
+                        if (version != HttpVersion30)
+                        {
+                            dns = dnsRecorder.VerifyActivityRecordedOnce();
+                            Assert.True(socketRecorder.Stopped is 1 or 2);
+                            sock = socketRecorder.LastFinishedActivity;
+
+                            if (useTls)
+                            {
+                                tls = tlsRecorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
+                            }
+                            else
+                            {
+                                tlsRecorder.VerifyActivityRecorded(0);
+                            }
+                        }
+
+                        // Verify relationships between request and connection_setup, wait_for_connection:
+                        Assert.Same(parentActivity, req1.Parent);
+                        Assert.Same(req1, wait1.Parent);
+
+                        // Verify timing relationships between request, wait_for_connection, connection_setup:
+                        ActivityAssert.FinishedInOrder(conn, wait1);
+                        ActivityAssert.FinishedInOrder(wait1, req1);
+
+                        // req1->conn link:
+                        req1.Links.Single(l => l.Context == conn.Context);
+
+                        // Verify the connection_setup graph:
+                        Assert.Null(conn.Parent);
+
+                        if (version != HttpVersion30)
+                        {
+                            Assert.Same(conn, dns.Parent);
+                            Assert.Same(conn, sock.Parent);
+                            if (useTls)
+                            {
+                                Assert.Same(conn, tls.Parent);
+                            }
+
+                            // Verify timing relationships for connection setup:
+                            ActivityAssert.FinishedInOrder(dns, sock);
+                            if (useTls)
+                            {
+                                ActivityAssert.FinishedInOrder(sock, tls);
+                                ActivityAssert.FinishedInOrder(tls, conn);
+                            }
+                            else
+                            {
+                                ActivityAssert.FinishedInOrder(sock, conn);
+                            }
+                        }
+
+                        // Verify display names and attributes:
+                        Assert.Equal(ActivityKind.Internal, wait1.Kind);
+                        Assert.Equal(ActivityKind.Internal, conn.Kind);
+                        Assert.Equal($"HTTP wait_for_connection {uri.Host}:{uri.Port}", wait1.DisplayName);
+                        Assert.Equal($"HTTP connection_setup {uri.Host}:{uri.Port}", conn.DisplayName);
+                        ActivityAssert.HasTag(conn, "network.peer.address",
+                            (string a) => a == IPAddress.Loopback.ToString() ||
+                            a == IPAddress.Loopback.MapToIPv6().ToString() ||
+                            a == IPAddress.IPv6Loopback.ToString());
+                        ActivityAssert.HasTag(conn, "server.address", uri.Host);
+                        ActivityAssert.HasTag(conn, "server.port", uri.Port);
+                        ActivityAssert.HasTag(conn, "url.scheme", useTls ? "https" : "http");
+
+                        // The second request should reuse the first connection, connection_setup and wait_for_connection should not be recorded again.
+                        await client.SendAsync(CreateRequest(HttpMethod.Get, uri, Version.Parse(useVersion), exactVersion: true));
+                        requestRecorder.VerifyActivityRecorded(2);
+                        Activity req2 = requestRecorder.LastFinishedActivity;
+                        Assert.NotSame(req1, req2);
+                        waitForConnectionRecorder.VerifyActivityRecorded(version == HttpVersion30 ? 2 : 1);
+                        connectionSetupRecorder.VerifyActivityRecorded(1);
+
+                        // The second request should also have a link to the shared connection.
+                        req2.Links.Single(l => l.Context == conn.Context);
+                    },
+                    async server =>
+                    {
+                        await server.AcceptConnectionAsync(async connection =>
+                        {
+                            await connection.ReadRequestDataAsync();
+                            await connection.SendResponseAsync(HttpStatusCode.OK);
+                            connection.CompleteRequestProcessing();
+
+                            await connection.ReadRequestDataAsync();
+                            await connection.SendResponseAsync(HttpStatusCode.OK);
+                        });
+                    }, options: new GenericLoopbackOptions()
+                    {
+                        UseSsl = useTls
+                    });
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("dns")]
+        [InlineData("socket")]
+        public async Task SendAsync_ConnectionFailure_RecordsActivitiesWithCorrectErrorInfo(string failureType)
+        {
+            await RemoteExecutor.Invoke(RunTest, UseVersion.ToString(), TestAsync.ToString(), failureType).DisposeAsync();
+            static async Task RunTest(string useVersion, string testAsync, string failureType)
+            {
+                Version version = Version.Parse(useVersion);
+
+                using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);   
+                using HttpClient client = new HttpClient(handler);
+
+                Activity parentActivity = new Activity("parent").Start();
+                using ActivityRecorder requestRecorder = new("System.Net.Http", "System.Net.Http.HttpRequestOut")
+                {
+                    ExpectedParent = parentActivity
+                };
+                using ActivityRecorder waitForConnectionRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.WaitForConnection")
+                {
+                    VerifyParent = false
+                };
+                using ActivityRecorder connectionSetupRecorder = new("Experimental.System.Net.Http.Connections", "Experimental.System.Net.Http.Connections.ConnectionSetup");
+                using ActivityRecorder dnsRecorder = new("Experimental.System.Net.NameResolution", "Experimental.System.Net.NameResolution.DnsLookup") { VerifyParent = false };
+                using ActivityRecorder socketRecorder = new("Experimental.System.Net.Sockets", "Experimental.System.Net.Sockets.Connect") { VerifyParent = false };
+
+                Uri uri;
+                using Socket? notListening = failureType is "socket"
+                    ? (version == HttpVersion30) ? new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp) : new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                    : null;
+
+                if (failureType is "dns")
+                {
+                    uri = new Uri("https://does.not.exist.sorry");
+                }
+                else
+                {
+                    Debug.Assert(notListening is not null);
+                    notListening.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                    IPEndPoint ep = (IPEndPoint)notListening.LocalEndPoint;
+                    uri = new Uri($"https://{ep.Address}:{ep.Port}");
+                }
+
+                using HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, version, exactVersion: true);
+                await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(bool.Parse(testAsync), request));
+
+                Activity req = requestRecorder.VerifyActivityRecordedOnce();
+                Activity wait = waitForConnectionRecorder.VerifyActivityRecordedOnce();
+                Activity conn = connectionSetupRecorder.VerifyActivityRecordedOnce();
+
+                Assert.Same(req, wait.Parent);
+                Assert.Null(conn.Parent);
+
+                if (failureType == "dns")
+                {
+                    Assert.Equal(ActivityStatusCode.Error, conn.Status);
+                    Assert.Equal(ActivityStatusCode.Error, wait.Status);
+
+                    ActivityAssert.HasTag(conn, "error.type", "name_resolution_error");
+                    ActivityAssert.HasTag(wait, "error.type", "name_resolution_error");
+
+                    // Whether System.Net.Quic uses System.Net.Dns is an implementation detail.
+                    if (version != HttpVersion30)
+                    {
+                        Activity dns = dnsRecorder.VerifyActivityRecordedOnce();
+                        Assert.Same(conn, dns.Parent);
+                        Assert.Equal(ActivityStatusCode.Error, dns.Status);
+                        ActivityAssert.HasTag(dns, "error.type", (string t) => t is "host_not_found" or "timed_out");
+                    }
+                }
+                else
+                {
+                    Debug.Assert(failureType is "socket");
+                    
+                    Assert.Equal(ActivityStatusCode.Error, conn.Status);
+                    Assert.Equal(ActivityStatusCode.Error, wait.Status);
+                    
+                    ActivityAssert.HasTag(conn, "error.type", "connection_error");
+                    ActivityAssert.HasTag(wait, "error.type", "connection_error");
+
+                    if (version != HttpVersion30)
+                    {
+                        Activity sock = socketRecorder.VerifyActivityRecordedOnce();
+                        Assert.Same(conn, sock.Parent);
+                        Assert.Equal(ActivityStatusCode.Error, sock.Status);
+                        ActivityAssert.HasTag(sock, "error.type", (string t) => t is "connection_refused" or "timed_out");
+                    }
+                }
             }
         }
 
@@ -1189,7 +1426,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_ActivityIsCreatedIfRequested(bool currentActivitySet, bool? diagnosticListenerActivityEnabled, bool? activitySourceCreatesActivity)
         {
             string parameters = $"{currentActivitySet},{diagnosticListenerActivityEnabled},{activitySourceCreatesActivity}";
-            await RemoteExecutor.Invoke(async (useVersion, testAsync, parametersString) =>
+            await RemoteExecutor.Invoke(static async (useVersion, testAsync, parametersString) =>
             {
                 bool?[] parameters = parametersString.Split(',').Select(p => p.Length == 0 ? (bool?)null : bool.Parse(p)).ToArray();
                 bool currentActivitySet = parameters[0].Value;
@@ -1201,7 +1438,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     ActivitySource.AddActivityListener(new ActivityListener
                     {
-                        ShouldListenTo = _ => true,
+                        ShouldListenTo = s => s.Name is "System.Net.Http",
                         Sample = (ref ActivityCreationOptions<ActivityContext> _) =>
                         {
                             madeASamplingDecision = true;
@@ -1230,7 +1467,7 @@ namespace System.Net.Http.Functional.Tests
                     // (when a DiagnosticListener forced one to be created)
                     ActivitySource.AddActivityListener(new ActivityListener
                     {
-                        ShouldListenTo = _ => true,
+                        ShouldListenTo = s => s.Name is "System.Net.Http" or "",
                         ActivityStarted = created =>
                         {
                             Assert.Null(parent);
@@ -1269,8 +1506,8 @@ namespace System.Net.Http.Functional.Tests
 
                 Assert.Equal(activitySourceCreatesActivity.HasValue, madeASamplingDecision);
                 Assert.Equal(diagnosticListenerActivityEnabled.HasValue, listenerCallbackWasCalled);
-            }, UseVersion.ToString(), TestAsync.ToString(), parameters).DisposeAsync();
-        }
+        }, UseVersion.ToString(), TestAsync.ToString(), parameters).DisposeAsync();
+    }
 
         private static T GetProperty<T>(object obj, string propertyName)
         {

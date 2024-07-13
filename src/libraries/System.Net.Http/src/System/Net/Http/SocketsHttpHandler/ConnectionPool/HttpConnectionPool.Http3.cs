@@ -75,7 +75,7 @@ namespace System.Net.Http
             // Loop in case we get a 421 and need to send the request to a different authority.
             while (true)
             {
-                if (!TryGetHttp3Authority(request, out _, out Exception? reasonException))
+                if (!TryGetHttp3Authority(request, out HttpAuthority? authority, out Exception? reasonException))
                 {
                     if (reasonException is null)
                     {
@@ -85,10 +85,20 @@ namespace System.Net.Http
                 }
 
                 long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
+                Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(authority);
 
                 if (!TryGetPooledHttp3Connection(request, out Http3Connection? connection, out HttpConnectionWaiter<Http3Connection?>? http3ConnectionWaiter))
                 {
-                    connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        connection = await http3ConnectionWaiter.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
+                        waitForConnectionActivity?.Stop();
+                        throw;
+                    }
                 }
 
                 // Request cannot be sent over H/3 connection, try downgrade or report failure.
@@ -98,7 +108,7 @@ namespace System.Net.Http
                     return null;
                 }
 
-                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, waitForConnectionActivity, cancellationToken).ConfigureAwait(false);
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
@@ -245,20 +255,22 @@ namespace System.Net.Http
 
             CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
             waiter.ConnectionCancellationTokenSource = cts;
+            Activity? connectionSetupActivity = null;
             try
             {
                 if (TryGetHttp3Authority(queueItem.Request, out authority, out Exception? reasonException))
                 {
+                    connectionSetupActivity = ConnectionSetupDistributedTracing.StartConnectionSetupActivity(isSecure: true, authority);
                     // If the authority was sent as an option through alt-svc then include alt-used header.
                     connection = new Http3Connection(this, authority, includeAltUsedHeader: _http3Authority == authority);
-
                     QuicConnection quicConnection = await ConnectHelper.ConnectQuicAsync(queueItem.Request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, connection.StreamCapacityCallback, cts.Token).ConfigureAwait(false);
                     if (quicConnection.NegotiatedApplicationProtocol != SslApplicationProtocol.Http3)
                     {
                         await quicConnection.DisposeAsync().ConfigureAwait(false);
                         throw new HttpRequestException(HttpRequestError.ConnectionError, "QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnConnectionFailure);
                     }
-                    connection.InitQuicConnection(quicConnection);
+                    if (connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, null, quicConnection.RemoteEndPoint);
+                    connection.InitQuicConnection(quicConnection, connectionSetupActivity);
                 }
                 else if (reasonException is not null)
                 {
@@ -270,6 +282,11 @@ namespace System.Net.Http
                 connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token && !waiter.CancelledByOriginatingRequestCompletion ?
                     CreateConnectTimeoutException(oce) :
                     e;
+
+                // On success path connectionSetupActivity is stopped before calling InitQuicConnection().
+                // This assertion makes sure that InitQuicConnection() does not throw unexpectedly.
+                Debug.Assert(connectionSetupActivity?.IsStopped is not true);
+                if (connectionSetupActivity is not null) ConnectionSetupDistributedTracing.StopConnectionSetupActivity(connectionSetupActivity, connectionException, null);
 
                 // If the connection hasn't been initialized with QuicConnection, get rid of it.
                 connection?.Dispose();
