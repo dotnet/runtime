@@ -1088,8 +1088,8 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetModuleData(CLRDATA_ADDRESS moduleAddr, struct DacpModuleData *data);
     virtual HRESULT STDMETHODCALLTYPE TraverseModuleMap(ModuleMapType mmt, CLRDATA_ADDRESS moduleAddr, MODULEMAPTRAVERSE pCallback, LPVOID token);
     virtual HRESULT STDMETHODCALLTYPE GetMethodDescFromToken(CLRDATA_ADDRESS moduleAddr, mdToken token, CLRDATA_ADDRESS *methodDesc);
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileBase(CLRDATA_ADDRESS addr, CLRDATA_ADDRESS *base);
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base);
+    virtual HRESULT STDMETHODCALLTYPE GetPEFileName(CLRDATA_ADDRESS moduleAddr, unsigned int count, _Inout_updates_z_(count) WCHAR *fileName, unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyModuleList(CLRDATA_ADDRESS assembly, unsigned int count, CLRDATA_ADDRESS modules[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapData(struct DacpGcHeapData *data);
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapList(unsigned int count, CLRDATA_ADDRESS heaps[], unsigned int *pNeeded);
@@ -1231,6 +1231,11 @@ public:
 
     HRESULT GetThreadDataImpl(CLRDATA_ADDRESS threadAddr, struct DacpThreadData *threadData);
     HRESULT GetThreadStoreDataImpl(struct DacpThreadStoreData *data);
+    HRESULT GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *moduleData);
+    HRESULT GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
+    HRESULT GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
+    HRESULT GetMethodTableForEEClassImpl (CLRDATA_ADDRESS eeClassReallyMT, CLRDATA_ADDRESS *value);
+    HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
@@ -1420,6 +1425,7 @@ public:
 
     CDAC m_cdac;
     NonVMComHolder<ISOSDacInterface> m_cdacSos;
+    NonVMComHolder<ISOSDacInterface2> m_cdacSos2;
     NonVMComHolder<ISOSDacInterface9> m_cdacSos9;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS

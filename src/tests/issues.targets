@@ -1756,7 +1756,7 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/16355/variance/**">
-            <Issue>needs triage</Issue>
+            <Issue>ldtoken in default interface methods does not appear to work in minijit or interp</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/20616/UnicodeBug/**">
             <Issue>needs triage</Issue>
@@ -1916,9 +1916,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftCallbackAbiStress/**">
             <Issue>https://github.com/dotnet/runtime/issues/93631: Swift reverse pinvokes are not implemented on Mono yet</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftIndirectResult/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93631: SwiftIndirectResult is not implemented on Mono yet</Issue>
         </ExcludeList>
     </ItemGroup>
 

@@ -18,7 +18,10 @@ internal sealed class Registry
         _target = target;
     }
 
+    public IException Exception => GetContract<IException>();
+    public ILoader Loader => GetContract<ILoader>();
     public IThread Thread => GetContract<IThread>();
+    public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
 
     private T GetContract<T>() where T : IContract
     {

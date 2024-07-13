@@ -14,12 +14,11 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("windows")]
     internal sealed class Http3Connection : HttpConnectionBase
     {
-        private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority _authority;
         private readonly byte[]? _altUsedEncodedHeader;
         private QuicConnection? _connection;
@@ -33,7 +32,7 @@ namespace System.Net.Http
 
         // Our control stream.
         private QuicStream? _clientControl;
-        private Task _sendSettingsTask;
+        private Task? _sendSettingsTask;
 
         // Server-advertised SETTINGS_MAX_FIELD_SECTION_SIZE
         // https://www.rfc-editor.org/rfc/rfc9114.html#section-7.2.4.1-2.2.1
@@ -54,6 +53,9 @@ namespace System.Net.Http
         public Exception? AbortException => Volatile.Read(ref _abortException);
         private object SyncObj => _activeRequests;
 
+        private int _availableRequestStreamsCount;
+        private TaskCompletionSource<bool>? _availableStreamsWaiter;
+
         /// <summary>
         /// If true, we've received GOAWAY, are aborting due to a connection-level error, or are disposing due to pool limits.
         /// </summary>
@@ -66,12 +68,10 @@ namespace System.Net.Http
             }
         }
 
-        public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
-            : base(pool, connection.RemoteEndPoint)
+        public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, bool includeAltUsedHeader)
+            : base(pool)
         {
-            _pool = pool;
             _authority = authority;
-            _connection = connection;
 
             if (includeAltUsedHeader)
             {
@@ -87,6 +87,13 @@ namespace System.Net.Http
                 // Use this as an initial value before we receive the SETTINGS frame.
                 _maxHeaderListSize = maxHeaderListSize;
             }
+        }
+
+        public void InitQuicConnection(QuicConnection connection, Activity? connectionSetupActivity)
+        {
+            MarkConnectionAsEstablished(connectionSetupActivity: connectionSetupActivity, remoteEndPoint: connection.RemoteEndPoint);
+
+            _connection = connection;
 
             // Errors are observed via Abort().
             _sendSettingsTask = SendSettingsAsync();
@@ -128,6 +135,9 @@ namespace System.Net.Http
             {
                 // Close the QuicConnection in the background.
 
+                _availableStreamsWaiter?.SetResult(false);
+                _availableStreamsWaiter = null;
+
                 _connectionClosedTask ??= _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
 
                 QuicConnection connection = _connection;
@@ -151,7 +161,7 @@ namespace System.Net.Http
 
                     if (_clientControl != null)
                     {
-                        await _sendSettingsTask.ConfigureAwait(false);
+                        await _sendSettingsTask!.ConfigureAwait(false);
                         await _clientControl.DisposeAsync().ConfigureAwait(false);
                         _clientControl = null;
                     }
@@ -162,7 +172,76 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
+        public bool TryReserveStream()
+        {
+            lock (SyncObj)
+            {
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
+
+                if (_availableRequestStreamsCount == 0)
+                {
+                    return false;
+                }
+
+                --_availableRequestStreamsCount;
+                return true;
+            }
+        }
+
+        public void ReleaseStream()
+        {
+            lock (SyncObj)
+            {
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount}");
+                ++_availableRequestStreamsCount;
+
+                _availableStreamsWaiter?.SetResult(!ShuttingDown);
+                _availableStreamsWaiter = null;
+            }
+        }
+
+        public void StreamCapacityCallback(QuicConnection connection, QuicStreamCapacityChangedArgs args)
+        {
+            Debug.Assert(_connection is null || connection == _connection);
+
+            lock (SyncObj)
+            {
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"_availableRequestStreamsCount = {_availableRequestStreamsCount} + bidirectionalStreamsCountIncrement = {args.BidirectionalIncrement}");
+
+                _availableRequestStreamsCount += args.BidirectionalIncrement;
+                _availableStreamsWaiter?.SetResult(!ShuttingDown);
+                _availableStreamsWaiter = null;
+            }
+        }
+
+        public Task<bool> WaitForAvailableStreamsAsync()
+        {
+            lock (SyncObj)
+            {
+                Debug.Assert(_availableRequestStreamsCount >= 0);
+
+                if (ShuttingDown)
+                {
+                    return Task.FromResult(false);
+                }
+                if (_availableRequestStreamsCount > 0)
+                {
+                    return Task.FromResult(true);
+                }
+
+                Debug.Assert(_availableStreamsWaiter is null);
+                _availableStreamsWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                return _availableStreamsWaiter.Task;
+            }
+        }
+
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, Activity? waitForConnectionActivity, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -184,17 +263,23 @@ namespace System.Net.Http
                             {
                                 MarkConnectionAsNotIdle();
                             }
-
                             _activeRequests.Add(quicStream, requestStream);
                         }
                     }
                 }
                 // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
                 // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
-                catch (ObjectDisposedException) { }
-                catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
+                catch (ObjectDisposedException e)
+                {
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
+                }
+                catch (QuicException e) when (e.QuicError != QuicError.OperationAborted)
+                {
+                    ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, e);
+                }
                 finally
                 {
+                    waitForConnectionActivity?.Stop();
                     if (queueStartingTimestamp != 0)
                     {
                         TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
@@ -226,6 +311,8 @@ namespace System.Net.Http
                     throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
+                Debug.Assert(waitForConnectionActivity?.IsStopped != false);
+                if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
@@ -363,10 +450,8 @@ namespace System.Net.Http
             }
         }
 
-        public override long GetIdleTicks(long nowTicks) => throw new NotImplementedException("We aren't scavenging HTTP3 connections yet");
-
         public override void Trace(string message, [CallerMemberName] string? memberName = null) =>
-            Trace(0, message, memberName);
+            Trace(0, _connection is not null ? $"{_connection} {message}" : message, memberName);
 
         internal void Trace(long streamId, string message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(

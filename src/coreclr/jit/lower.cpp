@@ -1495,6 +1495,14 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     return true;
 }
 
+//------------------------------------------------------------------------
+// ReplaceArgWithPutArgOrBitcast: Insert a PUTARG_* node in the right location
+// and replace the call operand with that node.
+//
+// Arguments:
+//    argSlot         - slot in call of argument
+//    putArgOrBitcast - the node that is being inserted
+//
 void Lowering::ReplaceArgWithPutArgOrBitcast(GenTree** argSlot, GenTree* putArgOrBitcast)
 {
     assert(argSlot != nullptr);
@@ -1789,6 +1797,28 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     assert(!arg->OperIsPutArg());
 
 #if !defined(TARGET_64BIT)
+    if (comp->opts.compUseSoftFP && (type == TYP_DOUBLE))
+    {
+        // Unlike TYP_LONG we do no decomposition for doubles, yet we maintain
+        // it as a primitive type until lowering. So we need to get it into the
+        // right form here.
+
+        unsigned argLclNum = comp->lvaGrabTemp(false DEBUGARG("double arg on softFP"));
+        GenTree* store     = comp->gtNewTempStore(argLclNum, arg);
+        GenTree* low       = comp->gtNewLclFldNode(argLclNum, TYP_INT, 0);
+        GenTree* high      = comp->gtNewLclFldNode(argLclNum, TYP_INT, 4);
+        GenTree* longNode  = new (comp, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, low, high);
+        BlockRange().InsertAfter(arg, store, low, high, longNode);
+
+        *ppArg = arg = longNode;
+        type         = TYP_LONG;
+
+        comp->lvaSetVarDoNotEnregister(argLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+
+        JITDUMP("Created new nodes for double-typed arg on softFP:\n");
+        DISPRANGE(LIR::ReadOnlyRange(store, longNode));
+    }
+
     if (varTypeIsLong(type))
     {
         noway_assert(arg->OperIs(GT_LONG));
@@ -1826,9 +1856,8 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (call->IsVarargs() || comp->opts.compUseSoftFP || callArg->AbiInfo.IsMismatchedArgType())
         {
-            // For vararg call or on armel, reg args should be all integer.
-            // For arg type and arg reg mismatch, reg arg should be integer on riscv64
-            // Insert copies as needed to move float value to integer register.
+            // Insert copies as needed to move float value to integer register
+            // if the ABI requires it.
             GenTree* newNode = LowerFloatArg(ppArg, callArg);
             if (newNode != nullptr)
             {
@@ -1942,18 +1971,6 @@ GenTree* Lowering::LowerFloatArgReg(GenTree* arg, regNumber regNum)
     GenTree*  intArg    = comp->gtNewBitCastNode(intType, arg);
     intArg->SetRegNum(regNum);
 
-#ifdef TARGET_ARM
-    if (floatType == TYP_DOUBLE)
-    {
-        // A special case when we introduce TYP_LONG
-        // during lowering for arm32 softFP to pass double
-        // in int registers.
-        assert(comp->opts.compUseSoftFP);
-
-        regNumber nextReg                  = REG_NEXT(regNum);
-        intArg->AsMultiRegOp()->gtOtherReg = nextReg;
-    }
-#endif
     return intArg;
 }
 #endif
@@ -1972,6 +1989,113 @@ void Lowering::LowerArgsForCall(GenTreeCall* call)
     {
         LowerArg(call, &arg, true);
     }
+
+    LegalizeArgPlacement(call);
+}
+
+//------------------------------------------------------------------------
+// LegalizeArgPlacement: Move arg placement nodes (PUTARG_*) into a legal
+// ordering after they have been created.
+//
+// Arguments:
+//   call - GenTreeCall node that has had PUTARG_* nodes created for arguments.
+//
+// Remarks:
+//   PUTARG_* nodes are created and inserted right after the definitions of the
+//   argument values. However, there are constraints on how the PUTARG nodes
+//   can appear:
+//
+//   - No other GT_CALL nodes are allowed between a PUTARG_REG/PUTARG_SPLIT
+//   node and the call. For FEATURE_FIXED_OUT_ARGS this condition is also true
+//   for PUTARG_STK.
+//   - For !FEATURE_FIXED_OUT_ARGS, the PUTARG_STK nodes must come in push
+//   order.
+//
+//   Morph has mostly already solved this problem, but transformations on LIR
+//   can make the ordering we end up with here illegal. This function legalizes
+//   the placement while trying to minimize the distance between an argument
+//   definition and its corresponding placement node.
+//
+void Lowering::LegalizeArgPlacement(GenTreeCall* call)
+{
+    size_t numMarked = MarkCallPutArgAndFieldListNodes(call);
+
+    // We currently do not try to resort the PUTARG_STK nodes, but rather just
+    // assert here that they are ordered.
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+    unsigned nextPushOffset = UINT_MAX;
+#endif
+
+    GenTree* cur = call->gtPrev;
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+#if defined(DEBUG) && !FEATURE_FIXED_OUT_ARGS
+            if (cur->OperIs(GT_PUTARG_STK))
+            {
+                // For !FEATURE_FIXED_OUT_ARGS (only x86) byte offsets are
+                // subtracted from the top of the stack frame; so last pushed
+                // arg has highest offset.
+                assert(nextPushOffset > cur->AsPutArgStk()->getArgOffset());
+                nextPushOffset = cur->AsPutArgStk()->getArgOffset();
+            }
+#endif
+        }
+
+        if (cur->IsCall())
+        {
+            break;
+        }
+
+        cur = cur->gtPrev;
+    }
+
+    if (numMarked == 0)
+    {
+        // Already legal; common case
+        return;
+    }
+
+    JITDUMP("Call [%06u] has %zu PUTARG nodes that interfere with [%06u]; will move them after it\n",
+            Compiler::dspTreeID(call), numMarked, Compiler::dspTreeID(cur));
+
+    // We found interference; remaining PUTARG nodes need to be moved after
+    // this point.
+    GenTree* insertionPoint = cur;
+
+    while (numMarked > 0)
+    {
+        assert(cur != nullptr);
+
+        GenTree* prev = cur->gtPrev;
+        if ((cur->gtLIRFlags & LIR::Flags::Mark) != 0)
+        {
+            numMarked--;
+            cur->gtLIRFlags &= ~LIR::Flags::Mark;
+
+            // For FEATURE_FIXED_OUT_ARGS: all PUTARG nodes must be moved after the interfering call
+            // For !FEATURE_FIXED_OUT_ARGS: only PUTARG_REG nodes must be moved after the interfering call
+            if (FEATURE_FIXED_OUT_ARGS || cur->OperIs(GT_FIELD_LIST, GT_PUTARG_REG))
+            {
+                JITDUMP("Relocating [%06u] after [%06u]\n", Compiler::dspTreeID(cur),
+                        Compiler::dspTreeID(insertionPoint));
+
+                BlockRange().Remove(cur);
+                BlockRange().InsertAfter(insertionPoint, cur);
+            }
+        }
+
+        cur = prev;
+    }
+
+    JITDUMP("Final result after legalization:\n");
+    DISPTREERANGE(BlockRange(), call);
 }
 
 // helper that create a node representing a relocatable physical address computation
@@ -1988,6 +2112,7 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+//------------------------------------------------------------------------
 // LowerCallMemset: Replaces the following memset-like special intrinsics:
 //
 //    SpanHelpers.Fill<T>(ref dstRef, CNS_SIZE, CNS_VALUE)
@@ -2771,19 +2896,7 @@ void Lowering::InsertProfTailCallHook(GenTreeCall* call, GenTree* insertionPoint
 //
 GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 {
-    size_t numMarkedNodes = 0;
-    for (CallArg& arg : call->gtArgs.Args())
-    {
-        if (arg.GetEarlyNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetEarlyNode());
-        }
-
-        if (arg.GetLateNode() != nullptr)
-        {
-            numMarkedNodes += MarkPutArgNodes(arg.GetLateNode());
-        }
-    }
+    size_t numMarkedNodes = MarkCallPutArgAndFieldListNodes(call);
 
     if (numMarkedNodes <= 0)
     {
@@ -2809,32 +2922,67 @@ GenTree* Lowering::FindEarliestPutArg(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------
-// MarkPutArgNodes: Mark all direct operand PUTARG nodes with a LIR mark.
+// MarkCallPutArgNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// corresponding to a call.
 //
 // Arguments:
-//    node - the node (either a field list or PUTARG node)
+//   call - the call
 //
 // Returns:
-//    The number of marks added.
+//   The number of nodes marked.
 //
-size_t Lowering::MarkPutArgNodes(GenTree* node)
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkCallPutArgAndFieldListNodes(GenTreeCall* call)
+{
+    size_t numMarkedNodes = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetEarlyNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetEarlyNode());
+        }
+
+        if (arg.GetLateNode() != nullptr)
+        {
+            numMarkedNodes += MarkPutArgAndFieldListNodes(arg.GetLateNode());
+        }
+    }
+
+    return numMarkedNodes;
+}
+
+//------------------------------------------------------------------------
+// MarkPutArgAndFieldListNodes: Mark all operand FIELD_LIST and PUTARG nodes
+// with a LIR mark.
+//
+// Arguments:
+//   node - the node (either a FIELD_LIST or PUTARG operand)
+//
+// Returns:
+//   The number of marks added.
+//
+// Remarks:
+//   FIELD_LIST operands are marked too, and their PUTARG operands are in turn
+//   marked as well.
+//
+size_t Lowering::MarkPutArgAndFieldListNodes(GenTree* node)
 {
     assert(node->OperIsPutArg() || node->OperIsFieldList());
 
-    size_t result = 0;
+    assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
+    node->gtLIRFlags |= LIR::Flags::Mark;
+
+    size_t result = 1;
     if (node->OperIsFieldList())
     {
         for (GenTreeFieldList::Use& operand : node->AsFieldList()->Uses())
         {
             assert(operand.GetNode()->OperIsPutArg());
-            result += MarkPutArgNodes(operand.GetNode());
+            result += MarkPutArgAndFieldListNodes(operand.GetNode());
         }
-    }
-    else
-    {
-        assert((node->gtLIRFlags & LIR::Flags::Mark) == 0);
-        node->gtLIRFlags |= LIR::Flags::Mark;
-        result++;
     }
 
     return result;
@@ -7542,39 +7690,40 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif
 
-    FinalizeOutgoingArgSpace();
-
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
     const bool setSlotNumbers = false;
     comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    comp->fgLocalVarLiveness();
-    // local var liveness can delete code, which may create empty blocks
-    if (comp->opts.OptimizationEnabled())
+    // Remove dead blocks and compute DFS (we want to remove unreachable blocks
+    // even in MinOpts).
+    comp->fgDfsBlocksAndRemove();
+
+    if (comp->backendRequiresLocalVarLifetimes())
     {
+        assert(comp->opts.OptimizationEnabled());
+
+        comp->fgLocalVarLiveness();
+        // local var liveness can delete code, which may create empty blocks
         // Don't churn the flowgraph with aggressive compaction since we've already run block layout
         bool modified = comp->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false,
                                                 /* doAggressiveCompaction */ false);
-        modified |= comp->fgRemoveDeadBlocks();
 
         if (modified)
         {
+            comp->fgDfsBlocksAndRemove();
             JITDUMP("had to run another liveness pass:\n");
             comp->fgLocalVarLiveness();
         }
-    }
-    else
-    {
-        // If we are not optimizing, remove the dead blocks regardless.
-        comp->fgRemoveDeadBlocks();
+
+        // Recompute local var ref counts again after liveness to reflect
+        // impact of any dead code removal. Note this may leave us with
+        // tracked vars that have zero refs.
+        comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
     }
 
-    // Recompute local var ref counts again after liveness to reflect
-    // impact of any dead code removal. Note this may leave us with
-    // tracked vars that have zero refs.
-    comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    comp->fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

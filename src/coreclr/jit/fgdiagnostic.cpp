@@ -56,7 +56,7 @@ void Compiler::fgPrintEdgeWeights()
 
 #ifdef DEBUG
 
-void Compiler::fgDebugCheckUpdate()
+void Compiler::fgDebugCheckUpdate(const bool doAggressiveCompaction)
 {
     if (!compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
     {
@@ -139,7 +139,7 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlock(block))
+        if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
@@ -3459,6 +3459,14 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 
 #if defined(TARGET_ARM64)
                     case NI_ArmBase_Yield:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                    case NI_Sve_GatherPrefetch8Bit:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
