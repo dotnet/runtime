@@ -600,10 +600,10 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             var collection = new TestServiceCollection();
             var externalService = new FakeService();
             collection.AddSingleton(externalService);
-            var provider = CreateServiceProvider(services);
+            var provider = CreateServiceProvider(collection);
 
             // Act
-            ((IDisposable)rootProvider).Dispose();
+            ((IDisposable)provider).Dispose();
 
             // Assert
             Assert.False(externalService.Disposed);
