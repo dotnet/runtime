@@ -21,17 +21,16 @@ Below are the requirements for toolchain setup, depending on your environment. P
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([dotnet/runtime#4069](https://github.com/dotnet/runtime/issues/4069)).
 
-
-### Debian-based / Ubuntu
-
-These instructions are written assuming the current Ubuntu LTS.
-
 You can use this helper script to install dependencies on some platforms:
 
 ```bash
 sudo eng/install-native-dependencies.sh
 # or without 'sudo' if you are root
 ```
+
+### Debian-based / Ubuntu
+
+These instructions are written assuming the current Ubuntu LTS.
 
 Install the following packages for the toolchain:
 
