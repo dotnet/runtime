@@ -5603,6 +5603,11 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> TransposeOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> TransposeOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<double> TrigonometricSelectCoefficient(System.Numerics.Vector<double> value, System.Numerics.Vector<ulong> selector) { throw null; }
+        public static System.Numerics.Vector<float> TrigonometricSelectCoefficient(System.Numerics.Vector<float> value, System.Numerics.Vector<uint> selector) { throw null; }
+        public static System.Numerics.Vector<double> TrigonometricStartingValue(System.Numerics.Vector<double> value, System.Numerics.Vector<ulong> sign) { throw null; }
+        public static System.Numerics.Vector<float> TrigonometricStartingValue(System.Numerics.Vector<float> value, System.Numerics.Vector<uint> sign) { throw null; }
+
         public static System.Numerics.Vector<sbyte> UnzipEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> UnzipEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> UnzipEven(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
