@@ -406,15 +406,6 @@ enum GenTreeFlags : unsigned int
                                   // With operators: the specified node is an unsigned operator
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
 
-// The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
-// that we are calling in the context of performing a CSE, thus we
-// should allow the run-once side effects of running a class constructor.
-//
-// The only requirement of this flag is that it not overlap any of the
-// side-effect flags. The actual bit used is otherwise arbitrary.
-
-    GTF_IS_IN_CSE   = GTF_BOOLEAN,
-
     GTF_COMMON_MASK = 0x0003FFFF, // mask of all the flags above
 
     GTF_REUSE_REG_VAL = 0x00800000, // This is set by the register allocator on nodes whose value already exists in the
