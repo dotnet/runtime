@@ -60,12 +60,24 @@ namespace System.Numerics.Tensors
             // 3. Reconstruction
             //      Hence, cos(x) = sin(x + pi/2) = (-1)^N * sin(f)
 
-            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool Vectorizable => (typeof(T) == typeof(float))
+                                            || (typeof(T) == typeof(double));
 
             public static T Invoke(T x) => T.Cos(x);
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector128.Cos(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector128.Cos(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
@@ -75,10 +87,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(double));
                     return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+#endif
             }
 
             public static Vector256<T> Invoke(Vector256<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector256.Cos(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector256.Cos(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
@@ -88,10 +112,22 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(double));
                     return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+#endif
             }
 
             public static Vector512<T> Invoke(Vector512<T> x)
             {
+#if NET9_0_OR_GREATER
+                if (typeof(T) == typeof(double))
+                {
+                    return Vector512.Cos(x.AsDouble()).As<double, T>();
+                }
+                else
+                {
+                    Debug.Assert(typeof(T) == typeof(float));
+                    return Vector512.Cos(x.AsSingle()).As<float, T>();
+                }
+#else
                 if (typeof(T) == typeof(float))
                 {
                     return CosOperatorSingle.Invoke(x.AsSingle()).As<float, T>();
@@ -101,9 +137,11 @@ namespace System.Numerics.Tensors
                     Debug.Assert(typeof(T) == typeof(double));
                     return CosOperatorDouble.Invoke(x.AsDouble()).As<double, T>();
                 }
+#endif
             }
         }
 
+#if !NET9_0_OR_GREATER
         /// <summary>float.Cos(x)</summary>
         private readonly struct CosOperatorSingle : IUnaryOperator<float, float>
         {
@@ -347,5 +385,6 @@ namespace System.Numerics.Tensors
                 return (poly.AsUInt64() ^ odd).AsDouble();
             }
         }
+#endif
     }
 }

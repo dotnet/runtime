@@ -33,13 +33,16 @@ namespace System.Numerics.Tensors
         private readonly struct SinPiOperator<T> : IUnaryOperator<T, T>
             where T : ITrigonometricFunctions<T>
         {
-            public static bool Vectorizable => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool Vectorizable => (typeof(T) == typeof(float))
+                                            || (typeof(T) == typeof(double));
 
             public static T Invoke(T x) => T.SinPi(x);
 
             public static Vector128<T> Invoke(Vector128<T> x)
             {
                 Vector128<T> xpi = x * Vector128.Create(T.Pi);
+
+#if !NET9_0_OR_GREATER
                 if (typeof(T) == typeof(float))
                 {
                     if (Vector128.GreaterThanAny(xpi.AsUInt32() & Vector128.Create(SinOperatorSingle.SignMask), Vector128.Create(SinOperatorSingle.MaxVectorizedValue)))
@@ -55,6 +58,7 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<SinPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
                 }
+#endif
 
                 return SinOperator<T>.Invoke(xpi);
             }
@@ -62,6 +66,8 @@ namespace System.Numerics.Tensors
             public static Vector256<T> Invoke(Vector256<T> x)
             {
                 Vector256<T> xpi = x * Vector256.Create(T.Pi);
+
+#if !NET9_0_OR_GREATER
                 if (typeof(T) == typeof(float))
                 {
                     if (Vector256.GreaterThanAny(xpi.AsUInt32() & Vector256.Create(SinOperatorSingle.SignMask), Vector256.Create(SinOperatorSingle.MaxVectorizedValue)))
@@ -77,6 +83,7 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<SinPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
                 }
+#endif
 
                 return SinOperator<T>.Invoke(xpi);
             }
@@ -84,6 +91,8 @@ namespace System.Numerics.Tensors
             public static Vector512<T> Invoke(Vector512<T> x)
             {
                 Vector512<T> xpi = x * Vector512.Create(T.Pi);
+
+#if !NET9_0_OR_GREATER
                 if (typeof(T) == typeof(float))
                 {
                     if (Vector512.GreaterThanAny(xpi.AsUInt32() & Vector512.Create(SinOperatorSingle.SignMask), Vector512.Create(SinOperatorSingle.MaxVectorizedValue)))
@@ -99,6 +108,7 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<SinPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
                 }
+#endif
 
                 return SinOperator<T>.Invoke(xpi);
             }
