@@ -25,7 +25,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         // It can be reduced if bidirectional streaming is backported.
         public static bool OsSupportsWinHttpBidirectionalStreaming => Environment.OSVersion.Version >= new Version(10, 0, 22357, 0);
 
-        public static bool TestsEnabled => OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
+        public static bool TestsEnabled => true;
 
         public static bool TestsBackwardsCompatibilityEnabled => !OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
 
@@ -39,6 +39,9 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         [ConditionalFact(nameof(TestsEnabled))]
         public async Task WriteRequestAfterReadResponse()
         {
+            _output.WriteLine($"Revision Number: {Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "UBR", "YOK")!.ToString()}");
+            Assert.False(true);
+
             TaskCompletionSource<object> tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
