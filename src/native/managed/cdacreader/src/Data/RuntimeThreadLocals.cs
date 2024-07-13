@@ -11,8 +11,8 @@ internal sealed class RuntimeThreadLocals : IData<RuntimeThreadLocals>
     public RuntimeThreadLocals(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RuntimeThreadLocals);
-        AllocContext = target.ProcessedData.GetOrAdd<GCAllocContext>(address + (ulong)type.Fields[nameof(AllocContext)].Offset);
+        AllocContext = target.ProcessedData.GetOrAdd<EEAllocContext>(address + (ulong)type.Fields[nameof(AllocContext)].Offset);
     }
 
-    public GCAllocContext AllocContext { get; init; }
+    public EEAllocContext AllocContext { get; init; }
 }
