@@ -97,13 +97,12 @@ Install the following packages for the toolchain:
 * libicu-devel
 * openssl-devel
 * krb5-devel
-* zlib-devel
 * lttng-ust-devel
 * ninja-build (optional, enables building native code with ninja instead of make)
 
 ```bash
 sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
-krb5-devel zlib-devel lttng-ust-devel ninja-build
+krb5-devel lttng-ust-devel ninja-build
 ```
 
 ### Gentoo
