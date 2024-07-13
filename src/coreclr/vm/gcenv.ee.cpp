@@ -55,6 +55,27 @@ void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     WRAPPER_NO_CONTRACT;
 
+    // The GC may change allocation contexts during the GC using GcEnumAllocContexts() so we need to
+    // update the corresponding combined limits now that the GC is complete. Doing this within
+    // GcEnumAllocContexts() is challenging to do correctly or efficiently because multiple GC threads
+    // may enumerate and modify the allocation contexts concurrently.
+    if (GCHeapUtilities::UseThreadAllocationContexts())
+    {
+        Thread * pThread = NULL;
+        while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+        {
+            ee_alloc_context* palloc_context = pThread->GetEEAllocContext();
+            if (palloc_context != nullptr)
+            {
+                palloc_context->UpdateCombinedLimit();
+            }
+        }
+    }
+    else
+    {
+        g_global_alloc_context.UpdateCombinedLimit();
+    }
+
     g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
     ThreadSuspend::RestartEE(bFinishedGC, TRUE);
@@ -445,7 +466,7 @@ gc_alloc_context * GCToEEInterface::GetAllocContext()
         return nullptr;
     }
 
-    return &t_runtime_thread_locals.alloc_context;
+    return &t_runtime_thread_locals.alloc_context.gc_allocation_context;
 }
 
 void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* param)
@@ -471,7 +492,7 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
     }
     else
     {
-        fn(&g_global_alloc_context, param);
+        fn(&g_global_alloc_context.gc_allocation_context, param);
     }
 }
 
