@@ -53,8 +53,8 @@ Install the following packages for the toolchain:
 
 ```bash
 sudo apt install -y cmake llvm lld clang build-essential \
-python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
-libssl-dev libkrb5-dev ninja-build
+  python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
+  libssl-dev libkrb5-dev ninja-build
 ```
 
 **NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (less in older Ubuntu versions), and version 3.18.4 in Debian 11 (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
@@ -102,7 +102,7 @@ Install the following packages for the toolchain:
 
 ```bash
 sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
-krb5-devel lttng-ust-devel ninja-build
+  krb5-devel lttng-ust-devel ninja-build
 ```
 
 ### Gentoo
