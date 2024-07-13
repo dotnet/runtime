@@ -67,7 +67,7 @@ namespace System.Net.Http
 
                 // In case the status code indicates a client or a server error, return the string representation of the status code.
                 // See the paragraph Status and the definition of 'error.type' in
-                // https://github.com/open-telemetry/semantic-conventions/blob/2bad9afad58fbd6b33cc683d1ad1f006e35e4a5d/docs/http/http-spans.md
+                // https://github.com/open-telemetry/semantic-conventions/blob/release/v1.23.x/docs/http/http-spans.md#Status
                 if (statusCode >= 400 && statusCode <= 599)
                 {
                     errorType = GetErrorStatusCodeString(statusCode);
