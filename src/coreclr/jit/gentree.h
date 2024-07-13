@@ -6527,7 +6527,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperRequiresGlobRefFlag() const;
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
-    uint8_t  GetTernaryControlByte(GenTreeHWIntrinsic* second) const;
 
     ClassLayout* GetLayout(Compiler* compiler) const;
 
