@@ -5420,7 +5420,6 @@ void CSE_HeuristicCommon::ConsiderCandidates()
 //
 // Parameters:
 //   tree        - The tree containing side effects
-//   sideEffects - [out] The resulting extracted side effects
 //
 // Return Value:
 //   Tree of side effects.
