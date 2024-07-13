@@ -540,6 +540,7 @@ static Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t 
     tls_pLastAllocationEEType = pEEType;
 
     Object* pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
+    pThread->GetEEAllocContext()->UpdateCombinedLimit();
     if (pObject == NULL)
         return NULL;
 
