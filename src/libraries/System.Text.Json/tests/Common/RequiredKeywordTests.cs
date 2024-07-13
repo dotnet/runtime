@@ -564,7 +564,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task RequiredNonDeserializablePropertyThrows()
+        public async Task RequiredPropertyWithoutSetterThrows()
         {
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static ti =>
             {
@@ -608,6 +608,23 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonExtensionData]
             public required Dictionary<string, JsonElement>? TestExtensionData { get; set; }
+        }
+
+        [Fact]
+        public async Task RequiredCollectionPropertyWithoutGetterThrows()
+        {
+            string json = """{"Foo":"foo","Bar":"bar"}""";
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await Serializer.DeserializeWrapper<ClassWithRequiredCollectionPropertyWithoutGetter>(json));
+            Assert.Contains(nameof(ClassWithRequiredCollectionPropertyWithoutGetter.TestCollectionPropertyWithoutGetter), exception.Message);
+        }
+
+        public class ClassWithRequiredCollectionPropertyWithoutGetter
+        {
+            public required Dictionary<string, JsonElement>? TestCollectionPropertyWithoutGetter
+            {
+                set => TestCollectionPropertyWithoutGetter = value;
+            }
         }
 
         [Fact]

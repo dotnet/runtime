@@ -764,6 +764,9 @@
   <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
     <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
   </data>
+  <data name="JsonPropertyRequiredAndCollectionPropertyMissingGetter" xml:space="preserve">
+    <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked required but is a collection property and does not specify a getter.</value>
+  </data>
   <!-- System.Collections polyfills -->
   <data name="Arg_WrongType" xml:space="preserve">
     <value>The value '{0}' is not of type '{1}' and cannot be used in this generic collection.</value>
