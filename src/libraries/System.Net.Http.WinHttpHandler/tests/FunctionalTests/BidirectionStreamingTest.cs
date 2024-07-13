@@ -10,6 +10,7 @@ using System.Net.Http.Headers;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -98,6 +99,9 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
         [ConditionalFact(nameof(TestsEnabled))]
         public async Task AfterReadResponseServerError_ClientWrite()
         {
+            _output.WriteLine($"Revision Number: {Microsoft.Win32.Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "UBR", "YOK")!.ToString()}");
+            Assert.False(true);
+
             TaskCompletionSource<Stream> requestStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource<object> completeStreamTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
