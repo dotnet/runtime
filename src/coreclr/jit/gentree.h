@@ -2267,6 +2267,7 @@ public:
         return OperGet() == GT_CALL;
     }
     inline bool IsHelperCall();
+    inline bool IsHelperCall(Compiler* compiler, unsigned helper);
 
     bool gtOverflow() const;
     bool gtOverflowEx() const;
@@ -10504,7 +10505,12 @@ inline bool GenTree::IsCnsVec() const
 
 inline bool GenTree::IsHelperCall()
 {
-    return OperGet() == GT_CALL && AsCall()->IsHelperCall();
+    return IsCall() && AsCall()->IsHelperCall();
+}
+
+inline bool GenTree::IsHelperCall(Compiler* compiler, unsigned helper)
+{
+    return IsCall() && AsCall()->IsHelperCall(compiler, helper);
 }
 
 inline var_types GenTree::CastFromType()

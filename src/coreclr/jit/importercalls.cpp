@@ -1330,6 +1330,55 @@ DONE_CALL:
         }
         else
         {
+            // We have the following pattern:
+            //
+            //   ArgumentNullException.ThrowIfNull(CORINFO_HELP_BOX_NULLABLE(classHandle, addr), valueName);
+            //
+            // We need to transform it to:
+            //
+            //   var addrTmp      = addr;
+            //   var valueNameTmp = valueName;
+            //   addr->hasValue != 0 ? NOP : ArgumentNullException.ThrowIfNull(null, valueNameTmp)
+            //
+            if (call->IsCall() && call->AsCall()->IsSpecialIntrinsic(this, NI_System_ArgumentNullException_ThrowIfNull))
+            {
+                GenTreeCall* throwIfNullCall = call->AsCall();
+                assert(throwIfNullCall->gtArgs.CountUserArgs() == 2);
+
+                GenTree* value     = throwIfNullCall->gtArgs.GetUserArgByIndex(0)->GetNode();
+                GenTree* valueName = throwIfNullCall->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+                if (value->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+                {
+                    GenTree* boxHelperClsArg  = value->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+                    GenTree* boxHelperAddrArg = value->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+                    // boxHelperClsArg is always just a class handle constant, so we don't bother spilling it.
+                    if ((boxHelperClsArg->gtFlags & GTF_SIDE_EFFECT) == 0)
+                    {
+                        // Now we need to spill the addr and argName arguments in the correct order
+                        // to preserve possible side effects.
+                        unsigned boxedValTmp     = lvaGrabTemp(true DEBUGARG("boxedVal spilled"));
+                        unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
+                        impStoreToTemp(boxedValTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+                        impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
+
+                        // Change arguments to 'ThrowIfNull(null, valueNameTmp)'
+                        throwIfNullCall->gtArgs.GetUserArgByIndex(0)->EarlyNodeRef() = gtNewNull();
+                        throwIfNullCall->gtArgs.GetUserArgByIndex(1)->EarlyNodeRef() =
+                            gtNewLclvNode(boxedArgNameTmp, valueName->TypeGet());
+
+                        // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
+                        // which is the first field of Nullable<T> struct and is of type 'bool'.
+                        //
+                        GenTree* hasValueField =
+                            gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxedValTmp, boxHelperAddrArg->TypeGet()));
+                        GenTreeOp* cond = gtNewOperNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(0));
+
+                        call = gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, gtNewNothingNode(), call));
+                    }
+                }
+            }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
     }
@@ -3791,26 +3840,41 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_ArgumentNullException_ThrowIfNull:
             {
-                // void ThrowIfNull(object? argument, string? paramName = null)
-                // void ThrowIfNull(object? argument, ExceptionArgument paramName)
+                // void ThrowIfNull(object argument, string paramName = null)
+                // void ThrowIfNull(object argument, ExceptionArgument paramName)
                 assert(sig->numArgs == 2);
                 assert(sig->retType == CORINFO_TYPE_VOID);
+
+                if (opts.compDbgCode || opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+                {
+                    // Don't fold it for debug code or forced MinOpts
+                    break;
+                }
 
                 // if we see:
                 //
                 //   ArgumentNullException_ThrowIfNull(GT_BOX(...), ...)
                 //
-                // We should be able to remove the call (and the box). It is done via intrinsic only
-                // because Tier0 is not able to remove the box itself.
+                // We should be able to remove the call (and the box). It is done via intrinsic
+                // because Tier0 is not able to remove the box itself (it doesn't inline callees).
                 //
                 GenTree* arg = impStackTop(1).val;
-                if (arg->OperIs(GT_BOX) && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+                if (arg->OperIs(GT_BOX))
                 {
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spill side effects for ThrowIfNull"));
                     gtTryRemoveBoxUpstreamEffects(arg, BR_REMOVE_AND_NARROW);
                     impPopStack();
                     impPopStack();
                     retNode = gtNewNothingNode();
+                }
+                else
+                {
+                    // Nullable is a bit more complicated, we need to materialize the actual ThrowIfNull call first
+                    // NOTE: when optimizations are enabled, we generate a better code for this case as is.
+                    if (!opts.OptimizationEnabled() && arg->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+                    {
+                        isSpecial = true;
+                    }
                 }
                 break;
             }
