@@ -183,6 +183,7 @@ native_binaries_to_ignore = [
     "vcruntime140.dll",
     "vcruntime140_1.dll",
     "xunit.console.exe",
+    "ilc.exe"
 ]
 
 MAX_FILES_COUNT = 1500
