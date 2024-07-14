@@ -374,7 +374,7 @@ namespace System.Text.Json
                     leftLast = leftFractional.Slice(-diff);
                     int rightOffset = rightIntegral.Length + diff;
                     rightFirst = rightIntegral.Slice(0, rightOffset);
-                    rightMiddle = rightIntegral.Slice(rightOffset, -diff);
+                    rightMiddle = rightIntegral.Slice(rightOffset);
                     rightLast = rightFractional;
                     break;
 
