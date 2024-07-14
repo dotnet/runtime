@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -654,18 +655,12 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
+#pragma warning disable CS9184
+        [InlineArray(8)]
         private ref struct EightObjects
+#pragma warning restore CS9184
         {
             internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051, IDE0044
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-            private object? _arg4;
-            private object? _arg5;
-            private object? _arg6;
-            private object? _arg7;
-#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
         }
 
         /// <summary>
