@@ -1786,7 +1786,6 @@ public:
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsMaskZero() const;
-    inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -9717,24 +9716,6 @@ inline bool GenTree::IsMaskZero() const
     }
 
 #endif
-    return false;
-}
-
-//-------------------------------------------------------------------
-// IsVectorConst: returns true if this node is a HWIntrinsic that represents a constant.
-//
-// Returns:
-//     True if this represents a HWIntrinsic node that represents a constant.
-//
-inline bool GenTree::IsVectorConst()
-{
-#ifdef FEATURE_SIMD
-    if (IsCnsVec())
-    {
-        return true;
-    }
-#endif // FEATURE_SIMD
-
     return false;
 }
 

@@ -340,7 +340,7 @@ void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTre
             GenTree* op1 = operands[0];
             GenTree* op2 = operands[1];
 
-            if (op2->IsVectorConst() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
+            if (op2->IsCnsVec() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
             {
                 result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
             }

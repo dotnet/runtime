@@ -11393,7 +11393,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
             {
                 operand->SetDoNotCSE();
             }
-            else if (canBenefitFromConstantProp && operand->IsVectorConst())
+            else if (canBenefitFromConstantProp && operand->IsCnsVec())
             {
                 if (tree->ShouldConstantProp(operand, operand->AsVecCon()))
                 {
@@ -11438,7 +11438,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
             assert(tree->GetOperandCount() == 2);
             GenTree*& op1 = tree->Op(1);
 
-            if (op1->IsVectorConst())
+            if (op1->IsCnsVec())
             {
                 // Move constant vectors from op1 to op2 for commutative operations
                 std::swap(op1, tree->Op(2));
@@ -11457,7 +11457,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
                 GenTree* op1 = tree->Op(1);
                 GenTree* op2 = tree->Op(2);
 
-                if (op1->IsVectorConst())
+                if (op1->IsCnsVec())
                 {
                     // Move constant vectors from op1 to op2 for comparison operations
 
