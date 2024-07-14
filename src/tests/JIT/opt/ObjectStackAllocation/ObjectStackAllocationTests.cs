@@ -175,12 +175,6 @@ namespace ObjectStackAllocation
             return Environment.GetEnvironmentVariable("DOTNET_GCStress") != null;
         }
 
-        static bool Crossgen2Test()
-        {
-            // CrossGen2 doesn't respect the debuggable attribute
-            return Environment.GetEnvironmentVariable("RunCrossGen2") != null;
-        }
-
         static void CallTestAndVerifyAllocation(Test test, int expectedResult, AllocationKind expectedAllocationsKind)
         {
             long allocatedBytesBefore = GC.GetAllocatedBytesForCurrentThread();
