@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 Console.WriteLine(@"Reference opcodes
 This file is presently only for human consumption
-This file is generated from opcode.def using the genrops.pl script
+This file is generated from opcode.def using src/coreclr/inc/ReferenceOpcodesGenerator
 
 Name                     String Name              refop    encode
 -----------------------------------------------------------------");
