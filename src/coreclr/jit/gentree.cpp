@@ -27409,6 +27409,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512F_And:
         case NI_AVX512DQ_And:
         case NI_AVX10v1_V512_And:
+        case NI_EVEX_AndMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_And:
 #endif
@@ -27416,12 +27417,14 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
             return GT_AND;
         }
 
-#if defined(TARGET_ARM64)
+#if defined(TARGET_XARCH)
+        case NI_EVEX_NotMask:
+#elif defined(TARGET_ARM64)
         case NI_AdvSimd_Not:
+#endif
         {
             return GT_NOT;
         }
-#endif
 
 #if defined(TARGET_XARCH)
         case NI_SSE_Xor:
@@ -27431,6 +27434,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512F_Xor:
         case NI_AVX512DQ_Xor:
         case NI_AVX10v1_V512_Xor:
+        case NI_EVEX_XorMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Xor:
 #endif
@@ -27446,6 +27450,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512F_Or:
         case NI_AVX512DQ_Or:
         case NI_AVX10v1_V512_Or:
+        case NI_EVEX_OrMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_Or:
 #endif
@@ -27461,6 +27466,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512F_AndNot:
         case NI_AVX512DQ_AndNot:
         case NI_AVX10v1_V512_AndNot:
+        case NI_EVEX_AndNotMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_BitwiseClear:
 #endif
@@ -27633,9 +27639,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         }
 #endif // TARGET_XARCH
 
-#ifdef TARGET_ARM64
-        case NI_AdvSimd_ShiftLeftLogical:
-#else
+#if defined(TARGET_XARCH)
         case NI_SSE2_ShiftLeftLogical:
         case NI_AVX2_ShiftLeftLogical:
         case NI_AVX2_ShiftLeftLogicalVariable:
@@ -27645,12 +27649,14 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512BW_ShiftLeftLogicalVariable:
         case NI_AVX512BW_VL_ShiftLeftLogicalVariable:
         case NI_AVX10v1_ShiftLeftLogicalVariable:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_ShiftLeftLogical:
 #endif
         {
             return GT_LSH;
         }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftLeftLogicalScalar:
         {
             if (genTypeSize(simdBaseType) != 8)
@@ -27661,9 +27667,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         }
 #endif
 
-#ifdef TARGET_ARM64
-        case NI_AdvSimd_ShiftRightArithmetic:
-#else
+#if defined(TARGET_XARCH)
         case NI_SSE2_ShiftRightArithmetic:
         case NI_AVX2_ShiftRightArithmetic:
         case NI_AVX2_ShiftRightArithmeticVariable:
@@ -27676,12 +27680,14 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512BW_VL_ShiftRightArithmeticVariable:
         case NI_AVX10v1_ShiftRightArithmetic:
         case NI_AVX10v1_ShiftRightArithmeticVariable:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_ShiftRightArithmetic:
 #endif
         {
             return GT_RSH;
         }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftRightArithmeticScalar:
         {
             if (genTypeSize(simdBaseType) != 8)
@@ -27692,9 +27698,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         }
 #endif
 
-#ifdef TARGET_ARM64
-        case NI_AdvSimd_ShiftRightLogical:
-#else
+#if defined(TARGET_XARCH)
         case NI_SSE2_ShiftRightLogical:
         case NI_AVX2_ShiftRightLogical:
         case NI_AVX2_ShiftRightLogicalVariable:
@@ -27704,12 +27708,14 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_AVX512BW_ShiftRightLogicalVariable:
         case NI_AVX512BW_VL_ShiftRightLogicalVariable:
         case NI_AVX10v1_ShiftRightLogicalVariable:
+#elif defined(TARGET_ARM64)
+        case NI_AdvSimd_ShiftRightLogical:
 #endif
         {
             return GT_RSZ;
         }
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64)
         case NI_AdvSimd_ShiftRightLogicalScalar:
         {
             if (genTypeSize(simdBaseType) != 8)
@@ -27763,6 +27769,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE41_CompareEqual:
         case NI_AVX_CompareEqual:
         case NI_AVX2_CompareEqual:
+        case NI_EVEX_CompareEqualMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareEqual:
         case NI_AdvSimd_Arm64_CompareEqual:
@@ -27797,6 +27804,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE42_CompareGreaterThan:
         case NI_AVX_CompareGreaterThan:
         case NI_AVX2_CompareGreaterThan:
+        case NI_EVEX_CompareGreaterThanMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareGreaterThan:
         case NI_AdvSimd_Arm64_CompareGreaterThan:
@@ -27829,6 +27837,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE_CompareGreaterThanOrEqual:
         case NI_SSE2_CompareGreaterThanOrEqual:
         case NI_AVX_CompareGreaterThanOrEqual:
+        case NI_EVEX_CompareGreaterThanOrEqualMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareGreaterThanOrEqual:
         case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
@@ -27863,6 +27872,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE42_CompareLessThan:
         case NI_AVX_CompareLessThan:
         case NI_AVX2_CompareLessThan:
+        case NI_EVEX_CompareLessThanMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareLessThan:
         case NI_AdvSimd_Arm64_CompareLessThan:
@@ -27895,6 +27905,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE_CompareLessThanOrEqual:
         case NI_SSE2_CompareLessThanOrEqual:
         case NI_AVX_CompareLessThanOrEqual:
+        case NI_EVEX_CompareLessThanOrEqualMask:
 #elif defined(TARGET_ARM64)
         case NI_AdvSimd_CompareLessThanOrEqual:
         case NI_AdvSimd_Arm64_CompareLessThanOrEqual:
@@ -27927,6 +27938,7 @@ genTreeOps GenTreeHWIntrinsic::GetOperForHWIntrinsicId(NamedIntrinsic id, var_ty
         case NI_SSE_CompareNotEqual:
         case NI_SSE2_CompareNotEqual:
         case NI_AVX_CompareNotEqual:
+        case NI_EVEX_CompareNotEqualMask:
         {
             return GT_NE;
         }
@@ -30403,80 +30415,73 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         GenTree* op = op1;
 
-        if (!op->OperIsHWIntrinsic())
+        if (op->OperIsHWIntrinsic())
         {
-            return tree;
-        }
+            unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+            GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
 
-        unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
-        GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
-
-        if (!cvtOp->OperIsConvertVectorToMask())
-        {
-            return tree;
-        }
-
-        if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
-        {
-            // We need the operand to be the same kind of mask; otherwise
-            // the bitwise operation can differ in how it performs
-            return tree;
-        }
+            if (cvtOp->OperIsConvertVectorToMask())
+            {
+                if ((genTypeSize(cvtOp->GetSimdBaseType()) == simdBaseTypeSize))
+                {
+                    // We need the operand to be the same kind of mask; otherwise
+                    // the bitwise operation can differ in how it performs
 
 #if defined(TARGET_XARCH)
-        GenTree* vectorNode = cvtOp->Op(1);
+                    GenTree* vectorNode = cvtOp->Op(1);
 #elif defined(TARGET_ARM64)
-        GenTree* vectorNode = cvtOp->Op(2);
+                    GenTree* vectorNode = cvtOp->Op(2);
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
-        DEBUG_DESTROY_NODE(op, tree);
-        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    DEBUG_DESTROY_NODE(op, tree);
+                    INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
-        return vectorNode;
+                    return vectorNode;
+                }
+            }
+        }
     }
 
     if (tree->OperIsConvertVectorToMask())
     {
-        GenTree* op = op1;
+        GenTree* op        = op1;
+        bool     tryHandle = false;
 
-#if defined(TARGET_ARM64)
-        if (!op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
+#if defined(TARGET_XARCH)
+        tryHandle = op->OperIsHWIntrinsic();
+#elif defined(TARGET_ARM64)
+        if (op->OperIsHWIntrinsic() && op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
         {
-            return tree;
+            op           = op2;
+            tryHandle = true;
         }
-        op = op2;
 #endif // TARGET_ARM64
 
-        if (!op->OperIsHWIntrinsic())
+        if (tryHandle)
         {
-            return tree;
-        }
+            unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
+            GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
 
-        unsigned            simdBaseTypeSize = genTypeSize(simdBaseType);
-        GenTreeHWIntrinsic* cvtOp            = op->AsHWIntrinsic();
+            if (cvtOp->OperIsConvertMaskToVector())
+            {
+                if ((genTypeSize(cvtOp->GetSimdBaseType()) == simdBaseTypeSize))
+                {
+                    // We need the operand to be the same kind of mask; otherwise
+                    // the bitwise operation can differ in how it performs
 
-        if (!cvtOp->OperIsConvertMaskToVector())
-        {
-            return tree;
-        }
-
-        if ((genTypeSize(cvtOp->GetSimdBaseType()) != simdBaseTypeSize))
-        {
-            // We need the operand to be the same kind of mask; otherwise
-            // the bitwise operation can differ in how it performs
-            return tree;
-        }
-
-        GenTree* maskNode = cvtOp->Op(1);
+                    GenTree* maskNode = cvtOp->Op(1);
 
 #if defined(TARGET_ARM64)
-        DEBUG_DESTROY_NODE(op1);
+                    DEBUG_DESTROY_NODE(op1);
 #endif // TARGET_ARM64
 
-        DEBUG_DESTROY_NODE(op, tree);
-        return maskNode;
+                    DEBUG_DESTROY_NODE(op, tree);
+                    return maskNode;
+                }
+            }
+        }
     }
 #else
     assert(!tree->OperIsConvertMaskToVector());
@@ -30519,6 +30524,62 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType);
             resultNode = cnsNode;
+        }
+        else if (tree->OperIsConvertMaskToVector())
+        {
+            GenTreeMskCon* mskCon = cnsNode->AsMskCon();
+
+            simd_t simdVal;
+            EvaluateSimdCvtMaskToVector(simdBaseType, &simdVal, mskCon->gtSimdMaskVal);
+
+            resultNode = gtNewVconNode(retType, &simdVal);
+        }
+        else if (tree->OperIsConvertVectorToMask())
+        {
+            GenTreeVecCon* vecCon = cnsNode->AsVecCon();
+            GenTreeMskCon* mskCon = gtNewMskConNode(retType);
+
+            switch (vecCon->TypeGet())
+            {
+                case TYP_SIMD8:
+                {
+                    EvaluateSimdCvtVectorToMask<simd8_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd8Val);
+                    break;
+                }
+
+                case TYP_SIMD12:
+                {
+                    EvaluateSimdCvtVectorToMask<simd12_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd12Val);
+                    break;
+                }
+
+                case TYP_SIMD16:
+                {
+                    EvaluateSimdCvtVectorToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd16Val);
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
+                case TYP_SIMD32:
+                {
+                    EvaluateSimdCvtVectorToMask<simd32_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd32Val);
+                    break;
+                }
+
+                case TYP_SIMD64:
+                {
+                    EvaluateSimdCvtVectorToMask<simd64_t>(simdBaseType, &mskCon->gtSimdMaskVal, vecCon->gtSimd64Val);
+                    break;
+                }
+#endif // TARGET_XARCH
+
+                default:
+                {
+                    unreached();
+                }
+            }
+
+            resultNode = mskCon;
         }
         else
         {
