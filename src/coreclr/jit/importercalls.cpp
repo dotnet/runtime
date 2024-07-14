@@ -1589,6 +1589,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
     // which is the first field of Nullable<T> struct and is of type 'bool'.
     //
+    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     GenTree*   hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxedValTmp, boxHelperAddrArg->TypeGet()));
     GenTreeOp* cond          = gtNewOperNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(0));
 
