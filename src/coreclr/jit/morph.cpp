@@ -9917,6 +9917,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
         {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             bool       isScalar   = false;
             genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
             genTreeOps oper       = actualOper;
@@ -10062,6 +10063,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return node;
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
             break;
         }
     }

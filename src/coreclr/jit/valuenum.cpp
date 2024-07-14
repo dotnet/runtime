@@ -2334,13 +2334,6 @@ ValueNum ValueNumStore::VNBroadcastForSimdType(var_types simdType, var_types sim
 
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case TYP_MASK:
-        {
-            unreached();
-        }
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
         default:
         {
             unreached();
@@ -2408,13 +2401,6 @@ bool ValueNumStore::VNIsVectorNaN(var_types simdType, var_types simdBaseType, Va
         }
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        case TYP_MASK:
-        {
-            unreached();
-        }
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
         default:
         {
             unreached();
@@ -2478,11 +2464,6 @@ bool ValueNumStore::VNIsVectorNegativeZero(var_types simdType, var_types simdBas
             simd64_t tmp = GetConstantSimd64(valVN);
             memcpy(&vector, &tmp, genTypeSize(simdType));
             break;
-        }
-
-        case TYP_MASK:
-        {
-            unreached();
         }
 #endif // TARGET_XARCH
 

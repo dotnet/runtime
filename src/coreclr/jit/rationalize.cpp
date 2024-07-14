@@ -103,7 +103,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
             if (varTypeIsMask(operand->TypeGet()))
             {
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                 // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
 
                 unsigned    simdSize;
@@ -164,7 +164,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
         if (varTypeIsMask(tree->TypeGet()))
         {
-#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             // No managed call returns TYP_MASK, so convert it from a TYP_SIMD
 
             unsigned    simdSize;

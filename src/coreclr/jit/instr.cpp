@@ -2038,13 +2038,13 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             return ins_Copy(dstType);
         }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (genIsValidMaskReg(srcReg))
         {
             // mask to int
             return INS_kmovq_gpr;
         }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
 
         // float to int
         assert(genIsValidFloatReg(srcReg));
