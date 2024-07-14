@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 
 namespace System.Runtime.Loader.Tests
@@ -232,6 +233,22 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains(typeof(ResourceAssemblyLoadContext).ToString(), alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
             Assert.Empty(alc.Assemblies);
+        }
+
+        class RefEmitLoadContext : AssemblyLoadContext
+        {
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                return AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        public static void LoadRefEmitAssembly()
+        {
+            AssemblyLoadContext alc = new RefEmitLoadContext();
+            Assembly asm = alc.LoadFromAssemblyName(new AssemblyName("MyAssembly"));
+            Assert.Equal(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(asm));
         }
     }
 }
