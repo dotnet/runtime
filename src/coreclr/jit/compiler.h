@@ -3055,6 +3055,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type, void* data);
 
+    GenTreeMskCon* gtNewMskConNode(var_types type);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
@@ -11674,6 +11676,7 @@ public:
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
+            case GT_CNS_MSK:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:

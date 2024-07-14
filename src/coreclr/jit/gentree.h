@@ -904,7 +904,7 @@ public:
 
     bool isUsedFromMemory() const
     {
-        return ((isContained() && (isMemoryOp() || OperIs(GT_LCL_VAR, GT_CNS_DBL, GT_CNS_VEC))) ||
+        return ((isContained() && (isMemoryOp() || OperIs(GT_LCL_VAR, GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK))) ||
                 isUsedFromSpillTemp());
     }
 
@@ -1036,7 +1036,7 @@ public:
         {
             // These are the only operators which can produce either VOID or non-VOID results.
             assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsHWIntrinsic() ||
-                   IsCnsVec());
+                   IsCnsVec() || IsCnsMsk());
             return false;
         }
 
@@ -1098,8 +1098,8 @@ public:
 
     static bool OperIsConst(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
-        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_VEC);
+        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC, GT_CNS_MSK));
+        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_MSK);
     }
 
     bool OperIsConst() const
@@ -2197,6 +2197,8 @@ public:
     inline bool IsCnsNonZeroFltOrDbl() const;
 
     inline bool IsCnsVec() const;
+
+    inline bool IsCnsMsk() const;
 
     bool IsIconHandle() const
     {
@@ -6647,7 +6649,7 @@ private:
 };
 #endif // FEATURE_HW_INTRINSICS
 
-// GenTreeVecCon -- vector  constant (GT_CNS_VEC)
+// GenTreeVecCon -- vector constant (GT_CNS_VEC)
 //
 struct GenTreeVecCon : public GenTree
 {
@@ -6661,10 +6663,6 @@ struct GenTreeVecCon : public GenTree
         simd32_t gtSimd32Val;
         simd64_t gtSimd64Val;
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        simdmask_t gtSimdMaskVal;
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
         simd_t gtSimdVal;
     };
@@ -7089,13 +7087,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return gtSimdMaskVal.IsAllBitsSet();
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7146,13 +7137,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return left->gtSimdMaskVal == right->gtSimdMaskVal;
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7198,13 +7182,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return gtSimdMaskVal.IsZero();
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7370,6 +7347,63 @@ struct GenTreeVecCon : public GenTree
 
 #if DEBUGGABLE_GENTREE
     GenTreeVecCon()
+        : GenTree()
+    {
+    }
+#endif
+};
+
+// GenTreeMskCon -- mask constant (GT_CNS_MSK)
+//
+struct GenTreeMskCon : public GenTree
+{
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    simdmask_t gtSimdMaskVal;
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    bool IsAllBitsSet() const
+    {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        return gtSimdMaskVal.IsAllBitsSet();
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    static bool Equals(const GenTreeMskCon* left, const GenTreeMskCon* right)
+    {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        return left->gtSimdMaskVal == right->gtSimdMaskVal;
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    bool IsZero() const
+    {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        return gtSimdMaskVal.IsZero();
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    GenTreeMskCon(var_types type)
+        : GenTree(GT_CNS_MSK, type)
+    {
+        assert(varTypeIsMask(type));
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        // Some uses of GenTreeMskCon do not specify all bits in the mask they are using but failing to zero out the
+        // buffer will cause determinism issues with the compiler.
+        memset(&gtSimdMaskVal, 0, sizeof(gtSimdMaskVal));
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeMskCon()
         : GenTree()
     {
     }
@@ -10477,6 +10511,11 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
 inline bool GenTree::IsCnsVec() const
 {
     return OperIs(GT_CNS_VEC);
+}
+
+inline bool GenTree::IsCnsMsk() const
+{
+    return OperIs(GT_CNS_MSK);
 }
 
 inline bool GenTree::IsHelperCall()

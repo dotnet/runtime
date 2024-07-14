@@ -2776,6 +2776,15 @@ AGAIN:
                 break;
             }
 
+            case GT_CNS_MSK:
+            {
+                if (GenTreeMskCon::Equals(op1->AsMskCon(), op2->AsMskCon()))
+                {
+                    return true;
+                }
+                break;
+            }
+
             default:
                 break;
         }
@@ -3309,15 +3318,6 @@ AGAIN:
                 switch (vecCon->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-                    case TYP_MASK:
-                    {
-                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[1]);
-                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimdVal.u32[0]);
-                        break;
-                    }
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
 #if defined(TARGET_XARCH)
                     case TYP_SIMD64:
                     {
@@ -3367,6 +3367,20 @@ AGAIN:
                         unreached();
                     }
                 }
+                break;
+            }
+
+            case GT_CNS_MSK:
+            {
+                GenTreeMskCon* mskCon = tree->AsMskCon();
+                add                   = 0;
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                add = genTreeHashAdd(ulo32(add), mskCon->gtSimdMaskVal.u32[1]);
+                add = genTreeHashAdd(ulo32(add), mskCon->gtSimdMaskVal.u32[0]);
+#else
+                unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
                 break;
             }
 
@@ -5266,6 +5280,23 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 break;
             }
 
+            case GT_CNS_MSK:
+            {
+                level = 0;
+
+                if (tree->AsMskCon()->IsAllBitsSet() || tree->AsMskCon()->IsZero())
+                {
+                    costEx = 1;
+                    costSz = 2;
+                }
+                else
+                {
+                    costEx = IND_COST_EX;
+                    costSz = 2;
+                }
+                break;
+            }
+
             case GT_LCL_VAR:
                 level = 1;
                 gtGetLclVarNodeCost(tree->AsLclVar(), &costEx, &costSz, gtIsLikelyRegVar(tree));
@@ -6492,6 +6523,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
@@ -7722,6 +7754,12 @@ GenTreeVecCon* Compiler::gtNewVconNode(var_types type, void* data)
     return vecCon;
 }
 
+GenTreeMskCon* Compiler::gtNewMskConNode(var_types type)
+{
+    GenTreeMskCon* mskCon = new (this, GT_CNS_MSK) GenTreeMskCon(type);
+    return mskCon;
+}
+
 GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 {
 #ifdef FEATURE_SIMD
@@ -8393,7 +8431,7 @@ void Compiler::gtInitializeStoreNode(GenTree* store, GenTree* value)
     }
 #else  // TARGET_X86
     // TODO-Cleanup: merge into the all-arch.
-    if (varTypeIsSIMD(value) && value->OperIs(GT_HWINTRINSIC, GT_CNS_VEC))
+    if (varTypeIsSIMD(value) && value->OperIs(GT_HWINTRINSIC, GT_CNS_VEC, GT_CNS_MSK))
     {
         SetOpLclRelatedToSIMDIntrinsic(store);
     }
@@ -9033,6 +9071,18 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
             break;
         }
 
+        case GT_CNS_MSK:
+        {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+            mskCon->gtSimdMaskVal = tree->AsMskCon()->gtSimdMaskVal;
+            copy                  = mskCon;
+#else
+            unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+            break;
+        }
+
         case GT_FTN_ADDR:
         {
             copy = new (this, tree->OperGet()) GenTreeFptrVal(tree->TypeGet(), tree->AsFptrVal()->gtFptrMethod);
@@ -9210,6 +9260,18 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
                 vecCon->gtSimdVal     = tree->AsVecCon()->gtSimdVal;
                 copy                  = vecCon;
                 goto DONE;
+            }
+
+            case GT_CNS_MSK:
+            {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+                mskCon->gtSimdMaskVal = tree->AsMskCon()->gtSimdMaskVal;
+                copy                  = mskCon;
+                goto DONE;
+#else
+                unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
             }
 
             case GT_LCL_VAR:
@@ -9999,6 +10061,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
@@ -12025,14 +12088,6 @@ void Compiler::gtDispConst(GenTree* tree)
 
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-                case TYP_MASK:
-                {
-                    printf("<0x%08x, 0x%08x>", vecCon->gtSimdVal.u32[0], vecCon->gtSimdVal.u32[1]);
-                    break;
-                }
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
                 default:
                 {
                     unreached();
@@ -12041,6 +12096,15 @@ void Compiler::gtDispConst(GenTree* tree)
 
             break;
         }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            case GT_CNS_MSK:
+            {
+                GenTreeMskCon* mskCon = tree->AsMskCon();
+                printf("<0x%08x, 0x%08x>", mskCon->gtSimdMaskVal.u32[0], mskCon->gtSimdMaskVal.u32[1]);
+                break;
+            }
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         default:
@@ -30127,6 +30191,10 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
         }
 
         return false;
+    }
+    else if (IsCnsMsk())
+    {
+        return true;
     }
 #endif // FEATURE_SIMD
 

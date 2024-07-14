@@ -3004,10 +3004,10 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, &value, sizeof(simdmask_t));
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+            memcpy(&mskCon->gtSimdMaskVal, &value, sizeof(simdmask_t));
 
-            conValTree = vecCon;
+            conValTree = mskCon;
             break;
         }
         break;
@@ -3136,7 +3136,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
         }
 #endif // FEATURE_HW_INTRINSICS
     }
-    else if (!value->IsCnsFltOrDbl())
+    else if (!value->IsCnsFltOrDbl() && !value->IsCnsMsk())
     {
         return true;
     }
