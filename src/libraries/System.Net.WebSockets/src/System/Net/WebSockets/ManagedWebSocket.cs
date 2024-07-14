@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -1544,8 +1545,14 @@ namespace System.Net.WebSockets
         // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75
         // Performs a stateful validation of UTF-8 bytes.
         // It checks for valid formatting, overlong encodings, surrogates, and value ranges.
-        private static bool TryValidateUtf8(Span<byte> span, bool endOfMessage, Utf8MessageState state)
+        private static bool TryValidateUtf8(ReadOnlySpan<byte> span, bool endOfMessage, Utf8MessageState state)
         {
+            // If no prior segment spilled over and this one is the last, we can validate it efficiently as a complete message.
+            if (!state.SequenceInProgress && endOfMessage)
+            {
+                return Utf8.IsValid(span);
+            }
+
             for (int i = 0; i < span.Length;)
             {
                 // Have we started a character sequence yet?
@@ -1589,6 +1596,7 @@ namespace System.Net.WebSockets
                         return false;
                     }
                 }
+
                 while (state.AdditionalBytesExpected > 0 && i < span.Length)
                 {
                     byte b = span[i];
@@ -1614,6 +1622,7 @@ namespace System.Net.WebSockets
                         return false;
                     }
                 }
+
                 if (state.AdditionalBytesExpected == 0)
                 {
                     state.SequenceInProgress = false;
@@ -1624,10 +1633,12 @@ namespace System.Net.WebSockets
                     }
                 }
             }
+
             if (endOfMessage && state.SequenceInProgress)
             {
                 return false;
             }
+
             return true;
         }
 
