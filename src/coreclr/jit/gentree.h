@@ -7362,7 +7362,8 @@ struct GenTreeMskCon : public GenTree
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize);
-    void EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other);
+    void EvaluateBinaryInPlace(
+        genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other);
 
     bool IsAllBitsSet() const
     {

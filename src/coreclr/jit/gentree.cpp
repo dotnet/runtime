@@ -18733,7 +18733,8 @@ void GenTreeMskCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types
 //    other    - the other vector constant to use in the evaluation
 //    simdSize - the size of the SIMD node the mask is for
 //
-void GenTreeMskCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other)
+void GenTreeMskCon::EvaluateBinaryInPlace(
+    genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other)
 {
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     simdmask_t result = {};
