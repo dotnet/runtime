@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tracing
     ///
     /// To get the value of a property quickly, use a delegate produced by <see cref="GetPropertyGetter(PropertyInfo)"/>.
     /// </summary>
-    internal readonly unsafe struct PropertyValue
+    internal readonly unsafe ref struct PropertyValue
     {
         /// <summary>
         /// Union of well-known value types, to avoid boxing those types.

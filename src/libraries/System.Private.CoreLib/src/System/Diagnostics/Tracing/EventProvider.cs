@@ -654,7 +654,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
-        private struct EightObjects
+        private ref struct EightObjects
         {
             internal object? _arg0;
 #pragma warning disable CA1823, CS0169, IDE0051, IDE0044

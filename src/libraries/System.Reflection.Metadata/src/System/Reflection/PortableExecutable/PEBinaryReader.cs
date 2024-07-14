@@ -17,7 +17,7 @@ namespace System.Reflection.PortableExecutable
     ///
     /// Only methods that are needed to read PE headers are implemented.
     /// </summary>
-    internal readonly struct PEBinaryReader
+    internal readonly ref struct PEBinaryReader
     {
         private readonly long _startOffset;
         private readonly long _maxOffset;

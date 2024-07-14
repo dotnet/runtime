@@ -1241,7 +1241,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Represents a current state in a DFA or NFA graph walk while processing a regular expression.</summary>
         /// <remarks>This is a discriminated union between a DFA state and an NFA state. One and only one will be non-null.</remarks>
-        private struct CurrentState
+        private ref struct CurrentState
         {
             /// <summary>Initializes the state as a DFA state.</summary>
             public CurrentState(MatchingState<TSet> dfaState)

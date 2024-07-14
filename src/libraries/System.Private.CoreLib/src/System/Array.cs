@@ -2258,7 +2258,7 @@ namespace System
             0X7FFFFFC7;
 
         // Private value type used by the Sort methods.
-        private readonly struct SorterObjectArray
+        private readonly ref struct SorterObjectArray
         {
             private readonly object[] keys;
             private readonly object?[]? items;
@@ -2475,7 +2475,7 @@ namespace System
         // Private value used by the Sort methods for instances of Array.
         // This is slower than the one for Object[], since we can't use the JIT helpers
         // to access the elements.  We must use GetValue & SetValue.
-        private readonly struct SorterGenericArray
+        private readonly ref struct SorterGenericArray
         {
             private readonly Array keys;
             private readonly Array? items;
