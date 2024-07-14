@@ -30,6 +30,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithInitOnlyRequiredProperty))]
         [JsonSerializable(typeof(ClassWithRequiredField))]
         [JsonSerializable(typeof(ClassWithRequiredExtensionDataProperty))]
+        [JsonSerializable(typeof(ClassWithRequiredCollectionPropertyWithoutGetter))]
         [JsonSerializable(typeof(ClassWithRequiredKeywordAndJsonRequiredCustomAttribute))]
         [JsonSerializable(typeof(ClassWithCustomRequiredPropertyName))]
         [JsonSerializable(typeof(DerivedClassWithRequiredInitOnlyProperty))]
