@@ -1793,8 +1793,8 @@ ValueNumStore::Chunk* ValueNumStore::GetAllocChunk(var_types typ, ChunkExtraAttr
 template <typename T, typename NumMap>
 ValueNum ValueNumStore::VnForConst(T cnsVal, NumMap* numMap, var_types varType)
 {
-    ValueNum* res = numMap->LookupPointerOrAdd(cnsVal, ValueNumStore::NoVN);
-    if (*res == ValueNumStore::NoVN)
+    ValueNum* res = numMap->LookupPointerOrAdd(cnsVal, NoVN);
+    if (*res == NoVN)
     {
         Chunk*   chunk               = GetAllocChunk(varType, CEA_Const);
         unsigned offsetWithinChunk   = chunk->AllocVN();
@@ -2778,8 +2778,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     //
     VNDefFuncApp<2> fstruct(func, arg0VN, arg1VN);
 
-    ValueNum* resultVN = GetVNFunc2Map()->LookupPointerOrAdd(fstruct, ValueNumStore::NoVN);
-    if (*resultVN == ValueNumStore::NoVN)
+    ValueNum* resultVN = GetVNFunc2Map()->LookupPointerOrAdd(fstruct, NoVN);
+    if (*resultVN == NoVN)
     {
         if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf))
         {
@@ -2848,8 +2848,8 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
     //
     VNDefFuncApp<2> fstruct(func, arg0VN, arg1VN);
-    ValueNum*       resultVN = GetVNFunc2Map()->LookupPointerOrAdd(fstruct, ValueNumStore::NoVN);
-    if (*resultVN == ValueNumStore::NoVN)
+    ValueNum*       resultVN = GetVNFunc2Map()->LookupPointerOrAdd(fstruct, NoVN);
+    if (*resultVN == NoVN)
     {
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN')
         //
