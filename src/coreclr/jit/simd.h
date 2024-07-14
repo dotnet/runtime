@@ -516,7 +516,8 @@ void EvaluateUnaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask
     memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
 }
 
-inline void EvaluateUnaryMask(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0)
+inline void EvaluateUnaryMask(
+    genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0)
 {
     switch (baseType)
     {
@@ -972,7 +973,8 @@ TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <typename TBase>
-void EvaluateBinaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0, const simdmask_t& arg1)
+void EvaluateBinaryMask(
+    genTreeOps oper, bool scalar, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0, const simdmask_t& arg1)
 {
     uint32_t count = simdSize / sizeof(TBase);
 
@@ -1079,7 +1081,13 @@ void EvaluateBinaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmas
     memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
 }
 
-inline void EvaluateBinaryMask(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0, const simdmask_t& arg1)
+inline void EvaluateBinaryMask(genTreeOps        oper,
+                               bool              scalar,
+                               var_types         baseType,
+                               unsigned          simdSize,
+                               simdmask_t*       result,
+                               const simdmask_t& arg0,
+                               const simdmask_t& arg1)
 {
     switch (baseType)
     {

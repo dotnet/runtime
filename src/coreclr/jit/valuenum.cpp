@@ -8016,7 +8016,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     {
         assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
 
-        bool       isMask   = false;
         bool       isScalar = false;
         genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
@@ -8036,9 +8035,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                     EvaluateBinaryMask(oper, isScalar, baseType, simdSize, &result, arg0, arg1);
                     return VNForSimdMaskCon(result);
                 }
-
-                isMask = true;
-                type   = Compiler::getSIMDTypeForSize(simdSize);
+                else
+                {
+                    var_types simdType   = Compiler::getSIMDTypeForSize(simdSize);
+                    ValueNum  simdResult = EvaluateBinarySimd(this, oper, isScalar, simdType, baseType, arg0VN, arg1VN);
+                    return EvaluateSimdCvtVectorToMask(this, type, baseType, simdResult);
+                }
             }
 
 #if defined(TARGET_XARCH)
@@ -8074,13 +8076,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
             }
 #endif // TARGET_XARCH
 
-            ValueNum simdResult = EvaluateBinarySimd(this, oper, isScalar, type, baseType, arg0VN, arg1VN);
-
-            if (isMask)
-            {
-                return EvaluateSimdCvtVectorToMask(this, type, baseType, simdResult);
-            }
-            return simdResult;
+            return EvaluateBinarySimd(this, oper, isScalar, type, baseType, arg0VN, arg1VN);
         }
 
         switch (ni)

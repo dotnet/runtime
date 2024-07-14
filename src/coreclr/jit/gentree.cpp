@@ -12098,12 +12098,12 @@ void Compiler::gtDispConst(GenTree* tree)
         }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case GT_CNS_MSK:
-            {
-                GenTreeMskCon* mskCon = tree->AsMskCon();
-                printf("<0x%08x, 0x%08x>", mskCon->gtSimdMaskVal.u32[0], mskCon->gtSimdMaskVal.u32[1]);
-                break;
-            }
+        case GT_CNS_MSK:
+        {
+            GenTreeMskCon* mskCon = tree->AsMskCon();
+            printf("<0x%08x, 0x%08x>", mskCon->gtSimdMaskVal.u32[0], mskCon->gtSimdMaskVal.u32[1]);
+            break;
+        }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
@@ -18701,6 +18701,47 @@ bool GenTreeVecCon::IsNegativeZero(var_types simdBaseType) const
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// GenTreeMskCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation
+//
+// Arguments:
+//    oper     - the operation to use in the evaluation
+//    scalar   - true if this is a scalar operation; otherwise, false
+//    baseType - the base type of the constant being checked
+//    simdSize - the size of the SIMD node the mask is for
+//
+void GenTreeMskCon::EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize)
+{
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    simdmask_t result = {};
+    EvaluateUnaryMask(oper, scalar, baseType, simdSize, &result, gtSimdMaskVal);
+    gtSimdMaskVal = result;
+#else
+    unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+}
+
+//------------------------------------------------------------------------
+// GenTreeMskCon::EvaluateUnaryInPlace: Evaluates this constant using the given operation
+//
+// Arguments:
+//    oper     - the operation to use in the evaluation
+//    scalar   - true if this is a scalar operation; otherwise, false
+//    baseType - the base type of the constant being checked
+//    other    - the other vector constant to use in the evaluation
+//    simdSize - the size of the SIMD node the mask is for
+//
+void GenTreeMskCon::EvaluateBinaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other)
+{
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    simdmask_t result = {};
+    EvaluateBinaryMask(oper, scalar, baseType, simdSize, &result, gtSimdMaskVal, other->gtSimdMaskVal);
+    gtSimdMaskVal = result;
+#else
+    unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
 }
 #endif // FEATURE_HW_INTRINSICS*/
 
@@ -30454,7 +30495,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #elif defined(TARGET_ARM64)
         if (op->OperIsHWIntrinsic() && op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
         {
-            op           = op2;
+            op        = op2;
             tryHandle = true;
         }
 #endif // TARGET_ARM64
@@ -30522,7 +30563,14 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         if (oper != GT_NONE)
         {
-            cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType);
+            if (varTypeIsMask(retType))
+            {
+                cnsNode->AsMskCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType, simdSize);
+            }
+            else
+            {
+                cnsNode->AsVecCon()->EvaluateUnaryInPlace(oper, isScalar, simdBaseType);
+            }
             resultNode = cnsNode;
         }
         else if (tree->OperIsConvertMaskToVector())
@@ -30780,41 +30828,57 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         {
             assert(op3 == nullptr);
 
-#if defined(TARGET_XARCH)
-            if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
+            if (varTypeIsMask(retType))
             {
-                if (otherNode->TypeIs(TYP_SIMD16))
+                if (varTypeIsMask(cnsNode))
                 {
-                    if ((ni != NI_AVX2_ShiftLeftLogicalVariable) && (ni != NI_AVX2_ShiftRightArithmeticVariable) &&
-                        (ni != NI_AVX512F_VL_ShiftRightArithmeticVariable) &&
-                        (ni != NI_AVX10v1_ShiftRightArithmeticVariable) && (ni != NI_AVX2_ShiftRightLogicalVariable))
-                    {
-                        // The xarch shift instructions support taking the shift amount as
-                        // a simd16, in which case they take the shift amount from the lower
-                        // 64-bits.
-
-                        int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_LONG, 0);
-
-                        if ((genTypeSize(simdBaseType) != 8) && (shiftAmount > INT_MAX))
-                        {
-                            // Ensure we don't lose track the the amount is an overshift
-                            shiftAmount = -1;
-                        }
-                        otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, shiftAmount);
-                    }
+                    cnsNode->AsMskCon()->EvaluateBinaryInPlace(oper, isScalar, simdBaseType, simdSize,
+                                                               otherNode->AsMskCon());
+                }
+                else
+                {
+                    cnsNode->AsVecCon()->EvaluateBinaryInPlace(oper, isScalar, simdBaseType, otherNode->AsVecCon());
                 }
             }
+            else
+            {
+#if defined(TARGET_XARCH)
+                if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
+                {
+                    if (otherNode->TypeIs(TYP_SIMD16))
+                    {
+                        if ((ni != NI_AVX2_ShiftLeftLogicalVariable) && (ni != NI_AVX2_ShiftRightArithmeticVariable) &&
+                            (ni != NI_AVX512F_VL_ShiftRightArithmeticVariable) &&
+                            (ni != NI_AVX10v1_ShiftRightArithmeticVariable) &&
+                            (ni != NI_AVX2_ShiftRightLogicalVariable))
+                        {
+                            // The xarch shift instructions support taking the shift amount as
+                            // a simd16, in which case they take the shift amount from the lower
+                            // 64-bits.
+
+                            int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_LONG, 0);
+
+                            if ((genTypeSize(simdBaseType) != 8) && (shiftAmount > INT_MAX))
+                            {
+                                // Ensure we don't lose track the the amount is an overshift
+                                shiftAmount = -1;
+                            }
+                            otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, shiftAmount);
+                        }
+                    }
+                }
 #endif // TARGET_XARCH
 
-            if (otherNode->IsIntegralConst())
-            {
-                int64_t scalar = otherNode->AsIntConCommon()->IntegralValue();
+                if (otherNode->IsIntegralConst())
+                {
+                    int64_t scalar = otherNode->AsIntConCommon()->IntegralValue();
 
-                otherNode = gtNewVconNode(retType);
-                otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, scalar);
+                    otherNode = gtNewVconNode(retType);
+                    otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, scalar);
+                }
+
+                cnsNode->AsVecCon()->EvaluateBinaryInPlace(oper, isScalar, simdBaseType, otherNode->AsVecCon());
             }
-
-            cnsNode->AsVecCon()->EvaluateBinaryInPlace(oper, isScalar, simdBaseType, otherNode->AsVecCon());
             resultNode = cnsNode;
         }
         else
@@ -31462,6 +31526,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
             case NI_Sve_ConditionalSelect:
 #endif
             {
+                assert(!varTypeIsMask(retType));
+
                 if (cnsNode != op1)
                 {
                     break;
@@ -31506,6 +31572,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
         }
+    }
+
+    if (varTypeIsMask(retType) && !varTypeIsMask(resultNode))
+    {
+        resultNode = gtNewSimdCvtVectorToMaskNode(retType, resultNode, simdBaseJitType, simdSize);
+        return gtFoldExprHWIntrinsic(resultNode->AsHWIntrinsic());
     }
 
     if (resultNode != tree)
