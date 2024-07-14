@@ -5,6 +5,8 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static partial class HttpClientBuilderExtensions
     {
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AsKeyed(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder DropKeyed(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddDefaultLogger(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpMessageHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.IServiceProvider, System.Net.Http.DelegatingHandler> configureHandler) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpMessageHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.Net.Http.DelegatingHandler> configureHandler) { throw null; }

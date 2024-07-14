@@ -133,7 +133,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
-                options.HttpMessageHandlerBuilderActions.Add(b => b.AdditionalHandlers.Add(b.Services.GetRequiredService<THandler>()));
+                options.HttpMessageHandlerBuilderActions.Add(b => b.AdditionalHandlers.Add(
+                    TryGetKeyedService<THandler>(b.Services, b.Name!) ?? b.Services.GetRequiredService<THandler>()));
             });
 
             return builder;
@@ -215,7 +216,9 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
-                options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = b.Services.GetRequiredService<THandler>());
+                options.HttpMessageHandlerBuilderActions.Add(b =>
+                    b.PrimaryHandler = TryGetKeyedService<THandler>(b.Services, b.Name!)
+                        ?? b.Services.GetRequiredService<THandler>());
             });
 
             return builder;
@@ -369,11 +372,6 @@ namespace Microsoft.Extensions.DependencyInjection
             this IHttpClientBuilder builder, bool validateSingleType)
             where TClient : class
         {
-            if (builder.Name is null)
-            {
-                throw new InvalidOperationException($"{nameof(HttpClientBuilderExtensions.AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
-            }
-
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
 
             builder.Services.AddTransient(s => AddTransientHelper<TClient>(s, builder));
@@ -650,9 +648,107 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        public static IHttpClientBuilder AsKeyed(this IHttpClientBuilder builder, ServiceLifetime lifetime)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+            object serviceKey = builder.Name ?? KeyedService.AnyKey;
+
+            builder.Services.Add(ServiceDescriptor.DescribeKeyed(typeof(HttpClient), serviceKey, CreateKeyedClient, lifetime));
+            builder.Services.Add(ServiceDescriptor.DescribeKeyed(typeof(HttpMessageHandler), serviceKey, CreateKeyedHandler, lifetime));
+
+            if (builder.Name is null)
+            {
+                builder.Services.Configure<HttpClientFactoryOptions>(null, options =>
+                {
+                    options.AnyKeyLifetime = lifetime;
+                    options.DropAnyKey = false;
+                });
+            }
+            else
+            {
+                builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+                {
+                    options.KeyedLifetime = lifetime;
+                    options.DropKeyed = false;
+                });
+            }
+
+            return builder;
+        }
+
+        private static HttpClient CreateKeyedClient(IServiceProvider serviceProvider, object? key)
+        {
+            if (key is not string name || IsKeyedLifetimeDisabled(serviceProvider, name))
+            {
+                return null!;
+            }
+            return serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(name);
+        }
+
+        private static HttpMessageHandler CreateKeyedHandler(IServiceProvider serviceProvider, object? key)
+        {
+            if (key is not string name || IsKeyedLifetimeDisabled(serviceProvider, name))
+            {
+                return null!;
+            }
+            return serviceProvider.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler(name);
+        }
+
+        private static bool IsKeyedLifetimeDisabled(IServiceProvider serviceProvider, string name)
+        {
+            HttpClientFactoryOptions options = serviceProvider.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>().Get(name);
+
+            return options.DropKeyed || (options.KeyedLifetime == null && options.DropAnyKey);
+        }
+
+        public static IHttpClientBuilder DropKeyed(this IHttpClientBuilder builder)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            if (builder.Name is null)
+            {
+                builder.Services.Configure<HttpClientFactoryOptions>(null, options =>
+                {
+                    options.AnyKeyLifetime = null;
+                    options.DropAnyKey = true;
+                });
+            }
+            else
+            {
+                builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+                {
+                    options.KeyedLifetime = null;
+                    options.DropKeyed = true;
+                });
+            }
+
+            return builder;
+        }
+
+        private static TService? TryGetKeyedService<TService>(IServiceProvider serviceProvider, string name)
+        {
+            if (serviceProvider is not IKeyedServiceProvider keyedServiceProvider)
+            {
+                return default;
+            }
+
+            var checker = keyedServiceProvider.GetRequiredService<IServiceProviderIsKeyedService>();
+            if (!checker.IsKeyedService(typeof(TService), name))
+            {
+                return default;
+            }
+            return serviceProvider.GetKeyedService<TService>(name);
+        }
+
+
         // See comments on HttpClientMappingRegistry.
         private static void ReserveClient(IHttpClientBuilder builder, Type type, string name, bool validateSingleType)
         {
+            if (builder.Name is null)
+            {
+                throw new InvalidOperationException($"{nameof(HttpClientBuilderExtensions.AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
+            }
+
             var registry = (HttpClientMappingRegistry?)builder.Services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
             Debug.Assert(registry != null);
 
