@@ -191,7 +191,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_offsets<Modul
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_offsets<Module>::TypeRefToMethodTableMap)
 CDAC_TYPE_END(Module)
 
-// Metadata
+// RuntimeTypeSystem
 
 CDAC_TYPE_BEGIN(MethodTable)
 CDAC_TYPE_INDETERMINATE(MethodTable)
