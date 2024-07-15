@@ -13,21 +13,21 @@ public sealed class ThreadFilter
 {
     // Filter includes all threads
     private bool _allThreads;
-    private readonly HashSet<uint> _backgroundGCThreads = [];
-    private readonly HashSet<uint> _foregroundGCThreads = [];
-    private readonly HashSet<uint> _threads = [];
+    private readonly HashSet<ulong> _backgroundGCThreads = [];
+    private readonly HashSet<ulong> _foregroundGCThreads = [];
+    private readonly HashSet<ulong> _threads = [];
 
-    public void AddThread(uint threadId)
+    public void AddThread(ulong threadId)
     {
         _threads.Add(threadId);
     }
 
-    public void AddBackgroundGCThread(uint heapNumber)
+    public void AddBackgroundGCThread(ulong heapNumber)
     {
         _backgroundGCThreads.Add(heapNumber);
     }
 
-    public void AddForegroundGCThread(uint heapNumber)
+    public void AddForegroundGCThread(ulong heapNumber)
     {
         _foregroundGCThreads.Add(heapNumber);
     }
@@ -36,7 +36,7 @@ public sealed class ThreadFilter
 
     public bool HasAnyGCThreadFilter => _backgroundGCThreads.Count > 0 || _foregroundGCThreads.Count > 0;
 
-    public bool IncludeThread(uint threadId)
+    public bool IncludeThread(ulong threadId)
     {
         if (_allThreads)
         {
@@ -46,7 +46,7 @@ public sealed class ThreadFilter
         return _threads.Contains(threadId);
     }
 
-    public bool IncludeHeapThread(uint heapNumber, bool isBackground)
+    public bool IncludeHeapThread(ulong heapNumber, bool isBackground)
     {
         if (_allThreads)
         {
@@ -66,15 +66,15 @@ public sealed class ThreadFilter
                 any = true;
                 if (threadId.StartsWith("GC", StringComparison.OrdinalIgnoreCase))
                 {
-                    _foregroundGCThreads.Add(uint.Parse(threadId.AsSpan()[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+                    _foregroundGCThreads.Add(ulong.Parse(threadId.AsSpan()[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture));
                 }
                 else if (threadId.StartsWith("BG", StringComparison.OrdinalIgnoreCase))
                 {
-                    _backgroundGCThreads.Add(uint.Parse(threadId.AsSpan()[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+                    _backgroundGCThreads.Add(ulong.Parse(threadId.AsSpan()[2..], NumberStyles.HexNumber, CultureInfo.InvariantCulture));
                 }
                 else
                 {
-                    _threads.Add(uint.Parse(threadId, NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+                    _threads.Add(ulong.Parse(threadId, NumberStyles.HexNumber, CultureInfo.InvariantCulture));
                 }
             }
         }
@@ -91,8 +91,8 @@ public sealed record Options(
     FileInfo? OutputFile,
     IntegerRange[]? ValueRanges,
     TimeRange Time,
-    bool AllMessages,
-    bool DefaultMessages,
+    bool IncludeAllMessages,
+    bool IncludeDefaultMessages,
     IReadOnlyList<IntegerRange>? LevelFilter,
     IntegerRange? GCIndex,
     ulong[]? IncludeFacility,

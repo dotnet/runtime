@@ -280,7 +280,7 @@ public static class Program
                 args.GetValue(valueRanges),
                 args.GetValue(timeRanges),
                 args.GetValue(allMessagesOption),
-                args.GetValue(defaultMessagesOption),
+                !args.GetValue(defaultMessagesOption), // The option specifies suppressing default messages
                 args.GetValue(levelFilter),
                 args.GetValue(gcIndex),
                 args.GetValue(includeFacilityOption),
@@ -316,7 +316,7 @@ public static class Program
             bool runAgain = false;
             do
             {
-                var analyzer = new StressLogAnalyzer(stressLogContract, options);
+                var analyzer = new StressLogAnalyzer(target, stressLogContract, options);
                 await analyzer.AnalyzeLogsAsync(logs, token).ConfigureAwait(false);
 
                 Console.Write("'q' to quit, 'r' to run again\n>");

@@ -13,7 +13,7 @@ using Microsoft.Diagnostics.DataContractReader;
 
 namespace StressLogAnalyzer
 {
-    internal sealed class InterestingStringFinder(Target target, string[] userStrings, string[] userStringPrefixes)
+    internal sealed class InterestingStringFinder(Target target, string[] userStrings, string[] userStringPrefixes, bool enableDefaultMessages)
     {
         public enum WellKnownString
         {
@@ -66,6 +66,18 @@ namespace StressLogAnalyzer
                 {"TraceGC is not turned on", WellKnownString.LOGGING_OFF },
             };
 
+        private static readonly SearchValues<byte> _defaultInterestingMessages = SearchValues.Create([
+            (byte)WellKnownString.LOGGING_OFF,
+            (byte)WellKnownString.GCSTART,
+            (byte)WellKnownString.GCEND,
+            (byte)WellKnownString.MARK_START,
+            (byte)WellKnownString.PLAN_START,
+            (byte)WellKnownString.RELOCATE_START,
+            (byte)WellKnownString.RELOCATE_END,
+            (byte)WellKnownString.COMPACT_START,
+            (byte)WellKnownString.COMPACT_END,
+            ]);
+
         private readonly SearchValues<string> _userInterestingStrings = SearchValues.Create(userStrings, StringComparison.Ordinal);
 
         private readonly ConcurrentDictionary<ulong, (bool isInteresting, WellKnownString? wellKnown)> _addressCache = [];
@@ -93,9 +105,14 @@ namespace StressLogAnalyzer
             {
                 string formatString = ReadZeroTerminatedString(formatStringPointer, 1024);
                 WellKnownString? wellKnownId = null;
+                bool defaultInteresting = false;
                 if (_knownStrings.TryGetValue(formatString, out WellKnownString wellKnown))
                 {
                     wellKnownId = wellKnown;
+                    if (enableDefaultMessages)
+                    {
+                        defaultInteresting = _defaultInterestingMessages.Contains((byte)wellKnown);
+                    }
                 }
 
                 if (_userInterestingStrings.Contains(formatString))
@@ -111,7 +128,7 @@ namespace StressLogAnalyzer
                     }
                 }
 
-                return (false, wellKnownId);
+                return (defaultInteresting, wellKnownId);
             });
 
             wellKnownStringKind = wellKnown;
