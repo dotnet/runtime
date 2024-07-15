@@ -3368,6 +3368,11 @@ PROCGetProcessStatus(
                 *pdwExitCode = WEXITSTATUS(status);
                 TRACE("Exit code was %d\n", *pdwExitCode);
             }
+            else if ( WIFSIGNALED( status ) )
+            {
+                *pdwExitCode = 128 + WTERMSIG(status);
+                TRACE("Exit code was signal %d = exit code %d\n", WTERMSIG(iStatus), *pdwExitCode);
+            }
             else
             {
                 WARN("process terminated without exiting; can't get exit "

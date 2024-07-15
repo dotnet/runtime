@@ -4495,6 +4495,12 @@ namespace CorUnix
                     *pfIsActualExitCode = true;
                     TRACE("Exit code was %d\n", *pdwExitCode);
                 }
+                else if ( WIFSIGNALED( iStatus ) )
+                {
+                    *pdwExitCode = 128 + WTERMSIG(iStatus);
+                    *pfIsActualExitCode = true;
+                    TRACE("Exited by signal %d = exit code %d\n", WTERMSIG(iStatus), *pdwExitCode);
+                }
                 else
                 {
                     WARN("Process terminated without exiting; can't get exit "
