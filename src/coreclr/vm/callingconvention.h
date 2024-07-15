@@ -1226,11 +1226,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         m_ofsStack = 0;
 
         m_idxFPReg = 0;
-#elif defined(TARGET_LOONGARCH64)
-        m_idxGenReg = numRegistersUsed;
-        m_ofsStack = 0;
-        m_idxFPReg = 0;
-#elif defined(TARGET_RISCV64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         m_idxGenReg = numRegistersUsed;
         m_ofsStack = 0;
         m_idxFPReg = 0;
@@ -1691,129 +1687,8 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
     m_ofsStack += cbArg;
     return argOfs;
-#elif defined(TARGET_LOONGARCH64)
-
-    int cFPRegs = 0;
-    FpStructInRegistersInfo info = {};
-
-    switch (argType)
-    {
-
-    case ELEMENT_TYPE_R4:
-    case ELEMENT_TYPE_R8:
-        // Floating point argument
-        cFPRegs = 1;
-        break;
-
-    case ELEMENT_TYPE_VALUETYPE:
-    {
-        // Handle struct which containing floats or doubles that can be passed
-        // in FP registers if possible.
-
-        // Composite greater than 16bytes should be passed by reference
-        if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
-        {
-            argSize = sizeof(TADDR);
-        }
-        else
-        {
-            info = MethodTable::GetFpStructInRegistersInfo(thValueType);
-            if (info.flags != FpStruct::UseIntCallConv)
-            {
-                cFPRegs = (info.flags & FpStruct::BothFloat) ? 2 : 1;
-            }
-        }
-
-        break;
-    }
-
-    default:
-        break;
-    }
-
-    const bool isValueType = (argType == ELEMENT_TYPE_VALUETYPE);
-    const bool isFloatHfa = thValueType.IsFloatHfa();
-    const int cbArg = StackElemSize(argSize, isValueType, isFloatHfa);
-
-    if (cFPRegs > 0 && !this->IsVarArg())
-    {
-        if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
-        {
-            assert(cFPRegs == 1);
-            assert((info.flags & (FpStruct::OnlyOne | FpStruct::BothFloat)) == 0);
-
-            if ((1 + m_idxFPReg <= NUM_ARGUMENT_REGISTERS) && (1 + m_idxGenReg <= NUM_ARGUMENT_REGISTERS))
-            {
-                int argOfs = 0;
-                m_argLocDescForStructInRegs.Init();
-                m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                m_argLocDescForStructInRegs.m_cFloatReg = 1;
-                m_argLocDescForStructInRegs.m_idxGenReg = m_idxGenReg;
-                m_argLocDescForStructInRegs.m_cGenReg = 1;
-                m_argLocDescForStructInRegs.m_structFields = info;
-
-                if (info.flags & FpStruct::IntFloat)
-                {
-                    argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-                }
-                else
-                {
-                    argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-                }
-
-                m_idxFPReg  += 1;
-                m_idxGenReg += 1;
-
-                m_hasArgLocDescForStructInRegs = true;
-
-                return argOfs;
-            }
-        }
-        else if (cFPRegs + m_idxFPReg <= NUM_ARGUMENT_REGISTERS)
-        {
-            int argOfs = TransitionBlock::GetOffsetOfFloatArgumentRegisters() + m_idxFPReg * 8;
-            static const FpStruct::Flags twoFloats = FpStruct::Flags(FpStruct::BothFloat
-                | (2 << FpStruct::PosSizeShift1st)
-                | (2 << FpStruct::PosSizeShift2nd));
-            if (info.flags == twoFloats) // struct with two float-fields.
-            {
-                m_argLocDescForStructInRegs.Init();
-                m_hasArgLocDescForStructInRegs = true;
-                m_argLocDescForStructInRegs.m_idxFloatReg = m_idxFPReg;
-                assert(cFPRegs == 2);
-                m_argLocDescForStructInRegs.m_cFloatReg = 2;
-                assert(argSize == 8);
-                m_argLocDescForStructInRegs.m_structFields = info;
-            }
-            m_idxFPReg += cFPRegs;
-            return argOfs;
-        }
-    }
-
-    {
-        const int regSlots = ALIGN_UP(cbArg, TARGET_POINTER_SIZE) / TARGET_POINTER_SIZE;
-        if (m_idxGenReg + regSlots <= NUM_ARGUMENT_REGISTERS)
-        {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_idxGenReg += regSlots;
-            return argOfs;
-        }
-        else if (m_idxGenReg < NUM_ARGUMENT_REGISTERS)
-        {
-            int argOfs = TransitionBlock::GetOffsetOfArgumentRegisters() + m_idxGenReg * 8;
-            m_ofsStack += (m_idxGenReg + regSlots - NUM_ARGUMENT_REGISTERS)*8;
-            assert(m_ofsStack == 8);
-            m_idxGenReg = NUM_ARGUMENT_REGISTERS;
-            return argOfs;
-        }
-    }
-
-    int argOfs = TransitionBlock::GetOffsetOfArgs() + m_ofsStack;
-    m_ofsStack += ALIGN_UP(cbArg, TARGET_POINTER_SIZE);
-
-    return argOfs;
-#elif defined(TARGET_RISCV64)
-    assert(!this->IsVarArg()); // Varargs on RISC-V not supported yet
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    assert(!this->IsVarArg()); // Varargs on RISC-V and LoongArch not supported yet
     int cFPRegs = 0;
     FpStructInRegistersInfo info = {};
 
