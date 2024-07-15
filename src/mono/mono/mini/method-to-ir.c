@@ -7547,34 +7547,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					// SwiftSelf, SwiftError, and SwiftIndirectResult are special cases where we need to preserve the class information for the codegen to handle them correctly.
 					if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
 						SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+						// Create a new local variable to store the base address of the struct
+						MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+						CHECK_ARG (idx_param);
+						NEW_ARGLOADA (cfg, struct_base_address, idx_param);
+						MONO_ADD_INS (cfg->cbb, struct_base_address);
 						if (!lowered_swift_struct.by_reference) {
-							// Create a new local variable to store the base address of the struct
-							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-							CHECK_ARG (idx_param);
-							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
-							MONO_ADD_INS (cfg->cbb, struct_base_address);
-
+							// Load the lowered elements of the struct
 							for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; ++idx_lowered) {
-								MonoInst *lowered_arg = NULL;
-								// Load the lowered elements of the struct
-								lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0);
+								MonoInst *lowered_arg = mini_emit_memory_load (cfg, lowered_swift_struct.lowered_elements [idx_lowered], struct_base_address, lowered_swift_struct.offsets [idx_lowered], 0);
 								*sp++ = lowered_arg;
 
-								++new_param_count;
 								g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+								++new_param_count;
 							}
 						} else {
 							// For structs that cannot be lowered, we change the argument to byref type
-							ptype = mono_class_get_byref_type (mono_defaults.typed_reference_class);
-							// Load the address of the struct
-							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-							CHECK_ARG (idx_param);
-							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
-							MONO_ADD_INS (cfg->cbb, struct_base_address);
 							*sp++ = struct_base_address;
+							ptype = mono_class_get_byref_type (klass);
 
-							++new_param_count;
 							g_array_append_val (new_params, ptype);
+							++new_param_count;
 						}
 					} else {
 						// Copy over non-struct arguments

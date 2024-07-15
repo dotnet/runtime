@@ -5603,6 +5603,8 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> TransposeOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> TransposeOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<double> TrigonometricMultiplyAddCoefficient(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw null; }
+        public static System.Numerics.Vector<float> TrigonometricMultiplyAddCoefficient(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw null; }
         public static System.Numerics.Vector<double> TrigonometricSelectCoefficient(System.Numerics.Vector<double> value, System.Numerics.Vector<ulong> selector) { throw null; }
         public static System.Numerics.Vector<float> TrigonometricSelectCoefficient(System.Numerics.Vector<float> value, System.Numerics.Vector<uint> selector) { throw null; }
         public static System.Numerics.Vector<double> TrigonometricStartingValue(System.Numerics.Vector<double> value, System.Numerics.Vector<ulong> sign) { throw null; }

@@ -1473,6 +1473,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_Sve_PrefetchInt32:
                     case NI_Sve_PrefetchInt64:
                     case NI_Sve_ExtractVector:
+                    case NI_Sve_TrigonometricMultiplyAddCoefficient:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
