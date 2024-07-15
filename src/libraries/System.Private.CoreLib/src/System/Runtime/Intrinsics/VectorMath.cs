@@ -102,7 +102,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(-0.5), x2, TVectorDouble.One);
                 }
             }
-            else
+            else if (TVectorDouble.LessThanAll(ax, TVectorDouble.Create(5000000.0)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
                 (TVectorDouble r, TVectorDouble rr, TVectorInt64 region) = SinCosReduce<TVectorDouble, TVectorInt64>(ax);
@@ -136,12 +136,29 @@ namespace System.Runtime.Intrinsics
                     result
                 );
             }
+            else
+            {
+                return ScalarFallback(x);
+            }
 
             return TVectorDouble.ConditionalSelect(
                 Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThan(ux, TVectorInt64.Create(ARG_SMALLER - 1))),
                 result,             // for elements: |x| >= 2^-27, infinity, or NaN
                 TVectorDouble.One   // for elements: 2^-27 > |x|
             );
+
+            static TVectorDouble ScalarFallback(TVectorDouble x)
+            {
+                TVectorDouble result = TVectorDouble.Zero;
+
+                for (int i = 0; i < TVectorDouble.Count; i++)
+                {
+                    double scalar = double.Cos(x[i]);
+                    result = result.WithElement(i, scalar);
+                }
+
+                return result;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -244,7 +261,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(-0.5f), x2, TVectorSingle.One);
                 }
             }
-            else
+            else if (TVectorSingle.LessThanAll(ax, TVectorSingle.Create(5000000.0f)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
 
@@ -276,6 +293,10 @@ namespace System.Runtime.Intrinsics
                     result
                 );
             }
+            else
+            {
+                return ScalarFallback(x);
+            }
 
             return TVectorSingle.ConditionalSelect(
                 Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThan(ux, TVectorInt32.Create(ARG_SMALLER - 1))),
@@ -302,6 +323,19 @@ namespace System.Runtime.Intrinsics
                     +result,    // region 0 or 3
                     -result     // region 1 or 2
                 );
+            }
+
+            static TVectorSingle ScalarFallback(TVectorSingle x)
+            {
+                TVectorSingle result = TVectorSingle.Zero;
+
+                for (int i = 0; i < TVectorSingle.Count; i++)
+                {
+                    float scalar = float.Cos(x[i]);
+                    result = result.WithElement(i, scalar);
+                }
+
+                return result;
             }
         }
 
@@ -1733,7 +1767,7 @@ namespace System.Runtime.Intrinsics
                     cosResult = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(-0.5), x2, TVectorDouble.One);
                 }
             }
-            else
+            else if (TVectorDouble.LessThanAll(ax, TVectorDouble.Create(5000000.0)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
                 (TVectorDouble r, TVectorDouble rr, TVectorInt64 region) = SinCosReduce<TVectorDouble, TVectorInt64>(ax);
@@ -1741,16 +1775,14 @@ namespace System.Runtime.Intrinsics
                 TVectorDouble sin = SinDoubleLarge(r, rr);
                 TVectorDouble cos = CosDoubleLarge(r, rr);
 
-                TVectorDouble regionMask = Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(region & TVectorInt64.One, TVectorInt64.Zero));
-
                 sinResult = TVectorDouble.ConditionalSelect(
-                    regionMask,
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(region & TVectorInt64.One, TVectorInt64.Zero)),
                     sin,    // region 0 or 2
                     cos     // region 1 or 3
                 );
 
                 cosResult = TVectorDouble.ConditionalSelect(
-                    regionMask,
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(region & TVectorInt64.One, TVectorInt64.Zero)),
                     cos,    // region 0 or 2
                     sin     // region 1 or 3
                 );
@@ -1770,51 +1802,64 @@ namespace System.Runtime.Intrinsics
                 );
 
                 // Propagate the NaN that was passed in
-                TVectorDouble nanMask = TVectorDouble.IsNaN(x);
-
                 sinResult = TVectorDouble.ConditionalSelect(
-                    nanMask,
+                    TVectorDouble.IsNaN(x),
                     x,
                     sinResult
                 );
 
                 cosResult = TVectorDouble.ConditionalSelect(
-                    nanMask,
+                    TVectorDouble.IsNaN(x),
                     x,
                     cosResult
                 );
 
                 // Return NaN for infinity
-                TVectorDouble infinityMask = TVectorDouble.IsPositiveInfinity(ax);
-
                 sinResult = TVectorDouble.ConditionalSelect(
-                    infinityMask,
+                    TVectorDouble.IsPositiveInfinity(ax),
                     TVectorDouble.Create(double.NaN),
                     sinResult
                 );
 
                 cosResult = TVectorDouble.ConditionalSelect(
-                    infinityMask,
+                    TVectorDouble.IsPositiveInfinity(ax),
                     TVectorDouble.Create(double.NaN),
                     cosResult
                 );
             }
-
-            TVectorDouble argNotSmallerMask = Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThan(ux, TVectorInt64.Create(ARG_SMALLER - 1)));
+            else
+            {
+                return ScalarFallback(x);
+            }
 
             sinResult = TVectorDouble.ConditionalSelect(
-                argNotSmallerMask,
+                Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThan(ux, TVectorInt64.Create(ARG_SMALLER - 1))),
                 sinResult,          // for elements: |x| >= 2^-27, infinity, or NaN
                 x                   // for elements: 2^-27 > |x|
             );
 
             cosResult = TVectorDouble.ConditionalSelect(
-                argNotSmallerMask,
+                Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThan(ux, TVectorInt64.Create(ARG_SMALLER - 1))),
                 cosResult,          // for elements: |x| >= 2^-27, infinity, or NaN
                 TVectorDouble.One   // for elements: 2^-27 > |x|
             );
 
             return (sinResult, cosResult);
+
+            static (TVectorDouble Sin, TVectorDouble Cos) ScalarFallback(TVectorDouble x)
+            {
+                TVectorDouble sinResult = TVectorDouble.Zero;
+                TVectorDouble cosResult = TVectorDouble.Zero;
+
+                for (int i = 0; i < TVectorDouble.Count; i++)
+                {
+                    (double sinScalar, double cosScalar) = double.SinCos(x[i]);
+                    sinResult = sinResult.WithElement(i, sinScalar);
+                    cosResult = cosResult.WithElement(i, cosScalar);
+                }
+
+                return (sinResult, cosResult);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1886,7 +1931,7 @@ namespace System.Runtime.Intrinsics
                     cosResult = TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(-0.5f), x2, TVectorSingle.One);
                 }
             }
-            else
+            else if (TVectorSingle.LessThanAll(ax, TVectorSingle.Create(5000000.0f)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
 
@@ -1907,48 +1952,46 @@ namespace System.Runtime.Intrinsics
                 }
 
                 // Propagate the NaN that was passed in
-                TVectorSingle nanMask = TVectorSingle.IsNaN(x);
-
                 sinResult = TVectorSingle.ConditionalSelect(
-                    nanMask,
+                    TVectorSingle.IsNaN(x),
                     x,
                     sinResult
                 );
 
                 cosResult = TVectorSingle.ConditionalSelect(
-                    nanMask,
+                    TVectorSingle.IsNaN(x),
                     x,
                     cosResult
                 );
 
                 // Return NaN for infinity
-                TVectorSingle infinityMask = TVectorSingle.IsPositiveInfinity(ax);
-
                 sinResult = TVectorSingle.ConditionalSelect(
-                    infinityMask,
+                    TVectorSingle.IsPositiveInfinity(ax),
                     TVectorSingle.Create(float.NaN),
                     sinResult
                 );
 
                 cosResult = TVectorSingle.ConditionalSelect(
-                    infinityMask,
+                    TVectorSingle.IsPositiveInfinity(ax),
                     TVectorSingle.Create(float.NaN),
                     cosResult
                 );
 
                 return (sinResult, cosResult);
             }
-
-            TVectorSingle argNotSmallerMask = Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThan(ux, TVectorInt32.Create(ARG_SMALLER - 1)));
+            else
+            {
+                return ScalarFallback(x);
+            }
 
             sinResult = TVectorSingle.ConditionalSelect(
-                argNotSmallerMask,
+                Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThan(ux, TVectorInt32.Create(ARG_SMALLER - 1))),
                 sinResult,          // for elements: |x| >= 2^-27, infinity, or NaN
                 x                   // for elements: 2^-27 > |x|
             );
 
             cosResult = TVectorSingle.ConditionalSelect(
-                argNotSmallerMask,
+                Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThan(ux, TVectorInt32.Create(ARG_SMALLER - 1))),
                 cosResult,          // for elements: |x| >= 2^-27, infinity, or NaN
                 TVectorSingle.One   // for elements: 2^-27 > |x|
             );
@@ -1963,16 +2006,14 @@ namespace System.Runtime.Intrinsics
                 TVectorDouble sin = SinSinglePoly(r);
                 TVectorDouble cos = CosSingleLarge(r);
 
-                TVectorDouble regionMask = Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(region & TVectorInt64.One, TVectorInt64.Zero));
-
                 TVectorDouble sinResult = TVectorDouble.ConditionalSelect(
-                    regionMask,
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(region & TVectorInt64.One, TVectorInt64.Zero)),
                     sin,    // region 0 or 2
                     cos     // region 1 or 3
                 );
 
                 TVectorDouble cosResult = TVectorDouble.ConditionalSelect(
-                    regionMask,
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(region & TVectorInt64.One, TVectorInt64.Zero)),
                     cos,    // region 0 or 2
                     sin     // region 1 or 3
                 );
@@ -1990,6 +2031,21 @@ namespace System.Runtime.Intrinsics
                     +cosResult, // region 0 or 3
                     -cosResult  // region 1 or 2
                 );
+
+                return (sinResult, cosResult);
+            }
+
+            static (TVectorSingle Sin, TVectorSingle Cos) ScalarFallback(TVectorSingle x)
+            {
+                TVectorSingle sinResult = TVectorSingle.Zero;
+                TVectorSingle cosResult = TVectorSingle.Zero;
+
+                for (int i = 0; i < TVectorSingle.Count; i++)
+                {
+                    (float sinScalar, float cosScalar) = float.SinCos(x[i]);
+                    sinResult = sinResult.WithElement(i, sinScalar);
+                    cosResult = cosResult.WithElement(i, cosScalar);
+                }
 
                 return (sinResult, cosResult);
             }
@@ -2076,7 +2132,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(-0.16666666666666666), x3, x);
                 }
             }
-            else
+            else if (TVectorDouble.LessThanAll(ax, TVectorDouble.Create(5000000.0)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
                 (TVectorDouble r, TVectorDouble rr, TVectorInt64 region) = SinCosReduce<TVectorDouble, TVectorInt64>(ax);
@@ -2112,12 +2168,29 @@ namespace System.Runtime.Intrinsics
                     result
                 );
             }
+            else
+            {
+                return ScalarFallback(x);
+            }
 
             return TVectorDouble.ConditionalSelect(
                 Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.GreaterThan(ux, TVectorInt64.Create(ARG_SMALLER - 1))),
                 result,     // for elements: |x| >= 2^-27, infinity, or NaN
                 x           // for elements: 2^-27 > |x|
             );
+
+            static TVectorDouble ScalarFallback(TVectorDouble x)
+            {
+                TVectorDouble result = TVectorDouble.Zero;
+
+                for (int i = 0; i < TVectorDouble.Count; i++)
+                {
+                    double scalar = double.Sin(x[i]);
+                    result = result.WithElement(i, scalar);
+                }
+
+                return result;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2215,7 +2288,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(-0.16666667f), x3, x);
                 }
             }
-            else
+            else if (TVectorSingle.LessThanAll(ax, TVectorSingle.Create(5000000.0f)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
 
@@ -2247,6 +2320,10 @@ namespace System.Runtime.Intrinsics
                     result
                 );
             }
+            else
+            {
+                return ScalarFallback(x);
+            }
 
             return TVectorSingle.ConditionalSelect(
                 Unsafe.BitCast<TVectorInt32, TVectorSingle>(TVectorInt32.GreaterThan(ux, TVectorInt32.Create(ARG_SMALLER - 1))),
@@ -2276,6 +2353,19 @@ namespace System.Runtime.Intrinsics
                     +result,    // negative in region 1 or 3, positive in region 0 or 2
                     -result     // negative in region 0 or 2, positive in region 1 or 3
                 );
+            }
+
+            static TVectorSingle ScalarFallback(TVectorSingle x)
+            {
+                TVectorSingle result = TVectorSingle.Zero;
+
+                for (int i = 0; i < TVectorSingle.Count; i++)
+                {
+                    float scalar = float.Sin(x[i]);
+                    result = result.WithElement(i, scalar);
+                }
+
+                return result;
             }
         }
 
