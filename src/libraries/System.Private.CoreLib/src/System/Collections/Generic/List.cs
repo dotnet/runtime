@@ -339,7 +339,7 @@ namespace System.Collections.Generic
         // It does a linear, O(n) search.  Equality is determined by calling
         // EqualityComparer<T>.Default.Equals().
         //
-        public bool Contains(T item)
+        public bool Contains([AllowNull] T item)
         {
             // PERF: IndexOf calls Array.IndexOf, which internally
             // calls EqualityComparer<T>.Default.IndexOf, which
