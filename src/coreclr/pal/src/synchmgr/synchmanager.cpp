@@ -4495,7 +4495,7 @@ namespace CorUnix
                     *pfIsActualExitCode = true;
                     TRACE("Exit code was %d\n", *pdwExitCode);
                 }
-                else if ( WIFSIGNALED( iStatus ) )
+                else if (WIFSIGNALED(iStatus))
                 {
                     *pdwExitCode = 128 + WTERMSIG(iStatus);
                     *pfIsActualExitCode = true;
