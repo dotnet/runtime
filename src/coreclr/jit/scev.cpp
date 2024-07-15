@@ -221,6 +221,48 @@ bool Scev::IsInvariant()
 }
 
 //------------------------------------------------------------------------
+// Scev::PeelAdditions: Peel the aditions from a SCEV and return the base SCEV
+// and the sum of the offsets peeled.
+//
+// Parameters:
+//   offset - [out] The sum of offsets peeled
+//
+// Returns:
+//   The base SCEV.
+//
+// Remarks:
+//   If the SCEV is 32-bits, the user is expected to apply the proper
+//   truncation (or extension into 64-bit).
+//
+Scev* Scev::PeelAdditions(int64_t* offset)
+{
+    *offset = 0;
+
+    Scev* scev = this;
+    while (scev->OperIs(ScevOper::Add))
+    {
+        Scev* op1 = ((ScevBinop*)scev)->Op1;
+        Scev* op2 = ((ScevBinop*)scev)->Op2;
+        if (op1->OperIs(ScevOper::Constant))
+        {
+            *offset += ((ScevConstant*)op1)->Value;
+            scev = op2;
+        }
+        else if (op2->OperIs(ScevOper::Constant))
+        {
+            *offset += ((ScevConstant*)op2)->Value;
+            scev = op1;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return scev;
+}
+
+//------------------------------------------------------------------------
 // Scev::Equals: Check if two SCEV trees are equal.
 //
 // Parameters:

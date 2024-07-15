@@ -4136,6 +4136,40 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? byte.MaxValue : result;
         }
 
+        public static double AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
+        {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<double>(1.0, op1.Length).ToArray();
+            double result = op1[0];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                if (mask[i] != 0.0)
+                {
+                    result += op2[i];
+                }
+            }
+
+            return result;
+        }
+
+        public static float AddSequentialAcross(float[] op1, float[] op2, float[] mask = null)
+        {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<float>((float)1.0, op1.Length).ToArray();
+            float result = op1[0];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                if (mask[i] != 0.0)
+                {
+                    result += op2[i];
+                }
+            }
+
+            return result;
+        }
+
         public static sbyte NegateSaturate(sbyte op1) => SubtractSaturate((sbyte)0, op1);
 
         public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
@@ -5245,6 +5279,36 @@ namespace JIT.HardwareIntrinsics.Arm
             return MathF.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt32BitsToSingle(coeff));
         }
 
+        public static float TrigonometricSelectCoefficient(float op1, uint op2)
+        {
+            float result = ((op2 % 2) == 0) ? op1 : (float)1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static float TrigonometricStartingValue(float op1, uint op2)
+        {
+            float result = op1 * op1;
+
+            if (float.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
         public static float FPExponentialAccelerator(uint op1)
         {
             uint index = op1 & 0b111111;
@@ -5392,6 +5456,36 @@ namespace JIT.HardwareIntrinsics.Arm
             return Math.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt64BitsToDouble(coeff));
         }
 
+        public static double TrigonometricSelectCoefficient(double op1, ulong op2)
+        {
+            double result = ((op2 % 2) == 0) ? op1 : 1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static double TrigonometricStartingValue(double op1, ulong op2)
+        {
+            double result = op1 * op1;
+
+            if (double.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+        
         public static double FPExponentialAccelerator(ulong op1)
         {
             ulong index = op1 & 0b111111;

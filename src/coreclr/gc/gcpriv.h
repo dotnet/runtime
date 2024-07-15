@@ -1468,9 +1468,7 @@ class gc_heap
     friend struct ::alloc_context;
     friend void ProfScanRootsHelper(Object** object, ScanContext *pSC, uint32_t dwFlags);
     friend void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForEtw, BOOL fShouldWalkHeapObjectsForEtw);
-#ifdef FEATURE_64BIT_ALIGNMENT
     friend Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags);
-#endif //FEATURE_64BIT_ALIGNMENT
     friend class t_join;
     friend class gc_mechanisms;
     friend class seg_free_spaces;
