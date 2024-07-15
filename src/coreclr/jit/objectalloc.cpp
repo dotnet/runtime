@@ -490,6 +490,16 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
                     didStackAllocate = true;
                 }
+
+                if (canStack)
+                {
+                    comp->Metrics.StackAllocatedArrays++;
+                }
+                else
+                {
+                    assert(onHeapReason != nullptr);
+                    JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, onHeapReason);
+                }
             }
 
             if (canonicalAllocObjFound)
