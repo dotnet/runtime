@@ -481,6 +481,10 @@ struct TernaryLogicInfo
 
     static const TernaryLogicInfo& lookup(uint8_t control);
 
+    static uint8_t GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(TernaryLogicOperKind oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(const TernaryLogicInfo& info, uint8_t op1, uint8_t op2, uint8_t op3);
+
     TernaryLogicUseFlags GetAllUseFlags() const
     {
         uint8_t useFlagsBits = 0;
@@ -957,6 +961,12 @@ struct HWIntrinsicInfo
 
         switch (id)
         {
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+                return NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
+
+            case NI_Sve_ConditionalExtractLastActiveElement:
+                return NI_Sve_ConditionalExtractLastActiveElementScalar;
+
             case NI_Sve_SaturatingDecrementBy16BitElementCount:
                 return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
 
@@ -1017,6 +1027,11 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_PermuteVar2x) != 0;
+    }
+
+    static bool IsTernaryLogic(NamedIntrinsic id)
+    {
+        return (id == NI_AVX512F_TernaryLogic) || (id == NI_AVX512F_VL_TernaryLogic) || (id == NI_AVX10v1_TernaryLogic);
     }
 #endif // TARGET_XARCH
 

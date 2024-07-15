@@ -38,6 +38,7 @@
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
     <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
+    <Compile Include="System\Net\Http\DiagnosticsHelper.cs" />
     <Compile Include="System\Net\Http\EmptyContent.cs" />
     <Compile Include="System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
@@ -174,6 +175,7 @@
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\AltSvcHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\KnownHeader.Http2And3.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\ConnectionSetupDistributedTracing.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionPool.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionPool.Http1.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\ConnectionPool\HttpConnectionPool.Http2.cs" />
@@ -384,6 +386,8 @@
              Link="Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\WinHttp\Interop.winhttp.cs"
              Link="Common\Interop\Windows\WinHttp\Interop.winhttp.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.RegNotifyChangeKeyValue.cs" />
     <Compile Include="$(CommonPath)\System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs"
@@ -479,6 +483,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="Microsoft.Win32.Registry" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'browser'">

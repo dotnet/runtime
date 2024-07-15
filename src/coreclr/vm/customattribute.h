@@ -20,7 +20,7 @@ namespace CustomAttribute
         COUNT_T cArgs,
         CaNamedArg* pCaNamedArgs,
         COUNT_T cNamedArgs,
-        DomainAssembly* pDomainAssembly);
+        Assembly* pAssembly);
 }
 
 extern "C" BOOL QCALLTYPE CustomAttribute_ParseAttributeUsageAttribute(
