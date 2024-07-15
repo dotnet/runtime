@@ -975,7 +975,6 @@ namespace System.Net.Security
                             }
                         }
 
-
                         if (_frameTask == null)
                         {
                             // We received EOF and we are only waiting for previous dectrypt to finish
@@ -990,7 +989,6 @@ namespace System.Net.Security
                         {
                             await Task.WhenAny(_frameTask, decryptTask).ConfigureAwait(false);
                         }
-
                         if (decryptTask.IsCompleted)
                         {
                             int length = SslStreamPal.ReadDecryptedData(_securityContext!, buffer.Span);
@@ -998,6 +996,13 @@ namespace System.Net.Security
                             {
                                 _receivedEOF = true;
                             }
+
+                            if (length == 0 && buffer.Length > 0 && SslStreamPal.GetAvailableDecryptedBytes(_securityContext) >= 0)
+                            {
+                                decryptTask = SslStreamPal.GetDecryptTask(_securityContext, buffer.Length);
+                                continue;
+                            }
+
                             return length;
                         }
                     }

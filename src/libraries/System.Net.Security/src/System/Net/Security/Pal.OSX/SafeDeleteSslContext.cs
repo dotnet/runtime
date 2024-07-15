@@ -311,7 +311,6 @@ namespace System.Net
                 {
                     return -1;
                 }
-
                 switch (status)
                 {
                     case PAL_NwStatusUpdates.FramerStart:
@@ -327,6 +326,8 @@ namespace System.Net
                         context.Tcs!.TrySetException(Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus));
                         context.Tcs = null;
                         context._handshakeDone = true;
+                        // this can happen also later and related to decryptin
+                        context._readStatus = osStatus;
                         break;
                     case PAL_NwStatusUpdates.ConnectionCancelled:
                         context.Tcs?.TrySetException(new OperationCanceledException());
@@ -344,15 +345,15 @@ namespace System.Net
                             if (data1 > 0)
                             {
                                 context.Write(data);
-                                context._readStatus = OSStatus_noErr;
                             }
-                            else
+                            else if (context._readStatus == OSStatus_noErr)
                             {
                                 context._readStatus = OSStatus_eofErr;
                             }
-
-                            context.Tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
+                            var tcs = context.Tcs;
+                            // need to set it before signallig as the continuation may run before the next assigment
                             context.Tcs = new TaskCompletionSource<SecurityStatusPalErrorCode>();
+                            tcs?.TrySetResult(SecurityStatusPalErrorCode.OK);
                         }
 
                         if (data1 > 0)
@@ -527,7 +528,6 @@ namespace System.Net
                 // We are shutting down
                 return -1;
             }
-           // _readWaiter!.Reset();
             fixed (byte* ptr = buffer)
             {
                 Interop.AppleCrypto.NwProcessInputData(SslContext, _framer, ptr, buffer.Length);
@@ -564,7 +564,7 @@ namespace System.Net
                         return  _inputBuffer.ActiveLength;
                     }
 
-                    return _readStatus == OSStatus_eofErr ? -1 : 0;
+                    return _readStatus == OSStatus_noErr ? 0 : -1 ;
                 }
             }
         }
