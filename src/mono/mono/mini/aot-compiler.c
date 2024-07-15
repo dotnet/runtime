@@ -12948,13 +12948,21 @@ should_emit_extra_method_for_generics (MonoMethod *method, gboolean reference_ty
 	MonoGenericParam *gen_param = NULL;
 	unsigned int gen_param_count;
 
+	ERROR_DECL (error);
+
 	if (method->is_generic && mono_class_is_gtd (method->klass)) {
 		// TODO: This is rarely encountered and would increase the complexity of covering such cases.
 		// For now always generate extra methods.
 		return TRUE;
 	} else if (method->is_generic) {
+		MonoMethodSignature* sig = mono_method_signature_checked(method, error);
+
+		if (!is_ok(error)) {
+			return FALSE;
+		}
+
 		gen_container = mono_method_get_generic_container (method);
-		gen_param_count = mono_method_signature_internal (method)->generic_param_count;
+		gen_param_count = sig->generic_param_count;
 	} else if (mono_class_is_gtd (method->klass)) {
 		gen_container = mono_class_get_generic_container (method->klass);
 		gen_param_count = gen_container->type_argc;
