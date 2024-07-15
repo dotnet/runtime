@@ -7302,18 +7302,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<uint> offsets, Vector<int> data) { throw new PlatformNotSupportedException(); }
 
         // <summary>
-        // void svst1h_scatter_[s32]index[_s32](svbool_t pg, int16_t *base, svint32_t indices, svint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<int> indices, Vector<int> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1h_scatter_[u32]index[_s32](svbool_t pg, int16_t *base, svuint32_t indices, svint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<int> mask, short* address, Vector<uint> indices, Vector<int> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
         // void svst1h_scatter_[s64]offset[_s64](svbool_t pg, int16_t *base, svint64_t offsets, svint64_t data)
         //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
         // </summary>
@@ -7324,18 +7312,6 @@ namespace System.Runtime.Intrinsics.Arm
         //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
         // </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1h_scatter_[s64]index[_s64](svbool_t pg, int16_t *base, svint64_t indices, svint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1h_scatter_[u64]index[_s64](svbool_t pg, int16_t *base, svuint64_t indices, svint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<long> mask, short* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         // <summary>
         // void svst1h_scatter_[s32]offset[_u32](svbool_t pg, uint16_t *base, svint32_t offsets, svuint32_t data)
@@ -7350,18 +7326,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<uint> offsets, Vector<uint> data) { throw new PlatformNotSupportedException(); }
 
         // <summary>
-        // void svst1h_scatter_[s32]index[_u32](svbool_t pg, uint16_t *base, svint32_t indices, svuint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, SXTW #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<int> indices, Vector<uint> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1h_scatter_[u32]index[_u32](svbool_t pg, uint16_t *base, svuint32_t indices, svuint32_t data)
-        //   ST1H Zdata.S, Pg, [Xbase, Zindices.S, UXTW #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<uint> mask, ushort* address, Vector<uint> indices, Vector<uint> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
         // void svst1h_scatter_[s64]offset[_u64](svbool_t pg, uint16_t *base, svint64_t offsets, svuint64_t data)
         //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
         // </summary>
@@ -7372,18 +7336,6 @@ namespace System.Runtime.Intrinsics.Arm
         //   ST1H Zdata.D, Pg, [Xbase, Zoffsets.D]
         // </summary>
         public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1h_scatter_[s64]index[_u64](svbool_t pg, uint16_t *base, svint64_t indices, svuint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svst1h_scatter_[u64]index[_u64](svbool_t pg, uint16_t *base, svuint64_t indices, svuint64_t data)
-        //   ST1H Zdata.D, Pg, [Xbase, Zindices.D, LSL #1]
-        // </summary>
-        // public static unsafe void Scatter16BitWithByteOffsetsNarrowing(Vector<ulong> mask, ushort* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         //  Truncate to 32 bits and store
@@ -7416,18 +7368,6 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<ulong> offsets, Vector<long> data) { throw new PlatformNotSupportedException(); }
 
         // <summary>
-        // void svstnt1w_scatter_[s64]index[_s64](svbool_t pg, int32_t *base, svint64_t indices, svint64_t data)
-        //   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
-        // </summary>
-        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<long> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svstnt1w_scatter_[u64]index[_s64](svbool_t pg, int32_t *base, svuint64_t indices, svint64_t data)
-        //   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
-        // </summary>
-        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<long> mask, int* address, Vector<ulong> indices, Vector<long> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
         // void svstnt1w_scatter_[s64]offset[_u64](svbool_t pg, uint32_t *base, svint64_t offsets, svuint64_t data)
         //   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         // </summary>
@@ -7438,18 +7378,6 @@ namespace System.Runtime.Intrinsics.Arm
         //   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
         // </summary>
         public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> offsets, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svstnt1w_scatter_[s64]index[_u64](svbool_t pg, uint32_t *base, svint64_t indices, svuint64_t data)
-        //   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
-        // </summary>
-        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<long> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
-
-        // <summary>
-        // void svstnt1w_scatter_[u64]index[_u64](svbool_t pg, uint32_t *base, svuint64_t indices, svuint64_t data)
-        //   STNT1W Zdata.D, Pg, [Zoffsets.D, Xbase]
-        // </summary>
-        // public static unsafe void Scatter32BitWithByteOffsetsNarrowing(Vector<ulong> mask, uint* address, Vector<ulong> indices, Vector<ulong> data) { throw new PlatformNotSupportedException(); }
 
 
         //  Truncate to 8 bits and store
