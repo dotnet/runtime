@@ -73,17 +73,19 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         else if (!structLayout->IsBlockLayout())
         {
             lowering = comp->GetFpStructLowering(structLayout->GetClassHandle());
-            assert((lowering->numLoweredElements > 0) == !lowering->byIntegerCallConv);
-            assert(lowering->numLoweredElements <= 2);
-            INDEBUG(unsigned debugIntFields = 0;)
-            for (size_t i = 0; i < lowering->numLoweredElements; ++i)
+            if (!lowering->byIntegerCallConv)
             {
-                var_types type = JITtype2varType(lowering->loweredElements[i]);
-                floatFields += (unsigned)varTypeIsFloating(type);
-                INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
+                assert((lowering->numLoweredElements == 1) || (lowering->numLoweredElements == 2));
+                INDEBUG(unsigned debugIntFields = 0;)
+                for (size_t i = 0; i < lowering->numLoweredElements; ++i)
+                {
+                    var_types type = JITtype2varType(lowering->loweredElements[i]);
+                    floatFields += (unsigned)varTypeIsFloating(type);
+                    INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
+                }
+                intFields = lowering->numLoweredElements - floatFields;
+                assert(debugIntFields == intFields);
             }
-            intFields = lowering->numLoweredElements - floatFields;
-            assert(debugIntFields == intFields);
         }
     }
     else

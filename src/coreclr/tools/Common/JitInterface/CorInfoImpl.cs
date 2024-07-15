@@ -3456,31 +3456,14 @@ namespace Internal.JitInterface
 
         private void getFpStructLowering(CORINFO_CLASS_STRUCT_* structHnd, ref CORINFO_FPSTRUCT_LOWERING lowering)
         {
-            TypeDesc typeDesc = HandleToObject(structHnd);
-            var target = _compilation.TypeSystemContext.Target;
-            FpStructInRegistersInfo info;
-            if (target.Architecture is TargetArchitecture.RiscV64)
-            {
-                info = RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(typeDesc);
-            }
-            else if (target.Architecture is TargetArchitecture.LoongArch64)
-            {
-                info = LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(typeDesc);
-            }
-            else
-            {
-                Debug.Assert(false, "Unsupported architecture for getFpStructInRegistersInfo");
-                return;
-            }
-
+            FpStructInRegistersInfo info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
+                HandleToObject(structHnd), _compilation.TypeSystemContext.Target.Architecture);
             if (info.flags != FpStruct.UseIntCallConv)
             {
-                lowering = new CORINFO_FPSTRUCT_LOWERING {
-                    byIntegerCallConv = false,
-                    numLoweredElements = ((info.flags & FpStruct.OnlyOne) != 0) ? 1 : 2,
-                };
+                lowering.byIntegerCallConv = false;
                 lowering.Offsets[0] = info.offset1st;
                 lowering.Offsets[1] = info.offset2nd;
+                lowering.numLoweredElements = ((info.flags & FpStruct.OnlyOne) != 0) ? 1 : 2;
 
                 if ((info.flags & (FpStruct.BothFloat | FpStruct.FloatInt | FpStruct.OnlyOne)) != 0)
                     lowering.LoweredElements[0] = (info.SizeShift1st() == 3) ? CorInfoType.CORINFO_TYPE_DOUBLE : CorInfoType.CORINFO_TYPE_FLOAT;
@@ -3503,7 +3486,7 @@ namespace Internal.JitInterface
             }
             else
             {
-                lowering = new CORINFO_FPSTRUCT_LOWERING{ byIntegerCallConv = true };
+                lowering.byIntegerCallConv = true;
             }
         }
 

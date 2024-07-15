@@ -1351,7 +1351,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     }
                                     else
                                     {
-                                        info = LoongArch64PassStructInRegister.GetLoongArch64PassFpStructInRegistersInfo(_argTypeHandle.GetRuntimeTypeHandle());
+                                        info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
+                                            _argTypeHandle.GetRuntimeTypeHandle(), TargetArchitecture.LoongArch64);
                                         if (info.flags != FpStruct.UseIntCallConv)
                                         {
                                             cFPRegs = ((info.flags & FpStruct.BothFloat) != 0) ? 2 : 1;
@@ -1480,7 +1481,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     }
                                     else
                                     {
-                                        info = RiscV64PassFpStructInRegisters.GetRiscV64PassFpStructInRegistersInfo(_argTypeHandle.GetRuntimeTypeHandle());
+                                        info = RiscVLoongArch64FpStruct.GetFpStructInRegistersInfo(
+                                            _argTypeHandle.GetRuntimeTypeHandle(), TargetArchitecture.RiscV64);
                                         if (info.flags != FpStruct.UseIntCallConv)
                                         {
                                             cFPRegs = ((info.flags & FpStruct.BothFloat) != 0) ? 2 : 1;
