@@ -1558,17 +1558,20 @@ namespace System.Net.WebSockets
                 // Have we started a character sequence yet?
                 if (!state.SequenceInProgress)
                 {
+                    // Skip past ASCII bytes.
+                    int firstNonAscii = span.Slice(i).IndexOfAnyExceptInRange((byte)0, (byte)127);
+                    if (firstNonAscii < 0)
+                    {
+                        break;
+                    }
+                    i += firstNonAscii;
+
                     // The first byte tells us how many bytes are in the sequence.
                     state.SequenceInProgress = true;
                     byte b = span[i];
                     i++;
-                    if ((b & 0x80) == 0) // 0bbbbbbb, single byte
-                    {
-                        state.AdditionalBytesExpected = 0;
-                        state.CurrentDecodeBits = b & 0x7F;
-                        state.ExpectedValueMin = 0;
-                    }
-                    else if ((b & 0xC0) == 0x80)
+                    Debug.Assert((b & 0x80) != 0, "Should have already skipped past ASCII");
+                    if ((b & 0xC0) == 0x80)
                     {
                         // Misplaced 10bbbbbb continuation byte. This cannot be the first byte.
                         return false;
@@ -1616,6 +1619,7 @@ namespace System.Net.WebSockets
                         // This is going to end up in the range of 0xD800-0xDFFF UTF-16 surrogates that are not allowed in UTF-8;
                         return false;
                     }
+
                     if (state.AdditionalBytesExpected == 2 && state.CurrentDecodeBits >= 0x110)
                     {
                         // This is going to be out of the upper Unicode bound 0x10FFFF.
@@ -1634,12 +1638,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            if (endOfMessage && state.SequenceInProgress)
-            {
-                return false;
-            }
-
-            return true;
+            return !endOfMessage || !state.SequenceInProgress;
         }
 
         private sealed class Utf8MessageState
