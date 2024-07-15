@@ -244,11 +244,12 @@ namespace System.Runtime.Loader.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
         public static void LoadRefEmitAssembly()
         {
             AssemblyLoadContext alc = new RefEmitLoadContext();
-            Assembly asm = alc.LoadFromAssemblyName(new AssemblyName("MyAssembly"));
-            Assert.Equal(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(asm));
+            Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
+            Assert.IsType<InvalidOperationException>(error.InnerException);
         }
     }
 }
