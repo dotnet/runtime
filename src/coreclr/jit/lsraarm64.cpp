@@ -727,6 +727,29 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
         }
 
+        case GT_CNS_MSK:
+        {
+            GenTreeMskCon* mskCon = tree->AsMskCon();
+
+            if (mskCon->IsAllBitsSet() || mskCon->IsZero())
+            {
+                // Directly encode constant to instructions.
+            }
+            else
+            {
+                // Reserve int to load constant from memory (IF_LARGELDC)
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            RefPosition* def               = BuildDef(tree);
+            def->getInterval()->isConstant = true;
+            break;
+        }
+
         case GT_BOX:
         case GT_COMMA:
         case GT_QMARK:

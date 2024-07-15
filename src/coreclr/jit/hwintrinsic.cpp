@@ -1954,13 +1954,13 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     }
 
     var_types nodeRetType = retType;
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
     if (HWIntrinsicInfo::ReturnsPerElementMask(intrinsic))
     {
         // Ensure the result is generated to a mask.
         nodeRetType = TYP_MASK;
     }
-#endif // defined(TARGET_ARM64)
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     // table-driven importer of simple intrinsics
     if (impIsTableDrivenHWIntrinsic(intrinsic, category))
@@ -2283,7 +2283,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
     }
 
-#if defined(TARGET_ARM64)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
     if (HWIntrinsicInfo::IsExplicitMaskedOperation(intrinsic))
     {
         assert(numArgs > 0);
@@ -2365,7 +2365,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
         retNode = gtNewSimdCvtMaskToVectorNode(retType, op, simdBaseJitType, simdSize);
     }
-#endif // defined(TARGET_ARM64)
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
 
     if ((retNode != nullptr) && retNode->OperIs(GT_HWINTRINSIC))
     {
