@@ -34,8 +34,6 @@ class BaseDomain;
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
 
-EXTERN_C void SinglecastDelegateInvokeStub();
-
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
 
 #define COMMETHOD_PREPAD                        8   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)

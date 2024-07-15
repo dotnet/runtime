@@ -414,8 +414,6 @@ public:
     void EmitEpilog();
 };
 
-extern "C" void SinglecastDelegateInvokeStub();
-
 
 // preferred alignment for data
 #define DATA_ALIGNMENT 8

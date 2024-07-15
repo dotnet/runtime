@@ -64,12 +64,6 @@ ASMCONSTANTS_C_ASSERT(LazyMachState_captureSp == offsetof(LazyMachState, capture
 #define LazyMachState_captureIp     (LazyMachState_captureSp+4)
 ASMCONSTANTS_C_ASSERT(LazyMachState_captureIp == offsetof(LazyMachState, captureIp))
 
-#define DelegateObject___methodPtr      0x0c
-ASMCONSTANTS_C_ASSERT(DelegateObject___methodPtr == offsetof(DelegateObject, _methodPtr));
-
-#define DelegateObject___target         0x04
-ASMCONSTANTS_C_ASSERT(DelegateObject___target == offsetof(DelegateObject, _target));
-
 #define MethodTable__m_BaseSize         0x04
 ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSize));
 

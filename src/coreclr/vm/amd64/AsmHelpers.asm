@@ -565,23 +565,6 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT
         ret
 NESTED_END ProfileTailcallNaked, _TEXT
 
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-
-        test    rcx, rcx
-        jz      NullObject
-
-
-        mov     rax, [rcx + OFFSETOF__DelegateObject___methodPtr]
-        mov     rcx, [rcx + OFFSETOF__DelegateObject___target]  ; replace "this" pointer
-
-        jmp     rax
-
-NullObject:
-        mov     rcx, CORINFO_NullReferenceException_ASM
-        jmp     JIT_InternalThrow
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 ifdef FEATURE_TIERED_COMPILATION
 
 extern OnCallCountThresholdReached:proc

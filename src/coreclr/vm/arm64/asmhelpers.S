@@ -272,22 +272,6 @@ LEAF_ENTRY  JIT_WriteBarrier_Callable, _TEXT
     br      x17
 LEAF_END JIT_WriteBarrier_Callable, _TEXT
 
-// void SinglecastDelegateInvokeStub(Delegate *pThis)
-LEAF_ENTRY SinglecastDelegateInvokeStub, _TEXT
-    cmp x0, #0
-    beq LOCAL_LABEL(LNullThis)
-
-    ldr x16, [x0, #DelegateObject___methodPtr]
-    ldr x0, [x0, #DelegateObject___target]
-
-    br x16
-
-LOCAL_LABEL(LNullThis):
-    mov x0, #CORINFO_NullReferenceException_ASM
-    b C_FUNC(JIT_InternalThrow)
-
-LEAF_END SinglecastDelegateInvokeStub, _TEXT
-
 //
 // x12 = UMEntryThunk*
 //
