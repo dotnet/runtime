@@ -700,12 +700,12 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 
     comp->fgInsertStmtBefore(block, stmt, initStmt);
 
-    // Initialize the length slot.
+    // Initialize the array length.
     //
     //------------------------------------------------------------------------
     // STMTx (IL 0x... ???)
-    //   * STORE_LCL_FLD    long
-    //   \--*  CNS_INT    long
+    //   * STORE_LCL_FLD    int
+    //   \--*  CNS_INT    int
     //------------------------------------------------------------------------
 
     // Pass the total length of the array.
