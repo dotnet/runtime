@@ -83,7 +83,7 @@ LOCAL_LABEL(CallDescrWorkerInternalReturnAddress):
     fsd fa0, CallDescrData__returnValue(s1) // fa0 is always occupied; we have at least one floating field
 
     andi a3, a3, FpStruct__BothFloat
-    bne a3, zero, LOCAL_LABEL(SecondFieldFloatReturn)
+    bne  a3, zero, LOCAL_LABEL(SecondFieldFloatReturn)
 
     // The second returned register is integer (FpStruct::FloatInt | FpStruct::IntFloat)
     // Note: it will also go in here for FpStruct::OnlyOne but storing a register of trash doesn't hurt
