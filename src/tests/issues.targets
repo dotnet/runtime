@@ -1908,12 +1908,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Structs/MemsetMemcpyNullref/*">
             <Issue>https://github.com/dotnet/runtime/issues/98628</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftRetAbiStress/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93631: Swift frozen struct support is not implemented on Mono yet</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/Swift/SwiftCallbackAbiStress/**">
-            <Issue>https://github.com/dotnet/runtime/issues/93631: Swift reverse pinvokes are not implemented on Mono yet</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Known failures for mono runtime on Windows -->
