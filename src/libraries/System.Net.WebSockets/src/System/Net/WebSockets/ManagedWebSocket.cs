@@ -1548,7 +1548,7 @@ namespace System.Net.WebSockets
         private static bool TryValidateUtf8(ReadOnlySpan<byte> span, bool endOfMessage, Utf8MessageState state)
         {
             // If no prior segment spilled over and this one is the last, we can validate it efficiently as a complete message.
-            if (!state.SequenceInProgress && endOfMessage)
+            if (endOfMessage && !state.SequenceInProgress)
             {
                 return Utf8.IsValid(span);
             }
