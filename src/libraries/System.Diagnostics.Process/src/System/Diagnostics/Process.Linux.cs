@@ -296,7 +296,7 @@ namespace System.Diagnostics
                         // stat.comm contains a possibly truncated version of the process name.
                         // When the program is a native executable, the process name will be in argv[0].
                         // When the program is a script, argv[0] contains the interpreter, and argv[1] contains the script name.
-                        Span<byte> argRemainder = buffer.Slice(0, bytesRead);
+                        ReadOnlySpan<byte> argRemainder = buffer.Slice(0, bytesRead);
                         int argEnd = argRemainder.IndexOf((byte)'\0');
                         if (argEnd != -1)
                         {
@@ -336,7 +336,7 @@ namespace System.Diagnostics
                 }
             }
 
-            static string? GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
+            static string? GetUntruncatedNameFromArg(ReadOnlySpan<byte> arg, string prefix)
             {
                 // Strip directory names from arg.
                 int nameStart = arg.LastIndexOf((byte)'/') + 1;

@@ -192,11 +192,16 @@ namespace System.Net.Sockets.Tests
             }, connectMethod, ipv6.ToString()).DisposeAsync();
         }
 
-        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [MemberData(nameof(SocketMethods_MemberData))]
         public async Task Socket_UDS_Success_ActivityRecorded(string connectMethod)
         {
+            if (!Socket.OSSupportsUnixDomainSockets)
+            {
+                return;
+            }
+
             await RemoteExecutor.Invoke(static async connectMethod =>
             {
                 Socket server = null;
