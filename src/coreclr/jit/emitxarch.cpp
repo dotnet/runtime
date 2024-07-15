@@ -274,13 +274,12 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 //
 bool emitter::IsRex2EncodableInstruction(instruction ins) const
 {
-    // TODO-apx: as currently we don't have apx machine, this test will fail for all case, disable it for now.
-
-    // if(!UseRex2Encoding())
-    // {
-    //     return false;
-    // }
-
+    // TODO-Xarch-apx: we have special stress mode for REX2 on non-compatible machine, that will
+    //                 force UseRex2Encoding return true regardless of the CPUID results.
+    if(!UseRex2Encoding())
+    {
+        return false;
+    }
     return HasRex2Encoding(ins);
 }
 
@@ -2780,6 +2779,25 @@ unsigned emitter::emitGetRexPrefixSize(instruction ins)
     return 1;
 }
 
+// Size of rex prefix in bytes
+unsigned emitter::emitGetRexPrefixSize(instrDesc* id, instruction ins)
+{
+    // In case of AVX instructions, REX prefixes are part of VEX prefix.
+    // And hence requires no additional byte to encode REX prefixes.
+    if (IsVexOrEvexEncodableInstruction(ins))
+    {
+        return 0;
+    }
+
+    if (TakesRex2Prefix(id))
+    {
+        return 0;
+    }
+
+    // If not AVX, then we would need 1-byte to encode REX prefix.
+    return 1;
+}
+
 //------------------------------------------------------------------------
 // emitGetEvexPrefixSize: Gets Size of EVEX prefix in bytes
 //
@@ -4045,7 +4063,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id, code_t code)
     if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attr) || IsExtendedReg(id->idReg2(), attr) ||
         (!id->idIsSmallDsc() && (IsExtendedReg(id->idReg3(), attr) || IsExtendedReg(id->idReg4(), attr))))
     {
-        sz += emitGetRexPrefixSize(ins);
+        sz += emitGetRexPrefixSize(id, ins);
         includeRexPrefixSize = !IsVexEncodableInstruction(ins);
     }
 
@@ -4133,7 +4151,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
         if ((TakesRexWPrefix(id) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
             IsExtendedReg(reg2, attr))
         {
-            sz += emitGetRexPrefixSize(ins);
+            sz += emitGetRexPrefixSize(id, ins);
             includeRexPrefixSize = false;
         }
     }
@@ -4346,7 +4364,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     // REX prefix
     if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
     {
-        prefix += emitGetRexPrefixSize(ins);
+        prefix += emitGetRexPrefixSize(id, ins);
     }
 
     return prefix + emitInsSizeSVCalcDisp(id, code, var, dsp);
@@ -4390,7 +4408,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(instrDesc* id, code_t code, int var
     // 64-bit operand instructions will need a REX.W prefix
     if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
     {
-        prefix += emitGetRexPrefixSize(ins);
+        prefix += emitGetRexPrefixSize(id, ins);
     }
 
     return prefix + valSize + emitInsSizeSVCalcDisp(id, code, var, dsp);
@@ -4513,18 +4531,18 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
     if (hasRexPrefix(code))
     {
         // REX prefix
-        size += emitGetRexPrefixSize(ins);
+        size += emitGetRexPrefixSize(id, ins);
     }
     else if (TakesRexWPrefix(id))
     {
         // REX.W prefix
-        size += emitGetRexPrefixSize(ins);
+        size += emitGetRexPrefixSize(id, ins);
     }
     else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) ||
              ((ins != INS_call) && (IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))))
     {
         // Should have a REX byte
-        size += emitGetRexPrefixSize(ins);
+        size += emitGetRexPrefixSize(id, ins);
     }
 
     if (rgx == REG_NA)
@@ -4731,7 +4749,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
     // 64-bit operand instructions will need a REX.W prefix
     if (TakesRexWPrefix(id) || IsExtendedReg(id->idReg1(), attrSize) || IsExtendedReg(id->idReg2(), attrSize))
     {
-        size += emitGetRexPrefixSize(ins);
+        size += emitGetRexPrefixSize(id, ins);
         includeRexPrefixSize = false;
     }
 
@@ -4988,7 +5006,7 @@ void emitter::emitIns(instruction ins, emitAttr attr)
     sz += emitGetAdjustedSize(id, code);
     if (TakesRexWPrefix(id))
     {
-        sz += emitGetRexPrefixSize(ins);
+        sz += emitGetRexPrefixSize(id, ins);
     }
 
     id->idCodeSize(sz);
@@ -5994,7 +6012,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     // REX byte
     if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id))
     {
-        sz += emitGetRexPrefixSize(ins);
+        sz += emitGetRexPrefixSize(id, ins);
     }
 
     id->idCodeSize(sz);
@@ -6224,7 +6242,7 @@ void emitter::emitIns_R_I(instruction ins,
     // register. So we also need to check if that built-in register is an extended register.
     if (IsExtendedReg(reg, attr) || TakesRexWPrefix(id) || instrIsExtendedReg3opImul(ins))
     {
-        sz += emitGetRexPrefixSize(ins);
+        sz += emitGetRexPrefixSize(id, ins);
     }
 
     id->idCodeSize(sz);
@@ -6372,7 +6390,7 @@ void emitter::emitIns_C(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fld
     if (TakesRexWPrefix(id))
     {
         // REX.W prefix
-        sz += emitGetRexPrefixSize(ins);
+        sz += emitGetRexPrefixSize(id, ins);
     }
 
     id->idAddr()->iiaFieldHnd = fldHnd;
@@ -7934,7 +7952,7 @@ void emitter::emitIns_C_R(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE f
         // REX prefix
         if (TakesRexWPrefix(id) || IsExtendedReg(reg, attr))
         {
-            sz += emitGetRexPrefixSize(ins);
+            sz += emitGetRexPrefixSize(id, ins);
         }
     }
     else
@@ -14705,7 +14723,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Compute VEX/EVEX prefix
     // Some of its callers already add EVEX/VEX prefix and then call this routine.
     // Therefore add EVEX/VEX prefix is not already present.
-    code = AddSimdPrefixIfNeededAndNotPresent(id, code, size);
+    code = AddX86PrefixIfNeededAndNotPresent(id, code, size);
 
     // Compute the REX prefix
     if (TakesRexWPrefix(id))
@@ -15461,7 +15479,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         {
             code = insCodeMR(ins);
         }
-        code = AddSimdPrefixIfNeeded(id, code, size);
+        code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code);
 
         if (TakesRexWPrefix(id))
@@ -15487,7 +15505,7 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
     {
         assert(hasCodeRM(ins) && !hasCodeMI(ins) && !hasCodeMR(ins));
         code = insCodeRM(ins);
-        code = AddSimdPrefixIfNeeded(id, code, size);
+        code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeRMreg(id, code);
 
 #endif // TARGET_AMD64
@@ -15860,7 +15878,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
     emitAttr  size      = id->idOpSize();
 
     code = insCodeRM(ins);
-    code = AddSimdPrefixIfNeeded(id, code, size);
+    code = AddX86PrefixIfNeeded(id, code, size);
 
     code = insEncodeRMreg(id, code);
 
@@ -15978,7 +15996,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         // Get the 'base' opcode.
         code = insCodeMI(ins);
-        code = AddSimdPrefixIfNeeded(id, code, size);
+        code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMIreg(id, reg, size, code);
         assert(code & 0x00FF0000);
         if (TakesSimdPrefix(id))
@@ -16118,6 +16136,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     {
         assert(!useSigned);
         code = insCodeACC(ins);
+        code = AddX86PrefixIfNeeded(id, code, size);
     }
     else
     {
@@ -17127,7 +17146,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 #ifdef TARGET_AMD64
             // Support only scalar AVX instructions and hence size is hard coded to 4-byte.
-            code = AddSimdPrefixIfNeeded(id, code, EA_4BYTE);
+            code = AddX86PrefixIfNeeded(id, code, EA_4BYTE);
 
             if (((ins == INS_cdq) || (ins == INS_cwde)) && TakesRexWPrefix(id))
             {
@@ -17584,7 +17603,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 code = insCodeMI(ins);
 
                 // Emit the VEX prefix if it exists
-                code = AddSimdPrefixIfNeeded(id, code, size);
+                code = AddX86PrefixIfNeeded(id, code, size);
 
                 assert((code & 0xC000) == 0);
                 code |= 0xC000;
@@ -17598,7 +17617,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 code = insCodeRM(ins);
                 // Emit the VEX prefix if it exists
-                code = AddSimdPrefixIfNeeded(id, code, size);
+                code = AddX86PrefixIfNeeded(id, code, size);
                 code = insEncodeRMreg(id, code);
                 mReg = id->idReg2();
                 rReg = id->idReg1();
@@ -17754,13 +17773,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(!EncodedBySSE38orSSE3A(ins));
 
                 code    = insCodeMI(ins);
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, getSseShiftRegNumber(ins), size, &code);
             }
             else
             {
                 code    = insCodeRM(ins);
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, id->idReg1(), size, &code);
             }
 
@@ -17861,7 +17880,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputAM(dst, id, code | regcode, &cnsVal);
             }
@@ -17897,7 +17916,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_AWR_RRD_RRD:
         {
             code = insCodeMR(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddX86PrefixIfNeeded(id, code, size);
             dst  = emitOutputAM(dst, id, code);
             sz   = emitSizeOfInsDsc_AMD(id);
             break;
@@ -17996,13 +18015,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(!EncodedBySSE38orSSE3A(ins));
 
                 code    = insCodeMI(ins);
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, getSseShiftRegNumber(ins), size, &code);
             }
             else
             {
                 code    = insCodeRM(ins);
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, id->idReg1(), size, &code);
             }
 
@@ -18070,7 +18089,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsVexOrEvexEncodableInstruction(ins));
 
             code = insCodeRM(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -18096,7 +18115,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsVexOrEvexEncodableInstruction(ins));
 
             code = insCodeRM(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeReg3456(id, id->idReg2(), size, code);
             emitGetInsCns(id, &cnsVal);
 
@@ -18225,13 +18244,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert(!EncodedBySSE38orSSE3A(ins));
 
                 code    = insCodeMI(ins);
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, getSseShiftRegNumber(ins), size, &code);
             }
             else
             {
                 code    = insCodeRM(ins);
-                code    = AddSimdPrefixIfNeeded(id, code, size);
+                code    = AddX86PrefixIfNeeded(id, code, size);
                 regcode = insEncodeReg345(id, id->idReg1(), size, &code);
             }
 
@@ -18291,7 +18310,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddSimdPrefixIfNeeded(id, code, size);
+                code = AddX86PrefixIfNeeded(id, code, size);
 
                 // In case of AVX instructions that take 3 operands, encode reg1 as first source.
                 // Note that reg1 is both a source and a destination.
@@ -18331,7 +18350,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsVexOrEvexEncodableInstruction(ins));
 
             code = insCodeRM(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeReg3456(id, id->idReg2(), size,
                                     code); // encode source operand reg in 'vvvv' bits in 1's complement form
 
@@ -18357,7 +18376,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsVexOrEvexEncodableInstruction(ins));
 
             code = insCodeRM(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddX86PrefixIfNeeded(id, code, size);
             code = insEncodeReg3456(id, id->idReg2(), size, code);
             emitGetInsCns(id, &cnsVal);
 
@@ -18397,7 +18416,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_MRD_OFF:
         {
             code = insCode(ins);
-            code = AddSimdPrefixIfNeeded(id, code, size);
+            code = AddX86PrefixIfNeeded(id, code, size);
 
             // In case of AVX instructions that take 3 operands, encode reg1 as first source.
             // Note that reg1 is both a source and a destination.
@@ -18433,7 +18452,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             else
             {
-                code = AddSimdPrefixIfNeeded(id, code, size);
+                code = AddX86PrefixIfNeeded(id, code, size);
 
                 // In case of AVX instructions that take 3 operands, encode reg1 as first source.
                 // Note that reg1 is both a source and a destination.

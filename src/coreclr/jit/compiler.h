@@ -9998,14 +9998,13 @@ private:
     // Returns:
     //    `true` if user requests REX2 encoding.
     //
-    bool DoJitStressRex2Encoding() 
+    bool DoJitStressRex2Encoding() const
     {
 #ifdef DEBUG
-        // TODO-apx: currently to make sure APX can be encoded on non-APX machine,
-        //           we don't assert APX support here, we will need to revisit 
-        //           this part after we have the hardware.
-
-        return this->m_jitStressRex2Encoding;
+        if (JitConfig.JitStressRex2Encoding())
+        {
+            return true;
+        }
 #endif // DEBUG
 
         return false;
@@ -11720,16 +11719,6 @@ public:
     {
         return this->cntCalleeTrashMask;
     }
-
-private:
-    bool m_jitStressRex2Encoding;
-
-public:
-    FORCEINLINE void JitStressRex2Encoding(bool val) 
-    {
-        this->m_jitStressRex2Encoding = val;
-    }
-
 #endif // TARGET_XARCH
 
 

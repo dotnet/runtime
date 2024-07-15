@@ -2297,8 +2297,11 @@ void Compiler::compSetProcessor()
             codeGen->GetEmitter()->SetUseEvexEncoding(true);
             // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
-        if (canUseRex2Encoding())
+        if (canUseRex2Encoding() || DoJitStressRex2Encoding())
         {
+            // TODO-Xarch-apx:
+            //   At this stage, since no machine will pass the CPUID check for APX, we need a special stress mode that enables
+            //   REX2 on incompatible platform, `DoJitStressRex2Encoding` is expected to be removed eventually.
             codeGen->GetEmitter()->SetUseRex2Encoding(true);
         }
     }
@@ -3410,8 +3413,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
         cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
     }
-
-    m_jitStressRex2Encoding = JitConfig.JitStressRex2Encoding();
 
     // Make sure we copy the register info and initialize the
     // trash regs after the underlying fields are initialized

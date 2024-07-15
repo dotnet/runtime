@@ -9193,8 +9193,8 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_S_I(INS_shl_N, EA_4BYTE, 0, 0, 4);
     theEmitter->emitIns_S(INS_shl_1, EA_4BYTE, 0, 4);
     
-    theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 1, 2);
-    theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 1, 2);
+    // theEmitter->emitIns_R_S(INS_movsx, EA_2BYTE, REG_ECX, 1, 2);
+    // theEmitter->emitIns_R_S(INS_movzx, EA_2BYTE, REG_EAX, 1, 2);
     theEmitter->emitIns_R_S(INS_cmovo, EA_4BYTE, REG_EAX, 1, 2);
 
     theEmitter->emitIns_R(INS_pop, EA_PTRSIZE, REG_EAX);
