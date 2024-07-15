@@ -486,7 +486,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 case 4:
                     assert(intrinEmbMask.op4 != nullptr);
-                    assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
                     assert(HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id));
                     FALLTHROUGH;
 
@@ -709,16 +708,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     break;
                 }
-                case 3:
-                    assert(!HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id) || (falseReg != embMaskOp3Reg));
-                    FALLTHROUGH;
 
+                case 3:
                 case 4:
                 {
                     assert(instrIsRMW);
 
                     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
                     {
+                        assert(falseReg != embMaskOp3Reg);
                         // For FMA, the operation we are trying to perform is:
                         //      result = op1 + (op2 * op3)
                         //
@@ -811,10 +809,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 insEmbMask = useAddend ? INS_sve_mls : INS_sve_msb;
                                 break;
 
-                            case NI_Sve_MultiplyAddRotateComplex:
-                                assert(useAddend);
-                                break;
-
                             default:
                                 unreached();
                         }
@@ -883,11 +877,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
 
                     // Finally, perform the desired operation.
-                    const bool embHasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id);
-
-                    if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
+                    if (HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id))
                     {
-                        if (embHasImmediateOperand)
+                        if (intrinEmbMask.numOperands == 4)
                         {
                             assert(intrinEmbMask.id == NI_Sve_MultiplyAddRotateComplex);
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op4, op2->AsHWIntrinsic());
@@ -900,22 +892,19 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                         else
                         {
-                            GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                             embMaskOp3Reg, opt);
-                        }
-                    }
-                    else if (embHasImmediateOperand)
-                    {
-                        HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op3, op2->AsHWIntrinsic());
-                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                        {
-                            GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                             helper.ImmValue(), opt);
+                            HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op3, op2->AsHWIntrinsic());
+                            for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                            {
+                                GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg,
+                                                                 embMaskOp2Reg, helper.ImmValue(), opt);
+                            }
                         }
                     }
                     else
                     {
-                        unreached();
+                        assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
+                        GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                         embMaskOp3Reg, opt);
                     }
 
                     break;
