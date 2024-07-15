@@ -328,7 +328,7 @@ void Debugger::DoNotCallDirectlyPrivateLock(void)
 
 
     // Lock becomes no-op in late shutdown.
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         return;
     }
@@ -430,7 +430,7 @@ void Debugger::DoNotCallDirectlyPrivateUnlock(void)
     // Controller lock is "smaller" than debugger lock.
 
 
-    if (!g_fProcessDetach)
+    if (!IsAtProcessExit())
     {
 #ifdef _DEBUG
         if (m_mutexCount == 1)
@@ -5035,7 +5035,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
         PRECONDITION(ThreadHoldsLock());
 
         // Anyone sending the synccomplete must hold the TSL.
-        PRECONDITION(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+        PRECONDITION(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
         // The sync complete is now only sent on a helper thread.
         if (!isEESuspendedForGC)
@@ -5069,7 +5069,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
     // We know we're not on the shutdown thread here.
     // And we also know we can't block the shutdown thread (b/c it has the TSL and will
     // get a free pass through the GC toggles that normally block threads for debugging).
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::SSCIPCE: Skipping for shutdown.\n");
         return;
@@ -5304,7 +5304,7 @@ void Debugger::TrapAllRuntimeThreads()
     // If we're doing shutdown, then don't bother trying to communicate w/ the RS.
     // If we're not the thread doing shutdown, then we may be asynchronously killed by the OS.
     // If we are the thread in shutdown, don't TART b/c that may block and do complicated stuff.
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
     {
         STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::TART: Skipping for shutdown.\n");
         return;
@@ -5355,7 +5355,7 @@ void Debugger::TrapAllRuntimeThreads()
         // That means that our helper is not blocked on starting up, thus we can wait infinite on it.
         // Thus we don't need to do helper duty if the suspend fails.
         bool fShouldDoHelperDuty = !m_pRCThread->IsRCThreadReady() && fSuspended;
-        if (fShouldDoHelperDuty && !g_fProcessDetach)
+        if (fShouldDoHelperDuty && !IsAtProcessExit())
         {
             // In V1.0, we had the assumption that if the helper thread isn't ready yet, then we're in
             // a state that SuspendForDebug will succeed on the first try, and thus we'll
@@ -9139,7 +9139,7 @@ BOOL Debugger::SuspendComplete(bool isEESuspendedForGC)
     // If happen on managed thread, it must be doing the helper thread duty.
     //
 
-    _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach);
+    _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit());
 
     // We should be holding debugger lock m_mutex.
     _ASSERTE(ThreadHoldsLock());
@@ -10739,7 +10739,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                  (pThread != NULL) ? GetThreadIdHelper(pThread) : 0,
                  debugState));
 
-            if (!g_fProcessDetach)
+            if (!IsAtProcessExit())
             {
                 g_pEEInterface->SetAllDebugState(pThread, debugState);
             }
@@ -10868,7 +10868,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             {
                 pIPCResult->hr = CORDBG_E_NOTREADY;
             }
-            else if (!g_fProcessDetach)
+            else if (!IsAtProcessExit())
             {
                 //
                 // Since this pointer is coming from the RS, it may be NULL or something
@@ -15056,7 +15056,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
     if (pThread->m_State & Thread::TS_AbortRequested)
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
 
-    if (g_fProcessDetach)
+    if (IsAtProcessExit())
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
 
     // If there is no guard page on this thread, then we've taken a stack overflow exception and can't run managed
@@ -15251,7 +15251,7 @@ Debugger::FuncEvalAbort(
              "D::FEA: performing UserAbort on thread %#x, id=0x%x\n",
              pDE->m_thread, GetThreadIdHelper(pDE->m_thread)));
 
-        if (!g_fProcessDetach && !pDE->m_completed)
+        if (!IsAtProcessExit() && !pDE->m_completed)
         {
             //
             // Perform a stop on the thread that the eval is running on.
@@ -15317,7 +15317,7 @@ Debugger::FuncEvalRudeAbort(
              "D::FEA: performing RudeAbort on thread %#x, id=0x%x\n",
              pDE->m_thread, Debugger::GetThreadIdHelper(pDE->m_thread)));
 
-        if (!g_fProcessDetach && !pDE->m_completed)
+        if (!IsAtProcessExit() && !pDE->m_completed)
         {
             //
             // Perform a stop on the thread that the eval is running on.
@@ -15608,7 +15608,7 @@ void Debugger::DisableDebugger(void)
  * This is called in the case that the loader lock is held and so no new
  * threads can be spun up to be the helper thread, so the existing thread
  * must be the helper thread until a new one can spin up.
- * This is also called in the shutdown case (g_fProcessDetach==true) and our
+ * This is also called in the shutdown case (IsAtProcessExit()==true) and our
  * helper may have already been blown away.
  ***************************************************************************/
 void Debugger::DoHelperThreadDuty()
@@ -15628,7 +15628,7 @@ void Debugger::DoHelperThreadDuty()
     // We'll get killed randomly anyways, so not much we can do.
 
     // These assumptions are based off us being called from TART.
-    _ASSERTE(ThreadStore::HoldingThreadStore() || g_fProcessDetach); // got this from TART
+    _ASSERTE(ThreadStore::HoldingThreadStore() || IsAtProcessExit()); // got this from TART
     _ASSERTE(m_trappingRuntimeThreads); // We're only called from TART.
     _ASSERTE(!m_stopped); // we haven't sent the sync-complete yet.
 
@@ -16179,7 +16179,7 @@ void Debugger::AcquireDebuggerDataLock(Debugger *pDebugger)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!g_fProcessDetach)
+    if (!IsAtProcessExit())
     {
         pDebugger->GetDebuggerDataLock()->Enter();
     }
@@ -16190,7 +16190,7 @@ void Debugger::ReleaseDebuggerDataLock(Debugger *pDebugger)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!g_fProcessDetach)
+    if (!IsAtProcessExit())
     {
         pDebugger->GetDebuggerDataLock()->Leave();
     }

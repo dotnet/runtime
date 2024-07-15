@@ -670,7 +670,7 @@ namespace System
         /// <exception cref="ArgumentException">
         /// <paramref name="value"/> is equal to <see cref="double.NaN"/>.
         /// </exception>
-        public static TimeSpan FromMicroseconds(double value) => Interval(value, TicksPerMicrosecond); // ISSUE: https://github.com/dotnet/runtime/issues/66815
+        public static TimeSpan FromMicroseconds(double value) => Interval(value, TicksPerMicrosecond);
 
         public static TimeSpan FromMinutes(double value) => Interval(value, TicksPerMinute);
 
