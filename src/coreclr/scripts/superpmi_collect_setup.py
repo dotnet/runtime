@@ -150,6 +150,7 @@ native_binaries_to_ignore = [
     "e_sqlite3.dll",
     "FileCheck.exe",
     "ilasm.exe",
+    "ilc.exe",
     "ildasm.exe",
     "jitinterface_arm.dll",
     "jitinterface_arm64.dll",
@@ -183,7 +184,6 @@ native_binaries_to_ignore = [
     "vcruntime140.dll",
     "vcruntime140_1.dll",
     "xunit.console.exe",
-    "ilc.exe"
 ]
 
 MAX_FILES_COUNT = 1500
