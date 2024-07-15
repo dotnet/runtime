@@ -47,7 +47,11 @@ protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
-    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
+    bool         CanAllocateLclVarOnStack(unsigned int         lclNum,
+                                          CORINFO_CLASS_HANDLE clsHnd,
+                                          unsigned int         length,
+                                          unsigned int*        structSize,
+                                          const char**         reason);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -64,6 +68,8 @@ private:
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
+    unsigned int MorphNewArrNodeIntoStackAlloc(
+        GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, unsigned int structSize, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
@@ -119,6 +125,8 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 //
 inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
                                                       CORINFO_CLASS_HANDLE clsHnd,
+                                                      unsigned int         length,
+                                                      unsigned int*        structSize,
                                                       const char**         reason)
 {
     assert(m_AnalysisDone);
@@ -150,6 +158,25 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 
         classSize = comp->info.compCompHnd->getClassSize(clsHnd);
     }
+    else if (comp->info.compCompHnd->isSDArray(clsHnd))
+    {
+        CorInfoType type = comp->info.compCompHnd->getChildType(clsHnd, &clsHnd);
+        if (type != CORINFO_TYPE_UNDEF && clsHnd == NULL)
+        {
+            // This is an array of primitive types
+            classSize = (unsigned int)OFFSETOF__CORINFO_Array__data + genTypeSize(JITtype2varType(type)) * length;
+        }
+        else if (comp->info.compCompHnd->isValueClass(clsHnd))
+        {
+            classSize =
+                (unsigned int)OFFSETOF__CORINFO_Array__data + comp->info.compCompHnd->getClassSize(clsHnd) * length;
+        }
+        else
+        {
+            *reason = "[array contains gc refs]";
+            return false;
+        }
+    }
     else
     {
         if (!enableRefClasses)
@@ -179,6 +206,11 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
     {
         *reason = "[escapes]";
         return false;
+    }
+
+    if (structSize != NULL)
+    {
+        *structSize = classSize;
     }
 
     return true;

@@ -30,9 +30,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 PhaseStatus ObjectAllocator::DoPhase()
 {
-    if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0)
+    if ((comp->optMethodFlags & OMF_HAS_NEWOBJ) == 0 && (comp->optMethodFlags & OMF_HAS_NEWARRAY) == 0)
     {
-        JITDUMP("no newobjs in this method; punting\n");
+        JITDUMP("no newobjs or newarr in this method; punting\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
@@ -391,6 +391,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
             GenTree* data     = nullptr;
 
             bool canonicalAllocObjFound = false;
+            bool canonicalAllocArrFound = false;
 
             if (stmtExpr->OperIs(GT_STORE_LCL_VAR) && stmtExpr->TypeIs(TYP_REF))
             {
@@ -399,6 +400,75 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 if (data->OperGet() == GT_ALLOCOBJ)
                 {
                     canonicalAllocObjFound = true;
+                }
+                else if (data->IsHelperCall())
+                {
+                    GenTreeCall* call = data->AsCall();
+                    if (call->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC)
+                    {
+                        canonicalAllocArrFound = true;
+                    }
+                }
+            }
+
+            if (canonicalAllocArrFound)
+            {
+                GenTreeCall* asCall = data->AsCall();
+                assert(asCall->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC);
+                //------------------------------------------------------------------------
+                // We expect the following expression tree at this point
+                //  STMTx (IL 0x... ???)
+                //    * STORE_LCL_VAR   ref
+                //    \--*  CALL help ref    CORINFO_HELP_NEWARR_1_VC
+                //       +--*  CNS_INT(h) long
+                //       \--*  *
+                //------------------------------------------------------------------------
+
+                unsigned int         lclNum       = stmtExpr->AsLclVar()->GetLclNum();
+                CallArg*             arg          = asCall->gtArgs.GetArgByIndex(0);
+                GenTree*             node         = arg->GetNode();
+                CORINFO_CLASS_HANDLE clsHnd       = (CORINFO_CLASS_HANDLE)node->AsIntConCommon()->IntegralValue();
+                GenTree*             len          = arg->GetNext()->GetNode();
+                const char*          onHeapReason = nullptr;
+                unsigned int         structSize   = 0;
+                bool                 canStack     = false;
+
+                // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
+                //
+                if (!IsObjectStackAllocationEnabled())
+                {
+                    onHeapReason = "[object stack allocation disabled]";
+                    canStack     = false;
+                }
+                else if (basicBlockHasBackwardJump)
+                {
+                    onHeapReason = "[alloc in loop]";
+                    canStack     = false;
+                }
+                else if (!len->IsCnsIntOrI())
+                {
+                    onHeapReason = "[non-constant size]";
+                    canStack     = false;
+                }
+                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal,
+                                                   &structSize, &onHeapReason))
+                {
+                    // reason set by the call
+                    canStack = false;
+                }
+                else
+                {
+                    JITDUMP("Allocating V%02u on the stack\n", lclNum);
+                    canStack                       = true;
+                    const unsigned int stackLclNum = MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, structSize, block, stmt);
+                    m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+                    // We keep the set of possibly-stack-pointing pointers as a superset of the set of
+                    // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
+                    MarkLclVarAsDefinitelyStackPointing(lclNum);
+                    MarkLclVarAsPossiblyStackPointing(lclNum);
+                    stmt->GetRootNode()->gtBashToNOP();
+                    comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
+                    didStackAllocate = true;
                 }
             }
 
@@ -443,7 +513,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     onHeapReason = "[alloc in loop]";
                     canStack     = false;
                 }
-                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, &onHeapReason))
+                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, 0, NULL, &onHeapReason))
                 {
                     // reason set by the call
                     canStack = false;
@@ -553,6 +623,77 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 #endif
 
     return helperCall;
+}
+
+unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
+                                                            CORINFO_CLASS_HANDLE clsHnd,
+                                                            unsigned int         structSize,
+                                                            BasicBlock*          block,
+                                                            Statement*           stmt)
+{
+    assert(newArr != nullptr);
+    assert(m_AnalysisDone);
+    assert(clsHnd != NO_CLASS_HANDLE);
+
+    const bool         shortLifetime = false;
+    const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
+
+    comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(structSize), /* unsafeValueClsCheck */ false);
+
+    // Initialize the object memory if necessary.
+    bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+    bool             bbIsReturn = block->KindIs(BBJ_RETURN);
+    LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
+    lclDsc->lvStackAllocatedBox = false;
+    if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
+    {
+        //------------------------------------------------------------------------
+        // STMTx (IL 0x... ???)
+        //   *  STORE_LCL_VAR   struct
+        //   \--*  CNS_INT   int    0
+        //------------------------------------------------------------------------
+
+        GenTree*   init     = comp->gtNewStoreLclVarNode(lclNum, comp->gtNewIconNode(0));
+        Statement* initStmt = comp->gtNewStmt(init);
+
+        comp->fgInsertStmtBefore(block, stmt, initStmt);
+    }
+    else
+    {
+        JITDUMP("\nSuppressing zero-init for V%02u -- expect to zero in prolog\n", lclNum);
+        lclDsc->lvSuppressedZeroInit = 1;
+        comp->compSuppressedZeroInit = true;
+    }
+
+    // Initialize the vtable slot.
+    //
+    //------------------------------------------------------------------------
+    // STMTx (IL 0x... ???)
+    //   * STORE_LCL_FLD    long
+    //   \--*  CNS_INT(h) long
+    //------------------------------------------------------------------------
+
+    // Initialize the method table pointer.
+    GenTree*   init     = comp->gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 0, newArr->gtArgs.GetArgByIndex(0)->GetNode());
+    Statement* initStmt = comp->gtNewStmt(init);
+
+    comp->fgInsertStmtBefore(block, stmt, initStmt);
+
+    // Initialize the length of array.
+    //
+    //------------------------------------------------------------------------
+    // STMTx (IL 0x... ???)
+    //   * STORE_LCL_FLD    long
+    //   \--*  CNS_INT long
+    //------------------------------------------------------------------------
+
+    // Pass the length of the array.
+    GenTree*   len     = comp->gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 8, newArr->gtArgs.GetArgByIndex(1)->GetNode());
+    Statement* lenStmt = comp->gtNewStmt(len);
+
+    comp->fgInsertStmtBefore(block, stmt, lenStmt);
+
+    return lclNum;
 }
 
 //------------------------------------------------------------------------
@@ -682,6 +823,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_EQ:
             case GT_NE:
             case GT_NULLCHECK:
+            case GT_ARR_LENGTH:
+            case GT_ARR_ELEM:
+            case GT_INDEX_ADDR:
                 canLclVarEscapeViaParentStack = false;
                 break;
 
@@ -778,6 +922,9 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_EQ:
             case GT_NE:
             case GT_NULLCHECK:
+            case GT_ARR_LENGTH:
+            case GT_ARR_ELEM:
+            case GT_INDEX_ADDR:
                 break;
 
             case GT_COMMA:
