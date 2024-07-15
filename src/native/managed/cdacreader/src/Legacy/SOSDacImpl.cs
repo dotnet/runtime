@@ -192,8 +192,17 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             }
             catch
             {
-                // TODO(cdac) -
-                Debug.Fail("Need to implment the fallback path here");
+                try
+                {
+                    string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
+                    if (fallbackName != null)
+                    {
+                        methodTableName.Clear();
+                        methodTableName.Append(fallbackName);
+                    }
+                }
+                catch
+                { }
             }
             CopyStringToTargetBuffer(mtName, count, pNeeded, methodTableName.ToString());
             return HResults.S_OK;

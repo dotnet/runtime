@@ -12,5 +12,6 @@
   "Exception": 1,
   "Loader": 1,
   "RuntimeTypeSystem": 1,
-  "Thread": 1
+  "Thread": 1,
+  "DacStreams": 1
 }

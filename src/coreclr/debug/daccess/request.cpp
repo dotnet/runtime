@@ -1935,7 +1935,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
 
             if (mtName != NULL)
             {
-                _ASSERTE(0 == wcsncmp(mtName, (WCHAR *)pwszNameLocal, count));
+                _ASSERTE(0 == u16_strncmp(mtName, (WCHAR *)pwszNameLocal, count));
             }
             if (pNeeded != NULL)
             {
