@@ -26626,9 +26626,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
             case NI_Sve_GatherVectorSByteSignExtend:
             case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt16ZeroExtend:
+            case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt32ZeroExtend:
+            case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
                 addr = Op(2);
                 break;
 
@@ -26715,10 +26719,13 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                           NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
                           NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
                           NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
-                          NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
-                          NI_Sve_GatherVectorUInt32ZeroExtend));
+                          NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
+                          NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt32ZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting));
         assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
-                                                            (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtend))));
+                                                            (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting))));
 #else
         assert(varTypeIsI(addr));
 #endif

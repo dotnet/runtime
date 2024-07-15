@@ -1992,9 +1992,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
                 case NI_Sve_GatherVectorSByteSignExtend:
                 case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt16ZeroExtend:
+                case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+                case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
                 case NI_Sve_GatherVectorUInt32ZeroExtend:
+                case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     FALLTHROUGH;
 
