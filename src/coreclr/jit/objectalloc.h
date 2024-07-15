@@ -50,7 +50,7 @@ private:
     bool         CanAllocateLclVarOnStack(unsigned int         lclNum,
                                           CORINFO_CLASS_HANDLE clsHnd,
                                           unsigned int         length,
-                                          unsigned int*        structSize,
+                                          unsigned int*        blockSize,
                                           const char**         reason);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
@@ -68,8 +68,12 @@ private:
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
     unsigned int MorphAllocObjNodeIntoStackAlloc(
         GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
-    unsigned int MorphNewArrNodeIntoStackAlloc(
-        GenTreeCall* newArr, CORINFO_CLASS_HANDLE clsHnd, unsigned int structSize, BasicBlock* block, Statement* stmt);
+    unsigned int MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
+                                               CORINFO_CLASS_HANDLE clsHnd,
+                                               unsigned int         length,
+                                               unsigned int         blockSize,
+                                               BasicBlock*          block,
+                                               Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
@@ -123,11 +127,8 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 // Return Value:
 //    Returns true iff local variable can be allocated on the stack.
 //
-inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
-                                                      CORINFO_CLASS_HANDLE clsHnd,
-                                                      unsigned int         length,
-                                                      unsigned int*        structSize,
-                                                      const char**         reason)
+inline bool ObjectAllocator::CanAllocateLclVarOnStack(
+    unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, unsigned int length, unsigned int* blockSize, const char** reason)
 {
     assert(m_AnalysisDone);
 
@@ -208,9 +209,9 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
         return false;
     }
 
-    if (structSize != NULL)
+    if (blockSize != NULL)
     {
-        *structSize = classSize;
+        *blockSize = (unsigned int)classSize;
     }
 
     return true;

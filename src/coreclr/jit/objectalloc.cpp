@@ -415,14 +415,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
             {
                 GenTreeCall* asCall = data->AsCall();
                 assert(asCall->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC);
-                //------------------------------------------------------------------------
-                // We expect the following expression tree at this point
-                //  STMTx (IL 0x... ???)
-                //    * STORE_LCL_VAR   ref
-                //    \--*  CALL help ref    CORINFO_HELP_NEWARR_1_VC
-                //       +--*  CNS_INT(h) long
-                //       \--*  *
-                //------------------------------------------------------------------------
 
                 unsigned int         lclNum       = stmtExpr->AsLclVar()->GetLclNum();
                 CallArg*             arg          = asCall->gtArgs.GetArgByIndex(0);
@@ -430,7 +422,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 CORINFO_CLASS_HANDLE clsHnd       = (CORINFO_CLASS_HANDLE)node->AsIntConCommon()->IntegralValue();
                 GenTree*             len          = arg->GetNext()->GetNode();
                 const char*          onHeapReason = nullptr;
-                unsigned int         structSize   = 0;
+                unsigned int         blockSize    = 0;
                 bool                 canStack     = false;
 
                 // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
@@ -450,8 +442,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     onHeapReason = "[non-constant size]";
                     canStack     = false;
                 }
-                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal,
-                                                   &structSize, &onHeapReason))
+                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal, &blockSize,
+                                                   &onHeapReason))
                 {
                     // reason set by the call
                     canStack = false;
@@ -459,8 +451,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 else
                 {
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
-                    canStack                       = true;
-                    const unsigned int stackLclNum = MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, structSize, block, stmt);
+                    canStack = true;
+                    const unsigned int stackLclNum =
+                        MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal,
+                                                      blockSize, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
                     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
                     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
@@ -627,7 +621,8 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
 
 unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
                                                             CORINFO_CLASS_HANDLE clsHnd,
-                                                            unsigned int         structSize,
+                                                            unsigned int         length,
+                                                            unsigned int         blockSize,
                                                             BasicBlock*          block,
                                                             Statement*           stmt)
 {
@@ -638,7 +633,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     const bool         shortLifetime = false;
     const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
 
-    comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(structSize), /* unsafeValueClsCheck */ false);
+    comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(blockSize), /* unsafeValueClsCheck */ false);
 
     // Initialize the object memory if necessary.
     bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
@@ -679,18 +674,18 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 
     comp->fgInsertStmtBefore(block, stmt, initStmt);
 
-    // Initialize the length of array.
+    // Initialize the length slot.
     //
     //------------------------------------------------------------------------
     // STMTx (IL 0x... ???)
     //   * STORE_LCL_FLD    long
-    //   \--*  CNS_INT long
+    //   \--*  CNS_INT    long
     //------------------------------------------------------------------------
 
-    // Pass the length of the array.
-    GenTree*   len     = comp->gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, 8, newArr->gtArgs.GetArgByIndex(1)->GetNode());
+    // Pass the total length of the array.
+    GenTree*   len     = comp->gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, genTypeSize(TYP_I_IMPL),
+                                                    comp->gtNewIconNode(length, TYP_I_IMPL));
     Statement* lenStmt = comp->gtNewStmt(len);
-
     comp->fgInsertStmtBefore(block, stmt, lenStmt);
 
     return lclNum;
@@ -824,7 +819,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_NE:
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
-            case GT_ARR_ELEM:
             case GT_INDEX_ADDR:
                 canLclVarEscapeViaParentStack = false;
                 break;
@@ -923,7 +917,6 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_NE:
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
-            case GT_ARR_ELEM:
             case GT_INDEX_ADDR:
                 break;
 
@@ -1170,6 +1163,34 @@ void ObjectAllocator::RewriteUses()
                             m_compiler->gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffects, indir);
                         *use = newComma;
                     }
+                }
+            }
+            // Rewrite INDEX_ADDR to ADD for stack-allocated arrays.
+            else if (tree->OperIs(GT_INDEX_ADDR))
+            {
+                GenTreeIndexAddr* const indexAddr = tree->AsIndexAddr();
+                GenTree* const          arr       = indexAddr->Arr();
+                GenTree* const          ind       = indexAddr->Index();
+
+                if (arr->OperIs(GT_LCL_ADDR) && ind->IsCnsIntOrI())
+                {
+                    JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
+                    GenTree* const add = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, arr, ind);
+                    *use               = add;
+                }
+            }
+            // Rewrite ARR_LENGTH to LCL_FLD for stack-allocated arrays.
+            else if (tree->OperIsArrLength())
+            {
+                GenTreeArrLen* const arrLen = tree->AsArrLen();
+                GenTree* const       arr    = arrLen->ArrRef();
+
+                if (arr->OperIs(GT_LCL_ADDR))
+                {
+                    JITDUMP("Rewriting ARR_LENGTH to LCL_FLD [%06u]\n", m_compiler->dspTreeID(tree));
+                    GenTree* const lclFld = m_compiler->gtNewLclFldNode(arr->AsLclVarCommon()->GetLclNum(), TYP_I_IMPL,
+                                                                        OFFSETOF__CORINFO_Array__length);
+                    *use = lclFld;
                 }
             }
 
