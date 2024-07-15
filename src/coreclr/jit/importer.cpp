@@ -851,6 +851,12 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
             NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
+            if (destAddr->OperIs(GT_LCL_ADDR))
+            {
+                lvaSetVarDoNotEnregister(destAddr->AsLclVarCommon()->GetLclNum()
+                                             DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+            }
+
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
             if ((TargetOS::IsWindows || compUnixX86Abi()) && srcCall->IsUnmanaged())

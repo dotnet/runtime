@@ -7563,7 +7563,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunUnary(
     if (IsVNConstant(arg0VN))
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (oper != GT_NONE)
         {
@@ -7915,17 +7915,15 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
         assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
 
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
         if (oper != GT_NONE)
         {
+            // We shouldn't find AND_NOT nodes since it should only be produced in lowering
+            assert(oper != GT_AND_NOT);
+
 #if defined(TARGET_XARCH)
-            if (oper == GT_AND_NOT)
-            {
-                // xarch does: ~arg0VN & arg1VN
-                std::swap(arg0VN, arg1VN);
-            }
-            else if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
+            if ((oper == GT_LSH) || (oper == GT_RSH) || (oper == GT_RSZ))
             {
                 if (TypeOfVN(arg1VN) == TYP_SIMD16)
                 {
@@ -8045,7 +8043,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     else if (cnsVN != NoVN)
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+
+        // We shouldn't find AND_NOT nodes since it should only be produced in lowering
+        assert(oper != GT_AND_NOT);
 
         if (isScalar)
         {
@@ -8104,37 +8105,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                 if (cnsVN == allBitsVN)
                 {
                     return argVN;
-                }
-                break;
-            }
-
-            case GT_AND_NOT:
-            {
-#if defined(TARGET_XARCH)
-                std::swap(arg0VN, arg1VN);
-#endif // TARGET_XARCH
-
-                // Handle `x & ~0 == x` and `0 & ~x == 0`
-                ValueNum zeroVN = VNZeroForType(type);
-
-                if (cnsVN == zeroVN)
-                {
-                    if (cnsVN == arg0VN)
-                    {
-                        return zeroVN;
-                    }
-                    return argVN;
-                }
-
-                // Handle `x & ~AllBitsSet == 0`
-                ValueNum allBitsVN = VNAllBitsForType(type);
-
-                if (cnsVN == allBitsVN)
-                {
-                    if (cnsVN == arg1VN)
-                    {
-                        return zeroVN;
-                    }
                 }
                 break;
             }
@@ -8395,7 +8365,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
     else if (arg0VN == arg1VN)
     {
         bool       isScalar = false;
-        genTreeOps oper     = tree->HWOperGet(&isScalar);
+        genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+
+        // We shouldn't find AND_NOT nodes since it should only be produced in lowering
+        assert(oper != GT_AND_NOT);
 
         if (isScalar)
         {
@@ -8409,12 +8382,6 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
             {
                 // Handle `x & x == x`
                 return arg0VN;
-            }
-
-            case GT_AND_NOT:
-            {
-                // Handle `x & ~x == 0`
-                return VNZeroForType(type);
             }
 
             case GT_OR:
@@ -8575,12 +8542,12 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(GenTreeHWIntrinsic* tree,
 
     switch (ni)
     {
-        case NI_Vector128_ConditionalSelect:
 #if defined(TARGET_XARCH)
+        case NI_Vector128_ConditionalSelect:
         case NI_Vector256_ConditionalSelect:
         case NI_Vector512_ConditionalSelect:
 #elif defined(TARGET_ARM64)
-        case NI_Vector64_ConditionalSelect:
+        case NI_AdvSimd_BitwiseSelect:
         case NI_Sve_ConditionalSelect:
 #endif
         {
