@@ -18,4 +18,8 @@
     <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Root.cs" Link="CDAC\Root.cs" />
     <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Target.cs" Link="CDAC\Target.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
+  </ItemGroup>
 </Project>

@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
+using System.CommandLine;
+using System.CommandLine.Help;
+using System.CommandLine.Parsing;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Win32.SafeHandles;
 
 namespace StressLogAnalyzer;
 
@@ -49,95 +54,261 @@ public static class Program
         return -1;
     }
 
-    public static unsafe int Main(string[] args)
+    public static async Task<int> Main(string[] args)
     {
-        if (args.Length == 0)
+        CliConfiguration configuration = new(CreateRootCommand());
+        return await configuration.InvokeAsync(args).ConfigureAwait(false);
+    }
+
+    public static CliRootCommand CreateRootCommand()
+    {
+        var inputFile = new CliArgument<FileInfo>("log file")
         {
-            Console.WriteLine("Usage: StressLog <log file> <options>");
-            Console.WriteLine("       StressLog <log file> -? for list of options");
-            return 1;
-        }
-        else if (args.Contains("-?"))
+            Description = "The memory-mapped stress log file to analyze",
+        };
+
+        var outputFile = new CliOption<FileInfo>("-output", "-o")
         {
-            Console.WriteLine("""      
-                Usage:
+            Description = "Write output to a text file instead of the console",
+            HelpName = "output file",
+        };
 
-                 -o:<outputfile.txt>: write output to a text file instead of the console
+        var valueRanges = new CliOption<IntegerRange[]>("-values", "-v")
+        {
+            Arity = ArgumentArity.OneOrMore,
+            CustomParser = argument =>
+            {
+                IntegerRange[] values = new IntegerRange[argument.Tokens.Count];
+                for (int i = 0; i < argument.Tokens.Count; i++)
+                {
+                    string value = argument.Tokens[i].Value;
+                    string[] parts = value.Split('-', '+');
+                    if (parts.Length > 2)
+                    {
+                        argument.AddError($"Invalid value range format in '{value}'");
+                        return null;
+                    }
+                    if (parts.Length == 1)
+                    {
+                        values[i] = new IntegerRange(ulong.Parse(parts[0], NumberStyles.HexNumber), ulong.Parse(parts[0], NumberStyles.HexNumber));
+                    }
+                    else if (value.Contains('-'))
+                    {
+                        values[i] = new IntegerRange(ulong.Parse(parts[0], NumberStyles.HexNumber), ulong.Parse(parts[1], NumberStyles.HexNumber));
+                    }
+                    else
+                    {
+                        // argument is in the format of -v:<hexlower>+<hexsize>
+                        ulong lower = ulong.Parse(parts[0], NumberStyles.HexNumber);
+                        ulong size = ulong.Parse(parts[1], NumberStyles.HexNumber);
+                        values[i] = new IntegerRange(lower, lower + size);
+                    }
+                }
+                return values;
+            },
+            Description = "Look for a specific hex value (often used to look for addresses). Can be a specific address or specified as a 'start-end' or 'start+length' range.",
+            HelpName = "hex value or range",
+        };
 
-                 -v:<hexvalue>: look for a specific hex value (often used to look for addresses
-                 -v:<hexlower>-<hexupper>: look for values >= hexlower and <= hexupper
-                 -v:<hexlower>+<hexsize>: look for values >= hexlower and <= hexlower+hexsize
+        var timeRanges = new CliOption<TimeRange>("--time", "-t")
+        {
+            Arity = ArgumentArity.OneOrMore,
+            CustomParser = argument =>
+            {
+                string value = argument.Tokens[0].Value;
+                if (double.TryParse(value, out double startTimestamp))
+                {
+                    // Format is either <start time> or -<last seconds>
+                    return new TimeRange(startTimestamp, double.MaxValue);
+                }
+                else if (value.Split('-') is [string start, string end])
+                {
+                    return new TimeRange(double.Parse(start), double.Parse(end));
+                }
+                else
+                {
+                    argument.AddError($"Invalid time range format in '{value}'");
+                    return default;
+                }
+            },
+            Description = "Don't consider messages before start time. Only consider messages >= start time and <= end time. Specify a negative number of seconds to only search in the last n seconds.",
+            HelpName = "start time or range",
+        };
 
-                 -t:<start time>: don't consider messages before start time
-                 -t:<start time>-<end time>: only consider messages >= start time and <= end time
-                 -t:-<last seconds>: only consider messages in the last seconds
+        var allMessagesOption = new CliOption<bool>("--all", "-a")
+        {
+            Description = "Print all messages from all threads"
+        };
 
-                 -l:<level1>,<level2>,... : print messages at dprint level1,level2,...
+        var defaultMessagesOption = new CliOption<bool>("--defaultMessages", "-d")
+        {
+            Description = "Suppress default messages"
+        };
 
-                 -g:<gc_index>: only print messages occurring during GC#gc_index
-                 -g:<gc_index1>-<gc_index_2>: as above, for a range of GC indices
+        var levelFilter = new CliOption<IReadOnlyList<IntegerRange>>("--level", "-l")
+        {
+            Arity = ArgumentArity.OneOrMore,
+            CustomParser = argument =>
+            {
+                List<IntegerRange> levels = [];
+                foreach (CliToken token in argument.Tokens)
+                {
+                    foreach (string value in token.Value.Split(','))
+                    {
+                        if (value == "*")
+                        {
+                            levels.Add(new IntegerRange(0, 0x7fffffff));
+                        }
+                        else if (ulong.TryParse(value, out ulong minLevel))
+                        {
+                            levels.Add(new IntegerRange(minLevel, minLevel));
+                        }
+                        else if (value.Split('-') is [string min, string max])
+                        {
+                            levels.Add(new IntegerRange(ulong.Parse(min), ulong.Parse(max)));
+                        }
+                        else
+                        {
+                            argument.AddError($"Invalid level range format in '{value}'");
+                            return null;
+                        }
+                    }
+                }
+                return levels;
+            },
+            Description = "Print messages at dprint level1,level2,...",
+            HelpName = "level or range of levels",
+            AllowMultipleArgumentsPerToken = true,
+        };
 
-                 -f: print the raw format strings along with the message
-                     (useful to search for the format string in the source code
-                 -f:<format string>: search for a specific format string
-                    e.g. '-f:\"<%zx>:%zx\"'
-                 -p:<format string>: search for all format strings with a specific prefix
-                    e.g. '-p:\"commit-accounting\"'
+        var prefixOption = new CliOption<string[]>("--prefix", "-p")
+        {
+            Description = "Search for all format strings with a specific prefix",
+            HelpName = "format string"
+        };
 
-                 -i:<hex facility code>: ignore messages from log facilities
-                   e.g. '-i:7ffe' means ignore messages from anything but LF_GC
+        var gcIndex = new CliOption<IntegerRange>("--gc", "-g")
+        {
+            Arity = ArgumentArity.OneOrMore,
+            CustomParser = argument =>
+            {
+                string value = argument.Tokens[0].Value;
+                if (value.Split('-') is [string start, string end])
+                {
+                    return new IntegerRange(ulong.Parse(start), ulong.Parse(end));
+                }
+                else
+                {
+                    ulong index = ulong.Parse(value);
+                    return new IntegerRange(index, index);
+                }
+            },
+            Description = "Only print messages occurring during GC#gc_index or from GC#gc_index_start to GC#gc_index_end",
+            HelpName = "gc index or range",
+        };
 
-                 -tid: print hex thread ids, e.g. 2a08 instead of GC12
-                 -tid:<thread id1>,<thread id2>,...: only print messages from the listed
-                     threads. Thread ids are in hex, given as GC<decimal heap number>,
-                     or BG<decimal heap number>
-                     e.g. '-tid:2bc8,GC3,BG14' would print messages from thread 2bc8, the gc thread
-                     associated with heap 3, and the background GC thread for heap 14
+        var includeFacilityOption = new CliOption<ulong[]>("--include", "-i")
+        {
+            Arity = ArgumentArity.OneOrMore,
+            CustomParser = argument =>
+            {
+                return argument.Tokens.Select(token => ulong.Parse(token.Value, NumberStyles.HexNumber)).ToArray();
+            },
+            Description = "Include messages only from these from log facilities",
+            HelpName = "hex facility code",
+        };
 
-                 -e: print earliest messages from all threads
-                 -e:<thread id1>,<thread id2>,...: print earliest messages from the listed
-                     threads. Thread ids are in hex, given as GC<decimal heap number>,
-                     or BG<decimal heap number>
-                     e.g. '-e:2bc8,GC3,BG14' would print the earliest messages from thread 2bc8,
-                     the gc thread associated with heap 3, and the background GC thread for heap 14
+        var earliestOption = new CliOption<ThreadFilter>("--earliest", "-e")
+        {
+            Arity = ArgumentArity.ZeroOrMore,
+            CustomParser = argument =>
+            {
+                return new ThreadFilter(argument.Tokens.Select(token => token.Value));
+            },
+            Description = "Print earliest message from all threads or from the listed threads",
+            HelpName = "thread id or GC heap number",
+        };
 
-                 -a: print all messages from all threads
+        var threadFilter = new CliOption<ThreadFilter>("--threads", "-tid")
+        {
+            Arity = ArgumentArity.ZeroOrMore,
+            CustomParser = argument =>
+            {
+                return new ThreadFilter(argument.Tokens.Select(token => token.Value));
+            },
+            Description = "Print hex thread ids, e.g. 2a08 instead of GC12. Otherwise, only print messages from the listed threads",
+            HelpName = "thread id or GC heap number",
+        };
 
-                 -d: suppress default messages
-                
-                """);
-            return 0;
-        }
+        var hexThreadId = new CliOption<bool?>("--hexThreadId", "--hex")
+        {
+            Description = "Print hex thread ids, e.g. 2a08 instead of GC12",
+        };
 
-        using var stressLogData = MemoryMappedFile.CreateFromFile(args[0], FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
+        var formatFilter = new CliOption<string[]>("--format", "-f")
+        {
+            Arity = ArgumentArity.ZeroOrMore,
+            Description = "Print the raw format strings along with the message. Use -f:<format string> to search for a specific format string",
+            HelpName = "format string",
+        };
+
+        var rootCommand = new CliRootCommand
+        {
+            inputFile,
+            outputFile,
+            valueRanges,
+            timeRanges,
+            allMessagesOption,
+            defaultMessagesOption,
+            levelFilter,
+            prefixOption,
+            gcIndex,
+            includeFacilityOption,
+            earliestOption,
+            threadFilter,
+            hexThreadId,
+            formatFilter,
+            new DiagramDirective(),
+        };
+
+        rootCommand.SetAction(async (args, ct) =>
+        {
+            ThreadFilter? threads = args.GetValue(threadFilter);
+            Options options = new(
+                args.GetValue(inputFile)!,
+                args.GetValue(outputFile),
+                args.GetValue(valueRanges),
+                args.GetValue(timeRanges),
+                args.GetValue(allMessagesOption),
+                args.GetValue(defaultMessagesOption),
+                args.GetValue(levelFilter),
+                args.GetValue(gcIndex),
+                args.GetValue(includeFacilityOption),
+                args.GetValue(earliestOption),
+                PrintHexThreadIds: args.GetValue(hexThreadId) ?? threads is { HasAnyFilter: false },
+                threads ?? new ThreadFilter([]),
+                PrintFormatStrings: args.GetValue(formatFilter) is [],
+                args.GetValue(prefixOption),
+                args.GetValue(formatFilter));
+            return await AnalyzeStressLog(options, ct).ConfigureAwait(false);
+        });
+
+        return rootCommand;
+    }
+
+    private static async Task<int> AnalyzeStressLog(Options options, CancellationToken token)
+    {
+        using var stressLogData = MemoryMappedFile.CreateFromFile(options.InputFile.FullName, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
         using MemoryMappedViewAccessor accessor = stressLogData.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
 
-        if (accessor.Capacity < sizeof(StressLogHeader))
+        if (accessor.Capacity < Unsafe.SizeOf<StressLogHeader>())
         {
             Console.WriteLine("Invalid memory-mapped stress log");
             return 1;
         }
-        byte* buffer = null;
         try
         {
-            accessor.SafeMemoryMappedViewHandle.AcquirePointer(ref buffer);
-            StressLogHeader* header = (StressLogHeader*)buffer;
-
-            if (header->headerSize != sizeof(StressLogHeader)
-                || !"LRTS"u8.SequenceEqual(header->magic)
-                || header->version is not (0x00010001 or 0x00010002))
-            {
-                Console.WriteLine("Invalid StressLogHeader");
-                return 1;
-            }
-
-            Target target = Target.Create(
-                GetDescriptor((int)(header->version & 0xFFFF)),
-                [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
-                &ReadFromMemoryMappedLog,
-                header,
-                true,
-                nuint.Size);
+            (Target target, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
 
             Registry registry = new(target);
             IStressLog stressLogContract = registry.StressLog;
@@ -145,7 +316,8 @@ public static class Program
             bool runAgain = false;
             do
             {
-                ProcessStressLog(header, stressLogContract, args[1..]);
+                var analyzer = new StressLogAnalyzer(stressLogContract, options);
+                await analyzer.AnalyzeLogsAsync(logs, token).ConfigureAwait(false);
 
                 Console.Write("'q' to quit, 'r' to run again\n>");
 
@@ -172,11 +344,28 @@ public static class Program
         }
     }
 
-    private static unsafe void ProcessStressLog(StressLogHeader* header, IStressLog stressLogContract, string[] args)
+    private static unsafe (Target target, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
     {
-        List<ThreadStressLogData> logs = [.. stressLogContract.GetThreadStressLogs(new TargetPointer(header->logs))];
+        byte* buffer = null;
+        handle.AcquirePointer(ref buffer);
+        StressLogHeader* header = (StressLogHeader*)buffer;
 
-        List<StressMsgData> messages = [.. logs.SelectMany(stressLogContract.GetStressMessages)];
+        if (header->headerSize != sizeof(StressLogHeader)
+            || !"LRTS"u8.SequenceEqual(header->magic)
+            || header->version is not (0x00010001 or 0x00010002))
+        {
+            throw new InvalidOperationException("Invalid memory-mapped stress log.");
+        }
+
+        Target target = Target.Create(
+            GetDescriptor((int)(header->version & 0xFFFF)),
+            [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
+            &ReadFromMemoryMappedLog,
+            header,
+            true,
+            nuint.Size);
+
+        return (target, header->logs);
     }
 
     private static ContractDescriptorParser.ContractDescriptor GetDescriptor(int stressLogVersion)
