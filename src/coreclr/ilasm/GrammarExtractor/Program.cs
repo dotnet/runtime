@@ -27,13 +27,20 @@ if (!match.Success)
 string grammar = match.Groups[2].Value;
 
 // Remove any text in {}
-grammar = GetRegexRemoveTextInBraces().Replace(grammar, "$1");
+var regexRemoveTextInBraces = GetRegexRemoveTextInBraces();
+string previousGrammar;
 
-// Change keyword identifiers into the string they represent
-grammar = GetRegexKeywordIdentifiers().Replace(grammar, "'$1'");
+do
+{
+    previousGrammar = grammar;
+    grammar = regexRemoveTextInBraces.Replace(grammar, "$1");
+} while (grammar != previousGrammar);
 
-// Change assembler directives into their string
-grammar = GetRegexAssemblerDirectives().Replace(grammar, "'$1'");
+// Change keyword identifiers into the string they represent (lowercase)
+grammar = GetRegexKeywordIdentifiers().Replace(grammar, m => $"'{m.Groups[1].Value.ToLowerInvariant()}'");
+
+// Change assembler directives into their string (lowercase with a period)
+grammar = GetRegexAssemblerDirectives().Replace(grammar, m => $"'.{m.Groups[1].Value.ToLowerInvariant()}'");
 
 // Handle special punctuation
 grammar = GetRegexEllipsis().Replace(grammar, "'...'");
@@ -43,10 +50,10 @@ grammar = GetRegexDcolon().Replace(grammar, "'::'");
 grammar = GetRegexRemoveTodoComments().Replace(grammar, "\n");
 
 // Print the output header
-Console.WriteLine(@"Lexical tokens
+Console.Write(@"Lexical tokens
     ID - C style alphaNumeric identifier (e.g. Hello_There2)
     DOTTEDNAME - Sequence of dot-separated IDs (e.g. System.Object)
-    QSTRING  - C style quoted string (e.g.  ""hi\\n"")
+    QSTRING  - C style quoted string (e.g.  ""hi\n"")
     SQSTRING - C style singlely quoted string(e.g.  'hi')
     INT32    - C style 32 bit integer (e.g.  235,  03423, 0x34FFF)
     INT64    - C style 64 bit integer (e.g.  -2353453636235234,  0x34FFFFFFFFFF)
@@ -65,30 +72,30 @@ START           : decls
                 ;");
 
 // Print the output
-Console.WriteLine(grammar);
+Console.Write(grammar);
 
 return 0;
 
 internal static partial class Patterns
 {
-    [GeneratedRegex(@"^(.*)%%(.*)%%")]
+    [GeneratedRegex(@"^(.*)%%(.*)%%", RegexOptions.Singleline)]
     internal static partial Regex GetRegexExtractMarkers();
 
-    [GeneratedRegex(@"\s*([^'])\{[^{}]*\}")]
+    [GeneratedRegex(@"\s*([^'])\{[^{}]*\}", RegexOptions.Singleline)]
     internal static partial Regex GetRegexRemoveTextInBraces();
 
-    [GeneratedRegex(@"\b([A-Z0-9_]+)_\b")]
+    [GeneratedRegex(@"\b([A-Z0-9_]+)_\b", RegexOptions.Singleline)]
     internal static partial Regex GetRegexKeywordIdentifiers();
 
-    [GeneratedRegex(@"\b_([A-Z0-9]+)\b")]
+    [GeneratedRegex(@"\b_([A-Z0-9]+)\b", RegexOptions.Singleline)]
     internal static partial Regex GetRegexAssemblerDirectives();
 
-    [GeneratedRegex(@"\bELLIPSIS\b")]
+    [GeneratedRegex(@"\bELLIPSIS\b", RegexOptions.Singleline)]
     internal static partial Regex GetRegexEllipsis();
 
-    [GeneratedRegex(@"\bDCOLON\b")]
+    [GeneratedRegex(@"\bDCOLON\b", RegexOptions.Singleline)]
     internal static partial Regex GetRegexDcolon();
 
-    [GeneratedRegex(@"\n\s*/\*[^\n]*TODO[^\n]*\*/\s*\n")]
+    [GeneratedRegex(@"\n\s*/\*[^\n]*TODO[^\n]*\*/\s*\n", RegexOptions.Singleline)]
     internal static partial Regex GetRegexRemoveTodoComments();
 }
