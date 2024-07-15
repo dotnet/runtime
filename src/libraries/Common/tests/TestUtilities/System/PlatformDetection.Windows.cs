@@ -171,6 +171,7 @@ namespace System
 
         internal static uint GetWindowsVersion() => (uint)GetWindowsVersionObject().Major;
         internal static uint GetWindowsMinorVersion() => (uint)GetWindowsVersionObject().Minor;
+        internal static uint GetWindowsBuildVersion() => (uint)GetWindowsVersionObject().Build;
 
         internal static bool IsWindowsVersionOrLater(int major, int minor, int build = -1)
         {
