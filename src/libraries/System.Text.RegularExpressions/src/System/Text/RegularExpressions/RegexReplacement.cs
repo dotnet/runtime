@@ -273,7 +273,7 @@ namespace System.Text.RegularExpressions
                 ReadOnlySpan<int> tmpSpan = span; // avoid address exposing the span and impacting the other code in the method that uses it
                 result = string.Create(length, ((IntPtr)(&tmpSpan), input, replacement), static (dest, state) =>
                 {
-                    Span<int> span = *(Span<int>*)state.Item1;
+                    ReadOnlySpan<int> span = *(ReadOnlySpan<int>*)state.Item1;
                     for (int i = 0; i < span.Length; i += 2)
                     {
                         if (i != 0)

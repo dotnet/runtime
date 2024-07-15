@@ -1453,7 +1453,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
+        private static int CombineMaskBytes(ReadOnlySpan<byte> buffer, int maskOffset) =>
             BitConverter.ToInt32(buffer.Slice(maskOffset));
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>
