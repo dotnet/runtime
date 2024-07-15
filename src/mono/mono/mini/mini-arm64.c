@@ -2024,22 +2024,21 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 	}
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	case ArgSwiftVtypeLoweredRet: {
-		int i;
 		int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
 		char *storage = (char*)dest;
-		for (i = 0; i < ainfo->nregs; ++i) {
-			switch (ainfo->struct_storage [i]) {
-				case ArgInIReg:
-					*(gsize*)(storage + ainfo->offsets [i]) = ccontext->gregs [gr++];
-					break;
-				case ArgInFReg:
-					*(double*)(storage + ainfo->offsets [i]) = ccontext->fregs [fr++];
-					break;
-				case ArgInFRegR4:
-					*(float*)(storage + ainfo->offsets [i]) = *(float*)&ccontext->fregs [fr++];
-					break;
-				default:
-					g_assert_not_reached ();
+		for (int k = 0; k < ainfo->nregs; ++k) {
+			switch (ainfo->struct_storage [k]) {
+			case ArgInIReg:
+				*(gsize*)(storage + ainfo->offsets [k]) = ccontext->gregs [gr++];
+				break;
+			case ArgInFReg:
+				*(double*)(storage + ainfo->offsets [k]) = ccontext->fregs [fr++];
+				break;
+			case ArgInFRegR4:
+				*(float*)(storage + ainfo->offsets [k]) = *(float*)&ccontext->fregs [fr++];
+				break;
+			default:
+				g_assert_not_reached ();
 			}
 		}
 		break;
@@ -2055,10 +2054,41 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 {
 	g_assert (arg_need_temp (ainfo));
 
-	float *src_float = (float*)src;
-	for (int k = 0; k < ainfo->nregs; k++) {
-		*(float*)&ccontext->fregs [ainfo->reg + k] = *src_float;
-		src_float++;
+	switch (ainfo->storage) {
+	case ArgHFA: {
+		float *src_float = (float*)src;
+		for (int k = 0; k < ainfo->nregs; k++) {
+			*(float*)&ccontext->fregs [ainfo->reg + k] = *src_float;
+			src_float++;
+		}
+		break;
+	}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	case ArgSwiftVtypeLoweredRet: {
+		int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
+		char *storage = (char*)src;
+		for (int k = 0; k< ainfo->nregs; ++k) {
+			switch (ainfo->struct_storage [k]) {
+			case ArgInIReg:
+				ccontext->gregs [gr++] = *(gsize*)(storage + ainfo->offsets [k]);
+				break;
+			case ArgInFReg:
+				ccontext->fregs [fr++] = *(double*)(storage + ainfo->offsets [k]);
+				break;
+			case ArgInFRegR4:
+				*(float*)&ccontext->fregs [fr++] = *(float*)(storage + ainfo->offsets [k]);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+
+		}	
+
+		break;
+	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
+	default:
+		g_assert_not_reached ();
 	}
 }
 
@@ -6486,6 +6516,30 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		}
 		break;
 	}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	case ArgSwiftVtypeLoweredRet: {
+		if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			MonoInst *ins = cfg->ret;
+			int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
+			for (int i = 0; i < cinfo->ret.nregs; ++i) {
+				switch (cinfo->ret.struct_storage [i]) {
+				case ArgInIReg:
+					code = emit_ldrx (code, gr++, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
+					break;
+				case ArgInFRegR4:
+					code = emit_ldrfpw (code, fr++, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
+					break;
+				case ArgInFReg:
+					code = emit_ldrfpx (code, fr++, ins->inst_basereg, GTMREG_TO_INT (ins->inst_offset + cinfo->ret.offsets [i]));
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			}
+		}
+		break;
+	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 	default:
 		break;
 	}
