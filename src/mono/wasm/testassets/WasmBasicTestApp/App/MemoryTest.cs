@@ -8,51 +8,66 @@ using System.Runtime.InteropServices.JavaScript;
 
 public partial class MemoryTest
 {
-    [JSImport("joinStringArray", "main.js")]
-    internal static partial string JoinStringArray(string[] testArray);
+    [JSImport("countChars", "main.js")]
+    internal static partial int CountChars(string[] testArray);
 
     [JSExport]
     internal static void Run()
     {
-        // Allocate a 2GB space (20 int arrays of 100MB, 100MB = 4 * 1024 * 1024 * 25)
-        const int arrayCnt = 20;
-        int[][] arrayHolder = new int[arrayCnt][];
+        // Allocate a 2GB space (1024 * 1024 * 25 string arrays of 80 bytes (1 char = 2bytes))
+        const int arrayCnt = 1024 * 1024 * 25;
+        const int stringLength = 40;
+        string[] testArray = new string[arrayCnt];
         string errors = "";
+        Random random = new();
         for (int i = 0; i < arrayCnt; i++)
         {
             try
             {
-                arrayHolder[i] = new int[1024 * 1024 * 25];
+                testArray[i] = GenerateRandomString(stringLength);
             }
             catch (Exception ex)
             {
                 errors += $"Exception {ex} was thrown on i={i}";
             }
         }
-
-        // marshall string array to JS
-        string [] testArray = new [] { "M", "e", "m", "o", "r", "y", "T", "e", "s", "t" };
-        string response = JoinStringArray(testArray);
-
-        bool correct = AssertJoinCorrect(testArray, response);
-        if (!correct)
-            errors += $"expected response: {response}, testArray: {string.Join("", testArray)}";
+        TestOutput.WriteLine("Finished 2GB array allocation");
 
         // call a method many times to trigger tier-up optimization
-        for (int i = 0; i < 10000; i++)
+        try
         {
-            AssertJoinCorrect(testArray, response);
+            for (int i = 0; i < 10000; i++)
+            {
+                int count = CountChars(testArray);
+                if (count != stringLength)
+                    errors += $"CountChars returned {count} instead of {stringLength} for {i}-th string.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errors += $"Exception {ex} was thrown when CountChars was called in a loop";
         }
         if (!string.IsNullOrEmpty(errors))
         {
             TestOutput.WriteLine(errors);
             throw new Exception(errors);
         }
+        else
+        {
+            TestOutput.WriteLine("Great success, MemoryTest finished without errors.");
+        }
     }
 
-    private static bool AssertJoinCorrect(string[] testArray, string expected)
+    private static Random random = new Random();
+
+    private static string GenerateRandomString(int stringLength)
     {
-        string joinedArray = string.Join("", testArray);
-        return joinedArray.Equals(expected);
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        char[] stringChars = new char[stringLength];
+        for (int i = 0; i < stringLength; i++)
+        {
+            stringChars[i] = chars[random.Next(chars.Length)];
+        }
+        return new string(stringChars);
     }
 }

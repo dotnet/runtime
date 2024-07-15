@@ -14,9 +14,10 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
-function joinStringArray(stringArr) {
+function countChars(stringArr) {
     testOutput(`JS received array: ${JSON.stringify(stringArr)}`);
-    return stringArr.join("");
+    let totalLength = stringArr.reduce((sum, currentString) => sum + currentString.length, 0);
+    return totalLength;
 }
 
 // Prepare base runtime parameters
@@ -175,9 +176,10 @@ try {
             break;
         case "AllocateLargeHeapThenInterop":
             setModuleImports('main.js', {
-                joinStringArray
+                countChars
             });
             exports.MemoryTest.Run();
+            exit(0);
             break;
         default:
             console.error(`Unknown test case: ${testCase}`);
