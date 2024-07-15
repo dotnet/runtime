@@ -514,6 +514,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = 3;
                 break;
 
+            case NI_Sve_TrigonometricMultiplyAddCoefficient:
+                immLowerBound = 0;
+                immUpperBound = 7;
+                break;
+
             default:
                 unreached();
         }

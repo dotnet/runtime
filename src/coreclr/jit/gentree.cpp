@@ -16609,7 +16609,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
  *  It may return false even if the node has GTF_SIDE_EFFECT (because of its children).
  */
 
-bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
+bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors)
 {
     if (flags & GTF_ASG)
     {
@@ -16636,7 +16636,6 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
         {
             GenTreeCall* const call             = potentialCall->AsCall();
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
-            const bool         ignoreCctors     = (flags & GTF_IS_IN_CSE) != 0; // We can CSE helpers that run cctors.
             if (!call->HasSideEffects(this, ignoreExceptions, ignoreCctors))
             {
                 // If this call is otherwise side effect free, check its arguments.
@@ -16644,12 +16643,13 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
                 {
                     // I'm a little worried that args that assign to temps that are late args will look like
                     // side effects...but better to be conservative for now.
-                    if ((arg.GetEarlyNode() != nullptr) && gtTreeHasSideEffects(arg.GetEarlyNode(), flags))
+                    if ((arg.GetEarlyNode() != nullptr) &&
+                        gtTreeHasSideEffects(arg.GetEarlyNode(), flags, ignoreCctors))
                     {
                         return true;
                     }
 
-                    if ((arg.GetLateNode() != nullptr) && gtTreeHasSideEffects(arg.GetLateNode(), flags))
+                    if ((arg.GetLateNode() != nullptr) && gtTreeHasSideEffects(arg.GetLateNode(), flags, ignoreCctors))
                     {
                         return true;
                     }
@@ -16686,7 +16686,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
  * Returns true if the expr tree has any side effects.
  */
 
-bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_SIDE_EFFECT*/)
+bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_SIDE_EFFECT*/, bool ignoreCctors)
 {
     // These are the side effect flags that we care about for this tree
     GenTreeFlags sideEffectFlags = tree->gtFlags & flags;
@@ -16709,22 +16709,22 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
                 // If this node is a helper call we may not care about the side-effects.
                 // Note that gtNodeHasSideEffects checks the side effects of the helper itself
                 // as well as the side effects of its arguments.
-                return gtNodeHasSideEffects(tree, flags);
+                return gtNodeHasSideEffects(tree, flags, ignoreCctors);
             }
         }
         else if (tree->OperGet() == GT_INTRINSIC)
         {
-            if (gtNodeHasSideEffects(tree, flags))
+            if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
             {
                 return true;
             }
 
-            if (gtNodeHasSideEffects(tree->AsOp()->gtOp1, flags))
+            if (gtNodeHasSideEffects(tree->AsOp()->gtOp1, flags, ignoreCctors))
             {
                 return true;
             }
 
-            if ((tree->AsOp()->gtOp2 != nullptr) && gtNodeHasSideEffects(tree->AsOp()->gtOp2, flags))
+            if ((tree->AsOp()->gtOp2 != nullptr) && gtNodeHasSideEffects(tree->AsOp()->gtOp2, flags, ignoreCctors))
             {
                 return true;
             }
@@ -17110,81 +17110,61 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
         {
             GenTree* node = *use;
 
-            bool treeHasSideEffects = m_compiler->gtTreeHasSideEffects(node, m_flags);
-
-            if (treeHasSideEffects)
+            if (!m_compiler->gtTreeHasSideEffects(node, m_flags))
             {
-                if (m_compiler->gtNodeHasSideEffects(node, m_flags))
-                {
-                    if (node->OperIsBlk() && !node->OperIsStoreBlk())
-                    {
-                        JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                        m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
-                    }
-
-                    Append(node);
-                    return Compiler::WALK_SKIP_SUBTREES;
-                }
-
-                if (node->OperIs(GT_QMARK))
-                {
-                    GenTree* prevSideEffects = m_result;
-                    // Visit children out of order so we know if we can
-                    // completely remove the qmark. We cannot modify the
-                    // condition if we cannot completely remove the qmark, so
-                    // we cannot visit it first.
-
-                    GenTreeQmark* qmark = node->AsQmark();
-                    GenTreeColon* colon = qmark->gtGetOp2()->AsColon();
-
-                    m_result = nullptr;
-                    WalkTree(&colon->gtOp1, colon);
-                    GenTree* thenSideEffects = m_result;
-
-                    m_result = nullptr;
-                    WalkTree(&colon->gtOp2, colon);
-                    GenTree* elseSideEffects = m_result;
-
-                    m_result = prevSideEffects;
-
-                    if ((thenSideEffects == nullptr) && (elseSideEffects == nullptr))
-                    {
-                        WalkTree(&qmark->gtOp1, qmark);
-                    }
-                    else
-                    {
-                        colon->gtOp1  = (thenSideEffects != nullptr) ? thenSideEffects : m_compiler->gtNewNothingNode();
-                        colon->gtOp2  = (elseSideEffects != nullptr) ? elseSideEffects : m_compiler->gtNewNothingNode();
-                        qmark->gtType = TYP_VOID;
-                        colon->gtType = TYP_VOID;
-                        Append(qmark);
-                    }
-
-                    return Compiler::WALK_SKIP_SUBTREES;
-                }
-
-                // Generally all GT_CALL nodes are considered to have side-effects.
-                // So if we get here it must be a helper call that we decided it does
-                // not have side effects that we needed to keep.
-                assert(!node->OperIs(GT_CALL) || node->AsCall()->IsHelperCall());
+                return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            if ((m_flags & GTF_IS_IN_CSE) != 0)
+            if (m_compiler->gtNodeHasSideEffects(node, m_flags))
             {
-                // If we're doing CSE then we also need to unmark CSE nodes. This will fail for CSE defs,
-                // those need to be extracted as if they're side effects.
-                if (!UnmarkCSE(node))
+                if (node->OperIsBlk() && !node->OperIsStoreBlk())
                 {
-                    Append(node);
-                    return Compiler::WALK_SKIP_SUBTREES;
+                    JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                    m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
                 }
 
-                // The existence of CSE defs and uses is not propagated up the tree like side
-                // effects are. We need to continue visiting the tree as if it has side effects.
-                treeHasSideEffects = true;
+                Append(node);
+                return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            return treeHasSideEffects ? Compiler::WALK_CONTINUE : Compiler::WALK_SKIP_SUBTREES;
+            if (node->OperIs(GT_QMARK))
+            {
+                GenTree* prevSideEffects = m_result;
+                // Visit children out of order so we know if we can
+                // completely remove the qmark. We cannot modify the
+                // condition if we cannot completely remove the qmark, so
+                // we cannot visit it first.
+
+                GenTreeQmark* qmark = node->AsQmark();
+                GenTreeColon* colon = qmark->gtGetOp2()->AsColon();
+
+                m_result = nullptr;
+                WalkTree(&colon->gtOp1, colon);
+                GenTree* thenSideEffects = m_result;
+
+                m_result = nullptr;
+                WalkTree(&colon->gtOp2, colon);
+                GenTree* elseSideEffects = m_result;
+
+                m_result = prevSideEffects;
+
+                if ((thenSideEffects == nullptr) && (elseSideEffects == nullptr))
+                {
+                    WalkTree(&qmark->gtOp1, qmark);
+                }
+                else
+                {
+                    colon->gtOp1  = (thenSideEffects != nullptr) ? thenSideEffects : m_compiler->gtNewNothingNode();
+                    colon->gtOp2  = (elseSideEffects != nullptr) ? elseSideEffects : m_compiler->gtNewNothingNode();
+                    qmark->gtType = TYP_VOID;
+                    colon->gtType = TYP_VOID;
+                    Append(qmark);
+                }
+
+                return Compiler::WALK_SKIP_SUBTREES;
+            }
+
+            return Compiler::WALK_CONTINUE;
         }
 
         void Append(GenTree* node)
@@ -17196,7 +17176,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             }
 
             GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
-            comma->gtFlags |= (m_result->gtFlags | node->gtFlags) & GTF_ALL_EFFECT;
 
 #ifdef DEBUG
             if (m_compiler->fgGlobalMorph)
@@ -17218,51 +17197,11 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             //
             if ((m_compiler->vnStore != nullptr) && m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
             {
-                // The result of a GT_COMMA node is op2, the normal value number is op2vnp
-                // But we also need to include the union of side effects from op1 and op2.
-                // we compute this value into exceptions_vnp.
-                ValueNumPair op1vnp;
-                ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
-                ValueNumPair op2vnp;
-                ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
-
-                m_compiler->vnStore->VNPUnpackExc(node->gtVNPair, &op1vnp, &op1Xvnp);
-                m_compiler->vnStore->VNPUnpackExc(m_result->gtVNPair, &op2vnp, &op2Xvnp);
-
-                ValueNumPair exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
-
-                exceptions_vnp = m_compiler->vnStore->VNPExcSetUnion(exceptions_vnp, op1Xvnp);
-                exceptions_vnp = m_compiler->vnStore->VNPExcSetUnion(exceptions_vnp, op2Xvnp);
-
-                comma->gtVNPair = m_compiler->vnStore->VNPWithExc(op2vnp, exceptions_vnp);
+                ValueNumPair op1Exceptions = m_compiler->vnStore->VNPExceptionSet(m_result->gtVNPair);
+                comma->gtVNPair            = m_compiler->vnStore->VNPWithExc(node->gtVNPair, op1Exceptions);
             }
 
             m_result = comma;
-        }
-
-    private:
-        bool UnmarkCSE(GenTree* node)
-        {
-            assert(m_compiler->optValnumCSE_phase);
-
-            if (m_compiler->optUnmarkCSE(node))
-            {
-                // The call to optUnmarkCSE(node) should have cleared any CSE info.
-                assert(!IS_CSE_INDEX(node->gtCSEnum));
-                return true;
-            }
-            else
-            {
-                assert(IS_CSE_DEF(node->gtCSEnum));
-#ifdef DEBUG
-                if (m_compiler->verbose)
-                {
-                    printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(node->gtCSEnum));
-                    m_compiler->printTreeID(node);
-                }
-#endif
-                return false;
-            }
         }
     };
 
@@ -26732,6 +26671,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_SSE2_MaskMove:
                 addr = Op(3);
                 break;
+
 #elif defined(TARGET_ARM64)
             case NI_Sve_StoreAndZip:
             case NI_Sve_StoreAndZipx2:
@@ -26743,9 +26683,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
                 break;
 
             case NI_Sve_Scatter:
+            case NI_Sve_Scatter16BitNarrowing:
+            case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter32BitNarrowing:
+            case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter8BitNarrowing:
+            case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
                 addr = Op(2);
                 break;
-
 #endif // TARGET_ARM64
 
             default:

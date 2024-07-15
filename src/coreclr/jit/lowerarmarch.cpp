@@ -3435,6 +3435,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt64:
             case NI_Sve_ExtractVector:
             case NI_Sve_AddRotateComplex:
+            case NI_Sve_TrigonometricMultiplyAddCoefficient:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())

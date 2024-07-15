@@ -1878,7 +1878,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // If we have a simple helper call with no other persistent side-effects
             // then we allow this tree to be a CSE candidate
             //
-            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE))
+            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
             {
                 return false;
             }
@@ -5131,8 +5131,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             //
             exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
-            GenTree* sideEffList = nullptr;
-            m_pCompiler->gtExtractSideEffList(exp, &sideEffList, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE);
+            GenTree* sideEffList = m_pCompiler->optExtractSideEffectsForCSE(exp);
 
             // If we have any side effects or extracted CSE defs then we need to create a GT_COMMA tree instead
             //
@@ -5412,6 +5411,113 @@ void CSE_HeuristicCommon::ConsiderCandidates()
             madeChanges = true;
         }
     }
+}
+
+//------------------------------------------------------------------------
+// optExtractSideEffectsForCSE: Extract side effects from a tree that is going
+// to be CSE'd. This requires unmarking CSE uses and preserving CSE defs as if
+// they were side effects.
+//
+// Parameters:
+//   tree        - The tree containing side effects
+//
+// Return Value:
+//   Tree of side effects.
+//
+// Remarks:
+//   Unlike gtExtractSideEffList, this considers CSE defs to be side effects
+//   and also unmarks CSE uses as it proceeds. Additionally, for CSE we are ok
+//   with not treating cctor invocations as side effects because we have
+//   already handled those specially during CSE.
+//
+GenTree* Compiler::optExtractSideEffectsForCSE(GenTree* tree)
+{
+    class Extractor final : public GenTreeVisitor<Extractor>
+    {
+        GenTree* m_result = nullptr;
+
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true
+        };
+
+        GenTree* GetResult()
+        {
+            return m_result;
+        }
+
+        Extractor(Compiler* compiler)
+            : GenTreeVisitor(compiler)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            if (m_compiler->gtTreeHasSideEffects(node, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
+            {
+                if (m_compiler->gtNodeHasSideEffects(node, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
+                {
+                    Append(node);
+                    return Compiler::WALK_SKIP_SUBTREES;
+                }
+
+                // Generally all GT_CALL nodes are considered to have side-effects.
+                // So if we get here it must be a helper call that we decided it does
+                // not have side effects that we needed to keep.
+                assert(!node->OperIs(GT_CALL) || node->AsCall()->IsHelperCall());
+            }
+
+            // We also need to unmark CSE nodes. This will fail for CSE defs,
+            // those need to be extracted as if they're side effects.
+            if (m_compiler->optUnmarkCSE(node))
+            {
+                // The call to optUnmarkCSE(node) should have cleared any CSE info.
+                assert(!IS_CSE_INDEX(node->gtCSEnum));
+                return Compiler::WALK_CONTINUE;
+            }
+
+            assert(IS_CSE_DEF(node->gtCSEnum));
+#ifdef DEBUG
+            if (m_compiler->verbose)
+            {
+                printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(node->gtCSEnum));
+                m_compiler->printTreeID(node);
+            }
+#endif
+            Append(node);
+            return Compiler::WALK_SKIP_SUBTREES;
+        }
+
+        void Append(GenTree* node)
+        {
+            if (m_result == nullptr)
+            {
+                m_result = node;
+                return;
+            }
+
+            GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
+
+            // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
+            //
+            if ((m_compiler->vnStore != nullptr) && m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
+            {
+                ValueNumPair op1Exceptions = m_compiler->vnStore->VNPExceptionSet(m_result->gtVNPair);
+                comma->gtVNPair            = m_compiler->vnStore->VNPWithExc(node->gtVNPair, op1Exceptions);
+            }
+
+            m_result = comma;
+        }
+    };
+
+    Extractor extractor(this);
+    extractor.WalkTree(&tree, nullptr);
+
+    return extractor.GetResult();
 }
 
 //------------------------------------------------------------------------
