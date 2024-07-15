@@ -22,6 +22,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class ObjectAllocator final : public Phase
 {
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
+    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalArrToLenMap;
 
     //===============================================================================
     // Data members
@@ -35,6 +36,7 @@ class ObjectAllocator final : public Phase
     BitVec              m_DefinitelyStackPointingPointers;
     BitVec              m_PointersHasLocalStore;
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
+    LocalArrToLenMap    m_LocalArrToLenMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
 
     //===============================================================================
@@ -91,6 +93,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_AnalysisDone(false)
     , m_bitVecTraits(comp->lvaCount, comp)
     , m_HeapLocalToStackLocalMap(comp->getAllocator())
+    , m_LocalArrToLenMap(comp->getAllocator())
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();

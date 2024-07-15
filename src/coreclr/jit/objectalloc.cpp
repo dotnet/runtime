@@ -481,6 +481,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal,
                                                       blockSize, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+                    m_LocalArrToLenMap.AddOrUpdate(stackLclNum, (unsigned int)len->AsIntCon()->gtIconVal);
                     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
                     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
                     MarkLclVarAsDefinitelyStackPointing(lclNum);
@@ -1196,11 +1197,14 @@ void ObjectAllocator::RewriteUses()
                 GenTreeIndexAddr* const gtIndexAddr = tree->AsIndexAddr();
                 GenTree* const          gtArr       = gtIndexAddr->Arr();
                 GenTree* const          gtInd       = gtIndexAddr->Index();
+                unsigned int            arrLen      = 0;
 
-                if (gtArr->OperIs(GT_LCL_ADDR) && gtInd->IsCnsIntOrI())
+                if (gtArr->OperIs(GT_LCL_ADDR) && gtInd->IsCnsIntOrI() &&
+                    m_allocator->m_LocalArrToLenMap.TryGetValue(gtArr->AsLclVarCommon()->GetLclNum(), &arrLen) &&
+                    gtInd->AsIntCon()->gtIconVal < arrLen)
                 {
                     JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
-                    ssize_t offset =
+                    const ssize_t offset =
                         OFFSETOF__CORINFO_Array__data + gtInd->AsIntCon()->gtIconVal * gtIndexAddr->gtElemSize;
                     GenTree* const gtOffset = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
                     GenTree* const gtAdd    = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffset);
