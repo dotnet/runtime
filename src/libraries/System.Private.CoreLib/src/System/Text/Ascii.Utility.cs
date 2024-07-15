@@ -146,13 +146,13 @@ namespace System.Text
                 {
                     if (bufferLength <= (nuint)Vector256<byte>.Count)
                     {
-                        return Search16To32(ref pBuffer, bufferLength);
+                        return SearchTwo<Vector128<byte>>(ref pBuffer, bufferLength);
                     }
                     if (Vector512.IsHardwareAccelerated)
                     {
                         if (bufferLength <= (nuint)Vector512<byte>.Count)
                         {
-                            return Search32To64(ref pBuffer, bufferLength);
+                            return SearchTwo<Vector256<byte>>(ref pBuffer, bufferLength);
                         }
 
                         // This is as wide as newest CPU cores can go at the time of writing.
@@ -172,42 +172,23 @@ namespace System.Text
         Done:
             return index;
 
-            static nuint Search16To32(ref byte pBuffer, nuint bufferLength)
+            static nuint SearchTwo<T>(ref byte pBuffer, nuint bufferLength)
+                where T : ISimdVector<T, byte>
             {
-                Debug.Assert(bufferLength is > 16 and <= 32);
-                Debug.Assert(Vector128.IsHardwareAccelerated);
+                Debug.Assert(T.IsHardwareAccelerated);
+                Debug.Assert(bufferLength > (nuint)T.Count && bufferLength <= (nuint)T.Count * 2);
 
-                Vector128<byte> mask = Vector128.Create((byte)0x80);
-                Vector128<byte> first = Vector128.LoadUnsafe(ref pBuffer);
-                Vector128<byte> last = Vector128.LoadUnsafe(ref pBuffer, bufferLength - 16);
+                T mask = T.Create(0x80);
+                T first = T.LoadUnsafe(ref pBuffer);
+                T last = T.LoadUnsafe(ref pBuffer, bufferLength - (nuint)T.Count);
 
-                bool foundFirst = (first & mask) != Vector128<byte>.Zero;
-                bool foundLast = (last & mask) != Vector128<byte>.Zero;
+                bool foundFirst = (first & mask) != T.Zero;
+                bool foundLast = (last & mask) != T.Zero;
 
                 return (foundFirst, foundLast) switch
                 {
                     (true, _) => IndexOfNonAscii(first),
-                    (_, true) => IndexOfNonAscii(last) + bufferLength - 16,
-                    _ => bufferLength,
-                };
-            }
-
-            static nuint Search32To64(ref byte pBuffer, nuint bufferLength)
-            {
-                Debug.Assert(bufferLength is > 32 and <= 64);
-                Debug.Assert(Vector256.IsHardwareAccelerated);
-
-                Vector256<byte> mask = Vector256.Create((byte)0x80);
-                Vector256<byte> first = Vector256.LoadUnsafe(ref pBuffer);
-                Vector256<byte> last = Vector256.LoadUnsafe(ref pBuffer, bufferLength - 32);
-
-                bool foundFirst = (first & mask) != Vector256<byte>.Zero;
-                bool foundLast = (last & mask) != Vector256<byte>.Zero;
-
-                return (foundFirst, foundLast) switch
-                {
-                    (true, _) => IndexOfNonAscii(first),
-                    (_, true) => IndexOfNonAscii(last) + bufferLength - 32,
+                    (_, true) => IndexOfNonAscii(last) + bufferLength - (nuint)T.Count,
                     _ => bufferLength,
                 };
             }
