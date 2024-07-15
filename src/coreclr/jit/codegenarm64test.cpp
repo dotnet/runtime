@@ -6106,7 +6106,7 @@ void CodeGen::genArm64EmitterUnitTestsSve()
                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
     theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V6, REG_FP_LAST, 255, INS_OPTS_SCALABLE_B,
                               INS_SCALABLE_OPTS_WITH_VECTOR_PAIR); // EXT <Zd>.B, {<Zn1>.B, <Zn2>.B }, #<imm>
-#endif // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
+#endif                                                             // ALL_ARM64_EMITTER_UNIT_TESTS_SVE_UNSUPPORTED
 
     // IF_SVE_BQ_2B
     theEmitter->emitIns_R_R_I(INS_sve_ext, EA_SCALABLE, REG_V0, REG_V1, 0,
