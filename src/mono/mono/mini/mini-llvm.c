@@ -38,10 +38,11 @@
 #include "llvm-c/Transforms/Scalar.h"
 #include "llvm-c/Transforms/IPO.h"
 #else
+// llvm 19 doesn't have the old pass manager
+// it is only used in the LLVM/JIT
+// we don't support that anymore. it will need to be rewritten to use the new pass manager if we want to support it again
 #ifdef _MSC_VER
 #pragma message("llvm 19 doesn't have the old pass manager")
-#else
-#warning "llvm 19 doesn't have the old pass manager"
 #endif
 #endif
 
