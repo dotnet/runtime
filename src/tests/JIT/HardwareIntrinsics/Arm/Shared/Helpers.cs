@@ -6030,6 +6030,25 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static float[] AddRotateComplex(float[] op1, float[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                if (rot == 0)
+                {
+                    op1[i] -= op2[i + 1];
+                    op1[i + 1] += op2[i];
+                }
+                else
+                {
+                    op1[i] += op2[i + 1];
+                    op1[i + 1] -= op2[i];
+                }
+            }
+
+            return op1;
+        }
+
         public static float Max(float op1, float op2) => Math.Max(op1, op2);
 
         public static float MaxPairwise(float[] op1, int i) => Pairwise(Max, op1, i);
@@ -6079,6 +6098,25 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
 
         public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static double[] AddRotateComplex(double[] op1, double[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                if (rot == 0)
+                {
+                    op1[i] -= op2[i + 1];
+                    op1[i + 1] += op2[i];
+                }
+                else
+                {
+                    op1[i] += op2[i + 1];
+                    op1[i + 1] -= op2[i];
+                }
+            }
+
+            return op1;
+        }
 
         public static double Max(double op1, double op2) => Math.Max(op1, op2);
 

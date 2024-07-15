@@ -4410,7 +4410,6 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing three registers and a constant.
- *  Do not call this directly. Use 'emitIns_R_R_R_I' instead.
  */
 
 void emitter::emitInsSve_R_R_R_I(instruction     ins,
@@ -5577,7 +5576,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm90_or_270(imm);
+            assert(emitIsValidEncodedRotationImm90_or_270(imm));
             fmt = IF_SVE_GP_3A;
             break;
 
@@ -5860,7 +5859,6 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing four registers.
- *  Do not call this directly. Use 'emitIns_R_R_R_R' instead.
  */
 
 void emitter::emitInsSve_R_R_R_R(instruction     ins,
