@@ -12,7 +12,6 @@ namespace System.Runtime.Intrinsics
 {
     internal static unsafe class VectorMath
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TVectorDouble CosDouble<TVectorDouble, TVectorInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
@@ -81,7 +80,7 @@ namespace System.Runtime.Intrinsics
 
             TVectorDouble result;
 
-            if (TVectorInt64.LessThanOrEqualAll(ux, TVectorInt64.Create(ARG_LARGE)))
+            if (TVectorInt64.LessThanAll(ux, TVectorInt64.Create(ARG_LARGE + 1)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
                 TVectorDouble x2 = x * x;
@@ -148,7 +147,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TVectorSingle CosSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
             where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
             where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
@@ -220,7 +218,7 @@ namespace System.Runtime.Intrinsics
 
             TVectorSingle result;
 
-            if (TVectorInt32.LessThanOrEqualAll(ux, TVectorInt32.Create(ARG_LARGE)))
+            if (TVectorInt32.LessThanAll(ux, TVectorInt32.Create(ARG_LARGE + 1)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
 
@@ -1693,7 +1691,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (TVectorDouble Sin, TVectorDouble Cos) SinCosDouble<TVectorDouble, TVectorInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
@@ -1716,7 +1713,7 @@ namespace System.Runtime.Intrinsics
 
             TVectorDouble sinResult, cosResult;
 
-            if (TVectorInt64.LessThanOrEqualAll(ux, TVectorInt64.Create(ARG_LARGE)))
+            if (TVectorInt64.LessThanAll(ux, TVectorInt64.Create(ARG_LARGE + 1)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
                 TVectorDouble x2 = x * x;
@@ -1765,7 +1762,7 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 sinResult = TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >>> 1)) | (~sign & ~(region >>> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
                     -sinResult, // negative in region 1 or 3, positive in region 0 or 2
                     +sinResult  // negative in region 0 or 2, positive in region 1 or 3
                 );
@@ -1811,7 +1808,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static (TVectorSingle Sin, TVectorSingle Cos) SinCosSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
             where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
             where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
@@ -1836,7 +1832,7 @@ namespace System.Runtime.Intrinsics
 
             TVectorSingle sinResult, cosResult;
 
-            if (TVectorInt32.LessThanOrEqualAll(ux, TVectorInt32.Create(ARG_LARGE)))
+            if (TVectorInt32.LessThanAll(ux, TVectorInt32.Create(ARG_LARGE + 1)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
 
@@ -1943,7 +1939,7 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 sinResult = TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >>> 1)) | (~sign & ~(region >>> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
                     -sinResult, // negative in region 1 or 3, positive in region 0 or 2
                     +sinResult  // negative in region 0 or 2, positive in region 1 or 3
                 );
@@ -1973,7 +1969,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TVectorDouble SinDouble<TVectorDouble, TVectorInt64>(TVectorDouble x)
             where TVectorDouble : unmanaged, ISimdVector<TVectorDouble, double>
             where TVectorInt64 : unmanaged, ISimdVector<TVectorInt64, long>
@@ -2038,7 +2033,7 @@ namespace System.Runtime.Intrinsics
 
             TVectorDouble result;
 
-            if (TVectorInt64.LessThanOrEqualAll(ux, TVectorInt64.Create(ARG_LARGE)))
+            if (TVectorInt64.LessThanAll(ux, TVectorInt64.Create(ARG_LARGE + 1)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
                 TVectorDouble x2 = x * x;
@@ -2072,7 +2067,7 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 result = TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >>> 1)) | (~sign & ~(region >>> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
                     -result,    // negative in region 1 or 3, positive in region 0 or 2
                     +result     // negative in region 0 or 2, positive in region 1 or 3
                 );
@@ -2102,7 +2097,6 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TVectorSingle SinSingle<TVectorSingle, TVectorInt32, TVectorDouble, TVectorInt64>(TVectorSingle x)
             where TVectorSingle : unmanaged, ISimdVector<TVectorSingle, float>
             where TVectorInt32 : unmanaged, ISimdVector<TVectorInt32, int>
@@ -2169,7 +2163,7 @@ namespace System.Runtime.Intrinsics
 
             TVectorSingle result;
 
-            if (TVectorInt32.LessThanOrEqualAll(ux, TVectorInt32.Create(ARG_LARGE)))
+            if (TVectorInt32.LessThanAll(ux, TVectorInt32.Create(ARG_LARGE + 1)))
             {
                 // We must be a finite value: (pi / 4) >= |x|
 
@@ -2245,7 +2239,7 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 return TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >>> 1)) | (~sign & ~(region >>> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
                     -result,    // negative in region 1 or 3, positive in region 0 or 2
                     +result     // negative in region 0 or 2, positive in region 1 or 3
                 );
