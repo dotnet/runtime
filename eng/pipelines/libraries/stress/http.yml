@@ -180,7 +180,7 @@ extends:
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0 -aspnetlog"
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -192,7 +192,7 @@ extends:
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0 -aspnetlog"
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -204,7 +204,7 @@ extends:
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0 -aspnetlog"
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -216,7 +216,7 @@ extends:
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0 -aspnetlog"
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -228,7 +228,7 @@ extends:
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0 -aspnetlog"
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
@@ -240,7 +240,7 @@ extends:
             New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
             New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
             $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 3.0"
-            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 3.0 -aspnetlog"
             & $env:DOCKER_COMPOSE_CMD up --abort-on-container-exit --no-color
           displayName: Run HttpStress - HTTP 3.0
           condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
