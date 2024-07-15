@@ -238,8 +238,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class CalledThroughConstraintWithDIM
 		{
-			// Instance DIMs require boxing the struct.
-			// let's try a static DIM.
 			interface Interface {
 				[RequiresUnreferencedCode (nameof (Method))]
 				static abstract void Method ();

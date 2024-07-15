@@ -793,9 +793,6 @@ namespace ILLink.Shared.TrimAnalysis
 
         private void LogValidationWarning(object provider, object baseProvider, TypeSystemEntity origin)
         {
-            if (origin is TypeDesc) {
-                Debug.WriteLine("Here");
-            }
             switch (provider)
             {
                 case ParameterProxy parameter:
