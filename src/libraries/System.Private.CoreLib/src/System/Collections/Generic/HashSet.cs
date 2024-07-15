@@ -211,7 +211,7 @@ namespace System.Collections.Generic
         /// <summary>Determines whether the <see cref="HashSet{T}"/> contains the specified element.</summary>
         /// <param name="item">The element to locate in the <see cref="HashSet{T}"/> object.</param>
         /// <returns>true if the <see cref="HashSet{T}"/> object contains the specified element; otherwise, false.</returns>
-        public bool Contains(T item) => FindItemIndex(item) >= 0;
+        public bool Contains([AllowNull] T item) => FindItemIndex(item) >= 0;
 
         /// <summary>Gets the index of the item in <see cref="_entries"/>, or -1 if it's not in the set.</summary>
         private int FindItemIndex(T item)
