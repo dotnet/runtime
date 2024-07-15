@@ -167,7 +167,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(
     else if (comp->info.compCompHnd->isSDArray(clsHnd))
     {
         CorInfoType type = comp->info.compCompHnd->getChildType(clsHnd, &clsHnd);
-        if (type != CORINFO_TYPE_UNDEF && clsHnd == NULL)
+        if (type != CORINFO_TYPE_UNDEF && clsHnd == nullptr)
         {
             // This is an array of primitive types
             classSize = (unsigned int)OFFSETOF__CORINFO_Array__data + genTypeSize(JITtype2varType(type)) * length;
@@ -214,7 +214,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(
         return false;
     }
 
-    if (blockSize != NULL)
+    if (blockSize != nullptr)
     {
         *blockSize = (unsigned int)classSize;
     }

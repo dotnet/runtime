@@ -543,7 +543,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     onHeapReason = "[alloc in loop]";
                     canStack     = false;
                 }
-                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, 0, NULL, &onHeapReason))
+                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, 0, nullptr, &onHeapReason))
                 {
                     // reason set by the call
                     canStack = false;
@@ -1212,7 +1212,7 @@ void ObjectAllocator::RewriteUses()
                 if (gtArr->OperIs(GT_LCL_ADDR) && gtInd->IsCnsIntOrI() &&
                     m_allocator->m_LocalArrToLenMap.TryGetValue(gtArr->AsLclVarCommon()->GetLclNum(), &arrLen))
                 {
-                    if (gtInd->AsIntCon()->gtIconVal < arrLen)
+                    if ((unsigned int)gtInd->AsIntCon()->gtIconVal < arrLen)
                     {
                         JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
                         const ssize_t offset =

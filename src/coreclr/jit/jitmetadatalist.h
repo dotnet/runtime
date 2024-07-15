@@ -76,6 +76,7 @@ JITMETADATAMETRIC(NewRefClassHelperCalls,                int,              0)
 JITMETADATAMETRIC(StackAllocatedRefClasses,              int,              0)
 JITMETADATAMETRIC(NewBoxedValueClassHelperCalls,         int,              0)
 JITMETADATAMETRIC(StackAllocatedBoxedValueClasses,       int,              0)
+JITMETADATAMETRIC(NewArrayHelperCalls,                   int,              0)
 JITMETADATAMETRIC(StackAllocatedArrays,                  int,              0)
 
 #undef JITMETADATA
