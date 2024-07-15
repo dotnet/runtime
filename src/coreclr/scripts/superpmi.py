@@ -278,6 +278,7 @@ superpmi_common_parser.add_argument("--break_on_assert", action="store_true", he
 superpmi_common_parser.add_argument("--break_on_error", action="store_true", help=break_on_error_help)
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
+superpmi_common_parser.add_argument("--parallelism", help="Specify amount of parallelism")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
@@ -1666,7 +1667,10 @@ class SuperPMIReplay:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                common_flags += [ "-p" ]
+                if not self.coreclr_args.parallelism:
+                    common_flags += [ "-p" ]
+                else:
+                    common_flags += [ "-p", self.coreclr_args.parallelism ]
 
             if self.coreclr_args.break_on_assert:
                 common_flags += [ "-boa" ]
@@ -2171,7 +2175,10 @@ class SuperPMIReplayAsmDiffs:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -2981,7 +2988,10 @@ class SuperPMIReplayThroughputDiff:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -4448,6 +4458,11 @@ def setup_args(args):
                             "sequential",
                             lambda unused: True,
                             "Unable to set sequential.")
+
+        coreclr_args.verify(args,
+                            "parallelism",
+                            lambda unused: True,
+                            "Unable to set parallelism.")
 
         coreclr_args.verify(args,
                             "error_limit",
