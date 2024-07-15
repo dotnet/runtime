@@ -220,12 +220,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     private TargetPointer GetMethodDescChunkPointerMayThrow(TargetPointer methodDescPointer, Data.MethodDesc umd)
     {
-        ulong? methodDescSize = _target.GetTypeInfo(DataType.MethodDesc).Size;
-        if (!methodDescSize.HasValue)
+        ulong? methodDescChunkSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size;
+        if (!methodDescChunkSize.HasValue)
         {
-            throw new InvalidOperationException("Target has no definite MethodDesc size");
+            throw new InvalidOperationException("Target has no definite MethodDescChunk size");
         }
-        ulong chunkAddress = (ulong)methodDescPointer - methodDescSize.Value - umd.ChunkIndex * MethodDescAlignment;
+        ulong chunkAddress = (ulong)methodDescPointer - methodDescChunkSize.Value - umd.ChunkIndex * MethodDescAlignment;
         return new TargetPointer(chunkAddress);
     }
 
