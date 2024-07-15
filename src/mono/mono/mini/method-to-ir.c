@@ -7582,7 +7582,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							{
 								MonoInst *swift_self_base_address = struct_base_address;
 								struct_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-								MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, sizeof(MonoObject));
+								MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, MONO_ABI_SIZEOF (MonoObject));
 							}
 
 							*sp++ = struct_base_address;
