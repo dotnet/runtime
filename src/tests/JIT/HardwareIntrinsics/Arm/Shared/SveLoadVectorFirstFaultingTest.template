@@ -76,7 +76,7 @@ namespace JIT.HardwareIntrinsics.Arm
             public DataTable({Op2BaseType}[] inArray1, {RetBaseType}[] outArray, int alignment)
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op2BaseType}>();
-                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{Op2BaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
+                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
                 {
@@ -116,14 +116,14 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private struct TestStruct
         {
-            public {Op1VectorType}<{RetBaseType}> _fld1;
+            public {RetVectorType}<{RetBaseType}> _fld1;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op2ElementCount; i++) { _data[i] = {NextValueOp2}; }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{RetBaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{RetBaseType}>>());
+                for (var i = 0; i < RetElementCount; i++) { _data[i] = {NextValueOp2}; }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{RetBaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op2BaseType}, byte>(ref _data[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{RetBaseType}>>());
 
                 return testStruct;
             }
@@ -137,19 +137,18 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(testClass._dataTable.inArray1Ptr, testClass._dataTable.outArrayPtr);
             }
-        }   
+        }
 
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int Op2ElementCount = Unsafe.SizeOf<{RetVectorType}<{Op2BaseType}>>() / sizeof({Op2BaseType});
         private static readonly int RetElementCount = Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>() / sizeof({RetBaseType});
 
-        private static {Op1BaseType}[] _data = new {Op1BaseType}[Op2ElementCount];
+        private static {Op2BaseType}[] _data = new {Op2BaseType}[RetElementCount];
 
         private static {RetBaseType}[] _maskData = new {RetBaseType}[RetElementCount];
         private static {RetBaseType}[] _falseData = new {RetBaseType}[RetElementCount];
 
-        private {Op1VectorType}<{RetBaseType}> _fld1;
+        private {RetVectorType}<{RetBaseType}> _fld1;
 
         private {Op1VectorType}<{Op1BaseType}> _mask;
         private {Op1VectorType}<{Op1BaseType}> _falseFld;
@@ -160,7 +159,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op2ElementCount; i++) { _data[i] = {NextValueOp2}; }
+            for (var i = 0; i < RetElementCount; i++) { _data[i] = {NextValueOp2}; }
             _dataTable = new DataTable(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
 
             for (var i = 0; i < RetElementCount; i++) { _maskData[i] = ({RetBaseType})({NextValueOp1}); }
@@ -196,7 +195,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1VectorType}<{Op1BaseType}> loadMask = Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All);
 
             ref var op2Ref = ref (_dataTable.inBounded.Span.GetPinnableReference());
-            
+
             Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
             var result = {Isa}.{Method}(
                 loadMask,
@@ -205,7 +204,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var faultResult = Sve.GetFfr{GetFfrType}();
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
+            ValidateFirstFaultingResult(ref op2Ref, Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>(), _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
         }
 
         public void RunReflectionScenario_Load()
@@ -260,22 +259,22 @@ namespace JIT.HardwareIntrinsics.Arm
         public void ConditionalSelect_ZeroOp()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(ConditionalSelect_ZeroOp));
-            ConditionalSelectScenario(_mask, ref _fld1, {Op1VectorType}<{RetBaseType}>.Zero);
-            
+            ConditionalSelectScenario(_mask, _dataTable.inArray1Ptr, {Op1VectorType}<{RetBaseType}>.Zero);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, ref _fld1, {Op1VectorType}<{Op1BaseType}>.Zero);
-            
+            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.Zero, _dataTable.inArray1Ptr, {Op1VectorType}<{Op1BaseType}>.Zero);
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all");
-            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, ref _fld1, {Op1VectorType}<{Op1BaseType}>.Zero);            
-        }        
+            ConditionalSelectScenario({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _dataTable.inArray1Ptr, {Op1VectorType}<{Op1BaseType}>.Zero);
+        }
 
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ConditionalSelectScenario({RetVectorType}<{RetBaseType}> mask, ref {RetVectorType}<{Op2BaseType}> op1, {Op1VectorType}<{Op1BaseType}> falseOp)
+        private void ConditionalSelectScenario({RetVectorType}<{RetBaseType}> mask, void* op1, {Op1VectorType}<{Op1BaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All), ({Op2BaseType}*)Unsafe.AsPointer(ref op1)), falseOp);
+            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(Sve.CreateTrueMask{RetBaseType}(SveMaskPattern.All), ({Op2BaseType}*)op1), falseOp);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateConditionalSelectResult(mask, op1, falseOp, _dataTable.outArrayPtr);
+            ValidateConditionalSelectResult(mask, ({Op2BaseType}*)op1, falseOp, _dataTable.outArrayPtr);
         }
 
         public void RunUnsupportedScenario()
@@ -296,7 +295,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
         {
-            {Op2BaseType}[] inArray = new {Op2BaseType}[Op2ElementCount];
+            {Op2BaseType}[] inArray = new {Op2BaseType}[RetElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<{RetVectorType}<{Op2BaseType}>>());
@@ -320,22 +319,22 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateConditionalSelectResult({RetVectorType}<{RetBaseType}> maskOp, {Op1VectorType}<{Op1BaseType}> op1, {RetVectorType}<{RetBaseType}> falseOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult({RetVectorType}<{RetBaseType}> maskOp, {Op2BaseType}* op1, {RetVectorType}<{RetBaseType}> falseOp, void* result, [CallerMemberName] string method = "")
         {
             {RetBaseType}[] maskArray = new {RetBaseType}[RetElementCount];
-            {Op1BaseType}[] op1Array = new {Op1BaseType}[RetElementCount];
+            {Op2BaseType}[] op1Array = new {Op2BaseType}[RetElementCount];
             {RetBaseType}[] falseValArray = new {RetBaseType}[RetElementCount];
             {RetBaseType}[] resultArray = new {RetBaseType}[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref maskArray[0]), maskOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref op1Array[0]), op1);
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref op1Array[0]), ref Unsafe.AsRef<byte>(op1), (uint)(op1Array.Length * Unsafe.SizeOf<{Op2BaseType}>()));
             Unsafe.WriteUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref falseValArray[0]), falseOp);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref resultArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
             ValidateConditionalSelectResult(maskArray, op1Array, falseValArray, resultArray, method);
         }
 
-        private void ValidateConditionalSelectResult({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        private void ValidateConditionalSelectResult({RetBaseType}[] maskOp, {Op2BaseType}[] firstOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
             var succeeded = Helpers.CheckLoadVectorBehavior(maskOp, firstOp, result, falseOp);
 

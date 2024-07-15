@@ -5014,6 +5014,48 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> LoadVectorByteNonFaultingZeroExtendToUInt64(byte* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
+        /// svint16_t svldff1ub_s16(svbool_t pg, const uint8_t *base)
+        ///   LDFF1B Zresult.H, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1B Zresult.H, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorByteZeroExtendFirstFaulting(Vector<short> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1ub_s32(svbool_t pg, const uint8_t *base)
+        ///   LDFF1B Zresult.S, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1B Zresult.S, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorByteZeroExtendFirstFaulting(Vector<int> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1ub_s64(svbool_t pg, const uint8_t *base)
+        ///   LDFF1B Zresult.D, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1B Zresult.D, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorByteZeroExtendFirstFaulting(Vector<long> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svldff1ub_u16(svbool_t pg, const uint8_t *base)
+        ///   LDFF1B Zresult.H, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1B Zresult.H, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorByteZeroExtendFirstFaulting(Vector<ushort> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1ub_u32(svbool_t pg, const uint8_t *base)
+        ///   LDFF1B Zresult.S, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1B Zresult.S, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorByteZeroExtendFirstFaulting(Vector<uint> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1ub_u64(svbool_t pg, const uint8_t *base)
+        ///   LDFF1B Zresult.D, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1B Zresult.D, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorByteZeroExtendFirstFaulting(Vector<ulong> mask, byte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
         /// svint32_t svldnf1uh_s32(svbool_t pg, const uint16_t *base)
         ///   LDNF1H Zresult.S, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
@@ -5037,6 +5079,36 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorUInt16NonFaultingZeroExtendToUInt64(ushort* address) { throw new PlatformNotSupportedException(); }
 
+        ///  Load 16-bit data and zero-extend, first-faulting
+
+        /// <summary>
+        /// svint32_t svldff1uh_s32(svbool_t pg, const uint16_t *base)
+        ///   LDFF1H Zresult.S, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1H Zresult.S, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorUInt16ZeroExtendFirstFaulting(Vector<int> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1uh_s64(svbool_t pg, const uint16_t *base)
+        ///   LDFF1H Zresult.D, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1H Zresult.D, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt16ZeroExtendFirstFaulting(Vector<long> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1uh_u32(svbool_t pg, const uint16_t *base)
+        ///   LDFF1H Zresult.S, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1H Zresult.S, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorUInt16ZeroExtendFirstFaulting(Vector<uint> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1uh_u64(svbool_t pg, const uint16_t *base)
+        ///   LDFF1H Zresult.D, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1H Zresult.D, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt16ZeroExtendFirstFaulting(Vector<ulong> mask, ushort* address) { throw new PlatformNotSupportedException(); }
+
         /// <summary>
         /// svint64_t svldnf1uw_s64(svbool_t pg, const uint32_t *base)
         ///   LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
@@ -5048,6 +5120,22 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LDNF1W Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorUInt32NonFaultingZeroExtendToUInt64(uint* address) { throw new PlatformNotSupportedException(); }
+
+        ///  Load 32-bit data and zero-extend, first-faulting
+
+        /// <summary>
+        /// svint64_t svldff1uw_s64(svbool_t pg, const uint32_t *base)
+        ///   LDFF1W Zresult.D, Pg/Z, [Xarray, Xindex, LSL #2]
+        ///   LDFF1W Zresult.D, Pg/Z, [Xbase, XZR, LSL #2]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorUInt32ZeroExtendFirstFaulting(Vector<long> mask, uint* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1uw_u64(svbool_t pg, const uint32_t *base)
+        ///   LDFF1W Zresult.D, Pg/Z, [Xarray, Xindex, LSL #2]
+        ///   LDFF1W Zresult.D, Pg/Z, [Xbase, XZR, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorUInt32ZeroExtendFirstFaulting(Vector<ulong> mask, uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint8x2_t svld2[_u8](svbool_t pg, const uint8_t *base)
@@ -5264,6 +5352,38 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorInt16NonFaultingSignExtendToUInt64(short* address) { throw new PlatformNotSupportedException(); }
 
+
+        ///  Load 16-bit data and sign-extend, first-faulting
+
+        /// <summary>
+        /// svint32_t svldff1sh_s32(svbool_t pg, const int16_t *base)
+        ///   LDFF1SH Zresult.S, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1SH Zresult.S, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorInt16SignExtendFirstFaulting(Vector<int> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1sh_s64(svbool_t pg, const int16_t *base)
+        ///   LDFF1SH Zresult.D, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1SH Zresult.D, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt16SignExtendFirstFaulting(Vector<long> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1sh_u32(svbool_t pg, const int16_t *base)
+        ///   LDFF1SH Zresult.S, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1SH Zresult.S, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorInt16SignExtendFirstFaulting(Vector<uint> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1sh_u64(svbool_t pg, const int16_t *base)
+        ///   LDFF1SH Zresult.D, Pg/Z, [Xarray, Xindex, LSL #1]
+        ///   LDFF1SH Zresult.D, Pg/Z, [Xbase, XZR, LSL #1]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt16SignExtendFirstFaulting(Vector<ulong> mask, short* address) { throw new PlatformNotSupportedException(); }
+
+
         ///  Load 32-bit data and sign-extend, non-faulting
 
         /// <summary>
@@ -5279,6 +5399,24 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LDNF1SW Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorInt32NonFaultingSignExtendToUInt64(int* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Load 32-bit data and sign-extend, first-faulting
+
+        /// <summary>
+        /// svint64_t svldff1sw_s64(svbool_t pg, const int32_t *base)
+        ///   LDFF1SW Zresult.D, Pg/Z, [Xarray, Xindex, LSL #2]
+        ///   LDFF1SW Zresult.D, Pg/Z, [Xbase, XZR, LSL #2]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorInt32SignExtendFirstFaulting(Vector<long> mask, int* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1sw_u64(svbool_t pg, const int32_t *base)
+        ///   LDFF1SW Zresult.D, Pg/Z, [Xarray, Xindex, LSL #2]
+        ///   LDFF1SW Zresult.D, Pg/Z, [Xbase, XZR, LSL #2]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorInt32SignExtendFirstFaulting(Vector<ulong> mask, int* address) { throw new PlatformNotSupportedException(); }
+
 
         ///  Load 8-bit data and sign-extend, non-faulting
 
@@ -5331,6 +5469,52 @@ namespace System.Runtime.Intrinsics.Arm
         ///   LDNF1SB Zresult.D, Pg/Z, [Xbase, #0, MUL VL]
         /// </summary>
         public static unsafe Vector<ulong> LoadVectorSByteNonFaultingSignExtendToUInt64(sbyte* address) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Load 8-bit data and sign-extend, first-faulting
+
+        /// <summary>
+        /// svint16_t svldff1sb_s16(svbool_t pg, const int8_t *base)
+        ///   LDFF1SB Zresult.H, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1SB Zresult.H, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<short> LoadVectorSByteSignExtendFirstFaulting(Vector<short> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1sb_s32(svbool_t pg, const int8_t *base)
+        ///   LDFF1SB Zresult.S, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1SB Zresult.S, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<int> LoadVectorSByteSignExtendFirstFaulting(Vector<int> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1sb_s64(svbool_t pg, const int8_t *base)
+        ///   LDFF1SB Zresult.D, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1SB Zresult.D, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<long> LoadVectorSByteSignExtendFirstFaulting(Vector<long> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint16_t svldff1sb_u16(svbool_t pg, const int8_t *base)
+        ///   LDFF1SB Zresult.H, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1SB Zresult.H, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<ushort> LoadVectorSByteSignExtendFirstFaulting(Vector<ushort> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1sb_u32(svbool_t pg, const int8_t *base)
+        ///   LDFF1SB Zresult.S, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1SB Zresult.S, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<uint> LoadVectorSByteSignExtendFirstFaulting(Vector<uint> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1sb_u64(svbool_t pg, const int8_t *base)
+        ///   LDFF1SB Zresult.D, Pg/Z, [Xarray, Xindex]
+        ///   LDFF1SB Zresult.D, Pg/Z, [Xbase, XZR]
+        /// </summary>
+        public static unsafe Vector<ulong> LoadVectorSByteSignExtendFirstFaulting(Vector<ulong> mask, sbyte* address) { throw new PlatformNotSupportedException(); }
+
 
         ///  Max : Maximum
 

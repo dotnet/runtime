@@ -109,7 +109,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
                 int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<{Op3BaseType}>();
-                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{Op2BaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
+                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
 
                 if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
@@ -309,7 +309,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ref var op3Ref = ref op3;
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(_dataTable.inArray1Ptr, ref op2Ref, _dataTable.inBounded.Span.Length, Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
+            ValidateFirstFaultingResult(_dataTable.inArray1Ptr, ref op2Ref, Op2ElementCount * Unsafe.SizeOf<{Op2BaseType}>(), Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
         }
 
         public void RunBasicScenario_FalseMask()
