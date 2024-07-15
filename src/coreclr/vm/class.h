@@ -1983,7 +1983,6 @@ public:
         PCCOR_SIGNATURE pShortSig,
         DWORD   cShortSig,
         DWORD   dwVtableSlot,
-        LoaderAllocator *pLoaderAllocator,
         AllocMemTracker *pamTracker);
 
     // Generate a short sig for an array accessor
@@ -2063,17 +2062,6 @@ inline PCODE GetPreStubEntryPoint()
 {
     return GetEEFuncEntryPoint(ThePreStub);
 }
-
-#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
-
-EXTERN_C void STDCALL ThePreStubCompactARM();
-
-inline PCODE GetPreStubCompactARMEntryPoint()
-{
-    return GetEEFuncEntryPoint(ThePreStubCompactARM);
-}
-
-#endif // defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
 
 PCODE TheUMThunkPreStub();
 

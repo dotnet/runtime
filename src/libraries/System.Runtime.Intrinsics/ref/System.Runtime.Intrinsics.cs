@@ -4373,6 +4373,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> AddSaturate(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> AddSaturate(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static System.Numerics.Vector<double> AddSequentialAcross(System.Numerics.Vector<double> initial, System.Numerics.Vector<double> value) { throw null; }
+        public static System.Numerics.Vector<float> AddSequentialAcross(System.Numerics.Vector<float> initial, System.Numerics.Vector<float> value) { throw null; }
+
         public static System.Numerics.Vector<byte> And(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<short> And(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
         public static System.Numerics.Vector<int> And(System.Numerics.Vector<int> left, System.Numerics.Vector<int> right) { throw null; }
@@ -4752,6 +4755,9 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<ushort> ExtractVector(System.Numerics.Vector<ushort> upper, System.Numerics.Vector<ushort> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<uint> ExtractVector(System.Numerics.Vector<uint> upper, System.Numerics.Vector<uint> lower, [ConstantExpected] byte index) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> ExtractVector(System.Numerics.Vector<ulong> upper, System.Numerics.Vector<ulong> lower, [ConstantExpected] byte index) { throw null; }
+
+        public static System.Numerics.Vector<double> FloatingPointExponentialAccelerator(System.Numerics.Vector<ulong> value) { throw null; }
+        public static System.Numerics.Vector<float> FloatingPointExponentialAccelerator(System.Numerics.Vector<uint> value) { throw null; }
 
         public static System.Numerics.Vector<double> FusedMultiplyAdd(System.Numerics.Vector<double> addend, System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> FusedMultiplyAdd(System.Numerics.Vector<float> addend, System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
@@ -5596,6 +5602,11 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> TransposeOdd(System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<uint> TransposeOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> TransposeOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+
+        public static System.Numerics.Vector<double> TrigonometricSelectCoefficient(System.Numerics.Vector<double> value, System.Numerics.Vector<ulong> selector) { throw null; }
+        public static System.Numerics.Vector<float> TrigonometricSelectCoefficient(System.Numerics.Vector<float> value, System.Numerics.Vector<uint> selector) { throw null; }
+        public static System.Numerics.Vector<double> TrigonometricStartingValue(System.Numerics.Vector<double> value, System.Numerics.Vector<ulong> sign) { throw null; }
+        public static System.Numerics.Vector<float> TrigonometricStartingValue(System.Numerics.Vector<float> value, System.Numerics.Vector<uint> sign) { throw null; }
 
         public static System.Numerics.Vector<sbyte> UnzipEven(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
         public static System.Numerics.Vector<short> UnzipEven(System.Numerics.Vector<short> left, System.Numerics.Vector<short> right) { throw null; }
