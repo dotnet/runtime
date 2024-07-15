@@ -120,8 +120,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Pre-computed hot-loop version of nullability check
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool IsNullableWithContext(int stateId, int mintermId) =>
-            (_nullabilityArray[stateId] & (1 << (int)GetPositionKind(mintermId))) > 0;
+        private bool IsNullableWithContext(byte stateNullability, int mintermId) =>
+            (stateNullability & (1 << (int)GetPositionKind(mintermId))) != 0;
 
         /// <summary>Returns the span from <see cref="_dfaDelta"/> that may contain transitions for the given state</summary>
         private Span<int> GetDeltasFor(MatchingState<TSet> state)
@@ -355,9 +355,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>Gets or creates a new DFA transition.</summary>
         /// <remarks>This function locks the matcher for safe concurrent use of the <see cref="_builder"/></remarks>
-        private bool TryCreateNewTransition(
-            MatchingState<TSet> sourceState, int mintermId, int offset, bool checkThreshold, [NotNullWhen(true)] out MatchingState<TSet>? nextState,
-            long timeoutOccursAt = 0)
+        private bool TryCreateNewTransition(MatchingState<TSet> sourceState, int mintermId, int offset, bool checkThreshold, long timeoutOccursAt, [NotNullWhen(true)] out MatchingState<TSet>? nextState)
         {
             Debug.Assert(offset < _dfaDelta.Length);
             lock (this)

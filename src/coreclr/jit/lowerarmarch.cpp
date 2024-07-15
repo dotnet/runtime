@@ -75,7 +75,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         emitAttr       attr   = emitActualTypeSize(childNode->TypeGet());
         emitAttr       size   = EA_SIZE(attr);
 #ifdef TARGET_ARM
-        insFlags flags = parentNode->gtSetFlags() ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
+        insFlags flags = (parentNode->gtOverflowEx() || parentNode->gtSetFlags()) ? INS_FLAGS_SET : INS_FLAGS_DONT_CARE;
 #endif
 
         switch (parentNode->OperGet())
@@ -1232,6 +1232,87 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    bool       isScalar = false;
+    genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
+
+    switch (oper)
+    {
+        case GT_AND:
+        case GT_OR:
+        {
+            // We want to recognize (~op1 & op2) and transform it
+            // into AdvSimd.AndNot(op2, op1) as well as (op1 & ~op2)
+            // transforming it into AdvSimd.AndNot(op1, op2)
+            //
+            // We want to similarly handle (~op1 | op2) and (op1 | ~op2)
+
+            bool transform = false;
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (op2->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* op2Intrin = op2->AsHWIntrinsic();
+
+                bool       op2IsScalar = false;
+                genTreeOps op2Oper     = op2Intrin->GetOperForHWIntrinsicId(&op2IsScalar);
+
+                if (op2Oper == GT_NOT)
+                {
+                    assert(!op2IsScalar);
+                    transform = true;
+
+                    op2 = op2Intrin->Op(1);
+                    BlockRange().Remove(op2Intrin);
+                }
+            }
+
+            if (!transform && op1->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
+
+                bool       op1IsScalar = false;
+                genTreeOps op1Oper     = opIntrin->GetOperForHWIntrinsicId(&op1IsScalar);
+
+                if (op1Oper == GT_NOT)
+                {
+                    assert(!op1IsScalar);
+                    transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+
+                    std::swap(op1, op2);
+                }
+            }
+
+            if (transform)
+            {
+                if (oper == GT_AND)
+                {
+                    oper        = GT_AND_NOT;
+                    intrinsicId = NI_AdvSimd_BitwiseClear;
+                }
+                else
+                {
+                    assert(oper == GT_OR);
+                    oper        = GT_NONE;
+                    intrinsicId = NI_AdvSimd_OrNot;
+                }
+
+                node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
+                oper = GT_AND_NOT;
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
 
     switch (intrinsicId)
     {
@@ -3353,6 +3434,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Sve_PrefetchInt32:
             case NI_Sve_PrefetchInt64:
             case NI_Sve_ExtractVector:
+            case NI_Sve_TrigonometricMultiplyAddCoefficient:
                 assert(hasImmediateOperand);
                 assert(varTypeIsIntegral(intrin.op3));
                 if (intrin.op3->IsCnsIntOrI())

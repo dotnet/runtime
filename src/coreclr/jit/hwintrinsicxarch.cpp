@@ -1394,19 +1394,62 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_SSE_AndNot:
+        case NI_SSE2_AndNot:
+        case NI_AVX_AndNot:
+        case NI_AVX2_AndNot:
+        case NI_AVX512F_AndNot:
+        case NI_AVX512DQ_AndNot:
+        case NI_AVX10v1_V512_AndNot:
+        {
+            assert(sig->numArgs == 2);
+
+            // We don't want to support creating AND_NOT nodes prior to LIR
+            // as it can break important optimizations. We'll produces this
+            // in lowering instead so decompose into the individual operations
+            // on import, taking into account that despite the name, these APIs
+            // do (~op1 & op2), so we need to account for that
+
+            op2 = impSIMDPopStack();
+            op1 = impSIMDPopStack();
+
+            op1     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op1, simdBaseJitType, simdSize));
+            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
+            break;
+        }
+
+        case NI_BMI1_AndNot:
+        case NI_BMI1_X64_AndNot:
+        {
+            assert(sig->numArgs == 2);
+
+            // The same general reasoning for the decomposition exists here as
+            // given above for the SIMD AndNot APIs.
+
+            op2 = impPopStack().val;
+            op1 = impPopStack().val;
+
+            op1     = gtFoldExpr(gtNewOperNode(GT_NOT, retType, op1));
+            retNode = gtNewOperNode(GT_AND, retType, op1, op2);
+            break;
+        }
+
         case NI_Vector128_AndNot:
         case NI_Vector256_AndNot:
         case NI_Vector512_AndNot:
         {
             assert(sig->numArgs == 2);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+            // We don't want to support creating AND_NOT nodes prior to LIR
+            // as it can break important optimizations. We'll produces this
+            // in lowering instead so decompose into the individual operations
+            // on import
 
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
-            retNode = gtNewSimdBinOpNode(GT_AND_NOT, retType, op1, op2, simdBaseJitType, simdSize);
+            op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseJitType, simdSize));
+            retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 

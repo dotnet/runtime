@@ -4863,6 +4863,52 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                 
     return NO_ASSERTION_INDEX;
 }
 
+//------------------------------------------------------------------------
+// optAssertionVNIsNonNull: See if we can prove that the value of a VN is
+// non-null using assertions.
+//
+// Arguments:
+//   vn         - VN to check
+//   assertions - set of live assertions
+//
+// Return Value:
+//   True if the VN could be proven non-null.
+//
+bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
+{
+    if (vnStore->IsKnownNonNull(vn))
+    {
+        return true;
+    }
+
+    // Check each assertion to find if we have a vn != null assertion.
+    //
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
+        {
+            break;
+        }
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        if (!curAssertion->CanPropNonNull())
+        {
+            continue;
+        }
+
+        if (curAssertion->op1.vn != vn)
+        {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 /*****************************************************************************
  *
  *  Given a tree consisting of a call and a set of available assertions, we

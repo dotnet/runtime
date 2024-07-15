@@ -2330,6 +2330,26 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_TrigonometricMultiplyAddCoefficient:
+            {
+                assert(isRMW);
+
+                if (targetReg != op1Reg)
+                {
+                    assert(targetReg != op2Reg);
+
+                    GetEmitter()->emitInsSve_R_R(INS_sve_movprfx, EA_SCALABLE, targetReg, op1Reg);
+                }
+
+                HWIntrinsicImmOpHelper helper(this, intrin.op3, node);
+
+                for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                {
+                    GetEmitter()->emitInsSve_R_R_I(ins, emitSize, targetReg, op2Reg, helper.ImmValue(), opt);
+                }
+                break;
+            }
+
             default:
                 unreached();
         }

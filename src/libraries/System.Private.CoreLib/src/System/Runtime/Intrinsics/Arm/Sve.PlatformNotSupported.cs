@@ -397,6 +397,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
+        ///  AddSequentialAcross : Add reduction (strictly-ordered)
+
+        /// <summary>
+        /// float64_t svadda[_f64](svbool_t pg, float64_t initial, svfloat64_t op)
+        ///   FADDA Dtied, Pg, Dtied, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> AddSequentialAcross(Vector<double> initial, Vector<double> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// float32_t svadda[_f32](svbool_t pg, float32_t initial, svfloat32_t op)
+        ///   FADDA Stied, Pg, Stied, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> AddSequentialAcross(Vector<float> initial, Vector<float> value) { throw new PlatformNotSupportedException(); }
+
         ///  And : Bitwise AND
 
         /// <summary>
@@ -2829,6 +2843,21 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
         /// </summary>
         public static unsafe Vector<ulong> ExtractVector(Vector<ulong> upper, Vector<ulong> lower, [ConstantExpected] byte index) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Floating-point exponential accelerator
+
+        /// <summary>
+        /// svfloat64_t svexpa[_f64](svuint64_t op)
+        ///   FEXPA Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> FloatingPointExponentialAccelerator(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svexpa[_f32](svuint32_t op)
+        ///   FEXPA Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> FloatingPointExponentialAccelerator(Vector<uint> value) { throw new PlatformNotSupportedException(); }
 
 
         ///  FusedMultiplyAdd : Multiply-add, addend first
@@ -8600,6 +8629,51 @@ namespace System.Runtime.Intrinsics.Arm
         ///   TRN2 Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static unsafe Vector<ulong> TransposeOdd(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Trigonometric multiply-add coefficient
+
+        /// <summary>
+        /// svfloat64_t svtmad[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm3)
+        ///   FTMAD Ztied1.D, Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricMultiplyAddCoefficient(Vector<double> left, Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtmad[_f32](svfloat32_t op1, svfloat32_t op2, uint64_t imm3)
+        ///   FTMAD Ztied1.S, Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricMultiplyAddCoefficient(Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Trigonometric select coefficient
+
+        /// <summary>
+        /// svfloat64_t svtssel[_f64](svfloat64_t op1, svuint64_t op2)
+        ///   FTSSEL Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricSelectCoefficient(Vector<double> value, Vector<ulong> selector) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtssel[_f32](svfloat32_t op1, svuint32_t op2)
+        ///   FTSSEL Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricSelectCoefficient(Vector<float> value, Vector<uint> selector) { throw new PlatformNotSupportedException(); }
+
+
+        ///  Trigonometric starting value
+
+        /// <summary>
+        /// svfloat64_t svtsmul[_f64](svfloat64_t op1, svuint64_t op2)
+        ///   FTSMUL Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricStartingValue(Vector<double> value, Vector<ulong> sign) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtsmul[_f32](svfloat32_t op1, svuint32_t op2)
+        ///   FTSMUL Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricStartingValue(Vector<float> value, Vector<uint> sign) { throw new PlatformNotSupportedException(); }
 
 
         ///  UnzipEven : Concatenate even elements from two inputs

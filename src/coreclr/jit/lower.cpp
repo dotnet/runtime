@@ -7690,8 +7690,6 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif
 
-    FinalizeOutgoingArgSpace();
-
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
