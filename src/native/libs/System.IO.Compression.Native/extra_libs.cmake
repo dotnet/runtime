@@ -13,7 +13,7 @@ macro(append_extra_compression_libs NativeLibsExtra)
       find_package(ZLIB REQUIRED)
       list(APPEND ZLIB_LIBRARIES m)
   else()
-    list(APPEND ZLIB_LIBRARIES z)
+    list(APPEND ZLIB_LIBRARIES $<IF:$<BOOL:CLR_CMAKE_USE_SYSTEM_ZLIB>,z,zlib>)
   endif ()
   list(APPEND ${NativeLibsExtra} ${ZLIB_LIBRARIES})
 
