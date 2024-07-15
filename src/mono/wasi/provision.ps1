@@ -18,6 +18,7 @@ tar --strip-components=1 -xzf ./wasi-sdk-$WasiSdkVersion.0-mingw.tar.gz -C $Wasi
 Copy-Item $WasiLocalPath/wasi-sdk-version.txt $WasiSdkPath/wasi-sdk-version.txt
 Remove-Item ./wasi-sdk-$WasiSdkVersion.0-mingw.tar.gz -fo
 
+# TODO https://github.com/dotnet/runtime/issues/104773
 # Temporary WASI-SDK 22 workaround #2: The version of `wasm-component-ld` that
 # ships with WASI-SDK 22 contains a
 # [bug](https://github.com/bytecodealliance/wasm-component-ld/issues/22) which
