@@ -5234,6 +5234,26 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
+        public static float[] MultiplyAddRotateComplex(float[] op1, float[] op2, float[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                (float ans1, float ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[i], op2[i], op3[i]), FusedMultiplyAdd(op1[i + 1], op2[i], op3[i + 1])),
+                    1 => (FusedMultiplySubtract(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplyAdd(op1[i + 1], op2[i + 1], op3[i])),
+                    2 => (FusedMultiplySubtract(op1[i], op2[i], op3[i]), FusedMultiplySubtract(op1[i + 1], op2[i], op3[i + 1])),
+                    3 => (FusedMultiplyAdd(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplySubtract(op1[i + 1], op2[i + 1], op3[i])),
+                    _ => (0.0f, 0.0f)
+                };
+
+                op1[i] = ans1;
+                op1[i + 1] = ans2;
+            }
+
+            return op1;
+        }
+
         public static float MultiplyExtended(float op1, float op2)
         {
             bool inf1 = float.IsInfinity(op1);
@@ -5383,6 +5403,26 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double MinNumberPairwise(double[] op1, int i) => Pairwise(MinNumber, op1, i);
 
         public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static double[] MultiplyAddRotateComplex(double[] op1, double[] op2, double[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                (double ans1, double ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[i], op2[i], op3[i]), FusedMultiplyAdd(op1[i + 1], op2[i], op3[i + 1])),
+                    1 => (FusedMultiplySubtract(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplyAdd(op1[i + 1], op2[i + 1], op3[i])),
+                    2 => (FusedMultiplySubtract(op1[i], op2[i], op3[i]), FusedMultiplySubtract(op1[i + 1], op2[i], op3[i + 1])),
+                    3 => (FusedMultiplyAdd(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplySubtract(op1[i + 1], op2[i + 1], op3[i])),
+                    _ => (0.0, 0.0)
+                };
+
+                op1[i] = ans1;
+                op1[i + 1] = ans2;
+            }
+
+            return op1;
+        }
 
         public static double MultiplyExtended(double op1, double op2)
         {

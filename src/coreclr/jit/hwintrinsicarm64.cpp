@@ -509,6 +509,11 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = 1;
                 break;
 
+            case NI_Sve_MultiplyAddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 3;
+                break;
+
             default:
                 unreached();
         }

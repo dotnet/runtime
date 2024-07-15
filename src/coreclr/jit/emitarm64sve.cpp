@@ -6989,7 +6989,7 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
             assert(isVectorRegister(reg3));
             assert(isVectorRegister(reg4));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm0_to_270(imm);
+            assert(emitIsValidEncodedRotationImm0_to_270(imm));
             fmt = IF_SVE_GT_4A;
             break;
 
@@ -9796,7 +9796,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm90_or_270(ssize_t imm)
 {
-    return (imm == 0) || (imm == 1);
+    return isValidUimm<1>(imm);
 }
 
 /************************************************************************
@@ -9865,7 +9865,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm0_to_270(ssize_t imm)
 {
-    return (imm >= 0) && (imm <= 3);
+    return isValidUimm<2>(imm);
 }
 
 /*****************************************************************************

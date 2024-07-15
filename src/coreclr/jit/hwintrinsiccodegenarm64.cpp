@@ -484,6 +484,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             switch (intrinEmbMask.numOperands)
             {
+                case 4:
+                    assert(intrinEmbMask.op4 != nullptr);
+                    assert(HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id));
+                    assert(HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id));
+                    FALLTHROUGH;
+
                 case 3:
                     assert(intrinEmbMask.op3 != nullptr);
                     embMaskOp3Reg = intrinEmbMask.op3->GetRegNum();
@@ -704,12 +710,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     break;
                 }
                 case 3:
+                    assert(!HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id) || (falseReg != embMaskOp3Reg));
+                    FALLTHROUGH;
+
+                case 4:
                 {
                     assert(instrIsRMW);
 
                     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
                     {
-                        assert(falseReg != embMaskOp3Reg);
                         // For FMA, the operation we are trying to perform is:
                         //      result = op1 + (op2 * op3)
                         //
@@ -802,6 +811,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                 insEmbMask = useAddend ? INS_sve_mls : INS_sve_msb;
                                 break;
 
+                            case NI_Sve_MultiplyAddRotateComplex:
+                                assert(useAddend);
+                                break;
+
                             default:
                                 unreached();
                         }
@@ -870,7 +883,28 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
 
                     // Finally, perform the desired operation.
-                    if (HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id))
+                    const bool embHasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id);
+
+                    if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
+                    {
+                        if (embHasImmediateOperand)
+                        {
+                            assert(intrinEmbMask.id == NI_Sve_MultiplyAddRotateComplex);
+                            HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op4, op2->AsHWIntrinsic());
+                            for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                            {
+                                GetEmitter()->emitInsSve_R_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg,
+                                                                   embMaskOp2Reg, embMaskOp3Reg, helper.ImmValue(),
+                                                                   opt);
+                            }
+                        }
+                        else
+                        {
+                            GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                             embMaskOp3Reg, opt);
+                        }
+                    }
+                    else if (embHasImmediateOperand)
                     {
                         HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op3, op2->AsHWIntrinsic());
                         for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
@@ -881,8 +915,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                     else
                     {
-                        GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
-                                                         embMaskOp3Reg, opt);
+                        unreached();
                     }
 
                     break;

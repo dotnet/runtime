@@ -1875,8 +1875,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
         if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmb.id))
         {
+            const bool embHasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrinEmb.id);
             assert(embOp2Node->isRMWHWIntrinsic(compiler));
-            assert(numArgs == 3);
+            assert((numArgs == 3) || (embHasImmediateOperand && (numArgs == 4)));
 
             LIR::Use use;
             GenTree* user = nullptr;
@@ -1915,6 +1916,17 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             srcCount += 1;
             srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
             srcCount += BuildDelayFreeUses(emitOp3, emitOp1);
+
+            if (embHasImmediateOperand)
+            {
+                assert(numArgs == 4);
+                srcCount += BuildDelayFreeUses(intrinEmb.op4, emitOp1);
+                if (!embOp2Node->Op(4)->isContainedIntOrIImmed())
+                {
+                    buildInternalIntRegisterDefForNode(embOp2Node);
+                }
+            }
+
             srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
         }
         else
@@ -1926,7 +1938,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             // that encodes the immediate
             if (intrinEmb.id == NI_Sve_ShiftRightArithmeticForDivide)
             {
-                assert(embOp2Node->GetOperandCount() == 2);
+                assert(numArgs == 2);
                 if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
                 {
                     buildInternalIntRegisterDefForNode(embOp2Node);
