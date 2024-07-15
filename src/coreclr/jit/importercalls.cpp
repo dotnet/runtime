@@ -1330,6 +1330,10 @@ DONE_CALL:
         }
         else
         {
+            if (call->IsCall() && call->AsCall()->IsSpecialIntrinsic(this, NI_System_ArgumentNullException_ThrowIfNull))
+            {
+                call = impThrowIfNull(call->AsCall());
+            }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
     }
@@ -1527,6 +1531,97 @@ DONE_CALL:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// impThrowIfNull: Remove redundandant boxing from ArgumentNullException_ThrowIfNull
+//    it is done for Tier0 where we can't remove it without inlining otherwise.
+//
+// Arguments:
+//    call -- call representing ArgumentNullException_ThrowIfNull
+//
+// Return Value:
+//    Optimized tree (or the original call tree if we can't optimize it).
+//
+GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
+{
+    // We have two overloads:
+    //
+    //  void ThrowIfNull(object argument, string paramName = null)
+    //  void ThrowIfNull(object argument, ExceptionArgument paramName)
+    //
+    assert(call->IsSpecialIntrinsic(this, NI_System_ArgumentNullException_ThrowIfNull));
+    assert(call->gtArgs.CountUserArgs() == 2);
+    assert(call->TypeIs(TYP_VOID));
+
+    if (opts.compDbgCode || opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+    {
+        // Don't fold it for debug code or forced MinOpts
+        return call;
+    }
+
+    GenTree* value     = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* valueName = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+    // Case 1: value-type (non-nullable):
+    //
+    //  ArgumentNullException_ThrowIfNull(GT_BOX(value), valueName)
+    //    ->
+    //  NOP (with side-effects if any)
+    //
+    if (value->OperIs(GT_BOX))
+    {
+        // Now we need to spill the addr and argName arguments in the correct order
+        // to preserve possible side effects.
+        unsigned boxedValTmp     = lvaGrabTemp(true DEBUGARG("boxedVal spilled"));
+        unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
+        impStoreToTemp(boxedValTmp, value, CHECK_SPILL_ALL);
+        impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
+        gtTryRemoveBoxUpstreamEffects(value, BR_REMOVE_AND_NARROW);
+        return gtNewNothingNode();
+    }
+
+    // Case 2: nullable:
+    //
+    //  ArgumentNullException.ThrowIfNull(CORINFO_HELP_BOX_NULLABLE(classHandle, addr), valueName);
+    //    ->
+    //  addr->hasValue != 0 ? NOP : ArgumentNullException.ThrowIfNull(null, valueNameTmp)
+    //
+    if (opts.OptimizationEnabled() || !value->IsHelperCall(this, CORINFO_HELP_BOX_NULLABLE))
+    {
+        // We're not boxing - bail out.
+        // NOTE: when opts are enabled, we remove the box as is (with better CQ)
+        return call;
+    }
+
+    GenTree* boxHelperClsArg  = value->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+    GenTree* boxHelperAddrArg = value->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+    if ((boxHelperClsArg->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // boxHelperClsArg is always just a class handle constant, so we don't bother spilling it.
+        return call;
+    }
+
+    // Now we need to spill the addr and argName arguments in the correct order
+    // to preserve possible side effects.
+    unsigned boxedValTmp     = lvaGrabTemp(true DEBUGARG("boxedVal spilled"));
+    unsigned boxedArgNameTmp = lvaGrabTemp(true DEBUGARG("boxedArg spilled"));
+    impStoreToTemp(boxedValTmp, boxHelperAddrArg, CHECK_SPILL_ALL);
+    impStoreToTemp(boxedArgNameTmp, valueName, CHECK_SPILL_ALL);
+
+    // Change arguments to 'ThrowIfNull(null, valueNameTmp)'
+    call->gtArgs.GetUserArgByIndex(0)->SetEarlyNode(gtNewNull());
+    call->gtArgs.GetUserArgByIndex(1)->SetEarlyNode(gtNewLclvNode(boxedArgNameTmp, valueName->TypeGet()));
+
+    // This is Tier0 specific, so we create a raw indir node to access Nullable<T>.hasValue field
+    // which is the first field of Nullable<T> struct and is of type 'bool'.
+    //
+    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    GenTree*   hasValueField = gtNewIndir(TYP_UBYTE, gtNewLclvNode(boxedValTmp, boxHelperAddrArg->TypeGet()));
+    GenTreeOp* cond          = gtNewOperNode(GT_NE, TYP_INT, hasValueField, gtNewIconNode(0));
+
+    return gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, gtNewNothingNode(), call));
+}
 
 //------------------------------------------------------------------------
 // impDuplicateWithProfiledArg: duplicates a call with a profiled argument, e.g.:
@@ -3257,6 +3352,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // to avoid some unnecessary boxing
             case NI_System_Enum_HasFlag:
 
+            // This one is made intrinsic specifically to avoid boxing in Tier0
+            case NI_System_ArgumentNullException_ThrowIfNull:
+
             // Most atomics are compiled to single instructions
             case NI_System_Threading_Interlocked_And:
             case NI_System_Threading_Interlocked_Or:
@@ -3786,6 +3884,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
                 break;
             }
+
+            case NI_System_ArgumentNullException_ThrowIfNull:
+                isSpecial = true;
+                break;
 
             case NI_System_Enum_HasFlag:
             {
@@ -9824,6 +9926,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "DefaultConstructorOf") == 0)
                         {
                             result = NI_System_Activator_DefaultConstructorOf;
+                        }
+                    }
+                    else if (strcmp(className, "ArgumentNullException") == 0)
+                    {
+                        if (strcmp(methodName, "ThrowIfNull") == 0)
+                        {
+                            result = NI_System_ArgumentNullException_ThrowIfNull;
                         }
                     }
                     else if (strcmp(className, "Array") == 0)

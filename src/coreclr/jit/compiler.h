@@ -4541,6 +4541,8 @@ protected:
 
     GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
 
+    GenTree* impThrowIfNull(GenTreeCall* call);
+
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
 #endif // DEBUG
