@@ -683,8 +683,8 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     //------------------------------------------------------------------------
 
     // Pass the total length of the array.
-    GenTree*   len     = comp->gtNewStoreLclFldNode(lclNum, TYP_I_IMPL, genTypeSize(TYP_I_IMPL),
-                                                    comp->gtNewIconNode(length, TYP_I_IMPL));
+    GenTree* len =
+        comp->gtNewStoreLclFldNode(lclNum, TYP_INT, genTypeSize(TYP_I_IMPL), comp->gtNewIconNode(length, TYP_INT));
     Statement* lenStmt = comp->gtNewStmt(len);
     comp->fgInsertStmtBefore(block, stmt, lenStmt);
 
@@ -1175,8 +1175,10 @@ void ObjectAllocator::RewriteUses()
                 if (arr->OperIs(GT_LCL_ADDR) && ind->IsCnsIntOrI())
                 {
                     JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
-                    GenTree* const add = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, arr, ind);
-                    *use               = add;
+                    GenTree* const offset =
+                        m_compiler->gtNewIconNode(OFFSETOF__CORINFO_Array__data + ind->AsIntCon()->gtIconVal, TYP_INT);
+                    GenTree* const add = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, arr, offset);
+                    *use = add;
                 }
             }
             // Rewrite ARR_LENGTH to LCL_FLD for stack-allocated arrays.
@@ -1188,9 +1190,9 @@ void ObjectAllocator::RewriteUses()
                 if (arr->OperIs(GT_LCL_ADDR))
                 {
                     JITDUMP("Rewriting ARR_LENGTH to LCL_FLD [%06u]\n", m_compiler->dspTreeID(tree));
-                    GenTree* const lclFld = m_compiler->gtNewLclFldNode(arr->AsLclVarCommon()->GetLclNum(), TYP_I_IMPL,
+                    GenTree* const lclFld = m_compiler->gtNewLclFldNode(arr->AsLclVarCommon()->GetLclNum(), TYP_INT,
                                                                         OFFSETOF__CORINFO_Array__length);
-                    *use = lclFld;
+                    *use                  = lclFld;
                 }
             }
 
