@@ -8631,6 +8631,21 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> TransposeOdd(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Trigonometric multiply-add coefficient
+
+        /// <summary>
+        /// svfloat64_t svtmad[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm3)
+        ///   FTMAD Ztied1.D, Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricMultiplyAddCoefficient(Vector<double> left, Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svtmad[_f32](svfloat32_t op1, svfloat32_t op2, uint64_t imm3)
+        ///   FTMAD Ztied1.S, Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricMultiplyAddCoefficient(Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) { throw new PlatformNotSupportedException(); }
+
+
         ///  Trigonometric select coefficient
 
         /// <summary>

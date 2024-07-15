@@ -404,15 +404,6 @@ enum GenTreeFlags : unsigned int
                                   // With operators: the specified node is an unsigned operator
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
 
-// The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
-// that we are calling in the context of performing a CSE, thus we
-// should allow the run-once side effects of running a class constructor.
-//
-// The only requirement of this flag is that it not overlap any of the
-// side-effect flags. The actual bit used is otherwise arbitrary.
-
-    GTF_IS_IN_CSE   = 0x00004000,
-
     GTF_COMMON_MASK = 0x0003FFFF, // mask of all the flags above
 
     GTF_REUSE_REG_VAL = 0x00800000, // This is set by the register allocator on nodes whose value already exists in the
@@ -2265,6 +2256,7 @@ public:
         return OperGet() == GT_CALL;
     }
     inline bool IsHelperCall();
+    inline bool IsHelperCall(Compiler* compiler, unsigned helper);
 
     bool gtOverflow() const;
     bool gtOverflowEx() const;
@@ -10500,7 +10492,12 @@ inline bool GenTree::IsCnsVec() const
 
 inline bool GenTree::IsHelperCall()
 {
-    return OperGet() == GT_CALL && AsCall()->IsHelperCall();
+    return IsCall() && AsCall()->IsHelperCall();
+}
+
+inline bool GenTree::IsHelperCall(Compiler* compiler, unsigned helper)
+{
+    return IsCall() && AsCall()->IsHelperCall(compiler, helper);
 }
 
 inline var_types GenTree::CastFromType()
