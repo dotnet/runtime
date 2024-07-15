@@ -4,7 +4,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides a base class for file-based configuration providers used with Microsoft.Extensions.Configuration and extension methods for configuring them.</PackageDescription>
   </PropertyGroup>
