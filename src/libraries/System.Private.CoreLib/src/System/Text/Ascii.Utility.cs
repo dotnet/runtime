@@ -139,168 +139,382 @@ namespace System.Text
                 return index + (nuint)(ulong.TrailingZeroCount(found8) / 8);
             }
 
-            return GetIndexOfFirstNonAsciiByte_Vector(ref pBuffer, bufferLength);
+            if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
+            {
+                // TODO: Handle length < 32 here.
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    if (bufferLength <= (nuint)Vector256<byte>.Count)
+                    {
+                        return Search16To32(ref pBuffer, bufferLength);
+                    }
+                    if (Vector512.IsHardwareAccelerated)
+                    {
+                        if (bufferLength <= (nuint)Vector512<byte>.Count)
+                        {
+                            return Search32To64(ref pBuffer, bufferLength);
+                        }
+
+                        // This is as wide as newest CPU cores can go at the time of writing.
+                        return GetIndexOfFirstNonAsciiByte_Unrolled2<Vector512<byte>>(ref pBuffer, bufferLength);
+                    }
+
+                    return GetIndexOfFirstNonAsciiByte_Unrolled4<Vector256<byte>>(ref pBuffer, bufferLength);
+                }
+
+                return GetIndexOfFirstNonAsciiByte_Unrolled4<Vector128<byte>>(ref pBuffer, bufferLength);
+            }
+            else
+            {
+                return GetIndexOfFirstNonAsciiByte_Scalar(ref pBuffer, bufferLength);
+            }
 
         Done:
             return index;
+
+            static nuint Search16To32(ref byte pBuffer, nuint bufferLength)
+            {
+                Debug.Assert(bufferLength is > 16 and <= 32);
+                Debug.Assert(Vector128.IsHardwareAccelerated);
+
+                Vector128<byte> mask = Vector128.Create((byte)0x80);
+                Vector128<byte> first = Vector128.LoadUnsafe(ref pBuffer);
+                Vector128<byte> last = Vector128.LoadUnsafe(ref pBuffer, bufferLength - 16);
+
+                bool foundFirst = Vector128.GreaterThanOrEqualAny(first, mask);
+                bool foundLast = Vector128.GreaterThanOrEqualAny(last, mask);
+
+                return (foundFirst, foundLast) switch
+                {
+                    (true, _) => IndexOfWhereAllBitsSet(Vector128.GreaterThanOrEqual(first, mask)),
+                    (_, true) => IndexOfWhereAllBitsSet(Vector128.GreaterThanOrEqual(last, mask)) + bufferLength - 16,
+                    _ => bufferLength,
+                };
+            }
+
+            static nuint Search32To64(ref byte pBuffer, nuint bufferLength)
+            {
+                Debug.Assert(bufferLength is > 32 and <= 64);
+                Debug.Assert(Vector256.IsHardwareAccelerated);
+
+                Vector256<byte> mask = Vector256.Create((byte)0x80);
+                Vector256<byte> first = Vector256.LoadUnsafe(ref pBuffer);
+                Vector256<byte> last = Vector256.LoadUnsafe(ref pBuffer, bufferLength - 32);
+
+                bool foundFirst = Vector256.GreaterThanOrEqualAny(first, mask);
+                bool foundLast = Vector256.GreaterThanOrEqualAny(last, mask);
+
+                return (foundFirst, foundLast) switch
+                {
+                    (true, _) => IndexOfWhereAllBitsSet(Vector256.GreaterThanOrEqual(first, mask)),
+                    (_, true) => IndexOfWhereAllBitsSet(Vector256.GreaterThanOrEqual(last, mask)) + bufferLength - 32,
+                    _ => bufferLength,
+                };
+            }
+        }
+
+        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Scalar(ref byte pBuffer, nuint bufferLength)
+        {
+            Debug.Assert(bufferLength > 16);
+            Debug.Assert(!Vector128.IsHardwareAccelerated || !BitConverter.IsLittleEndian);
+
+            ulong value;
+            nuint offset = 0;
+            const ulong mask = 0x8080808080808080;
+
+            nuint align = (nuint)Unsafe.AsPointer(ref pBuffer) % 8;
+            if (align != 0)
+            {
+                value = Unsafe.ReadUnaligned<ulong>(ref pBuffer) & mask;
+                if (value != 0)
+                {
+                    goto Found;
+                }
+                offset += 8 - align;
+            }
+
+            nuint last = bufferLength - 8;
+            while (offset <= last)
+            {
+                value = Unsafe.As<byte, ulong>(ref Unsafe.Add(ref pBuffer, offset)) & mask;
+                if (value != 0)
+                {
+                    goto Found;
+                }
+                offset += 8;
+            }
+
+            value = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref pBuffer, last)) & mask;
+            if (value != 0)
+            {
+                offset = last;
+                goto Found;
+            }
+
+            return bufferLength;
+
+        Found:
+            return offset + (BitConverter.IsLittleEndian
+                ? (nuint)BitOperations.TrailingZeroCount(value) / 8
+                : (nuint)BitOperations.LeadingZeroCount(value) / 8);
         }
 
         // Another case where we want to bypass Dynamic PGO - it is very easy to hit
         // a condition where a profile with longer path blocks marked as cold leads
         // to TestXXX helpers prevented from being inlined, which is disastrous for performance.
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Vector(ref byte pBuffer, nuint bufferLength)
+        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Unrolled2<T>(ref byte pBuffer, nuint bufferLength)
+            where T : ISimdVector<T, byte>
         {
-            Debug.Assert(bufferLength >= 16);
-            if (bufferLength <= 32)
+            Debug.Assert(T.IsHardwareAccelerated);
+            Debug.Assert(BitConverter.IsLittleEndian);
+            Debug.Assert(bufferLength > (nuint)T.Count);
+
+            nuint offset = 0;
+            nuint width = (nuint)T.Count;
+
+            T v0, v1;
+
+            if (bufferLength <= width * 2)
             {
-                Vector128<byte> first = Vector128.LoadUnsafe(ref pBuffer);
-                Vector128<byte> last = Vector128.LoadUnsafe(ref pBuffer, bufferLength - 16);
+                v0 = T.LoadUnsafe(ref pBuffer);
+                v1 = T.LoadUnsafe(ref pBuffer, bufferLength - width);
 
-                bool foundFirst = Test128(first);
-                bool foundLast = Test128(last);
+                bool foundFirst = T.GreaterThanOrEqualAny(v0, T.Create(0x80));
+                bool foundLast = T.GreaterThanOrEqualAny(v1, T.Create(0x80));
 
-                nuint offset;
-                Vector128<byte> found;
                 if (foundFirst)
                 {
-                    offset = 0;
-                    found = first;
-                    goto Found128;
+                    v1 = v0;
+                    goto FoundV1;
                 }
                 if (foundLast)
                 {
-                    offset = bufferLength - 16;
-                    found = last;
-                    goto Found128;
+                    offset = bufferLength - width;
+                    goto FoundV1;
                 }
 
                 return bufferLength;
-
-            Found128:
-                found = Vector128.GreaterThanOrEqual(found, Vector128.Create((byte)0x80));
-                return ComputeIndex(found) + offset;
             }
-
-            if (bufferLength <= 64)
-            {
-                Vector256<byte> first = Vector256.LoadUnsafe(ref pBuffer);
-                Vector256<byte> last = Vector256.LoadUnsafe(ref pBuffer, bufferLength - 32);
-
-                nuint offset;
-                Vector256<byte> found;
-                if (Test256(first))
-                {
-                    offset = 0;
-                    found = first;
-                    goto Found256;
-                }
-                if (Test256(last))
-                {
-                    offset = bufferLength - 32;
-                    found = last;
-                    goto Found256;
-                }
-
-                return bufferLength;
-
-            Found256:
-                found = Vector256.GreaterThanOrEqual(found, Vector256.Create((byte)0x80));
-                return ComputeIndex(found) + offset;
-            }
-
-            Vector512<byte> found512;
-            ref byte pCurrent = ref pBuffer;
-            ref byte pLast = ref Unsafe.Add(ref pBuffer, bufferLength - 64);
 
             // SAFETY: We only use the value of .AsPointer to calculate the byte offset
-            // to the next 64B boundary. Should GC relocate the buffer, we will lose the
+            // to the next vector boundary. Should GC relocate the buffer, we will lose the
             // alignment which is an acceptable trade-off over pinning the buffer, once
             // the callers of this method are updated to use byrefs.
-            nuint toAlign = (nuint)Unsafe.AsPointer(ref pCurrent) % 64;
-            if (toAlign != 0)
+            nuint align = (nuint)Unsafe.AsPointer(ref pBuffer) % width;
+            if (align != 0)
             {
-                Vector512<byte> first512 = Vector512.LoadUnsafe(ref pCurrent);
-                if (Test512(first512))
+                v1 = T.LoadUnsafe(ref pBuffer);
+                if (T.GreaterThanOrEqualAny(v1, T.Create(0x80)))
                 {
-                    found512 = first512;
-                    goto Found512;
+                    goto FoundV1;
                 }
-
-                pCurrent = ref Unsafe.Add(ref pCurrent, toAlign);
+                offset += align;
             }
 
-            while (!Unsafe.IsAddressGreaterThan(ref pCurrent, ref pLast))
+            nuint last = bufferLength - width * 2;
+            while (offset <= last)
             {
-                Vector512<byte> current512 = Vector512.LoadUnsafe(ref pCurrent);
-                if (!Test512(current512))
+                v0 = T.LoadUnsafe(ref pBuffer, offset);
+                v1 = T.LoadUnsafe(ref pBuffer, offset + width);
+                if (!Test2(v0, v1))
                 {
-                    // Better loop ordering
-                    pCurrent = ref Unsafe.Add(ref pCurrent, 64);
+                    offset += width * 2;
                     continue;
                 }
 
-                found512 = current512;
-                goto Found512;
+                goto FoundV01;
             }
 
-            Vector512<byte> last512 = Vector512.LoadUnsafe(ref pLast);
-            if (Test512(last512))
+            v0 = T.LoadUnsafe(ref pBuffer, last);
+            v1 = T.LoadUnsafe(ref pBuffer, last + width);
+            if (Test2(v0, v1))
             {
-                pCurrent = ref pLast;
-                found512 = last512;
-                goto Found512;
+                offset = last;
+                goto FoundV01;
             }
 
             return bufferLength;
 
-        Found512:
-            found512 = Vector512.GreaterThanOrEqual(found512, Vector512.Create((byte)0x80));
-            return ComputeIndex(found512) + (nuint)Unsafe.ByteOffset(ref pBuffer, ref pCurrent);
+        FoundV01:
+            nuint index = IndexOfWhereAllBitsSet(
+                T.GreaterThanOrEqual(v0, T.Create(0x80)));
+
+            if (index < width)
+            {
+                return index + offset;
+            }
+            offset += width;
+
+        FoundV1:
+            return offset + IndexOfWhereAllBitsSet(
+                T.GreaterThanOrEqual(v1, T.Create(0x80)));
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool Test128(Vector128<byte> value)
+            static bool Test2(T v0, T v1)
             {
-                if (Sse2.IsSupported)
+                return ((v0 | v1) & T.Create(0x80)) != T.Zero;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+        private static unsafe nuint GetIndexOfFirstNonAsciiByte_Unrolled4<T>(ref byte pBuffer, nuint bufferLength)
+            where T : ISimdVector<T, byte>
+        {
+            Debug.Assert(T.IsHardwareAccelerated);
+            Debug.Assert(BitConverter.IsLittleEndian);
+            Debug.Assert(bufferLength > (nuint)T.Count);
+
+            nuint offset = 0;
+            nuint width = (nuint)T.Count;
+
+            T v0, v1, v2, v3;
+
+            if (bufferLength <= width * 2)
+            {
+                v0 = T.LoadUnsafe(ref pBuffer);
+                v1 = T.LoadUnsafe(ref pBuffer, bufferLength - width);
+
+                bool foundFirst = T.GreaterThanOrEqualAny(v0, T.Create(0x80));
+                bool foundLast = T.GreaterThanOrEqualAny(v1, T.Create(0x80));
+
+                if (foundFirst)
                 {
-                    return value.ExtractMostSignificantBits() != 0;
+                    goto FoundV0;
+                }
+                if (foundLast)
+                {
+                    offset = bufferLength - width;
+                    v0 = v1;
+                    goto FoundV0;
                 }
 
-                return Vector128.GreaterThanOrEqualAny(value, Vector128.Create((byte)0x80));
+                return bufferLength;
+            }
+
+            if (bufferLength <= width * 4)
+            {
+                // SAFETY: Use byref arithmetic over offset-based load to ensure
+                // that the last two vectors are loaded with a single LDP on ARM64.
+                ref byte pLastTwo = ref Unsafe.Add(ref pBuffer, bufferLength - width * 2);
+                v0 = T.LoadUnsafe(ref pBuffer);
+                v1 = T.LoadUnsafe(ref pBuffer, width);
+                v2 = T.LoadUnsafe(ref pLastTwo);
+                v3 = T.LoadUnsafe(ref pLastTwo, width);
+
+                T pair0 = v0 | v1;
+                T pair1 = v2 | v3;
+
+                if ((pair0 & T.Create(0x80)) != T.Zero)
+                {
+                    v2 = v0;
+                    v3 = v1;
+                    goto FoundV23;
+                }
+                if ((pair1 & T.Create(0x80)) != T.Zero)
+                {
+                    offset = bufferLength - (width * 2);
+                    goto FoundV23;
+                }
+
+                return bufferLength;
+            }
+
+            // SAFETY: We only use the value of .AsPointer to calculate the byte offset
+            // to the next vector boundary. Should GC relocate the buffer, we will lose the
+            // alignment which is an acceptable trade-off over pinning the buffer, once
+            // the callers of this method are updated to use byrefs.
+            nuint align = (nuint)Unsafe.AsPointer(ref pBuffer) % width;
+            if (align != 0)
+            {
+                v0 = T.LoadUnsafe(ref pBuffer);
+                if (T.GreaterThanOrEqualAny(v0, T.Create(0x80)))
+                {
+                    goto FoundV0;
+                }
+                offset += align;
+            }
+
+            nuint last = bufferLength - width * 4;
+            while (offset <= last)
+            {
+                (v0, v1, v2, v3) = Load4(ref pBuffer, offset);
+                if (!Test4(v0, v1, v2, v3))
+                {
+                    offset += width * 4;
+                    continue;
+                }
+
+                goto FoundV0123;
+            }
+
+            (v0, v1, v2, v3) = Load4(ref pBuffer, last);
+            if (Test4(v0, v1, v2, v3))
+            {
+                offset = last;
+                goto FoundV0123;
+            }
+
+            return bufferLength;
+
+        FoundV0123:
+            nuint index = IndexOfWhereAllBitsSet2(
+                T.GreaterThanOrEqual(v0, T.Create(0x80)),
+                T.GreaterThanOrEqual(v1, T.Create(0x80)));
+
+            if (index < width * 2)
+            {
+                return index + offset;
+            }
+            offset += width * 2;
+
+        FoundV23:
+            return offset + IndexOfWhereAllBitsSet2(
+                T.GreaterThanOrEqual(v2, T.Create(0x80)),
+                T.GreaterThanOrEqual(v3, T.Create(0x80)));
+
+        FoundV0:
+            return offset + IndexOfWhereAllBitsSet(
+                T.GreaterThanOrEqual(v0, T.Create(0x80)));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static (T, T, T, T) Load4(ref byte pBuffer, nuint offset)
+            {
+                // Note: AdvSimd.Arm64.Load4xVector128 does not appear to work
+                // for the pointer-based implementation, likely due to the interaction
+                // with generics breaking consecutive register allocation.
+                ref byte pCurrent = ref Unsafe.Add(ref pBuffer, offset);
+                return (
+                    T.LoadUnsafe(ref pCurrent),
+                    T.LoadUnsafe(ref pCurrent, (nuint)T.Count),
+                    T.LoadUnsafe(ref pCurrent, (nuint)T.Count * 2),
+                    T.LoadUnsafe(ref pCurrent, (nuint)T.Count * 3));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool Test256(Vector256<byte> value)
+            static bool Test4(T v0, T v1, T v2, T v3)
             {
-                if (Avx.IsSupported)
-                {
-                    return value.ExtractMostSignificantBits() != 0;
-                }
-
-                if (Vector256.IsHardwareAccelerated)
-                {
-                    return Vector256.GreaterThanOrEqualAny(value, Vector256.Create((byte)0x80));
-                }
-
-                return Test128(value.GetLower() | value.GetUpper());
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static bool Test512(Vector512<byte> value)
-            {
-                if (Avx512F.IsSupported)
-                {
-                    return value.ExtractMostSignificantBits() != 0;
-                }
-
-                return Test256(value.GetLower() | value.GetUpper());
+                return ((v0 | v1 | v2 | v3) & T.Create(0x80)) != T.Zero;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint ComputeIndex(Vector128<byte> value)
+        private static nuint IndexOfWhereAllBitsSet<T>(T value)
+            where T : ISimdVector<T, byte>
         {
-            if (AdvSimd.IsSupported)
+            return value switch
+            {
+                Vector128<byte> v128 => AdvSimd.IsSupported
+                    ? IndexOfWhereAllBitsSet_Arm64(v128)
+                    : nuint.TrailingZeroCount(v128.ExtractMostSignificantBits()),
+                Vector256<byte> v256 => nuint.TrailingZeroCount(v256.ExtractMostSignificantBits()),
+                Vector512<byte> v512 => (nuint)ulong.TrailingZeroCount(v512.ExtractMostSignificantBits()),
+                _ => throw new NotSupportedException(),
+            };
+
+            [CompExactlyDependsOn(typeof(AdvSimd))]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static nuint IndexOfWhereAllBitsSet_Arm64(Vector128<byte> value)
             {
                 ulong shrn = AdvSimd
                     .ShiftRightLogicalNarrowingLower(value.AsUInt16(), 4)
@@ -308,38 +522,16 @@ namespace System.Text
                     .ToScalar();
                 return (nuint)(ulong.TrailingZeroCount(shrn) / 4);
             }
-
-            return nuint.TrailingZeroCount(value.ExtractMostSignificantBits());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint ComputeIndex(Vector256<byte> value)
+        private static nuint IndexOfWhereAllBitsSet2<T>(T v0, T v1)
+            where T : ISimdVector<T, byte>
         {
-            if (!Vector256.IsHardwareAccelerated)
-            {
-                Vector128<byte> lower = value.GetLower();
-                Vector128<byte> upper = value.GetUpper();
-                return lower != Vector128<byte>.Zero
-                    ? ComputeIndex(lower)
-                    : ComputeIndex(upper) + 16;
-            }
-
-            return nuint.TrailingZeroCount(value.ExtractMostSignificantBits());
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint ComputeIndex(Vector512<byte> value)
-        {
-            if (!Vector512.IsHardwareAccelerated)
-            {
-                Vector256<byte> lower = value.GetLower();
-                Vector256<byte> upper = value.GetUpper();
-                return lower != Vector256<byte>.Zero
-                    ? ComputeIndex(lower)
-                    : ComputeIndex(upper) + 32;
-            }
-
-            return (nuint)ulong.TrailingZeroCount(value.ExtractMostSignificantBits());
+            nuint width = (nuint)T.Count;
+            nuint offset0 = IndexOfWhereAllBitsSet(v0);
+            nuint offset1 = IndexOfWhereAllBitsSet(v1);
+            return offset0 < width ? offset0 : offset1 + width;
         }
 
         /// <summary>
