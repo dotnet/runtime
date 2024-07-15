@@ -300,7 +300,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->HResult = exceptionData.HResult;
             data->XCode = exceptionData.XCode;
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             return ex.HResult;
         }
