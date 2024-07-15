@@ -79,6 +79,81 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Select_ReadError_Success(bool dispose)
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            sender.Connect(listener.LocalEndPoint);
+            using Socket receiver = listener.Accept();
+
+            if (dispose)
+            {
+                sender.Dispose();
+            }
+            else
+            {
+                sender.Send(new byte[] { 1 });
+            }
+
+            var readList = new List<Socket> { receiver };
+            var errorList = new List<Socket> { receiver };
+            Socket.Select(readList, null, errorList, -1);
+            if (dispose)
+            {
+                 Assert.True(readList.Count == 1 || errorList.Count == 1);
+            }
+            else
+            {
+                Assert.Equal(1, readList.Count);
+                Assert.Equal(0, errorList.Count);
+            }
+        }
+
+        [Fact]
+        public void Select_WriteError_Success()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            sender.Connect(listener.LocalEndPoint);
+            using Socket receiver = listener.Accept();
+
+            var writeList = new List<Socket> { receiver };
+            var errorList = new List<Socket> { receiver };
+            Socket.Select(null, writeList, errorList, -1);
+            Assert.Equal(1, writeList.Count);
+            Assert.Equal(0, errorList.Count);
+        }
+
+        [Fact]
+        public void Select_ReadWriteError_Success()
+        {
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+            using Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            sender.Connect(listener.LocalEndPoint);
+            using Socket receiver = listener.Accept();
+
+            sender.Send(new byte[] { 1 });
+            var readList = new List<Socket> { receiver };
+            var writeList = new List<Socket> { receiver };
+            var errorList = new List<Socket> { receiver };
+            Socket.Select(readList, writeList, errorList, -1);
+            Assert.Equal(1, readList.Count);
+            Assert.Equal(1, writeList.Count);
+            Assert.Equal(0, errorList.Count);
+        }
+
+        [Theory]
         [InlineData(2, 0)]
         [InlineData(2, 1)]
         [InlineData(2, 2)]

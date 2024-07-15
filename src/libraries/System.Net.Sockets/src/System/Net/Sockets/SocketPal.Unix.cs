@@ -19,6 +19,8 @@ namespace System.Net.Sockets
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
+        private static readonly bool PollNeedsErrorListFixup = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() ||  OperatingSystem.IsTvOS();
+
         // IovStackThreshold matches Linux's UIO_FASTIOV, which is the number of 'struct iovec'
         // that get stackalloced in the Linux kernel.
         private const int IovStackThreshold = 8;
@@ -1817,20 +1819,22 @@ namespace System.Net.Sockets
             Debug.Assert(eventsLength == checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount, "Invalid eventsLength");
             int offset = 0;
             int refsAdded = 0;
+            int readRefs;
             try
             {
                 // In case we can't increase the reference count for each Socket,
                 // we'll unref refAdded Sockets in the finally block ordered: [checkRead, checkWrite, checkError].
                 AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.PollEvents.POLLIN | Interop.PollEvents.POLLHUP, ref refsAdded);
+                readRefs = refsAdded;
                 AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.PollEvents.POLLOUT, ref refsAdded);
-                AddToPollArray(events, eventsLength, checkError, ref offset, Interop.PollEvents.POLLPRI, ref refsAdded);
-                Debug.Assert(offset == eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
-                Debug.Assert(refsAdded == eventsLength, $"Invalid ref adds. refsAdded={refsAdded}, eventsLength={eventsLength}.");
+                AddToPollArray(events, eventsLength, checkError, ref offset, Interop.PollEvents.POLLPRI, ref refsAdded, PollNeedsErrorListFixup ? readRefs : 0);
+                Debug.Assert(offset <= eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
+                Debug.Assert(refsAdded <= eventsLength, $"Invalid ref adds. refsAdded={refsAdded}, eventsLength={eventsLength}.");
 
                 // Do the poll
                 uint triggered = 0;
                 int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
-                Interop.Error err = Interop.Sys.Poll(events, (uint)eventsLength, milliseconds, &triggered);
+                Interop.Error err = Interop.Sys.Poll(events, (uint)refsAdded, milliseconds, &triggered);
                 if (err != Interop.Error.SUCCESS)
                 {
                     return GetSocketErrorForErrorCode(err);
@@ -1867,7 +1871,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static unsafe void AddToPollArray(Interop.PollEvent* arr, int arrLength, IList? socketList, ref int arrOffset, Interop.PollEvents events, ref int refsAdded)
+        private static unsafe void AddToPollArray(Interop.PollEvent* arr, int arrLength, IList? socketList, ref int arrOffset, Interop.PollEvents events, ref int refsAdded, int readCount = 0)
         {
             if (socketList == null)
                 return;
@@ -1887,6 +1891,29 @@ namespace System.Net.Sockets
                 bool success = false;
                 socket.InternalSafeHandle.DangerousAddRef(ref success);
                 int fd = (int)socket.InternalSafeHandle.DangerousGetHandle();
+
+                if (readCount > 0)
+                {
+                    // some platfoms like macOS do not like if there is duplication between real and error list.
+                    // To fix that we will search read list and if macthing descriptor exiost we will add events flags
+                    // instead of adding new entry to error list.
+                    int readIndex = 0;
+                    while (readIndex < readCount)
+                    {
+                        if (arr[readIndex].FileDescriptor == fd)
+                        {
+                            arr[i].Events |= events;
+                            socket.InternalSafeHandle.DangerousRelease();
+                            break;
+                        }
+                        readIndex++;
+                    }
+                    if (readIndex != readCount)
+                    {
+                        continue;
+                    }
+                }
+
                 arr[arrOffset++] = new Interop.PollEvent { Events = events, FileDescriptor = fd };
                 refsAdded++;
             }
