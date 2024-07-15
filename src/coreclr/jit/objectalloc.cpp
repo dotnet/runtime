@@ -1200,15 +1200,25 @@ void ObjectAllocator::RewriteUses()
                 unsigned int            arrLen      = 0;
 
                 if (gtArr->OperIs(GT_LCL_ADDR) && gtInd->IsCnsIntOrI() &&
-                    m_allocator->m_LocalArrToLenMap.TryGetValue(gtArr->AsLclVarCommon()->GetLclNum(), &arrLen) &&
-                    gtInd->AsIntCon()->gtIconVal < arrLen)
+                    m_allocator->m_LocalArrToLenMap.TryGetValue(gtArr->AsLclVarCommon()->GetLclNum(), &arrLen))
                 {
-                    JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
-                    const ssize_t offset =
-                        OFFSETOF__CORINFO_Array__data + gtInd->AsIntCon()->gtIconVal * gtIndexAddr->gtElemSize;
-                    GenTree* const gtOffset = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
-                    GenTree* const gtAdd    = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffset);
-                    *use                    = gtAdd;
+                    if (gtInd->AsIntCon()->gtIconVal < arrLen)
+                    {
+                        JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
+                        const ssize_t offset =
+                            OFFSETOF__CORINFO_Array__data + gtInd->AsIntCon()->gtIconVal * gtIndexAddr->gtElemSize;
+                        GenTree* const gtOffset = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
+                        GenTree* const gtAdd    = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffset);
+                        *use                    = gtAdd;
+                    }
+                    else
+                    {
+                        JITDUMP("Rewriting INDEX_ADDR to RNGCHKFAIL helper call [%06u]\n", m_compiler->dspTreeID(tree));
+                        GenTree* const gtRngChkFail =
+                            m_compiler->gtNewMustThrowException(CORINFO_HELP_RNGCHKFAIL, gtIndexAddr->gtType,
+                                                                gtIndexAddr->gtStructElemClass);
+                        *use = gtRngChkFail;
+                    }
                 }
             }
             // Rewrite ARR_LENGTH to LCL_FLD for stack-allocated arrays.
