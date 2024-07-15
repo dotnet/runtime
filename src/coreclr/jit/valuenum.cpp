@@ -1635,7 +1635,33 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
+    {
+        return true;
+    }
+
+    // TODO-VN: we can add more cases, e.g. "VNF_ADD(KnownNotNull, smallCns)"
+
+    if (funcAttr.m_func == VNF_Cast)
+    {
+        var_types castFromType = TypeOfVN(vn);
+        var_types castToType;
+        bool      srcIsUnsigned;
+        GetCastOperFromVN(funcAttr.m_args[1], &castToType, &srcIsUnsigned);
+
+        // Any integral cast from a known non-null value is always non-null.
+        if (varTypeIsIntegralOrI(castFromType) && varTypeIsIntegralOrI(castToType))
+        {
+            return IsKnownNonNull(funcAttr.m_args[0]);
+        }
+    }
+
+    return false;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -11102,12 +11128,6 @@ void Compiler::fgValueNumberStore(GenTree* store)
             }
 
             valueVNPair.SetBoth(initObjVN);
-        }
-        else if (value->TypeGet() == TYP_REF)
-        {
-            // If we have an unsafe IL store of a TYP_REF to a non-ref (typically a TYP_BYREF)
-            // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
-            valueVNPair.SetBoth(vnStore->VNForExpr(compCurBB, store->TypeGet()));
         }
         else
         {
