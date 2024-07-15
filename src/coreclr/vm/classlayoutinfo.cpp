@@ -285,7 +285,7 @@ namespace
             }
             else
 #endif // FEATURE_64BIT_ALIGNMENT
-            if (pNestedType.GetMethodTable()->ContainsPointers())
+            if (pNestedType.GetMethodTable()->ContainsGCPointers())
             {
                 // this field type has GC pointers in it, which need to be pointer-size aligned
                 placementInfo.m_alignment = TARGET_POINTER_SIZE;
@@ -310,7 +310,7 @@ namespace
         if (corElemType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!pNestedType.IsNull());
-            return pNestedType.GetMethodTable()->ContainsPointers() != FALSE;
+            return pNestedType.GetMethodTable()->ContainsGCPointers() != FALSE;
         }
         return TRUE;
     }

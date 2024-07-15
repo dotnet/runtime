@@ -277,6 +277,9 @@
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicuuc.a" IsNative="true" />
+    <!-- zlib-specific files -->
+    <PlatformManifestFileEntry Include="libz.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="zlibstatic.lib" IsNative="true" />
   </ItemGroup>
 
  <ItemGroup>

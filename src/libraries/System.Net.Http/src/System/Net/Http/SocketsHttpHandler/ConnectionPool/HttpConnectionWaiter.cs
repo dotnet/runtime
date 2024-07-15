@@ -19,7 +19,7 @@ namespace System.Net.Http
 
         public ValueTask<T> WaitForConnectionAsync(HttpRequestMessage request, HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
         {
-            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
+            return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled || Activity.Current?.Source == DiagnosticsHandler.s_activitySource
                 ? WaitForConnectionWithTelemetryAsync(request, pool, async, requestCancellationToken)
                 : WaitWithCancellationAsync(async, requestCancellationToken);
         }
@@ -29,9 +29,16 @@ namespace System.Net.Http
             Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
 
             long startingTimestamp = Stopwatch.GetTimestamp();
+
+            using Activity? waitForConnectionActivity = ConnectionSetupDistributedTracing.StartWaitForConnectionActivity(pool.OriginAuthority);
             try
             {
                 return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (waitForConnectionActivity is not null)
+            {
+                ConnectionSetupDistributedTracing.ReportError(waitForConnectionActivity, ex);
+                throw;
             }
             finally
             {

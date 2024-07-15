@@ -72,6 +72,8 @@ namespace System.Net.Http
         // _shutdown above is true, and requests in flight have been (or are being) failed.
         private Exception? _abortException;
 
+        private Http2ProtocolErrorCode? _goAwayErrorCode;
+
         private const int MaxStreamId = int.MaxValue;
 
         // Temporary workaround for request burst handling on connection start.
@@ -128,8 +130,8 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
+            : base(pool, connectionSetupActivity, remoteEndPoint)
         {
             _stream = stream;
 
@@ -410,7 +412,11 @@ namespace System.Net.Http
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0)
                     {
-                        if (_incomingBuffer.ActiveLength == 0)
+                        if (_goAwayErrorCode is not null)
+                        {
+                            ThrowProtocolError(_goAwayErrorCode.Value, SR.net_http_http2_connection_close);
+                        }
+                        else if (_incomingBuffer.ActiveLength == 0)
                         {
                             ThrowMissingFrame();
                         }
@@ -1070,6 +1076,7 @@ namespace System.Net.Http
 
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode, SR.net_http_http2_connection_close);
+            _goAwayErrorCode = errorCode;
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();
@@ -1837,7 +1844,6 @@ namespace System.Net.Http
             Debug.Assert(_streamsInUse == 0);
 
             GC.SuppressFinalize(this);
-
             _stream.Dispose();
 
             _connectionWindow.Dispose();
@@ -1981,6 +1987,7 @@ namespace System.Net.Http
             Debug.Assert(async);
             Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
 
             try
             {

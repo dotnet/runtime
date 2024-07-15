@@ -61,7 +61,7 @@ internal static partial class Interop
                     int length = FormatMessage(flags | FORMAT_MESSAGE_ALLOCATE_BUFFER, moduleHandle, unchecked((uint)errorCode), 0, &nativeMsgPtr, 0, IntPtr.Zero);
                     if (length > 0)
                     {
-                        return GetAndTrimString(new Span<char>((char*)nativeMsgPtr, length));
+                        return GetAndTrimString(new ReadOnlySpan<char>((char*)nativeMsgPtr, length));
                     }
                 }
                 finally
@@ -74,7 +74,7 @@ internal static partial class Interop
             return $"Unknown error (0x{errorCode:x})";
         }
 
-        private static string GetAndTrimString(Span<char> buffer)
+        private static string GetAndTrimString(ReadOnlySpan<char> buffer)
         {
             int length = buffer.Length;
             while (length > 0 && buffer[length - 1] <= 32)

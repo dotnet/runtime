@@ -80,7 +80,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0023`__ | RNGCryptoServiceProvider is obsolete. To generate a random number, use one of the RandomNumberGenerator static methods instead. |
 |  __`SYSLIB0024`__ | Creating and unloading AppDomains is not supported and throws an exception. |
 |  __`SYSLIB0025`__ | SuppressIldasmAttribute has no effect in .NET 6.0+. |
-|  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate. |
+|  __`SYSLIB0026`__ | X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate. |
 |  __`SYSLIB0027`__ | PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey. |
 |  __`SYSLIB0028`__ | X509Certificate2.PrivateKey is obsolete. Use the appropriate method to get the private key, such as GetRSAPrivateKey, or use the CopyWithPrivateKey method to create a new instance with a private key. |
 |  __`SYSLIB0029`__ | ProduceLegacyHmacValues is obsolete. Producing legacy HMAC values is not supported. |
@@ -110,6 +110,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0053`__ | AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size. |
 |  __`SYSLIB0054`__ | Thread.VolatileRead and Thread.VolatileWrite are obsolete. Use Volatile.Read or Volatile.Write respectively instead. |
 |  __`SYSLIB0055`__ | The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead. |
+|  __`SYSLIB0056`__ |  LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm. |
 |  __`SYSLIB0057`__ | Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates. |
 
 ## Analyzer Warnings

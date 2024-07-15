@@ -427,6 +427,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) => AddSaturate(left, right);
 
+        ///  AddSequentialAcross : Add reduction (strictly-ordered)
+
+        /// <summary>
+        /// float64_t svadda[_f64](svbool_t pg, float64_t initial, svfloat64_t op)
+        ///   FADDA Dtied, Pg, Dtied, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> AddSequentialAcross(Vector<double> initial, Vector<double> value) => AddSequentialAcross(initial, value);
+
+        /// <summary>
+        /// float32_t svadda[_f32](svbool_t pg, float32_t initial, svfloat32_t op)
+        ///   FADDA Stied, Pg, Stied, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> AddSequentialAcross(Vector<float> initial, Vector<float> value) => AddSequentialAcross(initial, value);
+
         ///  And : Bitwise AND
 
         /// <summary>
@@ -2887,6 +2901,21 @@ namespace System.Runtime.Intrinsics.Arm
         ///   EXT Ztied1.B, Ztied1.B, Zop2.B, #imm3 * 8
         /// </summary>
         public static unsafe Vector<ulong> ExtractVector(Vector<ulong> upper, Vector<ulong> lower, [ConstantExpected] byte index) => ExtractVector(upper, lower, index);
+
+
+        ///  Floating-point exponential accelerator
+
+        /// <summary>
+        /// svfloat64_t svexpa[_f64](svuint64_t op)
+        ///   FEXPA Zresult.D, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> FloatingPointExponentialAccelerator(Vector<ulong> value) => FloatingPointExponentialAccelerator(value);
+
+        /// <summary>
+        /// svfloat32_t svexpa[_f32](svuint32_t op)
+        ///   FEXPA Zresult.S, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> FloatingPointExponentialAccelerator(Vector<uint> value) => FloatingPointExponentialAccelerator(value);
 
 
         ///  FusedMultiplyAdd : Multiply-add, addend first
@@ -7189,6 +7218,120 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<float> Scale(Vector<float> left, Vector<int> right) => Scale(left, right);
 
 
+        ///  Non-truncating store
+
+        // <summary>
+        // void svst1_scatter_[s64]offset[_f64](svbool_t pg, float64_t *base, svint64_t offsets, svfloat64_t data)
+        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter(Vector<double> mask, double* address, Vector<long> indicies, Vector<double> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter[_u64base_f64](svbool_t pg, svuint64_t bases, svfloat64_t data)
+        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter(Vector<double> mask, Vector<ulong> addresses, Vector<double> data) => Scatter(mask, addresses, data);
+
+        // <summary>
+        // void svst1_scatter_[u64]offset[_f64](svbool_t pg, float64_t *base, svuint64_t offsets, svfloat64_t data)
+        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter(Vector<double> mask, double* address, Vector<ulong> indicies, Vector<double> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter_[s32]offset[_s32](svbool_t pg, int32_t *base, svint32_t offsets, svint32_t data)
+        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        // </summary>
+        public static unsafe void Scatter(Vector<int> mask, int* address, Vector<int> indicies, Vector<int> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter[_u32base_s32](svbool_t pg, svuint32_t bases, svint32_t data)
+        //   ST1W Zdata.S, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void Scatter(Vector<int> mask, Vector<uint> addresses, Vector<int> data) => Scatter(mask, addresses, data);
+
+        // <summary>
+        // void svst1_scatter_[u32]offset[_s32](svbool_t pg, int32_t *base, svuint32_t offsets, svint32_t data)
+        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        // </summary>
+        public static unsafe void Scatter(Vector<int> mask, int* address, Vector<uint> indicies, Vector<int> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter_[s64]offset[_s64](svbool_t pg, int64_t *base, svint64_t offsets, svint64_t data)
+        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter(Vector<long> mask, long* address, Vector<long> indicies, Vector<long> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter[_u64base_s64](svbool_t pg, svuint64_t bases, svint64_t data)
+        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter(Vector<long> mask, Vector<ulong> addresses, Vector<long> data) => Scatter(mask, addresses, data);
+
+        // <summary>
+        // void svst1_scatter_[u64]offset[_s64](svbool_t pg, int64_t *base, svuint64_t offsets, svint64_t data)
+        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter(Vector<long> mask, long* address, Vector<ulong> indicies, Vector<long> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter_[s32]offset[_f32](svbool_t pg, float32_t *base, svint32_t offsets, svfloat32_t data)
+        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        // </summary>
+        public static unsafe void Scatter(Vector<float> mask, float* address, Vector<int> indicies, Vector<float> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter[_u32base_f32](svbool_t pg, svuint32_t bases, svfloat32_t data)
+        //   ST1W Zdata.S, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void Scatter(Vector<float> mask, Vector<uint> addresses, Vector<float> data) => Scatter(mask, addresses, data);
+
+        // <summary>
+        // void svst1_scatter_[u32]offset[_f32](svbool_t pg, float32_t *base, svuint32_t offsets, svfloat32_t data)
+        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        // </summary>
+        public static unsafe void Scatter(Vector<float> mask, float* address, Vector<uint> indicies, Vector<float> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter_[s32]offset[_u32](svbool_t pg, uint32_t *base, svint32_t offsets, svuint32_t data)
+        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, SXTW]
+        // </summary>
+        public static unsafe void Scatter(Vector<uint> mask, uint* address, Vector<int> indicies, Vector<uint> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter[_u32base_u32](svbool_t pg, svuint32_t bases, svuint32_t data)
+        //   ST1W Zdata.S, Pg, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe void Scatter(Vector<uint> mask, Vector<uint> addresses, Vector<uint> data) => Scatter(mask, addresses, data);
+
+        // <summary>
+        // void svst1_scatter_[u32]offset[_u32](svbool_t pg, uint32_t *base, svuint32_t offsets, svuint32_t data)
+        //   ST1W Zdata.S, Pg, [Xbase, Zoffsets.S, UXTW]
+        // </summary>
+        public static unsafe void Scatter(Vector<uint> mask, uint* address, Vector<uint> indicies, Vector<uint> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter_[s64]offset[_u64](svbool_t pg, uint64_t *base, svint64_t offsets, svuint64_t data)
+        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter(Vector<ulong> mask, ulong* address, Vector<long> indicies, Vector<ulong> data) => Scatter(mask, address, indicies, data);
+
+        // <summary>
+        // void svst1_scatter[_u64base_u64](svbool_t pg, svuint64_t bases, svuint64_t data)
+        //   ST1D Zdata.D, Pg, [Zbases.D, #0]
+        // </summary>
+        public static unsafe void Scatter(Vector<ulong> mask, Vector<ulong> addresses, Vector<ulong> data) => Scatter(mask, addresses, data);
+
+        // <summary>
+        // void svst1_scatter_[u64]offset[_u64](svbool_t pg, uint64_t *base, svuint64_t offsets, svuint64_t data)
+        //   ST1D Zdata.D, Pg, [Xbase, Zoffsets.D]
+        // </summary>
+        public static unsafe void Scatter(Vector<ulong> mask, ulong* address, Vector<ulong> indicies, Vector<ulong> data) => Scatter(mask, address, indicies, data);
+
+
         ///  Logical shift left
 
         /// <summary>
@@ -8531,6 +8674,36 @@ namespace System.Runtime.Intrinsics.Arm
         ///   TRN2 Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static unsafe Vector<ulong> TransposeOdd(Vector<ulong> left, Vector<ulong> right) => TransposeOdd(left, right);
+
+
+        ///  Trigonometric select coefficient
+
+        /// <summary>
+        /// svfloat64_t svtssel[_f64](svfloat64_t op1, svuint64_t op2)
+        ///   FTSSEL Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricSelectCoefficient(Vector<double> value, Vector<ulong> selector) => TrigonometricSelectCoefficient(value, selector);
+
+        /// <summary>
+        /// svfloat32_t svtssel[_f32](svfloat32_t op1, svuint32_t op2)
+        ///   FTSSEL Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricSelectCoefficient(Vector<float> value, Vector<uint> selector) => TrigonometricSelectCoefficient(value, selector);
+
+
+        ///  Trigonometric starting value
+
+        /// <summary>
+        /// svfloat64_t svtsmul[_f64](svfloat64_t op1, svuint64_t op2)
+        ///   FTSMUL Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricStartingValue(Vector<double> value, Vector<ulong> sign) => TrigonometricStartingValue(value, sign);
+
+        /// <summary>
+        /// svfloat32_t svtsmul[_f32](svfloat32_t op1, svuint32_t op2)
+        ///   FTSMUL Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricStartingValue(Vector<float> value, Vector<uint> sign) => TrigonometricStartingValue(value, sign);
 
 
         ///  UnzipEven : Concatenate even elements from two inputs

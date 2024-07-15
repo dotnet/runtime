@@ -14,8 +14,8 @@ set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_WASICC_FLA
 
 target_link_libraries(dotnet
     PRIVATE
-    ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++.a
-    ${CMAKE_SYSROOT}/lib/wasm32-wasi/libc++abi.a
+    ${CMAKE_SYSROOT}/lib/wasm32-wasip2/libc++.a
+    ${CMAKE_SYSROOT}/lib/wasm32-wasip2/libc++abi.a
     ${ICU_LIB_DIR}/libicudata.a
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a
@@ -27,6 +27,7 @@ target_link_libraries(dotnet
     ${MONO_ARTIFACTS_DIR}/libmonosgen-2.0.a
     ${MONO_ARTIFACTS_DIR}/libmono-icall-table.a
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
+    ${MONO_ARTIFACTS_DIR}/libz.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a

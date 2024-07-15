@@ -529,15 +529,16 @@ namespace System.Net.Http
                 handler = new HttpAuthenticatedConnectionHandler(poolManager);
             }
 
+            // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
+            // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
+            handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+            settings._metrics = new SocketsHttpHandlerMetrics(meter);
+
             // DiagnosticsHandler is inserted before RedirectHandler so that trace propagation is done on redirects as well
             if (DiagnosticsHandler.IsGloballyEnabled() && settings._activityHeadersPropagator is DistributedContextPropagator propagator)
             {
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
-
-            handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
-
-            settings._metrics = new SocketsHttpHandlerMetrics(meter);
 
             if (settings._allowAutoRedirect)
             {

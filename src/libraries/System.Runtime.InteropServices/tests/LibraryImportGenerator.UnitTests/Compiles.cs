@@ -521,9 +521,46 @@ namespace LibraryImportGenerator.UnitTests
                 yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
             }
 
-            // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
+            // Confirm that if support is missing for a type with an ITypeBasedMarshallingInfoProvider (like arrays and SafeHandles), we fall back to a forwarder even if other types are supported.
             {
-                string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Runtime.InteropServices.SafeHandle", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("System.Runtime.InteropServices.SafeHandle", "int", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that if support is missing for a type without an ITypeBasedMarshallingInfoProvider (like StringBuilder), we fall back to a forwarder even if other types are supported.
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("void", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Core, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
+                yield return new object[] { ID(), code, TestTargetFramework.Framework, true };
+            }
+            {
+                string code = CodeSnippets.BasicReturnAndParameterWithAlwaysSupportedParameter("int", "System.Text.StringBuilder", CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { ID(), code, TestTargetFramework.Net6, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Core, true };
                 yield return new object[] { ID(), code, TestTargetFramework.Standard, true };
@@ -724,7 +761,6 @@ namespace LibraryImportGenerator.UnitTests
             await test.RunAsync();
         }
 
-        
         [OuterLoop("Uses the network for downlevel ref packs")]
         [InlineData(TestTargetFramework.Standard)]
         [InlineData(TestTargetFramework.Framework)]

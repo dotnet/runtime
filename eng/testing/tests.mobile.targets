@@ -29,7 +29,7 @@
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress trimming warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
-    <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
+    <NoWarn>$(NoWarn);IL2103;IL2025;IL2111;IL2122</NoWarn>
 
     <!-- Reduce library test app size by trimming framework library features  -->
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' != 'Debug'">false</DebuggerSupport>

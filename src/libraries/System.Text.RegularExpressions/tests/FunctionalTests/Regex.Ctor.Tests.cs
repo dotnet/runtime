@@ -133,7 +133,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Throws<NotSupportedException>(() => new Regex(@"(?>a*)a", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and atomics
                 Assert.Throws<NotSupportedException>(() => new Regex(@"\Ga", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and start anchors
                 Assert.Throws<NotSupportedException>(() => new Regex(@"(?<C>A)(?<-C>B)$", RegexHelpers.RegexOptionNonBacktracking)); // NonBacktracking and balancing groups
-                Assert.Throws<NotSupportedException>(() => new Regex(@"\w{1,1001}", RegexHelpers.RegexOptionNonBacktracking)); // Potentially large automata expansion
+                Assert.Throws<NotSupportedException>(() => new Regex(@"\w{1,100001}", RegexHelpers.RegexOptionNonBacktracking)); // Potentially large automata expansion
             }
         }
 

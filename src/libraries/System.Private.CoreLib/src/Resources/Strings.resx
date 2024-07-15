@@ -3494,6 +3494,12 @@
   <data name="TargetInvocation_MethodCannotBeInvoked" xml:space="preserve">
     <value>Method cannot be invoked.</value>
   </data>
+  <data name="TargetInvocation_TargetDoesNotImplementIDispatch" xml:space="preserve">
+    <value>COM target does not implement IDispatch.</value>
+  </data>
+  <data name="TargetInvocation_InterfaceNotIDispatch" xml:space="preserve">
+    <value>The interface does not support late bound calls since it does not derive from IDispatch.</value>
+  </data>
   <data name="Task_ContinueWith_ESandLR" xml:space="preserve">
     <value>The specified TaskContinuationOptions combined LongRunning and ExecuteSynchronously.  Synchronous continuations should not be long running.</value>
   </data>

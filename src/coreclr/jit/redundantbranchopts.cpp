@@ -2224,12 +2224,10 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
                 return BasicBlockVisit::Abort;
             }
 
-            if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+            if (!BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
             {
                 return BasicBlockVisit::Continue;
             }
-
-            BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
             stack.Push(succ);
             return BasicBlockVisit::Continue;

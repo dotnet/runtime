@@ -168,7 +168,7 @@ namespace System.Net.Security
             a = BitOperations.RotateLeft(a, s);
         }
 
-        private static void Encode(Span<byte> output, Span<uint> input)
+        private static void Encode(Span<byte> output, ReadOnlySpan<uint> input)
         {
             for (int i = 0, j = 0; j < output.Length; i++, j += 4)
             {

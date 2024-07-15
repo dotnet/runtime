@@ -16,6 +16,9 @@
     <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <InstallRuntimeComponentDestination Include="." />
     <!-- TODO: [cdac] Output to sharedFramework and add PlatformManifestFileEntry for Microsoft.NETCore.App once ready to include in shipping package -->
     <!-- <InstallRuntimeComponentDestination Include="sharedFramework" Condition="'$(RuntimeFlavor)' == 'coreclr'"/> -->

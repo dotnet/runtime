@@ -325,7 +325,7 @@ namespace System.Data.SqlTypes
             // Adjust count based on data length
             int count = Math.Min(buffer.Length, (int)(Length - offset));
 
-            Span<byte> span = _rgbBuf!.AsSpan((int)offset, count);
+            ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(_rgbBuf, (int)offset, count);
             span.CopyTo(buffer);
 
             return span.Length;

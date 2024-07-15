@@ -28,11 +28,6 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             yield return new object[] { new Uri("http://localhost"), true };
         }
 
-        [Fact]
-        public void TryCreate_WinInetProxySettingsAllOff_ReturnsFalse()
-        {
-            Assert.False(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
-        }
 
         [Theory]
         [MemberData(nameof(ManualSettingsMemberData))]
@@ -44,7 +39,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             FakeRegistry.WinInetProxySettings.ProxyBypass = ManualSettingsProxyBypassList;
             TestControl.PACFileNotDetectedOnNetwork = true;
 
-            Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
+            IWebProxy webProxy = new HttpWindowsProxy();
 
             // The first GetProxy() call will try using WinInetProxyHelper (and thus WinHTTP) since AutoDetect is on.
             Uri proxyUri1 = webProxy.GetProxy(destination);
@@ -74,7 +69,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             FakeRegistry.WinInetProxySettings.Proxy = ManualSettingsProxyHost;
             FakeRegistry.WinInetProxySettings.ProxyBypass = ManualSettingsProxyBypassList;
 
-            Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
+            IWebProxy webProxy = new HttpWindowsProxy();
             Uri proxyUri = webProxy.GetProxy(destination);
             if (bypassProxy)
             {
@@ -90,7 +85,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void IsBypassed_ReturnsFalse()
         {
             FakeRegistry.WinInetProxySettings.AutoDetect = true;
-            Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
+            IWebProxy webProxy = new HttpWindowsProxy();
             Assert.False(webProxy.IsBypassed(new Uri("http://www.microsoft.com/")));
         }
     }

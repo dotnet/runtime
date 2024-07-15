@@ -344,7 +344,7 @@ namespace System
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="Int128" />.</returns>
         [CLSCompliant(false)]
-        public static explicit operator Int128(UInt128 value) => new Int128(value._upper, value._lower);
+        public static explicit operator Int128(UInt128 value) => Unsafe.BitCast<UInt128, Int128>(value);
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="Int128" /> value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
@@ -357,7 +357,7 @@ namespace System
             {
                 ThrowHelper.ThrowOverflowException();
             }
-            return new Int128(value._upper, value._lower);
+            return Unsafe.BitCast<UInt128, Int128>(value);
         }
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="IntPtr" /> value.</summary>

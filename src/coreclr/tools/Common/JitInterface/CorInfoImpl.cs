@@ -2352,14 +2352,8 @@ namespace Internal.JitInterface
             uint result = 0;
 
             MetadataType type = (MetadataType)HandleToObject(cls);
-
-            int pointerSize = PointerSize;
-
-            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceFieldSize.AsInt, pointerSize) / pointerSize;
-
-            // Assume no GC pointers at first
-            for (int i = 0; i < ptrsCount; i++)
-                gcPtrs[i] = (byte)CorInfoGCType.TYPE_GC_NONE;
+            uint size = type.IsValueType ? getClassSize(cls) : getHeapClassSize(cls);
+            new Span<byte>(gcPtrs, (int)((size + PointerSize - 1) / PointerSize)).Clear();
 
             if (type.ContainsGCPointers || type.IsByRefLike)
             {
@@ -2606,9 +2600,26 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getTypeForBoxOnStack(CORINFO_CLASS_STRUCT_* cls)
         {
-            // Todo: implement...
-            _ = HandleToObject(cls);
-            return null;
+            TypeDesc clsTypeDesc = HandleToObject(cls);
+            if (clsTypeDesc.IsNullable)
+            {
+                clsTypeDesc = clsTypeDesc.Instantiation[0];
+            }
+
+            if (clsTypeDesc.RequiresAlign8())
+            {
+                // Conservatively give up on such types (32bit)
+                return null;
+            }
+
+            // Instantiate StackAllocatedBox<T> helper type with the type we're boxing
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System.Runtime.CompilerServices", "StackAllocatedBox`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                // Give up if corelib does not have support for stackallocation
+                return null;
+            }
+            return ObjectToHandle(placeholderType.MakeInstantiatedType(clsTypeDesc));
         }
 
         private CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)

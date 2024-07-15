@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -212,6 +214,41 @@ namespace System.Text.Json
 #endif
         }
 
+        public static bool TryLookupUtf8Key<TValue>(
+            this Dictionary<string, TValue> dictionary,
+            ReadOnlySpan<byte> utf8Key,
+            [MaybeNullWhen(false)] out TValue result)
+        {
+#if NET9_0_OR_GREATER
+            Debug.Assert(dictionary.Comparer is IAlternateEqualityComparer<ReadOnlySpan<char>, string>);
+
+            Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> spanLookup =
+                dictionary.GetAlternateLookup<string, TValue, ReadOnlySpan<char>>();
+
+            char[]? rentedBuffer = null;
+
+            Span<char> charBuffer = utf8Key.Length <= JsonConstants.StackallocCharThreshold ?
+                stackalloc char[JsonConstants.StackallocCharThreshold] :
+                (rentedBuffer = ArrayPool<char>.Shared.Rent(utf8Key.Length));
+
+            int charsWritten = Encoding.UTF8.GetChars(utf8Key, charBuffer);
+            Span<char> decodedKey = charBuffer[0..charsWritten];
+
+            bool success = spanLookup.TryGetValue(decodedKey, out result);
+
+            if (rentedBuffer != null)
+            {
+                decodedKey.Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+
+            return success;
+#else
+            string key = Utf8GetString(utf8Key);
+            return dictionary.TryGetValue(key, out result);
+#endif
+        }
+
         /// <summary>
         /// Emulates Dictionary(IEnumerable{KeyValuePair}) on netstandard.
         /// </summary>
@@ -289,5 +326,242 @@ namespace System.Text.Json
 #else
         private static Regex CreateIntegerRegex() => new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
 #endif
+
+        /// <summary>
+        /// Compares two valid UTF-8 encoded JSON numbers for decimal equality.
+        /// </summary>
+        public static bool AreEqualJsonNumbers(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+        {
+            Debug.Assert(left.Length > 0 && right.Length > 0);
+
+            ParseNumber(left,
+                out bool leftIsNegative,
+                out ReadOnlySpan<byte> leftIntegral,
+                out ReadOnlySpan<byte> leftFractional,
+                out int leftExponent);
+
+            ParseNumber(right,
+                out bool rightIsNegative,
+                out ReadOnlySpan<byte> rightIntegral,
+                out ReadOnlySpan<byte> rightFractional,
+                out int rightExponent);
+
+            int nDigits;
+            if (leftIsNegative != rightIsNegative ||
+                leftExponent != rightExponent ||
+                (nDigits = (leftIntegral.Length + leftFractional.Length)) !=
+                            rightIntegral.Length + rightFractional.Length)
+            {
+                return false;
+            }
+
+            if (leftIntegral.Length == rightIntegral.Length)
+            {
+                return leftIntegral.SequenceEqual(rightIntegral) &&
+                    leftFractional.SequenceEqual(rightFractional);
+            }
+
+            // There is differentiation in the integral and fractional lengths,
+            // concatenate both into singular buffers and compare them.
+            scoped Span<byte> leftDigits;
+            scoped Span<byte> rightDigits;
+            byte[]? rentedLeftBuffer;
+            byte[]? rentedRightBuffer;
+
+            if (nDigits <= JsonConstants.StackallocByteThreshold)
+            {
+                leftDigits = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                rightDigits = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                rentedLeftBuffer = rentedRightBuffer = null;
+            }
+            else
+            {
+                leftDigits = (rentedLeftBuffer = ArrayPool<byte>.Shared.Rent(nDigits));
+                rightDigits = (rentedRightBuffer = ArrayPool<byte>.Shared.Rent(nDigits));
+            }
+
+            leftIntegral.CopyTo(leftDigits);
+            leftFractional.CopyTo(leftDigits.Slice(leftIntegral.Length));
+            rightIntegral.CopyTo(rightDigits);
+            rightFractional.CopyTo(rightDigits.Slice(rightIntegral.Length));
+
+            bool result = leftDigits.Slice(0, nDigits).SequenceEqual(rightDigits.Slice(0, nDigits));
+
+            if (rentedLeftBuffer != null)
+            {
+                Debug.Assert(rentedRightBuffer != null);
+                rentedLeftBuffer.AsSpan(0, nDigits).Clear();
+                rentedRightBuffer.AsSpan(0, nDigits).Clear();
+                ArrayPool<byte>.Shared.Return(rentedLeftBuffer);
+                ArrayPool<byte>.Shared.Return(rentedRightBuffer);
+            }
+
+            return result;
+
+            static void ParseNumber(
+                ReadOnlySpan<byte> span,
+                out bool isNegative,
+                out ReadOnlySpan<byte> integral,
+                out ReadOnlySpan<byte> fractional,
+                out int exponent)
+            {
+                // Parses a JSON number into its integral, fractional, and exponent parts.
+                // The returned components use a normal-form decimal representation:
+                //
+                //   Number := sign * <integral + fractional> * 10^exponent
+                //
+                // where integral and fractional are sequences of digits whose concatenation
+                // represents the significand of the number without leading or trailing zeros.
+                // Two such normal-form numbers are treated as equal if and only if they have
+                // equal signs, significands, and exponents.
+
+                bool neg;
+                ReadOnlySpan<byte> intg;
+                ReadOnlySpan<byte> frac;
+                int exp;
+
+                Debug.Assert(span.Length > 0);
+
+                if (span[0] == '-')
+                {
+                    neg = true;
+                    span = span.Slice(1);
+                }
+                else
+                {
+                    Debug.Assert(char.IsDigit((char)span[0]), "leading plus not allowed in valid JSON numbers.");
+                    neg = false;
+                }
+
+                int i = span.IndexOfAny((byte)'.', (byte)'e', (byte)'E');
+                if (i < 0)
+                {
+                    intg = span;
+                    frac = default;
+                    exp = 0;
+                    goto Normalize;
+                }
+
+                intg = span.Slice(0, i);
+
+                if (span[i] == '.')
+                {
+                    span = span.Slice(i + 1);
+                    i = span.IndexOfAny((byte)'e', (byte)'E');
+                    if (i < 0)
+                    {
+                        frac = span;
+                        exp = 0;
+                        goto Normalize;
+                    }
+
+                    frac = span.Slice(0, i);
+                }
+                else
+                {
+                    frac = default;
+                }
+
+                Debug.Assert(span[i] is (byte)'e' or (byte)'E');
+                if (!Utf8Parser.TryParse(span.Slice(i + 1), out exp, out _))
+                {
+                    Debug.Assert(span.Length >= 10);
+                    ThrowHelper.ThrowArgumentOutOfRangeException_JsonNumberExponentTooLarge(nameof(exponent));
+                }
+
+            Normalize: // Calculates the normal form of the number.
+
+                if (IndexOfFirstTrailingZero(frac) is >= 0 and int iz)
+                {
+                    // Trim trailing zeros from the fractional part.
+                    // e.g. 3.1400 -> 3.14
+                    frac = frac.Slice(0, iz);
+                }
+
+                if (intg[0] == '0')
+                {
+                    Debug.Assert(intg.Length == 1, "Leading zeros not permitted in JSON numbers.");
+
+                    if (IndexOfLastLeadingZero(frac) is >= 0 and int lz)
+                    {
+                        // Trim leading zeros from the fractional part
+                        // and update the exponent accordingly.
+                        // e.g. 0.000123 -> 0.123e-3
+                        frac = frac.Slice(lz + 1);
+                        exp -= lz + 1;
+                    }
+
+                    // Normalize "0" to the empty span.
+                    intg = default;
+                }
+
+                if (frac.IsEmpty && IndexOfFirstTrailingZero(intg) is >= 0 and int fz)
+                {
+                    // There is no fractional part, trim trailing zeros from
+                    // the integral part and increase the exponent accordingly.
+                    // e.g. 1000 -> 1e3
+                    exp += intg.Length - fz;
+                    intg = intg.Slice(0, fz);
+                }
+
+                // Normalize the exponent by subtracting the length of the fractional part.
+                // e.g. 3.14 -> 314e-2
+                exp -= frac.Length;
+
+                if (intg.IsEmpty && frac.IsEmpty)
+                {
+                    // Normalize zero representations.
+                    neg = false;
+                    exp = 0;
+                }
+
+                // Copy to out parameters.
+                isNegative = neg;
+                integral = intg;
+                fractional = frac;
+                exponent = exp;
+
+                static int IndexOfLastLeadingZero(ReadOnlySpan<byte> span)
+                {
+#if NET
+                    int firstNonZero = span.IndexOfAnyExcept((byte)'0');
+                    return firstNonZero < 0 ? span.Length - 1 : firstNonZero - 1;
+#else
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        if (span[i] != '0')
+                        {
+                            return i - 1;
+                        }
+                    }
+
+                    return span.Length - 1;
+#endif
+                }
+
+                static int IndexOfFirstTrailingZero(ReadOnlySpan<byte> span)
+                {
+#if NET
+                    int lastNonZero = span.LastIndexOfAnyExcept((byte)'0');
+                    return lastNonZero == span.Length - 1 ? -1 : lastNonZero + 1;
+#else
+                    if (span.IsEmpty)
+                    {
+                        return -1;
+                    }
+
+                    for (int i = span.Length - 1; i >= 0; i--)
+                    {
+                        if (span[i] != '0')
+                        {
+                            return i == span.Length - 1 ? -1 : i + 1;
+                        }
+                    }
+
+                    return 0;
+#endif
+                }
+            }
+        }
     }
 }

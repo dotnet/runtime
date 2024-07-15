@@ -308,17 +308,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         emitSize = emitActualTypeSize(intrin.baseType);
         opt      = INS_OPTS_NONE;
     }
+    else if (HWIntrinsicInfo::IsScalable(intrin.id))
+    {
+        emitSize = EA_SCALABLE;
+        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+    }
     else if (intrin.category == HW_Category_Special)
     {
         assert(intrin.id == NI_ArmBase_Yield);
 
         emitSize = EA_UNKNOWN;
         opt      = INS_OPTS_NONE;
-    }
-    else if (HWIntrinsicInfo::IsScalable(intrin.id))
-    {
-        emitSize = EA_SCALABLE;
-        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
     }
     else
     {
@@ -2051,6 +2051,39 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // Use non-predicated version explicitly
                 GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                 break;
+
+            case NI_Sve_Scatter:
+            {
+                if (!varTypeIsSIMD(intrin.op2->gtType))
+                {
+                    // Scatter(Vector<T1> mask, T1* address, Vector<T2> indicies, Vector<T> data)
+                    assert(intrin.numOperands == 4);
+                    emitAttr baseSize = emitActualTypeSize(intrin.baseType);
+
+                    if (baseSize == EA_8BYTE)
+                    {
+                        // Index is multiplied by 8
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, op2Reg, op3Reg, opt,
+                                                      INS_SCALABLE_OPTS_LSL_N);
+                    }
+                    else
+                    {
+                        // Index is sign or zero extended to 64bits, then multiplied by 4
+                        assert(baseSize == EA_4BYTE);
+                        opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
+                                                                          : INS_OPTS_SCALABLE_S_SXTW;
+                        GetEmitter()->emitIns_R_R_R_R(ins, emitSize, op4Reg, op1Reg, op2Reg, op3Reg, opt,
+                                                      INS_SCALABLE_OPTS_MOD_N);
+                    }
+                }
+                else
+                {
+                    // Scatter(Vector<T> mask, Vector<T> addresses, Vector<T> data)
+                    assert(intrin.numOperands == 3);
+                    GetEmitter()->emitIns_R_R_R_I(ins, emitSize, op3Reg, op1Reg, op2Reg, 0, opt);
+                }
+                break;
+            }
 
             case NI_Sve_StoreNarrowing:
                 opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));

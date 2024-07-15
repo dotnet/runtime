@@ -49,7 +49,7 @@ static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made b
 #define MTFlag_RequiresAlign8           0x00001000 // enum_flag_RequiresAlign8
 #define MTFlag_Category_ValueType       0x00040000 // enum_flag_Category_ValueType
 #define MTFlag_Category_ValueType_Mask  0x000C0000 // enum_flag_Category_ValueType_Mask
-#define MTFlag_ContainsPointers         0x01000000 // enum_flag_ContainsPointers
+#define MTFlag_ContainsGCPointers       0x01000000 // enum_flag_ContainsGCPointers
 #define MTFlag_HasCriticalFinalizer     0x00000002 // enum_flag_HasCriticalFinalizer
 #define MTFlag_HasFinalizer             0x00100000 // enum_flag_HasFinalizer
 #define MTFlag_IsArray                  0x00080000 // enum_flag_Category_Array
@@ -100,14 +100,14 @@ public:
         return (m_flags & MTFlag_Collectible) != 0;
     }
 
-    bool ContainsPointers()
+    bool ContainsGCPointers()
     {
-        return (m_flags & MTFlag_ContainsPointers) != 0;
+        return (m_flags & MTFlag_ContainsGCPointers) != 0;
     }
 
-    bool ContainsPointersOrCollectible()
+    bool ContainsGCPointersOrCollectible()
     {
-        return ContainsPointers() || Collectible();
+        return ContainsGCPointers() || Collectible();
     }
 
     bool RequiresAlign8()

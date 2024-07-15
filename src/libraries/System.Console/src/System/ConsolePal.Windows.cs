@@ -677,6 +677,25 @@ namespace System
 
         public static void Beep()
         {
+            const char BellCharacter = '\u0007'; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+
+            if (!Console.IsOutputRedirected)
+            {
+                Console.Out.Write(BellCharacter);
+                return;
+            }
+
+            if (!Console.IsErrorRedirected)
+            {
+                Console.Error.Write(BellCharacter);
+                return;
+            }
+
+            BeepFallback();
+        }
+
+        private static void BeepFallback()
+        {
             const int BeepFrequencyInHz = 800;
             const int BeepDurationInMs = 200;
             Interop.Kernel32.Beep(BeepFrequencyInHz, BeepDurationInMs);

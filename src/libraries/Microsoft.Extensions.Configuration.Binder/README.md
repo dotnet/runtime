@@ -118,13 +118,36 @@ Sometimes the SDK uses stale bits of the generator. This can lead to unexpected 
 
 Some contributions might change the logic emitted by the generator. We maintain baseline [source files](https://github.com/dotnet/runtime/tree/e3e9758a10870a8f99a93a25e54ab2837d3abefc/src/libraries/Microsoft.Extensions.Configuration.Binder/tests/SourceGenerationTests/Baselines) to track the code emitted to handle some core binding scenarios.
 
-If the emitted code changes, these tests will fail locally and in continuous integration checks (for PRs) changes. You would need to update the baseline source files, manually or by using the following commands (PowerShell):
+If the emitted code changes, these tests will fail locally and\or during continuous integration checks. You would need to update the baseline source files, manually or by using a combination of:
+- The `/p:UpdateBaselines=true` switch when building `Microsoft.Extensions.Configuration.Binder` in order to use `InterceptableAttributeVersion` for testing and\or updating the baselines.
+- The `/p:UpdateBaselines=true` switch when building `Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests` in order to update the test baseline files.
+- The `RepoRootDir` environment variable.
+- The optional `InterceptableAttributeVersion` environment variable.
 
+The `RepoRootDir environment variable needs to be specified to the root repo path.
+
+The `InterceptableAttributeVersion` specifies what version of the `[Interceptable]` attribute should be generated. Currently there are two versions, both of which are experimental as of July 2024, and one is selected based on the local compiler. The original version ("version 0") is expected to be deprecated. Version 1 will be used for newer compilers automatically. However, if version 0 needs to be updated when newer compilers are present, version 0 can be forced by setting the environment variable to `0`.
+
+Sample commands (PowerShell):
 ```ps
 > $env:RepoRootDir = "D:\repos\dotnet_runtime"
-> dotnet build t:test -f /p:UpdateBaselines=true
+> $env:InterceptableAttributeVersion = 0 # NOTE: this is optional - see notes
+> cd D:/repros/dotnet_runtime/src/libraries/Microsoft.Extensions.Configuration.Binder
+> dotnet build /p:UpdateBaselines=true
+> cd tests/SourceGenerationTests
+> dotnet build -t:test /p:UpdateBaselines=true
 ```
 
-We have a [test helper](https://github.com/dotnet/runtime/blob/e3e9758a10870a8f99a93a25e54ab2837d3abefc/src/libraries/Microsoft.Extensions.Configuration.Binder/tests/SourceGenerationTests/GeneratorTests.Helpers.cs#L105-L118) to update the baselines. It requires setting an environment variable called `RepoRootDir` to the root repo path. In additon, the `UpdateBaselines` MSBuild property needs to be set to `true`.
+Sample commands (command prompt):
+```
+set RepoRootDir = "D:\repos\dotnet_runtime"
+set InterceptableAttributeVersion = 0 REM NOTE: this is optional - see notes
+cd D:\repros\dotnet_runtime\src\libraries\Microsoft.Extensions.Configuration.Binder
+dotnet build /p:UpdateBaselines=true
+cd tests\SourceGenerationTests
+dotnet build -t:test /p:UpdateBaselines=true
+```
 
-After updating the baselines, inspect the changes to verify that they are valid. Note that the baseline tests will fail if the new code causes errors when building the resulting compilation.
+After updating the baselines:
+- Inspect the changes to verify that they are valid. Note that the baseline tests will fail if the new code causes errors when building the resulting compilation.
+- Rebuild `Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests` without `/p:UpdateBaselines=true` so that the tests compare against the new baselines instead of being re-generated.

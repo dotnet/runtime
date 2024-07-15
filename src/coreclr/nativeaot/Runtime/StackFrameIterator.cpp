@@ -323,10 +323,9 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
 
 #endif // TARGET_ARM
 
-#endif // defined(USE_PORTABLE_HELPERS)
-
     // adjust for thunks, if needed
     EnsureInitializedToManagedFrame();
+#endif // !defined(USE_PORTABLE_HELPERS)
 
     STRESS_LOG1(LF_STACKWALK, LL_INFO10000, "   %p\n", m_ControlPC);
 }

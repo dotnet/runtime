@@ -5579,7 +5579,7 @@ namespace System.Diagnostics.Tracing
                                 continue;
 
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
+                            ReadOnlySpan<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
 
                             sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
@@ -5626,7 +5626,7 @@ namespace System.Diagnostics.Tracing
                     sb?.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
                     keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
+                    ReadOnlySpan<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
                     sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb?.AppendLine(" </keywords>");

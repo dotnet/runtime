@@ -62,8 +62,6 @@ class ThreadExceptionState
 
 public:
 
-    void FreeAllStackTraces();
-
 #ifdef _DEBUG
     typedef enum
     {
@@ -142,10 +140,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         ResetThreadExceptionFlag(TEF_ForeignExceptionRaise);
     }
-
-#if defined(_DEBUG)
-    void AssertStackTraceInfo(StackTraceInfo *pSTI);
-#endif // _debug
 
 private:
     Thread* GetMyThread();

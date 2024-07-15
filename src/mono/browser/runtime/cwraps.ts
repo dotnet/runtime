@@ -53,7 +53,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_load_icu_data", "number", ["number"]],
     [false, "mono_wasm_add_assembly", "number", ["string", "number", "number"]],
     [true, "mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
-    [false, "mono_wasm_load_runtime", null, ["string", "number"]],
+    [false, "mono_wasm_load_runtime", null, ["number"]],
     [true, "mono_wasm_change_debugger_log_level", "void", ["number"]],
 
     [true, "mono_wasm_assembly_load", "number", ["string"]],

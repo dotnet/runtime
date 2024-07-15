@@ -74,8 +74,9 @@ namespace System.Net.Http
             HttpConnectionPool pool,
             Stream stream,
             TransportContext? transportContext,
+            Activity? connectionSetupActivity,
             IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+            : base(pool, connectionSetupActivity, remoteEndPoint)
         {
             Debug.Assert(stream != null);
 
@@ -547,6 +548,7 @@ namespace System.Net.Http
 
             // Send the request.
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {

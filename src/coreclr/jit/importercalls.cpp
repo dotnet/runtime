@@ -3234,6 +3234,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_IsAssignableFrom:
             case NI_System_Type_IsAssignableTo:
             case NI_System_Type_get_IsGenericType:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
 
             // Lightweight intrinsics
             case NI_System_String_get_Chars:

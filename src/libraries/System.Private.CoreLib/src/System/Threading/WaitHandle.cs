@@ -401,7 +401,7 @@ namespace System.Threading
             return waitResult;
         }
 
-        internal static int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        internal static int WaitMultipleIgnoringSyncContext(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
             int waitResult = WaitFailed;
 

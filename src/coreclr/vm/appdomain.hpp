@@ -1517,8 +1517,8 @@ public:
     }
 
     static void RaiseExitProcessEvent();
-    Assembly* RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR szName);
-    DomainAssembly* RaiseTypeResolveEventThrowing(DomainAssembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
+    Assembly* RaiseResourceResolveEvent(Assembly* pAssembly, LPCSTR szName);
+    Assembly* RaiseTypeResolveEventThrowing(Assembly* pAssembly, LPCSTR szName, ASSEMBLYREF *pResultingAssemblyRef);
     Assembly* RaiseAssemblyResolveEvent(AssemblySpec *pSpec);
 
 private:

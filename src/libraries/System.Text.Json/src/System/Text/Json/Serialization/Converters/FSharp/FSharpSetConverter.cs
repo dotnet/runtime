@@ -31,6 +31,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ReturnValue = new List<TElement>();
         }
 
+        internal sealed override bool IsConvertibleCollection => true;
         protected override void ConvertCollection(ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = _setConstructor((List<TElement>)state.Current.ReturnValue!);

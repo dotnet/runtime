@@ -156,7 +156,7 @@ VOID LogAssert(
 
     // Log asserts to the stress log. Note that we can't include the szExpr b/c that
     // may not be a string literal (particularly for formatt-able asserts).
-    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s, line:%d\n", szFile, iLine);
+    STRESS_LOG2(LF_ASSERT, LL_ALWAYS, "ASSERT:%s:%d\n", szFile, iLine);
 
     SYSTEMTIME st;
 #ifndef TARGET_UNIX

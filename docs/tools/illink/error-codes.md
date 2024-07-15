@@ -1870,6 +1870,22 @@ void TestMethod()
   }
   ```
 
+#### `IL2122`: Type 'typeName' is not assembly qualified. Type name strings used for dynamically accessing a type should be assembly qualified.
+
+- The type name string passed to a location with `DynamicallyAccessedMembers` requirements was not assembly-qualified, so the trimmer cannot guarantee that the type is preserved. Consider using an assembly-qualified name instead.
+
+  ```C#
+  // warning IL2122: Type 'MyClass' is not assembly qualified. Type name strings used for dynamically accessing a type should be assembly qualified.
+  GetTypeWrapper("MyClass");
+
+  class MyClass { }
+
+  // May be defined in another assembly, so at runtime Type.GetType will look in that assembly for "MyClass".
+  void GetTypeWrapper([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
+  {
+      var type = Type.GetType(typeName);
+  }
+  ```
 
 ## Single-File Warning Codes
 

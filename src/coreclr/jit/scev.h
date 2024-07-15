@@ -75,6 +75,8 @@ struct Scev
 
     bool IsInvariant();
 
+    Scev* PeelAdditions(int64_t* offset);
+
     static bool Equals(Scev* left, Scev* right);
 };
 

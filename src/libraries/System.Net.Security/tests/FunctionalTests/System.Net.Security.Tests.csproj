@@ -33,6 +33,7 @@
     <Compile Include="SslStreamConformanceTests.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="SslStreamNetworkStreamTest.cs" />
+    <Compile Include="SslStreamFramingTest.cs" />
     <Compile Include="SslStreamMutualAuthenticationTest.cs" />
     <Compile Include="TransportContextTest.cs" />
     <!-- NegotiateAuthentication Tests -->
@@ -54,6 +55,8 @@
              Link="Common\System\IO\DelegateStream.cs" />
     <Compile Include="$(CommonTestPath)System\IO\DelegateDelegatingStream.cs"
              Link="CommonTest\System\IO\DelegateDelegatingStream.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\ActivityRecorder.cs"
+             Link="Common\System\Net\ActivityRecorder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
              Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslStreamCertificatePolicy.cs"

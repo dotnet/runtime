@@ -2,9 +2,10 @@
 
 * [Docker](#docker)
 * [Environment](#environment)
-  * [Toolchain Setup](#toolchain-setup)
+  * [Debian-based / Ubuntu](#debian-based--ubuntu)
     * [Additional Requirements for Cross-Building](#additional-requirements-for-cross-building)
-  * [Gentoo Special Case](#gentoo-special-case)
+  * [Fedora](#fedora)
+  * [Gentoo](#gentoo)
 
 This guide will walk you through the requirements to build _dotnet/runtime_ on Linux. Before building there is environment setup that needs to happen to pull in all the dependencies required by the build.
 
@@ -16,11 +17,20 @@ Install Docker. For further installation instructions, see [here](https://docs.d
 
 ## Environment
 
-These instructions are written assuming the current Ubuntu LTS. Pull Requests are welcome to address other environments.
+Below are the requirements for toolchain setup, depending on your environment. Pull Requests are welcome to address other environments.
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([dotnet/runtime#4069](https://github.com/dotnet/runtime/issues/4069)).
 
-### Toolchain Setup
+You can use this helper script to install dependencies on some platforms:
+
+```bash
+sudo eng/install-native-dependencies.sh
+# or without 'sudo' if you are root
+```
+
+### Debian-based / Ubuntu
+
+These instructions are written assuming the current Ubuntu LTS.
 
 Install the following packages for the toolchain:
 
@@ -44,8 +54,8 @@ Install the following packages for the toolchain:
 
 ```bash
 sudo apt install -y cmake llvm lld clang build-essential \
-python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
-libssl-dev libkrb5-dev zlib1g-dev ninja-build
+  python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
+  libssl-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
 **NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (less in older Ubuntu versions), and version 3.18.4 in Debian 11 (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
@@ -71,7 +81,33 @@ If you are planning to use your Linux environment to do cross-building for other
 
 **NOTE**: These dependencies are used to build the `crossrootfs`, not the runtime itself.
 
-### Gentoo Special Case
+### Fedora
+
+These instructions are written assuming Fedora 40.
+
+Install the following packages for the toolchain:
+
+* cmake
+* llvm
+* lld
+* lldb
+* clang
+* python
+* curl
+* git
+* libicu-devel
+* openssl-devel
+* krb5-devel
+* zlib-devel
+* lttng-ust-devel
+* ninja-build (optional, enables building native code with ninja instead of make)
+
+```bash
+sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
+  krb5-devel zlib-devel lttng-ust-devel ninja-build
+```
+
+### Gentoo
 
 In case you have Gentoo you can run following command:
 

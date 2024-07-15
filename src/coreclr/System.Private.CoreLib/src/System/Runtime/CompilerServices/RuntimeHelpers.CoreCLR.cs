@@ -654,7 +654,7 @@ namespace System.Runtime.CompilerServices
         private const uint enum_flag_IsByRefLike = 0x00001000;
 
         // WFLAGS_HIGH_ENUM
-        private const uint enum_flag_ContainsPointers = 0x01000000;
+        private const uint enum_flag_ContainsGCPointers = 0x01000000;
         private const uint enum_flag_ContainsGenericVariables = 0x20000000;
         private const uint enum_flag_HasComponentSize = 0x80000000;
         private const uint enum_flag_HasTypeEquivalence = 0x02000000;
@@ -707,7 +707,7 @@ namespace System.Runtime.CompilerServices
 
         public bool HasComponentSize => (Flags & enum_flag_HasComponentSize) != 0;
 
-        public bool ContainsGCPointers => (Flags & enum_flag_ContainsPointers) != 0;
+        public bool ContainsGCPointers => (Flags & enum_flag_ContainsGCPointers) != 0;
 
         public bool NonTrivialInterfaceCast => (Flags & enum_flag_NonTrivialInterfaceCast) != 0;
 
