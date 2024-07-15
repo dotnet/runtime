@@ -80,7 +80,7 @@ namespace Microsoft.Interop
             }
 
             bool noMarshallingNeeded = true;
-
+            bool hasForwardedTypes = false;
             foreach (BoundGenerator generator in _marshallers.SignatureMarshallers)
             {
                 // Check if marshalling info and generator support the current target framework.
@@ -90,6 +90,19 @@ namespace Microsoft.Interop
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo.IsByRef: false }
                         or { Generator: Forwarder };
+
+                // Track if any generators are just forwarders - for types other than void, this indicates
+                // types that can't be marshalled by the source generated.
+                // In .NET 7+ support, we would have emitted a diagnostic error about lack of support
+                // In down-level support, we do not error - tracking this allows us to switch to generating a basic forwarder (DllImport declaration)
+                hasForwardedTypes |= generator is { Generator: Forwarder, TypeInfo.ManagedType: not SpecialTypeInfo { SpecialType: Microsoft.CodeAnalysis.SpecialType.System_Void } };
+            }
+
+            // For down-level support, if some parameters cannot be marshalled, consider the target framework as not supported
+            if (hasForwardedTypes
+                && (targetFramework != TargetFramework.Net || targetFrameworkVersion.Major < 7))
+            {
+                SupportsTargetFramework = false;
             }
 
             StubIsBasicForwarder = !setLastError
