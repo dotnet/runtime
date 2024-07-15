@@ -683,8 +683,8 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     //------------------------------------------------------------------------
 
     // Pass the total length of the array.
-    GenTree* len =
-        comp->gtNewStoreLclFldNode(lclNum, TYP_INT, genTypeSize(TYP_I_IMPL), comp->gtNewIconNode(length, TYP_INT));
+    GenTree*   len     = comp->gtNewStoreLclFldNode(lclNum, TYP_INT, OFFSETOF__CORINFO_Array__length,
+                                                    comp->gtNewIconNode(length, TYP_INT));
     Statement* lenStmt = comp->gtNewStmt(len);
     comp->fgInsertStmtBefore(block, stmt, lenStmt);
 
