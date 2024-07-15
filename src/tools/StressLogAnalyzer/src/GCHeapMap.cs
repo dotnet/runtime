@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace StressLogAnalyzer
 {
-    internal class GCHeapMap
+    internal sealed class GCHeapMap
     {
         private ulong _seenHeapBitmap;
         private readonly ConcurrentDictionary<ulong, (ulong heap, bool background)> _heapMap = [];
@@ -26,6 +26,21 @@ namespace StressLogAnalyzer
             }
 
             _heapMap.GetOrAdd(threadId, (heap, background));
+        }
+
+        public bool IncludeThread(ulong threadId, ThreadFilter filter)
+        {
+            if (filter.IncludeThread(threadId))
+            {
+                return true;
+            }
+
+            if (_heapMap.TryGetValue(threadId, out (ulong heap, bool background) heapInfo))
+            {
+                return filter.IncludeHeapThread(heapInfo.heap, heapInfo.background);
+            }
+
+            return false;
         }
     }
 }

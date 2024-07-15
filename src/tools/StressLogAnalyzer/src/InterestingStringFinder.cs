@@ -76,7 +76,7 @@ namespace StressLogAnalyzer
             (byte)WellKnownString.RELOCATE_END,
             (byte)WellKnownString.COMPACT_START,
             (byte)WellKnownString.COMPACT_END,
-            ]);
+        ]);
 
         private readonly SearchValues<string> _userInterestingStrings = SearchValues.Create(userStrings, StringComparison.Ordinal);
 
