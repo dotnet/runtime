@@ -3923,18 +3923,19 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     IfFailThrow(hr);
 
     // Operate on local data, and then persist it into the module once we know it's valid.
-    int sizeInInts = (numBytes / sizeof(int32_t)) + 2;
-    NewArrayHolder<uint32_t> pBuffer(new uint32_t[sizeInInts]);
+    NewArrayHolder<uint8_t> pBuffer(new uint8_t[numBytes + sizeof(DynamicMetadata)]);
     _ASSERTE(pBuffer != NULL); // allocation would throw first
+
+    DynamicMetadata *pDynamicMetadata = (DynamicMetadata*)(uint8_t*)pBuffer;
 
     // ReflectionModule is still in a consistent state, and now we're just operating on local data to
     // assemble the new metadata buffer. If this fails, then worst case is that metadata does not include
     // recently generated classes.
 
     // Caller ensures serialization that guarantees that the metadata doesn't grow underneath us.
-    BYTE * pRawData = (BYTE*)&pBuffer[1];
+    BYTE * pRawData = &pDynamicMetadata->Data[0];
     hr = pEmitter->SaveToMemory(pRawData, numBytes);
-    pBuffer[0] = numBytes;
+    pDynamicMetadata->Size = numBytes;
 
     IfFailThrow(hr);
 

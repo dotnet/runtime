@@ -231,6 +231,11 @@ CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, CallConv, cdac_offsets<FnPtrTypeDesc>
 CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, RetAndArgTypes, cdac_offsets<FnPtrTypeDesc>::RetAndArgTypes)
 CDAC_TYPE_END(FnPtrTypeDesc)
 
+CDAC_TYPE_BEGIN(DynamicMetadata)
+CDAC_TYPE_FIELD(DynamicMetadata, /*uint32*/, Size, cdac_offsets<DynamicMetadata>::Size)
+CDAC_TYPE_FIELD(DynamicMetadata, /*inline byte array*/, Data, cdac_offsets<DynamicMetadata>::Data)
+CDAC_TYPE_END(DynamicMetadata)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()

@@ -91,6 +91,20 @@ typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
 
+struct DynamicMetadata
+{
+    uint32_t Size;
+    BYTE Data[0];
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<>
+struct cdac_offsets<DynamicMetadata>
+{
+    static constexpr size_t Size = offsetof(DynamicMetadata, Size);
+    static constexpr size_t Data = offsetof(DynamicMetadata, Data);
+};
+
 struct LookupMapBase
 {
     DPTR(LookupMapBase) pNext;

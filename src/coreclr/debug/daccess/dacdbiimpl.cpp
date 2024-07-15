@@ -4287,8 +4287,8 @@ void DacDbiInterfaceImpl::GetMetadata(VMPTR_Module vmModule, TargetBuffer * pTar
         ReflectionModule * pReflectionModule = pModule->GetReflectionModule();
 
         TADDR metadataBuffer = pReflectionModule->GetDynamicMetadataBuffer();
-        CORDB_ADDRESS addr = PTR_TO_CORDB_ADDRESS(metadataBuffer + sizeof(TADDR));
-        pTargetBuffer->Init(addr, *dac_cast<DPTR(uint32_t)>(metadataBuffer));
+        CORDB_ADDRESS addr = PTR_TO_CORDB_ADDRESS(metadataBuffer + offsetof(DynamicMetadata, Data));
+        pTargetBuffer->Init(addr, dac_cast<DPTR(DynamicMetadata)>(metadataBuffer)->Size);
     }
     else
     {

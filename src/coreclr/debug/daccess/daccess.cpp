@@ -6716,8 +6716,8 @@ ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule
         TADDR metadataBuffer = reflectionModule->GetDynamicMetadataBuffer();
         if (metadataBuffer != PTR_NULL)
         {
-            mdBaseTarget = dac_cast<PTR_CVOID>(metadataBuffer + sizeof(uint32_t));
-            mdSize = *dac_cast<DPTR(uint32_t)>(metadataBuffer);
+            mdBaseTarget = dac_cast<PTR_CVOID>(metadataBuffer + offsetof(DynamicMetadata, Data));
+            mdSize = dac_cast<DPTR(DynamicMetadata)>(metadataBuffer)->Size;
         }
         else
         {

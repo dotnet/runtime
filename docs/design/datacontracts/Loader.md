@@ -114,7 +114,22 @@ ModuleLookupTables GetLookupTables(ModuleHandle handle);
 ## Version 1
 
 Data descriptors used:
-- `Module`
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `Module` | `Assembly` | Assembly of the Module |
+| `Module` | `Base` | Pointer to start of PE file in memory |
+| `Module` | `Flags` | Assembly of the Module |
+| `Module` | `LoaderAllocator` | LoaderAllocator of the Module |
+| `Module` | `ThunkHeap` | Pointer to the thunk heap |
+| `Module` | `DynamicMetadata` | Pointer to saved metadata for reflection emit modules |
+| `Module` | `FieldDefToDescMap` | Mapping table |
+| `Module` | `ManifestModuleReferencesMap` | Mapping table |
+| `Module` | `MemberRefToDescMap` | Mapping table |
+| `Module` | `MethodDefToDescMap` | Mapping table |
+| `Module` | `TypeDefToMethodTableMap` | Mapping table |
+| `Module` | `TypeRefToMethodTableMap` | Mapping table |
+| `DynamicMetadata` | `Size` | Size of the dynamic metadata blob (as a 32bit uint) |
+| `DynamicMetadata` | `Data` | Start of dynamic metadata data array |
 
 ``` csharp
 ModuleHandle GetModuleHandle(TargetPointer modulePointer)
@@ -186,8 +201,9 @@ TargetPointer ILoader.GetReadWriteSavedMetadataAddress(ModuleHandle handle, out 
 {
     Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
     TargetPointer dynamicMetadata = target.ReadPointer(handle.Address + /* Module::DynamicMetadata offset */);
-    size = _target.Read<uint>(dynamicMetadata);
-    TargetPointer result = module.DynamicMetadata + (ulong)_target.PointerSize;
+
+    size = target.Read<uint>(handle.Address + /* DynamicMetadata::Size offset */);
+    TargetPointer result = handle.Address + /* DynamicMetadata::Data offset */;
     return result;
 }
 
