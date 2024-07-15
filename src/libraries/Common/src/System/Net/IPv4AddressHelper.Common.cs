@@ -32,7 +32,7 @@ namespace System.Net
 
                 for (; (start < str.Length) && (ch = int.CreateTruncating(str[start])) != '.' && ch != ':'; ++start)
                 {
-                    b = (b * 10) + ch - '0';
+                    b = unchecked((b * 10) + ch - '0');
                 }
 
                 numbers[i] = (byte)b;
@@ -255,8 +255,15 @@ namespace System.Net
                     }
                     else if (numberBase == IPv4AddressHelper.Hex)
                     {
-                        digitValue = HexConverter.FromChar(characterValue);
-                        if (digitValue == 0xFF)
+                        if (characterValue is >= 'a' and <= 'f')
+                        {
+                            digitValue = characterValue - 'a' + 10;
+                        }
+                        else if (characterValue is >= 'A' and <= 'F')
+                        {
+                            digitValue = characterValue - 'A' + 10;
+                        }
+                        else
                         {
                             break; // Invalid/terminator
                         }
@@ -266,7 +273,7 @@ namespace System.Net
                         break; // Invalid/terminator
                     }
 
-                    currentValue = (currentValue * numberBase) + digitValue;
+                    currentValue = unchecked((currentValue * numberBase) + digitValue);
 
                     if (currentValue > MaxIPv4Value) // Overflow
                     {

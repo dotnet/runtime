@@ -197,7 +197,7 @@ namespace System.Net
                         i += 2;
                         // If there is a port, it must either be a hexadecimal or decimal number.
                         // If the next two characters are '0x' or '0X' then it's a hexadecimal number. Skip the prefix.
-                        if (i + 1 < end && name[i] == TChar.CreateTruncating('0') && (name[i + 1] | TChar.CreateTruncating(0x20)) == TChar.CreateTruncating('x'))
+                        if (i + 1 < end && name[i] == TChar.CreateTruncating('0') && (name[i + 1] == TChar.CreateTruncating('x') || name[i + 1] == TChar.CreateTruncating('X')))
                         {
                             i += 2;
 
@@ -205,7 +205,7 @@ namespace System.Net
                             {
                                 int ch = int.CreateTruncating(name[i]);
 
-                                if (HexConverter.FromChar(ch) == 0xFF)
+                                if (ch is not (>= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F'))
                                 {
                                     return false;
                                 }
@@ -328,13 +328,13 @@ namespace System.Net
             int index = 0;
             int compressorIndex = -1;
             bool numberIsValid = true;
-            int addressTerminatorIndex = address.IndexOf(TChar.CreateTruncating(']'));
-            int end = addressTerminatorIndex < 0 ? address.Length : addressTerminatorIndex;
-            bool containsIPv4Separator = address.Contains(TChar.CreateTruncating('.'));
+            // It's possible for an IPv6 address to be short enough that the cost of Contains outweighs the benefit of short-circuiting the parsing logic.
+            bool shortAddress = address.Length <= 16;
+            bool mayContainIPv4Separator = shortAddress || address.Contains(TChar.CreateTruncating('.'));
 
             scopeId = ReadOnlySpan<TChar>.Empty;
             // Skip the start '[' character, if present. Stop parsing at the end IPv6 address terminator (']').
-            for (int i = (address[0] == TChar.CreateTruncating('[') ? 1 : 0); i < end;)
+            for (int i = (address[0] == TChar.CreateTruncating('[') ? 1 : 0); i < address.Length && address[i] != TChar.CreateTruncating(']');)
             {
                 if (address[i] == TChar.CreateTruncating('%')
                     || address[i] == TChar.CreateTruncating('/'))
@@ -379,7 +379,7 @@ namespace System.Net
                         // numbers yet.
                         continue;
                     }
-                    else if (!containsIPv4Separator)
+                    else if (!mayContainIPv4Separator)
                     {
                         // No point checking for IPv4 address if the string
                         // doesn't contain an IPv4 component separator.
@@ -426,8 +426,15 @@ namespace System.Net
                 {
                     TChar ch = address[i++];
                     int castCharacter = int.CreateTruncating(ch);
+                    int characterValue = castCharacter switch
+                    {
+                        >= '0' and <= '9' => castCharacter - '0',
+                        >= 'a' and <= 'f' => castCharacter - 'a' + 10,
+                        >= 'A' and <= 'F' => castCharacter - 'A' + 10,
+                        _ => 0x0
+                    };
 
-                    number = unchecked((ushort)(number * IPv6AddressHelper.Hex + HexConverter.FromChar(castCharacter)));
+                    number = unchecked((ushort)(number * IPv6AddressHelper.Hex + characterValue));
                 }
             }
 
