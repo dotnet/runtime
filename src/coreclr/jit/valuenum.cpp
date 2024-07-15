@@ -8039,7 +8039,7 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                 {
                     var_types simdType   = Compiler::getSIMDTypeForSize(simdSize);
                     ValueNum  simdResult = EvaluateBinarySimd(this, oper, isScalar, simdType, baseType, arg0VN, arg1VN);
-                    return EvaluateSimdCvtVectorToMask(this, type, baseType, simdResult);
+                    return EvaluateSimdCvtVectorToMask(this, simdType, baseType, simdResult);
                 }
             }
 
@@ -11097,7 +11097,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_MASK:
         {
             simdmask_t simdmaskVal;
-            memcpy(&simdmaskVal, &tree->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
+            memcpy(&simdmaskVal, &tree->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
 
             tree->gtVNPair.SetBoth(vnStore->VNForSimdMaskCon(simdmaskVal));
             break;
