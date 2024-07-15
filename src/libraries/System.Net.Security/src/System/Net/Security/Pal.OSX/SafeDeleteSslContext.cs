@@ -74,6 +74,7 @@ namespace System.Net
                         throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
                 }
 
+                // TBD make this opt-in
                 // NW freamewoprk still does not support all features and server side
                 UseNwFramework = CanUseNwFramework && sslAuthenticationOptions.IsClient &&
                                     sslAuthenticationOptions.CipherSuitesPolicy == null &&

@@ -309,7 +309,6 @@ PALEXPORT int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, 
 
 PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, uint32_t* alpnLength);
 
-//PALEXPORT int32_t AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, SecTrustRef* pChainOut, int32_t* pOSStatus);
 PALEXPORT int32_t AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, CFArrayRef* certificates, int* count);
 PALEXPORT int32_t AppleCryptoNative_NwCancelConnection(nw_connection_t connection);
 

@@ -115,48 +115,33 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 };
 
 
-// for simplicity this is now synchronous method that will take data read by SslStream and it would feed them to nw_connection via framer.
-// we can revisit that later and wait in .NET but it simplifies buffer ownership for now
-int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int dataLength)
+// this takes encrypted input from underlying stream and feeds it to nw_connection.
+int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength)
 {
     nw_framer_message_t message = nw_framer_message_create(framer);
-   dispatch_semaphore_t sem = dispatch_semaphore_create(42);
 
     // There is race condition when connection can fail or be canceled and if it does we fail to create the message here.
     if (message == NULL)
     {
         return -1;
     }
-/*
-    dispatch_data_t data  = dispatch_data_create(b2, (size_t)dataLength, _tlsQueue, nil);
-    if (dataLength > 0 )
-    {
-        
-    }
 
-     uint8_t * b2 = NULL;
-    if (dataLength > 0)
-    {
-         b2 = malloc((size_t)dataLength);
-         memcpy(b2, buffer, dataLength);
-
-    //dispatch_data_t data = dispatch_data_create(b2, (size_t)dataLength, _inputQueue, nil);
-   data = dispatch_data_create(b2, (size_t)dataLength, _tlsQueue, nil);
-    nw_framer_message_set_value(message, "DATA", b2, NULL);
-    }
-    else
-    {
-        data = NULL;
-    }
-*/
+     uint8_t * copy = NULL;
+     if (bufferLength > 0)
+     {
+        copy = malloc((size_t)bufferLength);
+        memcpy(copy, buffer, bufferLength);
+        nw_framer_message_set_value(message, "DATA", copy,  ^(void* ptr) {
+             free(ptr);
+        });
+     }
 
     nw_framer_async(framer, ^(void) 
     {
-        nw_framer_deliver_input(framer, buffer, (size_t)dataLength, message, dataLength > 0 ? FALSE : TRUE);
-        dispatch_semaphore_signal(sem);
+        nw_framer_deliver_input(framer, copy, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
+        nw_release(message);
     });
 
-    dispatch_semaphore_wait(sem,  DISPATCH_TIME_FOREVER);
     (void*)connection;
 
     return 0;
