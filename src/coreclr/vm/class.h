@@ -1893,6 +1893,7 @@ public:
     PTR_Stub                         m_pStaticCallStub;
     PTR_Stub                         m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
+    PTR_Stub                         m_pSingleCastInvokeStub;
     PTR_Stub                         m_pMultiCastInvokeStub;
     PTR_Stub                         m_pWrapperDelegateInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;

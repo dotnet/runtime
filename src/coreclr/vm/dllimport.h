@@ -203,6 +203,7 @@ enum ILStubTypes
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
     ILSTUB_STATIC_VIRTUAL_DISPATCH_STUB  = 0x8000000A,
+    ILSTUB_SINGLECASTDELEGATE_INVOKE     = 0x8000000B,
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -230,6 +231,7 @@ inline bool SF_IsArrayOpStub           (DWORD dwStubFlags) { LIMITED_METHOD_CONT
                                                                                               (dwStubFlags == ILSTUB_ARRAYOP_ADDRESS)); }
 
 inline bool SF_IsMulticastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_MULTICASTDELEGATE_INVOKE); }
+inline bool SF_IsSinglecastDelegateStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_SINGLECASTDELEGATE_INVOKE); }
 
 inline bool SF_IsWrapperDelegateStub    (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_WRAPPERDELEGATE_INVOKE); }
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL

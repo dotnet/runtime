@@ -1885,18 +1885,6 @@ BOOL COMDelegate::IsTrueMulticastDelegate(OBJECTREF delegate)
     return isMulticast;
 }
 
-PCODE COMDelegate::TheDelegateInvokeStub()
-{
-    CONTRACT(PCODE)
-    {
-        STANDARD_VM_CHECK;
-        POSTCONDITION(RETVAL != NULL);
-    }
-    CONTRACT_END;
-
-    RETURN GetEEFuncEntryPoint(SinglecastDelegateInvokeStub);
-}
-
 // Get the cpu stub for a delegate invoke.
 PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 {
@@ -1920,7 +1908,54 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
             COMPlusThrow(kInvalidProgramException);
 
-        ret = COMDelegate::TheDelegateInvokeStub();
+        Stub *pStub = pClass->m_pMultiCastInvokeStub;
+        if (pStub == NULL)
+        {
+            MetaSig sig(pMD);
+
+            BOOL fReturnVal = !sig.IsReturnTypeVoid();
+
+            SigTypeContext emptyContext;
+            ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
+
+            ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+            // Load the target object
+            pCode->EmitLoadThis();
+            pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
+
+            // Load the arguments
+            for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
+                pCode->EmitLDARG(paramCount);
+
+            // Load the method pointer
+            pCode->EmitLoadThis();
+            pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR)));
+        
+            PCCOR_SIGNATURE pSig;
+            DWORD cbSig;
+            pMD->GetSig(&pSig,&cbSig);
+
+            // call the delegate
+            pCode->EmitCALLI(pCode->GetSigToken(pSig, cbSig), sig.NumFixedArgs(), fReturnVal);
+
+            // return
+            pCode->EmitRET();
+
+            MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
+                                                                   pMD->GetMethodTable(),
+                                                                   ILSTUB_MULTICASTDELEGATE_INVOKE,
+                                                                   pMD->GetModule(),
+                                                                   pSig, cbSig,
+                                                                   NULL,
+                                                                   &sl);
+
+            pStub = Stub::NewStub(JitILStub(pStubMD));
+
+            InterlockedCompareExchangeT<PTR_Stub>(&pClass->m_pSingleCastInvokeStub, pStub, NULL);
+        }
+
+        ret = pStub->GetEntryPoint();
     }
     else
     {

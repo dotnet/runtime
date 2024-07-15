@@ -148,6 +148,7 @@ namespace
             case DynamicMethodDesc::StubStructMarshalInterop: return "IL_STUB_StructMarshal";
             case DynamicMethodDesc::StubArrayOp:            return "IL_STUB_Array";
             case DynamicMethodDesc::StubMulticastDelegate:  return "IL_STUB_MulticastDelegate_Invoke";
+            case DynamicMethodDesc::StubSinglecastDelegate:  return "IL_STUB_SinglecastDelegate_Invoke";
 #ifdef FEATURE_INSTANTIATINGSTUB_AS_IL
             case DynamicMethodDesc::StubUnboxingIL:         return "IL_STUB_UnboxingStub";
             case DynamicMethodDesc::StubInstantiating:      return "IL_STUB_InstantiatingStub";
@@ -240,6 +241,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsMulticastDelegateStub(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubMulticastDelegate);
+    }
+    else
+    if (SF_IsSinglecastDelegateStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubSinglecastDelegate);
     }
     else
     if (SF_IsWrapperDelegateStub(dwStubFlags))
