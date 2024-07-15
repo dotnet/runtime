@@ -62,6 +62,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates executing the test inside conditional, with op3 as zero
                 test.ConditionalSelect_ZeroOp();
+
+                // Validates basic functionality fails with an invalid imm, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm();
             }
             else
             {
@@ -207,6 +210,31 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm));
+
+            bool succeeded = false;
+            try
+            {
+                var result = {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
+                    {InvalidImm}
+                );
+                Console.WriteLine(result);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
         }
 
         public void RunBasicScenario_Load()
@@ -368,7 +396,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> op2, {Op1VectorType}<{Op1BaseType}> falseOp)
         {
-            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, Imm), falseOp);
+            var result = Sve.ConditionalSelect(mask, {Isa}.{Method}(op1, op2, {Imm}), falseOp);
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateConditionalSelectResult_TrueValue(mask, op1, op2, falseOp, _dataTable.outArrayPtr);
         }
@@ -376,7 +404,7 @@ namespace JIT.HardwareIntrinsics.Arm
         [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}> mask, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> op2, {Op1VectorType}<{Op1BaseType}> trueOp)
         {
-            var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op1, op2, Imm));
+            var result = Sve.ConditionalSelect(mask, trueOp, {Isa}.{Method}(op1, op2, {Imm}));
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateConditionalSelectResult_FalseValue(mask, op1, op2, trueOp, _dataTable.outArrayPtr);
         }

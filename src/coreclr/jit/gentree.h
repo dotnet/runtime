@@ -400,20 +400,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_NODE_MASK   = GTF_COLON_COND,
 
-    GTF_BOOLEAN     = 0x00004000, // value is known to be 0/1
-
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
-
-// The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
-// that we are calling in the context of performing a CSE, thus we
-// should allow the run-once side effects of running a class constructor.
-//
-// The only requirement of this flag is that it not overlap any of the
-// side-effect flags. The actual bit used is otherwise arbitrary.
-
-    GTF_IS_IN_CSE   = GTF_BOOLEAN,
 
     GTF_COMMON_MASK = 0x0003FFFF, // mask of all the flags above
 
@@ -1640,6 +1629,32 @@ public:
 
     bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
 
+    bool OperIsConvertMaskToVector() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertMaskToVector);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
+        return false;
+#endif // FEATURE_HW_INTRINSICS
+    }
+
+    bool OperIsConvertVectorToMask() const
+    {
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(TARGET_XARCH)
+        return OperIsHWIntrinsic(NI_EVEX_ConvertVectorToMask);
+#elif defined(TARGET_ARM64)
+        return OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+#else
+        return false;
+#endif // FEATURE_HW_INTRINSICS
+    }
+
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
     {
@@ -2241,11 +2256,11 @@ public:
         return OperGet() == GT_CALL;
     }
     inline bool IsHelperCall();
+    inline bool IsHelperCall(Compiler* compiler, unsigned helper);
 
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
-    bool gtRequestSetFlags();
 
 #ifdef DEBUG
     static int         gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
@@ -6499,34 +6514,11 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsBitwiseHWIntrinsic() const;
     bool OperIsEmbRoundingEnabled() const;
 
-    bool OperIsConvertMaskToVector() const
-    {
-#if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_EVEX_ConvertMaskToVector;
-#elif defined(TARGET_ARM64)
-        return GetHWIntrinsicId() == NI_Sve_ConvertMaskToVector;
-#else
-        return false;
-#endif // TARGET_ARM64 && FEATURE_MASKED_HW_INTRINSICS
-    }
-
-    bool OperIsConvertVectorToMask() const
-    {
-#if defined(TARGET_XARCH)
-        return GetHWIntrinsicId() == NI_EVEX_ConvertVectorToMask;
-#elif defined(TARGET_ARM64)
-        return GetHWIntrinsicId() == NI_Sve_ConvertVectorToMask;
-#else
-        return false;
-#endif
-    }
-
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
     bool OperRequiresGlobRefFlag() const;
 
     unsigned GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
-    uint8_t  GetTernaryControlByte(GenTreeHWIntrinsic* second) const;
 
     ClassLayout* GetLayout(Compiler* compiler) const;
 
@@ -10500,7 +10492,12 @@ inline bool GenTree::IsCnsVec() const
 
 inline bool GenTree::IsHelperCall()
 {
-    return OperGet() == GT_CALL && AsCall()->IsHelperCall();
+    return IsCall() && AsCall()->IsHelperCall();
+}
+
+inline bool GenTree::IsHelperCall(Compiler* compiler, unsigned helper)
+{
+    return IsCall() && AsCall()->IsHelperCall(compiler, helper);
 }
 
 inline var_types GenTree::CastFromType()

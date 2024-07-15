@@ -9961,81 +9961,7 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 
 bool GenTree::gtSetFlags() const
 {
-    //
-    // When FEATURE_SET_FLAGS (TARGET_ARM) is active the method returns true
-    //    when the gtFlags has the flag GTF_SET_FLAGS set
-    // otherwise the architecture will be have instructions that typically set
-    //    the flags and this method will return true.
-    //
-    //    Exceptions: GT_IND (load/store) is not allowed to set the flags
-    //                and on XARCH the GT_MUL/GT_DIV and all overflow instructions
-    //                do not set the condition flags
-    //
-    // Precondition we have a GTK_SMPOP
-    //
-    if (!varTypeIsIntegralOrI(TypeGet()) && (TypeGet() != TYP_VOID))
-    {
-        return false;
-    }
-
-    if (((gtFlags & GTF_SET_FLAGS) != 0) && (gtOper != GT_IND))
-    {
-        // GTF_SET_FLAGS is not valid on GT_IND and is overlaid with GTF_NONFAULTING_IND
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-bool GenTree::gtRequestSetFlags()
-{
-    bool result = false;
-
-#if FEATURE_SET_FLAGS
-    // This method is a Nop unless FEATURE_SET_FLAGS is defined
-
-    // In order to set GTF_SET_FLAGS
-    //              we must have a GTK_SMPOP
-    //          and we have a integer or machine size type (not floating point or TYP_LONG on 32-bit)
-    //
-    if (!OperIsSimple())
-        return false;
-
-    if (!varTypeIsIntegralOrI(TypeGet()))
-        return false;
-
-    switch (gtOper)
-    {
-        case GT_IND:
-        case GT_ARR_LENGTH:
-        case GT_MDARR_LENGTH:
-        case GT_MDARR_LOWER_BOUND:
-            // These will turn into simple load from memory instructions
-            // and we can't force the setting of the flags on load from memory
-            break;
-
-        case GT_MUL:
-        case GT_DIV:
-            // These instructions don't set the flags (on x86/x64)
-            //
-            break;
-
-        default:
-            // Otherwise we can set the flags for this gtOper
-            // and codegen must set the condition flags.
-            //
-            gtFlags |= GTF_SET_FLAGS;
-            result = true;
-            break;
-    }
-#endif // FEATURE_SET_FLAGS
-
-    // Codegen for this tree must set the condition flags if
-    // this method returns true.
-    //
-    return result;
+    return (gtFlags & GTF_SET_FLAGS) != 0;
 }
 
 GenTreeUseEdgeIterator::GenTreeUseEdgeIterator()
@@ -10679,11 +10605,7 @@ bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
                      (flags & GTF_MAKE_CSE) ? 'H'
                                             : '-'); // H is for Hoist this expr
     printf("%c", (flags & GTF_REVERSE_OPS) ? 'R' : '-');
-    printf("%c", (flags & GTF_UNSIGNED) ? 'U' : (flags & GTF_BOOLEAN) ? 'B' : '-');
-#if FEATURE_SET_FLAGS
-    printf("%c", (flags & GTF_SET_FLAGS) ? 'S' : '-');
-    ++charsDisplayed;
-#endif
+    printf("%c", (flags & GTF_UNSIGNED) ? 'U' : '-');
 
     // Both GTF_SPILL and GTF_SPILLED: '#'
     //               Only GTF_SPILLED: 'z'
@@ -13281,10 +13203,6 @@ void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr *
 
         // 60 spaces for alignment
         printf("%-60s", "");
-#if FEATURE_SET_FLAGS
-        // additional flag enlarges the flag field by one character
-        printf(" ");
-#endif
 
         indentStack.Push(operandArc);
         indentStack.print();
@@ -14366,21 +14284,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
                 op = NewZeroExtendNode(tree->TypeGet(), op, TYP_UINT);
                 goto DONE_FOLD;
             }
-            else
-            {
-                /* The GTF_BOOLEAN flag is set for nodes that are part
-                 * of a boolean expression, thus all their children
-                 * are known to evaluate to only 0 or 1 */
-
-                if (tree->gtFlags & GTF_BOOLEAN)
-                {
-
-                    /* The constant value must be 1
-                     * AND with 1 stays the same */
-                    assert(val == 1);
-                    goto DONE_FOLD;
-                }
-            }
             break;
         }
 
@@ -14388,16 +14291,6 @@ GenTree* Compiler::gtFoldExprSpecial(GenTree* tree)
         {
             if (val == 0)
             {
-                goto DONE_FOLD;
-            }
-            else if (tree->gtFlags & GTF_BOOLEAN)
-            {
-                /* The constant value must be 1 - OR with 1 is 1 */
-
-                assert(val == 1);
-
-                // OR with one - return the 'one' node
-                op = gtWrapWithSideEffects(cons, op, GTF_ALL_EFFECT);
                 goto DONE_FOLD;
             }
             break;
@@ -16716,7 +16609,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
  *  It may return false even if the node has GTF_SIDE_EFFECT (because of its children).
  */
 
-bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
+bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors)
 {
     if (flags & GTF_ASG)
     {
@@ -16743,7 +16636,6 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
         {
             GenTreeCall* const call             = potentialCall->AsCall();
             const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
-            const bool         ignoreCctors     = (flags & GTF_IS_IN_CSE) != 0; // We can CSE helpers that run cctors.
             if (!call->HasSideEffects(this, ignoreExceptions, ignoreCctors))
             {
                 // If this call is otherwise side effect free, check its arguments.
@@ -16751,12 +16643,13 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
                 {
                     // I'm a little worried that args that assign to temps that are late args will look like
                     // side effects...but better to be conservative for now.
-                    if ((arg.GetEarlyNode() != nullptr) && gtTreeHasSideEffects(arg.GetEarlyNode(), flags))
+                    if ((arg.GetEarlyNode() != nullptr) &&
+                        gtTreeHasSideEffects(arg.GetEarlyNode(), flags, ignoreCctors))
                     {
                         return true;
                     }
 
-                    if ((arg.GetLateNode() != nullptr) && gtTreeHasSideEffects(arg.GetLateNode(), flags))
+                    if ((arg.GetLateNode() != nullptr) && gtTreeHasSideEffects(arg.GetLateNode(), flags, ignoreCctors))
                     {
                         return true;
                     }
@@ -16793,7 +16686,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
  * Returns true if the expr tree has any side effects.
  */
 
-bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_SIDE_EFFECT*/)
+bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_SIDE_EFFECT*/, bool ignoreCctors)
 {
     // These are the side effect flags that we care about for this tree
     GenTreeFlags sideEffectFlags = tree->gtFlags & flags;
@@ -16816,22 +16709,22 @@ bool Compiler::gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags /* = GTF_S
                 // If this node is a helper call we may not care about the side-effects.
                 // Note that gtNodeHasSideEffects checks the side effects of the helper itself
                 // as well as the side effects of its arguments.
-                return gtNodeHasSideEffects(tree, flags);
+                return gtNodeHasSideEffects(tree, flags, ignoreCctors);
             }
         }
         else if (tree->OperGet() == GT_INTRINSIC)
         {
-            if (gtNodeHasSideEffects(tree, flags))
+            if (gtNodeHasSideEffects(tree, flags, ignoreCctors))
             {
                 return true;
             }
 
-            if (gtNodeHasSideEffects(tree->AsOp()->gtOp1, flags))
+            if (gtNodeHasSideEffects(tree->AsOp()->gtOp1, flags, ignoreCctors))
             {
                 return true;
             }
 
-            if ((tree->AsOp()->gtOp2 != nullptr) && gtNodeHasSideEffects(tree->AsOp()->gtOp2, flags))
+            if ((tree->AsOp()->gtOp2 != nullptr) && gtNodeHasSideEffects(tree->AsOp()->gtOp2, flags, ignoreCctors))
             {
                 return true;
             }
@@ -17217,81 +17110,61 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
         {
             GenTree* node = *use;
 
-            bool treeHasSideEffects = m_compiler->gtTreeHasSideEffects(node, m_flags);
-
-            if (treeHasSideEffects)
+            if (!m_compiler->gtTreeHasSideEffects(node, m_flags))
             {
-                if (m_compiler->gtNodeHasSideEffects(node, m_flags))
-                {
-                    if (node->OperIsBlk() && !node->OperIsStoreBlk())
-                    {
-                        JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                        m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
-                    }
-
-                    Append(node);
-                    return Compiler::WALK_SKIP_SUBTREES;
-                }
-
-                if (node->OperIs(GT_QMARK))
-                {
-                    GenTree* prevSideEffects = m_result;
-                    // Visit children out of order so we know if we can
-                    // completely remove the qmark. We cannot modify the
-                    // condition if we cannot completely remove the qmark, so
-                    // we cannot visit it first.
-
-                    GenTreeQmark* qmark = node->AsQmark();
-                    GenTreeColon* colon = qmark->gtGetOp2()->AsColon();
-
-                    m_result = nullptr;
-                    WalkTree(&colon->gtOp1, colon);
-                    GenTree* thenSideEffects = m_result;
-
-                    m_result = nullptr;
-                    WalkTree(&colon->gtOp2, colon);
-                    GenTree* elseSideEffects = m_result;
-
-                    m_result = prevSideEffects;
-
-                    if ((thenSideEffects == nullptr) && (elseSideEffects == nullptr))
-                    {
-                        WalkTree(&qmark->gtOp1, qmark);
-                    }
-                    else
-                    {
-                        colon->gtOp1  = (thenSideEffects != nullptr) ? thenSideEffects : m_compiler->gtNewNothingNode();
-                        colon->gtOp2  = (elseSideEffects != nullptr) ? elseSideEffects : m_compiler->gtNewNothingNode();
-                        qmark->gtType = TYP_VOID;
-                        colon->gtType = TYP_VOID;
-                        Append(qmark);
-                    }
-
-                    return Compiler::WALK_SKIP_SUBTREES;
-                }
-
-                // Generally all GT_CALL nodes are considered to have side-effects.
-                // So if we get here it must be a helper call that we decided it does
-                // not have side effects that we needed to keep.
-                assert(!node->OperIs(GT_CALL) || node->AsCall()->IsHelperCall());
+                return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            if ((m_flags & GTF_IS_IN_CSE) != 0)
+            if (m_compiler->gtNodeHasSideEffects(node, m_flags))
             {
-                // If we're doing CSE then we also need to unmark CSE nodes. This will fail for CSE defs,
-                // those need to be extracted as if they're side effects.
-                if (!UnmarkCSE(node))
+                if (node->OperIsBlk() && !node->OperIsStoreBlk())
                 {
-                    Append(node);
-                    return Compiler::WALK_SKIP_SUBTREES;
+                    JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+                    m_compiler->gtChangeOperToNullCheck(node, m_compiler->compCurBB);
                 }
 
-                // The existence of CSE defs and uses is not propagated up the tree like side
-                // effects are. We need to continue visiting the tree as if it has side effects.
-                treeHasSideEffects = true;
+                Append(node);
+                return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            return treeHasSideEffects ? Compiler::WALK_CONTINUE : Compiler::WALK_SKIP_SUBTREES;
+            if (node->OperIs(GT_QMARK))
+            {
+                GenTree* prevSideEffects = m_result;
+                // Visit children out of order so we know if we can
+                // completely remove the qmark. We cannot modify the
+                // condition if we cannot completely remove the qmark, so
+                // we cannot visit it first.
+
+                GenTreeQmark* qmark = node->AsQmark();
+                GenTreeColon* colon = qmark->gtGetOp2()->AsColon();
+
+                m_result = nullptr;
+                WalkTree(&colon->gtOp1, colon);
+                GenTree* thenSideEffects = m_result;
+
+                m_result = nullptr;
+                WalkTree(&colon->gtOp2, colon);
+                GenTree* elseSideEffects = m_result;
+
+                m_result = prevSideEffects;
+
+                if ((thenSideEffects == nullptr) && (elseSideEffects == nullptr))
+                {
+                    WalkTree(&qmark->gtOp1, qmark);
+                }
+                else
+                {
+                    colon->gtOp1  = (thenSideEffects != nullptr) ? thenSideEffects : m_compiler->gtNewNothingNode();
+                    colon->gtOp2  = (elseSideEffects != nullptr) ? elseSideEffects : m_compiler->gtNewNothingNode();
+                    qmark->gtType = TYP_VOID;
+                    colon->gtType = TYP_VOID;
+                    Append(qmark);
+                }
+
+                return Compiler::WALK_SKIP_SUBTREES;
+            }
+
+            return Compiler::WALK_CONTINUE;
         }
 
         void Append(GenTree* node)
@@ -17303,7 +17176,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             }
 
             GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
-            comma->gtFlags |= (m_result->gtFlags | node->gtFlags) & GTF_ALL_EFFECT;
 
 #ifdef DEBUG
             if (m_compiler->fgGlobalMorph)
@@ -17325,51 +17197,11 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
             //
             if ((m_compiler->vnStore != nullptr) && m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
             {
-                // The result of a GT_COMMA node is op2, the normal value number is op2vnp
-                // But we also need to include the union of side effects from op1 and op2.
-                // we compute this value into exceptions_vnp.
-                ValueNumPair op1vnp;
-                ValueNumPair op1Xvnp = ValueNumStore::VNPForEmptyExcSet();
-                ValueNumPair op2vnp;
-                ValueNumPair op2Xvnp = ValueNumStore::VNPForEmptyExcSet();
-
-                m_compiler->vnStore->VNPUnpackExc(node->gtVNPair, &op1vnp, &op1Xvnp);
-                m_compiler->vnStore->VNPUnpackExc(m_result->gtVNPair, &op2vnp, &op2Xvnp);
-
-                ValueNumPair exceptions_vnp = ValueNumStore::VNPForEmptyExcSet();
-
-                exceptions_vnp = m_compiler->vnStore->VNPExcSetUnion(exceptions_vnp, op1Xvnp);
-                exceptions_vnp = m_compiler->vnStore->VNPExcSetUnion(exceptions_vnp, op2Xvnp);
-
-                comma->gtVNPair = m_compiler->vnStore->VNPWithExc(op2vnp, exceptions_vnp);
+                ValueNumPair op1Exceptions = m_compiler->vnStore->VNPExceptionSet(m_result->gtVNPair);
+                comma->gtVNPair            = m_compiler->vnStore->VNPWithExc(node->gtVNPair, op1Exceptions);
             }
 
             m_result = comma;
-        }
-
-    private:
-        bool UnmarkCSE(GenTree* node)
-        {
-            assert(m_compiler->optValnumCSE_phase);
-
-            if (m_compiler->optUnmarkCSE(node))
-            {
-                // The call to optUnmarkCSE(node) should have cleared any CSE info.
-                assert(!IS_CSE_INDEX(node->gtCSEnum));
-                return true;
-            }
-            else
-            {
-                assert(IS_CSE_DEF(node->gtCSEnum));
-#ifdef DEBUG
-                if (m_compiler->verbose)
-                {
-                    printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(node->gtCSEnum));
-                    m_compiler->printTreeID(node);
-                }
-#endif
-                return false;
-            }
         }
     };
 
@@ -20613,10 +20445,17 @@ GenTree* Compiler::gtNewSimdAbsNode(var_types type, GenTree* op1, CorInfoType si
 
         GenTree* bitMask;
 
-        bitMask = gtNewDconNode(-0.0, simdBaseType);
-        bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, simdBaseJitType, simdSize);
-
-        return gtNewSimdBinOpNode(GT_AND_NOT, type, op1, bitMask, simdBaseJitType, simdSize);
+        if (simdBaseType == TYP_FLOAT)
+        {
+            bitMask = gtNewIconNode(0x7FFFFFFF);
+            bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, CORINFO_TYPE_INT, simdSize);
+        }
+        else
+        {
+            bitMask = gtNewLconNode(0x7FFFFFFFFFFFFFFF);
+            bitMask = gtNewSimdCreateBroadcastNode(type, bitMask, CORINFO_TYPE_LONG, simdSize);
+        }
+        return gtNewSimdBinOpNode(GT_AND, type, op1, bitMask, simdBaseJitType, simdSize);
     }
 
     NamedIntrinsic intrinsic = NI_Illegal;
@@ -20857,12 +20696,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                     }
                 }
             }
-
-            if (op == GT_AND_NOT)
-            {
-                // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
-                needsReverseOps = true;
-            }
             break;
         }
 #endif // TARGET_XARCH
@@ -20893,11 +20726,34 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
     if (intrinsic != NI_Illegal)
     {
+        if (op == GT_AND_NOT)
+        {
+            assert(fgNodeThreading == NodeThreading::LIR);
+
+#if defined(TARGET_XARCH)
+            // GT_AND_NOT expects `op1 & ~op2`, but xarch does `~op1 & op2`
+            // We specially handle this here since we're only producing a
+            // native intrinsic node in LIR
+
+            std::swap(op1, op2);
+#endif // TARGET_XARCH
+        }
         return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
     }
 
     switch (op)
     {
+        case GT_AND_NOT:
+        {
+            // Prior to LIR, we want to explicitly decompose this operation so that downstream phases can
+            // appropriately optimize around the individual operations being performed, particularly ~op2,
+            // and produce overall better codegen.
+            assert(fgNodeThreading != NodeThreading::LIR);
+
+            op2 = gtNewSimdUnOpNode(GT_NOT, type, op2, simdBaseJitType, simdSize);
+            return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseJitType, simdSize);
+        }
+
 #if defined(TARGET_XARCH)
         case GT_RSZ:
         {
@@ -21061,9 +20917,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                         {
                             vecCon1->gtSimdVal.u64[i] = 0x00FF00FF00FF00FF;
                         }
-
-                        // Validate we can't use AVX512F_VL_TernaryLogic here
-                        assert(!canUseEvexEncodingDebugOnly());
 
                         // Vector256<short> maskedProduct = Avx2.And(widenedProduct, vecCon1).AsInt16()
                         GenTree* maskedProduct    = gtNewSimdBinOpNode(GT_AND, widenedType, widenedProduct, vecCon1,
@@ -22028,9 +21881,6 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                                                CORINFO_TYPE_INT, simdSize);
                 v   = gtNewSimdHWIntrinsicNode(type, v, gtNewIconNode(SHUFFLE_ZZXX, TYP_INT), NI_SSE2_Shuffle,
                                                CORINFO_TYPE_INT, simdSize);
-
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
 
                 op2 = gtNewSimdBinOpNode(GT_AND, type, u, v, simdBaseJitType, simdSize);
                 return gtNewSimdBinOpNode(GT_OR, type, op1, op2, simdBaseJitType, simdSize);
@@ -24422,9 +24272,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
-
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
                 tmp3 = gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_AVX2_PackUnsignedSaturate, CORINFO_TYPE_UBYTE,
@@ -24462,9 +24309,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                 }
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
-
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
 
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -24567,9 +24411,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
 
                 GenTree* vecCon2 = gtCloneExpr(vecCon1);
 
-                // Validate we can't use AVX512F_VL_TernaryLogic here
-                assert(!canUseEvexEncodingDebugOnly());
-
                 tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                 tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
 
@@ -24605,9 +24446,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(
                     }
 
                     GenTree* vecCon2 = gtCloneExpr(vecCon1);
-
-                    // Validate we can't use AVX512F_VL_TernaryLogic here
-                    assert(!canUseEvexEncodingDebugOnly());
 
                     tmp1 = gtNewSimdBinOpNode(GT_AND, type, op1, vecCon1, simdBaseJitType, simdSize);
                     tmp2 = gtNewSimdBinOpNode(GT_AND, type, op2, vecCon2, simdBaseJitType, simdSize);
@@ -26833,6 +26671,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
             case NI_SSE2_MaskMove:
                 addr = Op(3);
                 break;
+
 #elif defined(TARGET_ARM64)
             case NI_Sve_StoreAndZip:
             case NI_Sve_StoreAndZipx2:
@@ -26844,9 +26683,14 @@ bool GenTreeHWIntrinsic::OperIsMemoryStore(GenTree** pAddr) const
                 break;
 
             case NI_Sve_Scatter:
+            case NI_Sve_Scatter16BitNarrowing:
+            case NI_Sve_Scatter16BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter32BitNarrowing:
+            case NI_Sve_Scatter32BitWithByteOffsetsNarrowing:
+            case NI_Sve_Scatter8BitNarrowing:
+            case NI_Sve_Scatter8BitWithByteOffsetsNarrowing:
                 addr = Op(2);
                 break;
-
 #endif // TARGET_ARM64
 
             default:
@@ -28227,6 +28071,14 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(Compiler*  comp,
             assert(!isScalar);
             assert(op2->TypeIs(simdType));
 
+            if (comp->fgNodeThreading != NodeThreading::LIR)
+            {
+                // We don't want to support creating AND_NOT nodes prior to LIR
+                // as it can break important optimizations. We'll produces this
+                // in lowering instead.
+                break;
+            }
+
 #if defined(TARGET_XARCH)
             if (simdSize == 64)
             {
@@ -29294,6 +29146,21 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
             return IsUserCall() && (operand == Op(2));
         }
 
+#if defined(TARGET_XARCH)
+        case NI_SSE_Xor:
+        case NI_SSE2_Xor:
+        case NI_AVX_Xor:
+        case NI_AVX2_Xor:
+        case NI_AVX512F_Xor:
+        case NI_AVX512DQ_Xor:
+        case NI_AVX10v1_V512_Xor:
+        {
+            // We recognize this as GT_NOT which can enable other optimizations
+            assert(GetOperandCount() == 2);
+            return vecCon->IsVectorAllBitsSet();
+        }
+#endif // TARGET_XARCH
+
         default:
         {
             break;
@@ -30043,7 +29910,8 @@ bool GenTreeLclVar::IsNeverNegative(Compiler* comp) const
 unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
 #if defined(TARGET_XARCH)
-    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId));
+    assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId) || HWIntrinsicInfo::IsPermuteVar2x(gtHWIntrinsicId) ||
+           HWIntrinsicInfo::IsTernaryLogic(gtHWIntrinsicId));
 #elif defined(TARGET_ARM64)
     assert(HWIntrinsicInfo::IsFmaIntrinsic(gtHWIntrinsicId));
 #endif
@@ -30086,85 +29954,6 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForRmwIntrinsic(GenTree* use, GenTree
     }
 
     return 0;
-}
-
-//------------------------------------------------------------------------
-// GetTernaryControlByte: calculate the value of the control byte for ternary node
-// with given logic nodes on the input.
-//
-// Return value: the value of the ternary control byte.
-uint8_t GenTreeHWIntrinsic::GetTernaryControlByte(GenTreeHWIntrinsic* second) const
-{
-    // we assume we have a structure like:
-    /*
-               /- A
-               +- B
-        t1 = binary logical op1
-
-               /- C
-               +- t1
-        t2 = binary logical op2
-    */
-
-    // To calculate the control byte value:
-    // The way the constants work is we have three keys:
-    // * A: 0xF0
-    // * B: 0xCC
-    // * C: 0xAA
-    //
-    // To compute the correct control byte, you simply perform the corresponding operation on these keys. So, if you
-    // wanted to do (A & B) ^ C, you would compute (0xF0 & 0xCC) ^ 0xAA or 0x6A.
-    assert(second->Op(1) == this || second->Op(2) == this);
-    const uint8_t A = 0xF0;
-    const uint8_t B = 0xCC;
-    const uint8_t C = 0xAA;
-
-    bool isScalar = false;
-
-    genTreeOps firstOper = GetOperForHWIntrinsicId(&isScalar);
-    assert(!isScalar);
-
-    genTreeOps secondOper = second->GetOperForHWIntrinsicId(&isScalar);
-    assert(!isScalar);
-
-    uint8_t AB  = 0;
-    uint8_t ABC = 0;
-
-    if (firstOper == GT_AND)
-    {
-        AB = A & B;
-    }
-    else if (firstOper == GT_OR)
-    {
-        AB = A | B;
-    }
-    else if (firstOper == GT_XOR)
-    {
-        AB = A ^ B;
-    }
-    else
-    {
-        unreached();
-    }
-
-    if (secondOper == GT_AND)
-    {
-        ABC = AB & C;
-    }
-    else if (secondOper == GT_OR)
-    {
-        ABC = AB | C;
-    }
-    else if (secondOper == GT_XOR)
-    {
-        ABC = AB ^ C;
-    }
-    else
-    {
-        unreached();
-    }
-
-    return ABC;
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS
 
@@ -30561,13 +30350,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     bool       isScalar = false;
     genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
 
-#if defined(TARGET_XARCH)
-    if (oper == GT_AND_NOT)
-    {
-        // xarch does: ~op1 & op2, we need op1 & ~op2
-        std::swap(op1, op2);
-    }
-#endif // TARGET_XARCH
+    // We shouldn't find AND_NOT nodes since it should only be produced in lowering
+    assert(oper != GT_AND_NOT);
 
     GenTree* cnsNode   = nullptr;
     GenTree* otherNode = nullptr;
@@ -30706,7 +30490,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                 case NI_Vector256_ToVector512:
                 {
-                    assert(retType == TYP_SIMD32);
+                    assert(retType == TYP_SIMD64);
                     assert(cnsNode->gtType == TYP_SIMD32);
                     cnsNode->AsVecCon()->gtSimd64Val.v256[1] = {};
 
@@ -31076,31 +30860,6 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 if (cnsNode->IsVectorAllBitsSet())
                 {
                     resultNode = otherNode;
-                }
-                break;
-            }
-
-            case GT_AND_NOT:
-            {
-                // Handle `x & ~0 == x` and `0 & ~x == 0`
-                if (cnsNode->IsVectorZero())
-                {
-                    if (cnsNode == op1)
-                    {
-                        resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
-                        break;
-                    }
-                    else
-                    {
-                        resultNode = otherNode;
-                    }
-                    break;
-                }
-
-                // Handle `x & ~AllBitsSet == 0`
-                if (cnsNode->IsVectorAllBitsSet() && (cnsNode == op2))
-                {
-                    resultNode = gtWrapWithSideEffects(cnsNode, otherNode, GTF_ALL_EFFECT);
                 }
                 break;
             }
@@ -31495,12 +31254,12 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         switch (ni)
         {
-            case NI_Vector128_ConditionalSelect:
 #if defined(TARGET_XARCH)
+            case NI_Vector128_ConditionalSelect:
             case NI_Vector256_ConditionalSelect:
             case NI_Vector512_ConditionalSelect:
 #elif defined(TARGET_ARM64)
-            case NI_Vector64_ConditionalSelect:
+            case NI_AdvSimd_BitwiseSelect:
             case NI_Sve_ConditionalSelect:
 #endif
             {

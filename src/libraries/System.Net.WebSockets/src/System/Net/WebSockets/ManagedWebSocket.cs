@@ -1452,7 +1452,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
+        private static int CombineMaskBytes(ReadOnlySpan<byte> buffer, int maskOffset) =>
             BitConverter.ToInt32(buffer.Slice(maskOffset));
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>
@@ -1544,7 +1544,7 @@ namespace System.Net.WebSockets
         // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75
         // Performs a stateful validation of UTF-8 bytes.
         // It checks for valid formatting, overlong encodings, surrogates, and value ranges.
-        private static bool TryValidateUtf8(Span<byte> span, bool endOfMessage, Utf8MessageState state)
+        private static bool TryValidateUtf8(ReadOnlySpan<byte> span, bool endOfMessage, Utf8MessageState state)
         {
             for (int i = 0; i < span.Length;)
             {
