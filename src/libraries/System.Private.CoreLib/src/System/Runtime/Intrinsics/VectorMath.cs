@@ -71,6 +71,7 @@ namespace System.Runtime.Intrinsics
             //
             // else return 1.0
 
+            const long ARG_HUGE = 0x415312D000000000;       // 5e6
             const long ARG_LARGE = 0x3FE921FB54442D18;      // PI / 4
             const long ARG_SMALL = 0x3F20000000000000;      // 2^-13
             const long ARG_SMALLER = 0x3E40000000000000;    // 2^-27
@@ -102,7 +103,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(-0.5), x2, TVectorDouble.One);
                 }
             }
-            else if (TVectorDouble.LessThanAll(ax, TVectorDouble.Create(5000000.0)))
+            else if (TVectorInt64.LessThanAll(ux, TVectorInt64.Create(ARG_HUGE)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
                 (TVectorDouble r, TVectorDouble rr, TVectorInt64 region) = SinCosReduce<TVectorDouble, TVectorInt64>(ax);
@@ -120,20 +121,6 @@ namespace System.Runtime.Intrinsics
                     Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals((region + TVectorInt64.One) & TVectorInt64.Create(2), TVectorInt64.Zero)),
                     +result,    // region 0 or 3
                     -result     // region 1 or 2
-                );
-
-                // Propagate the NaN that was passed in
-                result = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsNaN(x),
-                    x,
-                    result
-                );
-
-                // Return NaN for infinity
-                result = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsPositiveInfinity(ax),
-                    TVectorDouble.Create(double.NaN),
-                    result
                 );
             }
             else
@@ -223,6 +210,7 @@ namespace System.Runtime.Intrinsics
             //
             // else return 1.0
 
+            const int ARG_HUGE = 0x4A989680;    // 5e6
             const int ARG_LARGE = 0x3F490FDB;   // PI / 4
             const int ARG_SMALL = 0x3C000000;   // 2^-13
             const int ARG_SMALLER = 0x39000000; // 2^-27
@@ -261,7 +249,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(-0.5f), x2, TVectorSingle.One);
                 }
             }
-            else if (TVectorSingle.LessThanAll(ax, TVectorSingle.Create(5000000.0f)))
+            else if (TVectorInt32.LessThanAll(ux, TVectorInt32.Create(ARG_HUGE)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
 
@@ -278,20 +266,6 @@ namespace System.Runtime.Intrinsics
                         CoreImpl(WidenUpper<TVectorSingle, TVectorDouble>(ax))
                     );
                 }
-
-                // Propagate the NaN that was passed in
-                result = TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsNaN(x),
-                    x,
-                    result
-                );
-
-                // Return NaN for infinity
-                return TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsPositiveInfinity(ax),
-                    TVectorSingle.Create(float.NaN),
-                    result
-                );
             }
             else
             {
@@ -1732,6 +1706,7 @@ namespace System.Runtime.Intrinsics
 
             // See SinDouble and CosDouble for implementation details
 
+            const long ARG_HUGE = 0x415312D000000000;       // 5e6
             const long ARG_LARGE = 0x3FE921FB54442D18;      // PI / 4
             const long ARG_SMALL = 0x3F20000000000000;      // 2^-13
             const long ARG_SMALLER = 0x3E40000000000000;    // 2^-27
@@ -1767,7 +1742,7 @@ namespace System.Runtime.Intrinsics
                     cosResult = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(-0.5), x2, TVectorDouble.One);
                 }
             }
-            else if (TVectorDouble.LessThanAll(ax, TVectorDouble.Create(5000000.0)))
+            else if (TVectorInt64.LessThanAll(ux, TVectorInt64.Create(ARG_HUGE)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
                 (TVectorDouble r, TVectorDouble rr, TVectorInt64 region) = SinCosReduce<TVectorDouble, TVectorInt64>(ax);
@@ -1790,41 +1765,15 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 sinResult = TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    +sinResult, // negative in region 1 or 3, positive in region 0 or 2
-                    -sinResult  // negative in region 0 or 2, positive in region 1 or 3
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    -sinResult, // negative in region 1 or 3, positive in region 0 or 2
+                    +sinResult  // negative in region 0 or 2, positive in region 1 or 3
                 );
 
                 cosResult = TVectorDouble.ConditionalSelect(
                     Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals((region + TVectorInt64.One) & TVectorInt64.Create(2), TVectorInt64.Zero)),
                     +cosResult, // region 0 or 3
                     -cosResult  // region 1 or 2
-                );
-
-                // Propagate the NaN that was passed in
-                sinResult = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsNaN(x),
-                    x,
-                    sinResult
-                );
-
-                cosResult = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsNaN(x),
-                    x,
-                    cosResult
-                );
-
-                // Return NaN for infinity
-                sinResult = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsPositiveInfinity(ax),
-                    TVectorDouble.Create(double.NaN),
-                    sinResult
-                );
-
-                cosResult = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsPositiveInfinity(ax),
-                    TVectorDouble.Create(double.NaN),
-                    cosResult
                 );
             }
             else
@@ -1877,6 +1826,7 @@ namespace System.Runtime.Intrinsics
 
             // See SinSingle and CosSingle for implementation details
 
+            const int ARG_HUGE = 0x4A989680;    // 5e6
             const int ARG_LARGE = 0x3F490FDB;   // PI / 4
             const int ARG_SMALL = 0x3C000000;   // 2^-13
             const int ARG_SMALLER = 0x39000000; // 2^-27
@@ -1931,7 +1881,7 @@ namespace System.Runtime.Intrinsics
                     cosResult = TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(-0.5f), x2, TVectorSingle.One);
                 }
             }
-            else if (TVectorSingle.LessThanAll(ax, TVectorSingle.Create(5000000.0f)))
+            else if (TVectorInt32.LessThanAll(ux, TVectorInt32.Create(ARG_HUGE)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
 
@@ -1950,34 +1900,6 @@ namespace System.Runtime.Intrinsics
                     sinResult = Narrow<TVectorDouble, TVectorSingle>(sinLo, sinHi);
                     cosResult = Narrow<TVectorDouble, TVectorSingle>(cosLo, cosHi);
                 }
-
-                // Propagate the NaN that was passed in
-                sinResult = TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsNaN(x),
-                    x,
-                    sinResult
-                );
-
-                cosResult = TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsNaN(x),
-                    x,
-                    cosResult
-                );
-
-                // Return NaN for infinity
-                sinResult = TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsPositiveInfinity(ax),
-                    TVectorSingle.Create(float.NaN),
-                    sinResult
-                );
-
-                cosResult = TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsPositiveInfinity(ax),
-                    TVectorSingle.Create(float.NaN),
-                    cosResult
-                );
-
-                return (sinResult, cosResult);
             }
             else
             {
@@ -2021,9 +1943,9 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 sinResult = TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    +sinResult, // negative in region 1 or 3, positive in region 0 or 2
-                    -sinResult  // negative in region 0 or 2, positive in region 1 or 3
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    -sinResult, // negative in region 1 or 3, positive in region 0 or 2
+                    +sinResult  // negative in region 0 or 2, positive in region 1 or 3
                 );
 
                 cosResult = TVectorDouble.ConditionalSelect(
@@ -2106,6 +2028,7 @@ namespace System.Runtime.Intrinsics
             // if |x| < 2.0^(-13) && |x| > 2.0^(-27)
             //   sin(x) = x - (x * x * x * (1/6));
 
+            const long ARG_HUGE = 0x415312D000000000;       // 5e6
             const long ARG_LARGE = 0x3FE921FB54442D18;      // PI / 4
             const long ARG_SMALL = 0x3F20000000000000;      // 2^-13
             const long ARG_SMALLER = 0x3E40000000000000;    // 2^-27
@@ -2132,7 +2055,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorDouble.MultiplyAddEstimate(TVectorDouble.Create(-0.16666666666666666), x3, x);
                 }
             }
-            else if (TVectorDouble.LessThanAll(ax, TVectorDouble.Create(5000000.0)))
+            else if (TVectorInt64.LessThanAll(ux, TVectorInt64.Create(ARG_HUGE)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
                 (TVectorDouble r, TVectorDouble rr, TVectorInt64 region) = SinCosReduce<TVectorDouble, TVectorInt64>(ax);
@@ -2149,23 +2072,9 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 result = TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    +result,    // negative in region 1 or 3, positive in region 0 or 2
-                    -result     // negative in region 0 or 2, positive in region 1 or 3
-                );
-
-                // Propagate the NaN that was passed in
-                result = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsNaN(x),
-                    x,
-                    result
-                );
-
-                // Return NaN for infinity
-                result = TVectorDouble.ConditionalSelect(
-                    TVectorDouble.IsPositiveInfinity(ax),
-                    TVectorDouble.Create(double.NaN),
-                    result
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    -result,    // negative in region 1 or 3, positive in region 0 or 2
+                    +result     // negative in region 0 or 2, positive in region 1 or 3
                 );
             }
             else
@@ -2250,6 +2159,7 @@ namespace System.Runtime.Intrinsics
             // if |x| < 2.0^(-13) && |x| > 2.0^(-27)
             //   sin(x) = x - (x * x * x * (1/6));
 
+            const int ARG_HUGE = 0x4A989680;    // 5e6
             const int ARG_LARGE = 0x3F490FDB;   // PI / 4
             const int ARG_SMALL = 0x3C000000;   // 2^-13
             const int ARG_SMALLER = 0x39000000; // 2^-27
@@ -2288,7 +2198,7 @@ namespace System.Runtime.Intrinsics
                     result = TVectorSingle.MultiplyAddEstimate(TVectorSingle.Create(-0.16666667f), x3, x);
                 }
             }
-            else if (TVectorSingle.LessThanAll(ax, TVectorSingle.Create(5000000.0f)))
+            else if (TVectorInt32.LessThanAll(ux, TVectorInt32.Create(ARG_HUGE)))
             {
                 // at least one element is: |x| > (pi / 4) -or- infinite -or- nan
 
@@ -2305,20 +2215,6 @@ namespace System.Runtime.Intrinsics
                         CoreImpl(WidenUpper<TVectorSingle, TVectorDouble>(x))
                     );
                 }
-
-                // Propagate the NaN that was passed in
-                result = TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsNaN(x),
-                    x,
-                    result
-                );
-
-                // Return NaN for infinity
-                return TVectorSingle.ConditionalSelect(
-                    TVectorSingle.IsPositiveInfinity(ax),
-                    TVectorSingle.Create(float.NaN),
-                    result
-                );
             }
             else
             {
@@ -2349,9 +2245,9 @@ namespace System.Runtime.Intrinsics
                 TVectorInt64 sign = Unsafe.BitCast<TVectorDouble, TVectorInt64>(x) >>> 63;
 
                 return TVectorDouble.ConditionalSelect(
-                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & region) | (~sign & ~region)) & TVectorInt64.One, TVectorInt64.Zero)),
-                    +result,    // negative in region 1 or 3, positive in region 0 or 2
-                    -result     // negative in region 0 or 2, positive in region 1 or 3
+                    Unsafe.BitCast<TVectorInt64, TVectorDouble>(TVectorInt64.Equals(((sign & (region >> 1)) | (~sign & ~(region >> 1))) & TVectorInt64.One, TVectorInt64.Zero)),
+                    -result,    // negative in region 1 or 3, positive in region 0 or 2
+                    +result     // negative in region 0 or 2, positive in region 1 or 3
                 );
             }
 
