@@ -3371,7 +3371,7 @@ PROCGetProcessStatus(
             else if ( WIFSIGNALED( status ) )
             {
                 *pdwExitCode = 128 + WTERMSIG(status);
-                TRACE("Exit code was signal %d = exit code %d\n", WTERMSIG(iStatus), *pdwExitCode);
+                TRACE("Exit code was signal %d = exit code %d\n", WTERMSIG(status), *pdwExitCode);
             }
             else
             {
