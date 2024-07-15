@@ -181,13 +181,13 @@ namespace System.Text
                 Vector128<byte> first = Vector128.LoadUnsafe(ref pBuffer);
                 Vector128<byte> last = Vector128.LoadUnsafe(ref pBuffer, bufferLength - 16);
 
-                bool foundFirst = Vector128.GreaterThanOrEqualAny(first, mask);
-                bool foundLast = Vector128.GreaterThanOrEqualAny(last, mask);
+                bool foundFirst = (first & mask) != Vector128<byte>.Zero;
+                bool foundLast = (last & mask) != Vector128<byte>.Zero;
 
                 return (foundFirst, foundLast) switch
                 {
-                    (true, _) => IndexOfWhereAllBitsSet(Vector128.GreaterThanOrEqual(first, mask)),
-                    (_, true) => IndexOfWhereAllBitsSet(Vector128.GreaterThanOrEqual(last, mask)) + bufferLength - 16,
+                    (true, _) => IndexOfNonAscii(first),
+                    (_, true) => IndexOfNonAscii(last) + bufferLength - 16,
                     _ => bufferLength,
                 };
             }
@@ -201,13 +201,13 @@ namespace System.Text
                 Vector256<byte> first = Vector256.LoadUnsafe(ref pBuffer);
                 Vector256<byte> last = Vector256.LoadUnsafe(ref pBuffer, bufferLength - 32);
 
-                bool foundFirst = Vector256.GreaterThanOrEqualAny(first, mask);
-                bool foundLast = Vector256.GreaterThanOrEqualAny(last, mask);
+                bool foundFirst = (first & mask) != Vector256<byte>.Zero;
+                bool foundLast = (last & mask) != Vector256<byte>.Zero;
 
                 return (foundFirst, foundLast) switch
                 {
-                    (true, _) => IndexOfWhereAllBitsSet(Vector256.GreaterThanOrEqual(first, mask)),
-                    (_, true) => IndexOfWhereAllBitsSet(Vector256.GreaterThanOrEqual(last, mask)) + bufferLength - 32,
+                    (true, _) => IndexOfNonAscii(first),
+                    (_, true) => IndexOfNonAscii(last) + bufferLength - 32,
                     _ => bufferLength,
                 };
             }
@@ -280,8 +280,8 @@ namespace System.Text
                 v0 = T.LoadUnsafe(ref pBuffer);
                 v1 = T.LoadUnsafe(ref pBuffer, bufferLength - width);
 
-                bool foundFirst = T.GreaterThanOrEqualAny(v0, T.Create(0x80));
-                bool foundLast = T.GreaterThanOrEqualAny(v1, T.Create(0x80));
+                bool foundFirst = (v0 & T.Create(0x80)) != T.Zero;
+                bool foundLast = (v1 & T.Create(0x80)) != T.Zero;
 
                 if (foundFirst)
                 {
@@ -305,11 +305,11 @@ namespace System.Text
             if (align != 0)
             {
                 v1 = T.LoadUnsafe(ref pBuffer);
-                if (T.GreaterThanOrEqualAny(v1, T.Create(0x80)))
+                if ((v1 & T.Create(0x80)) != T.Zero)
                 {
                     goto FoundV1;
                 }
-                offset += align;
+                offset += width - align;
             }
 
             nuint last = bufferLength - width * 2;
@@ -337,8 +337,7 @@ namespace System.Text
             return bufferLength;
 
         FoundV01:
-            nuint index = IndexOfWhereAllBitsSet(
-                T.GreaterThanOrEqual(v0, T.Create(0x80)));
+            nuint index = IndexOfNonAscii(v0);
 
             if (index < width)
             {
@@ -347,8 +346,7 @@ namespace System.Text
             offset += width;
 
         FoundV1:
-            return offset + IndexOfWhereAllBitsSet(
-                T.GreaterThanOrEqual(v1, T.Create(0x80)));
+            return offset + IndexOfNonAscii(v1);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static bool Test2(T v0, T v1)
@@ -375,8 +373,8 @@ namespace System.Text
                 v0 = T.LoadUnsafe(ref pBuffer);
                 v1 = T.LoadUnsafe(ref pBuffer, bufferLength - width);
 
-                bool foundFirst = T.GreaterThanOrEqualAny(v0, T.Create(0x80));
-                bool foundLast = T.GreaterThanOrEqualAny(v1, T.Create(0x80));
+                bool foundFirst = (v0 & T.Create(0x80)) != T.Zero;
+                bool foundLast = (v1 & T.Create(0x80)) != T.Zero;
 
                 if (foundFirst)
                 {
@@ -428,11 +426,11 @@ namespace System.Text
             if (align != 0)
             {
                 v0 = T.LoadUnsafe(ref pBuffer);
-                if (T.GreaterThanOrEqualAny(v0, T.Create(0x80)))
+                if ((v0 & T.Create(0x80)) != T.Zero)
                 {
                     goto FoundV0;
                 }
-                offset += align;
+                offset += width - align;
             }
 
             nuint last = bufferLength - width * 4;
@@ -458,9 +456,7 @@ namespace System.Text
             return bufferLength;
 
         FoundV0123:
-            nuint index = IndexOfWhereAllBitsSet2(
-                T.GreaterThanOrEqual(v0, T.Create(0x80)),
-                T.GreaterThanOrEqual(v1, T.Create(0x80)));
+            nuint index = IndexOfNonAscii2(v0, v1);
 
             if (index < width * 2)
             {
@@ -469,13 +465,10 @@ namespace System.Text
             offset += width * 2;
 
         FoundV23:
-            return offset + IndexOfWhereAllBitsSet2(
-                T.GreaterThanOrEqual(v2, T.Create(0x80)),
-                T.GreaterThanOrEqual(v3, T.Create(0x80)));
+            return offset + IndexOfNonAscii2(v2, v3);
 
         FoundV0:
-            return offset + IndexOfWhereAllBitsSet(
-                T.GreaterThanOrEqual(v0, T.Create(0x80)));
+            return offset + IndexOfNonAscii(v0);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             static (T, T, T, T) Load4(ref byte pBuffer, nuint offset)
@@ -499,13 +492,13 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint IndexOfWhereAllBitsSet<T>(T value)
+        private static nuint IndexOfNonAscii<T>(T value)
             where T : ISimdVector<T, byte>
         {
             return value switch
             {
                 Vector128<byte> v128 => AdvSimd.IsSupported
-                    ? IndexOfWhereAllBitsSet_Arm64(v128)
+                    ? IndexOfNonAsciiArm64(v128)
                     : nuint.TrailingZeroCount(v128.ExtractMostSignificantBits()),
                 Vector256<byte> v256 => nuint.TrailingZeroCount(v256.ExtractMostSignificantBits()),
                 Vector512<byte> v512 => (nuint)ulong.TrailingZeroCount(v512.ExtractMostSignificantBits()),
@@ -514,8 +507,9 @@ namespace System.Text
 
             [CompExactlyDependsOn(typeof(AdvSimd))]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            static nuint IndexOfWhereAllBitsSet_Arm64(Vector128<byte> value)
+            static nuint IndexOfNonAsciiArm64(Vector128<byte> value)
             {
+                value = Vector128.GreaterThanOrEqual(value, Vector128.Create((byte)0x80));
                 ulong shrn = AdvSimd
                     .ShiftRightLogicalNarrowingLower(value.AsUInt16(), 4)
                     .AsUInt64()
@@ -525,12 +519,12 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static nuint IndexOfWhereAllBitsSet2<T>(T v0, T v1)
+        private static nuint IndexOfNonAscii2<T>(T v0, T v1)
             where T : ISimdVector<T, byte>
         {
             nuint width = (nuint)T.Count;
-            nuint offset0 = IndexOfWhereAllBitsSet(v0);
-            nuint offset1 = IndexOfWhereAllBitsSet(v1);
+            nuint offset0 = IndexOfNonAscii(v0);
+            nuint offset1 = IndexOfNonAscii(v1);
             return offset0 < width ? offset0 : offset1 + width;
         }
 
