@@ -1418,120 +1418,217 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     bool       isScalar = false;
     genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
-    switch (oper)
+    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
     {
-        case GT_AND:
-        case GT_OR:
-        case GT_XOR:
-        {
-            if (!comp->canUseEvexEncoding())
-            {
-                break;
-            }
+        // These are the control bytes used for TernaryLogic
 
-            GenTree* op1 = node->Op(1);
-            GenTree* op2 = node->Op(2);
+        const uint8_t A = 0xF0;
+        const uint8_t B = 0xCC;
+        const uint8_t C = 0xAA;
 
-            LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
-            {
-                // search for structure like:
-                /*
-                        /- A
-                        +- B
-                    t1 = binary logical op1
+        var_types   simdType        = node->TypeGet();
+        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+        var_types   simdBaseType    = node->GetSimdBaseType();
+        unsigned    simdSize        = node->GetSimdSize();
 
-                        /- C
-                        +- t1
-                    t2 = binary logical op2
-                */
-                GenTree* second = use.User();
-                if (!second->OperIs(GT_HWINTRINSIC))
-                {
-                    break;
-                }
+        GenTree* op1 = node->Op(1);
+        GenTree* op2 = node->Op(2);
+        GenTree* op3 = nullptr;
 
-                bool       nestedIsScalar = false;
-                genTreeOps nestedOper     = second->AsHWIntrinsic()->GetOperForHWIntrinsicId(&isScalar);
-
-                if (nestedOper == GT_NONE)
-                {
-                    // TODO: We should support cases like CNDSEL
-                    break;
-                }
-
-                if (nestedIsScalar)
-                {
-                    break;
-                }
-
-                if ((nestedOper != GT_AND) && (nestedOper != GT_OR) && (nestedOper != GT_XOR))
-                {
-                    // TODO: We should support other cases like AND_NOT, NOT, and CNDSEL
-                    break;
-                }
-
-                GenTree*    op3             = second->AsHWIntrinsic()->Op(1) == node ? second->AsHWIntrinsic()->Op(2)
-                                                                                     : second->AsHWIntrinsic()->Op(1);
-                GenTree*    control         = comp->gtNewIconNode(node->GetTernaryControlByte(second->AsHWIntrinsic()));
-                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-                unsigned    simdSize        = node->GetSimdSize();
-                var_types   simdType        = Compiler::getSIMDTypeForSize(simdSize);
-                GenTree*    ternaryNode =
-                    comp->gtNewSimdTernaryLogicNode(simdType, op1, op2, op3, control, simdBaseJitType, simdSize);
-                BlockRange().InsertBefore(second, control, ternaryNode);
-                LIR::Use finalRes;
-                if (BlockRange().TryGetUse(second, &finalRes))
-                {
-                    finalRes.ReplaceWith(ternaryNode);
-                }
-                else
-                {
-                    ternaryNode->SetUnusedValue();
-                }
-                GenTree* next = node->gtNext;
-                BlockRange().Remove(node);
-                BlockRange().Remove(second);
-                return next;
-            }
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
-    }
-
-    if ((oper == GT_XOR) && node->Op(2)->IsVectorAllBitsSet())
-    {
+        // We want to specially recognize this pattern as GT_NOT
+        bool isOperNot       = (oper == GT_XOR) && op2->IsVectorAllBitsSet();
         bool isV512Supported = false;
-        if ((genTypeSize(node->GetSimdBaseType()) >= 4) && comp->compIsEvexOpportunisticallySupported(isV512Supported))
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
         {
-            var_types simdType = node->TypeGet();
-            unsigned  simdSize = node->GetSimdSize();
+            GenTree* user = use.User();
 
-            GenTree* op1 = node->Op(1);
-            BlockRange().Remove(node->Op(2));
+            if (user->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* userIntrin = user->AsHWIntrinsic();
 
-            // We can't use the mask, but we can emit a ternary logic node
+                bool       userIsScalar = false;
+                genTreeOps userOper     = userIntrin->GetOperForHWIntrinsicId(&isScalar);
+
+                if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(userOper))
+                {
+                    if (isOperNot && (userOper == GT_AND))
+                    {
+                        // We want to specially handle GT_AND_NOT as its available without EVEX
+                        GenTree* nextNode = node->gtNext;
+
+                        BlockRange().Remove(op2);
+                        BlockRange().Remove(node);
+
+                        // Note that despite its name, the xarch instruction does ~op1 & op2, so
+                        // we need to ensure op1 is the value whose ones complement is computed
+
+                        op2 = userIntrin->Op(2);
+
+                        if (op2 == node)
+                        {
+                            op2 = userIntrin->Op(1);
+                        }
+
+                        NamedIntrinsic intrinsic =
+                            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2, simdBaseType,
+                                                                         simdSize, false);
+                        userIntrin->ResetHWIntrinsicId(intrinsic, comp, op1, op2);
+
+                        return nextNode;
+                    }
+
+                    if (comp->compIsEvexOpportunisticallySupported(isV512Supported))
+                    {
+                        // For everything else we want to lower it to a standard TernaryLogic node
+                        GenTree* nextNode = node->gtNext;
+
+                        BlockRange().Remove(node);
+                        op3 = userIntrin->Op(2);
+
+                        if (op3 == node)
+                        {
+                            op3 = userIntrin->Op(1);
+                        }
+
+                        uint8_t controlByte = 0x00;
+
+                        if ((userOper == GT_XOR) && op3->IsVectorAllBitsSet())
+                        {
+                            // We're being used by what is actually GT_NOT, so we
+                            // need to shift parameters down so that A is unused
+
+                            std::swap(op2, op3);
+                            std::swap(op1, op2);
+
+                            if (isOperNot)
+                            {
+                                // We have what is actually a double not, so just return op2
+                                // which is the only actual value now that the parameters
+                                // were shifted around
+
+                                assert(op1->IsVectorAllBitsSet());
+                                assert(op3->IsVectorAllBitsSet());
+
+                                LIR::Use superUse;
+                                if (BlockRange().TryGetUse(user, &superUse))
+                                {
+                                    superUse.ReplaceWith(op2);
+                                }
+                                else
+                                {
+                                    op2->SetUnusedValue();
+                                }
+
+                                BlockRange().Remove(op3);
+                                BlockRange().Remove(op1);
+                                BlockRange().Remove(user);
+
+                                return nextNode;
+                            }
+                            else
+                            {
+                                // We're now doing NOT(OP(B, C))
+                                assert(op1->IsVectorAllBitsSet());
+
+                                controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, B, C);
+                                controlByte = static_cast<uint8_t>(~controlByte);
+                            }
+                        }
+                        else if (isOperNot)
+                        {
+                            // A is unused, so we just want OP(NOT(B), C)
+
+                            assert(op2->IsVectorAllBitsSet());
+                            std::swap(op1, op2);
+
+                            controlByte = static_cast<uint8_t>(~B);
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
+                        }
+                        else
+                        {
+                            // We have OP2(OP1(A, B), C)
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, A, B);
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
+                        }
+
+                        NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
+
+                        if (simdSize != 64)
+                        {
+                            ternaryLogicId = isV512Supported ? NI_AVX512F_VL_TernaryLogic : NI_AVX10v1_TernaryLogic;
+                        }
+
+                        GenTree* op4 = comp->gtNewIconNode(controlByte);
+                        BlockRange().InsertBefore(userIntrin, op4);
+
+                        userIntrin->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, op4);
+                        return nextNode;
+                    }
+                }
+            }
+        }
+
+        if (isOperNot && comp->compIsEvexOpportunisticallySupported(isV512Supported))
+        {
+            // Lowering this to TernaryLogic(zero, zero, op1, ~C) is smaller
+            // and faster than emitting the pcmpeqd; pxor sequence.
+
+            BlockRange().Remove(op2);
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
+
+                if (HWIntrinsicInfo::IsTernaryLogic(opIntrin->GetHWIntrinsicId()))
+                {
+                    GenTree* opControl = opIntrin->Op(4);
+
+                    if (opControl->IsCnsIntOrI())
+                    {
+                        // When the input is already a ternary logic node, we want to invert it rather
+                        // than introduce a new ternary logic node.
+
+                        GenTree* nextNode = node->gtNext;
+
+                        GenTreeIntConCommon* opControlCns = opControl->AsIntConCommon();
+                        opControlCns->SetIconValue(static_cast<uint8_t>(~opControlCns->IconValue()));
+
+                        if (BlockRange().TryGetUse(node, &use))
+                        {
+                            use.ReplaceWith(op1);
+                        }
+                        else
+                        {
+                            op1->SetUnusedValue();
+                        }
+
+                        BlockRange().Remove(node);
+                        return nextNode;
+                    }
+                }
+            }
+
             NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
 
             if (simdSize != 64)
             {
-                ternaryLogicId = !isV512Supported ? NI_AVX10v1_TernaryLogic : NI_AVX512F_VL_TernaryLogic;
+                ternaryLogicId = isV512Supported ? NI_AVX512F_VL_TernaryLogic : NI_AVX10v1_TernaryLogic;
             }
 
-            GenTree* op2 = comp->gtNewZeroConNode(simdType);
+            op3 = op1;
+
+            op2 = comp->gtNewZeroConNode(simdType);
             BlockRange().InsertBefore(node, op2);
 
-            GenTree* op3 = comp->gtNewZeroConNode(simdType);
-            BlockRange().InsertBefore(node, op3);
+            op1 = comp->gtNewZeroConNode(simdType);
+            BlockRange().InsertBefore(node, op1);
 
-            GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~0xAA)); // ~C
+            GenTree* control = comp->gtNewIconNode(static_cast<uint8_t>(~C));
             BlockRange().InsertBefore(node, control);
 
-            node->ResetHWIntrinsicId(ternaryLogicId, comp, op3, op2, op1, control);
+            node->ResetHWIntrinsicId(ternaryLogicId, comp, op1, op2, op3, control);
             return LowerNode(node);
         }
     }
@@ -1737,6 +1834,79 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
                 node->ChangeHWIntrinsicId(testIntrinsicId);
                 return LowerNode(node);
+            }
+            break;
+        }
+
+        case NI_EVEX_AndMask:
+        {
+            // We want to recognize (~op1 & op2) and transform it
+            // into Evex.AndNotMask(op1, op2) as well as (op1 & ~op2)
+            // transforming it into Evex.AndNotMask(op2, op1), which
+            // takes into account that the XARCH APIs operate more like
+            // NotAnd
+
+            bool transform = false;
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (op1->OperIsHWIntrinsic(NI_EVEX_NotMask))
+            {
+                GenTreeHWIntrinsic* opIntrin         = op1->AsHWIntrinsic();
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+                }
+            }
+
+            if (!transform && op2->OperIsHWIntrinsic(NI_EVEX_NotMask))
+            {
+                GenTreeHWIntrinsic* opIntrin         = op2->AsHWIntrinsic();
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+
+                    std::swap(op1, op2);
+                }
+            }
+
+            if (transform)
+            {
+                intrinsicId = NI_EVEX_AndNotMask;
+                node->ChangeHWIntrinsicId(intrinsicId, op1, op2);
+            }
+            break;
+        }
+
+        case NI_EVEX_NotMask:
+        {
+            // We want to recognize ~(op1 ^ op2) and transform it
+            // into Evex.XnorMask(op1, op2)
+
+            GenTree* op1 = node->Op(1);
+
+            if (op1->OperIsHWIntrinsic(NI_EVEX_XorMask))
+            {
+                GenTreeHWIntrinsic* opIntrin         = op1->AsHWIntrinsic();
+                unsigned            simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    intrinsicId = NI_EVEX_XnorMask;
+                    node->ResetHWIntrinsicId(intrinsicId, comp, opIntrin->Op(1), opIntrin->Op(2));
+                    BlockRange().Remove(opIntrin);
+                }
             }
             break;
         }
@@ -3210,6 +3380,12 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 {
     assert(comp->canUseEvexEncodingDebugOnly());
 
+    // These are the control bytes used for TernaryLogic
+
+    const uint8_t A = 0xF0;
+    const uint8_t B = 0xCC;
+    const uint8_t C = 0xAA;
+
     var_types   simdType        = node->gtType;
     CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
     var_types   simdBaseType    = node->GetSimdBaseType();
@@ -3226,66 +3402,66 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 
     if (op4->IsCnsIntOrI())
     {
-        uint8_t control = static_cast<uint8_t>(op4->AsIntConCommon()->IconValue());
+        uint8_t                 control  = static_cast<uint8_t>(op4->AsIntConCommon()->IconValue());
+        const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+        TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
 
         switch (control)
         {
-            case 0xAC: // A ? C : B; (C & A) | (B & ~A)
-            case 0xB8: // B ? C : A; (C & B) | (A & ~B)
-            case 0xD8: // C ? B : A; (B & C) | (A & ~C)
-            case 0xCA: // A ? B : C; (B & A) | (C & ~A)
-            case 0xE2: // B ? A : C; (A & B) | (C & ~B)
-            case 0xE4: // C ? A : B; (A & C) | (B & ~C)
+            case static_cast<uint8_t>((C & A) | (B & ~A)): // A ? C : B
+            case static_cast<uint8_t>((C & B) | (A & ~B)): // B ? C : A
+            case static_cast<uint8_t>((B & C) | (A & ~C)): // C ? B : A
+            case static_cast<uint8_t>((B & A) | (C & ~A)): // A ? B : C
+            case static_cast<uint8_t>((A & B) | (C & ~B)): // B ? A : C
+            case static_cast<uint8_t>((A & C) | (B & ~C)): // C ? A : B
             {
                 // For the operations that work as a conditional select, we want
                 // to try and optimize it to use BlendVariableMask when the condition
                 // is already a TYP_MASK
 
-                const TernaryLogicInfo& ternLogInfo = TernaryLogicInfo::lookup(control);
-
-                assert(ternLogInfo.oper1 == TernaryLogicOperKind::Select);
-                assert(ternLogInfo.oper2 == TernaryLogicOperKind::Select);
-                assert(ternLogInfo.oper3 == TernaryLogicOperKind::Cond);
+                assert(info.oper1 == TernaryLogicOperKind::Select);
+                assert(info.oper2 == TernaryLogicOperKind::Select);
+                assert(info.oper3 == TernaryLogicOperKind::Cond);
 
                 GenTree* condition   = nullptr;
                 GenTree* selectTrue  = nullptr;
                 GenTree* selectFalse = nullptr;
 
-                if (ternLogInfo.oper1Use == TernaryLogicUseFlags::A)
+                if (info.oper1Use == TernaryLogicUseFlags::A)
                 {
                     selectTrue = op1;
 
-                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::B)
+                    if (info.oper2Use == TernaryLogicUseFlags::B)
                     {
-                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::C);
+                        assert(info.oper3Use == TernaryLogicUseFlags::C);
 
                         selectFalse = op2;
                         condition   = op3;
                     }
                     else
                     {
-                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::C);
-                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::B);
+                        assert(info.oper2Use == TernaryLogicUseFlags::C);
+                        assert(info.oper3Use == TernaryLogicUseFlags::B);
 
                         selectFalse = op3;
                         condition   = op2;
                     }
                 }
-                else if (ternLogInfo.oper1Use == TernaryLogicUseFlags::B)
+                else if (info.oper1Use == TernaryLogicUseFlags::B)
                 {
                     selectTrue = op2;
 
-                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::A)
+                    if (info.oper2Use == TernaryLogicUseFlags::A)
                     {
-                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::C);
+                        assert(info.oper3Use == TernaryLogicUseFlags::C);
 
                         selectFalse = op1;
                         condition   = op3;
                     }
                     else
                     {
-                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::C);
-                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::A);
+                        assert(info.oper2Use == TernaryLogicUseFlags::C);
+                        assert(info.oper3Use == TernaryLogicUseFlags::A);
 
                         selectFalse = op3;
                         condition   = op1;
@@ -3293,21 +3469,21 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                 }
                 else
                 {
-                    assert(ternLogInfo.oper1Use == TernaryLogicUseFlags::C);
+                    assert(info.oper1Use == TernaryLogicUseFlags::C);
 
                     selectTrue = op3;
 
-                    if (ternLogInfo.oper2Use == TernaryLogicUseFlags::A)
+                    if (info.oper2Use == TernaryLogicUseFlags::A)
                     {
-                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::B);
+                        assert(info.oper3Use == TernaryLogicUseFlags::B);
 
                         selectFalse = op1;
                         condition   = op2;
                     }
                     else
                     {
-                        assert(ternLogInfo.oper2Use == TernaryLogicUseFlags::B);
-                        assert(ternLogInfo.oper3Use == TernaryLogicUseFlags::A);
+                        assert(info.oper2Use == TernaryLogicUseFlags::B);
+                        assert(info.oper3Use == TernaryLogicUseFlags::A);
 
                         selectFalse = op2;
                         condition   = op1;
@@ -3465,10 +3641,172 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
 
             default:
             {
+                switch (useFlags)
+                {
+                    case TernaryLogicUseFlags::A:
+                    {
+                        // Swap the operands here to make the containment checks in codegen significantly simpler
+                        std::swap(node->Op(1), node->Op(3));
+
+                        // Make sure we also fixup the control byte
+                        control = TernaryLogicInfo::GetTernaryControlByte(info, C, B, A);
+                        op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::C;
+                        break;
+                    }
+
+                    case TernaryLogicUseFlags::B:
+                    {
+                        // Swap the operands here to make the containment checks in codegen significantly simpler
+                        std::swap(node->Op(2), node->Op(3));
+
+                        // Make sure we also fixup the control byte
+                        control = TernaryLogicInfo::GetTernaryControlByte(info, A, C, B);
+                        op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::C;
+                        break;
+                    }
+
+                    case TernaryLogicUseFlags::AB:
+                    {
+                        // Swap the operands here to make the containment checks in codegen significantly simpler
+                        std::swap(node->Op(2), node->Op(3));
+                        std::swap(node->Op(1), node->Op(2));
+
+                        // Make sure we also fixup the control byte
+                        control = TernaryLogicInfo::GetTernaryControlByte(info, C, A, B);
+                        op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::BC;
+                        break;
+                    }
+
+                    case TernaryLogicUseFlags::AC:
+                    {
+                        // Swap the operands here to make the containment checks in codegen significantly simpler
+                        std::swap(node->Op(1), node->Op(2));
+
+                        // Make sure we also fixup the control byte
+                        control = TernaryLogicInfo::GetTernaryControlByte(info, B, A, C);
+                        op4->AsIntCon()->SetIconValue(control);
+
+                        useFlags = TernaryLogicUseFlags::BC;
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+
+                GenTree* replacementNode = nullptr;
+
+                switch (useFlags)
+                {
+                    case TernaryLogicUseFlags::None:
+                    {
+                        // Encountering none should be very rare and so we'll handle
+                        // it, but we won't try to optimize it by finding an existing
+                        // constant to reuse or similar, as that's more expensive
+
+                        op1->SetUnusedValue();
+                        op2->SetUnusedValue();
+                        op3->SetUnusedValue();
+
+                        if (control == 0x00)
+                        {
+                            replacementNode = comp->gtNewZeroConNode(simdType);
+                        }
+                        else
+                        {
+                            assert(control == 0xFF);
+                            replacementNode = comp->gtNewAllBitsSetConNode(simdType);
+                        }
+
+                        BlockRange().InsertBefore(node, replacementNode);
+                        break;
+                    }
+
+                    case TernaryLogicUseFlags::C:
+                    {
+                        // Encountering `select(c)` instead of `not(c)` should likewise
+                        // be rare, but we'll handle it in case the combined operations
+                        // are just right to cause it to appear
+
+                        if (control == C)
+                        {
+                            op1->SetUnusedValue();
+                            op2->SetUnusedValue();
+
+                            replacementNode = op3;
+                            break;
+                        }
+
+                        // For not, we do want to check if we already have reusable constants as
+                        // this can occur for the normal lowering pattern around `xor(c, AllBitsSet)`
+
+                        if (!op1->IsCnsVec())
+                        {
+                            op1->SetUnusedValue();
+                            op1 = comp->gtNewZeroConNode(simdType);
+
+                            BlockRange().InsertBefore(node, op1);
+                            node->Op(1) = op1;
+                        }
+
+                        if (!op2->IsCnsVec())
+                        {
+                            op2->SetUnusedValue();
+                            op2 = comp->gtNewZeroConNode(simdType);
+
+                            BlockRange().InsertBefore(node, op2);
+                            node->Op(2) = op2;
+                        }
+                        break;
+                    }
+
+                    case TernaryLogicUseFlags::BC:
+                    {
+                        if (!op1->IsCnsVec())
+                        {
+                            op1->SetUnusedValue();
+                            op1 = comp->gtNewZeroConNode(simdType);
+
+                            BlockRange().InsertBefore(node, op1);
+                            node->Op(1) = op1;
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        assert(useFlags == TernaryLogicUseFlags::ABC);
+                        break;
+                    }
+                }
+
+                if (replacementNode != nullptr)
+                {
+                    LIR::Use use;
+                    if (BlockRange().TryGetUse(node, &use))
+                    {
+                        use.ReplaceWith(replacementNode);
+                    }
+                    else
+                    {
+                        replacementNode->SetUnusedValue();
+                    }
+                }
                 break;
             }
         }
     }
+
+    // TODO-XARCH-AVX512: We should look for nested TernaryLogic and BitwiseOper
+    // nodes so that we can fully take advantage of the instruction where possible
 
     ContainCheckHWIntrinsic(node);
     return node->gtNext;
@@ -7246,6 +7584,11 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* op1, GenTree* op2)
     // f) If neither of them are local vars (i.e. tree temps), prefer to
     // mark op1 as reg optional for the same reason as mentioned in (d) above.
 
+    if (op1 == nullptr)
+    {
+        return op2;
+    }
+
     assert(!op1->IsRegOptional());
     assert(!op2->IsRegOptional());
 
@@ -9290,7 +9633,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 assert(childBaseType == TYP_DOUBLE);
             }
 
-            if (comp->canUseEvexEncoding() && parentNode->OperIsEmbBroadcastCompatible())
+            if (parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding())
             {
                 GenTree* broadcastOperand = hwintrinsic->Op(1);
 
@@ -9328,7 +9671,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                 return false;
             }
 
-            return parentNode->OperIsEmbBroadcastCompatible();
+            return parentNode->OperIsEmbBroadcastCompatible() && comp->canUseEvexEncoding();
         }
 
         default:
@@ -9891,59 +10234,60 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     bool supportsOp1RegOptional = false;
                     bool supportsOp2RegOptional = false;
 
+                    GenTree* containedOperand   = nullptr;
+                    GenTree* regOptionalOperand = nullptr;
+                    bool     swapOperands       = false;
+
                     if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                     {
-                        if (op2->IsCnsVec() && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
-                            node->OperIsEmbBroadcastCompatible())
-                        {
-                            TryFoldCnsVecForEmbeddedBroadcast(node, op2->AsVecCon());
-                        }
-                        else
-                        {
-                            MakeSrcContained(node, op2);
-                        }
+                        containedOperand = op2;
                     }
                     else if ((isCommutative || (intrinsicId == NI_BMI2_MultiplyNoFlags) ||
                               (intrinsicId == NI_BMI2_X64_MultiplyNoFlags)) &&
                              IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                     {
-                        if (op1->IsCnsVec() && comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
-                            node->OperIsEmbBroadcastCompatible())
+                        containedOperand = op1;
+                        swapOperands     = true;
+                    }
+                    else
+                    {
+                        if (supportsOp1RegOptional)
                         {
-                            TryFoldCnsVecForEmbeddedBroadcast(node, op1->AsVecCon());
-                        }
-                        else
-                        {
-                            MakeSrcContained(node, op1);
+                            regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op1);
                         }
 
-                        // Swap the operands here to make the containment checks in codegen significantly simpler
-                        std::swap(node->Op(1), node->Op(2));
-                    }
-                    else if (supportsOp1RegOptional)
-                    {
                         if (supportsOp2RegOptional)
                         {
-                            GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op2);
-                            MakeSrcRegOptional(node, regOptionalOperand);
+                            regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op2);
+                        }
 
-                            if (regOptionalOperand == op1)
-                            {
-                                // Swap the operands here to make the containment checks in codegen simpler
-                                std::swap(node->Op(1), node->Op(2));
-                            }
+                        if (regOptionalOperand == op1)
+                        {
+                            swapOperands = true;
+                        }
+                    }
+
+                    if (containedOperand != nullptr)
+                    {
+                        if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible() &&
+                            comp->canUseEvexEncoding())
+                        {
+                            TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                         }
                         else
                         {
-                            MakeSrcRegOptional(node, op1);
-
-                            // Swap the operands here to make the containment checks in codegen simpler
-                            std::swap(node->Op(1), node->Op(2));
+                            MakeSrcContained(node, containedOperand);
                         }
                     }
-                    else if (supportsOp2RegOptional)
+                    else if (regOptionalOperand != nullptr)
                     {
-                        MakeSrcRegOptional(node, op2);
+                        MakeSrcRegOptional(node, regOptionalOperand);
+                    }
+
+                    if (swapOperands)
+                    {
+                        // Swap the operands here to make the containment checks in codegen significantly simpler
+                        std::swap(node->Op(1), node->Op(2));
                     }
                     break;
                 }
@@ -10268,6 +10612,9 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         bool supportsOp2RegOptional = false;
                         bool supportsOp3RegOptional = false;
 
+                        GenTree* containedOperand   = nullptr;
+                        GenTree* regOptionalOperand = nullptr;
+
                         LIR::Use use;
                         GenTree* user = nullptr;
 
@@ -10284,61 +10631,58 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         if ((resultOpNum != 3) && IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
                         {
                             // result = (op1 * op2) + [op3]
-                            MakeSrcContained(node, op3);
+                            containedOperand = op3;
                         }
                         else if ((resultOpNum != 2) && IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                         {
                             // result = (op1 * [op2]) + op3
-                            MakeSrcContained(node, op2);
+                            containedOperand = op2;
                         }
                         else if ((resultOpNum != 1) && !HWIntrinsicInfo::CopiesUpperBits(intrinsicId) &&
                                  IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                         {
                             // result = ([op1] * op2) + op3
-                            MakeSrcContained(node, op1);
+                            containedOperand = op1;
                         }
-                        else if (supportsOp1RegOptional)
+                        else
                         {
+                            if (supportsOp1RegOptional)
+                            {
+                                regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op1);
+                            }
+
                             if (supportsOp2RegOptional)
                             {
-                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op2);
+                                regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op2);
+                            }
 
-                                if (supportsOp3RegOptional)
-                                {
-                                    regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op3);
-                                }
-
-                                MakeSrcRegOptional(node, regOptionalOperand);
-                            }
-                            else if (supportsOp3RegOptional)
-                            {
-                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op3);
-                                MakeSrcRegOptional(node, regOptionalOperand);
-                            }
-                            else
-                            {
-                                MakeSrcRegOptional(node, op1);
-                            }
-                        }
-                        else if (supportsOp2RegOptional)
-                        {
                             if (supportsOp3RegOptional)
                             {
-                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op2, op3);
-                                MakeSrcRegOptional(node, regOptionalOperand);
+                                regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op3);
+                            }
+                        }
+
+                        if (containedOperand != nullptr)
+                        {
+                            if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible() &&
+                                comp->canUseEvexEncoding())
+                            {
+                                TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                             }
                             else
                             {
-                                MakeSrcRegOptional(node, op2);
+                                MakeSrcContained(node, containedOperand);
                             }
                         }
-                        else if (supportsOp3RegOptional)
+                        else if (regOptionalOperand != nullptr)
                         {
-                            MakeSrcRegOptional(node, op3);
+                            MakeSrcRegOptional(node, regOptionalOperand);
                         }
                     }
                     else if (HWIntrinsicInfo::IsPermuteVar2x(intrinsicId))
                     {
+                        assert(comp->canUseEvexEncodingDebugOnly());
+
                         // PermuteVar2x is similarly special in that op1 and op3
                         // are commutative and op1 or op2 can be the RMW operand.
                         //
@@ -10354,8 +10698,11 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                         bool supportsOp1RegOptional = false;
                         bool supportsOp3RegOptional = false;
-                        bool swapOperands           = false;
-                        bool isOp2Cns               = op2->IsCnsVec();
+
+                        GenTree* containedOperand   = nullptr;
+                        GenTree* regOptionalOperand = nullptr;
+                        bool     swapOperands       = false;
+                        bool     isOp2Cns           = op2->IsCnsVec();
 
                         LIR::Use use;
                         GenTree* user = nullptr;
@@ -10373,44 +10720,51 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         if (((resultOpNum != 3) || !isOp2Cns) &&
                             IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
                         {
-                            MakeSrcContained(node, op3);
+                            containedOperand = op3;
                         }
                         else if ((resultOpNum != 2) && isOp2Cns &&
                                  IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                         {
-                            MakeSrcContained(node, op1);
-
-                            // Swap the operands here to make the containment checks in codegen significantly simpler
-                            swapOperands = true;
+                            containedOperand = op1;
+                            swapOperands     = true;
                         }
-                        else if (supportsOp1RegOptional)
+                        else
                         {
+                            if (supportsOp1RegOptional)
+                            {
+                                regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op1);
+                            }
+
                             if (supportsOp3RegOptional)
                             {
-                                GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op3);
-                                MakeSrcRegOptional(node, regOptionalOperand);
-
-                                if (regOptionalOperand == op1)
-                                {
-                                    // Swap the operands here to make the containment checks in codegen simpler
-                                    swapOperands = true;
-                                }
+                                regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op3);
                             }
-                            else
-                            {
-                                MakeSrcRegOptional(node, op1);
 
-                                // Swap the operands here to make the containment checks in codegen simpler
+                            if (regOptionalOperand == op1)
+                            {
                                 swapOperands = true;
                             }
                         }
-                        else if (supportsOp3RegOptional)
+
+                        if (containedOperand != nullptr)
                         {
-                            MakeSrcRegOptional(node, op3);
+                            if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible())
+                            {
+                                TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
+                            }
+                            else
+                            {
+                                MakeSrcContained(node, containedOperand);
+                            }
+                        }
+                        else if (regOptionalOperand != nullptr)
+                        {
+                            MakeSrcRegOptional(node, regOptionalOperand);
                         }
 
                         if (swapOperands)
                         {
+                            // Swap the operands here to make the containment checks in codegen significantly simpler
                             assert(op2->IsCnsVec());
                             std::swap(node->Op(1), node->Op(3));
 
@@ -10640,41 +10994,51 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                 bool supportsOp1RegOptional = false;
                                 bool supportsOp2RegOptional = false;
 
+                                GenTree* containedOperand   = nullptr;
+                                GenTree* regOptionalOperand = nullptr;
+                                bool     swapOperands       = false;
+
                                 if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
                                 {
-                                    MakeSrcContained(node, op2);
+                                    containedOperand = op2;
                                 }
                                 else if (IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
                                 {
-                                    MakeSrcContained(node, op1);
-
-                                    // Swap the operands here to make the containment checks in codegen simpler
-                                    std::swap(node->Op(1), node->Op(2));
+                                    containedOperand = op1;
+                                    swapOperands     = true;
                                 }
-                                else if (supportsOp1RegOptional)
+                                else
                                 {
+                                    if (supportsOp1RegOptional)
+                                    {
+                                        regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op1);
+                                    }
+
                                     if (supportsOp2RegOptional)
                                     {
-                                        GenTree* regOptionalOperand = PreferredRegOptionalOperand(op1, op2);
-                                        MakeSrcRegOptional(node, regOptionalOperand);
-
-                                        if (regOptionalOperand == op1)
-                                        {
-                                            // Swap the operands here to make the containment checks in codegen simpler
-                                            std::swap(node->Op(1), node->Op(2));
-                                        }
+                                        regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op2);
                                     }
-                                    else
-                                    {
-                                        MakeSrcRegOptional(node, op1);
 
-                                        // Swap the operands here to make the containment checks in codegen simpler
-                                        std::swap(node->Op(1), node->Op(2));
+                                    if (regOptionalOperand == op1)
+                                    {
+                                        swapOperands = true;
                                     }
                                 }
-                                else if (supportsOp2RegOptional)
+
+                                if (containedOperand != nullptr)
                                 {
-                                    MakeSrcRegOptional(node, op2);
+                                    MakeSrcContained(node, containedOperand);
+                                }
+                                else if (regOptionalOperand != nullptr)
+                                {
+                                    MakeSrcRegOptional(node, regOptionalOperand);
+                                }
+
+                                if (swapOperands)
+                                {
+                                    // Swap the operands here to make the containment checks in codegen significantly
+                                    // simpler
+                                    std::swap(node->Op(1), node->Op(2));
                                 }
                                 break;
                             }
@@ -10932,44 +11296,240 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX512F_VL_TernaryLogic:
                         case NI_AVX10v1_TernaryLogic:
                         {
+                            assert(comp->canUseEvexEncodingDebugOnly());
+
+                            // These are the control bytes used for TernaryLogic
+
+                            const uint8_t A = 0xF0;
+                            const uint8_t B = 0xCC;
+                            const uint8_t C = 0xAA;
+
                             if (!isContainedImm)
                             {
                                 // Don't contain if we're generating a jmp table fallback
                                 break;
                             }
 
-                            if (IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
-                            {
-                                MakeSrcContained(node, op3);
-                            }
-                            else if (supportsRegOptional)
-                            {
-                                MakeSrcRegOptional(node, op3);
-                            }
-
                             uint8_t                 control  = static_cast<uint8_t>(op4->AsIntCon()->gtIconVal);
-                            const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
-                            TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+                            const TernaryLogicInfo* info     = &TernaryLogicInfo::lookup(control);
+                            TernaryLogicUseFlags    useFlags = info->GetAllUseFlags();
 
-                            if (useFlags != TernaryLogicUseFlags::ABC)
+                            bool supportsOp1RegOptional = false;
+                            bool supportsOp2RegOptional = false;
+                            bool supportsOp3RegOptional = false;
+
+                            GenTree*             containedOperand   = nullptr;
+                            GenTree*             regOptionalOperand = nullptr;
+                            TernaryLogicUseFlags swapOperands       = TernaryLogicUseFlags::None;
+
+                            switch (useFlags)
                             {
-                                assert(!node->isRMWHWIntrinsic(comp));
-
-                                // op1, and possibly op2, are never selected
-                                // by the table so we can contain and ignore
-                                // any register allocated to it resulting in
-                                // better non-RMW based codegen.
-
-                                MakeSrcContained(node, op1);
-
-                                if (useFlags == TernaryLogicUseFlags::C)
+                                case TernaryLogicUseFlags::None:
                                 {
+                                    break;
+                                }
+
+                                case TernaryLogicUseFlags::C:
+                                {
+                                    // We're only using op3, so that's the one to try and contain
+
+                                    assert(op1->IsCnsVec());
+                                    MakeSrcContained(node, op1);
+
+                                    assert(op2->IsCnsVec());
                                     MakeSrcContained(node, op2);
+
+                                    if (IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
+                                    {
+                                        containedOperand = op3;
+                                    }
+                                    else if (supportsOp3RegOptional)
+                                    {
+                                        regOptionalOperand = op3;
+                                    }
+                                    break;
+                                }
+
+                                case TernaryLogicUseFlags::BC:
+                                {
+                                    // We're only using op2 and op3, so find the right one to contain
+                                    // using the standard commutative rules, fixing up the control byte
+                                    // as needed to ensure the operation remains the same
+
+                                    assert(op1->IsCnsVec());
+                                    MakeSrcContained(node, op1);
+
+                                    if (IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
+                                    {
+                                        containedOperand = op3;
+                                    }
+                                    else if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
+                                    {
+                                        containedOperand = op2;
+                                        swapOperands     = TernaryLogicUseFlags::BC;
+                                    }
+                                    else
+                                    {
+                                        if (supportsOp2RegOptional)
+                                        {
+                                            regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op2);
+                                        }
+
+                                        if (supportsOp3RegOptional)
+                                        {
+                                            regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op3);
+                                        }
+
+                                        if (regOptionalOperand == op2)
+                                        {
+                                            swapOperands = TernaryLogicUseFlags::BC;
+                                        }
+                                    }
+                                    break;
+                                }
+
+                                case TernaryLogicUseFlags::ABC:
+                                {
+                                    // TernaryLogic is special in that any operand can be contained
+                                    // and any other operand can be the RMW operand.
+                                    //
+                                    // This comes about from having a control byte that indicates
+                                    // the operation to be performed per operand.
+
+                                    LIR::Use use;
+                                    GenTree* user = nullptr;
+
+                                    if (BlockRange().TryGetUse(node, &use))
+                                    {
+                                        user = use.User();
+                                    }
+                                    unsigned resultOpNum = node->GetResultOpNumForRmwIntrinsic(user, op1, op2, op3);
+
+                                    // Prioritize Containable op. Check if any one of the op is containable first.
+                                    // Set op regOptional only if none of them is containable.
+
+                                    if (resultOpNum == 2)
+                                    {
+                                        // Swap the operands here to make the containment checks in codegen
+                                        // significantly simpler
+                                        std::swap(node->Op(1), node->Op(2));
+                                        std::swap(op1, op2);
+
+                                        // Make sure we also fixup the control byte
+                                        control = TernaryLogicInfo::GetTernaryControlByte(*info, B, A, C);
+                                        op4->AsIntCon()->SetIconValue(control);
+
+                                        // Result is now in op1, but also get the updated info
+                                        resultOpNum = 1;
+                                        info        = &TernaryLogicInfo::lookup(control);
+                                    }
+                                    else if (resultOpNum == 3)
+                                    {
+                                        // Swap the operands here to make the containment checks in codegen
+                                        // significantly simpler
+                                        std::swap(node->Op(1), node->Op(3));
+                                        std::swap(op1, op3);
+
+                                        // Make sure we also fixup the control byte
+                                        control = TernaryLogicInfo::GetTernaryControlByte(*info, C, B, A);
+                                        op4->AsIntCon()->SetIconValue(control);
+
+                                        // Result is now in op1, but also get the updated info
+                                        resultOpNum = 1;
+                                        info        = &TernaryLogicInfo::lookup(control);
+                                    }
+
+                                    // Prefer to make op3 contained as it doesn't require reordering operands
+                                    if (IsContainableHWIntrinsicOp(node, op3, &supportsOp3RegOptional))
+                                    {
+                                        containedOperand = op3;
+                                    }
+                                    else if (IsContainableHWIntrinsicOp(node, op2, &supportsOp2RegOptional))
+                                    {
+                                        containedOperand = op2;
+                                        swapOperands     = TernaryLogicUseFlags::BC;
+                                    }
+                                    else if ((resultOpNum != 1) &&
+                                             IsContainableHWIntrinsicOp(node, op1, &supportsOp1RegOptional))
+                                    {
+                                        containedOperand = op1;
+                                        swapOperands     = TernaryLogicUseFlags::AC;
+                                    }
+                                    else
+                                    {
+                                        if (supportsOp1RegOptional)
+                                        {
+                                            regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op1);
+                                        }
+
+                                        if (supportsOp2RegOptional)
+                                        {
+                                            regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op2);
+                                        }
+
+                                        if (supportsOp3RegOptional)
+                                        {
+                                            regOptionalOperand = PreferredRegOptionalOperand(regOptionalOperand, op3);
+                                        }
+
+                                        if (regOptionalOperand == op1)
+                                        {
+                                            swapOperands = TernaryLogicUseFlags::AC;
+                                        }
+                                        else if (regOptionalOperand == op2)
+                                        {
+                                            swapOperands = TernaryLogicUseFlags::BC;
+                                        }
+                                    }
+                                    break;
+                                }
+
+                                default:
+                                {
+                                    // Lowering should have normalized to one of the above
+                                    unreached();
+                                }
+                            }
+
+                            if (containedOperand != nullptr)
+                            {
+                                if (containedOperand->IsCnsVec() && node->OperIsEmbBroadcastCompatible())
+                                {
+                                    TryFoldCnsVecForEmbeddedBroadcast(node, containedOperand->AsVecCon());
                                 }
                                 else
                                 {
-                                    assert(useFlags == TernaryLogicUseFlags::BC);
+                                    MakeSrcContained(node, containedOperand);
                                 }
+                            }
+                            else if (regOptionalOperand != nullptr)
+                            {
+                                MakeSrcRegOptional(node, regOptionalOperand);
+                            }
+
+                            if (swapOperands == TernaryLogicUseFlags::AC)
+                            {
+                                // Swap the operands here to make the containment checks in codegen
+                                // significantly simpler
+                                std::swap(node->Op(1), node->Op(3));
+
+                                // Make sure we also fixup the control byte
+                                control = TernaryLogicInfo::GetTernaryControlByte(*info, C, B, A);
+                                op4->AsIntCon()->SetIconValue(control);
+                            }
+                            else if (swapOperands == TernaryLogicUseFlags::BC)
+                            {
+                                // Swap the operands here to make the containment checks in codegen
+                                // significantly simpler
+                                std::swap(node->Op(2), node->Op(3));
+
+                                // Make sure we also fixup the control byte
+                                control = TernaryLogicInfo::GetTernaryControlByte(*info, A, C, B);
+                                op4->AsIntCon()->SetIconValue(control);
+                            }
+                            else
+                            {
+                                assert(swapOperands == TernaryLogicUseFlags::None);
                             }
                             break;
                         }

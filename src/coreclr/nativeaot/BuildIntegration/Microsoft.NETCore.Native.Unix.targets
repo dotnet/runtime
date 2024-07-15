@@ -24,7 +24,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
-    <UseSystemZlib Condition="!Exists('$(IlcSdkPath)libz.a')">true</UseSystemZlib>
+    <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcFrameworkNativePath)libz.a')">true</UseSystemZlib>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -130,13 +130,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibFileExt)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibFileExt)" />
       <NativeLibrary Condition="'$(LinkStandardCPlusPlusLibrary)' != 'true' and '$(StaticICULinking)' != 'true'" Include="$(IlcSdkPath)libstdc++compat.a" />
-      <NativeLibrary Condition="'$(UseSystemZlib)' != 'true'" Include="$(IlcSdkPath)libz.a" />
     </ItemGroup>
 
     <ItemGroup>
       <NetCoreAppNativeLibrary Include="System.Native" />
       <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
+      <NetCoreAppNativeLibrary Include="z" Condition="'$(UseSystemZlib)' != 'true'" /> <!-- zlib must be added after System.IO.Compression.Native, order matters. -->
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
       <!-- Not compliant for iOS-like platforms -->

@@ -427,6 +427,20 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddSaturate(Vector<ulong> left, Vector<ulong> right) => AddSaturate(left, right);
 
+        ///  AddSequentialAcross : Add reduction (strictly-ordered)
+
+        /// <summary>
+        /// float64_t svadda[_f64](svbool_t pg, float64_t initial, svfloat64_t op)
+        ///   FADDA Dtied, Pg, Dtied, Zop.D
+        /// </summary>
+        public static unsafe Vector<double> AddSequentialAcross(Vector<double> initial, Vector<double> value) => AddSequentialAcross(initial, value);
+
+        /// <summary>
+        /// float32_t svadda[_f32](svbool_t pg, float32_t initial, svfloat32_t op)
+        ///   FADDA Stied, Pg, Stied, Zop.S
+        /// </summary>
+        public static unsafe Vector<float> AddSequentialAcross(Vector<float> initial, Vector<float> value) => AddSequentialAcross(initial, value);
+
         ///  And : Bitwise AND
 
         /// <summary>
@@ -8660,6 +8674,51 @@ namespace System.Runtime.Intrinsics.Arm
         ///   TRN2 Zresult.D, Zop1.D, Zop2.D
         /// </summary>
         public static unsafe Vector<ulong> TransposeOdd(Vector<ulong> left, Vector<ulong> right) => TransposeOdd(left, right);
+
+
+        ///  Trigonometric multiply-add coefficient
+
+        /// <summary>
+        /// svfloat64_t svtmad[_f64](svfloat64_t op1, svfloat64_t op2, uint64_t imm3)
+        ///   FTMAD Ztied1.D, Ztied1.D, Zop2.D, #imm3
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricMultiplyAddCoefficient(Vector<double> left, Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) => TrigonometricMultiplyAddCoefficient(left, right, control);
+
+        /// <summary>
+        /// svfloat32_t svtmad[_f32](svfloat32_t op1, svfloat32_t op2, uint64_t imm3)
+        ///   FTMAD Ztied1.S, Ztied1.S, Zop2.S, #imm3
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricMultiplyAddCoefficient(Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(7))] byte control) => TrigonometricMultiplyAddCoefficient(left, right, control);
+
+
+        ///  Trigonometric select coefficient
+
+        /// <summary>
+        /// svfloat64_t svtssel[_f64](svfloat64_t op1, svuint64_t op2)
+        ///   FTSSEL Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricSelectCoefficient(Vector<double> value, Vector<ulong> selector) => TrigonometricSelectCoefficient(value, selector);
+
+        /// <summary>
+        /// svfloat32_t svtssel[_f32](svfloat32_t op1, svuint32_t op2)
+        ///   FTSSEL Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricSelectCoefficient(Vector<float> value, Vector<uint> selector) => TrigonometricSelectCoefficient(value, selector);
+
+
+        ///  Trigonometric starting value
+
+        /// <summary>
+        /// svfloat64_t svtsmul[_f64](svfloat64_t op1, svuint64_t op2)
+        ///   FTSMUL Zresult.D, Zop1.D, Zop2.D
+        /// </summary>
+        public static unsafe Vector<double> TrigonometricStartingValue(Vector<double> value, Vector<ulong> sign) => TrigonometricStartingValue(value, sign);
+
+        /// <summary>
+        /// svfloat32_t svtsmul[_f32](svfloat32_t op1, svuint32_t op2)
+        ///   FTSMUL Zresult.S, Zop1.S, Zop2.S
+        /// </summary>
+        public static unsafe Vector<float> TrigonometricStartingValue(Vector<float> value, Vector<uint> sign) => TrigonometricStartingValue(value, sign);
 
 
         ///  UnzipEven : Concatenate even elements from two inputs
