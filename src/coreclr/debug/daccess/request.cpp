@@ -4686,8 +4686,42 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
 
     SOSDacEnter();
 
-    PTR_ExceptionObject pObj = dac_cast<PTR_ExceptionObject>(TO_TADDR(objAddr));
+    if (m_cdacSos2 != NULL)
+    {
+        hr = m_cdacSos2->GetObjectExceptionData(objAddr, data);
+        if (FAILED(hr))
+        {
+            hr = GetObjectExceptionDataImpl(objAddr, data);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpExceptionObjectData dataLocal;
+            HRESULT hrLocal = GetObjectExceptionDataImpl(objAddr, &dataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(data->Message == dataLocal.Message);
+            _ASSERTE(data->InnerException == dataLocal.InnerException);
+            _ASSERTE(data->StackTrace == dataLocal.StackTrace);
+            _ASSERTE(data->WatsonBuckets == dataLocal.WatsonBuckets);
+            _ASSERTE(data->StackTraceString == dataLocal.StackTraceString);
+            _ASSERTE(data->RemoteStackTraceString == dataLocal.RemoteStackTraceString);
+            _ASSERTE(data->HResult == dataLocal.HResult);
+            _ASSERTE(data->XCode == dataLocal.XCode);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetObjectExceptionDataImpl(objAddr, data);
+    }
 
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data)
+{
+    PTR_ExceptionObject pObj = dac_cast<PTR_ExceptionObject>(TO_TADDR(objAddr));
     data->Message         = TO_CDADDR(dac_cast<TADDR>(pObj->GetMessage()));
     data->InnerException  = TO_CDADDR(dac_cast<TADDR>(pObj->GetInnerException()));
     data->StackTrace      = TO_CDADDR(dac_cast<TADDR>(pObj->GetStackTraceArrayObject()));
@@ -4696,10 +4730,7 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
     data->RemoteStackTraceString = TO_CDADDR(dac_cast<TADDR>(pObj->GetRemoteStackTraceString()));
     data->HResult         = pObj->GetHResult();
     data->XCode           = pObj->GetXCode();
-
-    SOSDacLeave();
-
-    return hr;
+    return S_OK;
 }
 
 HRESULT ClrDataAccess::IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy)

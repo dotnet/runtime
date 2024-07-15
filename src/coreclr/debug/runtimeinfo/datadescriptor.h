@@ -141,6 +141,21 @@ CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Pointer, offsetof(gc_alloc_context,
 CDAC_TYPE_FIELD(GCAllocContext, /*pointer*/, Limit, offsetof(gc_alloc_context, alloc_limit))
 CDAC_TYPE_END(GCAllocContext)
 
+// Exception
+
+// Use exact managed type field names for the descriptor as field names often can't change due to binary serialization or implicit diagnostic contracts
+CDAC_TYPE_BEGIN(Exception)
+CDAC_TYPE_INDETERMINATE(Exception)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _message, cdac_offsets<ExceptionObject>::_message)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _innerException, cdac_offsets<ExceptionObject>::_innerException)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _stackTrace, cdac_offsets<ExceptionObject>::_stackTrace)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _watsonBuckets, cdac_offsets<ExceptionObject>::_watsonBuckets)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _stackTraceString, cdac_offsets<ExceptionObject>::_stackTraceString)
+CDAC_TYPE_FIELD(Exception, /*pointer*/, _remoteStackTraceString, cdac_offsets<ExceptionObject>::_remoteStackTraceString)
+CDAC_TYPE_FIELD(Exception, /*int32*/, _HResult, cdac_offsets<ExceptionObject>::_HResult)
+CDAC_TYPE_FIELD(Exception, /*int32*/, _xcode, cdac_offsets<ExceptionObject>::_xcode)
+CDAC_TYPE_END(Exception)
+
 CDAC_TYPE_BEGIN(ExceptionInfo)
 CDAC_TYPE_INDETERMINATE(ExceptionInfo)
 #if FEATURE_EH_FUNCLETS
@@ -151,6 +166,7 @@ CDAC_TYPE_FIELD(ExceptionInfo, /*pointer*/, ThrownObject, offsetof(ExInfo, m_hTh
 CDAC_TYPE_FIELD(PreviousNestedInfo, /*pointer*/, PreviousNestedInfo, offsetof(ExInfo, m_pPrevNestedInfo))
 #endif
 CDAC_TYPE_END(ExceptionInfo)
+
 
 CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))

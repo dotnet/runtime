@@ -3582,6 +3582,7 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				    gboolean check_interfaces)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
 	/* FIXME test for interfaces with variant generic arguments */
 	if (check_interfaces) {
 		mono_class_init_internal (klass);
@@ -4284,13 +4285,9 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 
 		MonoClass *eclass;
 		MonoClass *eoclass;
-		if (signature_assignment) {
-			eclass = composite_type_to_reduced_element_type (klass);
-			eoclass = composite_type_to_reduced_element_type (oklass);
-		} else {
-			eclass = m_class_get_cast_class (klass);
-			eoclass = m_class_get_cast_class (oklass);
-		}
+
+		eclass = composite_type_to_reduced_element_type (klass);
+		eoclass = composite_type_to_reduced_element_type (oklass);
 
 		*result = (eclass == eoclass);
 		return;
