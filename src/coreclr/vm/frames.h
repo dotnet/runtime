@@ -3330,6 +3330,7 @@ public:
 #else // #ifndef DACCESS_COMPILE
 
 #define GCPROTECT_BEGIN(ObjRefStruct)
+#define GCPROTECT_BEGIN_THREAD(pThread, ObjRefStruct)
 #define GCPROTECT_ARRAY_BEGIN(ObjRefArray,cnt)
 #define GCPROTECT_BEGININTERIOR(ObjRefStruct)
 #define GCPROTECT_END()

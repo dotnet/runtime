@@ -7,6 +7,8 @@
 #pragma hdrstop
 #endif
 
+#include "lower.h" // for LowerRange()
+
 // Flowgraph Miscellany
 
 //------------------------------------------------------------------------
@@ -3534,69 +3536,84 @@ PhaseStatus Compiler::fgCreateThrowHelperBlocks()
         // graph optimizations. Note that no target block points to these blocks.
         //
         newBlk->SetFlags(BBF_IMPORTED | BBF_DONT_REMOVE);
-
-        // Figure out what code to insert
-        //
-        int helper = CORINFO_HELP_UNDEF;
-
-        switch (add->acdKind)
-        {
-            case SCK_RNGCHK_FAIL:
-                helper = CORINFO_HELP_RNGCHKFAIL;
-                break;
-
-            case SCK_DIV_BY_ZERO:
-                helper = CORINFO_HELP_THROWDIVZERO;
-                break;
-
-            case SCK_ARITH_EXCPN:
-                helper = CORINFO_HELP_OVERFLOW;
-                noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
-                break;
-
-            case SCK_ARG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
-                break;
-
-            case SCK_ARG_RNG_EXCPN:
-                helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
-                break;
-
-            case SCK_FAIL_FAST:
-                helper = CORINFO_HELP_FAIL_FAST;
-                break;
-
-            default:
-                noway_assert(!"unexpected code addition kind");
-        }
-
-        noway_assert(helper != CORINFO_HELP_UNDEF);
-
-        // Add the appropriate helper call.
-        //
-        GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
-
-        // There are no args here but fgMorphArgs has side effects
-        // such as setting the outgoing arg area (which is necessary
-        // on AMD if there are any calls).
-        //
-        tree = fgMorphArgs(tree);
-
-        // Store the tree in the new basic block.
-        //
-        if (fgNodeThreading != NodeThreading::LIR)
-        {
-            fgInsertStmtAtEnd(newBlk, fgNewStmtFromTree(tree));
-        }
-        else
-        {
-            LIR::AsRange(newBlk).InsertAtEnd(LIR::SeqTree(this, tree));
-        }
     }
 
     fgRngChkThrowAdded = true;
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgCreateThrowHelperBlockCode: create the code for throw helper blocks
+//
+void Compiler::fgCreateThrowHelperBlockCode(AddCodeDsc* add)
+{
+    assert(add->acdUsed);
+
+    // Find the block created earlier. It should be empty.
+    //
+    BasicBlock* const block = add->acdDstBlk;
+    assert(block->isEmpty());
+
+    // Figure out what code to insert
+    //
+    int helper = CORINFO_HELP_UNDEF;
+
+    switch (add->acdKind)
+    {
+        case SCK_RNGCHK_FAIL:
+            helper = CORINFO_HELP_RNGCHKFAIL;
+            break;
+
+        case SCK_DIV_BY_ZERO:
+            helper = CORINFO_HELP_THROWDIVZERO;
+            break;
+
+        case SCK_ARITH_EXCPN:
+            helper = CORINFO_HELP_OVERFLOW;
+            noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
+            break;
+
+        case SCK_ARG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
+            break;
+
+        case SCK_ARG_RNG_EXCPN:
+            helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
+            break;
+
+        case SCK_FAIL_FAST:
+            helper = CORINFO_HELP_FAIL_FAST;
+            break;
+
+        default:
+            noway_assert(!"unexpected code addition kind");
+    }
+
+    noway_assert(helper != CORINFO_HELP_UNDEF);
+
+    // Add the appropriate helper call.
+    //
+    GenTreeCall* tree = gtNewHelperCallNode(helper, TYP_VOID);
+
+    // There are no args here but fgMorphArgs has side effects
+    // such as setting the outgoing arg area (which is necessary
+    // on AMD if there are any calls).
+    //
+    tree = fgMorphArgs(tree);
+
+    // Store the tree in the new basic block.
+    //
+    if (fgNodeThreading != NodeThreading::LIR)
+    {
+        fgInsertStmtAtEnd(block, fgNewStmtFromTree(tree));
+    }
+    else
+    {
+        LIR::AsRange(block).InsertAtEnd(tree);
+        LIR::ReadOnlyRange range(tree, tree);
+        m_pLowering->LowerRange(block, range);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -5799,6 +5816,76 @@ bool FlowGraphNaturalLoop::MayExecuteBlockMultipleTimesPerIteration(BasicBlock* 
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// IsPostDominatedOnLoopIteration:
+//   Check whether control will always flow through "postDominator" if starting
+//   at "block" and a backedge is taken.
+//
+// Parameters:
+//   block         - The basic block
+//   postDominator - Block to query postdominance of
+//
+// Returns:
+//   True if so.
+//
+bool FlowGraphNaturalLoop::IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator)
+{
+    assert(ContainsBlock(block) && ContainsBlock(postDominator));
+
+    unsigned index;
+    bool     gotIndex = TryGetLoopBlockBitVecIndex(block, &index);
+    assert(gotIndex);
+
+    Compiler*               comp = m_dfsTree->GetCompiler();
+    ArrayStack<BasicBlock*> stack(comp->getAllocator(CMK_Loops));
+
+    BitVecTraits traits = LoopBlockTraits();
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
+
+    stack.Push(block);
+    BitVecOps::AddElemD(&traits, visited, index);
+
+    auto queueSuccs = [=, &stack, &traits, &visited](BasicBlock* succ) {
+        if (succ == m_header)
+        {
+            // We managed to reach the header without going through "postDominator".
+            return BasicBlockVisit::Abort;
+        }
+
+        unsigned index;
+        if (!TryGetLoopBlockBitVecIndex(succ, &index) || !BitVecOps::IsMember(&traits, m_blocks, index))
+        {
+            // Block is not inside loop
+            return BasicBlockVisit::Continue;
+        }
+
+        if (!BitVecOps::TryAddElemD(&traits, visited, index))
+        {
+            // Block already visited
+            return BasicBlockVisit::Continue;
+        }
+
+        stack.Push(succ);
+        return BasicBlockVisit::Continue;
+    };
+
+    while (stack.Height() > 0)
+    {
+        BasicBlock* block = stack.Pop();
+        if (block == postDominator)
+        {
+            continue;
+        }
+
+        if (block->VisitAllSuccs(comp, queueSuccs) == BasicBlockVisit::Abort)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------
