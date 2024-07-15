@@ -1427,14 +1427,14 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
         // setting the result element to AllBitsSet or Zero
         // depending on the corresponding mask bit
 
-        isSet = ((mask >> count) & 1) != 0;
+        isSet = ((mask >> i) & 1) != 0;
 #elif defined(TARGET_ARM64)
         // For Arm64 we have count total bits to read, but
         // they are sizeof(TBase) bits apart. We still set
         // the result element to AllBitsSet or Zero depending
         // on the corresponding mask bit
 
-        isSet = ((mask >> (count * sizeof(TBase))) & 1) != 0;
+        isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
 #else
         unreached();
 #endif
@@ -1502,29 +1502,28 @@ void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
     uint64_t mask  = 0;
 
-    TBase allBitsSet;
-    memset(&allBitsSet, 0xFF, sizeof(TBase));
+    TBase mostSignificantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
 
     for (uint32_t i = 0; i < count; i++)
     {
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        if (memcmp(&input0, &allBitsSet, sizeof(TBase)) == 0)
+        if ((input0 & mostSignificantBit) != 0)
         {
 #if defined(TARGET_XARCH)
             // For xarch we have count sequential bits to write
             // depending on if the corresponding the input element
-            // is AllBitsSet or Zero
+            // has its most significant bit set
 
-            mask |= static_cast<uint64_t>(1) << count;
+            mask |= static_cast<uint64_t>(1) << i;
 #elif defined(TARGET_ARM64)
             // For Arm64 we have count total bits to write, but
             // they are sizeof(TBase) bits apart. We still set
             // depending on if the corresponding input element
-            // is AllBitsSet or Zero
+            // has its most significant bit set
 
-            mask |= static_cast<uint64_t>(1) << (count * sizeof(TBase));
+            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
 #else
             unreached();
 #endif
