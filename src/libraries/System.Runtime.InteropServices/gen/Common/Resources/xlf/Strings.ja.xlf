@@ -492,6 +492,11 @@
         <target state="translated">属性の[In]と[Out]</target>
         <note />
       </trans-unit>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
         <target state="translated">イベントは COM の概念ではないため、ソース生成 COM インターフェイス上のインスタンス イベントに対して相互運用コードはソース生成されません。</target>
@@ -1020,11 +1025,6 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">このプロジェクトでは、アセンブリに 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' を適用してランタイム マーシャリングを無効にし、この型のマーシャリングを有効にする必要があります。</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">'SafeHandle' から派生した抽象型は、参照でマーシャリングできません。指定される型は具象型である必要があります。</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">

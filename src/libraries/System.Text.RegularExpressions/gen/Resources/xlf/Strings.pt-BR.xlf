@@ -192,9 +192,9 @@
         <target state="translated">O mecanismo Regex atingiu o tempo limite ao tentar combinar um padrão com uma cadeia de caracteres de entrada. Isso pode ocorrer por vários motivos, incluindo entradas muito grandes ou retrocessos excessivos causados por quantificadores aninhados, referências anteriores e outros fatores.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
-        <target state="translated">O método GeneratedRegexAttribute deve ser parcial, sem parâmetros, não genérico, não abstrato e retornar Regex.</target>
+      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
+        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
