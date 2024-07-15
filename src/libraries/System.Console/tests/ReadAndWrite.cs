@@ -159,8 +159,10 @@ public class ReadAndWrite
                 TextWriter writer = Console.Out;
                 Assert.NotNull(writer);
                 // single-threaded WASM bypasses SyncTextWriter for faster startup
-                if (!PlatformDetection.IsThreadingSupported)
+                if (PlatformDetection.IsThreadingSupported)
                     Assert.NotEqual(writer, sw); // the writer we provide gets wrapped
+                else
+                    Assert.Equal(writer, sw); // the writer we provide does not get wrapped
 
                 // We just want to ensure none of these throw exceptions, we don't actually validate
                 // what was written.
