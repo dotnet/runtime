@@ -87,10 +87,6 @@ UINT WINAPI GetTempFileNameWrapper(
     SString&  lpTempFileName
     );
 
-DWORD WINAPI GetTempPathWrapper(
-    SString& lpBuffer
-    );
-
 DWORD WINAPI GetCurrentDirectoryWrapper(
     SString&  lpBuffer
     );
