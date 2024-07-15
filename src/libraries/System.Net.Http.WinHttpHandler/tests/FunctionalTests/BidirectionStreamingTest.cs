@@ -22,9 +22,9 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         // Build number suggested by the WinHttp team.
         // It can be reduced if bidirectional streaming is backported.
-        public static bool OsSupportsWinHttpBidirectionalStreaming => Environment.OSVersion.Version >= new Version(10, 0, 22357, 0);
+        public static bool OsSupportsWinHttpBidirectionalStreaming => Environment.OSVersion.Version >= new Version(10, 0, 22357, 0) && PlatformDetection.IsWindowsServer2022;
 
-        public static bool TestsEnabled => OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
+        public static bool TestsEnabled => OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn && !PlatformDetection.IsWindowsServer2022;
 
         public static bool TestsBackwardsCompatibilityEnabled => !OsSupportsWinHttpBidirectionalStreaming && PlatformDetection.SupportsAlpn;
 
