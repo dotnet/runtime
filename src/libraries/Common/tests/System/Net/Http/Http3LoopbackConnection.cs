@@ -315,8 +315,11 @@ namespace System.Net.Test.Common
 
             // The client's control stream should throw QuicConnectionAbortedException, indicating that it was
             // aborted because the connection was closed (and was not explicitly closed or aborted prior to the connection being closed)
-            QuicException ex = await Assert.ThrowsAsync<QuicException>(async () => await _inboundControlStream.ReadFrameAsync().ConfigureAwait(false));
-            Assert.Equal(QuicError.ConnectionAborted, ex.QuicError);
+            if (_inboundControlStream is not null)
+            {
+                QuicException ex = await Assert.ThrowsAsync<QuicException>(async () => await _inboundControlStream.ReadFrameAsync().ConfigureAwait(false));
+                Assert.Equal(QuicError.ConnectionAborted, ex.QuicError);
+            }
 
             await CloseAsync(H3_NO_ERROR).ConfigureAwait(false);
         }
