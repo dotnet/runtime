@@ -33,6 +33,7 @@ class ObjectAllocator final : public Phase
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
+    BitVec              m_PointersHasLocalStore;
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
 
@@ -59,6 +60,7 @@ private:
     bool         DoesLclVarPointToStack(unsigned int lclNum);
     void         DoAnalysis();
     void         MarkLclVarAsEscaping(unsigned int lclNum);
+    bool         MarkLclVarHasLocalStore(unsigned int lclNum);
     void         MarkEscapingVarsAndBuildConnGraph();
     void         AddConnGraphEdge(unsigned int sourceLclNum, unsigned int targetLclNum);
     void         ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);

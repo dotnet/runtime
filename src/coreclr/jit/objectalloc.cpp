@@ -90,6 +90,27 @@ void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 }
 
 //------------------------------------------------------------------------------
+// MarkLclVarHasLocalStore : Mark local variable having local store.
+//
+//
+// Arguments:
+//    lclNum  - Pointing local variable number
+// Returns:
+//    true if the local variable is first marked as having local store
+//    false if the local variable is already marked as having local store
+
+bool ObjectAllocator::MarkLclVarHasLocalStore(unsigned int lclNum)
+{
+    if (BitVecOps::IsMember(&m_bitVecTraits, m_PointersHasLocalStore, lclNum))
+    {
+        return false;
+    }
+
+    BitVecOps::AddElemD(&m_bitVecTraits, m_PointersHasLocalStore, lclNum);
+    return true;
+}
+
+//------------------------------------------------------------------------------
 // MarkLclVarAsPossiblyStackPointing : Mark local variable as possibly pointing
 //                                     to a stack-allocated object.
 //
@@ -140,6 +161,7 @@ void ObjectAllocator::DoAnalysis()
     if (comp->lvaCount > 0)
     {
         m_EscapingPointers         = BitVecOps::MakeEmpty(&m_bitVecTraits);
+        m_PointersHasLocalStore    = BitVecOps::MakeEmpty(&m_bitVecTraits);
         m_ConnGraphAdjacencyMatrix = new (comp->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[comp->lvaCount];
 
         MarkEscapingVarsAndBuildConnGraph();
@@ -201,7 +223,9 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
             if (tree->OperIsLocalStore())
             {
-                lclEscapes = false;
+                // conservatively marking locals being reassigned as escaping
+                // this can happen on arrays
+                lclEscapes = !m_allocator->MarkLclVarHasLocalStore(lclNum);
             }
             else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
             {
@@ -404,7 +428,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 else if (data->IsHelperCall())
                 {
                     GenTreeCall* call = data->AsCall();
-                    if (call->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC)
+                    if (call->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC &&
+                        call->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
                     {
                         canonicalAllocArrFound = true;
                     }
@@ -1168,31 +1193,32 @@ void ObjectAllocator::RewriteUses()
             // Rewrite INDEX_ADDR to ADD for stack-allocated arrays.
             else if (tree->OperIs(GT_INDEX_ADDR))
             {
-                GenTreeIndexAddr* const indexAddr = tree->AsIndexAddr();
-                GenTree* const          arr       = indexAddr->Arr();
-                GenTree* const          ind       = indexAddr->Index();
+                GenTreeIndexAddr* const gtIndexAddr = tree->AsIndexAddr();
+                GenTree* const          gtArr       = gtIndexAddr->Arr();
+                GenTree* const          gtInd       = gtIndexAddr->Index();
 
-                if (arr->OperIs(GT_LCL_ADDR) && ind->IsCnsIntOrI())
+                if (gtArr->OperIs(GT_LCL_ADDR) && gtInd->IsCnsIntOrI())
                 {
                     JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
-                    GenTree* const offset =
-                        m_compiler->gtNewIconNode(OFFSETOF__CORINFO_Array__data + ind->AsIntCon()->gtIconVal, TYP_INT);
-                    GenTree* const add = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, arr, offset);
-                    *use = add;
+                    ssize_t offset =
+                        OFFSETOF__CORINFO_Array__data + gtInd->AsIntCon()->gtIconVal * gtIndexAddr->gtElemSize;
+                    GenTree* const gtOffset = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
+                    GenTree* const gtAdd    = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffset);
+                    *use                    = gtAdd;
                 }
             }
             // Rewrite ARR_LENGTH to LCL_FLD for stack-allocated arrays.
             else if (tree->OperIsArrLength())
             {
-                GenTreeArrLen* const arrLen = tree->AsArrLen();
-                GenTree* const       arr    = arrLen->ArrRef();
+                GenTreeArrLen* const gtArrLen = tree->AsArrLen();
+                GenTree* const       gtArr    = gtArrLen->ArrRef();
 
-                if (arr->OperIs(GT_LCL_ADDR))
+                if (gtArr->OperIs(GT_LCL_ADDR))
                 {
                     JITDUMP("Rewriting ARR_LENGTH to LCL_FLD [%06u]\n", m_compiler->dspTreeID(tree));
-                    GenTree* const lclFld = m_compiler->gtNewLclFldNode(arr->AsLclVarCommon()->GetLclNum(), TYP_INT,
-                                                                        OFFSETOF__CORINFO_Array__length);
-                    *use                  = lclFld;
+                    GenTree* const gtLclFld = m_compiler->gtNewLclFldNode(gtArr->AsLclVarCommon()->GetLclNum(), TYP_INT,
+                                                                          OFFSETOF__CORINFO_Array__length);
+                    *use                    = gtLclFld;
                 }
             }
 
