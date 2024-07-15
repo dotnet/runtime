@@ -93,7 +93,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodTableHandle methodTable = contract.GetMethodTableHandle(mt);
+            Contracts.TypeHandle methodTable = contract.GetTypeHandle(mt);
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
@@ -141,7 +141,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodTableHandle methodTableHandle = contract.GetMethodTableHandle(eeClassReallyCanonMT);
+            Contracts.TypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT);
             *value = methodTableHandle.Address;
             return HResults.S_OK;
         }
@@ -175,7 +175,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
         try
         {
             Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodTableHandle methodTableHandle = typeSystemContract.GetMethodTableHandle(mt);
+            Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt);
             if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
             {
                 CopyStringToTargetBuffer(mtName, count, pNeeded, "Free");
@@ -188,7 +188,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
             try
             {
                 TargetPointer modulePointer = typeSystemContract.GetModule(methodTableHandle);
-                TypeNameBuilder.AppendType(_target, methodTableName, new TypeHandle(methodTableHandle), TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                TypeNameBuilder.AppendType(_target, methodTableName, methodTableHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
             }
             catch
             {

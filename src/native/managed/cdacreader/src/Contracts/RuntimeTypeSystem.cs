@@ -6,49 +6,17 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-// an opaque handle to a method table.  See IMetadata.GetMethodTableData
-internal readonly struct MethodTableHandle
-{
-    internal MethodTableHandle(TargetPointer address)
-    {
-        Address = address;
-    }
-
-    internal TargetPointer Address { get; }
-}
-
-internal readonly struct TypeDescHandle
-{
-    internal TypeDescHandle(TargetPointer address)
-    {
-        Address = address;
-    }
-
-    internal TargetPointer Address { get; }
-}
-
+// an opaque handle to a type handle.  See IMetadata.GetMethodTableData
 internal readonly struct TypeHandle
 {
-    private readonly MethodTableHandle? _mtHandle;
-    private readonly TypeDescHandle? _typeDescHandle;
-
-    internal TypeHandle(MethodTableHandle mtHandle)
+    internal TypeHandle(TargetPointer address)
     {
-        _mtHandle = mtHandle;
+        Address = address;
     }
 
-    internal TypeHandle(TypeDescHandle typeDescHandle)
-    {
-        _typeDescHandle = typeDescHandle;
-    }
+    internal TargetPointer Address { get; }
 
-    public static implicit operator TypeHandle(MethodTableHandle mtHandle) => new TypeHandle(mtHandle);
-
-    public MethodTableHandle AsMethodTable => _mtHandle!.Value;
-    public bool IsMethodTable => _mtHandle.HasValue;
-    public TypeDescHandle AsTypeDesc => _typeDescHandle!.Value;
-    public bool IsTypeDesc => _typeDescHandle.HasValue;
-    public bool IsNull => !_mtHandle.HasValue;
+    internal bool IsNull => Address == 0;
 }
 
 internal enum CorElementType
@@ -101,43 +69,41 @@ internal interface IRuntimeTypeSystem : IContract
         };
     }
 
-    #region MethodTable inspection APIs
-    public virtual MethodTableHandle GetMethodTableHandle(TargetPointer targetPointer) => throw new NotImplementedException();
-
-    public virtual TargetPointer GetModule(MethodTableHandle methodTable) => throw new NotImplementedException();
+    #region TypeHandle inspection APIs
+    public virtual TypeHandle GetTypeHandle(TargetPointer address) => throw new NotImplementedException();
+    public virtual TargetPointer GetModule(TypeHandle typeHandle) => throw new NotImplementedException();
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
-    public virtual TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual TargetPointer GetParentMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+    public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
 
-    public virtual uint GetBaseSize(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetBaseSize(TypeHandle typeHandle) => throw new NotImplementedException();
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
-    public virtual uint GetComponentSize(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetComponentSize(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
-    public virtual bool IsFreeObjectMethodTable(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual bool IsString(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual bool IsFreeObjectMethodTable(TypeHandle typeHandle) => throw new NotImplementedException();
+    public virtual bool IsString(TypeHandle typeHandle) => throw new NotImplementedException();
     // True if the MethodTable represents a type that contains managed references
-    public virtual bool ContainsGCPointers(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual bool IsDynamicStatics(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumMethods(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual ushort GetNumInterfaces(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual bool ContainsGCPointers(TypeHandle typeHandle) => throw new NotImplementedException();
+    public virtual bool IsDynamicStatics(TypeHandle typeHandle) => throw new NotImplementedException();
+    public virtual ushort GetNumMethods(TypeHandle typeHandle) => throw new NotImplementedException();
+    public virtual ushort GetNumInterfaces(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
-    public virtual uint GetTypeDefToken(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetTypeDefToken(TypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
-    public virtual uint GetTypeDefTypeAttributes(MethodTableHandle methodTable) => throw new NotImplementedException();
+    public virtual uint GetTypeDefTypeAttributes(TypeHandle typeHandle) => throw new NotImplementedException();
 
-    public virtual ReadOnlySpan<MethodTableHandle> GetInstantiation(MethodTableHandle methodTable) => throw new NotImplementedException();
-    public virtual bool IsGenericTypeDefinition(MethodTableHandle methodTable) => throw new NotImplementedException();
-    #endregion MethodTable inspection APIs
+    public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle) => throw new NotImplementedException();
+    public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle) => throw new NotImplementedException();
 
-    #region TypeHandle inspection APIs
-    public virtual TypeHandle TypeHandleFromAddress(TargetPointer address) => throw new NotImplementedException();
     public virtual bool HasTypeParam(TypeHandle typeHandle) => throw new NotImplementedException();
 
-    // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class
+    // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
+    // If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view on a structure
+    // HasTypeParam will return true for cases where this is the interop view
     public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle) => throw new NotImplementedException();
 
     // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
@@ -146,30 +112,6 @@ internal interface IRuntimeTypeSystem : IContract
     public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token) => throw new NotImplementedException();
     public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv) => throw new NotImplementedException();
     // Returns null if the TypeHandle is not a class/struct/generic variable
-
-    // Default implementation is implemented in terms of other apis already on RuntimeTypeSystem
-    public virtual TargetPointer GetModule(TypeHandle typeHandle)
-    {
-        if (typeHandle.IsMethodTable)
-            return GetModule(typeHandle.AsMethodTable);
-        else
-        {
-            if (HasTypeParam(typeHandle))
-            {
-                return GetModule(GetTypeParam(typeHandle));
-            }
-            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
-            {
-                return genericParamModule;
-            }
-            else
-            {
-                System.Diagnostics.Debug.Assert(IsFunctionPointer(typeHandle, out _, out _));
-                return TargetPointer.Null;
-            }
-        }
-    }
-
     #endregion TypeHandle inspection APIs
 }
 

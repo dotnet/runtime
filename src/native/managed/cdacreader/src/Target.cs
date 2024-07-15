@@ -423,7 +423,6 @@ public sealed unsafe class Target
     {
         private readonly Target _target;
         private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
-        private readonly Dictionary<Type, object> _customKeyReadDataByAddress = [];
 
         public DataCache(Target target)
         {
@@ -444,22 +443,6 @@ public sealed unsafe class Target
             return result!;
         }
 
-        public TValue GetOrAdd<TKey, TValue>(TKey key) where TValue : IData<TValue, TKey> where TKey : notnull, IEquatable<TKey>
-        {
-            if (TryGet(key, out TValue? result))
-                return result!;
-
-            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)_customKeyReadDataByAddress[typeof(Tuple<TKey, TValue>)];
-
-            TValue constructed = TValue.Create(_target, key);
-            if (dictionary.TryAdd(key, constructed))
-                return constructed;
-
-            bool found = TryGet(key, out result);
-            Debug.Assert(found);
-            return result!;
-        }
-
         public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
@@ -473,17 +456,6 @@ public sealed unsafe class Target
             }
 
             return false;
-        }
-
-        public bool TryGet<TKey, TValue>(TKey key, [NotNullWhen(true)] out TValue? data) where TValue : IData<TValue, TKey> where TKey : notnull, IEquatable<TKey>
-        {
-            if (!_customKeyReadDataByAddress.TryGetValue(typeof(Tuple<TKey, TValue>), out var dictionaryObject))
-            {
-                dictionaryObject = new Dictionary<TKey, TValue>();
-                _customKeyReadDataByAddress.Add(typeof(Tuple<TKey, TValue>), dictionaryObject);
-            }
-            Dictionary<TKey, TValue> dictionary = (Dictionary<TKey, TValue>)dictionaryObject;
-            return dictionary.TryGetValue(key, out data);
         }
     }
 

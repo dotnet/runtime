@@ -55,12 +55,12 @@ internal struct TypeNameBuilder
     {
         AppendType(target, stringBuilder, typeHandle, default, format);
     }
-    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, ReadOnlySpan<MethodTableHandle> typeInstantiation, TypeNameFormat format)
+    public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
-    private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.TypeHandle typeHandle, ReadOnlySpan<Contracts.MethodTableHandle> instantiation, TypeNameFormat format)
+    private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.TypeHandle typeHandle, ReadOnlySpan<Contracts.TypeHandle> instantiation, TypeNameFormat format)
     {
         bool toString = format.HasFlag(TypeNameFormat.FormatNamespace) && !format.HasFlag(TypeNameFormat.FormatFullInst) && !format.HasFlag(TypeNameFormat.FormatAssembly);
 
@@ -77,13 +77,13 @@ internal struct TypeNameBuilder
                 if (elemType != Contracts.CorElementType.ValueType)
                 {
                     typeSystemContract.IsArray(typeHandle, out uint rank);
-                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default(ReadOnlySpan<Contracts.MethodTableHandle>), (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
+                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default(ReadOnlySpan<Contracts.TypeHandle>), (TypeNameFormat)(format & ~TypeNameFormat.FormatAssembly));
                     AppendParamTypeQualifier(ref tnb, elemType, rank);
                 }
                 else
                 {
                     tnb.TypeString.Append("VALUETYPE");
-                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), Array.Empty<Contracts.MethodTableHandle>(), format & ~TypeNameFormat.FormatAssembly);
+                    AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), Array.Empty<Contracts.TypeHandle>(), format & ~TypeNameFormat.FormatAssembly);
                 }
             }
             else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
@@ -141,9 +141,8 @@ internal struct TypeNameBuilder
             else
             {
                 // ...otherwise it's just a plain type def or an instantiated type
-                MethodTableHandle methodTable = typeHandle.AsMethodTable;
-                uint typeDefToken = typeSystemContract.GetTypeDefToken(methodTable);
-                Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandle(typeSystemContract.GetModule(methodTable));
+                uint typeDefToken = typeSystemContract.GetTypeDefToken(typeHandle);
+                Contracts.ModuleHandle moduleHandle = tnb.Target.Contracts.Loader.GetModuleHandle(typeSystemContract.GetModule(typeHandle));
                 if (EcmaMetadataReader.RidFromToken(typeDefToken) == 0)
                 {
                     tnb.AddName("(dynamicClass)");
@@ -158,9 +157,9 @@ internal struct TypeNameBuilder
 
                 if (format.HasFlag(TypeNameFormat.FormatNamespace) || format.HasFlag(TypeNameFormat.FormatAssembly))
                 {
-                    ReadOnlySpan<MethodTableHandle> instantiationSpan = typeSystemContract.GetInstantiation(methodTable);
+                    ReadOnlySpan<TypeHandle> instantiationSpan = typeSystemContract.GetInstantiation(typeHandle);
 
-                    if ((instantiationSpan.Length > 0) && (!typeSystemContract.IsGenericTypeDefinition(methodTable) || toString))
+                    if ((instantiationSpan.Length > 0) && (!typeSystemContract.IsGenericTypeDefinition(typeHandle) || toString))
                     {
                         if (instantiation.Length == 0)
                         {
@@ -185,10 +184,10 @@ internal struct TypeNameBuilder
         }
     }
 
-    private static void AppendInst(ref TypeNameBuilder tnb, ReadOnlySpan<MethodTableHandle> inst, TypeNameFormat format)
+    private static void AppendInst(ref TypeNameBuilder tnb, ReadOnlySpan<TypeHandle> inst, TypeNameFormat format)
     {
         tnb.OpenGenericArguments();
-        foreach (MethodTableHandle arg in inst)
+        foreach (TypeHandle arg in inst)
         {
             tnb.OpenGenericArgument();
             if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _))

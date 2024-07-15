@@ -21,29 +21,29 @@ internal class DacStreams_1 : IDacStreams
 
     public virtual string? StringFromEEAddress(TargetPointer address)
     {
-        TargetPointer miniMetaDataBuffAddress = _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
-        uint miniMetaDataBuffMaxSize = _target.Read<uint>(_target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffMaxSize));
-
         // We use the data subsystem to handle caching results from processing this data
-        var dictionary = _target.ProcessedData.GetOrAdd<(TargetPointer, uint), DacStreams_1_Data>((miniMetaDataBuffAddress, miniMetaDataBuffMaxSize)).EEObjectToString;
+        var dictionary = _target.ProcessedData.GetOrAdd<DacStreams_1_Data>(0).EEObjectToString;
 
         dictionary.TryGetValue(address, out string? result);
         return result;
     }
 
-    internal class DacStreams_1_Data : IData<DacStreams_1_Data, (TargetPointer, uint)>
+    internal class DacStreams_1_Data : IData<DacStreams_1_Data>
     {
-        static DacStreams_1_Data IData<DacStreams_1_Data, (TargetPointer, uint)>.Create(Target target, (TargetPointer, uint) key) => new DacStreams_1_Data(target, key);
+        static DacStreams_1_Data IData<DacStreams_1_Data>.Create(Target target, TargetPointer address) => new DacStreams_1_Data(target);
 
-        public DacStreams_1_Data(Target target, (TargetPointer miniMetaDataBuffAddress, uint miniMetaDataBuffMaxSize) key)
+        public DacStreams_1_Data(Target target)
         {
-            EEObjectToString = GetEEAddressToStringMap(target, key.miniMetaDataBuffAddress, key.miniMetaDataBuffMaxSize);
+            EEObjectToString = GetEEAddressToStringMap(target);
         }
 
         public readonly Dictionary<TargetPointer, string> EEObjectToString;
 
-        internal static Dictionary<TargetPointer, string> GetEEAddressToStringMap(Target target, TargetPointer miniMetaDataBuffAddress, uint miniMetaDataBuffMaxSize)
+        internal static Dictionary<TargetPointer, string> GetEEAddressToStringMap(Target target)
         {
+            TargetPointer miniMetaDataBuffAddress = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
+            uint miniMetaDataBuffMaxSize = target.Read<uint>(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffMaxSize));
+
             Dictionary<TargetPointer, string> stringToAddress = new();
             if (miniMetaDataBuffMaxSize < 20)
             {
