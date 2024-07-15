@@ -2067,7 +2067,7 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 	case ArgSwiftVtypeLoweredRet: {
 		int gr = 0, fr = 0; // We can start from 0 since we are handling only returns
 		char *storage = (char*)src;
-		for (int k = 0; k< ainfo->nregs; ++k) {
+		for (int k = 0; k< ainfo->nregs; k++) {
 			switch (ainfo->struct_storage [k]) {
 			case ArgInIReg:
 				ccontext->gregs [gr++] = *(gsize*)(storage + ainfo->offsets [k]);
@@ -2081,9 +2081,7 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 			default:
 				g_assert_not_reached ();
 			}
-
 		}	
-
 		break;
 	}
 #endif /* MONO_ARCH_HAVE_SWIFTCALL */
