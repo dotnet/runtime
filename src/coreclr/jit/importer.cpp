@@ -2896,6 +2896,77 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     {
                         optimize = true;
                     }
+                    //
+                    // Also, try to optimize (T)(object)nullableT
+                    //
+                    else if (!eeIsSharedInst(unboxResolvedToken.hClass) &&
+                             (info.compCompHnd->isNullableType(pResolvedToken->hClass) == TypeCompareState::Must) &&
+                             (info.compCompHnd->getTypeForBox(pResolvedToken->hClass) == unboxResolvedToken.hClass))
+                    {
+                        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
+                        GenTree* nullableObj = impPopStack().val;
+                        unsigned objTmp;
+                        if (nullableObj->OperIs(GT_LCL_VAR))
+                        {
+                            objTmp = nullableObj->AsLclVarCommon()->GetLclNum();
+                        }
+                        else
+                        {
+                            objTmp = lvaGrabTemp(true DEBUGARG("nullable obj temp"));
+                            impStoreToTemp(objTmp, nullableObj, nullableObj->TypeGet());
+                        }
+
+                        // Nullable has two fields: 'bool hasValue' and 'T value'
+                        // We need to create two LclFld nodes to access them
+                        static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+                        unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
+                        unsigned valueOffset  = info.compCompHnd->getFieldOffset(
+                            info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1));
+                        var_types valueType =
+                            JITtype2varType(info.compCompHnd->asCorInfoType(unboxResolvedToken.hClass));
+                        GenTree* hasValueFldTree = gtNewLclFldNode(objTmp, TYP_UBYTE, hasValOffset);
+                        GenTree* valueFldTree    = gtNewLclFldNode(objTmp, valueType, valueOffset);
+
+                        // Push "hasValue == 0 ? throw new NullReferenceException() : NOP" qmark
+                        GenTree*      fallback = gtNewHelperCallNode(CORINFO_HELP_THROWNULLREF, TYP_VOID);
+                        GenTree*      cond     = gtNewOperNode(GT_EQ, TYP_INT, hasValueFldTree, gtNewIconNode(0));
+                        GenTreeColon* colon    = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
+                        GenTree*      qmark    = gtNewQmarkNode(TYP_VOID, cond, colon);
+                        impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+
+                        // Now push the value field
+                        impPushOnStack(valueFldTree, typeInfo(valueFldTree->TypeGet()));
+                        optimize = true;
+                    }
+                    //
+                    // Vice versa, try to optimize (T?)(object)nonNullableT
+                    //
+                    else if (!eeIsSharedInst(pResolvedToken->hClass) &&
+                             (info.compCompHnd->isNullableType(unboxResolvedToken.hClass) == TypeCompareState::Must) &&
+                             (info.compCompHnd->getTypeForBox(unboxResolvedToken.hClass) == pResolvedToken->hClass))
+                    {
+                        unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
+                        unsigned valueOffset  = info.compCompHnd->getFieldOffset(
+                            info.compCompHnd->getFieldInClass(unboxResolvedToken.hClass, 1));
+
+                        unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
+                        lvaSetStruct(resultTmp, unboxResolvedToken.hClass, false);
+
+                        // Now do two stores:
+                        //  nullableTmp.hasValue = 1;
+                        //  nullableTmp.value    = popStack().val;
+                        GenTree* boxedVal = impPopStack().val;
+                        GenTree* hasValueStore =
+                            gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
+                        GenTree* valueStore =
+                            gtNewStoreLclFldNode(resultTmp, boxedVal->TypeGet(), valueOffset, boxedVal);
+
+                        impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
+                        impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);
+                        GenTreeLclVar* result = impCreateLocalNode(resultTmp DEBUGARG(0));
+                        impPushOnStack(result, typeInfo(result->TypeGet()));
+                        optimize = true;
+                    }
                 }
 
                 if (optimize)
@@ -5554,7 +5625,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     // We can convert constant-ish tokens of nullable to its underlying type.
     // However, when the type is shared generic parameter like Nullable<Struct<__Canon>>, the actual type will require
     // runtime lookup. It's too complex to add another level of indirection in op2, fallback to the cast helper instead.
-    if (isClassExact && !(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST))
+    if (isClassExact && !eeIsSharedInst(pResolvedToken->hClass))
     {
         CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
         if (hClass != pResolvedToken->hClass)
@@ -5600,7 +5671,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
             !compCurBB->isRunRarely())
         {
             // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
-            if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
+            if (!eeIsSharedInst(pResolvedToken->hClass))
             {
                 HandleHistogramProfileCandidateInfo* pInfo =
                     new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
@@ -9476,8 +9547,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             CORINFO_FIELD_INFO fi;
                             eeGetFieldInfo(&fldToken, CORINFO_ACCESS_SET, &fi);
                             unsigned flagsToCheck = CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL;
-                            if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) &&
-                                ((info.compCompHnd->getClassAttribs(info.compClassHnd) & CORINFO_FLG_SHAREDINST) == 0))
+                            if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) && !eeIsSharedInst(info.compClassHnd))
                             {
 #ifdef FEATURE_READYTORUN
                                 if (opts.IsReadyToRun())
