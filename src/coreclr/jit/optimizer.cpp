@@ -9007,6 +9007,9 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 //------------------------------------------------------------------------------------------
 // optRemoveRedundantZeroInits: Remove redundant zero initializations.
 //
+// Arguments:
+//    hasCycle -- true if SSA's topological sort detected a cycle in the flowgraph
+//
 // Notes:
 //    This phase iterates over basic blocks starting with the first basic block until there is no unique
 //    basic block successor or until it detects a loop. It keeps track of local nodes it encounters.
@@ -9024,8 +9027,10 @@ typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, unsigned> Lc
 //            either the local has no gc pointers or there are no gc-safe points between the prolog and the assignment,
 //         then the local is marked with lvHasExplicitInit which tells the codegen not to insert zero initialization
 //         for this local in the prolog.
-
-void Compiler::optRemoveRedundantZeroInits()
+//
+//   It depends on pre/post order numbers set by TopologicalSort.
+//
+void Compiler::optRemoveRedundantZeroInits(bool hasCycle)
 {
 #ifdef DEBUG
     if (verbose)
@@ -9043,10 +9048,37 @@ void Compiler::optRemoveRedundantZeroInits()
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) == 0);
-         block             = block->GetUniqueSucc())
+    for (BasicBlock* block = fgFirstBB; (block != nullptr); block = block->GetUniqueSucc())
     {
-        block->bbFlags |= BBF_MARKED;
+        if (hasCycle)
+        {
+            // See if this block is a cycle entry
+            //
+            bool stop = false;
+            for (FlowEdge* predEdge = BlockPredsWithEH(block); predEdge != nullptr;
+                 predEdge           = predEdge->getNextPredEdge())
+            {
+                BasicBlock* const predBlock = predEdge->getSourceBlock();
+
+                if ((block->bbPreorderNum <= predBlock->bbPreorderNum) &&
+                    (predBlock->bbPostorderNum <= block->bbPostorderNum))
+                {
+                    JITDUMP(FMT_BB " is part of a cycle, stopping the block scan\n", block->bbNum);
+                    stop = true;
+                    break;
+                }
+            }
+
+            // If so, stop looking for redundant zero inits
+            //
+            if (stop)
+            {
+                break;
+            }
+        }
+
+        JITDUMP("Analyzing " FMT_BB "\n", block->bbNum);
+
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
@@ -9167,7 +9199,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         if (tree->Data()->IsIntegralConst(0))
                         {
-                            bool bbInALoop  = (block->bbFlags & BBF_BACKWARD_JUMP) != 0;
+                            bool bbInALoop  = false;
                             bool bbIsReturn = block->bbJumpKind == BBJ_RETURN;
 
                             if (!bbInALoop || bbIsReturn)
@@ -9243,12 +9275,6 @@ void Compiler::optRemoveRedundantZeroInits()
                 }
             }
         }
-    }
-
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && ((block->bbFlags & BBF_MARKED) != 0);
-         block             = block->GetUniqueSucc())
-    {
-        block->bbFlags &= ~BBF_MARKED;
     }
 }
 
