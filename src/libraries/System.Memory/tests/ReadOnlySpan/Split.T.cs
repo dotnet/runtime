@@ -145,7 +145,7 @@ namespace System.SpanTests
         public static IEnumerable<object[]> SplitAnySeparatorData =>
         [
             // Split no separators
-            [ (char[])['a', ' ', 'b'], (char[])[],      (Range[])[0..3] ],
+            [ (char[])['a', ' ', 'b'], (char[])[],      (Range[])[0..1, 2..3] ], // an empty span of separators for char is handled as all whitespace being separators
             [ (int[]) [1, 2, 3],       (int[]) [],      (Range[])[0..3] ],
             [ (long[])[1, 2, 3],       (long[])[],      (Range[])[0..3] ],
             [ (byte[])[1, 2, 3],       (byte[])[],      (Range[])[0..3] ],
@@ -197,7 +197,9 @@ namespace System.SpanTests
         {
             AssertEnsureCorrectEnumeration(new ReadOnlySpan<T>(value).SplitAny(separator), result);
 
-            if (value is char[] source && separator is char[] separators)
+            if (value is char[] source &&
+                separator is char[] separators &&
+                separators.Length > 0) // the SearchValues overload does not special-case empty
             {
                 var charEnumerator = new ReadOnlySpan<char>(source).SplitAny(SearchValues.Create(separators));
                 AssertEnsureCorrectEnumeration(charEnumerator, result);

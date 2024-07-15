@@ -528,6 +528,7 @@ namespace System.Tests
                 Assert.Equal(expected, value.Split(separator.ToString()));
 
                 AssertEqual(expected, value.AsSpan(), value.AsSpan().Split(separator));
+                AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny([separator]));
                 AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny(Buffers.SearchValues.Create([separator])));
             }
 
@@ -646,11 +647,13 @@ namespace System.Tests
             Assert.Equal(expected.Length, value.AsSpan().SplitAny(ranges, separators, options));
             Assert.Equal(expected, ranges.Take(expected.Length).Select(r => value[r]).ToArray());
 
-            // The SpanSplitEnumerator does not replicate the behaviour of splitting on a whitespace char when input char[] is null or empty.
-            if (count == int.MaxValue && options is StringSplitOptions.None && separators is { Length: > 0 })
+            if (count == int.MaxValue && options is StringSplitOptions.None)
             {
                 AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny(separators));
-                AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny(Buffers.SearchValues.Create(separators)));
+                if (separators is { Length: > 0 }) // the SearchValues overload doesn't special-case empty to mean whitespace
+                {
+                    AssertEqual(expected, value.AsSpan(), value.AsSpan().SplitAny(Buffers.SearchValues.Create(separators)));
+                }
             }
         }
 
@@ -701,6 +704,11 @@ namespace System.Tests
             Range[] ranges = new Range[count == int.MaxValue ? value.Length + 1 : count];
             Assert.Equal(expected.Length, value.AsSpan().SplitAny(ranges, separators, options));
             Assert.Equal(expected, ranges.Take(expected.Length).Select(r => value[r]).ToArray());
+
+            if (separators is { Length: 1 } && count == int.MaxValue && options == StringSplitOptions.None)
+            {
+                AssertEqual(expected, value, value.AsSpan().Split(separators[0]));
+            }
         }
 
         private static string[] ToStringArray(char[] source)
@@ -718,12 +726,12 @@ namespace System.Tests
 
         private static void AssertEqual(string[] items, ReadOnlySpan<char> source, MemoryExtensions.SpanSplitEnumerator<char> enumerator)
         {
-            foreach (var item in items)
+            foreach (string item in items)
             {
                 Assert.True(enumerator.MoveNext());
-                var slice = source[enumerator.Current];
-                Assert.Equal(item, new string(slice));
+                Assert.Equal(item, source[enumerator.Current].ToString());
             }
+
             Assert.False(enumerator.MoveNext());
         }
     }
