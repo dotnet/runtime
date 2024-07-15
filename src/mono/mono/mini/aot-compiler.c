@@ -13053,12 +13053,21 @@ collect_methods (MonoAotCompile *acfg)
 		}
 		*/
 
+		gboolean warn_and_skip = FALSE;
 		if (should_emit_extra_method_for_generics (method, TRUE, error)) {
 			/* Compile the ref shared version instead */
+			mono_error_assert_ok (error);
 			method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+
+			if (!method || !is_ok (error)) {
+				warn_and_skip = TRUE;
+			}
+		}
+		else if (!is_ok (error)) {
+			warn_and_skip = TRUE;
 		}
 
-		if (!is_ok (error) || !method) {
+		if (warn_and_skip) {
 			aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
 			aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
 			mono_error_cleanup (error);
@@ -13104,6 +13113,10 @@ collect_methods (MonoAotCompile *acfg)
 			mono_error_assert_ok (error);
 
 			add_extra_method (acfg, gshared);
+		}
+		else if (!is_ok (error)) {
+			g_warning ("Failed to generate extra gsharedvt method for %s in '%s' due to %s.\n", method->name, image->name, mono_error_get_message (error));
+			mono_error_cleanup (error);
 		}
 	}
 
