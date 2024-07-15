@@ -743,8 +743,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).RequiresPublicMethods ();
 			}
 
-			// This should produce IL2071 https://github.com/dotnet/linker/issues/2144
-			[ExpectedWarning ("IL2070", "MakeGenericMethod")]
+			[ExpectedWarning ("IL2071", "'T'")]
 			static void InstantiateGeneric (Type type = null)
 			{
 				// This should warn due to MakeGenericMethod - in this case the generic parameter is unannotated type
