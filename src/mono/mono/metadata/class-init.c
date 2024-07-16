@@ -3286,7 +3286,14 @@ mono_class_setup_interface_id_nolock (MonoClass *klass)
 	    * 	a != b ==> true
 		*/
 		const char *name = m_class_get_name (klass);
-		if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
+		if (
+			!strcmp (name, "IList`1") ||
+			!strcmp (name, "IReadOnlyList`1") ||
+			!strcmp (name, "ICollection`1") ||
+			!strcmp (name, "IReadOnlyCollection`1") ||
+			!strcmp (name, "IEnumerable`1") ||
+			!strcmp (name, "IEnumerator`1")
+		)
 			klass->is_array_special_interface = 1;
 	}
 }
@@ -4187,6 +4194,89 @@ void
 mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
 {
 	klass->runtime_vtable = vtable;
+}
+
+static int
+index_of_class (MonoClass *needle, MonoClass **haystack, int haystack_size) {
+	for (int i = 0; i < haystack_size; i++)
+		if (haystack[i] == needle)
+			return i;
+
+	return -1;
+}
+
+static void
+build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count) {
+	if (!m_class_is_interfaces_inited (klass)) {
+		ERROR_DECL (error);
+		mono_class_setup_interfaces (klass, error);
+		return_if_nok (error);
+	}
+	guint c = m_class_get_interface_count (klass);
+	if (c) {
+		MonoClass **ifaces = m_class_get_interfaces (klass);
+		for (guint i = 0; i < c; i++) {
+			MonoClass *iface = ifaces [i];
+			// Avoid adding duplicates or recursing into them.
+			if (index_of_class (iface, buf, *buf_count) >= 0)
+				continue;
+
+			if (mono_class_has_variant_generic_params (iface)) {
+				g_assert (*buf_count < buf_size);
+				buf[*buf_count] = iface;
+				(*buf_count) += 1;
+			}
+
+			build_variance_search_table_inner (iface, buf, buf_size, buf_count);
+		}
+	}
+}
+
+// Only call this with the loader lock held
+static void
+build_variance_search_table (MonoClass *klass) {
+	// FIXME: Is there a way to deterministically compute the right capacity?
+	int buf_size = m_class_get_interface_offsets_count (klass), buf_count = 0;
+	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *));
+	MonoClass **result = NULL;
+	memset (buf, 0, buf_size * sizeof(MonoClass *));
+	build_variance_search_table_inner (klass, buf, buf_size, &buf_count);
+
+	if (buf_count) {
+		guint bytes = buf_count * sizeof(MonoClass *);
+		result = mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes);
+		memcpy (result, buf, bytes);
+	}
+	klass->variant_search_table_length = buf_count;
+	klass->variant_search_table = result;
+	// Ensure we do not set the inited flag until we've stored the result pointer
+	mono_memory_barrier ();
+	klass->variant_search_table_inited = TRUE;
+}
+
+void
+mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int *table_size) {
+	g_assert (klass);
+	g_assert (table);
+	g_assert (table_size);
+
+	// We will never do a variance search to locate a given interface on an interface, only on
+	//  a fully-defined type or generic instance
+	if (m_class_is_interface (klass)) {
+		*table = NULL;
+		*table_size = 0;
+		return;
+	}
+
+	if (!klass->variant_search_table_inited) {
+		mono_loader_lock ();
+		if (!klass->variant_search_table_inited)
+			build_variance_search_table (klass);
+		mono_loader_unlock ();
+	}
+
+	*table = klass->variant_search_table;
+	*table_size = klass->variant_search_table_length;
 }
 
 /**

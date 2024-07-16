@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
+    <TestRuntime>true</TestRuntime>
+    <HybridGlobalization>true</HybridGlobalization>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="..\default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AssemblyInfo.cs" />
+    <Compile Include="..\IcuTests.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoLongDatePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoShortDatePattern.cs" />
+    <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoMonthDayPattern.cs" />
+    <!-- Helpers -->
+    <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
+             Link="..\Common\System\RandomDataGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\UnicodeData.txt">
+      <Link>CharUnicodeInfo\UnicodeData.$(UnicodeUcdVersion).txt</Link>
+      <LogicalName>UnicodeData.txt</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PkgSystem_Private_Runtime_UnicodeData)\contentFiles\any\any\$(UnicodeUcdVersion).0\ucd\auxiliary\GraphemeBreakTest.txt">
+      <Link>CharUnicodeInfo\GraphemeBreakTest-$(UnicodeUcdVersion).0.txt</Link>
+      <LogicalName>GraphemeBreakTest.txt</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)TestUtilities.Unicode\TestUtilities.Unicode.csproj" />
+  </ItemGroup>
+</Project>

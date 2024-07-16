@@ -246,6 +246,9 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
+  <data name="JsonNumberExponentTooLarge" xml:space="preserve">
+    <value>The exponent value in the specified JSON number is too large.</value>
+  </data>
   <data name="DefaultTypeInfoResolverImmutable" xml:space="preserve">
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
   </data>
@@ -670,6 +673,9 @@
   </data>
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
     <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
+  </data>
+  <data name="OnDeserializingCallbacksNotSupported" xml:space="preserve">
+    <value>The type '{0}' does not support setting OnDeserializing callbacks.</value>
   </data>
   <data name="CreateObjectConverterNotCompatible" xml:space="preserve">
     <value>The converter for type '{0}' does not support setting 'CreateObject' delegates.</value>

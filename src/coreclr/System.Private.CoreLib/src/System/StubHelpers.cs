@@ -1616,10 +1616,8 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContext();
 
-#if FEATURE_MULTICASTSTUB_AS_IL
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void MulticastDebuggerTraceHelper(object o, int count);
-#endif
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
