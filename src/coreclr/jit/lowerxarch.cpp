@@ -1471,9 +1471,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                             op2 = userIntrin->Op(1);
                         }
 
-                        NamedIntrinsic intrinsic =
-                            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2, simdBaseType,
-                                                                         simdSize, false);
+                        NamedIntrinsic intrinsic = NI_Illegal;
+
+                        if (comp->IsBaselineSimdIsaSupported())
+                        {
+                            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2,
+                                                                                     simdBaseType, simdSize, false);
+                        }
+                        else
+                        {
+                            // We need to ensure we optimize even if SSE2 is disabled
+
+                            assert(simdBaseType == TYP_FLOAT);
+                            assert(simdSize <= 16);
+
+                            intrinsic = NI_SSE_AndNot;
+                        }
+
                         userIntrin->ResetHWIntrinsicId(intrinsic, comp, op1, op2);
 
                         return nextNode;
