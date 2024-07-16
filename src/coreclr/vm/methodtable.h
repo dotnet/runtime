@@ -1671,11 +1671,13 @@ public:
     // Slots <-> the MethodDesc associated with the slot.
     //
 
+#ifndef DACCESS_COMPILE
     // Get the MethodDesc that implements a given slot
     // NOTE: Since this may fill in the slot with a temporary entrypoint if that hasn't happened
     //       yet, when writing asserts, GetMethodDescForSlot_NoThrow should be used to avoid
     //       the presence of an assert hiding bugs.
     MethodDesc* GetMethodDescForSlot(DWORD slot);
+#endif
 
     // This api produces the same result as GetMethodDescForSlot, but it uses a variation on the
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
@@ -2433,8 +2435,6 @@ public:
     // exact result.
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
     bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
-
-    MethodDesc *GetIntroducingMethodDesc(DWORD slotNumber);
 
     // Determines whether all methods in the given interface have their final implementing
     // slot in a parent class. I.e. if this returns TRUE, it is trivial (no VSD lookup) to
