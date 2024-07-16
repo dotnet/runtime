@@ -118,6 +118,7 @@ public class AssetsComputingHelper
                 ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.worker", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.globalization", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 _ => string.Concat(fileName, extension)
             };
         }
