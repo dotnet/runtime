@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
@@ -399,7 +400,89 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString(), testMethod).DisposeAsync();
         }
 
-        private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1)
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("/test/path?q1=a&q2=b", true)]
+        [InlineData("/test/path?q1=a&q2=b", false)]
+        [InlineData("/test/path", true)]
+        [InlineData("/test/path", false)]
+        [InlineData("?q1=a&q2=b", true)]
+        [InlineData("?q1=a&q2=b", false)]
+        [InlineData("", true)]
+        [InlineData("", false)]
+        [InlineData("/test/path?q1=a&q2=b#frag", true)]
+        [InlineData("/test/path?q1=a&q2=b#frag", false)]
+        [InlineData("/test/path#frag", true)]
+        [InlineData("/test/path#frag", false)]
+        [InlineData("?q1=a&q2=b#frag", true)]
+        [InlineData("?q1=a&q2=b#frag", false)]
+        [InlineData("#frag", true)]
+        [InlineData("#frag", false)]
+        public async Task EventSource_PathAndQueryRedaction_LogsStartStop(string uriTail, bool disableRedaction)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
+            var fragIndex = uriTail.IndexOf('#');
+            var expectedPathAndQuery = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+            if (!disableRedaction)
+            {
+                var queryIndex = expectedPathAndQuery.IndexOf('?');
+                expectedPathAndQuery = expectedPathAndQuery.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedPathAndQuery.Length);
+                expectedPathAndQuery = queryIndex >= 0 ? expectedPathAndQuery + '*' : expectedPathAndQuery;
+            }
+            expectedPathAndQuery = expectedPathAndQuery.StartsWith('/') ? expectedPathAndQuery : '/' + expectedPathAndQuery;
+
+            await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedPathAndQuery) =>
+            {
+                Version version = Version.Parse(useVersionString);
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            expectedUri = uri;
+                            using HttpClientHandler handler = CreateHttpClientHandler(version);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
+                            client.BaseAddress = uri;
+                            using var invoker = new HttpMessageInvoker(handler);
+
+                            var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version
+                            };
+
+                            await client.GetAsync(uriTail);
+                        },
+                        async server =>
+                        {
+                            await server.AcceptConnectionAsync(async connection =>
+                            {
+                                await connection.ReadRequestDataAsync();
+                                await WaitForEventCountersAsync(events);
+                                await connection.SendResponseAsync();
+                            });
+                        });
+
+                    await WaitForEventCountersAsync(events);
+                });
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
+
+                ValidateStartFailedStopEvents(events, version, pathAndQuery: expectedPathAndQuery);
+
+                ValidateConnectionEstablishedClosed(events, version, expectedUri);
+
+                ValidateRequestResponseStartStopEvents(events, null, 0, count: 1);
+
+                ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: false, versionMajor: version.Major);
+            }, UseVersion.ToString(), uriTail, expectedPathAndQuery, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
+        private static void ValidateStartFailedStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, bool shouldHaveFailures = false, int count = 1, string? pathAndQuery = null)
         {
             (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == "RequestStart").ToArray();
             foreach (EventWrittenEventArgs startEvent in starts.Select(e => e.Event))
@@ -409,6 +492,10 @@ namespace System.Net.Http.Functional.Tests
                 Assert.NotEmpty((string)startEvent.Payload[1]); // host
                 Assert.True(startEvent.Payload[2] is int port && port >= 0 && port <= 65535);
                 Assert.NotEmpty((string)startEvent.Payload[3]); // pathAndQuery
+                if (pathAndQuery is not null)
+                {
+                    Assert.Equal(pathAndQuery, (string)startEvent.Payload[3]); // pathAndQuery
+                }
                 byte versionMajor = Assert.IsType<byte>(startEvent.Payload[4]);
                 Assert.Equal(version.Major, versionMajor);
                 byte versionMinor = Assert.IsType<byte>(startEvent.Payload[5]);

@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Text;
 using System.Threading;
 
 namespace System.Net.Http
@@ -37,6 +38,17 @@ namespace System.Net.Http
         private void RequestStart(string scheme, string host, int port, string pathAndQuery, byte versionMajor, byte versionMinor, HttpVersionPolicy versionPolicy)
         {
             Interlocked.Increment(ref _startedRequests);
+            if (!GlobalHttpSettings.DiagnosticsHandler.DisableUriRedaction)
+            {
+                int queryIndex = pathAndQuery.IndexOf('?');
+                if (queryIndex >= 0)
+                {
+                    using ValueStringBuilder str = queryIndex < 254 ? new ValueStringBuilder(stackalloc char[queryIndex + 2]) : new ValueStringBuilder(queryIndex + 2);
+                    str.Append(pathAndQuery.AsSpan(0, queryIndex + 1));
+                    str.Append('*');
+                    pathAndQuery = str.ToString();
+                }
+            }
             WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor, versionPolicy);
         }
 
