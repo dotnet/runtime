@@ -155,7 +155,7 @@ namespace System
             set => throw new PlatformNotSupportedException();
         }
 
-        public static void Beep(bool _) => throw new PlatformNotSupportedException();
+        public static void Beep() => throw new PlatformNotSupportedException();
 
         public static void Beep(int frequency, int duration) => throw new PlatformNotSupportedException();
 

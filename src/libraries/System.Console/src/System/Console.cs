@@ -538,7 +538,7 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static void Beep()
         {
-            ConsolePal.Beep(s_isOutTextWriterRedirected);
+            ConsolePal.Beep();
         }
 
         [SupportedOSPlatform("windows")]
