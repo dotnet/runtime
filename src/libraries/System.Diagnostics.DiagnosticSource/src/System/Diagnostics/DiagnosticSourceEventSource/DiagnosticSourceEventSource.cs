@@ -113,7 +113,6 @@ namespace System.Diagnostics
     ///     "[AS]MyLibrary/-Propagate"   listen to `MyLibrary` ActivitySource and the 'Start and Stop' Activity events. The Activities will be created with PropagationData sampling.
     ///     "[AS]MyLibrary/Stop-Record"  listen to `MyLibrary` ActivitySource and the 'Stop' Activity event. The Activities will be created with AllData sampling.
     ///     "[AS]*/-"                    listen to all ActivitySources and the Start and Stop Activity events. Activities will be created with AllDataAndRecorded sampling. this equivalent to "[AS]*" too.
-    ///     "[AS]*+MyActivity"           listen to all activity sources when creating Activity with the operation name "MyActivity".
     ///
     /// * How data is logged in the EventSource
     ///
