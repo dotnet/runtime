@@ -445,6 +445,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
     CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
     CORINFO_HELP_UNBOX,
+    CORINFO_HELP_UNBOX_TYPETEST,    // Verify unbox type, throws if incompatible
     CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
     CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
@@ -893,7 +894,7 @@ enum CORINFO_ACCESS_FLAGS
 {
     CORINFO_ACCESS_ANY        = 0x0000, // Normal access
     CORINFO_ACCESS_THIS       = 0x0001, // Accessed via the this reference
-    // UNUSED                 = 0x0002,
+    CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
 
     CORINFO_ACCESS_NONNULL    = 0x0004, // Instance is guaranteed non-null
 
@@ -2549,6 +2550,14 @@ public:
 
     // Boxing nullable<T> actually returns a boxed<T> not a boxed Nullable<T>.
     virtual CORINFO_CLASS_HANDLE getTypeForBox(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // Get a representation for a stack-allocated boxed value type.
+    //
+    // This differs from getTypeForBox in that it includes an explicit field
+    // for the method table pointer.
+    virtual CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

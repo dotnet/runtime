@@ -194,8 +194,6 @@ GVAL_IMPL(SIZE_T, g_runtimeVirtualSize);
 
 bool g_fManagedAttach = false;
 
-DWORD g_FinalizerWaiterStatus = 0;
-
 //
 // Do we own the lifetime of the process, ie. is it an EXE?
 //

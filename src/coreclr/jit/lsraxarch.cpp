@@ -152,6 +152,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
         {
             srcCount = 0;
 
@@ -1244,10 +1245,6 @@ int LinearScan::BuildCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
         // By this point, lowering has ensured that all call arguments are one of the following:
-        // - an arg setup store
-        // - an arg placeholder
-        // - a nop
-        // - a copy blk
         // - a field list
         // - a put arg
         //

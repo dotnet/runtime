@@ -359,12 +359,6 @@ void MorphInitBlockHelper::TryInitFieldByField()
         return;
     }
 
-    if (destLclVar->lvAnySignificantPadding)
-    {
-        JITDUMP(" dest has significant padding.\n");
-        return;
-    }
-
     if (m_dstLclOffset != 0)
     {
         JITDUMP(" dest not at a zero offset.\n");
@@ -772,22 +766,6 @@ void MorphCopyBlockHelper::MorphStructCases()
     if ((m_store->OperIs(GT_STORE_LCL_VAR) && m_dstVarDsc->lvRegStruct) ||
         (m_src->OperIs(GT_LCL_VAR) && m_srcVarDsc->lvRegStruct))
     {
-        requiresCopyBlock = true;
-    }
-
-    // Can we use field by field copy for the dest?
-    if (m_dstDoFldStore && m_dstVarDsc->lvAnySignificantPadding)
-    {
-        JITDUMP(" dest has significant padding");
-        // C++ style CopyBlock with holes
-        requiresCopyBlock = true;
-    }
-
-    // Can we use field by field copy for the src?
-    if (m_srcDoFldStore && m_srcVarDsc->lvAnySignificantPadding)
-    {
-        JITDUMP(" src has significant padding");
-        // C++ style CopyBlock with holes
         requiresCopyBlock = true;
     }
 

@@ -3,7 +3,7 @@
 
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Tests.Vectors;
+using System.Tests;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -1350,19 +1350,186 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
-        public void FusedMultiplyAddSingleTest(float left, float right, float addend)
+        [MemberData(nameof(GenericMathTestMemberData.ExpSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void ExpSingleTest(float value, float expectedResult, float variance)
         {
-            Vector3 actualResult = Vector3.FusedMultiplyAdd(new Vector3(left), new Vector3(right), new Vector3(addend));
-            AssertEqual(new Vector3(float.FusedMultiplyAdd(left, right, addend)), actualResult, Vector3.Zero);
+            Vector3 actualResult = Vector3.Exp(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Create(variance));
         }
 
         [Theory]
-        [MemberData(nameof(VectorTestMemberData.MultiplyAddSingle), MemberType = typeof(VectorTestMemberData))]
-        public void MultiplyAddEstimateSingleTest(float left, float right, float addend)
+        [MemberData(nameof(GenericMathTestMemberData.LogSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void LogSingleTest(float value, float expectedResult, float variance)
         {
-            Vector3 actualResult = Vector3.MultiplyAddEstimate(new Vector3(left), new Vector3(right), new Vector3(addend));
-            AssertEqual(new Vector3(float.MultiplyAddEstimate(left, right, addend)), actualResult, Vector3.Zero);
+            Vector3 actualResult = Vector3.Log(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.Log2Single), MemberType = typeof(GenericMathTestMemberData))]
+        public void Log2SingleTest(float value, float expectedResult, float variance)
+        {
+            Vector3 actualResult = Vector3.Log2(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.FusedMultiplyAddSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void FusedMultiplyAddSingleTest(float left, float right, float addend, float expectedResult)
+        {
+            AssertEqual(Vector3.Create(expectedResult), Vector3.FusedMultiplyAdd(Vector3.Create(left), Vector3.Create(right), Vector3.Create(addend)), Vector3.Zero);
+            AssertEqual(Vector3.Create(float.MultiplyAddEstimate(left, right, addend)), Vector3.MultiplyAddEstimate(Vector3.Create(left), Vector3.Create(right), Vector3.Create(addend)), Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.ClampSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void ClampSingleTest(float x, float min, float max, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.Clamp(Vector3.Create(x), Vector3.Create(min), Vector3.Create(max));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CopySignSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CopySignSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.CopySign(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.DegreesToRadiansSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void DegreesToRadiansSingleTest(float value, float expectedResult, float variance)
+        {
+            AssertEqual(Vector3.Create(-expectedResult), Vector3.DegreesToRadians(Vector3.Create(-value)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(+expectedResult), Vector3.DegreesToRadians(Vector3.Create(+value)), Vector3.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.HypotSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void HypotSingleTest(float x, float y, float expectedResult, float variance)
+        {
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(-x), Vector3.Create(-y)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(-x), Vector3.Create(+y)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(+x), Vector3.Create(-y)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(+x), Vector3.Create(+y)), Vector3.Create(variance));
+
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(-y), Vector3.Create(-x)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(-y), Vector3.Create(+x)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(+y), Vector3.Create(-x)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(expectedResult), Vector3.Hypot(Vector3.Create(+y), Vector3.Create(+x)), Vector3.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.LerpSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void LerpSingleTest(float x, float y, float amount, float expectedResult)
+        {
+            AssertEqual(Vector3.Create(+expectedResult), Vector3.Lerp(Vector3.Create(+x), Vector3.Create(+y), Vector3.Create(amount)), Vector3.Zero);
+            AssertEqual(Vector3.Create((expectedResult == 0.0f) ? expectedResult : -expectedResult), Vector3.Lerp(Vector3.Create(-x), Vector3.Create(-y), Vector3.Create(amount)), Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.Max(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.MaxMagnitude(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxMagnitudeNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxMagnitudeNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.MaxMagnitudeNumber(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MaxNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MaxNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.MaxNumber(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.Min(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.MinMagnitude(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinMagnitudeNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinMagnitudeNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.MinMagnitudeNumber(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.MinNumberSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void MinNumberSingleTest(float x, float y, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.MinNumber(Vector3.Create(x), Vector3.Create(y));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RadiansToDegreesSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RadiansToDegreesSingleTest(float value, float expectedResult, float variance)
+        {
+            AssertEqual(Vector3.Create(-expectedResult), Vector3.RadiansToDegrees(Vector3.Create(-value)), Vector3.Create(variance));
+            AssertEqual(Vector3.Create(+expectedResult), Vector3.RadiansToDegrees(Vector3.Create(+value)), Vector3.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundSingleTest(float value, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.Round(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundAwayFromZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundAwayFromZeroSingleTest(float value, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.Round(Vector3.Create(value), MidpointRounding.AwayFromZero);
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.RoundToEvenSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void RoundToEvenSingleTest(float value, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.Round(Vector3.Create(value), MidpointRounding.ToEven);
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.TruncateSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void TruncateSingleTest(float value, float expectedResult)
+        {
+            Vector3 actualResult = Vector3.Truncate(Vector3.Create(value));
+            AssertEqual(Vector3.Create(expectedResult), actualResult, Vector3.Zero);
         }
     }
 }

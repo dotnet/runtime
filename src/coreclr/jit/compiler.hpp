@@ -1872,9 +1872,9 @@ inline GenTreeCast* Compiler::gtNewCastNodeL(var_types typ, GenTree* op1, bool f
     return cast;
 }
 
-inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object)
+inline GenTreeIndir* Compiler::gtNewMethodTableLookup(GenTree* object, bool onStack)
 {
-    assert(object->TypeIs(TYP_REF));
+    assert(onStack || object->TypeIs(TYP_REF));
     GenTreeIndir* result = gtNewIndir(TYP_I_IMPL, object, GTF_IND_INVARIANT);
     return result;
 }
@@ -4358,6 +4358,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:
