@@ -211,7 +211,7 @@ namespace System
             {
                 ushort keyCode = ir.keyEvent.wVirtualKeyCode;
                 if (keyCode is >= 0x10 and <= 0x12) return false; // Shift, Control, Alt
-                if (keycode is 0x14 or 0x90 or 0x91) return false; // CapsLock, NumLock, ScrollLock
+                if (keyCode is 0x14 or 0x90 or 0x91) return false; // CapsLock, NumLock, ScrollLock
                 ControlKeyState keyState = (ControlKeyState)ir.keyEvent.dwControlKeyState;
                 if ((keyState & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0)
                 {
