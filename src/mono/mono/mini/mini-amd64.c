@@ -8435,9 +8435,9 @@ MONO_RESTORE_WARNING
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 			if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && sig->pinvoke &&
 	    		cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && 
-	    		cfg->arch.cinfo->need_swift_return_buffer) {
+	    		cfg->arch.cinfo->need_swift_return_buffer && cinfo->ret.reg == AMD64_R10) {
 				// Save the return buffer passed by the Swift caller
-				amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, SWIFT_RETURN_BUFFER_REG, sizeof (target_mgreg_t));
+				amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, SWIFT_RETURN_BUFFER_REG, 8);
 			} else
 #endif
 			{
@@ -8449,8 +8449,7 @@ MONO_RESTORE_WARNING
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && 
 	    cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && 
-	    cfg->arch.cinfo->need_swift_return_buffer &&
-		cfg->arch.cinfo->ret.storage != ArgValuetypeAddrInIReg) {
+	    cfg->arch.cinfo->need_swift_return_buffer) {
 		amd64_mov_reg_reg (code, AMD64_R10, SWIFT_RETURN_BUFFER_REG, 8);
 	}
 #endif
