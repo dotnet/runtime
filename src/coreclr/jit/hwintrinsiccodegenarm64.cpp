@@ -480,13 +480,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             regNumber embMaskOp1Reg = REG_NA;
             regNumber embMaskOp2Reg = REG_NA;
             regNumber embMaskOp3Reg = REG_NA;
+            regNumber embMaskOp4Reg = REG_NA;
             regNumber falseReg      = op3Reg;
 
             switch (intrinEmbMask.numOperands)
             {
                 case 4:
                     assert(intrinEmbMask.op4 != nullptr);
-                    assert(HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id));
+                    embMaskOp4Reg = intrinEmbMask.op4->GetRegNum();
                     FALLTHROUGH;
 
                 case 3:
@@ -507,6 +508,70 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 default:
                     unreached();
             }
+
+            // Shared code for setting up embedded mask arg for intrinsics with 3+ operands
+            auto emitEmbeddedMaskSetup = [&] {
+                if (intrin.op3->IsVectorZero())
+                {
+                    // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
+                    // destination using /Z.
+
+                    assert(targetReg != embMaskOp2Reg);
+                    assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
+                    GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                }
+                else
+                {
+                    // Below are the considerations we need to handle:
+                    //
+                    // targetReg == falseReg && targetReg == embMaskOp1Reg
+                    //      fmla    Zd, P/m, Zn, Zm
+                    //
+                    // targetReg == falseReg && targetReg != embMaskOp1Reg
+                    //      movprfx target, P/m, embMaskOp1Reg
+                    //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                    //
+                    // targetReg != falseReg && targetReg == embMaskOp1Reg
+                    //      sel     target, P/m, embMaskOp1Reg, falseReg
+                    //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                    //
+                    // targetReg != falseReg && targetReg != embMaskOp1Reg
+                    //      sel     target, P/m, embMaskOp1Reg, falseReg
+                    //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
+                    //
+                    // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
+                    // coincides or not.
+
+                    if (targetReg != falseReg)
+                    {
+                        if (falseReg == embMaskOp1Reg)
+                        {
+                            // If falseReg value and embMaskOp1Reg value are same, then just mov the value
+                            // to the target.
+
+                            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, embMaskOp1Reg,
+                                                      /* canSkip */ true);
+                        }
+                        else
+                        {
+                            // If falseReg value is not present in targetReg yet, move the inactive lanes
+                            // into the targetReg using `sel`. Since this is RMW, the active lanes should
+                            // have the value from embMaskOp1Reg
+
+                            GetEmitter()->emitInsSve_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                             falseReg, opt);
+                        }
+                    }
+                    else if (targetReg != embMaskOp1Reg)
+                    {
+                        // If target already contains the values of `falseReg`, just merge the lanes from
+                        // `embMaskOp1Reg`, again because this is RMW semantics.
+
+                        GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg,
+                                                       opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
+                    }
+                }
+            };
 
             switch (intrinEmbMask.numOperands)
             {
@@ -710,7 +775,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
 
                 case 3:
-                case 4:
                 {
                     assert(instrIsRMW);
 
@@ -814,90 +878,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                     }
 
-                    if (intrin.op3->IsVectorZero())
-                    {
-                        // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
-                        // destination using /Z.
-
-                        assert(targetReg != embMaskOp2Reg);
-                        assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
-                        GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                       opt);
-                    }
-                    else
-                    {
-                        // Below are the considerations we need to handle:
-                        //
-                        // targetReg == falseReg && targetReg == embMaskOp1Reg
-                        //      fmla    Zd, P/m, Zn, Zm
-                        //
-                        // targetReg == falseReg && targetReg != embMaskOp1Reg
-                        //      movprfx target, P/m, embMaskOp1Reg
-                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
-                        //
-                        // targetReg != falseReg && targetReg == embMaskOp1Reg
-                        //      sel     target, P/m, embMaskOp1Reg, falseReg
-                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
-                        //
-                        // targetReg != falseReg && targetReg != embMaskOp1Reg
-                        //      sel     target, P/m, embMaskOp1Reg, falseReg
-                        //      fmla    target, P/m, embMaskOp2Reg, embMaskOp3Reg
-                        //
-                        // Note that, we just check if the targetReg/falseReg or targetReg/embMaskOp1Reg
-                        // coincides or not.
-
-                        if (targetReg != falseReg)
-                        {
-                            if (falseReg == embMaskOp1Reg)
-                            {
-                                // If falseReg value and embMaskOp1Reg value are same, then just mov the value
-                                // to the target.
-
-                                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, embMaskOp1Reg,
-                                                          /* canSkip */ true);
-                            }
-                            else
-                            {
-                                // If falseReg value is not present in targetReg yet, move the inactive lanes
-                                // into the targetReg using `sel`. Since this is RMW, the active lanes should
-                                // have the value from embMaskOp1Reg
-
-                                GetEmitter()->emitInsSve_R_R_R_R(INS_sve_sel, emitSize, targetReg, maskReg,
-                                                                 embMaskOp1Reg, falseReg, opt);
-                            }
-                        }
-                        else if (targetReg != embMaskOp1Reg)
-                        {
-                            // If target already contains the values of `falseReg`, just merge the lanes from
-                            // `embMaskOp1Reg`, again because this is RMW semantics.
-
-                            GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg,
-                                                           opt, INS_SCALABLE_OPTS_PREDICATE_MERGE);
-                        }
-                    }
+                    emitEmbeddedMaskSetup();
 
                     // Finally, perform the desired operation.
                     if (HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id))
                     {
-                        if (intrinEmbMask.numOperands == 4)
+                        HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op3, op2->AsHWIntrinsic());
+                        for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                         {
-                            assert(intrinEmbMask.id == NI_Sve_MultiplyAddRotateComplex);
-                            HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op4, op2->AsHWIntrinsic());
-                            for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                            {
-                                GetEmitter()->emitInsSve_R_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg,
-                                                                   embMaskOp2Reg, embMaskOp3Reg, helper.ImmValue(),
-                                                                   opt);
-                            }
-                        }
-                        else
-                        {
-                            HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op3, op2->AsHWIntrinsic());
-                            for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
-                            {
-                                GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg,
-                                                                 embMaskOp2Reg, helper.ImmValue(), opt);
-                            }
+                            GetEmitter()->emitInsSve_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                             helper.ImmValue(), opt);
                         }
                     }
                     else
@@ -909,6 +899,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     break;
                 }
+
+                case 4:
+                {
+                    assert(instrIsRMW);
+                    assert(intrinEmbMask.op4->isContained() == (embMaskOp4Reg == REG_NA));
+                    assert(HWIntrinsicInfo::HasImmediateOperand(intrinEmbMask.id));
+
+                    emitEmbeddedMaskSetup();
+
+                    HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op4, op2->AsHWIntrinsic());
+                    for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
+                    {
+                        GetEmitter()->emitInsSve_R_R_R_R_I(insEmbMask, emitSize, targetReg, maskReg, embMaskOp2Reg,
+                                                           embMaskOp3Reg, helper.ImmValue(), opt);
+                    }
+
+                    break;
+                }
+
                 default:
                     unreached();
             }
