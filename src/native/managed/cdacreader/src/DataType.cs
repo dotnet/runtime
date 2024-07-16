@@ -29,7 +29,7 @@ public enum DataType
     Module,
     MethodTable,
     EEClass,
-    MethodTableAuxiliaryData,,
+    MethodTableAuxiliaryData,
     StressLog,
     StressLogModuleDesc,
     StressLogHeader,

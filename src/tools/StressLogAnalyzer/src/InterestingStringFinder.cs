@@ -54,7 +54,14 @@ namespace StressLogAnalyzer
             (byte)WellKnownString.COMPACT_END,
         ]);
 
-        private readonly SearchValues<string> _userInterestingStrings = SearchValues.Create(userStrings, StringComparison.Ordinal);
+        private static string InterpretEscapeSequences(string input)
+        {
+            return input.Replace("\\n", "\n").Replace("\\r", "\r").Replace("\\t", "\t");
+        }
+
+        private readonly SearchValues<string> _userInterestingStrings = SearchValues.Create([.. userStrings.Select(InterpretEscapeSequences)], StringComparison.Ordinal);
+
+        private readonly string[] _userStringPrefixes = userStringPrefixes?.Select(InterpretEscapeSequences).ToArray() ?? [];
 
         private readonly ConcurrentDictionary<ulong, (bool isInteresting, WellKnownString? wellKnown)> _addressCache = [];
 
@@ -96,7 +103,7 @@ namespace StressLogAnalyzer
                     return (true, wellKnownId);
                 }
 
-                foreach (string prefix in userStringPrefixes ?? [])
+                foreach (string prefix in _userStringPrefixes)
                 {
                     if (formatString.StartsWith(prefix, StringComparison.Ordinal))
                     {

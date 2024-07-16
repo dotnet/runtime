@@ -17,7 +17,10 @@ internal struct StressLogHeader
     public nint headerSize;
 
     [InlineArray(4)]
-    public record struct Magic(byte b);
+    public struct Magic
+    {
+        private byte b;
+    }
     public Magic magic;
 
     public uint version;
@@ -31,7 +34,10 @@ internal struct StressLogHeader
     private uint reserved1;
 
     [InlineArray(15)]
-    private record struct ReservedSpace(ulong reserved);
+    private struct ReservedSpace
+    {
+        private ulong reserved;
+    }
     private ReservedSpace reserved2;
 
     public struct ModuleDesc
@@ -41,12 +47,18 @@ internal struct StressLogHeader
     }
 
     [InlineArray(5)]
-    public record struct ModuleTable(ModuleDesc moduleDesc);
+    public struct ModuleTable
+    {
+        private ModuleDesc moduleDesc;
+    }
 
     public ModuleTable moduleTable;
 
     [InlineArray(64*1024*1024)]
-    public record struct ModuleImageData(byte b);
+    public struct ModuleImageData
+    {
+        private byte b;
+    }
 
     public ModuleImageData moduleImageData;
 }
