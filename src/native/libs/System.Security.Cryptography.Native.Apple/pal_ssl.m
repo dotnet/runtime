@@ -34,7 +34,7 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
 {
     nw_protocol_options_t framer_options;
 
-    if (__builtin_available(macOS 12.3, iOS 9.0, tvOS 9.0, watchOS 2.0, *))
+    if (__builtin_available(macOS 12.3, iOS 9.0, tvOS 15.4, watchOS 2.0, *))
     {
         framer_options = nw_framer_copy_options(framer);
 
@@ -61,7 +61,7 @@ static nw_framer_output_handler_t framer_output_handler = ^(nw_framer_t framer, 
 };
 
 static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) {
-    if (__builtin_available(macOS 12.3, iOS 9.0, tvOS 9.0, watchOS 2.0, *))
+    if (__builtin_available(macOS 12.3, iOS 9.0, tvOS 15.4, watchOS 2.0, *))
     {
         size_t gcHandle = 0;
         nw_protocol_options_t framer_options = nw_framer_copy_options(framer);

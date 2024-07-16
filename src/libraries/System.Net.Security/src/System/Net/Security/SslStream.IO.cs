@@ -115,8 +115,8 @@ namespace System.Net.Security
             else
             {
                 return isAsync ?
-                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken, isAsync) :
-                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken, isAsync);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
             }
         }
 
@@ -128,8 +128,8 @@ namespace System.Net.Security
             try
             {
                 Task task = isAsync ?
-                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken, isAsync) :
-                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken, isAsync);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
 
                 await task.ConfigureAwait(false);
 
@@ -253,9 +253,10 @@ namespace System.Net.Security
         }
 
         // reAuthenticationData is only used on Windows in case of renegotiation.
-        private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken, bool isAsync = true)
+        private async Task ForceAuthenticationAsync<TIOAdapter>(bool receiveFirst, byte[]? reAuthenticationData, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+            bool isSync = typeof(TIOAdapter) == typeof(SyncReadWriteAdapter);
             bool handshakeCompleted = false;
             ProtocolToken token = default;
             Task<SecurityStatusPalErrorCode>? handshakeTask = null;
@@ -314,11 +315,7 @@ namespace System.Net.Security
                 {
                     if (handshakeTask != null)
                     {
-                        if (isAsync)
-                        {
-                            _frameTask ??= ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).AsTask();
-                        }
-                        else
+                        if (isSync)
                         {
                             _frameTask ??= Task<int>.Run(() => {
                                 ValueTask<int> vt = ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken);
@@ -326,15 +323,19 @@ namespace System.Net.Security
                                 return vt.GetAwaiter().GetResult();
                             });
                         }
-
-                        if (isAsync)
+                        else
                         {
-                            await Task.WhenAny(handshakeTask, _frameTask).ConfigureAwait(false);
+                            _frameTask ??= ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).AsTask();
+                        }
+
+                        if (isSync)
+                        {
+                            Task[] tasks = new Task[] { handshakeTask, _frameTask };
+                           int index = Task.WaitAny(tasks, cancellationToken);
                         }
                         else
                         {
-                           Task[] tasks = new Task[] { handshakeTask, _frameTask };
-                           int index = Task.WaitAny(tasks, cancellationToken);
+                            await Task.WhenAny(handshakeTask, _frameTask).ConfigureAwait(false);
                         }
 
                         if (handshakeTask.IsCompleted)
@@ -891,9 +892,11 @@ namespace System.Net.Security
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
-        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken, bool isSync = false)
+        private async ValueTask<int> ReadAsyncInternal<TIOAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
             where TIOAdapter : IReadWriteAdapter
         {
+            bool isSync = typeof(TIOAdapter) == typeof(SyncReadWriteAdapter);
+
             Debug.Assert(_securityContext != null);
 
             // Throw first if we already have exception.

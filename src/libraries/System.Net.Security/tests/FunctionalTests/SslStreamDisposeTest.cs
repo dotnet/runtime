@@ -88,10 +88,12 @@ namespace System.Net.Security.Tests
                 if (bufferedRead)
                 {
                     // This will read everything into internal buffer. Following ReadAsync will not need IO.
-                    task = client.ReadAsync(readBuffer, 0, 4, cts.Token);
+                    await client.ReadAsync(readBuffer, 0, 1, cts.Token);
+                    // Try to read the rest
+                    task = client.ReadAsync(readBuffer, 0, 3, cts.Token);
                     client.Dispose();
                     int readLength = await task.ConfigureAwait(false);
-                    Assert.Equal(4, readLength);
+                    Assert.Equal(3, readLength);
                 }
                 else
                 {

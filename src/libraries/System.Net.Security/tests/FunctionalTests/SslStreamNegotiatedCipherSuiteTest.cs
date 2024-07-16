@@ -126,6 +126,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_AllowSomeCipherSuitesWithNoEncryptionOption_Fails()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -168,6 +169,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_AllowTwoOnBothSidesWithSingleOverlapNonTls13_Success()
         {
             CheckPrereqsForNonTls13Tests(3);
@@ -194,6 +196,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_AllowTwoOnBothSidesWithNoOverlapNonTls13_Fails()
         {
             CheckPrereqsForNonTls13Tests(4);
@@ -219,7 +222,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
-        [ActiveIssue("ABC", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_AllowSameTwoOnBothSidesLessPreferredIsTls13_Success()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -244,6 +247,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_TwoCipherSuitesWithAllOverlapping_Success()
         {
             CheckPrereqsForNonTls13Tests(2);
@@ -272,6 +276,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_ThreeCipherSuitesWithTwoOverlapping_Success()
         {
             CheckPrereqsForNonTls13Tests(4);
@@ -345,6 +350,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_OnlyNonTls13CipherSuitesAllowedButChosenProtocolDoesNotAllowIt_Fails()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -366,7 +372,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicySupported))]
-        [ActiveIssue("ABC", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/1979", TestPlatforms.OSX)]
         public void CipherSuitesPolicy_OnlyNonTls13CipherSuiteAllowedButOtherSideDoesNotAllowIt_Fails()
         {
             CheckPrereqsForNonTls13Tests(1);
@@ -449,7 +455,6 @@ namespace System.Net.Security.Tests
                     NegotiatedParams ret = i == 0 ?
                         ConnectAndGetNegotiatedParams(paramsA, paramsB) :
                         ConnectAndGetNegotiatedParams(paramsB, paramsA);
-
                     score += ret.HasSucceeded ? 1 : 0;
                     if (mustSucceed(cs) || ret.HasSucceeded)
                     {
@@ -478,6 +483,7 @@ namespace System.Net.Security.Tests
                 // This situation is rather unexpected but can happen on i.e. Alpine
                 // Make sure at least some tests run.
 
+                //if (Tls13Supported || OperatingSystem.IsMacOS())
                 if (Tls13Supported)
                 {
                     throw new SkipTestException($"Test requires that at least {minCipherSuites} non TLS 1.3 cipher suites are supported.");
@@ -737,6 +743,7 @@ namespace System.Net.Security.Tests
                 }
                 else
                 {
+                    Console.WriteLine(failure);
                     return new NegotiatedParams(failure);
                 }
             }

@@ -111,10 +111,6 @@ namespace System.Net
         public void Commit(int byteCount)
         {
             ObjectDisposedException.ThrowIf(_bytes == null, this);
-            if (byteCount > AvailableLength)
-            {
-                Console.WriteLine("WTF commiting {0} bytes, available {1} active {2} bytes {3} disposed {4} active {5} avilable {6}, total{7}", byteCount, AvailableLength, ActiveLength, _bytes, _disposed, _activeStart, _availableStart, _bytes?.Length);
-            }
             Debug.Assert(byteCount <= AvailableLength);
             _availableStart += byteCount;
         }
