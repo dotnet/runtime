@@ -10422,11 +10422,12 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #error Unsupported platform
 #endif
 
-                        if (strncmp(methodName, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
+                        if (strncmp(methodName,
+                                    "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0)
                         {
-                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
-                            // but, they all prefix the qualified name of the interface first, so we'll check for that and
-                            // skip the prefix before trying to resolve the method.
+                            // We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where
+                            // possible but, they all prefix the qualified name of the interface first, so we'll check
+                            // for that and skip the prefix before trying to resolve the method.
 
                             if (strncmp(methodName + 70, "64<T>,T>.", 9) == 0)
                             {
