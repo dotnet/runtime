@@ -21,6 +21,12 @@ Below are the requirements for toolchain setup, depending on your environment. P
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([dotnet/runtime#4069](https://github.com/dotnet/runtime/issues/4069)).
 
+You can use this helper script to install dependencies on some platforms:
+
+```bash
+sudo eng/install-native-dependencies.sh
+# or without 'sudo' if you are root
+```
 
 ### Debian-based / Ubuntu
 
@@ -48,8 +54,8 @@ Install the following packages for the toolchain:
 
 ```bash
 sudo apt install -y cmake llvm lld clang build-essential \
-python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
-libssl-dev libkrb5-dev zlib1g-dev ninja-build
+  python-is-python3 curl git lldb libicu-dev liblttng-ust-dev \
+  libssl-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
 **NOTE**: As of now, Ubuntu's `apt` only has until CMake version 3.16.3 if you're using Ubuntu 20.04 LTS (less in older Ubuntu versions), and version 3.18.4 in Debian 11 (less in older Debian versions). This is lower than the required 3.20, which in turn makes it incompatible with the repo. For this case, we can use the `snap` package manager or the _Kitware APT feed_ to get a new enough version of CMake.
@@ -98,7 +104,7 @@ Install the following packages for the toolchain:
 
 ```bash
 sudo dnf install -y cmake llvm lld lldb clang python curl git libicu-devel openssl-devel \
-krb5-devel zlib-devel lttng-ust-devel ninja-build
+  krb5-devel zlib-devel lttng-ust-devel ninja-build
 ```
 
 ### Gentoo
