@@ -32,10 +32,10 @@ struct REGDISPLAY
     uintptr_t   SP;
     PCODE       IP;
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
     uintptr_t   SSP;          // keep track of SSP for EH unwind
                               // we do not adjust the original, so only need the value
-#endif
+#endif  // TARGET_AMD64 && TARGET_WINDOWS
 
 #if defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)
     Fp128          Xmm[16-6]; // preserved xmm6..xmm15 regs for EH stackwalk
