@@ -662,7 +662,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            private TResult[] LazyToArray()
+            private TResult[] ToArrayNoPresizing()
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
@@ -696,13 +696,13 @@ namespace System.Linq
                 int count = _source.GetCount(onlyIfCheap: true);
                 return count switch
                 {
-                    -1 => LazyToArray(),
+                    -1 => ToArrayNoPresizing(),
                     0 => [],
                     _ => PreallocatingToArray(count),
                 };
             }
 
-            private List<TResult> LazyToList()
+            private List<TResult> ToListNoPresizing()
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
@@ -728,7 +728,7 @@ namespace System.Linq
                 switch (count)
                 {
                     case -1:
-                        list = LazyToList();
+                        list = ToListNoPresizing();
                         break;
                     case 0:
                         list = new List<TResult>();
