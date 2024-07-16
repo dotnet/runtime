@@ -141,7 +141,21 @@ namespace System.Numerics.Tensors
             }
         }
 
-#if !NET9_0_OR_GREATER
+#if NET9_0_OR_GREATER
+        // These are still used by CosPiOperator
+
+        private readonly struct CosOperatorSingle
+        {
+            internal const uint MaxVectorizedValue = 0x4A989680u;
+            internal const uint SignMask = 0x7FFFFFFFu;
+        }
+
+        private readonly struct CosOperatorDouble
+        {
+            internal const ulong SignMask = 0x7FFFFFFFFFFFFFFFul;
+            internal const ulong MaxVectorizedValue = 0x4160000000000000ul;
+        }
+#else
         /// <summary>float.Cos(x)</summary>
         private readonly struct CosOperatorSingle : IUnaryOperator<float, float>
         {

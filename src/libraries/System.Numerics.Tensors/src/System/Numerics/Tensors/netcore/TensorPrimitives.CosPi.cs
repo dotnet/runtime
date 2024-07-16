@@ -42,7 +42,6 @@ namespace System.Numerics.Tensors
             {
                 Vector128<T> xpi = x * Vector128.Create(T.Pi);
 
-#if !NET9_0_OR_GREATER
                 if (typeof(T) == typeof(float))
                 {
                     if (Vector128.GreaterThanAny(xpi.AsUInt32() & Vector128.Create(CosOperatorSingle.SignMask), Vector128.Create(CosOperatorSingle.MaxVectorizedValue)))
@@ -58,7 +57,6 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<CosPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
                 }
-#endif
 
                 return CosOperator<T>.Invoke(xpi);
             }
@@ -67,7 +65,6 @@ namespace System.Numerics.Tensors
             {
                 Vector256<T> xpi = x * Vector256.Create(T.Pi);
 
-#if !NET9_0_OR_GREATER
                 if (typeof(T) == typeof(float))
                 {
                     if (Vector256.GreaterThanAny(xpi.AsUInt32() & Vector256.Create(CosOperatorSingle.SignMask), Vector256.Create(CosOperatorSingle.MaxVectorizedValue)))
@@ -83,7 +80,6 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<CosPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
                 }
-#endif
 
                 return CosOperator<T>.Invoke(xpi);
             }
@@ -92,7 +88,6 @@ namespace System.Numerics.Tensors
             {
                 Vector512<T> xpi = x * Vector512.Create(T.Pi);
 
-#if !NET9_0_OR_GREATER
                 if (typeof(T) == typeof(float))
                 {
                     if (Vector512.GreaterThanAny(xpi.AsUInt32() & Vector512.Create(CosOperatorSingle.SignMask), Vector512.Create(CosOperatorSingle.MaxVectorizedValue)))
@@ -108,7 +103,6 @@ namespace System.Numerics.Tensors
                         return ApplyScalar<CosPiOperator<double>>(x.AsDouble()).As<double, T>();
                     }
                 }
-#endif
 
                 return CosOperator<T>.Invoke(xpi);
             }

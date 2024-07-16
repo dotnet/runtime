@@ -131,7 +131,21 @@ namespace System.Numerics.Tensors
             }
         }
 
-#if !NET9_0_OR_GREATER
+#if NET9_0_OR_GREATER
+        // These are still used by SinPiOperator
+
+        private readonly struct SinOperatorSingle
+        {
+            internal const uint MaxVectorizedValue = 0x49800000u;
+            internal const uint SignMask = 0x7FFFFFFFu;
+        }
+
+        private readonly struct SinOperatorDouble
+        {
+            internal const ulong SignMask = 0x7FFFFFFFFFFFFFFFul;
+            internal const ulong MaxVectorizedValue = 0x4160000000000000ul;
+        }
+#else
         /// <summary>float.Sin(x)</summary>
         private readonly struct SinOperatorSingle : IUnaryOperator<float, float>
         {
