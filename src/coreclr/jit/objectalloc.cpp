@@ -442,7 +442,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         // We expect the following expression tree at this point
                         //  STMTx (IL 0x... ???)
                         //    * STORE_LCL_VAR   ref
-                        //    \--*  CALL helper  ref
+                        //    \--*  CALL help  ref    CORINFO_HELP_NEWARR_1_VC
                         //       +--*  CNS_INT(h) long
                         //       \--*  CNS_INT long
                         //------------------------------------------------------------------------
