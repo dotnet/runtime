@@ -826,6 +826,48 @@ public:
 
         switch (node->OperGet())
         {
+            case GT_INDEX_ADDR:
+            {
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->gtGetOp1());
+                assert(TopValue(0).Node() == node->gtGetOp2());
+
+                if (node->gtGetOp2()->IsCnsIntOrI())
+                {
+                    ssize_t offset = OFFSETOF__CORINFO_Array__data +
+                                     node->gtGetOp2()->AsIntCon()->IconValue() * node->AsIndexAddr()->gtElemSize;
+                    if (FitsIn<unsigned>(offset) && TopValue(2).AddOffset(TopValue(1), static_cast<unsigned>(offset)))
+                    {
+                        INDEBUG(TopValue(0).Consume());
+                        PopValue();
+                        PopValue();
+                        break;
+                    }
+                }
+
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                break;
+            }
+            case GT_ARR_LENGTH:
+            {
+                Value& arr = TopValue(0);
+                EscapeValue(arr, node);
+                PopValue();
+
+                GenTree* gtArr = arr.Node();
+
+                if (gtArr->OperIs(GT_LCL_ADDR))
+                {
+                    unsigned int lclNum = gtArr->AsLclVarCommon()->GetLclNum();
+                    GenTree* gtLclFld   = m_compiler->gtNewLclFldNode(lclNum, TYP_INT, OFFSETOF__CORINFO_Array__length);
+                    SequenceLocal(gtLclFld->AsLclVarCommon());
+                    *use = node = gtLclFld;
+                }
+                break;
+            }
             case GT_STORE_LCL_FLD:
                 if (node->IsPartialLclFld(m_compiler))
                 {

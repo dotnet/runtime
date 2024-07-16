@@ -22,7 +22,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class ObjectAllocator final : public Phase
 {
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
-    typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalArrToLenMap;
 
     //===============================================================================
     // Data members
@@ -34,9 +33,7 @@ class ObjectAllocator final : public Phase
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
     BitVec              m_PossiblyStackPointingPointers;
     BitVec              m_DefinitelyStackPointingPointers;
-    BitVec              m_PointersHasLocalStore;
     LocalToLocalMap     m_HeapLocalToStackLocalMap;
-    LocalArrToLenMap    m_LocalArrToLenMap;
     BitSetShortLongRep* m_ConnGraphAdjacencyMatrix;
 
     //===============================================================================
@@ -62,7 +59,6 @@ private:
     bool         DoesLclVarPointToStack(unsigned int lclNum);
     void         DoAnalysis();
     void         MarkLclVarAsEscaping(unsigned int lclNum);
-    bool         MarkLclVarHasLocalStore(unsigned int lclNum);
     void         MarkEscapingVarsAndBuildConnGraph();
     void         AddConnGraphEdge(unsigned int sourceLclNum, unsigned int targetLclNum);
     void         ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& escapingNodes);
@@ -93,7 +89,6 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     , m_AnalysisDone(false)
     , m_bitVecTraits(comp->lvaCount, comp)
     , m_HeapLocalToStackLocalMap(comp->getAllocator())
-    , m_LocalArrToLenMap(comp->getAllocator())
 {
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();

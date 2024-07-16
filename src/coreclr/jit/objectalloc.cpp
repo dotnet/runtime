@@ -90,27 +90,6 @@ void ObjectAllocator::MarkLclVarAsEscaping(unsigned int lclNum)
 }
 
 //------------------------------------------------------------------------------
-// MarkLclVarHasLocalStore : Mark local variable having local store.
-//
-//
-// Arguments:
-//    lclNum  - Pointing local variable number
-// Returns:
-//    true if the local variable is first marked as having local store
-//    false if the local variable is already marked as having local store
-
-bool ObjectAllocator::MarkLclVarHasLocalStore(unsigned int lclNum)
-{
-    if (BitVecOps::IsMember(&m_bitVecTraits, m_PointersHasLocalStore, lclNum))
-    {
-        return false;
-    }
-
-    BitVecOps::AddElemD(&m_bitVecTraits, m_PointersHasLocalStore, lclNum);
-    return true;
-}
-
-//------------------------------------------------------------------------------
 // MarkLclVarAsPossiblyStackPointing : Mark local variable as possibly pointing
 //                                     to a stack-allocated object.
 //
@@ -161,7 +140,6 @@ void ObjectAllocator::DoAnalysis()
     if (comp->lvaCount > 0)
     {
         m_EscapingPointers         = BitVecOps::MakeEmpty(&m_bitVecTraits);
-        m_PointersHasLocalStore    = BitVecOps::MakeEmpty(&m_bitVecTraits);
         m_ConnGraphAdjacencyMatrix = new (comp->getAllocator(CMK_ObjectAllocator)) BitSetShortLongRep[comp->lvaCount];
 
         MarkEscapingVarsAndBuildConnGraph();
@@ -223,9 +201,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
             if (tree->OperIsLocalStore())
             {
-                // conservatively marking locals being reassigned as escaping
-                // this can happen on arrays
-                lclEscapes = !m_allocator->MarkLclVarHasLocalStore(lclNum);
+                lclEscapes = false;
             }
             else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
             {
@@ -481,7 +457,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal,
                                                       blockSize, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
-                    m_LocalArrToLenMap.AddOrUpdate(stackLclNum, (unsigned int)len->AsIntCon()->gtIconVal);
                     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
                     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
                     MarkLclVarAsDefinitelyStackPointing(lclNum);
@@ -1096,11 +1071,17 @@ void ObjectAllocator::RewriteUses()
 
                 if (lclVarDsc->lvType != newType)
                 {
-                    JITDUMP("changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
+                    JITDUMP("Changing the type of V%02u from %s to %s\n", lclNum, varTypeName(lclVarDsc->lvType),
                             varTypeName(newType));
                     lclVarDsc->lvType = newType;
                 }
                 m_allocator->UpdateAncestorTypes(tree, &m_ancestors, newType);
+
+                if (newLclNum != BAD_VAR_NUM)
+                {
+                    JITDUMP("Update V%02u to V%02u from use [%06u]\n", lclNum, newLclNum, m_compiler->dspTreeID(tree));
+                    DISPTREE(tree);
+                }
             }
 
             return Compiler::fgWalkResult::WALK_CONTINUE;
@@ -1199,50 +1180,6 @@ void ObjectAllocator::RewriteUses()
                             m_compiler->gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffects, indir);
                         *use = newComma;
                     }
-                }
-            }
-            // Rewrite INDEX_ADDR to ADD for stack-allocated arrays.
-            else if (tree->OperIs(GT_INDEX_ADDR))
-            {
-                GenTreeIndexAddr* const gtIndexAddr = tree->AsIndexAddr();
-                GenTree* const          gtArr       = gtIndexAddr->Arr();
-                GenTree* const          gtInd       = gtIndexAddr->Index();
-                unsigned int            arrLen      = 0;
-
-                if (gtArr->OperIs(GT_LCL_ADDR) && gtInd->IsCnsIntOrI() &&
-                    m_allocator->m_LocalArrToLenMap.TryGetValue(gtArr->AsLclVarCommon()->GetLclNum(), &arrLen))
-                {
-                    if ((unsigned int)gtInd->AsIntCon()->gtIconVal < arrLen)
-                    {
-                        JITDUMP("Rewriting INDEX_ADDR to ADD [%06u]\n", m_compiler->dspTreeID(tree));
-                        const ssize_t offset =
-                            OFFSETOF__CORINFO_Array__data + gtInd->AsIntCon()->gtIconVal * gtIndexAddr->gtElemSize;
-                        GenTree* const gtOffset = m_compiler->gtNewIconNode(offset, TYP_I_IMPL);
-                        GenTree* const gtAdd    = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffset);
-                        *use                    = gtAdd;
-                    }
-                    else
-                    {
-                        JITDUMP("Rewriting INDEX_ADDR to RNGCHKFAIL helper call [%06u]\n", m_compiler->dspTreeID(tree));
-                        GenTree* const gtRngChkFail =
-                            m_compiler->gtNewMustThrowException(CORINFO_HELP_RNGCHKFAIL, gtIndexAddr->gtType,
-                                                                gtIndexAddr->gtStructElemClass);
-                        *use = gtRngChkFail;
-                    }
-                }
-            }
-            // Rewrite ARR_LENGTH to LCL_FLD for stack-allocated arrays.
-            else if (tree->OperIsArrLength())
-            {
-                GenTreeArrLen* const gtArrLen = tree->AsArrLen();
-                GenTree* const       gtArr    = gtArrLen->ArrRef();
-
-                if (gtArr->OperIs(GT_LCL_ADDR))
-                {
-                    JITDUMP("Rewriting ARR_LENGTH to LCL_FLD [%06u]\n", m_compiler->dspTreeID(tree));
-                    GenTree* const gtLclFld = m_compiler->gtNewLclFldNode(gtArr->AsLclVarCommon()->GetLclNum(), TYP_INT,
-                                                                          OFFSETOF__CORINFO_Array__length);
-                    *use                    = gtLclFld;
                 }
             }
 
