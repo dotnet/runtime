@@ -95,31 +95,31 @@ namespace System
                     break;
 
                 case IConvertible ic when ic.GetTypeCode() != TypeCode.Object:
+                {
+                    IFormatProvider provider = CultureInfo.InvariantCulture;
+                    pOle = ic.GetTypeCode() switch
                     {
-                        IFormatProvider provider = CultureInfo.InvariantCulture;
-                        pOle = ic.GetTypeCode() switch
-                        {
-                            TypeCode.Empty => default,
-                            TypeCode.DBNull => ComVariant.Create(DBNull.Value),
-                            TypeCode.Boolean => ComVariant.Create(ic.ToBoolean(provider)),
-                            TypeCode.Char => ComVariant.Create((ushort)ic.ToChar(provider)),
-                            TypeCode.SByte => ComVariant.Create(ic.ToSByte(provider)),
-                            TypeCode.Byte => ComVariant.Create(ic.ToByte(provider)),
-                            TypeCode.Int16 => ComVariant.Create(ic.ToInt16(provider)),
-                            TypeCode.UInt16 => ComVariant.Create(ic.ToUInt16(provider)),
-                            TypeCode.Int32 => ComVariant.Create(ic.ToInt32(provider)),
-                            TypeCode.UInt32 => ComVariant.Create(ic.ToUInt32(provider)),
-                            TypeCode.Int64 => ComVariant.Create(ic.ToInt64(provider)),
-                            TypeCode.UInt64 => ComVariant.Create(ic.ToUInt64(provider)),
-                            TypeCode.Single => ComVariant.Create(ic.ToSingle(provider)),
-                            TypeCode.Double => ComVariant.Create(ic.ToDouble(provider)),
-                            TypeCode.Decimal => ComVariant.Create(ic.ToDecimal(provider)),
-                            TypeCode.DateTime => ComVariant.Create(ic.ToDateTime(provider)),
-                            TypeCode.String => ComVariant.Create(ic.ToString(provider)),
-                            _ => throw new NotSupportedException(SR.Format(SR.NotSupported_UnknownTypeCode, ic.GetTypeCode())),
-                        };
-                        break;
-                    }
+                        TypeCode.Empty => default,
+                        TypeCode.DBNull => ComVariant.Create(DBNull.Value),
+                        TypeCode.Boolean => ComVariant.Create(ic.ToBoolean(provider)),
+                        TypeCode.Char => ComVariant.Create((ushort)ic.ToChar(provider)),
+                        TypeCode.SByte => ComVariant.Create(ic.ToSByte(provider)),
+                        TypeCode.Byte => ComVariant.Create(ic.ToByte(provider)),
+                        TypeCode.Int16 => ComVariant.Create(ic.ToInt16(provider)),
+                        TypeCode.UInt16 => ComVariant.Create(ic.ToUInt16(provider)),
+                        TypeCode.Int32 => ComVariant.Create(ic.ToInt32(provider)),
+                        TypeCode.UInt32 => ComVariant.Create(ic.ToUInt32(provider)),
+                        TypeCode.Int64 => ComVariant.Create(ic.ToInt64(provider)),
+                        TypeCode.UInt64 => ComVariant.Create(ic.ToUInt64(provider)),
+                        TypeCode.Single => ComVariant.Create(ic.ToSingle(provider)),
+                        TypeCode.Double => ComVariant.Create(ic.ToDouble(provider)),
+                        TypeCode.Decimal => ComVariant.Create(ic.ToDecimal(provider)),
+                        TypeCode.DateTime => ComVariant.Create(ic.ToDateTime(provider)),
+                        TypeCode.String => ComVariant.Create(ic.ToString(provider)),
+                        _ => throw new NotSupportedException(SR.Format(SR.NotSupported_UnknownTypeCode, ic.GetTypeCode())),
+                    };
+                    break;
+                }
 
                 case Missing:
                     pOle = ComVariant.CreateRaw(VarEnum.VT_ERROR, HResults.DISP_E_PARAMNOTFOUND);
@@ -128,19 +128,19 @@ namespace System
                 // Array handled by native side
 
                 case UnknownWrapper wrapper:
-                    {
-                        object? wrapped = ConvertWrappedObject(wrapper.WrappedObject);
-                        pOle = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN,
-                            wrapped is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(wrapped));
-                        break;
-                    }
+                {
+                    object? wrapped = ConvertWrappedObject(wrapper.WrappedObject);
+                    pOle = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN,
+                        wrapped is null ? IntPtr.Zero : Marshal.GetIUnknownForObject(wrapped));
+                    break;
+                }
                 case DispatchWrapper wrapper:
-                    {
-                        object? wrapped = ConvertWrappedObject(wrapper.WrappedObject);
-                        pOle = ComVariant.CreateRaw(VarEnum.VT_DISPATCH,
-                            wrapped is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(wrapped));
-                        break;
-                    }
+                {
+                    object? wrapped = ConvertWrappedObject(wrapper.WrappedObject);
+                    pOle = ComVariant.CreateRaw(VarEnum.VT_DISPATCH,
+                        wrapped is null ? IntPtr.Zero : Marshal.GetIDispatchForObject(wrapped));
+                    break;
+                }
 
                 case ErrorWrapper wrapper:
                     pOle = ComVariant.Create(wrapper);
