@@ -3439,11 +3439,13 @@ interp_emit_swiftcall_struct_lowering (TransformData *td, MonoMethodSignature *c
 					g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
 				}
 			} else {
-				// For structs that cannot be lowered, we change the argument to byref type
+				// For structs that cannot be lowered, we change the argument to a pointer-like argument type.
+				// If SwiftSelf<T> can't be lowered, it should be passed in the same manner as SwiftSelf, via the context register.
 				if (gklass && (gklass->container_class == swift_self_t))
 					ptype = mono_class_get_byref_type (swift_self);
 				else
-					ptype = mono_class_get_byref_type (mono_defaults.int_class);
+					ptype = mono_class_get_byref_type (klass);
+
 				// Load the address of the struct
 				interp_add_ins (td, MINT_LDLOCA_S);
 				interp_ins_set_sreg (td->last_ins, sp_old_params [idx_param].var);
