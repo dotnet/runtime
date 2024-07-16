@@ -1174,6 +1174,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [Collection(nameof(DisableParallelization))]
     public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
     {
         protected override bool TestHttpMessageInvoker => true;
