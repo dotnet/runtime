@@ -55,6 +55,7 @@ void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
         CryptoNative_EvpPkeyExtraHandleDestroy(extra);
     }
 #else
+    (void)extraHandle;
     assert(extraHandle == NULL);
 #endif
 }
@@ -84,6 +85,7 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
         extra->references++;
     }
 #else
+    (void)extraHandle;
     assert(extraHandle == NULL);
 #endif
 
