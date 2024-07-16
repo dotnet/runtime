@@ -192,9 +192,9 @@
         <target state="translated">Regex 엔진이 패턴을 입력 문자열에 일치시키는 동안 시간 초과되었습니다. 이 오류는 많은 입력, 중첩 수량자로 인한 과도한 역추적, 역참조, 기타 요인 등의 다양한 이유로 인해 발생할 수 있습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="RegexMemberMustHaveValidSignatureMessage">
-        <source>GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</source>
-        <target state="new">GeneratedRegexAttribute method or property must be partial, parameterless, non-generic, non-abstract, and return Regex. If a property, it must also be get-only.</target>
+      <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
+        <source>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</source>
+        <target state="translated">GeneratedRegexAttribute 메서드는 부분적이고 매개 변수가 없으며 제네릭이 아닌 비추상 메서드여야 하며 regex를 반환해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
