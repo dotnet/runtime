@@ -839,6 +839,10 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_EQ:
             case GT_NE:
+            case GT_LT:
+            case GT_GT:
+            case GT_LE:
+            case GT_GE:
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
                 canLclVarEscapeViaParentStack = false;
@@ -938,6 +942,10 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
 
             case GT_EQ:
             case GT_NE:
+            case GT_LT:
+            case GT_GT:
+            case GT_LE:
+            case GT_GE:
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
                 break;
