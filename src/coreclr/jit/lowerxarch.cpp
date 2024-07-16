@@ -5091,7 +5091,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             {
                 LIR::Use addrUse(BlockRange(), &indir->Addr(), indir);
                 addrUse.ReplaceWithLclVar(comp);
-                addr             = indir->Addr();
+                addr = indir->Addr();
             }
 
             // If the indir can fault, do a null check.
