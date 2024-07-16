@@ -263,8 +263,7 @@ namespace System.Collections.Generic
                 result = new List<T>(count);
 
                 CollectionsMarshal.SetCount(result, count);
-                Span<T> span = CollectionsMarshal.AsSpan(result);
-                ToSpanInlined(span);
+                ToSpanInlined(CollectionsMarshal.AsSpan(result));
             }
             else
             {

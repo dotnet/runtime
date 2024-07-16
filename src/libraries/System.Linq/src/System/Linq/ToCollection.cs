@@ -59,9 +59,9 @@ namespace System.Linq
 
         public static List<TSource> ToList<TSource>(this IEnumerable<TSource> source)
         {
-            if (source is ICollection<TSource> collection)
+            if (source is null)
             {
-                return new List<TSource>(collection);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
 #if !OPTIMIZE_FOR_SIZE
@@ -71,25 +71,7 @@ namespace System.Linq
             }
 #endif
 
-            return EnumerableToList(source);
-
-            [MethodImpl(MethodImplOptions.NoInlining)] // avoid large stack allocation impacting other paths
-            static List<TSource> EnumerableToList(IEnumerable<TSource> source)
-            {
-                if (source is null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
-                }
-
-                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
-                SegmentedArrayBuilder<TSource> builder = new(scratch);
-
-                builder.AddNonICollectionRangeInlined(source);
-                List<TSource> result = builder.ToList();
-
-                builder.Dispose();
-                return result;
-            }
+            return new List<TSource>(source);
         }
 
         /// <summary>
