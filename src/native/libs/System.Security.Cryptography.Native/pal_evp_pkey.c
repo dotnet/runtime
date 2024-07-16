@@ -8,7 +8,6 @@
 #ifdef NEED_OPENSSL_3_0
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
 c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
-#endif
 
 struct EvpPKeyExtraHandle_st
 {
@@ -18,12 +17,6 @@ struct EvpPKeyExtraHandle_st
 };
 
 typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
-
-EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
-{
-    ERR_clear_error();
-    return EVP_PKEY_new();
-}
 
 static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
 {
@@ -40,6 +33,13 @@ static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
         free(handle);
     }
 }
+#endif
+
+EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
+{
+    ERR_clear_error();
+    return EVP_PKEY_new();
+}
 
 void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
 {
@@ -48,11 +48,15 @@ void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
         EVP_PKEY_free(pkey);
     }
 
+#ifdef NEED_OPENSSL_3_0
     if (extraHandle != NULL)
     {
         EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
         CryptoNative_EvpPkeyExtraHandleDestroy(extra);
     }
+#else
+    assert(extraHandle == NULL);
+#endif
 }
 
 int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
@@ -67,17 +71,21 @@ int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
 
 int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
 {
-    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
-
     if (!pkey)
     {
         return 0;
     }
 
+#ifdef NEED_OPENSSL_3_0
+    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
+
     if (extra != NULL)
     {
         extra->references++;
     }
+#else
+    assert(extraHandle == NULL);
+#endif
 
     // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
@@ -730,6 +738,9 @@ EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraH
     else
 #endif
     {
+#ifndef NEED_OPENSSL_3_0
+        (void)extraHandle;
+#endif
         return EVP_PKEY_CTX_new(pkey, NULL);
     }
 }
