@@ -1509,52 +1509,12 @@ namespace Internal.JitInterface
         private struct SwiftLoweredTypes
         {
             public CorInfoType type;
-
-            public override bool Equals(object other)
-            {
-                if (other is SwiftLoweredTypes otherType)
-                {
-                    ReadOnlySpan<CorInfoType> self = this;
-                    return self.SequenceEqual(otherType);
-                }
-                return false;
-            }
-
-            public override int GetHashCode()
-            {
-                var code = new HashCode();
-                foreach (var item in this)
-                {
-                    code.Add(item);
-                }
-                return code.ToHashCode();
-            }
         }
 
         [InlineArray(4)]
         private struct LoweredOffsets
         {
             public uint offset;
-            
-            public override bool Equals(object other)
-            {
-                if (other is LoweredOffsets otherType)
-                {
-                    ReadOnlySpan<uint> self = this;
-                    return self.SequenceEqual(otherType);
-                }
-                return false;
-            }
-
-            public override int GetHashCode()
-            {
-                var code = new HashCode();
-                foreach (var item in this)
-                {
-                    code.Add(item);
-                }
-                return code.ToHashCode();
-            }
         }
 
         private SwiftLoweredTypes _loweredElements;
@@ -1568,6 +1528,47 @@ namespace Internal.JitInterface
         public Span<uint> Offsets => _offsets;
 
         public nint numLoweredElements;
+
+        public override bool Equals(object obj)
+        {
+            if (obj is not CORINFO_SWIFT_LOWERING other)
+            {
+                return false;
+            }
+
+            if (byReference != other.byReference)
+            {
+                return false;
+            }
+
+            // If both are by-ref, the rest of the bits mean nothing.
+            if (byReference)
+            {
+                return true;
+            }
+
+            return LoweredElements.Slice(0, numLoweredElements).SequenceEqual(other.LoweredElements).Slice(0, other.numLoweredElements)
+                && Offsets.Slice(0, numLoweredElements).SequenceEqual(other.Offsets).Slice(0, other.numLoweredElements);
+        }
+
+        public override int GetHashCode()
+        {
+            HashCode code = new HashCode();
+            code.Add(byReference);
+
+            if (byReference)
+            {
+                return code.ToHashCode();
+            }
+
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                code.Add(LoweredElements[i]);
+                code.Add(Offsets[i]);
+            }
+
+            return code.ToHashCode();
+        }
 
         // Override for a better unit test experience
         public override string ToString()
