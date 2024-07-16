@@ -97,6 +97,7 @@ namespace Mono.Linker
 					_featureCheckValues[method] = value;
 					return true;
 				}
+				return false;
 			}
 
 			if (!_context.IsOptimizationEnabled (CodeOptimizations.SubstituteFeatureGuards, method))
