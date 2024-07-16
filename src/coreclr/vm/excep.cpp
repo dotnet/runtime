@@ -7953,7 +7953,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
     // find the slot corresponding to get_StackTrace
     for (DWORD slot = g_pObjectClass->GetNumVirtuals(); slot < g_pExceptionClass->GetNumVirtuals(); slot++)
     {
-        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot(slot);
+        MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot_NoThrow(slot);
         if (pMD != nullptr)
         {
             LPCUTF8 name = pMD->GetName();
@@ -7961,7 +7961,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
             if (name != NULL && strcmp(name, "get_StackTrace") == 0)
             {
                 // see if the slot is overridden by pMT
-                MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot(slot);
+                MethodDesc *pDerivedMD = pMT->GetMethodDescForSlot_NoThrow(slot);
                 return (pDerivedMD != pMD);
             }
         }
