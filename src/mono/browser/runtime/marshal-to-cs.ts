@@ -14,7 +14,7 @@ import {
     set_gc_handle, set_js_handle, set_arg_type, set_arg_i32, set_arg_f64, set_arg_i52, set_arg_f32, set_arg_i16, set_arg_u8, set_arg_bool, set_arg_date,
     set_arg_length, get_arg, get_signature_arg1_type, get_signature_arg2_type, js_to_cs_marshalers,
     get_signature_res_type, bound_js_function_symbol, set_arg_u16, array_element_size,
-    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr,
+    get_string_root, Span, ArraySegment, MemoryViewType, get_signature_arg3_type, set_arg_i64_big, set_arg_intptr, set_arg_uintptr,
     set_arg_element_type, ManagedObject, JavaScriptMarshalerArgSize, proxy_debug_symbol, get_arg_gc_handle, get_arg_type, set_arg_proxy_context, get_arg_intptr
 } from "./marshal";
 import { get_marshaler_to_js_by_type } from "./marshal-to-js";
@@ -458,7 +458,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
         mono_assert(element_size != -1, () => `Element type ${element_type} not supported`);
         const length = value.length;
         const buffer_length = element_size * length;
-        const buffer_ptr = <any>Module._malloc(buffer_length);
+        const buffer_ptr = <any>Module._malloc(buffer_length) >>> 0;
         if (element_type == MarshalerType.String) {
             mono_check(Array.isArray(value), "Value is not an Array");
             _zero_region(buffer_ptr, buffer_length);
@@ -503,7 +503,7 @@ export function marshal_array_to_cs_impl (arg: JSMarshalerArgument, value: Array
         } else {
             throw new Error("not implemented");
         }
-        set_arg_intptr(arg, buffer_ptr);
+        set_arg_uintptr(arg, buffer_ptr);
         set_arg_type(arg, MarshalerType.Array);
         set_arg_element_type(arg, element_type);
         set_arg_length(arg, value.length);

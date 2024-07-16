@@ -294,6 +294,11 @@ export function set_arg_intptr (arg: JSMarshalerArgument, value: VoidPtr): void 
     setI32(<any>arg, <any>value);
 }
 
+export function set_arg_uintptr (arg: JSMarshalerArgument, value: VoidPtr): void {
+    mono_assert(arg, "Null arg");
+    setU32(<any>arg, <any>value);
+}
+
 export function set_arg_i52 (arg: JSMarshalerArgument, value: number): void {
     mono_assert(arg, "Null arg");
     mono_check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
