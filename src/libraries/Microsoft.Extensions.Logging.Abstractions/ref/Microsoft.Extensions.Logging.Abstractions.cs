@@ -155,23 +155,6 @@ namespace Microsoft.Extensions.Logging
         Critical = 5,
         None = 6,
     }
-    public abstract class BufferedLogRecord
-    {
-        public abstract System.DateTimeOffset Timestamp { get; }
-        public abstract Microsoft.Extensions.Logging.LogLevel LogLevel { get; }
-        public abstract Microsoft.Extensions.Logging.EventId EventId { get; }
-        public abstract string? Exception { get; }
-        public abstract System.Diagnostics.ActivitySpanId? ActivitySpanId { get; }
-        public abstract System.Diagnostics.ActivityTraceId? ActivityTraceId { get; }
-        public abstract int? ManagedThreadId { get; }
-        public abstract string? FormattedMessage { get; }
-        public abstract string? MessageTemplate { get; }
-        public abstract System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>> Attributes { get; }
-    }
-    public interface IBufferedLogger
-    {
-        void LogRecords(System.Collections.Generic.IReadOnlyList<Microsoft.Extensions.Logging.BufferedLogRecord> records);
-    }
 }
 namespace Microsoft.Extensions.Logging.Abstractions
 {
@@ -218,5 +201,22 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public System.IDisposable BeginScope<TState>(TState state) where TState : notnull { throw null; }
         public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) { throw null; }
         public void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter) { }
+    }
+    public abstract class BufferedLogRecord
+    {
+        public abstract System.DateTimeOffset Timestamp { get; }
+        public abstract Microsoft.Extensions.Logging.LogLevel LogLevel { get; }
+        public abstract Microsoft.Extensions.Logging.EventId EventId { get; }
+        public virtual string? Exception { get; }
+        public virtual System.Diagnostics.ActivitySpanId? ActivitySpanId { get; }
+        public virtual System.Diagnostics.ActivityTraceId? ActivityTraceId { get; }
+        public virtual int? ManagedThreadId { get; }
+        public virtual string? FormattedMessage { get; }
+        public virtual string? MessageTemplate { get; }
+        public virtual System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, object?>> Attributes { get; }
+    }
+    public interface IBufferedLogger
+    {
+        void LogRecords(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.BufferedLogRecord> records);
     }
 }

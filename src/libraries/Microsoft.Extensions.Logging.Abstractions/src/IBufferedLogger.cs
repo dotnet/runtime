@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Extensions.Logging
+namespace Microsoft.Extensions.Logging.Abstractions
 {
     /// <summary>
     /// Logging providers can implement this interface to indicate they support buffered logging.
@@ -29,9 +29,9 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="records">The buffered log records to log.</param>
         /// <remarks>
-        /// Once this function returns, it should no longer access the records
-        /// or state referenced by these records.
+        /// Once this function returns, the implementation should no longer access the records
+        /// or state referenced by these records since they will get recycled.
         /// </remarks>
-        void LogRecords(IReadOnlyList<BufferedLogRecord> records);
+        void LogRecords(IEnumerable<BufferedLogRecord> records);
     }
 }

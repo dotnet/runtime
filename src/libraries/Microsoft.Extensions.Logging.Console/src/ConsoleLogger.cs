@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Logging.Console
         }
 
         /// <inheritdoc />
-        public void LogRecords(IReadOnlyList<BufferedLogRecord> records)
+        public void LogRecords(IEnumerable<BufferedLogRecord> records)
         {
             ThrowHelper.ThrowIfNull(records);
 

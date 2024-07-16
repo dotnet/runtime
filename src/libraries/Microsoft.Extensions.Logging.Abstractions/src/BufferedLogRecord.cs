@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Microsoft.Extensions.Logging
+namespace Microsoft.Extensions.Logging.Abstractions
 {
     /// <summary>
     /// State representing a buffered log record.
@@ -34,36 +34,36 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Gets an optional exception string for this record.
         /// </summary>
-        public abstract string? Exception { get => null; }
+        public virtual string? Exception { get => null; }
 
         /// <summary>
         /// Gets an activity span id for this record, representing the state of the thread that created the record.
         /// </summary>
-        public abstract ActivitySpanId? ActivitySpanId { get => null; }
+        public virtual ActivitySpanId? ActivitySpanId { get => null; }
 
         /// <summary>
         /// Gets an activity trace id for this record, representing the state of the thread that created the record.
         /// </summary>
-        public abstract ActivityTraceId? ActivityTraceId { get => null; }
+        public virtual ActivityTraceId? ActivityTraceId { get => null; }
 
         /// <summary>
         /// Gets the ID of the thread that created the log record.
         /// </summary>
-        public abstract int? ManagedThreadId { get => null; }
+        public virtual int? ManagedThreadId { get => null; }
 
         /// <summary>
         /// Gets the formatted log message.
         /// </summary>
-        public abstract string? FormattedMessage { get => null; }
+        public virtual string? FormattedMessage { get => null; }
 
         /// <summary>
         /// Gets the original log message template.
         /// </summary>
-        public abstract string? MessageTemplate { get => null; }
+        public virtual string? MessageTemplate { get => null; }
 
         /// <summary>
         /// Gets the variable set of name/value pairs associated with the record.
         /// </summary>
-        public abstract IReadOnlyList<KeyValuePair<string, object?>> Attributes { get => Array.Empty<KeyValuePair<string, object?>>(); }
+        public virtual IReadOnlyList<KeyValuePair<string, object?>> Attributes { get => Array.Empty<KeyValuePair<string, object?>>(); }
     }
 }
