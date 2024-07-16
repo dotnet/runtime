@@ -6132,15 +6132,18 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (int i = 0; i < op1.Length; i += 2)
             {
+                int real = i;
+                int img = i + 1;
+
                 if (rot == 0)
                 {
-                    op1[i] -= op2[i + 1];
-                    op1[i + 1] += op2[i];
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
                 }
                 else
                 {
-                    op1[i] += op2[i + 1];
-                    op1[i + 1] -= op2[i];
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
                 }
             }
 
@@ -6201,15 +6204,18 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (int i = 0; i < op1.Length; i += 2)
             {
+                int real = i;
+                int img = i + 1;
+
                 if (rot == 0)
                 {
-                    op1[i] -= op2[i + 1];
-                    op1[i + 1] += op2[i];
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
                 }
                 else
                 {
-                    op1[i] += op2[i + 1];
-                    op1[i + 1] -= op2[i];
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
                 }
             }
 
