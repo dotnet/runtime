@@ -1043,6 +1043,15 @@ Update the `SpecialConstraintMask` flag value and description, and add a new fla
 | ... | ... | ... |
 | `AllowByRefLike`        | `0x20` | The generic parameter is allowed to be ByRefLike |
 
+### III.2.1
+The following case is added as the **third** cases in the "if _thisType_" sequence.
+
+> If _thisType_ is ByRefLike and _thisType_ does not implement _method_ then; a `NotSupportedException` is thrown at the callsite.
+
+The following is added to the paragraph starting with "This last case can only occur when _method_ was defined on `System.Object`, `System.ValueType`, or `System.Enum`".
+
+> The third case can only occur when _method_ was defined on `System.Object` or is a Default Interface Method.
+
 ## Rules for IL Rewriters
 
 There are apis such as `System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<T>(...)` which require that the PE file have a particular structure. In particular, that api requires that the associated RVA of a FieldDef which is used to create a span must be naturally aligned over the data type that `CreateSpan` is instantiated over. There are 2 major concerns.
