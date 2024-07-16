@@ -574,17 +574,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class BaseImplementsInterfaceViaDerived
 		{
-			[LogContains (
-				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseImplementsInterfaceViaDerived.ReturnValueBaseWithInterfaceWithout()' " +
-				"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBaseImplementedInterface.ReturnValueBaseWithInterfaceWithout()'. " +
-				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 			public virtual Type ReturnValueBaseWithInterfaceWithout () => null;
 
-			[ExpectedWarning ("IL2046", "BaseImplementsInterfaceViaDerived.RequiresUnreferencedCodeBaseWithoutInterfaceWith")]
 			public virtual void RequiresUnreferencedCodeBaseWithoutInterfaceWith () { }
 		}
 
+		[ExpectedWarning ("IL2046", "BaseImplementsInterfaceViaDerived.RequiresUnreferencedCodeBaseWithoutInterfaceWith")]
+		[LogContains (
+			"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseImplementsInterfaceViaDerived.ReturnValueBaseWithInterfaceWithout()' " +
+			"don't match overridden return value of method 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.IBaseImplementedInterface.ReturnValueBaseWithInterfaceWithout()'. " +
+			"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
 		class DerivedWithInterfaceImplementedByBase : BaseImplementsInterfaceViaDerived, IBaseImplementedInterface
 		{
 		}

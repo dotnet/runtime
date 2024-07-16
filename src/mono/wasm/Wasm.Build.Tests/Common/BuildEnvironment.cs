@@ -176,7 +176,7 @@ namespace Wasm.Build.Tests
         public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
         public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
-            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.js"));
+            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.mjs"));
 
         public static string WasmOverridePacksTargetsPath = Path.Combine(TestDataPath, "WasmOverridePacks.targets");
 

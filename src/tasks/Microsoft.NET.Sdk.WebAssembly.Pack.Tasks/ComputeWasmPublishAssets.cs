@@ -214,17 +214,19 @@ public class ComputeWasmPublishAssets : Task
 
             if (isDotNetJs)
             {
+                var extension = ".js";
                 var baseName = Path.GetFileNameWithoutExtension(key);
-                if (baseName.StartsWith("dotnet.native.worker"))
+                if (baseName.StartsWith("dotnet.native.worker")) {
                     baseName = "dotnet.native.worker";
-                else if (baseName.StartsWith("dotnet.native"))
+                    extension = ".mjs";
+                } else if (baseName.StartsWith("dotnet.native"))
                     baseName = "dotnet.native";
                 else if (baseName.StartsWith("dotnet.runtime"))
                     baseName = "dotnet.runtime";
                 else if (baseName.StartsWith("dotnet"))
                     baseName = "dotnet";
 
-                var aotDotNetJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == $"{baseName}.js");
+                var aotDotNetJs = WasmAotAssets.SingleOrDefault(a => $"{a.GetMetadata("FileName")}{a.GetMetadata("Extension")}" == $"{baseName}{extension}");
                 ITaskItem newDotNetJs = null;
                 if (aotDotNetJs != null)
                 {
@@ -248,7 +250,7 @@ public class ComputeWasmPublishAssets : Task
                 }
 
                 nativeStaticWebAssets.Add(newDotNetJs);
-                if (resolvedNativeAssetToPublish.TryGetValue($"{baseName}.js", out var resolved))
+                if (resolvedNativeAssetToPublish.TryGetValue($"{baseName}{extension}", out var resolved))
                 {
                     filesToRemove.Add(resolved);
                 }
@@ -316,7 +318,7 @@ public class ComputeWasmPublishAssets : Task
         static bool IsAnyDotNetJs(string key)
         {
             var fileName = Path.GetFileName(key);
-            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && fileName.EndsWith(".js", StringComparison.Ordinal);
+            return fileName.StartsWith("dotnet.", StringComparison.Ordinal) && (fileName.EndsWith(".js", StringComparison.Ordinal) || fileName.EndsWith(".mjs", StringComparison.Ordinal));
         }
 
         static bool IsDotNetWasm(string key)

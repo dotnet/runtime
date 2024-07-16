@@ -6,6 +6,28 @@
 #ifndef _METHOD_INL_
 #define _METHOD_INL_
 
+inline bool MethodDesc::IsEligibleForTieredCompilation()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+#ifdef FEATURE_TIERED_COMPILATION
+    _ASSERTE(GetMethodDescChunk()->DeterminedIfMethodsAreEligibleForTieredCompilation());
+#endif
+    return IsEligibleForTieredCompilation_NoCheckMethodDescChunk();
+}
+
+inline bool MethodDesc::IsEligibleForTieredCompilation_NoCheckMethodDescChunk()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Just like above, but without the assert. This is used in the path which initializes the flag.
+#ifdef FEATURE_TIERED_COMPILATION
+    return (VolatileLoadWithoutBarrier(&m_wFlags3AndTokenRemainder) & enum_flag3_IsEligibleForTieredCompilation) != 0;
+#else
+    return false;
+#endif
+}
+
 inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 {
     WRAPPER_NO_CONTRACT;

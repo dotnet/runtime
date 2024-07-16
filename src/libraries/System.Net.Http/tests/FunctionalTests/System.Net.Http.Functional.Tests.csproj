@@ -79,6 +79,8 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\ActivityRecorder.cs"
+             Link="Common\System\Net\ActivityRecorder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
              Link="Common\System\Net\EventSourceTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs"

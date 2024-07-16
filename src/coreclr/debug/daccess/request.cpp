@@ -214,11 +214,15 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
 
         if (retval)
         {
-            MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
-
-            if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+            PCODE tempEntryPoint = pMD->GetTemporaryEntryPointIfExists();
+            if (tempEntryPoint != (PCODE)NULL)
             {
-                retval = FALSE;
+                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(tempEntryPoint, TRUE);
+
+                if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+                {
+                    retval = FALSE;
+                }
             }
         }
 
@@ -419,7 +423,11 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     else if (slot < mTable->GetNumVtableSlots())
     {
         // Now get the slot:
-        *value = mTable->GetRestoredSlot(slot);
+        *value = mTable->GetSlot(slot);
+        if (*value == 0)
+        {
+            hr = S_FALSE;
+        }
     }
     else
     {
@@ -430,8 +438,16 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
             MethodDesc * pMD = it.GetMethodDesc();
             if (pMD->GetSlot() == slot)
             {
-                *value = pMD->GetMethodEntryPoint();
-                hr = S_OK;
+                *value = pMD->GetMethodEntryPointIfExists();
+                if (*value == 0)
+                {
+                    hr = S_FALSE;
+                }
+                else
+                {
+                    hr = S_OK;
+                }
+                break;
             }
         }
     }
@@ -440,6 +456,89 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     return hr;
 }
 
+HRESULT
+ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator)
+{
+    if (mt == 0 || enumerator == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(mt));
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
+        *enumerator = methodTableSlotEnumerator;
+        if (*enumerator == NULL)
+        {
+            hr = E_OUTOFMEMORY;
+        }
+        else
+        {
+            hr = methodTableSlotEnumerator->Init(mTable);
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
+{
+    unsigned int slot = 0;
+
+    WORD numVtableSlots = mTable->GetNumVtableSlots();
+    while (slot < numVtableSlots)
+    {
+        MethodDesc* pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        SOSMethodData methodData = {0};
+        methodData.MethodDesc = HOST_CDADDR(pMD);
+        methodData.Entrypoint = mTable->GetSlot(slot);
+        methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+        methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+        methodData.Token = pMD->GetMemberDef();
+
+        methodData.Slot = slot++;
+
+        if (!mMethods.Add(methodData))
+            return E_OUTOFMEMORY;
+    }
+
+    MethodTable::IntroducedMethodIterator it(mTable);
+    for (; it.IsValid(); it.Next())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        WORD slot = pMD->GetSlot();
+        if (slot >= numVtableSlots)
+        {
+            SOSMethodData methodData = {0};
+            methodData.MethodDesc = HOST_CDADDR(pMD);
+            methodData.Entrypoint = pMD->GetMethodEntryPointIfExists();
+            methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+            methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+            methodData.Token = pMD->GetMemberDef();
+
+            if (slot == MethodTable::NO_SLOT)
+            {
+                methodData.Slot = 0xFFFFFFFF;
+            }
+            else
+            {
+                methodData.Slot = slot;
+            }
+
+            if (!mMethods.Add(methodData))
+                return E_OUTOFMEMORY;
+        }
+    }
+
+    return S_OK;
+}
 
 HRESULT
 ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, struct DacpJitCodeHeapInfo codeHeaps[], unsigned int *pNeeded)
@@ -1706,13 +1805,62 @@ ClrDataAccess::GetModule(CLRDATA_ADDRESS addr, IXCLRDataModule **mod)
 }
 
 HRESULT
-ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
+ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData* moduleData)
 {
-    if (addr == 0 || ModuleData == NULL)
+    if (addr == 0 || moduleData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetModuleData(addr, moduleData);
+        if (FAILED(hr))
+        {
+            hr = GetModuleDataImpl(addr, moduleData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpModuleData moduleDataLocal;
+            HRESULT hrLocal = GetModuleDataImpl(addr, &moduleDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(moduleData->Address == moduleDataLocal.Address);
+            _ASSERTE(moduleData->PEAssembly == moduleDataLocal.PEAssembly);
+            _ASSERTE(moduleData->ilBase == moduleDataLocal.ilBase);
+            _ASSERTE(moduleData->metadataStart == moduleDataLocal.metadataStart);
+            _ASSERTE(moduleData->metadataSize == moduleDataLocal.metadataSize);
+            _ASSERTE(moduleData->Assembly == moduleDataLocal.Assembly);
+            _ASSERTE(moduleData->bIsReflection == moduleDataLocal.bIsReflection);
+            _ASSERTE(moduleData->bIsPEFile == moduleDataLocal.bIsPEFile);
+            _ASSERTE(moduleData->dwBaseClassIndex == moduleDataLocal.dwBaseClassIndex);
+            _ASSERTE(moduleData->dwModuleID == moduleDataLocal.dwModuleID);
+            _ASSERTE(moduleData->dwTransientFlags == moduleDataLocal.dwTransientFlags);
+            _ASSERTE(moduleData->TypeDefToMethodTableMap == moduleDataLocal.TypeDefToMethodTableMap);
+            _ASSERTE(moduleData->TypeRefToMethodTableMap == moduleDataLocal.TypeRefToMethodTableMap);
+            _ASSERTE(moduleData->MethodDefToDescMap == moduleDataLocal.MethodDefToDescMap);
+            _ASSERTE(moduleData->FieldDefToDescMap == moduleDataLocal.FieldDefToDescMap);
+            _ASSERTE(moduleData->MemberRefToDescMap == moduleDataLocal.MemberRefToDescMap);
+            _ASSERTE(moduleData->FileReferencesMap == moduleDataLocal.FileReferencesMap);
+            _ASSERTE(moduleData->ManifestModuleReferencesMap == moduleDataLocal.ManifestModuleReferencesMap);
+            _ASSERTE(moduleData->LoaderAllocator == moduleDataLocal.LoaderAllocator);
+            _ASSERTE(moduleData->ThunkHeap == moduleDataLocal.ThunkHeap);
+            _ASSERTE(moduleData->dwModuleIndex == moduleDataLocal.dwModuleIndex);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetModuleDataImpl(addr, moduleData);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetModuleDataImpl(CLRDATA_ADDRESS addr, struct DacpModuleData *ModuleData)
+{
     Module* pModule = PTR_Module(TO_TADDR(addr));
 
     ZeroMemory(ModuleData,sizeof(DacpModuleData));
@@ -1721,7 +1869,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     COUNT_T metadataSize = 0;
     if (!pModule->IsReflectionEmit())
     {
-        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedLayout()->GetBase()));
+        ModuleData->ilBase = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
     }
 
     ModuleData->metadataStart = (CLRDATA_ADDRESS)dac_cast<TADDR>(pModule->GetPEAssembly()->GetLoadedMetadata(&metadataSize));
@@ -1754,8 +1902,7 @@ ClrDataAccess::GetModuleData(CLRDATA_ADDRESS addr, struct DacpModuleData *Module
     }
     EX_END_CATCH(SwallowAllExceptions)
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT
@@ -2232,12 +2379,11 @@ ClrDataAccess::GetPEFileBase(CLRDATA_ADDRESS moduleAddr, CLRDATA_ADDRESS *base)
     SOSDacEnter();
 
     PTR_Module pModule = PTR_Module(TO_TADDR(moduleAddr));
-    PEAssembly* pPEAssembly = pModule->GetPEAssembly();
 
     // More fields later?
-    if (!pPEAssembly->IsReflectionEmit())
+    if (!pModule->IsReflectionEmit())
     {
-        *base = TO_CDADDR(dac_cast<TADDR>(pPEAssembly->GetLoadedLayout()->GetBase()));
+        *base = TO_CDADDR(dac_cast<TADDR>(pModule->m_baseAddress));
     }
     else
     {
@@ -4600,8 +4746,42 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
 
     SOSDacEnter();
 
-    PTR_ExceptionObject pObj = dac_cast<PTR_ExceptionObject>(TO_TADDR(objAddr));
+    if (m_cdacSos2 != NULL)
+    {
+        hr = m_cdacSos2->GetObjectExceptionData(objAddr, data);
+        if (FAILED(hr))
+        {
+            hr = GetObjectExceptionDataImpl(objAddr, data);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpExceptionObjectData dataLocal;
+            HRESULT hrLocal = GetObjectExceptionDataImpl(objAddr, &dataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(data->Message == dataLocal.Message);
+            _ASSERTE(data->InnerException == dataLocal.InnerException);
+            _ASSERTE(data->StackTrace == dataLocal.StackTrace);
+            _ASSERTE(data->WatsonBuckets == dataLocal.WatsonBuckets);
+            _ASSERTE(data->StackTraceString == dataLocal.StackTraceString);
+            _ASSERTE(data->RemoteStackTraceString == dataLocal.RemoteStackTraceString);
+            _ASSERTE(data->HResult == dataLocal.HResult);
+            _ASSERTE(data->XCode == dataLocal.XCode);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetObjectExceptionDataImpl(objAddr, data);
+    }
 
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data)
+{
+    PTR_ExceptionObject pObj = dac_cast<PTR_ExceptionObject>(TO_TADDR(objAddr));
     data->Message         = TO_CDADDR(dac_cast<TADDR>(pObj->GetMessage()));
     data->InnerException  = TO_CDADDR(dac_cast<TADDR>(pObj->GetInnerException()));
     data->StackTrace      = TO_CDADDR(dac_cast<TADDR>(pObj->GetStackTraceArrayObject()));
@@ -4610,10 +4790,7 @@ HRESULT ClrDataAccess::GetObjectExceptionData(CLRDATA_ADDRESS objAddr, struct Da
     data->RemoteStackTraceString = TO_CDADDR(dac_cast<TADDR>(pObj->GetRemoteStackTraceString()));
     data->HResult         = pObj->GetHResult();
     data->XCode           = pObj->GetXCode();
-
-    SOSDacLeave();
-
-    return hr;
+    return S_OK;
 }
 
 HRESULT ClrDataAccess::IsRCWDCOMProxy(CLRDATA_ADDRESS rcwAddr, BOOL* isDCOMProxy)
