@@ -58,11 +58,12 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
 
-            // This handle is meant for ECOpenSsl which will take ownership of this handle and will dispose it.
-            SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
+            using (SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle))
+            {
+                // CreateEvpPkeyFromEcKey already uprefs so nothing else to do
+                _key = new Lazy<SafeEvpPKeyHandle>(Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle));
+            }
 
-            // CreateEvpPkeyFromEcKey already uprefs so nothing else to do
-            _key = new Lazy<SafeEvpPKeyHandle>(Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle));
             ForceSetKeySize(_key.Value.GetKeySizeBits());
         }
 

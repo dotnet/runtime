@@ -90,7 +90,7 @@ namespace System.Security.Cryptography
 
             bool thisIsNamed;
 
-            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
             {
                 thisIsNamed = Interop.Crypto.EcKeyHasCurveName(ecKey);
             }
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
 
             // The only case when we will not directly use our key is when peer key is an explicit curve
             // but we're using named in which case we'll recreate our key with explicit parameters.
-            SafeEvpPKeyHandle ourKey = _key;
+            SafeEvpPKeyHandle ourKey = _key.Value;
             bool disposeOurKey = false;
 
             SafeEvpPKeyHandle? theirKey = null;

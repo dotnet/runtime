@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class ECDiffieHellmanOpenSsl : ECDiffieHellman
     {
-        private SafeEvpPKeyHandle _key;
+        private Lazy<SafeEvpPKeyHandle>? _key;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
         public ECDiffieHellmanOpenSsl(ECCurve curve)
         {
             ThrowIfNotSupported();
-            _key = SafeEvpPKeyHandle.GenerateECKey(curve, out int keySize);
+            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(curve, out int keySize));
             KeySizeValue = keySize;
         }
 
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
             base.KeySize = keySize;
-            _key = SafeEvpPKeyHandle.GenerateECKey(keySize);
+            _key = new Lazy<SafeEvpPKeyHandle>(() => SafeEvpPKeyHandle.GenerateECKey(keySize));
         }
 
         public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
@@ -51,8 +51,8 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                _key?.Dispose();
-                _key = null!;
+                FreeKey();
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -75,8 +75,8 @@ namespace System.Security.Cryptography
                 base.KeySize = value;
 
                 ThrowIfDisposed();
-                _key.Dispose();
-                _key = SafeEvpPKeyHandle.GenerateECKey(value);
+                FreeKey();
+                _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(value));
             }
         }
 
@@ -84,8 +84,8 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            _key.Dispose();
-            _key = SafeEvpPKeyHandle.GenerateECKey(curve, out int keySizeValue);
+            FreeKey();
+            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(curve, out int keySizeValue));
             KeySizeValue = keySizeValue;
         }
 
@@ -94,15 +94,17 @@ namespace System.Security.Cryptography
             get
             {
                 ThrowIfDisposed();
-                return new ECDiffieHellmanOpenSslPublicKey(_key);
+
+                // This may generate the key
+                return new ECDiffieHellmanOpenSslPublicKey(_key.Value);
             }
         }
 
         public override void ImportParameters(ECParameters parameters)
         {
             ThrowIfDisposed();
-            _key.Dispose();
-            _key = SafeEvpPKeyHandle.GenerateECKey(parameters, out int keySize);
+            FreeKey();
+            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(parameters, out int keySize));
             KeySizeValue = keySize;
         }
 
@@ -110,7 +112,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
             {
                 return ECOpenSsl.ExportExplicitParameters(ecKey, includePrivateParameters);
             }
@@ -120,7 +122,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
 
-            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key.Value))
             {
                 return ECOpenSsl.ExportParameters(ecKey, includePrivateParameters);
             }
@@ -142,6 +144,15 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+        }
+
+        private void FreeKey()
+        {
+            if (_key != null && _key.IsValueCreated)
+            {
+                SafeEvpPKeyHandle handle = _key.Value;
+                handle?.Dispose();
+            }
         }
 
         [MemberNotNull(nameof(_key))]

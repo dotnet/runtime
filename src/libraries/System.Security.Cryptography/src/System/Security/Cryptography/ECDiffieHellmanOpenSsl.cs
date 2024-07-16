@@ -31,8 +31,8 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
 
-            _key = pkeyHandle.DuplicateHandle();
-            KeySizeValue = _key.GetKeySizeBits();
+            _key = new Lazy<SafeEvpPKeyHandle>(pkeyHandle.DuplicateHandle());
+            KeySizeValue = _key.Value.GetKeySizeBits();
         }
 
         /// <summary>
@@ -57,9 +57,13 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
 
-            SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
-            _key = Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle);
-            KeySizeValue = _key.GetKeySizeBits();
+            using (SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle))
+            {
+                // CreateEvpPkeyFromEcKey already uprefs so nothing else to do
+                _key = new Lazy<SafeEvpPKeyHandle>(Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle));
+            }
+
+            KeySizeValue = _key.Value.GetKeySizeBits();
         }
 
         /// <summary>
@@ -69,7 +73,8 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the EVP_PKEY key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            return _key.DuplicateHandle();
+            ThrowIfDisposed();
+            return _key.Value.DuplicateHandle();
         }
 
         static partial void ThrowIfNotSupported()
