@@ -681,7 +681,7 @@ namespace System
             {
                 ReadOnlySpan<byte> bell = "\u0007"u8; // Windows doesn't use terminfo, so the codepoint is hardcoded.
                 int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
-                if (Interop.Errors.ERROR_SUCCESS == errorCode)
+                if (errorCode == Interop.Errors.ERROR_SUCCESS)
                 {
                     return;
                 }
