@@ -15,6 +15,7 @@ pr:
     - src/coreclr/jit/emitarm64sve.cpp
     - src/coreclr/jit/emitfmtsarm64sve.h
     - src/coreclr/jit/lsraarm64.cpp
+    - src/coreclr/jit/gentree.cpp
 
 schedules:
 - cron: "30 19 * * 6"
