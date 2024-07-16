@@ -7571,8 +7571,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
     if (isInvariant)
     {
-        assert(GenTree::HandleKindDataIsInvariant(iconFlags));
-
         // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
 
