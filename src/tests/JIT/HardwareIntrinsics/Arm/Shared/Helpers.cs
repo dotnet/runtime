@@ -5234,6 +5234,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
+        public static float[] MultiplyAddRotateComplex(float[] op1, float[] op2, float[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (float ans1, float ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[i])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
+                    _ => (0.0f, 0.0f)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static float MultiplyExtended(float op1, float op2)
         {
             bool inf1 = float.IsInfinity(op1);
@@ -5410,6 +5432,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double MinNumberPairwise(double[] op1, int i) => Pairwise(MinNumber, op1, i);
 
         public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
+
+        public static double[] MultiplyAddRotateComplex(double[] op1, double[] op2, double[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (double ans1, double ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[i])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
+                    _ => (0.0, 0.0)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
 
         public static double MultiplyExtended(double op1, double op2)
         {
@@ -6084,6 +6128,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static float[] AddRotateComplex(float[] op1, float[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
+                }
+                else
+                {
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
+                }
+            }
+
+            return op1;
+        }
+
         public static float Max(float op1, float op2) => Math.Max(op1, op2);
 
         public static float MaxPairwise(float[] op1, int i) => Pairwise(Max, op1, i);
@@ -6133,6 +6199,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
 
         public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static double[] AddRotateComplex(double[] op1, double[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
+                }
+                else
+                {
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
+                }
+            }
+
+            return op1;
+        }
 
         public static double Max(double op1, double op2) => Math.Max(op1, op2);
 

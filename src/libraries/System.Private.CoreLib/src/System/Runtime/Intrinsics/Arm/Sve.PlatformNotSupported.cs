@@ -347,6 +347,26 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) { throw new PlatformNotSupportedException(); }
 
+        ///  Complex add with rotate
+
+        /// <summary>
+        /// svfloat64_t svcadd[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D, #imm_rotation
+        /// svfloat64_t svcadd[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D, #imm_rotation
+        /// svfloat64_t svcadd[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<double> AddRotateComplex(Vector<double> left, Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svcadd[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S, #imm_rotation
+        /// svfloat32_t svcadd[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S, #imm_rotation
+        /// svfloat32_t svcadd[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<float> AddRotateComplex(Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) { throw new PlatformNotSupportedException(); }
+
         ///  AddSaturate : Saturating add
 
         /// <summary>
@@ -5716,6 +5736,26 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MLA Ztied1.D, Pg/M, Zop2.D, Zop3.D
         /// </summary>
         public static unsafe Vector<ulong> MultiplyAdd(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+
+        ///  Complex multiply-add with rotate
+
+        /// <summary>
+        /// svfloat64_t svcmla[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.D, Pg/M, Zop2.D, Zop3.D, #imm_rotation
+        /// svfloat64_t svcmla[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.D, Pg/M, Zop2.D, Zop3.D, #imm_rotation
+        /// svfloat64_t svcmla[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<double> MultiplyAddRotateComplex(Vector<double> addend, Vector<double> left, Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svcmla[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.S, Pg/M, Zop2.S, Zop3.S, #imm_rotation
+        /// svfloat32_t svcmla[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.S, Pg/M, Zop2.S, Zop3.S, #imm_rotation
+        /// svfloat32_t svcmla[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<float> MultiplyAddRotateComplex(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
 
         ///  MultiplyBySelectedScalar : Multiply
 
