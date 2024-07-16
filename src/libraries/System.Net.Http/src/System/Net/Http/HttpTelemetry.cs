@@ -43,10 +43,7 @@ namespace System.Net.Http
                 int queryIndex = pathAndQuery.IndexOf('?');
                 if (queryIndex >= 0)
                 {
-                    using ValueStringBuilder str = queryIndex < 254 ? new ValueStringBuilder(stackalloc char[queryIndex + 2]) : new ValueStringBuilder(queryIndex + 2);
-                    str.Append(pathAndQuery.AsSpan(0, queryIndex + 1));
-                    str.Append('*');
-                    pathAndQuery = str.ToString();
+                    pathAndQuery = $"{pathAndQuery.AsSpan(0, queryIndex + 1)}*";
                 }
             }
             WriteEvent(eventId: 1, scheme, host, port, pathAndQuery, versionMajor, versionMinor, versionPolicy);
