@@ -32,25 +32,23 @@ namespace System
             return version.Major == 6 && version.Minor == 1;
         }
 
-        private static bool UseFileAPIs(bool isRedirected) => isRedirected || Console.InputEncoding.CodePage != UnicodeCodePage;
-
         public static Stream OpenStandardInput() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE,
                 FileAccess.Read,
-                useFileAPIs: UseFileAPIs(Console.IsInputRedirected));
+                useFileAPIs: Console.InputEncoding.CodePage != UnicodeCodePage || Console.IsInputRedirected);
 
         public static Stream OpenStandardOutput() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: UseFileAPIs(Console.IsOutputRedirected));
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsOutputRedirected);
 
         public static Stream OpenStandardError() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: UseFileAPIs(Console.IsErrorRedirected));
+                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsErrorRedirected);
 
         private static IntPtr InputHandle =>
             Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
@@ -682,7 +680,7 @@ namespace System
             if (!Console.IsOutputRedirected)
             {
                 ReadOnlySpan<byte> bell = "\u0007"u8; // Windows doesn't use terminfo, so the codepoint is hardcoded.
-                int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, UseFileAPIs(isRedirected: false));
+                int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
                 if (Interop.Errors.ERROR_SUCCESS == errorCode)
                 {
                     return;
