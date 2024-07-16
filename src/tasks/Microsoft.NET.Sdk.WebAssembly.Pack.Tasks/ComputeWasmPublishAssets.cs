@@ -364,6 +364,8 @@ public class ComputeWasmPublishAssets : Task
         var updateMap = new Dictionary<string, ITaskItem>();
         var existingToRemove = new Dictionary<string, ITaskItem>();
 
+        var mappedFingerprintedAssets = new Dictionary<string, string>();
+
         foreach (var kvp in symbolAssets)
         {
             var asset = kvp.Value;
@@ -373,8 +375,10 @@ public class ComputeWasmPublishAssets : Task
                 {
                     // This is a symbol asset like classlibrary.pdb or similar that was not filtered and that needs to be updated
                     // to a publish asset.
-                    var newAsset = new TaskItem(asset);
-                    ApplyPublishProperties(newAsset);
+                    var newAsset = CreatePromotedAsset(asset);
+                    if (newAsset.ItemSpec != asset.ItemSpec)
+                        mappedFingerprintedAssets[asset.ItemSpec] = newAsset.ItemSpec;
+
                     symbolStaticWebAssets.Add(newAsset);
                     updateMap.Add(newAsset.ItemSpec, newAsset);
                     filesToRemove.Add(existing);
@@ -398,11 +402,19 @@ public class ComputeWasmPublishAssets : Task
         }
 
         var compressedFiles = ProcessCompressedAssets(compressedRepresentations, symbolAssets, updateMap, existingToRemove);
-
-        foreach (var file in compressedFiles)
+        foreach (var f in compressedFiles)
         {
-            promotedAssets.Add(file);
-            symbolStaticWebAssets.Add(file);
+            var compressed = f;
+            if (mappedFingerprintedAssets.TryGetValue(compressed.GetMetadata("RelatedAsset"), out var fingerprintedAsset))
+            {
+                Log.LogMessage(MessageImportance.Low, "Changing related asset for compressed asset '{0}' to '{1}'.", compressed.ItemSpec, fingerprintedAsset);
+
+                compressed = new TaskItem(compressed);
+                compressed.SetMetadata("RelatedAsset", fingerprintedAsset);
+            }
+
+            promotedAssets.Add(compressed);
+            symbolStaticWebAssets.Add(compressed);
         }
     }
 
