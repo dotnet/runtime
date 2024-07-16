@@ -14,10 +14,10 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
-function countChars(stringArr) {
-    testOutput(`JS received array: ${JSON.stringify(stringArr)}`);
-    let totalLength = stringArr.reduce((sum, currentString) => sum + currentString.length, 0);
-    return totalLength;
+function countChars(str) {
+    const length = str.length;
+    testOutput(`JS received str of ${length} length`);
+    return length;
 }
 
 // Prepare base runtime parameters
