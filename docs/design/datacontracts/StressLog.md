@@ -225,6 +225,15 @@ IEnumerable<StressMsgData> GetStressMessages(ThreadStressLog threadLog, uint for
 }
 ```
 
+A StressLog message, represented by a `StressMsgData` struct, can be formatted as though the null-terminated UTF-8 string located at `FormatString` is a `printf`-style format string, with all arguments located at `Args`. Additionally, the following special format specifiers are supported:
+
+| Format Specifier | Argument Type | Description |
+| --- | --- | --- |
+| `%pT` | pointer | A `MethodTableHandle` |
+| `%pM` | pointer | A `MethodDesc` |
+| `%pV` | pointer | A pointer to a virtual method table in the image. |
+| `%pK` | pointer | A pointer to an offset from a symbol in the image, generally representing an IP in a stack trace. |
+
 ## Version 0
 
 Data descriptors used:
