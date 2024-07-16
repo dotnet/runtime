@@ -644,7 +644,6 @@ namespace System.Net
 
         private static void SetProtocols(SafeSslHandle sslContext, SslProtocols protocols)
         {
-            Console.WriteLine("SetProtocols called for {0}", protocols);
             (SslProtocols minProtocolId, SslProtocols maxProtocolId) = GetMinMaxProtocols(protocols);
             // Set the min and max.
             Interop.AppleCrypto.SslSetMinProtocolVersion(sslContext, minProtocolId);
