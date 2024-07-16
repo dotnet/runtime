@@ -677,6 +677,25 @@ namespace System
 
         public static void Beep()
         {
+            const char BellCharacter = '\u0007'; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+
+            if (!Console.IsOutputRedirected)
+            {
+                Console.Out.Write(BellCharacter);
+                return;
+            }
+
+            if (!Console.IsErrorRedirected)
+            {
+                Console.Error.Write(BellCharacter);
+                return;
+            }
+
+            BeepFallback();
+        }
+
+        private static void BeepFallback()
+        {
             const int BeepFrequencyInHz = 800;
             const int BeepDurationInMs = 200;
             Interop.Kernel32.Beep(BeepFrequencyInHz, BeepDurationInMs);
@@ -1227,7 +1246,7 @@ namespace System
 
                         // If the code page could be Unicode, we should use ReadConsole instead, e.g.
                         // Note that WriteConsoleW has a max limit on num of chars to write (64K)
-                        // [https://docs.microsoft.com/en-us/windows/console/writeconsole]
+                        // [https://learn.microsoft.com/windows/console/writeconsole]
                         // However, we do not need to worry about that because the StreamWriter in Console has
                         // a much shorter buffer size anyway.
                         int charsWritten;

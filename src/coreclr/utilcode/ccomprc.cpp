@@ -512,7 +512,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
         // Now that we have the proper dll handle, load the string
         _ASSERTE(hInst != NULL);
 
-        length = ::WszLoadString(hInst, iResourceID, szBuffer, iMax);
+        length = ::LoadString(hInst, iResourceID, szBuffer, iMax);
         if(length > 0)
         {
             if(pcwchUsed)

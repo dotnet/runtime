@@ -393,6 +393,18 @@ namespace System.Diagnostics
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity)obj), activity);
             }
         }
+
+        internal void NotifyActivityAddException(Activity activity, Exception exception, ref TagList tags)
+        {
+            Debug.Assert(activity != null);
+
+            // _listeners can get assigned to null in Dispose.
+            SynchronizedList<ActivityListener>? listeners = _listeners;
+            if (listeners != null && listeners.Count > 0)
+            {
+                listeners.EnumWithExceptionNotification(activity, exception, ref tags);
+            }
+        }
     }
 
     // SynchronizedList<T> is a helper collection which ensure thread safety on the collection
@@ -498,5 +510,36 @@ namespace System.Diagnostics
             }
         }
 
+        public void EnumWithExceptionNotification(Activity activity, Exception exception, ref TagList tags)
+        {
+            if (typeof(T) != typeof(ActivityListener))
+            {
+                return;
+            }
+
+            uint version = _version;
+            int index = 0;
+
+            while (index < _list.Count)
+            {
+                T item;
+                lock (_list)
+                {
+                    if (version != _version)
+                    {
+                        version = _version;
+                        index = 0;
+                        continue;
+                    }
+
+                    item = _list[index];
+                    index++;
+                }
+
+                // Important to notify outside the lock.
+                // This is the whole point we are having this wrapper class.
+                (item as ActivityListener)!.ExceptionRecorder?.Invoke(activity, exception, ref tags);
+            }
+        }
     }
 }

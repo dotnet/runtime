@@ -338,7 +338,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
+        /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
         /// This is the preferred way of generating a manifest to be embedded in the ETW stream as it is fast and
         /// the fact that it only includes localized entries for the current UI culture is an acceptable tradeoff.
         /// </summary>
@@ -359,7 +359,7 @@ namespace System.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
+        /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
         /// Pass EventManifestOptions.AllCultures when generating a manifest to be registered on the machine. This
         /// ensures that the entries in the event log will be "optimally" localized.
         /// </summary>
@@ -5158,8 +5158,11 @@ namespace System.Diagnostics.Tracing
             if (dllName != null)
                 sb.Append($" resourceFileName=\"{dllName}\" messageFileName=\"{dllName}\"");
 
-            string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
-            sb.AppendLine($" symbol=\"{symbolsName}\">");
+            sb.Append(" symbol=\"");
+            int pos = sb.Length;
+            sb.Append(providerName); // Period and dash are illegal; replace them.
+            sb.Replace('.', '_', pos, sb.Length - pos).Replace("-", "", pos, sb.Length - pos);
+            sb.AppendLine("\">");
         }
 
         /// <summary>
@@ -5576,7 +5579,7 @@ namespace System.Diagnostics.Tracing
                                 continue;
 
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
+                            ReadOnlySpan<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
 
                             sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
@@ -5623,7 +5626,7 @@ namespace System.Diagnostics.Tracing
                     sb?.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
                     keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
+                    ReadOnlySpan<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
                     sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb?.AppendLine(" </keywords>");

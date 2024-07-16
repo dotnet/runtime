@@ -463,6 +463,13 @@ namespace ILCompiler
                     ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
                 }
 
+                if (!method.IsCanonicalMethod(CanonicalFormKind.Any) && method.IsStaticConstructor)
+                {
+                    // Information about the static constructor prefixes the non-GC static base
+                    dependencies ??= new DependencyList();
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)method.OwningType), "Static constructor is reflection-callable");
+                }
+
                 GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, method.OwningType);
             }
@@ -560,6 +567,15 @@ namespace ILCompiler
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of a
             // RuntimeFieldHandle data structure.
+        }
+
+        public void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
+        {
+            if (target.IsVirtual)
+            {
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.DelegateTargetVirtualMethod(target), "Delegate to a virtual method created");
+            }
         }
 
         /// <summary>
@@ -697,6 +713,11 @@ namespace ILCompiler
                 if (transformed.GetTransformedMethodDefinition(typicalMethod) != null &&
                     ShouldMethodBeInInvokeMap(method) &&
                     (GetMetadataCategory(method) & MetadataCategory.RuntimeMapping) != 0)
+                    continue;
+
+                // If the method will be folded, no need to emit stack trace info for this one
+                ISymbolNode internedBody = factory.ObjectInterner.GetDeduplicatedSymbol(factory, methodBody);
+                if (internedBody != methodBody)
                     continue;
 
                 MethodStackTraceVisibilityFlags stackVisibility = _stackTraceEmissionPolicy.GetMethodVisibility(method);
@@ -1165,7 +1186,7 @@ namespace ILCompiler
             return null;
         }
 
-        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin = null)
         {
         }
     }

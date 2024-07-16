@@ -213,6 +213,7 @@ namespace System.Net.Http.Tests
                 new WarningHeaderValue(1, "h", "\"t\"",
                     new DateTimeOffset(2010, 7, 20, 1, 2, 3, TimeSpan.Zero)));
             CheckValidParse("1 \u4F1A \"t\" ", new WarningHeaderValue(1, "\u4F1A", "\"t\""));
+            CheckValidParse("1 \u2000 \"\"", new WarningHeaderValue(1, "\u2000", "\"\""));
         }
 
         [Fact]

@@ -364,7 +364,7 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags, Mo
 			mono_error_move (bad_image_error, error);
 	}
 
-	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
+	// TODO: Pass remaining flags on to LoadLibraryEx on Windows where appropriate, see https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportsearchpath?view=netcore-3.1
 
 	if (!module && !is_ok (bad_image_error)) {
 		mono_error_cleanup (error);

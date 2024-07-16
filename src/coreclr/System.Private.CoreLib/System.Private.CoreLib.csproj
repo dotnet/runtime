@@ -237,7 +237,9 @@
     <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
       <Link>Common\System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
-    <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />    
+    <Compile Include="src\System\RuntimeType.BoxCache.cs" />
+    <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />
+    <Compile Include="src\System\RuntimeType.GenericCache.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureComWrappers)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComWrappers.cs" />

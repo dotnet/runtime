@@ -101,7 +101,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 {
     if (nameLen)
     {
-        *nameLen = WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+        *nameLen = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
         if (!*nameLen)
         {
             return HRESULT_FROM_GetLastError();
@@ -110,7 +110,7 @@ ConvertUtf8(_In_ LPCUTF8 utf8,
 
     if (buffer && bufLen)
     {
-        if (!WszMultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
+        if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, buffer, bufLen))
         {
             return HRESULT_FROM_GetLastError();
         }
@@ -124,7 +124,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
           ULONG32 srcChars,
           _Outptr_ LPUTF8* utf8)
 {
-    ULONG32 chars = WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    ULONG32 chars = WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                            NULL, 0, NULL, NULL);
     if (!chars)
     {
@@ -146,7 +146,7 @@ AllocUtf8(_In_opt_ LPCWSTR wstr,
         return E_OUTOFMEMORY;
     }
 
-    if (!WszWideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
+    if (!WideCharToMultiByte(CP_UTF8, 0, wstr, srcChars,
                                 mem, chars, NULL, NULL))
     {
         HRESULT hr = HRESULT_FROM_GetLastError();
@@ -3239,6 +3239,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface14*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface15)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface15*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -5512,6 +5516,7 @@ ClrDataAccess::Initialize(void)
                     // Get SOS interfaces from the cDAC if available.
                     IUnknown* unk = m_cdac.SosInterface();
                     (void)unk->QueryInterface(__uuidof(ISOSDacInterface), (void**)&m_cdacSos);
+                    (void)unk->QueryInterface(__uuidof(ISOSDacInterface2), (void**)&m_cdacSos2);
                     (void)unk->QueryInterface(__uuidof(ISOSDacInterface9), (void**)&m_cdacSos9);
                 }
             }
@@ -6033,7 +6038,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
                                   CLRDATA_ADDRESS* codeStart,
                                   ULONG32* codeOffset)
 {
-    _ASSERTE((codeOffset == NULL) || (address != NULL));
+    _ASSERTE((codeOffset == NULL) || (address != (TADDR)NULL));
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
@@ -7913,7 +7918,7 @@ void DacStackReferenceWalker::WalkStack()
     // Setup GCCONTEXT structs for the stackwalk.
     GCCONTEXT gcctx = {0};
     DacScanContext dsc(this, &mList, mResolvePointers);
-    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallback;
+    dsc.pEnumFunc = DacStackReferenceWalker::GCEnumCallbackFunc;
     gcctx.f = DacStackReferenceWalker::GCReportCallback;
     gcctx.sc = &dsc;
 
@@ -7960,7 +7965,7 @@ CLRDATA_ADDRESS DacStackReferenceWalker::ReadPointer(TADDR addr)
 }
 
 
-void DacStackReferenceWalker::GCEnumCallback(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
+void DacStackReferenceWalker::GCEnumCallbackFunc(LPVOID hCallback, OBJECTREF *pObject, uint32_t flags, DacSlotLocation loc)
 {
     GCCONTEXT *gcctx = (GCCONTEXT *)hCallback;
     DacScanContext *dsc = (DacScanContext*)gcctx->sc;
@@ -8340,6 +8345,44 @@ HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[],
     return i < count ? S_FALSE : S_OK;
 }
 
+HRESULT DacMethodTableSlotEnumerator::Skip(unsigned int count)
+{
+    mIteratorIndex += count;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Reset()
+{
+    mIteratorIndex = 0;
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::GetCount(unsigned int* pCount)
+{
+    if (!pCount)
+        return E_POINTER;
+
+    *pCount = mMethods.GetCount();
+    return S_OK;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Next(unsigned int count, SOSMethodData methods[], unsigned int* pFetched)
+{
+    if (!pFetched)
+        return E_POINTER;
+
+    if (!methods)
+        return E_POINTER;
+
+    unsigned int i = 0;
+    while (i < count && mIteratorIndex < mMethods.GetCount())
+    {
+        methods[i++] = mMethods.Get(mIteratorIndex++);
+    }
+
+    *pFetched = i;
+    return i < count ? S_FALSE : S_OK;
+}
 
 HRESULT DacGCBookkeepingEnumerator::Init()
 {

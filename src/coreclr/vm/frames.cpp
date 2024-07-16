@@ -566,7 +566,7 @@ BOOL PrestubMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
         // native code versions, even if they aren't the one that was reported by this trace, see
         // DebuggerController::PatchTrace() under case TRACE_MANAGED. This alleviates the StubManager from having to prevent the
         // race that occurs here.
-        trace->InitForStub(GetFunction()->GetMethodEntryPoint());
+        trace->InitForStub(GetFunction()->GetMethodEntryPointIfExists());
     }
     else
     {
@@ -612,7 +612,7 @@ MethodDesc* StubDispatchFrame::GetFunction()
     {
         if (m_pRepresentativeMT != NULL)
         {
-            pMD = m_pRepresentativeMT->GetMethodDescForSlot(m_representativeSlot);
+            pMD = m_pRepresentativeMT->GetMethodDescForSlot_NoThrow(m_representativeSlot);
 #ifndef DACCESS_COMPILE
             m_pMD = pMD;
 #endif
@@ -1546,7 +1546,7 @@ PInvokeCalliFrame::PInvokeCalliFrame(TransitionBlock * pTransitionBlock, VASigCo
 #ifdef FEATURE_COMINTEROP
 
 #ifndef DACCESS_COMPILE
-ComPlusMethodFrame::ComPlusMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
+CLRToCOMMethodFrame::CLRToCOMMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD)
     : FramedMethodFrame(pTransitionBlock, pMD)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1554,11 +1554,11 @@ ComPlusMethodFrame::ComPlusMethodFrame(TransitionBlock * pTransitionBlock, Metho
 #endif // #ifndef DACCESS_COMPILE
 
 //virtual
-void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
+void CLRToCOMMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
-    // ComPlusMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
+    // CLRToCOMMethodFrame is only used in the event call / late bound call code path where we do not have IL stub
     // so we need to promote the arguments and return value manually.
 
     FramedMethodFrame::GcScanRoots(fn, sc);
@@ -1586,7 +1586,7 @@ void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 
 #if defined (_DEBUG) && !defined (DACCESS_COMPILE)
 // For IsProtectedByGCFrame, we need to know whether a given object ref is protected
-// by a ComPlusMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
+// by a CLRToCOMMethodFrame or a ComMethodFrame. Since GCScanRoots for those frames are
 // quite complicated, we don't want to duplicate their logic so we call GCScanRoots with
 // IsObjRefProtected (a fake promote function) and an extended ScanContext to do the checking.
 
@@ -1911,74 +1911,6 @@ BOOL HelperMethodFrame::InsureInit(bool initialInit,
 }
 
 
-#include "comdelegate.h"
-
-BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
-                                TraceDestination *trace, REGDISPLAY *regs)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!fromPatch);
-
-#ifdef DACCESS_COMPILE
-    return FALSE;
-
-#else // !DACCESS_COMPILE
-    LOG((LF_CORDB,LL_INFO10000, "MulticastFrame::TF FromPatch:0x%x, at 0x%x\n", fromPatch, GetControlPC(regs)));
-
-    // At this point we have no way to recover the Stub object from the control pc.  We can't use the MD stored
-    // in the MulticastFrame because it points to the dummy Invoke() method, not the method we want to call.
-
-    BYTE *pbDel = NULL;
-    int delegateCount = 0;
-
-#if defined(TARGET_X86)
-    // At this point the counter hasn't been incremented yet.
-    delegateCount = *regs->GetEdiLocation() + 1;
-    pbDel = *(BYTE **)( (size_t)*regs->GetEsiLocation() + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());
-#elif defined(TARGET_AMD64)
-    // At this point the counter hasn't been incremented yet.
-    delegateCount = (int)regs->pCurrentContext->Rdi + 1;
-    pbDel = *(BYTE **)( (size_t)(regs->pCurrentContext->Rsi) + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());
-#elif defined(TARGET_ARM)
-    // At this point the counter has not yet been incremented. Counter is in R7, frame pointer in R4.
-    delegateCount = regs->pCurrentContext->R7 + 1;
-    pbDel = *(BYTE **)( (size_t)(regs->pCurrentContext->R4) + GetOffsetOfTransitionBlock() + ArgIterator::GetThisOffset());
-#else
-    delegateCount = 0;
-    PORTABILITY_ASSERT("MulticastFrame::TraceFrame (frames.cpp)");
-#endif
-
-    int totalDelegateCount = (int)*(size_t*)(pbDel + DelegateObject::GetOffsetOfInvocationCount());
-
-    _ASSERTE( COMDelegate::IsTrueMulticastDelegate( ObjectToOBJECTREF((Object*)pbDel) ) );
-
-    if (delegateCount == totalDelegateCount)
-    {
-        LOG((LF_CORDB, LL_INFO1000, "MF::TF: Executed all stubs, should return\n"));
-        // We've executed all the stubs, so we should return
-        return FALSE;
-    }
-    else
-    {
-        // We're going to execute stub delegateCount next, so go and grab it.
-        BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationList());
-
-        pbDel = *(BYTE**)( ((ArrayBase *)pbDelInvocationList)->GetDataPtr() +
-                           ((ArrayBase *)pbDelInvocationList)->GetComponentSize()*delegateCount);
-
-        _ASSERTE(pbDel);
-        return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
-    }
-#endif // !DACCESS_COMPILE
-}
-
 #ifndef DACCESS_COMPILE
 
 VOID InlinedCallFrame::Init()
@@ -2044,7 +1976,7 @@ void FakePromote(PTR_PTR_Object ppObj, ScanContext *pSC, uint32_t dwFlags)
 
     CORCOMPILE_GCREFMAP_TOKENS newToken = (dwFlags & GC_CALL_INTERIOR) ? GCREFMAP_INTERIOR : GCREFMAP_REF;
 
-    _ASSERTE((*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == NULL) || (*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == newToken));
+    _ASSERTE((*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == 0) || (*(CORCOMPILE_GCREFMAP_TOKENS *)ppObj == newToken));
 
     *(CORCOMPILE_GCREFMAP_TOKENS *)ppObj = newToken;
 }

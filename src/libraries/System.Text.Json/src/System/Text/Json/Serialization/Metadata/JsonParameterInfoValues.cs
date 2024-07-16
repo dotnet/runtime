@@ -47,5 +47,11 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public bool IsNullable { get; init; }
+
+        /// <summary>
+        /// Whether the parameter represents a required or init-only member initializer.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public bool IsMemberInitializer { get; init; }
     }
 }

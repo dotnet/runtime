@@ -5,6 +5,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -110,9 +112,9 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                     windowsGraphicalUserInterface: true);
 
                 BitConverter
-                    .ToUInt16(File.ReadAllBytes(destinationFilePath), SubsystemOffset)
-                    .Should()
-                    .Be((ushort)Subsystem.WindowsGui);
+                   .ToUInt16(File.ReadAllBytes(destinationFilePath), SubsystemOffset)
+                   .Should()
+                   .Be((ushort)Subsystem.WindowsGui);
 
                 Assert.Equal((ushort)Subsystem.WindowsGui, PEUtils.GetWindowsGraphicalUserInterfaceBit(destinationFilePath));
             }
@@ -301,6 +303,83 @@ namespace Microsoft.NET.HostModel.AppHost.Tests
                     enableMacOSCodeSign: true));
                 Assert.Contains($"{destinationFilePath}: is already signed", exception.Message);
                 Assert.True(exception.ExitCode == 1, $"AppHostSigningException.ExitCode - expected: 1, actual: '{exception.ExitCode}'");
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]  // Bit is set in extended DLL characteristics
+        [InlineData(false)] // Bit is not set in extended DLL characteristics
+        [InlineData(null)]  // No extended DLL characteristics
+        public void CetCompat(bool? cetCompatSet)
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                // Create a PE image with with CET compatability enabled/disabled
+                BlobBuilder peBlob = Binaries.CetCompat.CreatePEImage(cetCompatSet);
+
+                // Add the placeholder - it just needs to exist somewhere in the image, as HostWriter.CreateAppHost requires it
+                peBlob.WriteBytes(AppBinaryPathPlaceholderSearchValue);
+
+                string source = Path.Combine(artifact.Location, "source.exe");
+                using (FileStream stream = new FileStream(source, FileMode.Create))
+                {
+                    peBlob.WriteContentTo(stream);
+                }
+
+                bool originallyEnabled = cetCompatSet.HasValue ? cetCompatSet.Value : false;
+                Assert.Equal(originallyEnabled, Binaries.CetCompat.IsMarkedCompatible(source));
+
+                // Validate compatibility is disabled
+                string cetDisabled = Path.Combine(artifact.Location, "cetDisabled.exe");
+                HostWriter.CreateAppHost(
+                   source,
+                   cetDisabled,
+                   "app",
+                   disableCetCompat: true);
+                Assert.False(Binaries.CetCompat.IsMarkedCompatible(cetDisabled));
+
+                // Validate compatibility is not changed
+                string cetEnabled = Path.Combine(artifact.Location, "cetUnchanged.exe");
+                HostWriter.CreateAppHost(
+                   source,
+                   cetEnabled,
+                   "app",
+                   disableCetCompat: false);
+                Assert.Equal(originallyEnabled, Binaries.CetCompat.IsMarkedCompatible(cetEnabled));
+            }
+        }
+
+        [ConditionalFact(typeof(Binaries.CetCompat), nameof(Binaries.CetCompat.IsSupported))]
+        public void CetCompat_ProductHosts()
+        {
+            using (TestArtifact artifact = CreateTestDirectory())
+            {
+                string[] hosts = [Binaries.AppHost.FilePath, Binaries.SingleFileHost.FilePath];
+                foreach (string host in hosts)
+                {
+                    // Hosts should be compatible with CET shadow stack by default
+                    Assert.True(Binaries.CetCompat.IsMarkedCompatible(host));
+                    string source = Path.Combine(artifact.Location, Path.GetFileName(host));
+                    File.Copy(host, source);
+
+                    // Validate compatibility is disabled
+                    string cetDisabled = Path.Combine(artifact.Location, $"{Path.GetFileName(host)}_cetDisabled.exe");
+                    HostWriter.CreateAppHost(
+                       source,
+                       cetDisabled,
+                       "app",
+                       disableCetCompat: true);
+                    Assert.False(Binaries.CetCompat.IsMarkedCompatible(cetDisabled));
+
+                    // Validate compatibility is not changed (remains enabled)
+                    string cetEnabled = Path.Combine(artifact.Location, $"{Path.GetFileName(host)}_cetEnabled.exe");
+                    HostWriter.CreateAppHost(
+                       source,
+                       cetEnabled,
+                       "app",
+                       disableCetCompat: false);
+                    Assert.True(Binaries.CetCompat.IsMarkedCompatible(cetEnabled));
+                }
             }
         }
 

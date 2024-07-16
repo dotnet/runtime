@@ -37,6 +37,7 @@ private:
 
     // Intrinsic related transformations
     void RewriteNodeAsCall(GenTree**             use,
+                           CORINFO_SIG_INFO*     sig,
                            ArrayStack<GenTree*>& parents,
                            CORINFO_METHOD_HANDLE callHnd,
 #if defined(FEATURE_READYTORUN)

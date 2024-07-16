@@ -392,7 +392,7 @@ namespace System.Reflection
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         // Copy modified values out. This is only done with ByRef parameters.
-        internal void CopyBack(Span<object?> dest, Span<object?> copyOfParameters, Span<bool> shouldCopyBack)
+        internal void CopyBack(Span<object?> dest, ReadOnlySpan<object?> copyOfParameters, ReadOnlySpan<bool> shouldCopyBack)
         {
             for (int i = 0; i < dest.Length; i++)
             {

@@ -10,6 +10,7 @@
 //
 // Arguments:
 //    use          - A pointer-to-a-pointer for the tree node
+//    sig          - The signature info for callHnd
 //    parents      - A pointer to tree walk data providing the context
 //    callHnd      - The method handle of the call to be generated
 //    entryPoint   - The method entrypoint of the call to be generated
@@ -21,6 +22,7 @@
 //
 
 void Rationalizer::RewriteNodeAsCall(GenTree**             use,
+                                     CORINFO_SIG_INFO*     sig,
                                      ArrayStack<GenTree*>& parents,
                                      CORINFO_METHOD_HANDLE callHnd,
 #if defined(FEATURE_READYTORUN)
@@ -36,25 +38,29 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     BlockRange().Remove(treeFirstNode, tree);
 
     // Create the call node
-    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType);
+    GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->TypeGet());
 
-    CORINFO_SIG_INFO sig;
-    comp->eeGetMethodSig(callHnd, &sig);
-
-    var_types retType = JITtype2varType(sig.retType);
+    assert(sig != nullptr);
+    var_types retType = JITtype2varType(sig->retType);
 
     if (varTypeIsStruct(retType))
     {
-        call->gtRetClsHnd = sig.retTypeClass;
-        retType           = comp->impNormStructType(sig.retTypeClass);
+        call->gtRetClsHnd = sig->retTypeClass;
+        retType           = comp->impNormStructType(sig->retTypeClass);
+
+        if (retType != call->gtType)
+        {
+            assert(varTypeIsSIMD(retType));
+            call->ChangeType(retType);
+        }
 
 #if FEATURE_MULTIREG_RET
-        call->InitializeStructReturnType(comp, sig.retTypeClass, call->GetUnmanagedCallConv());
+        call->InitializeStructReturnType(comp, sig->retTypeClass, call->GetUnmanagedCallConv());
 #endif // FEATURE_MULTIREG_RET
 
         Compiler::structPassingKind howToReturnStruct;
         var_types                   returnType =
-            comp->getReturnTypeForStruct(sig.retTypeClass, call->GetUnmanagedCallConv(), &howToReturnStruct);
+            comp->getReturnTypeForStruct(sig->retTypeClass, call->GetUnmanagedCallConv(), &howToReturnStruct);
 
         if (howToReturnStruct == Compiler::SPK_ByReference)
         {
@@ -63,12 +69,10 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         }
     }
 
-    assert(retType == tree->gtType);
-
-    CORINFO_ARG_LIST_HANDLE sigArg   = sig.args;
+    CORINFO_ARG_LIST_HANDLE sigArg   = sig->args;
     size_t                  firstArg = 0;
 
-    if (sig.hasThis())
+    if (sig->hasThis())
     {
         GenTree*   operand = operands[0];
         NewCallArg arg     = NewCallArg::Primitive(operand).WellKnown(WellKnownArg::ThisPointer);
@@ -84,15 +88,36 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         GenTree* operand = operands[i];
 
         CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
-        CorInfoType          corTyp = strip(comp->info.compCompHnd->getArgType(&sig, sigArg, &clsHnd));
+        CorInfoType          corTyp = strip(comp->info.compCompHnd->getArgType(sig, sigArg, &clsHnd));
         var_types            sigTyp = JITtype2varType(corTyp);
 
         NewCallArg arg;
 
         if (varTypeIsStruct(sigTyp))
         {
+            // GenTreeFieldList should not have been introduced
+            // for intrinsics that get rewritten back to user calls
+            assert(!operand->OperIsFieldList());
+
             sigTyp = comp->impNormStructType(clsHnd);
-            arg    = NewCallArg::Struct(operand, sigTyp, clsHnd);
+
+            if (varTypeIsMask(operand->TypeGet()))
+            {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                // No managed call takes TYP_MASK, so convert it back to a TYP_SIMD
+
+                unsigned    simdSize;
+                CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
+                assert(simdSize != 0);
+
+                GenTree* cvtNode = comp->gtNewSimdCvtMaskToVectorNode(sigTyp, operand, simdBaseJitType, simdSize);
+                BlockRange().InsertAfter(operand, LIR::Range(comp->fgSetTreeSeq(cvtNode), cvtNode));
+                operand = cvtNode;
+#else
+                unreached();
+#endif // FEATURE_HW_INTRINSICS
+            }
+            arg = NewCallArg::Struct(operand, sigTyp, clsHnd);
         }
         else
         {
@@ -116,7 +141,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         assert(call->ShouldHaveRetBufArg());
 
         tmpNum = comp->lvaGrabTemp(true DEBUGARG("return buffer for hwintrinsic"));
-        comp->lvaSetStruct(tmpNum, sig.retTypeClass, false);
+        comp->lvaSetStruct(tmpNum, sig->retTypeClass, false);
 
         GenTree*   destAddr = comp->gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
         NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer);
@@ -134,13 +159,49 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     {
         if (tmpNum != BAD_VAR_NUM)
         {
-            result = comp->gtNewLclvNode(tmpNum, tree->gtType);
+            result = comp->gtNewLclvNode(tmpNum, retType);
+        }
+
+        if (varTypeIsMask(tree->TypeGet()))
+        {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            // No managed call returns TYP_MASK, so convert it from a TYP_SIMD
+
+            unsigned    simdSize;
+            CorInfoType simdBaseJitType = comp->getBaseJitTypeAndSizeOfSIMDType(call->gtRetClsHnd, &simdSize);
+            assert(simdSize != 0);
+
+            result = comp->gtNewSimdCvtVectorToMaskNode(TYP_MASK, result, simdBaseJitType, simdSize);
+
+            if (tmpNum == BAD_VAR_NUM)
+            {
+                // Propagate flags of "call" to its parent.
+                result->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+            }
+#else
+            unreached();
+#endif // FEATURE_HW_INTRINSICS
         }
 
         parents.Top(1)->ReplaceOperand(use, result);
 
         if (tmpNum != BAD_VAR_NUM)
         {
+            // We have a return buffer, so we need to insert both the result and the call
+            // since they are independent trees. If we have a convert node, it will indirectly
+            // insert the local node.
+
+            comp->gtSetEvalOrder(result);
+            BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
+
+            comp->gtSetEvalOrder(call);
+            BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
+        }
+        else
+        {
+            // We don't have a return buffer, so we only need to insert the result, which
+            // will indirectly insert the call in the case we have a convert node as well.
+
             comp->gtSetEvalOrder(result);
             BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
         }
@@ -150,18 +211,20 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
         // If there's no parent, the tree being replaced is the root of the
         // statement (and no special handling is necessary).
         *use = result;
+
+        comp->gtSetEvalOrder(call);
+        BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
     }
 
-    comp->gtSetEvalOrder(call);
-    BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(call), call));
-
-    if (result == call)
+    if (tmpNum == BAD_VAR_NUM)
     {
         // Propagate flags of "call" to its parents.
+        GenTreeFlags callFlags = (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+
         // 0 is current node, so start at 1
         for (int i = 1; i < parents.Height(); i++)
         {
-            parents.Top(i)->gtFlags |= (call->gtFlags & GTF_ALL_EFFECT) | GTF_CALL;
+            parents.Top(i)->gtFlags |= callFlags;
         }
     }
     else
@@ -217,7 +280,12 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
         operandCount++;
     }
 
-    RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
+    CORINFO_METHOD_HANDLE callHnd = intrinsic->gtMethodHandle;
+
+    CORINFO_SIG_INFO sigInfo;
+    comp->eeGetMethodSig(callHnd, &sigInfo);
+
+    RewriteNodeAsCall(use, &sigInfo, parents, callHnd,
 #if defined(FEATURE_READYTORUN)
                       intrinsic->gtEntryPoint,
 #endif // FEATURE_READYTORUN
@@ -235,12 +303,248 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 //    None.
 void Rationalizer::RewriteHWIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents)
 {
-    GenTreeHWIntrinsic* hwintrinsic = (*use)->AsHWIntrinsic();
+    GenTreeHWIntrinsic* hwintrinsic     = (*use)->AsHWIntrinsic();
+    NamedIntrinsic      intrinsicId     = hwintrinsic->GetHWIntrinsicId();
+    CorInfoType         simdBaseJitType = hwintrinsic->GetSimdBaseJitType();
+    var_types           simdBaseType    = hwintrinsic->GetSimdBaseType();
+    uint32_t            simdSize        = hwintrinsic->GetSimdSize();
+    var_types           retType         = hwintrinsic->TypeGet();
 
     GenTree** operands     = hwintrinsic->GetOperandArray();
     size_t    operandCount = hwintrinsic->GetOperandCount();
 
-    RewriteNodeAsCall(use, parents, hwintrinsic->GetMethodHandle(),
+    CORINFO_METHOD_HANDLE callHnd = hwintrinsic->GetMethodHandle();
+
+    CORINFO_SIG_INFO sigInfo;
+    comp->eeGetMethodSig(callHnd, &sigInfo);
+
+    GenTree* result = nullptr;
+
+    switch (intrinsicId)
+    {
+        case NI_Vector128_Shuffle:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_Shuffle:
+        case NI_Vector512_Shuffle:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_Shuffle:
+#endif
+        {
+            assert(operandCount == 2);
+#if defined(TARGET_XARCH)
+            assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+#else
+            assert((simdSize == 8) || (simdSize == 16));
+#endif
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+
+            if (op2->IsCnsVec() && comp->IsValidForShuffle(op2->AsVecCon(), simdSize, simdBaseType))
+            {
+                result = comp->gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize);
+            }
+            break;
+        }
+
+        case NI_Vector128_WithElement:
+#if defined(TARGET_XARCH)
+        case NI_Vector256_WithElement:
+        case NI_Vector512_WithElement:
+#elif defined(TARGET_ARM64)
+        case NI_Vector64_WithElement:
+#endif
+        {
+            assert(operandCount == 3);
+
+            GenTree* op1 = operands[0];
+            GenTree* op2 = operands[1];
+            GenTree* op3 = operands[2];
+
+            if (op2->OperIsConst())
+            {
+                ssize_t imm8  = op2->AsIntCon()->IconValue();
+                ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                if ((imm8 >= count) || (imm8 < 0))
+                {
+                    // Using software fallback if index is out of range (throw exception)
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
+                if (varTypeIsIntegral(simdBaseType))
+                {
+                    if (varTypeIsLong(simdBaseType))
+                    {
+                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41_X64))
+                        {
+                            break;
+                        }
+                    }
+                    else if (!varTypeIsShort(simdBaseType))
+                    {
+                        if (!comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                        {
+                            break;
+                        }
+                    }
+                }
+#endif // TARGET_XARCH
+
+                result = comp->gtNewSimdWithElementNode(retType, op1, op2, op3, simdBaseJitType, simdSize);
+                break;
+            }
+            break;
+        }
+
+        default:
+        {
+            if (sigInfo.numArgs == 0)
+            {
+                break;
+            }
+
+            GenTree* immOp1 = nullptr;
+            GenTree* immOp2 = nullptr;
+
+            int  immLowerBound   = 0;
+            int  immUpperBound   = 0;
+            bool hasFullRangeImm = false;
+            bool mustExpand      = false;
+            bool useFallback     = false;
+
+#if defined(TARGET_XARCH)
+            immOp1 = operands[operandCount - 1];
+
+            if (!HWIntrinsicInfo::isImmOp(intrinsicId, immOp1))
+            {
+                break;
+            }
+
+            immUpperBound   = HWIntrinsicInfo::lookupImmUpperBound(intrinsicId);
+            hasFullRangeImm = HWIntrinsicInfo::HasFullRangeImm(intrinsicId);
+#elif defined(TARGET_ARM64)
+            if (!HWIntrinsicInfo::HasImmediateOperand(intrinsicId))
+            {
+                break;
+            }
+
+            CORINFO_CLASS_HANDLE op1ClsHnd = NO_CLASS_HANDLE;
+            CORINFO_CLASS_HANDLE op2ClsHnd = NO_CLASS_HANDLE;
+            CORINFO_CLASS_HANDLE op3ClsHnd = NO_CLASS_HANDLE;
+
+            size_t argCount = operandCount - (sigInfo.hasThis() ? 1 : 0);
+
+            if (argCount > 0)
+            {
+                CORINFO_ARG_LIST_HANDLE args = sigInfo.args;
+                comp->info.compCompHnd->getArgType(&sigInfo, args, &op1ClsHnd);
+
+                if (argCount > 1)
+                {
+                    args = comp->info.compCompHnd->getArgNext(args);
+                    comp->info.compCompHnd->getArgType(&sigInfo, args, &op2ClsHnd);
+
+                    if (argCount > 2)
+                    {
+                        args = comp->info.compCompHnd->getArgNext(args);
+                        comp->info.compCompHnd->getArgType(&sigInfo, args, &op3ClsHnd);
+                    }
+                }
+            }
+
+            // Position of the immediates from top of stack
+            int imm1Pos = -1;
+            int imm2Pos = -1;
+
+            HWIntrinsicInfo::GetImmOpsPositions(intrinsicId, &sigInfo, &imm1Pos, &imm2Pos);
+
+            if (imm1Pos >= 0)
+            {
+                immOp1 = operands[operandCount - (1 + imm1Pos)];
+                assert(HWIntrinsicInfo::isImmOp(intrinsicId, immOp1));
+            }
+
+            if (imm2Pos >= 0)
+            {
+                immOp2 = operands[operandCount - (1 + imm2Pos)];
+                assert(HWIntrinsicInfo::isImmOp(intrinsicId, immOp2));
+            }
+
+            unsigned  immSimdSize     = simdSize;
+            var_types immSimdBaseType = simdBaseType;
+
+            if (immOp2 != nullptr)
+            {
+                comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 2, simdBaseType, simdBaseJitType, op1ClsHnd,
+                                             op2ClsHnd, op3ClsHnd, &immSimdSize, &immSimdBaseType);
+                HWIntrinsicInfo::lookupImmBounds(intrinsicId, immSimdSize, immSimdBaseType, 2, &immLowerBound,
+                                                 &immUpperBound);
+
+                if (comp->CheckHWIntrinsicImmRange(intrinsicId, simdBaseJitType, immOp2, mustExpand, immLowerBound,
+                                                   immUpperBound, hasFullRangeImm, &useFallback))
+                {
+                    // Set this as nullptr so we stay an intrinsic if both immediates are constant and in range
+                    immOp2 = nullptr;
+                }
+
+                immSimdSize     = simdSize;
+                immSimdBaseType = simdBaseType;
+            }
+
+            comp->getHWIntrinsicImmTypes(intrinsicId, &sigInfo, 1, simdBaseType, simdBaseJitType, op1ClsHnd, op2ClsHnd,
+                                         op3ClsHnd, &immSimdSize, &immSimdBaseType);
+            HWIntrinsicInfo::lookupImmBounds(intrinsicId, immSimdSize, immSimdBaseType, 1, &immLowerBound,
+                                             &immUpperBound);
+#endif
+
+            if ((immOp2 == nullptr) && (immOp1 != nullptr))
+            {
+                if (comp->CheckHWIntrinsicImmRange(intrinsicId, simdBaseJitType, immOp1, mustExpand, immLowerBound,
+                                                   immUpperBound, hasFullRangeImm, &useFallback))
+                {
+                    // We're already in the right shape, so just stop tracking ourselves as a user call
+                    hwintrinsic->gtFlags &= ~GTF_HW_USER_CALL;
+                    return;
+                }
+            }
+            break;
+        }
+    }
+
+    if (result != nullptr)
+    {
+        GenTree* const hwintrinsicFirstNode = comp->fgGetFirstNode(hwintrinsic);
+        GenTree* const insertionPoint       = hwintrinsicFirstNode->gtPrev;
+
+        BlockRange().Remove(hwintrinsicFirstNode, hwintrinsic);
+
+        // Replace "tree" with "call"
+        if (parents.Height() > 1)
+        {
+            parents.Top(1)->ReplaceOperand(use, result);
+        }
+        else
+        {
+            // If there's no parent, the tree being replaced is the root of the
+            // statement (and no special handling is necessary).
+            *use = result;
+        }
+
+        comp->gtSetEvalOrder(result);
+        BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(result), result));
+
+        // Since "hwintrinsic" is replaced with "result", pop "hwintrinsic" node (i.e the current node)
+        // and replace it with "result" on parent stack.
+        assert(parents.Top() == hwintrinsic);
+        (void)parents.Pop();
+        parents.Push(result);
+
+        return;
+    }
+
+    RewriteNodeAsCall(use, &sigInfo, parents, callHnd,
 #if defined(FEATURE_READYTORUN)
                       hwintrinsic->GetEntryPoint(),
 #endif // FEATURE_READYTORUN

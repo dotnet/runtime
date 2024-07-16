@@ -451,11 +451,12 @@ typedef jitstd::list<RefPosition>::reverse_iterator RefPositionReverseIterator;
 class Referenceable
 {
 public:
-    Referenceable()
+    Referenceable(RegisterType _registerType)
     {
         firstRefPosition  = nullptr;
         recentRefPosition = nullptr;
         lastRefPosition   = nullptr;
+        registerType      = _registerType;
     }
 
     // A linked list of RefPositions.  These are only traversed in the forward
@@ -465,6 +466,8 @@ public:
     RefPosition* firstRefPosition;
     RefPosition* recentRefPosition;
     RefPosition* lastRefPosition;
+
+    RegisterType registerType;
 
     // Get the position of the next reference which is at or greater than
     // the current location (relies upon recentRefPosition being updated
@@ -477,12 +480,12 @@ class RegRecord : public Referenceable
 {
 public:
     RegRecord()
+        : Referenceable(IntRegisterType)
     {
         assignedInterval = nullptr;
         previousInterval = nullptr;
         regNum           = REG_NA;
         isCalleeSave     = false;
-        registerType     = IntRegisterType;
     }
 
     void init(regNumber reg)
@@ -505,13 +508,13 @@ public:
         {
             registerType = FloatRegisterType;
         }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         else
         {
             assert(emitter::isMaskReg(reg));
             registerType = MaskRegisterType;
         }
-#endif
+#endif // FEATURE_MASKED_HW_INTRINSICS
         regNum       = reg;
         isCalleeSave = ((RBM_CALLEE_SAVED & genRegMask(reg)) != 0);
     }
@@ -537,7 +540,6 @@ public:
 
     regNumber     regNum;
     bool          isCalleeSave;
-    RegisterType  registerType;
     unsigned char regOrder;
 };
 
@@ -622,7 +624,7 @@ public:
     // This is the main driver
     virtual PhaseStatus doLinearScan();
 
-    static bool isSingleRegister(regMaskTP regMask)
+    static bool isSingleRegister(SingleTypeRegSet regMask)
     {
         return (genExactlyOneBit(regMask));
     }
@@ -1243,18 +1245,19 @@ private:
                                                          unsigned int     registersNeeded);
 #endif // TARGET_ARM64
 
-    SingleTypeRegSet getFreeCandidates(regMaskTP candidates, var_types regType)
+    SingleTypeRegSet getFreeCandidates(SingleTypeRegSet candidates, var_types regType)
     {
-        regMaskTP result = candidates & m_AvailableRegs;
+        SingleTypeRegSet availableRegsForType = m_AvailableRegs.GetRegSetForType(regType);
+        SingleTypeRegSet result               = candidates & availableRegsForType;
 #ifdef TARGET_ARM
         // For TYP_DOUBLE on ARM, we can only use register for which the odd half is
         // also available.
         if (regType == TYP_DOUBLE)
         {
-            result &= (m_AvailableRegs >> 1);
+            result &= (availableRegsForType >> 1);
         }
 #endif // TARGET_ARM
-        return result.GetRegSetForType(regType);
+        return result;
     }
 
 #ifdef DEBUG
@@ -1500,7 +1503,7 @@ private:
     int       lastUsedRegNumIndex;
     bool      shouldDumpReg(regNumber regNum)
     {
-        return (registersToDump & genRegMask(regNum)) != 0;
+        return registersToDump.IsRegNumInMask(regNum);
     }
 
     void dumpRegRecordHeader();
@@ -1723,10 +1726,14 @@ private:
     PhasedVar<SingleTypeRegSet>* availableRegs[TYP_COUNT];
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-#define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
+#ifdef HAS_MORE_THAN_64_REGISTERS
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs, availableMaskRegs)
 #else
-#define allAvailableRegs (availableIntRegs | availableFloatRegs)
-#endif
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs | availableMaskRegs)
+#endif // HAS_MORE_THAN_64_REGISTERS
+#else
+#define allAvailableRegs regMaskTP(availableIntRegs | availableFloatRegs)
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64)
 
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
@@ -1782,30 +1789,6 @@ private:
     //-----------------------------------------------------------------------
 
     regMaskTP m_AvailableRegs;
-    regNumber getRegForType(regNumber reg, var_types regType)
-    {
-#ifdef TARGET_ARM
-        if ((regType == TYP_DOUBLE) && !genIsValidDoubleReg(reg))
-        {
-            reg = REG_PREV(reg);
-        }
-#endif // TARGET_ARM
-        return reg;
-    }
-
-    regMaskTP getRegMask(regNumber reg, var_types regType)
-    {
-        reg               = getRegForType(reg, regType);
-        regMaskTP regMask = genRegMask(reg);
-#ifdef TARGET_ARM
-        if (regType == TYP_DOUBLE)
-        {
-            assert(genIsValidDoubleReg(reg));
-            regMask |= (regMask << 1);
-        }
-#endif // TARGET_ARM
-        return regMask;
-    }
 
     void resetAvailableRegs()
     {
@@ -1815,8 +1798,7 @@ private:
 
     bool isRegAvailable(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (m_AvailableRegs & regMask) == regMask;
+        return m_AvailableRegs.IsRegNumPresent(reg, regType);
     }
     void setRegsInUse(regMaskTP regMask)
     {
@@ -1824,8 +1806,7 @@ private:
     }
     void setRegInUse(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        setRegsInUse(regMask);
+        m_AvailableRegs.RemoveRegNum(reg, regType);
     }
     void makeRegsAvailable(regMaskTP regMask)
     {
@@ -1833,8 +1814,7 @@ private:
     }
     void makeRegAvailable(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        makeRegsAvailable(regMask);
+        m_AvailableRegs.AddRegNum(reg, regType);
     }
 
     void clearAllNextIntervalRef();
@@ -1846,7 +1826,8 @@ private:
     void updateSpillCost(regNumber reg, Interval* interval);
 
     FORCEINLINE void updateRegsFreeBusyState(RefPosition&               refPosition,
-                                             regMaskTP                  regsBusy,
+                                             var_types                  registerType,
+                                             SingleTypeRegSet           regsBusy,
                                              regMaskTP*                 regsToFree,
                                              regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
                                                  DEBUG_ARG(regNumber assignedReg));
@@ -1854,17 +1835,15 @@ private:
     regMaskTP m_RegistersWithConstants;
     void      clearConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants &= ~getRegMask(reg, regType);
+        m_RegistersWithConstants.RemoveRegNum(reg, regType);
     }
     void setConstantReg(regNumber reg, var_types regType)
     {
-        m_RegistersWithConstants |= getRegMask(reg, regType);
+        m_RegistersWithConstants.AddRegNum(reg, regType);
     }
     bool isRegConstant(regNumber reg, var_types regType)
     {
-        reg               = getRegForType(reg, regType);
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (m_RegistersWithConstants & regMask) == regMask;
+        return m_RegistersWithConstants.IsRegNumPresent(reg, regType);
     }
     SingleTypeRegSet getMatchingConstants(SingleTypeRegSet mask, Interval* currentInterval, RefPosition* refPosition);
 
@@ -1905,22 +1884,20 @@ private:
 #endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (regsBusyUntilKill & regMask) != RBM_NONE;
+        return regsBusyUntilKill.IsRegNumPresent(reg, regType);
     }
     void setRegBusyUntilKill(regNumber reg, var_types regType)
     {
-        regsBusyUntilKill |= getRegMask(reg, regType);
+        regsBusyUntilKill.AddRegNum(reg, regType);
     }
     void clearRegBusyUntilKill(regNumber reg)
     {
-        regsBusyUntilKill &= ~genRegMask(reg);
+        regsBusyUntilKill.RemoveRegNumFromMask(reg);
     }
 
     bool isRegInUse(regNumber reg, var_types regType)
     {
-        regMaskTP regMask = getRegMask(reg, regType);
-        return (regsInUseThisLocation & regMask) != RBM_NONE;
+        return regsInUseThisLocation.IsRegNumPresent(reg, regType);
     }
 
     void resetRegState()
@@ -2189,14 +2166,14 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class Interval : public Referenceable
 {
 public:
-    Interval(RegisterType registerType, regMaskTP registerPreferences)
-        : registerPreferences(registerPreferences)
+    Interval(RegisterType registerType, SingleTypeRegSet registerPreferences)
+        : Referenceable(registerType)
+        , registerPreferences(registerPreferences)
         , registerAversion(RBM_NONE)
         , relatedInterval(nullptr)
         , assignedReg(nullptr)
         , varNum(0)
         , physReg(REG_COUNT)
-        , registerType(registerType)
         , isActive(false)
         , isLocalVar(false)
         , isSplit(false)
@@ -2252,8 +2229,6 @@ public:
 
     // The register to which it is currently assigned.
     regNumber physReg;
-
-    RegisterType registerType;
 
     // Is this Interval currently in a register and live?
     bool isActive;
@@ -2491,15 +2466,22 @@ public:
     RefPosition* nextRefPosition;
 
     // The remaining fields are common to both options
-    GenTree*     treeNode;
+    union
+    {
+        struct
+        {
+            GenTree* treeNode;
+
+            // Prior to the allocation pass, registerAssignment captures the valid registers
+            // for this RefPosition.
+            // After the allocation pass, this contains the actual assignment
+            SingleTypeRegSet registerAssignment;
+        };
+        regMaskTP killedRegisters;
+    };
     unsigned int bbNum;
 
     LsraLocation nodeLocation;
-
-    // Prior to the allocation pass, registerAssignment captures the valid registers
-    // for this RefPosition.
-    // After the allocation pass, this contains the actual assignment
-    SingleTypeRegSet registerAssignment;
 
     RefType refType;
 
@@ -2611,9 +2593,9 @@ public:
         : referent(nullptr)
         , nextRefPosition(nullptr)
         , treeNode(treeNode)
+        , registerAssignment(RBM_NONE)
         , bbNum(bbNum)
         , nodeLocation(nodeLocation)
-        , registerAssignment(RBM_NONE)
         , refType(refType)
         , multiRegIdx(0)
 #ifdef TARGET_ARM64
@@ -2670,7 +2652,18 @@ public:
             return REG_NA;
         }
 
-        return genRegNumFromMask(registerAssignment);
+        return genRegNumFromMask(registerAssignment, getRegisterType());
+    }
+
+    RegisterType getRegisterType()
+    {
+        return referent->registerType;
+    }
+
+    regMaskTP getKilledRegisters()
+    {
+        assert(refType == RefTypeKill);
+        return killedRegisters;
     }
 
     // Returns true if it is a reference on a GenTree node.
@@ -2761,7 +2754,7 @@ public:
 
     // isFixedRefOfRegMask indicates that the RefPosition has a fixed assignment to the register
     // specified by the given mask
-    bool isFixedRefOfRegMask(regMaskTP regMask)
+    bool isFixedRefOfRegMask(SingleTypeRegSet regMask)
     {
         assert(genMaxOneBit(regMask));
         return (registerAssignment == regMask);
@@ -2770,7 +2763,7 @@ public:
     // isFixedRefOfReg indicates that the RefPosition has a fixed assignment to the given register
     bool isFixedRefOfReg(regNumber regNum)
     {
-        return (isFixedRefOfRegMask(genRegMask(regNum)));
+        return (isFixedRefOfRegMask(genSingleTypeRegMask(regNum)));
     }
 
 #ifdef TARGET_ARM64

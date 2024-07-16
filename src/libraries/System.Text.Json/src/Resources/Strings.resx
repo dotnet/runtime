@@ -246,6 +246,9 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
+  <data name="JsonNumberExponentTooLarge" xml:space="preserve">
+    <value>The exponent value in the specified JSON number is too large.</value>
+  </data>
   <data name="DefaultTypeInfoResolverImmutable" xml:space="preserve">
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
   </data>
@@ -304,7 +307,7 @@
     <value>Expected a digit ('0'-'9'), but instead reached end of data.</value>
   </data>
   <data name="SpecialNumberValuesNotSupported" xml:space="preserve">
-    <value>.NET number values such as positive and negative infinity cannot be written as valid JSON. To make it work when using 'JsonSerializer', consider specifying 'JsonNumberHandling.AllowNamedFloatingPointLiterals' (see https://docs.microsoft.com/dotnet/api/system.text.json.serialization.jsonnumberhandling).</value>
+    <value>.NET number values such as positive and negative infinity cannot be written as valid JSON. To make it work when using 'JsonSerializer', consider specifying 'JsonNumberHandling.AllowNamedFloatingPointLiterals' (see https://learn.microsoft.com/dotnet/api/system.text.json.serialization.jsonnumberhandling).</value>
   </data>
   <data name="ValueTooLarge" xml:space="preserve">
     <value>The JSON value of length {0} is too large and not supported.</value>
@@ -671,6 +674,9 @@
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
     <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
   </data>
+  <data name="OnDeserializingCallbacksNotSupported" xml:space="preserve">
+    <value>The type '{0}' does not support setting OnDeserializing callbacks.</value>
+  </data>
   <data name="CreateObjectConverterNotCompatible" xml:space="preserve">
     <value>The converter for type '{0}' does not support setting 'CreateObject' delegates.</value>
   </data>
@@ -693,7 +699,7 @@
     <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked both as required and as an extension data property. This combination is not supported.</value>
   </data>
   <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
-    <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
+    <value>JSON deserialization for type '{0}' was missing required properties including: {1}.</value>
   </data>
   <data name="ObjectCreationHandlingPopulateNotSupportedByConverter" xml:space="preserve">
     <value>Property '{0}' on type '{1}' is marked with JsonObjectCreationHandling.Populate but it doesn't support populating. This can be either because the property type is immutable or it could use a custom converter.</value>
@@ -749,7 +755,10 @@
   <data name="ConstructorParameterDisallowNull" xml:space="preserve">
     <value>The constructor parameter '{0}' on type '{1}' doesn't allow null values. Consider updating its nullability annotation.</value>
   </data>
-  <data name="NullabilityInfoContext_NotSupported" xml:space="preserve">
-    <value>NullabilityInfoContext is not supported in the current application because 'System.Reflection.NullabilityInfoContext.IsSupported' is set to false. Set the MSBuild Property 'NullabilityInfoContextSupport' to true in order to enable it.</value>
+  <data name="JsonSchemaExporter_ReferenceHandlerPreserve_NotSupported" xml:space="preserve">
+    <value>JSON schema generation is not supported for contracts using ReferenceHandler.Preserve.</value>
+  </data>
+  <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
+    <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
   </data>
 </root>

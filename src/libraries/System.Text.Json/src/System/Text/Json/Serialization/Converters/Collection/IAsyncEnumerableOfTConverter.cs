@@ -107,7 +107,7 @@ namespace System.Text.Json.Serialization.Converters
                     return true;
                 }
 
-                if (ShouldFlush(ref state))
+                if (ShouldFlush(ref state, writer))
                 {
                     return false;
                 }

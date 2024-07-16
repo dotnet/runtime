@@ -270,6 +270,7 @@ namespace System.Text.Json.SourceGeneration
                 JsonKnownNamingPolicy? dictionaryKeyPolicy = null;
                 bool? respectNullableAnnotations = null;
                 bool? ignoreReadOnlyFields = null;
+                bool? respectRequiredConstructorParameters = null;
                 bool? ignoreReadOnlyProperties = null;
                 bool? includeFields = null;
                 int? maxDepth = null;
@@ -332,6 +333,10 @@ namespace System.Text.Json.SourceGeneration
 
                         case nameof(JsonSourceGenerationOptionsAttribute.RespectNullableAnnotations):
                             respectNullableAnnotations = (bool)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.RespectRequiredConstructorParameters):
+                            respectRequiredConstructorParameters = (bool)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.IgnoreReadOnlyFields):
@@ -418,6 +423,7 @@ namespace System.Text.Json.SourceGeneration
                     DefaultIgnoreCondition = defaultIgnoreCondition,
                     DictionaryKeyPolicy = dictionaryKeyPolicy,
                     RespectNullableAnnotations = respectNullableAnnotations,
+                    RespectRequiredConstructorParameters = respectRequiredConstructorParameters,
                     IgnoreReadOnlyFields = ignoreReadOnlyFields,
                     IgnoreReadOnlyProperties = ignoreReadOnlyProperties,
                     IncludeFields = includeFields,

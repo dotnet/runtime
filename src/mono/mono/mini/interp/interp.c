@@ -619,7 +619,9 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 		g_assert (vtable->klass != m->klass);
 		/* TODO: interface offset lookup is slow, go through IMT instead */
 		gboolean non_exact_match;
-		slot += mono_class_interface_offset_with_variance (vtable->klass, m->klass, &non_exact_match);
+		int ioffset = mono_class_interface_offset_with_variance (vtable->klass, m->klass, &non_exact_match);
+		g_assert (ioffset >= 0);
+		slot += ioffset;
 	}
 
 	MonoMethod *virtual_method = m_class_get_vtable (vtable->klass) [slot];
@@ -8034,6 +8036,7 @@ interp_parse_options (const char *options)
 			}
 		}
 	}
+	g_strfreev (args);
 }
 
 /*
