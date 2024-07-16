@@ -14,6 +14,18 @@ internal class DacStreams_1 : IDacStreams
 {
     private readonly Target _target;
 
+    private const uint MiniMetadataSignature = 0x6d727473;
+    private const uint EENameStreamSignature = 0x614e4545;
+
+    private const uint MiniMetaDataStreamsHeaderSize = 12;
+    private const uint MiniMetadataStream_MiniMetadataSignature_Offset = 0;
+    private const uint MiniMetadataStream_TotalSize_Offset = 4;
+    private const uint MiniMetadataStream_CountOfStreams_Offset = 8;
+
+    private const uint EENameStreamHeaderSize = 8;
+    private const uint EENameStream_EENameStreamSignature_Offset = 0;
+    private const uint EENameStream_CountOfNames_Offset = 4;
+
     internal DacStreams_1(Target target)
     {
         _target = target;
@@ -43,6 +55,7 @@ internal class DacStreams_1 : IDacStreams
         {
             TargetPointer miniMetaDataBuffAddress = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffAddress));
             uint miniMetaDataBuffMaxSize = target.Read<uint>(target.ReadGlobalPointer(Constants.Globals.MiniMetaDataBuffMaxSize));
+            ulong miniMetaDataBuffEnd = miniMetaDataBuffAddress + miniMetaDataBuffMaxSize;
 
             Dictionary<TargetPointer, string> stringToAddress = new();
             if (miniMetaDataBuffMaxSize < 20)
@@ -51,14 +64,14 @@ internal class DacStreams_1 : IDacStreams
                 return stringToAddress;
             }
 
-            if (target.Read<uint>(miniMetaDataBuffAddress) != 0x6d727473)
+            if (target.Read<uint>(miniMetaDataBuffAddress + MiniMetadataStream_MiniMetadataSignature_Offset) != MiniMetadataSignature)
             {
                 // Magic number is incorrect
                 return stringToAddress;
             }
 
 
-            uint totalSize = target.Read<uint>(miniMetaDataBuffAddress + 0x4);
+            uint totalSize = target.Read<uint>(miniMetaDataBuffAddress + MiniMetadataStream_TotalSize_Offset);
             if (totalSize > miniMetaDataBuffMaxSize)
             {
                 // totalSize is inconsistent with miniMetaDataBuffMaxSize
@@ -68,35 +81,36 @@ internal class DacStreams_1 : IDacStreams
             byte[] bytes = new byte[totalSize];
             ReadOnlySpan<byte> miniMdBuffer = bytes.AsSpan();
             target.ReadBuffer(miniMetaDataBuffAddress, bytes);
-            uint countStreams = target.Read<uint>(miniMetaDataBuffAddress + 0x8);
+            uint countStreams = target.Read<uint>(miniMetaDataBuffAddress + MiniMetadataStream_CountOfStreams_Offset);
             if (countStreams != 1)
             {
                 // This implementation is only aware of 1 possible stream type, so only 1 can exist
                 return stringToAddress;
             }
-            uint eeNameSig = target.Read<uint>(miniMetaDataBuffAddress + 0xC);
-            if (eeNameSig != 0x614e4545)
+            ulong eeNameStreamAddress = miniMetaDataBuffAddress + MiniMetaDataStreamsHeaderSize;
+            uint eeNameSig = target.Read<uint>(eeNameStreamAddress + EENameStream_EENameStreamSignature_Offset);
+            if (eeNameSig != EENameStreamSignature)
             {
                 // name of first stream is not 0x614e4545 == "EENa"
                 return stringToAddress;
             }
-            uint countNames = target.Read<uint>(miniMetaDataBuffAddress + 0x10);
+            uint countNames = target.Read<uint>(eeNameStreamAddress + EENameStream_CountOfNames_Offset);
 
-            uint currentOffset = 20;
+            ulong currentAddress = eeNameStreamAddress + EENameStreamHeaderSize;
 
             for (int i = 0; i < countNames; i++)
             {
-                if ((currentOffset + target.PointerSize) > miniMetaDataBuffMaxSize)
+                if (currentAddress >= miniMetaDataBuffEnd)
                     break;
-                TargetPointer eeObjectPointer = target.ReadPointer(miniMetaDataBuffAddress + currentOffset);
-                currentOffset += (uint)target.PointerSize;
-                int stringLen = miniMdBuffer.Slice((int)currentOffset).IndexOf((byte)0);
+                TargetPointer eeObjectPointer = target.ReadPointer(currentAddress);
+                currentAddress += (uint)target.PointerSize;
+                int stringLen = miniMdBuffer.Slice((int)(currentAddress - miniMetaDataBuffAddress)).IndexOf((byte)0);
                 if (stringLen == -1)
                     break;
 
                 try
                 {
-                    string name = Encoding.UTF8.GetString(miniMdBuffer.Slice((int)currentOffset, stringLen));
+                    string name = Encoding.UTF8.GetString(miniMdBuffer.Slice((int)(currentAddress - miniMetaDataBuffAddress), stringLen));
                     stringToAddress.Add(eeObjectPointer, name);
                 }
                 catch
@@ -104,7 +118,7 @@ internal class DacStreams_1 : IDacStreams
                     // Tolerate malformed strings without causing all lookups to fail
                 }
 
-                currentOffset += (uint)stringLen + 1;
+                currentAddress += (uint)stringLen + 1;
             }
 
             return stringToAddress;

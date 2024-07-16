@@ -11,14 +11,10 @@ Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides a `Ty
 ``` csharp
 struct TypeHandle
 {
-    // no public properties or constructors
+    // no public constructors
 
     public TargetPointer Address { get; }
     public bool IsNull => Address != 0;
-}
-
-struct TypeHandle
-{
 }
 
 internal enum CorElementType
@@ -33,7 +29,7 @@ A `TypeHandle` is the runtime representation of the type information about a val
 struct TypeHandle
 
 ``` csharp
-    #region MethodTable inspection APIs
+    #region TypeHandle inspection APIs
     public virtual TypeHandle GetTypeHandle(TargetPointer targetPointer);
 
     public virtual TargetPointer GetModule(TypeHandle typeHandle);
