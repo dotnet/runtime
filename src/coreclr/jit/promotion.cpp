@@ -686,18 +686,29 @@ public:
             if (otherAccess.AccessType != TYP_STRUCT)
             {
                 if ((otherAccess.Offset != access.Offset) || !varTypeIsSmall(access.AccessType) ||
-                    !varTypeIsSmall(otherAccess.AccessType))
+                    (genTypeSize(access.AccessType) != genTypeSize(otherAccess.AccessType)))
                 {
                     return false;
                 }
 
                 // Here we need to make a decision about whether we want to
                 // keep the value zero or sign extended.
-                if ((otherAccess.CountWtd > access.CountWtd) ||
-                    ((otherAccess.CountWtd == access.CountWtd) && (otherAccess.Count > access.Count)))
+                if (otherAccess.CountWtd > access.CountWtd)
                 {
-                    // Other sign is accessed with higher weight or count,
-                    // so prefer that.
+                    // Prefer other since it has higher weight.
+                    return false;
+                }
+
+                if ((otherAccess.CountWtd == access.CountWtd) && (otherAccess.Count > access.Count))
+                {
+                    // Prefer other since it has higher count.
+                    return false;
+                }
+
+                if ((otherAccess.CountWtd == access.CountWtd) && (otherAccess.Count == access.Count) &&
+                    (varTypeIsUnsigned(otherAccess.AccessType)))
+                {
+                    // Tie-breaker: prefer other since it is unsigned.
                     return false;
                 }
 
