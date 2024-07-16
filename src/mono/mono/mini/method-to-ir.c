@@ -7566,17 +7566,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						} else {
 							// For structs that cannot be lowered, we change the argument to a pointer-like argument type.
 							// If SwiftSelf<T> can't be lowered, it should be passed in the same manner as SwiftSelf, via the context register.
-							if (gklass && (gklass->container_class == swift_self_t))
+							if (gklass && (gklass->container_class == swift_self_t)) {
 								ptype = mono_class_get_byref_type (swift_self);
-							else
+								// The ARGLOADA should be a pointer-like type.
+								struct_base_address->klass = mono_defaults.int_class;
+							} else {
 								ptype = mono_class_get_byref_type (klass);
-
-							// Load the address of the struct with 0 offset from SwiftSelf<T>
-							if (gklass && (gklass->container_class == swift_self_t))
-							{
-								MonoInst *swift_self_base_address = struct_base_address;
-								struct_base_address = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-								MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, struct_base_address->dreg, swift_self_base_address->dreg, 0);
 							}
 
 							*sp++ = struct_base_address;
