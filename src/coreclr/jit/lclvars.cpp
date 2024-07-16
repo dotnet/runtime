@@ -82,7 +82,7 @@ void Compiler::lvaInit()
 
     gsShadowVarInfo = nullptr;
     lvaPSPSym       = BAD_VAR_NUM;
-#if FEATURE_SIMD
+#if defined(FEATURE_SIMD)
     lvaSIMDInitTempVarNum = BAD_VAR_NUM;
 #endif // FEATURE_SIMD
     lvaCurEpoch = 0;

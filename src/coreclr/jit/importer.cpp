@@ -232,8 +232,12 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                     case GT_CNS_LNG:
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
                     case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
                     case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
                     case GT_LCL_VAR:
                         table->val = gtCloneExpr(tree);
                         break;
@@ -3626,7 +3630,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                         hwAccelerated = compOpportunisticallyDependsOn(InstructionSet_AVX);
                     }
                     else
-#endif
+#endif // TARGET_XARCH
                     {
                         // SIMD8, SIMD12, SIMD16 are covered by IsBaselineSimdIsaSupported check
                         assert((simdType == TYP_SIMD8) || (simdType == TYP_SIMD12) || (simdType == TYP_SIMD16));
@@ -3639,7 +3643,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
                         return vec;
                     }
                 }
-#endif
+#endif // FEATURE_SIMD
 
                 for (unsigned i = 0; i < totalSize; i++)
                 {

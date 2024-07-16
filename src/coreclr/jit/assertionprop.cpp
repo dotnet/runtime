@@ -2939,7 +2939,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 
-#if FEATURE_SIMD
+#if defined(FEATURE_SIMD)
         case TYP_SIMD8:
         {
             simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
@@ -2998,6 +2998,7 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         break;
 
 #endif // TARGET_XARCH
+#endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
@@ -3012,7 +3013,6 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 #endif // FEATURE_MASKED_HW_INTRINSICS
-#endif // FEATURE_SIMD
 
         case TYP_BYREF:
             // Do not support const byref optimization.
