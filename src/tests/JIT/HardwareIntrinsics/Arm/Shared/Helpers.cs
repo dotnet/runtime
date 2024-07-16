@@ -5238,17 +5238,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (int i = 0; i < op1.Length; i += 2)
             {
+                int real = i;
+                int img = i + 1;
                 (float ans1, float ans2) = imm switch
                 {
-                    0 => (FusedMultiplyAdd(op1[i], op2[i], op3[i]), FusedMultiplyAdd(op1[i + 1], op2[i], op3[i + 1])),
-                    1 => (FusedMultiplySubtract(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplyAdd(op1[i + 1], op2[i + 1], op3[i])),
-                    2 => (FusedMultiplySubtract(op1[i], op2[i], op3[i]), FusedMultiplySubtract(op1[i + 1], op2[i], op3[i + 1])),
-                    3 => (FusedMultiplyAdd(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplySubtract(op1[i + 1], op2[i + 1], op3[i])),
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[i])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
                     _ => (0.0f, 0.0f)
                 };
 
-                op1[i] = ans1;
-                op1[i + 1] = ans2;
+                op1[real] = ans1;
+                op1[img] = ans2;
             }
 
             return op1;
@@ -5435,17 +5437,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (int i = 0; i < op1.Length; i += 2)
             {
+                int real = i;
+                int img = i + 1;
                 (double ans1, double ans2) = imm switch
                 {
-                    0 => (FusedMultiplyAdd(op1[i], op2[i], op3[i]), FusedMultiplyAdd(op1[i + 1], op2[i], op3[i + 1])),
-                    1 => (FusedMultiplySubtract(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplyAdd(op1[i + 1], op2[i + 1], op3[i])),
-                    2 => (FusedMultiplySubtract(op1[i], op2[i], op3[i]), FusedMultiplySubtract(op1[i + 1], op2[i], op3[i + 1])),
-                    3 => (FusedMultiplyAdd(op1[i], op2[i + 1], op3[i + 1]), FusedMultiplySubtract(op1[i + 1], op2[i + 1], op3[i])),
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[i])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
                     _ => (0.0, 0.0)
                 };
 
-                op1[i] = ans1;
-                op1[i + 1] = ans2;
+                op1[real] = ans1;
+                op1[img] = ans2;
             }
 
             return op1;
