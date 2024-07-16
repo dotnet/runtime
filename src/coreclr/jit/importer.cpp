@@ -2844,19 +2844,35 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 //
 GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenTree* value)
 {
+    // We still make some assumptions about the layout of Nullable<T> in JIT so let's assert them
+    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
     unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
     unsigned valueOffset  = info.compCompHnd->getFieldOffset(info.compCompHnd->getFieldInClass(nullableCls, 1));
 
+    // Create an empty Nullable<T> object on stack
     unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
     lvaSetStruct(resultTmp, nullableCls, false);
+    GenTreeLclVar* result       = impCreateLocalNode(resultTmp DEBUGARG(0));
+    GenTree*       hasValueAddr = gtNewLclAddrNode(resultTmp, hasValOffset);
+    GenTree*       valueAddr    = gtNewLclAddrNode(resultTmp, valueOffset);
 
-    // Now do two stores:
-    GenTree* hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
-    GenTree* valueStore    = gtNewStoreLclFldNode(resultTmp, value->TypeGet(), valueOffset, value);
+    // Now store 'hasValue' and 'value' fields
+    GenTree* hasValueStore = gtNewStoreIndNode(TYP_UBYTE, hasValueAddr, gtNewIconNode(1));
+    GenTree* valueStore;
+
+    if (varTypeIsStruct(value))
+    {
+        CORINFO_CLASS_HANDLE unboxCls = info.compCompHnd->getTypeForBox(nullableCls);
+        valueStore                    = gtNewStoreBlkNode(typGetObjLayout(unboxCls), valueAddr, value);
+    }
+    else
+    {
+        valueStore = gtNewStoreIndNode(value->TypeGet(), valueAddr, value);
+    }
 
     impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
     impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);
-    return impCreateLocalNode(resultTmp DEBUGARG(0));
+    return result;
 }
 
 //------------------------------------------------------------------------
