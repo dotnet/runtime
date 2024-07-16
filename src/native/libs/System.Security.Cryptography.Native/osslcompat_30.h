@@ -59,8 +59,9 @@ int EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX* ctx, int pad_mode);
 int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
-int EVP_PKEY_get_size(const EVP_PKEY* pkey);
 int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
+EVP_PKEY_CTX *EVP_PKEY_CTX_new_from_pkey(
+    OSSL_LIB_CTX *libctx, EVP_PKEY *pkey, const char *propquery);
 
 OSSL_PARAM OSSL_PARAM_construct_end(void);
 OSSL_PARAM OSSL_PARAM_construct_int32(const char *key, int32_t *buf);

@@ -721,13 +721,17 @@ EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraH
     assert(pkey != NULL);
 
 #ifdef NEED_OPENSSL_3_0
-    EvpPKeyExtraHandle* handle = (EvpPKeyExtraHandle*)extraHandle;
-    OSSL_LIB_CTX* libCtx = (handle != NULL) ? handle->libCtx : NULL;
-    return EVP_PKEY_CTX_new_from_pkey(libCtx, pkey, NULL);
-#else
-    assert(libCtx == NULL);
-    return EVP_PKEY_CTX_new(pkey, NULL);
+    if (API_EXISTS(EVP_PKEY_CTX_new_from_pkey))
+    {
+        EvpPKeyExtraHandle* handle = (EvpPKeyExtraHandle*)extraHandle;
+        OSSL_LIB_CTX* libCtx = (handle != NULL) ? handle->libCtx : NULL;
+        return EVP_PKEY_CTX_new_from_pkey(libCtx, pkey, NULL);
+    }
+    else
 #endif
+    {
+        return EVP_PKEY_CTX_new(pkey, NULL);
+    }
 }
 
 int32_t CryptoNative_EvpPKeyCtxConfigureForECDSASign(EVP_PKEY_CTX* ctx)

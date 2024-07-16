@@ -447,7 +447,6 @@ extern bool g_libSslUses32BitTime;
     REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
     RENAMED_FUNCTION(EVP_PKEY_get_base_id, EVP_PKEY_base_id) \
-    RENAMED_FUNCTION(EVP_PKEY_get_size, EVP_PKEY_size) \
     RENAMED_FUNCTION(EVP_PKEY_get_bits, EVP_PKEY_bits) \
     FALLBACK_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
@@ -993,7 +992,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
 #define EVP_PKEY_get_base_id EVP_PKEY_get_base_id_ptr
-#define EVP_PKEY_get_size EVP_PKEY_get_size_ptr
 #define EVP_PKEY_get_bits EVP_PKEY_get_bits_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
@@ -1363,7 +1361,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 // Undo renames for renamed-in-3.0
 #define EVP_MD_get_size EVP_MD_size
 #define EVP_PKEY_get_base_id EVP_PKEY_base_id
-#define EVP_PKEY_get_size EVP_PKEY_size
 #define EVP_PKEY_get_bits EVP_PKEY_bits
 #define SSL_get1_peer_certificate SSL_get_peer_certificate
 #define EVP_CIPHER_get_nid EVP_CIPHER_nid
