@@ -44,7 +44,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSource.cs" />
     <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceActivitySourceListener.cs" />
-    <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceSamplerBuilder.cs" />
     <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource\DiagnosticSourceEventSourceFilterAndTransform.cs" />

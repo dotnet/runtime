@@ -386,7 +386,7 @@ namespace System.Diagnostics
                             filterAndPayloadSpecs = NewLineSeparate(filterAndPayloadSpecs, EntityFrameworkCoreCommandsKeywordValue);
                     }
                     _listener?.Dispose();
-                    _listener = DiagnosticSourceEventSourceListener.Create(filterAndPayloadSpecs);
+                    _listener = DiagnosticSourceEventSourceFilterAndTransform.ParseFilterAndPayloadSpecs(filterAndPayloadSpecs);
                 }
                 else if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable)
                 {
@@ -412,7 +412,7 @@ namespace System.Diagnostics
             return str1 + "\n" + str2;
         }
 
-        private DiagnosticSourceEventSourceListener? _listener;
+        private IDisposable? _listener;
         #endregion
 
         #region debugger hooks

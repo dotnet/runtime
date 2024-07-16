@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -24,21 +25,89 @@ namespace System.Diagnostics;
 /// </summary>
 internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposable
 {
+    private const string c_ActivitySourcePrefix = "[AS]";
+    private const string c_ParentRatioSamplerPrefix = "ParentRatioSampler(";
+
+    /// <summary>
+    /// Parses filterAndPayloadSpecs which is a list of lines each of which has the from
+    ///
+    ///    DiagnosticSourceName/EventName:PAYLOAD_SPEC
+    ///
+    /// where PAYLOADSPEC is a semicolon separated list of specifications of the form
+    ///
+    ///    OutputName=Prop1.Prop2.PropN
+    ///
+    /// Into linked list of FilterAndTransform that together forward events from the given
+    /// DiagnosticSource's to 'eventSource'. Sets the 'specList' variable to this value
+    /// (destroying anything that was there previously).
+    ///
+    /// By default any serializable properties of the payload object are also included
+    /// in the output payload, however this feature and be tuned off by prefixing the
+    /// PAYLOADSPEC with a '-'.
+    /// </summary>
+    public static IDisposable ParseFilterAndPayloadSpecs(string? filterAndPayloadSpecs)
+    {
+        filterAndPayloadSpecs ??= "";
+
+        DiagnosticSourceEventSourceFilterAndTransform? specList = null;
+        DiagnosticSourceEventSourceFilterAndTransform? activitySourceSpecList = null;
+
+        // Points just beyond the last point in the string that has yet to be parsed. Thus we start with the whole string.
+        int endIdx = filterAndPayloadSpecs.Length;
+        while (true)
+        {
+            // Skip trailing whitespace.
+            while (0 < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[endIdx - 1]))
+                --endIdx;
+
+            int newlineIdx = filterAndPayloadSpecs.LastIndexOf('\n', endIdx - 1, endIdx);
+            int startIdx = 0;
+            if (0 <= newlineIdx)
+                startIdx = newlineIdx + 1;  // starts after the newline, or zero if we don't find one.
+
+            // Skip leading whitespace
+            while (startIdx < endIdx && char.IsWhiteSpace(filterAndPayloadSpecs[startIdx]))
+                startIdx++;
+
+            if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
+            {
+                activitySourceSpecList = CreateActivitySourceTransform(filterAndPayloadSpecs, startIdx, endIdx, activitySourceSpecList);
+            }
+            else
+            {
+                specList = CreateTransform(filterAndPayloadSpecs, startIdx, endIdx, specList);
+            }
+
+            endIdx = newlineIdx;
+            if (endIdx < 0)
+                break;
+        }
+
+        DiagnosticSourceEventSourceActivitySourceListener? activitySourceListener = activitySourceSpecList != null
+            ? DiagnosticSourceEventSourceActivitySourceListener.Create(activitySourceSpecList)
+            : null;
+
+        return new ParsedFilterAndPayloadSpecs(specList, activitySourceListener);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsActivitySourceEntry(string filterAndPayloadSpec, int startIdx, int endIdx) =>
+        filterAndPayloadSpec.AsSpan(startIdx, endIdx - startIdx).StartsWith(c_ActivitySourcePrefix.AsSpan(), StringComparison.Ordinal);
+
     /// <summary>
     /// Creates one FilterAndTransform specification from filterAndPayloadSpec starting at 'startIdx' and ending just before 'endIdx'.
     /// This FilterAndTransform will subscribe to DiagnosticSources specified by the specification and forward them to 'eventSource.
     /// For convenience, the 'Next' field is set to the 'next' parameter, so you can easily form linked lists.
     /// </summary>
-    internal DiagnosticSourceEventSourceFilterAndTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSourceFilterAndTransform? next)
+    private static DiagnosticSourceEventSourceFilterAndTransform? CreateTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSourceFilterAndTransform? next)
     {
         Debug.Assert(filterAndPayloadSpec != null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
-
-        Next = next;
-        SampleFunc = null;
 
         string? listenerNameFilter = null;       // Means WildCard.
         string? eventNameFilter = null;          // Means WildCard.
         string? activityName = null;
+        bool noImplicitTransforms = false;
+        TransformSpec? explicitTransforms = null;
 
         var startTransformIdx = startIdx;
         var endEventNameIdx = endIdx;
@@ -77,7 +146,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
         if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
         {
             DiagnosticSourceEventSource.Log.Message("DiagnosticSource: suppressing implicit transforms.");
-            _noImplicitTransforms = true;
+            noImplicitTransforms = true;
             startTransformIdx++;
         }
 
@@ -97,7 +166,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
                     if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Informational, DiagnosticSourceEventSource.Keywords.Messages))
                         DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
 
-                    _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
+                    explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, explicitTransforms);
                 }
                 if (startTransformIdx == specStartIdx)
                     break;
@@ -105,68 +174,133 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
             }
         }
 
-        Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
-        if (activityName != null && activityName.Contains("Activity"))
-        {
-            writeEvent = activityName switch
-            {
-                nameof(DiagnosticSourceEventSource.Activity1Start) => DiagnosticSourceEventSource.Log.Activity1Start,
-                nameof(DiagnosticSourceEventSource.Activity1Stop) => DiagnosticSourceEventSource.Log.Activity1Stop,
-                nameof(DiagnosticSourceEventSource.Activity2Start) => DiagnosticSourceEventSource.Log.Activity2Start,
-                nameof(DiagnosticSourceEventSource.Activity2Stop) => DiagnosticSourceEventSource.Log.Activity2Stop,
-                nameof(DiagnosticSourceEventSource.RecursiveActivity1Start) => DiagnosticSourceEventSource.Log.RecursiveActivity1Start,
-                nameof(DiagnosticSourceEventSource.RecursiveActivity1Stop) => DiagnosticSourceEventSource.Log.RecursiveActivity1Stop,
-                _ => null
-            };
+        var transform = new DiagnosticSourceEventSourceFilterAndTransform(
+            next,
+            noImplicitTransforms,
+            explicitTransforms,
+            sourceName: null,
+            activityName: null,
+            activityEvents: default,
+            sampleFunc: null);
 
-            if (writeEvent == null)
-                DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
-        }
+        transform.SetupDiagnosticListenerSubscription(listenerNameFilter, eventNameFilter, activityName);
 
-        writeEvent ??= DiagnosticSourceEventSource.Log.Event;
-
-        // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
-        // to the EventSource.
-        _diagnosticsListenersSubscription = DiagnosticListener.AllListeners.Subscribe(new CallbackObserver<DiagnosticListener>(delegate (DiagnosticListener newListener)
-        {
-            if (listenerNameFilter == null || listenerNameFilter == newListener.Name)
-            {
-                DiagnosticSourceEventSource.Log.NewDiagnosticListener(newListener.Name);
-                Predicate<string>? eventNameFilterPredicate = null;
-                if (eventNameFilter != null)
-                    eventNameFilterPredicate = (string eventName) => eventNameFilter == eventName;
-
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
-                    Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
-                                    "method that requires unreferenced code. EventSource will not access this local function.")]
-                void OnEventWritten(KeyValuePair<string, object?> evnt)
-                {
-                    // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
-                    // Thus we look for any events that may have snuck through and filter them out before forwarding.
-                    if (eventNameFilter != null && eventNameFilter != evnt.Key)
-                        return;
-
-                    var outputArgs = this.Morph(evnt.Value);
-                    var eventName = evnt.Key;
-                    writeEvent(newListener.Name, eventName, outputArgs);
-                }
-
-                var subscription = newListener.Subscribe(new CallbackObserver<KeyValuePair<string, object?>>(OnEventWritten), eventNameFilterPredicate);
-                _liveSubscriptions = new Subscriptions(subscription, _liveSubscriptions);
-            }
-        }));
+        return transform;
     }
 
-    internal DiagnosticSourceEventSourceFilterAndTransform(string filterAndPayloadSpec, int endIdx, int colonIdx, string activitySourceName, string? activityName, ActivityEvents events, DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc sampleFunc, DiagnosticSourceEventSourceFilterAndTransform? next)
+    private static DiagnosticSourceEventSourceFilterAndTransform? CreateActivitySourceTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSourceFilterAndTransform? next)
     {
-        Next = next;
+        Debug.Assert(endIdx - startIdx >= 4);
+        Debug.Assert(IsActivitySourceEntry(filterAndPayloadSpec, startIdx, endIdx));
 
-        SourceName = activitySourceName;
-        ActivityName = activityName;
-        Events = events;
-        SampleFunc = sampleFunc;
+        bool noImplicitTransforms = false;
+        TransformSpec? explicitTransforms = null;
+        ReadOnlySpan<char> eventName;
+        ReadOnlySpan<char> activitySourceName;
+
+        DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents supportedEvent = DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.All; // Default events
+        DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options)
+            => ActivitySamplingResult.AllDataAndRecorded; // Default sampler
+
+        int colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx + c_ActivitySourcePrefix.Length, endIdx - startIdx - c_ActivitySourcePrefix.Length);
+
+        ReadOnlySpan<char> entry = filterAndPayloadSpec.AsSpan(
+            startIdx + c_ActivitySourcePrefix.Length,
+            (colonIdx >= 0 ? colonIdx : endIdx) - startIdx - c_ActivitySourcePrefix.Length)
+            .Trim();
+
+        int eventNameIndex = entry.IndexOf('/');
+        if (eventNameIndex >= 0)
+        {
+            activitySourceName = entry.Slice(0, eventNameIndex).Trim();
+
+            ReadOnlySpan<char> suffixPart = entry.Slice(eventNameIndex + 1).Trim();
+            int samplingResultIndex = suffixPart.IndexOf('-');
+            if (samplingResultIndex >= 0)
+            {
+                // We have the format "[AS]SourceName/[EventName]-[SamplingResult]
+                eventName = suffixPart.Slice(0, samplingResultIndex).Trim();
+                suffixPart = suffixPart.Slice(samplingResultIndex + 1).Trim();
+
+                if (suffixPart.Length > 0)
+                {
+                    if (suffixPart.Equals("Propagate".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.PropagationData;
+                    }
+                    else if (suffixPart.Equals("Record".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData;
+                    }
+                    else if (suffixPart.StartsWith(c_ParentRatioSamplerPrefix.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        int endingLocation = suffixPart.IndexOf(')');
+                        if (endingLocation < 0
+#if NETFRAMEWORK || NETSTANDARD
+                            || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length).ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
+#else
+                            || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
+#endif
+                        {
+                            if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                                DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling ratio was invalid");
+                            return next;
+                        }
+
+                        sampleFunc = DiagnosticSourceEventSourceSamplerBuilder.CreateParentRatioSampler(ratio);
+                    }
+                    else
+                    {
+                        if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                            DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling method was invalid");
+                        return next;
+                    }
+                }
+            }
+            else
+            {
+                // We have the format "[AS]SourceName/[EventName]
+                eventName = suffixPart;
+            }
+
+            if (eventName.Length > 0)
+            {
+                if (eventName.Equals("Start".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                {
+                    supportedEvent = DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.ActivityStart;
+                }
+                else if (eventName.Equals("Stop".AsSpan(), StringComparison.OrdinalIgnoreCase))
+                {
+                    supportedEvent = DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.ActivityStop;
+                }
+                else
+                {
+                    if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                        DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because event name was invalid");
+                    return next;
+                }
+            }
+        }
+        else
+        {
+            // We have the format "[AS]SourceName"
+            activitySourceName = entry;
+        }
+
+        string? activityName = null;
+        int plusSignIndex = activitySourceName.IndexOf('+');
+        if (plusSignIndex >= 0)
+        {
+            activityName = activitySourceName.Slice(plusSignIndex + 1).Trim().ToString();
+            activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
+
+            if (activityName.Length > 0 && activitySourceName.Length == 1 && activitySourceName[0] == '*')
+            {
+                if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                    DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because activity name cannot be specified for wildcard activity sources");
+                return next;
+            }
+        }
 
         if (colonIdx >= 0)
         {
@@ -176,7 +310,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
             if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
             {
                 DiagnosticSourceEventSource.Log.Message("DiagnosticSource: suppressing implicit transforms.");
-                _noImplicitTransforms = true;
+                noImplicitTransforms = true;
                 startTransformIdx++;
             }
 
@@ -196,7 +330,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
                         if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Informational, DiagnosticSourceEventSource.Keywords.Messages))
                             DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
 
-                        _explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, _explicitTransforms);
+                        explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, explicitTransforms);
                     }
                     if (startTransformIdx == specStartIdx)
                         break;
@@ -204,6 +338,34 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
                 }
             }
         }
+
+        return new DiagnosticSourceEventSourceFilterAndTransform(
+            next,
+            noImplicitTransforms,
+            explicitTransforms,
+            activitySourceName.ToString(),
+            activityName,
+            supportedEvent,
+            sampleFunc);
+    }
+
+    private DiagnosticSourceEventSourceFilterAndTransform(
+        DiagnosticSourceEventSourceFilterAndTransform? next,
+        bool noImplicitTransforms,
+        TransformSpec? explicitTransforms,
+        string? sourceName,
+        string? activityName,
+        ActivityEvents activityEvents,
+        DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc? sampleFunc)
+    {
+        _noImplicitTransforms = noImplicitTransforms;
+        _explicitTransforms = explicitTransforms;
+
+        Next = next;
+        SourceName = sourceName;
+        ActivityName = activityName;
+        Events = activityEvents;
+        SampleFunc = sampleFunc;
     }
 
     public void Dispose()
@@ -292,14 +454,73 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
         return outputArgs;
     }
 
-    public DiagnosticSourceEventSourceFilterAndTransform? Next;
+    private void SetupDiagnosticListenerSubscription(
+        string? listenerNameFilter, // Means WildCard.
+        string? eventNameFilter, // Means WildCard.
+        string? activityName)
+    {
+        Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
+        if (activityName != null && activityName.Contains("Activity"))
+        {
+            writeEvent = activityName switch
+            {
+                nameof(DiagnosticSourceEventSource.Activity1Start) => DiagnosticSourceEventSource.Log.Activity1Start,
+                nameof(DiagnosticSourceEventSource.Activity1Stop) => DiagnosticSourceEventSource.Log.Activity1Stop,
+                nameof(DiagnosticSourceEventSource.Activity2Start) => DiagnosticSourceEventSource.Log.Activity2Start,
+                nameof(DiagnosticSourceEventSource.Activity2Stop) => DiagnosticSourceEventSource.Log.Activity2Stop,
+                nameof(DiagnosticSourceEventSource.RecursiveActivity1Start) => DiagnosticSourceEventSource.Log.RecursiveActivity1Start,
+                nameof(DiagnosticSourceEventSource.RecursiveActivity1Stop) => DiagnosticSourceEventSource.Log.RecursiveActivity1Stop,
+                _ => null
+            };
+
+            if (writeEvent == null)
+                DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
+        }
+
+        writeEvent ??= DiagnosticSourceEventSource.Log.Event;
+
+        // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
+        // to the EventSource.
+        _diagnosticsListenersSubscription = DiagnosticListener.AllListeners.Subscribe(new CallbackObserver<DiagnosticListener>(delegate (DiagnosticListener newListener)
+        {
+            if (listenerNameFilter == null || listenerNameFilter == newListener.Name)
+            {
+                DiagnosticSourceEventSource.Log.NewDiagnosticListener(newListener.Name);
+                Predicate<string>? eventNameFilterPredicate = null;
+                if (eventNameFilter != null)
+                    eventNameFilterPredicate = (string eventName) => eventNameFilter == eventName;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                    Justification = "DiagnosticSource.Write is marked with RequiresUnreferencedCode.")]
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
+                    Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
+                                    "method that requires unreferenced code. EventSource will not access this local function.")]
+                void OnEventWritten(KeyValuePair<string, object?> evnt)
+                {
+                    // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
+                    // Thus we look for any events that may have snuck through and filter them out before forwarding.
+                    if (eventNameFilter != null && eventNameFilter != evnt.Key)
+                        return;
+
+                    var outputArgs = this.Morph(evnt.Value);
+                    var eventName = evnt.Key;
+                    writeEvent(newListener.Name, eventName, outputArgs);
+                }
+
+                var subscription = newListener.Subscribe(new CallbackObserver<KeyValuePair<string, object?>>(OnEventWritten), eventNameFilterPredicate);
+                _liveSubscriptions = new Subscriptions(subscription, _liveSubscriptions);
+            }
+        }));
+    }
+
+    public DiagnosticSourceEventSourceFilterAndTransform? Next { get; }
 
     // Specific ActivitySource Transforms information
 
-    internal string? SourceName { get; set; }
-    internal string? ActivityName { get; set; }
-    internal ActivityEvents Events { get; set; }
-    internal DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc? SampleFunc { get; set; }
+    internal string? SourceName { get; }
+    internal string? ActivityName { get; }
+    internal ActivityEvents Events { get; }
+    internal DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc? SampleFunc { get; }
 
     [Flags]
     internal enum ActivityEvents
@@ -308,6 +529,37 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
         ActivityStart = 0x01,
         ActivityStop = 0x02,
         All = ActivityStart | ActivityStop,
+    }
+
+    private sealed class ParsedFilterAndPayloadSpecs : IDisposable
+    {
+        private DiagnosticSourceEventSourceFilterAndTransform? _specList;
+        private DiagnosticSourceEventSourceActivitySourceListener? _activitySourceListener;
+
+        public ParsedFilterAndPayloadSpecs(
+            DiagnosticSourceEventSourceFilterAndTransform? specList,
+            DiagnosticSourceEventSourceActivitySourceListener? activitySourceListener)
+        {
+            _specList = specList;
+            _activitySourceListener = activitySourceListener;
+        }
+
+        /// <summary>
+        /// This destroys (turns off) the FilterAndTransform stopping the forwarding started with CreateFilterAndTransformList
+        /// </summary>
+        public void Dispose()
+        {
+            _activitySourceListener?.Dispose();
+            _activitySourceListener = null;
+
+            var curSpec = _specList;
+            _specList = null;            // Null out the list
+            while (curSpec != null)     // Dispose everything in the list.
+            {
+                curSpec.Dispose();
+                curSpec = curSpec.Next;
+            }
+        }
     }
 
     // This olds one the implicit transform for one type of object.
