@@ -104,7 +104,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
 
             return HResults.E_NOTIMPL;
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }

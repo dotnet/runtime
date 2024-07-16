@@ -257,9 +257,9 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 return false;
             }
-            MethodTableHandle methodTableHandle = GetMethodTableHandle(methodTablePointer);
+            TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
 
-            if (umd.Slot >= GetNumVtableSlots(methodTableHandle) && !umd.HasNonVtableSlot)
+            if (umd.Slot >= GetNumVtableSlots(typeHandle) && !umd.HasNonVtableSlot)
             {
                 return false;
             }

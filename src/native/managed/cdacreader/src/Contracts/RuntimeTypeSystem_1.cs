@@ -446,12 +446,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 TypeHandles[i] = rts.GetTypeHandle(target.ReadPointer(retAndArgs + (ulong)target.PointerSize * (ulong)i));
             }
         }
+    }
 
-    internal ushort GetNumVtableSlots(TypeHandleHandle typeHandle)
+    internal ushort GetNumVtableSlots(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return 0;
-        MethodTable methodTable = _methodTables[typeHandleHandle.Address];
+        MethodTable methodTable = _methodTables[typeHandle.Address];
         ushort numNonVirtualSlots = methodTable.IsCanonMT ? GetClassData(typeHandle).NumNonVirtualSlots : (ushort)0;
         return checked((ushort)(methodTable.NumVirtuals + numNonVirtualSlots));
     }
