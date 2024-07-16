@@ -443,8 +443,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     onHeapReason = "[non-constant size]";
                     canStack     = false;
                 }
-                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal, &blockSize,
-                                                   &onHeapReason))
+                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, (unsigned int)len->AsIntCon()->IconValue(),
+                                                   &blockSize, &onHeapReason))
                 {
                     // reason set by the call
                     canStack = false;
@@ -454,7 +454,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     JITDUMP("Allocating V%02u on the stack\n", lclNum);
                     canStack = true;
                     const unsigned int stackLclNum =
-                        MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, (unsigned int)len->AsIntCon()->gtIconVal,
+                        MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, (unsigned int)len->AsIntCon()->IconValue(),
                                                       blockSize, block, stmt);
                     m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
                     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
