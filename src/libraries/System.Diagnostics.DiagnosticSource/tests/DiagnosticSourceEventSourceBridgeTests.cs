@@ -163,26 +163,28 @@ namespace System.Diagnostics.Tests
         [InlineData("", "Record", true)]
         [InlineData("Start", "Propagate", false)]
         [InlineData("Stop", "Record", true)]
-        public void TestDefaultActivitySource(string eventName, string samplingResult, bool alldataRequested)
+        public void TestDefaultActivitySource(string eventName, string samplingResult, bool allDataRequested)
         {
-            RemoteExecutor.Invoke((eventname, result, dataRequested) =>
+            RemoteExecutor.Invoke((eventName, samplingResult, allDataRequested) =>
             {
                 using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
                 Activity a = new Activity(""); // we need this to ensure DiagnosticSourceEventSource.Logger creation.
 
                 Assert.Equal(0, eventSourceListener.EventCount);
-                eventSourceListener.Enable($"  [AS]/{eventname}-{result}\r\n");
+                eventSourceListener.Enable($"  [AS]/{eventName}-{samplingResult}\r\n");
                 Assert.Equal("", a.Source.Name);
 
                 a = a.Source.StartActivity("newOne");
 
-                Assert.Equal(bool.Parse(dataRequested), a.IsAllDataRequested);
+                Assert.NotNull(a);
+                Assert.Equal(bool.Parse(allDataRequested), a.IsAllDataRequested);
+
                 // All Activities created with "new Activity(...)" will have ActivityTraceFlags is `None`;
-                Assert.Equal(result.Length == 0 ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None, a.ActivityTraceFlags);
+                Assert.Equal(samplingResult.Length == 0 ? ActivityTraceFlags.Recorded : ActivityTraceFlags.None, a.ActivityTraceFlags);
 
                 a.Dispose();
 
-                int eCount = eventname.Length == 0 ? 2 : 1;
+                int eCount = eventName.Length == 0 ? 2 : 1;
                 Assert.Equal(eCount, eventSourceListener.EventCount);
 
                 // None Default Source
@@ -190,19 +192,19 @@ namespace System.Diagnostics.Tests
                 Activity activity = source.StartActivity($"ActivityFromNoneDefault"); // Shouldn't fire any event
                 Assert.Equal(eCount, eventSourceListener.EventCount);
                 Assert.Null(activity);
-            }, eventName, samplingResult, alldataRequested.ToString()).Dispose();
+            }, eventName, samplingResult, allDataRequested.ToString()).Dispose();
         }
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("[AS]*\r\n [AS]Specific/-Propagate\r\n [AS]*/-Propagate\r\n", false, true)]
-        [InlineData("[AS]AnotherSource/-Propagate\r\n [AS]*/-Propagate\r\n [AS]Specific/-Record\r\n [AS]*\r\n", true, true)]
-        [InlineData("[AS]*/-Propagate\r\n  [AS]*/-Propagate\r\n [AS]Specific/-Propagate\r\n[AS]Specific/-Record\r\n", true, false)]
+        [InlineData("[AS]*\r\n [AS]Specific/-Propagate\r\n", false, true)]
+        [InlineData("[AS]AnotherSource/-Propagate\r\n [AS]Specific/-Record\r\n [AS]*\r\n", true, true)]
+        [InlineData("[AS]*/-Propagate\r\n [AS]Specific/-Record\r\n", true, false)]
         [InlineData("[AS]*/-Propagate\r\n", false, false)]
         [InlineData("[AS]*/-Record\r\n", true, true)]
         [InlineData("[AS]Specific/-Propagate\r\n [AS]NoneSpecific/-Record\r\n", false, true)]
         [InlineData("[AS]Specific/-Record\r\n [AS]NoneSpecific/-Propagate\r\n", true, false)]
         [InlineData("[AS]Specific\r\n [AS]NoneSpecific\r\n", true, true)]
-        public void TestMultipleSpecs(string spec, bool isAlldataRequestedFromSpecif, bool alldataRequestedFromNoneSpecific)
+        public void TestMultipleSpecs(string spec, bool isAllDataRequestedFromSpecific, bool isAllDataRequestedFromNoneSpecific)
         {
             RemoteExecutor.Invoke((specString, specificAllData, noneSpecificAllData) =>
             {
@@ -227,7 +229,7 @@ namespace System.Diagnostics.Tests
                 a2.Dispose();
                 Assert.Equal(4, eventSourceListener.EventCount);
 
-            }, spec, isAlldataRequestedFromSpecif.ToString(), alldataRequestedFromNoneSpecific.ToString()).Dispose();
+            }, spec, isAllDataRequestedFromSpecific.ToString(), isAllDataRequestedFromNoneSpecific.ToString()).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1357,18 +1359,49 @@ namespace System.Diagnostics.Tests
                 Activity a = new Activity(""); // we need this to ensure DiagnosticSourceEventSource.Logger creation.
                 Assert.Equal("", a.Source.Name);
 
-                Assert.Equal(0, eventSourceListener.EventCount);
                 eventSourceListener.Enable("[AS]*+TestName"); // Rule with wildcard source and activity name is ignored
 
                 Assert.NotNull(eventSourceListener.LastOtherEvent);
                 Assert.Equal("Message", eventSourceListener.LastOtherEvent.EventName);
                 Assert.Equal("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]*+TestName' because activity name cannot be specified for wildcard activity sources", eventSourceListener.LastOtherEvent.Payload[0] as string);
 
-
                 using var root = a.Source.StartActivity("TestName");
 
                 Assert.Null(root);
             }).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("[AS]*/Stop\r\n [AS]*/Start", "DiagnosticSource: Ignoring wildcard activity source filterAndPayloadSpec rule because a previous rule was defined")]
+        [InlineData("[AS]TestSource/Stop\r\n [AS]TestSource/Start", "DiagnosticSource: Ignoring filterAndPayloadSpec rule for '[AS]TestSource' because a previous rule was defined")]
+        [InlineData("[AS]TestSource+TestActivity/Stop\r\n [AS]TestSource+TestActivity/Start", "DiagnosticSource: Ignoring filterAndPayloadSpec rule for '[AS]TestSource+TestActivity' because a previous rule was defined")]
+        public void TestMultipleRulesOnlyFirstTaken(string spec, string errorMessage)
+        {
+            RemoteExecutor.Invoke((string spec, string errorMessage) =>
+            {
+                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
+
+                Activity a = new Activity(""); // we need this to ensure DiagnosticSourceEventSource.Logger creation.
+                Assert.Equal("", a.Source.Name);
+
+                eventSourceListener.Enable(spec); // Rule with wildcard source and activity name is ignored
+
+                Assert.NotNull(eventSourceListener.LastOtherEvent);
+                Assert.Equal("Message", eventSourceListener.LastOtherEvent.EventName);
+                Assert.Equal(errorMessage, eventSourceListener.LastOtherEvent.Payload[0] as string);
+
+                using var source = new ActivitySource("TestSource");
+
+                using var root = source.StartActivity("TestActivity");
+
+                Assert.NotNull(root);
+
+                Assert.Equal(0, eventSourceListener.EventCount);
+
+                root.Stop();
+
+                Assert.Equal(1, eventSourceListener.EventCount);
+            }, spec, errorMessage).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1515,28 +1548,6 @@ namespace System.Diagnostics.Tests
 
             RemoteExecutor.Invoke(() =>
             {
-                // Multiple matches on source + name takes highest sampling result
-
-                using ActivitySource source = new("TestActivitySource");
-
-                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
-
-                eventSourceListener.Enable(
-@"[AS]TestActivitySource+TestActivity/-ParentRatioSampler(0.0)
-[AS]TestActivitySource+TestActivity/-Propagate
-[AS]TestActivitySource+TestActivity/-
-[AS]TestActivitySource+TestActivity/-Record
-");
-
-                using (Activity? a = source.StartActivity("TestActivity"))
-                {
-                    Assert.NotNull(a);
-                    Assert.True(a.Recorded);
-                }
-            }).Dispose();
-
-            RemoteExecutor.Invoke(() =>
-            {
                 // Match on source wins
 
                 using ActivitySource source = new("TestActivitySource");
@@ -1558,28 +1569,6 @@ namespace System.Diagnostics.Tests
 
             RemoteExecutor.Invoke(() =>
             {
-                // Multiple matches on source takes highest sampling result
-
-                using ActivitySource source = new("TestActivitySource");
-
-                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
-
-                eventSourceListener.Enable(
-@"[AS]TestActivitySource/-ParentRatioSampler(0.0)
-[AS]TestActivitySource/-Propagate
-[AS]TestActivitySource/-
-[AS]TestActivitySource/-Record
-");
-
-                using (Activity? a = source.StartActivity("OtherActivity"))
-                {
-                    Assert.NotNull(a);
-                    Assert.True(a.Recorded);
-                }
-            }).Dispose();
-
-            RemoteExecutor.Invoke(() =>
-            {
                 // Wildcard match wins
 
                 using ActivitySource source = new("OtherActivitySource");
@@ -1596,28 +1585,6 @@ namespace System.Diagnostics.Tests
                 {
                     Assert.NotNull(a);
                     Assert.False(a.Recorded);
-                }
-            }).Dispose();
-
-            RemoteExecutor.Invoke(() =>
-            {
-                // Multiple matches on wildcard takes highest sampling result
-
-                using ActivitySource source = new("OtherActivitySource");
-
-                using TestDiagnosticSourceEventListener eventSourceListener = new TestDiagnosticSourceEventListener();
-
-                eventSourceListener.Enable(
-@"[AS]*/-ParentRatioSampler(0.0)
-[AS]*/-Propagate
-[AS]*/-
-[AS]*/-Record
-");
-
-                using (Activity? a = source.StartActivity("OtherActivity"))
-                {
-                    Assert.NotNull(a);
-                    Assert.True(a.Recorded);
                 }
             }).Dispose();
         }
