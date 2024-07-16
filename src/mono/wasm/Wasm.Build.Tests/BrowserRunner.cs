@@ -117,7 +117,7 @@ internal class BrowserRunner : IAsyncDisposable
         if (modifyBrowserUrl != null)
             browserUrl = modifyBrowserUrl(browserUrl);
 
-        IPage page = await Browser.NewPageAsync();
+        IPage page = await Browser!.NewPageAsync();
         if (onConsoleMessage is not null)
             page.Console += (_, msg) => onConsoleMessage(msg);
 
