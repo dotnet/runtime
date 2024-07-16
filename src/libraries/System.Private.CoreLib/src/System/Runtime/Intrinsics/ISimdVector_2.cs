@@ -156,8 +156,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         static virtual void CopyTo(TSelf vector, T[] destination)
         {
-            _ = destination.Length;
-            TSelf.CopyTo(vector, destination.AsSpan());
+            TSelf.CopyTo(vector, new Span<T>(destination, 0, destination.Length));
         }
 
         /// <summary>Copies a vector to a given array starting at the specified index.</summary>
@@ -170,8 +169,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         static virtual void CopyTo(TSelf vector, T[] destination, int startIndex)
         {
-            _ = destination.Length;
-            TSelf.CopyTo(vector, destination.AsSpan(startIndex));
+            TSelf.CopyTo(vector, new Span<T>(destination, startIndex, destination.Length));
         }
 
         /// <summary>Copies a vector to a given span.</summary>
@@ -202,8 +200,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         static virtual TSelf Create(T[] values)
         {
-            _ = values.Length;
-            return TSelf.Create(values.AsSpan());
+            return TSelf.Create(new Span<T>(values, 0, values.Length));
         }
 
         /// <summary>Creates a new vector from a given array.</summary>
@@ -215,8 +212,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         static virtual TSelf Create(T[] values, int index)
         {
-            _ = values.Length;
-            return TSelf.Create(values.AsSpan(index));
+            return TSelf.Create(new Span<T>(values, index, values.Length));
         }
 
         /// <summary>Creates a new vector from a given readonly span.</summary>
