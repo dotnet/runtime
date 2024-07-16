@@ -4853,16 +4853,16 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe System.Numerics.Vector<double> GatherVectorFirstFaulting(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<long> indices) { throw null; }
         public static unsafe System.Numerics.Vector<double> GatherVectorFirstFaulting(System.Numerics.Vector<double> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<double> GatherVectorFirstFaulting(System.Numerics.Vector<double> mask, double* address, System.Numerics.Vector<ulong> indices) { throw null; }
-        public static unsafe System.Numerics.Vector<int> GatherVectorFirstFaulting(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        // public static unsafe System.Numerics.Vector<int> GatherVectorFirstFaulting(System.Numerics.Vector<int> mask, System.Numerics.Vector<uint> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<int> GatherVectorFirstFaulting(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<int> indices) { throw null; }
         public static unsafe System.Numerics.Vector<int> GatherVectorFirstFaulting(System.Numerics.Vector<int> mask, int* address, System.Numerics.Vector<uint> indices) { throw null; }
         public static unsafe System.Numerics.Vector<long> GatherVectorFirstFaulting(System.Numerics.Vector<long> mask, System.Numerics.Vector<ulong> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<long> GatherVectorFirstFaulting(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<long> indices) { throw null; }
         public static unsafe System.Numerics.Vector<long> GatherVectorFirstFaulting(System.Numerics.Vector<long> mask, long* address, System.Numerics.Vector<ulong> indices) { throw null; }
         public static unsafe System.Numerics.Vector<float> GatherVectorFirstFaulting(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<int> indices) { throw null; }
-        public static unsafe System.Numerics.Vector<float> GatherVectorFirstFaulting(System.Numerics.Vector<float> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        // public static unsafe System.Numerics.Vector<float> GatherVectorFirstFaulting(System.Numerics.Vector<float> mask, System.Numerics.Vector<uint> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<float> GatherVectorFirstFaulting(System.Numerics.Vector<float> mask, float* address, System.Numerics.Vector<uint> indices) { throw null; }
-        public static unsafe System.Numerics.Vector<uint> GatherVectorFirstFaulting(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
+        // public static unsafe System.Numerics.Vector<uint> GatherVectorFirstFaulting(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> addresses) { throw null; }
         public static unsafe System.Numerics.Vector<uint> GatherVectorFirstFaulting(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<int> indices) { throw null; }
         public static unsafe System.Numerics.Vector<uint> GatherVectorFirstFaulting(System.Numerics.Vector<uint> mask, uint* address, System.Numerics.Vector<uint> indices) { throw null; }
         public static unsafe System.Numerics.Vector<ulong> GatherVectorFirstFaulting(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> addresses) { throw null; }

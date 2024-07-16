@@ -34,6 +34,8 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates basic functionality works
                 test.RunBasicScenario_Load();
+
+                // Validates basic functionality of first-faulting behavior
                 test.RunBasicScenario_LoadFirstFaulting();
 
                 // Validates fully masked out load works.
@@ -580,7 +582,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            var succeeded = Helpers.CheckGatherVectorBehavior(maskOp, firstOp, secondOp, thirdOp, falseOp, result);
+            var succeeded = Helpers.CheckGatherVectorConditionalSelectBehavior(maskOp, firstOp, secondOp, thirdOp, falseOp, result);
 
             if (!succeeded)
             {

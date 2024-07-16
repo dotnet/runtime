@@ -8119,6 +8119,12 @@ namespace JIT.HardwareIntrinsics.Arm
             return (maskResult != T.Zero) ? result : falseResult;
         }
 
+        private static T ConditionalSelectTrueResult<T>(T maskResult, T result, T trueResult) where T : INumberBase<T>
+        {
+            return (maskResult != T.Zero) ? trueResult : result;
+        }
+
+
         private static bool CheckLoadVectorBehaviorCore<T>(T[] firstOp, T[] result, Func<int, T, T> map) where T : INumberBase<T>
         {
             for (var i = 0; i < firstOp.Length; i++)
@@ -8143,22 +8149,30 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckLoadVectorBehaviorCore(firstOp, result, (i, loadResult) => ConditionalSelectResult(maskOp[i], loadResult, falseOp[i]));
         }
 
-        private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp)
+        private static T GetGatherVectorResultByIndex<T, ExtendedElementT, Index>(int index, T[] mask, ExtendedElementT[] data, Index[] indices)
                 where T : INumberBase<T> 
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
                 where Index : IBinaryInteger<Index>
         {
-            return (firstOp[index] == T.Zero) ? T.Zero : T.CreateTruncating(secondOp[int.CreateChecked(thirdOp[index])]);
+            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(data[int.CreateChecked(indices[index])]);
         }
 
-        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] result, Func<int, T, T> map) 
+        private static unsafe T GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(int index, T[] mask, AddressT[] data)
                 where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
+        }
+
+        private static bool CheckGatherVectorBehaviorCore<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Func<int, T, T> map) 
+                where T : INumberBase<T>
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
                 where Index : IBinaryInteger<Index>
         {
-            for (var i = 0; i < firstOp.Length; i++)
+            for (var i = 0; i < mask.Length; i++)
             {
-                T gatherResult = GetGatherVectorResultByIndex(i, firstOp, secondOp, thirdOp);
+                T gatherResult = GetGatherVectorResultByIndex(i, mask, data, indices);
                 gatherResult = map(i, gatherResult);
                 if (result[i] != gatherResult)
                 {
@@ -8168,20 +8182,70 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] result) 
+        private static bool CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Func<int, T, T> map) 
                 where T : INumberBase<T> 
-                where ExtendedElementT : INumberBase<ExtendedElementT> 
-                where Index : IBinaryInteger<Index>
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
-            return CheckGatherVectorBehaviorCore(firstOp, secondOp, thirdOp, result, (_, gatherResult) => gatherResult);
+            for (var i = 0; i < mask.Length; i++)
+            {
+                T gatherResult = GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data);
+                gatherResult = map(i, gatherResult);
+                if (result[i] != gatherResult)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
-        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] maskOp, T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] falseOp, T[] result) 
+        public static bool CheckGatherVectorBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result) 
                 where T : INumberBase<T> 
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
                 where Index : IBinaryInteger<Index>
         {
-            return CheckGatherVectorBehaviorCore(firstOp, secondOp, thirdOp, result, (i, gatherResult) => ConditionalSelectResult(maskOp[i], gatherResult, falseOp[i]));
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (_, gatherResult) => gatherResult);
+        }
+
+        public static bool CheckGatherVectorConditionalSelectBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelFalse, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
+        }
+
+        public static bool CheckGatherVectorConditionalSelectTrueBehavior<T, ExtendedElementT, Index>(T[] cndSelMask, T[] mask, ExtendedElementT[] data, Index[] indices, T[] cndSelTrue, T[] result) 
+                where T : INumberBase<T> 
+                where ExtendedElementT : INumberBase<ExtendedElementT> 
+                where Index : IBinaryInteger<Index>
+        {
+            return CheckGatherVectorBehaviorCore(mask, data, indices, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
+        }
+
+
+        public static bool CheckGatherVectorBasesBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (_, gatherResult) => gatherResult);
+        }
+
+        public static bool CheckGatherVectorBasesConditionalSelectBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelFalse, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectResult(cndSelMask[i], gatherResult, cndSelFalse[i]));
+        }
+
+        public static bool CheckGatherVectorBasesConditionalSelectTrueBehavior<T, AddressT, ExtendedElementT>(T[] cndSelMask, T[] mask, AddressT[] data, T[] cndSelTrue, T[] result) 
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
         }
 
         private static bool CheckFirstFaultingBehaviorCore<T>(T[] result, Vector<T> faultResult, Func<int, bool> checkIter) where T : INumberBase<T>
@@ -8226,12 +8290,20 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => firstOp[i] == result[i]);
         }
 
-        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index>(T[] firstOp, ExtendedElementT[] secondOp, Index[] thirdOp, T[] result, Vector<T> faultResult)
+        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<T> faultResult)
                 where T : INumberBase<T> 
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
                 where Index : IBinaryInteger<Index>
         {
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByIndex(i, firstOp, secondOp, thirdOp) == result[i]);
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByIndex(i, mask, data, indices) == result[i]);
+        }
+
+        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Vector<T> faultResult)
+                where T : INumberBase<T> 
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+        {
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
         
         private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)

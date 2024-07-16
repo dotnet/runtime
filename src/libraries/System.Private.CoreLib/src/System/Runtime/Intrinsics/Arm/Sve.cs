@@ -3521,11 +3521,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<double> GatherVectorFirstFaulting(Vector<double> mask, double* address, Vector<ulong> indices) => GatherVectorFirstFaulting(mask, address, indices);
 
-        /// <summary>
-        /// svint32_t svldff1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe Vector<int> GatherVectorFirstFaulting(Vector<int> mask, Vector<uint> addresses) => GatherVectorFirstFaulting(mask, addresses);
+        // <summary>
+        // svint32_t svldff1_gather[_u32base]_s32(svbool_t pg, svuint32_t bases)
+        //   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<int> GatherVectorFirstFaulting(Vector<int> mask, Vector<uint> addresses) => GatherVectorFirstFaulting(mask, addresses);
 
         /// <summary>
         /// svint32_t svldff1_gather_[s32]index[_s32](svbool_t pg, const int32_t *base, svint32_t indices)
@@ -3563,11 +3564,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> GatherVectorFirstFaulting(Vector<float> mask, float* address, Vector<int> indices) => GatherVectorFirstFaulting(mask, address, indices);
 
-        /// <summary>
-        /// svfloat32_t svldff1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe Vector<float> GatherVectorFirstFaulting(Vector<float> mask, Vector<uint> addresses) => GatherVectorFirstFaulting(mask, addresses);
+        // <summary>
+        // svfloat32_t svldff1_gather[_u32base]_f32(svbool_t pg, svuint32_t bases)
+        //   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<float> GatherVectorFirstFaulting(Vector<float> mask, Vector<uint> addresses) => GatherVectorFirstFaulting(mask, addresses);
 
         /// <summary>
         /// svfloat32_t svldff1_gather_[u32]index[_f32](svbool_t pg, const float32_t *base, svuint32_t indices)
@@ -3575,11 +3577,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> GatherVectorFirstFaulting(Vector<float> mask, float* address, Vector<uint> indices) => GatherVectorFirstFaulting(mask, address, indices);
 
-        /// <summary>
-        /// svuint32_t svldff1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
-        ///   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
-        /// </summary>
-        public static unsafe Vector<uint> GatherVectorFirstFaulting(Vector<uint> mask, Vector<uint> addresses) => GatherVectorFirstFaulting(mask, addresses);
+        // <summary>
+        // svuint32_t svldff1_gather[_u32base]_u32(svbool_t pg, svuint32_t bases)
+        //   LDFF1W Zresult.S, Pg/Z, [Zbases.S, #0]
+        // </summary>
+        // Removed as per #103297
+        // public static unsafe Vector<uint> GatherVectorFirstFaulting(Vector<uint> mask, Vector<uint> addresses) => GatherVectorFirstFaulting(mask, addresses);
 
         /// <summary>
         /// svuint32_t svldff1_gather_[s32]index[_u32](svbool_t pg, const uint32_t *base, svint32_t indices)
