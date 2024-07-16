@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -153,7 +154,8 @@ internal sealed class DiagnosticSourceEventSourceListener : IDisposable
                             || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
 #endif
                         {
-                            // Invalid format
+                            if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                                DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling ratio was invalid");
                             return next;
                         }
 
@@ -161,7 +163,8 @@ internal sealed class DiagnosticSourceEventSourceListener : IDisposable
                     }
                     else
                     {
-                        // Invalid format
+                        if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                            DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling method was invalid");
                         return next;
                     }
                 }
@@ -184,7 +187,8 @@ internal sealed class DiagnosticSourceEventSourceListener : IDisposable
                 }
                 else
                 {
-                    // Invalid format
+                    if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                        DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because event name was invalid");
                     return next;
                 }
             }
@@ -201,6 +205,13 @@ internal sealed class DiagnosticSourceEventSourceListener : IDisposable
         {
             activityName = activitySourceName.Slice(plusSignIndex + 1).Trim().ToString();
             activitySourceName = activitySourceName.Slice(0, plusSignIndex).Trim();
+
+            if (activityName.Length > 0 && activitySourceName.Length == 1 && activitySourceName[0] == '*')
+            {
+                if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                    DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because activity name cannot be specified for wildcard activity sources");
+                return next;
+            }
         }
 
         return new DiagnosticSourceEventSourceFilterAndTransform(filterAndPayloadSpec, endIdx, colonIdx, activitySourceName.ToString(), activityName, supportedEvent, sampleFunc, next);
