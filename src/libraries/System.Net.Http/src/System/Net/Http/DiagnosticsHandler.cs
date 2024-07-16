@@ -200,7 +200,7 @@ namespace System.Net.Http
                         // Add standard tags known at request completion.
                         if (response is not null)
                         {
-                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
                             activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
                         }
 
@@ -219,7 +219,7 @@ namespace System.Net.Http
                         // Add standard tags known at request completion.
                         if (response is not null)
                         {
-                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                            activity.SetTag("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
                             activity.SetTag("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
                         }
 

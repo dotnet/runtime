@@ -303,9 +303,11 @@ namespace System
         /// </remarks>
         public static Guid CreateVersion7(DateTimeOffset timestamp)
         {
-            // This isn't the most optimal way, but we don't have an easy way to get
-            // secure random bytes in corelib without doing this since the secure rng
-            // is in a different layer.
+            // NewGuid uses CoCreateGuid on Windows and Interop.GetCryptographicallySecureRandomBytes on Unix to get
+            // cryptographically-secure random bytes. We could use Interop.BCrypt.BCryptGenRandom to generate the random
+            // bytes on Windows, as is done in RandomNumberGenerator, but that's measurably slower than using CoCreateGuid.
+            // And while CoCreateGuid only generates 122 bits of randomness, the other 6 bits being for the version / variant
+            // fields, this method also needs those bits to be non-random, so we can just use NewGuid for efficiency.
             Guid result = NewGuid();
 
             // 2^48 is roughly 8925.5 years, which from the Unix Epoch means we won't
