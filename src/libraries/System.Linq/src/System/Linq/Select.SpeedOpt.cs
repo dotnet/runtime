@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static System.Linq.Utilities;
 
@@ -31,15 +32,19 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 Func<TSource, TResult> selector = _selector;
                 foreach (TSource item in _source)
                 {
-                    list.Add(selector(item));
+                    builder.Add(selector(item));
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override int GetCount(bool onlyIfCheap)
@@ -657,7 +662,7 @@ namespace System.Linq
                 return sourceFound ? _selector(input!) : default!;
             }
 
-            private TResult[] LazyToArray()
+            private TResult[] ToArrayNoPresizing()
             {
                 Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
 
@@ -691,10 +696,29 @@ namespace System.Linq
                 int count = _source.GetCount(onlyIfCheap: true);
                 return count switch
                 {
-                    -1 => LazyToArray(),
+                    -1 => ToArrayNoPresizing(),
                     0 => [],
                     _ => PreallocatingToArray(count),
                 };
+            }
+
+            private List<TResult> ToListNoPresizing()
+            {
+                Debug.Assert(_source.GetCount(onlyIfCheap: true) == -1);
+
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
+
+                Func<TSource, TResult> selector = _selector;
+                foreach (TSource input in _source)
+                {
+                    builder.Add(selector(input));
+                }
+
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override List<TResult> ToList()
@@ -704,11 +728,7 @@ namespace System.Linq
                 switch (count)
                 {
                     case -1:
-                        list = new List<TResult>();
-                        foreach (TSource input in _source)
-                        {
-                            list.Add(_selector(input));
-                        }
+                        list = ToListNoPresizing();
                         break;
                     case 0:
                         list = new List<TResult>();

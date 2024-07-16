@@ -39,6 +39,7 @@
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">00:20:00</_workItemTimeout>
@@ -355,7 +356,7 @@
   <!--
       Helix tasks will attempt to write a .payload file to the payload directory. But if the
       directory is not writable, for example when it is a system installed dependency like
-        `WASI_SDK22_PATH=/usr/local/wasi-sdk`
+        `WASI_SDK_PATH=/usr/local/wasi-sdk`
       .. then we need to stage that before passing the path to helix like under `artifacts/obj/helix-staging`
   -->
   <Target Name="StageDependenciesForHelix" Condition="@(__HelixDependenciesToStageThatDontExist->Count()) > 0">

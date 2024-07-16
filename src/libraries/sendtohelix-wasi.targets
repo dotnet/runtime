@@ -46,8 +46,8 @@
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
-    <WASI_SDK22_PATH Condition="'$(WASI_SDK22_PATH)' == ''">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK22_PATH>
-    <WASI_SDK22_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK22_PATH)').Replace('\', '/'))</WASI_SDK22_PATH>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')">$([MSBuild]::NormalizeDirectory($(RepoRoot), 'src', 'mono', 'wasi', 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
     <WasiBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasi', 'build'))</WasiBuildTargetsDir>
     <WasiSdkDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasi-sdk</WasiSdkDirForHelixPayload>
     <WasmtimeDirForHelixPayload>$(HelixDependenciesStagingPath)$(WorkItemPrefix)wasmtime</WasmtimeDirForHelixPayload>
@@ -64,7 +64,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixDependenciesToStage Condition="'$(NeedsWasiSdk)' == 'true'"  SourcePath="$(WASI_SDK22_PATH)" Include="$(WasiSdkDirForHelixPayload)" />
+    <HelixDependenciesToStage Condition="'$(NeedsWasiSdk)' == 'true'"  SourcePath="$(WASI_SDK_PATH)" Include="$(WasiSdkDirForHelixPayload)" />
     <HelixDependenciesToStage Condition="'$(NeedsWasmtime)' == 'true'" SourcePath="$(WasmtimeDir)"   Include="$(WasmtimeDirForHelixPayload)" />
   </ItemGroup>
 
@@ -93,8 +93,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;WASI_SDK22_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
-    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;WASI_SDK22_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;WASI_SDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\wasi-sdk&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;WASI_SDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/wasi-sdk&quot;" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(NeedsWasiSdk)' == 'true'">

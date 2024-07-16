@@ -2232,6 +2232,8 @@ public:
 
     bool MayExecuteBlockMultipleTimesPerIteration(BasicBlock* block);
 
+    bool IsPostDominatedOnLoopIteration(BasicBlock* block, BasicBlock* postDominator);
+
 #ifdef DEBUG
     static void Dump(FlowGraphNaturalLoop* loop);
 #endif // DEBUG
@@ -3053,6 +3055,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type, void* data);
 
+    GenTreeMskCon* gtNewMskConNode(var_types type);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
@@ -3230,7 +3234,9 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtMaskToVectorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCvtNode(var_types   type,
                               GenTree*    op1,
@@ -3244,7 +3250,9 @@ public:
                                     CorInfoType simdSourceBaseJitType,
                                     unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3646,10 +3654,10 @@ public:
     void gtSetStmtInfo(Statement* stmt);
 
     // Returns "true" iff "node" has any of the side effects in "flags".
-    bool gtNodeHasSideEffects(GenTree* node, GenTreeFlags flags);
+    bool gtNodeHasSideEffects(GenTree* node, GenTreeFlags flags, bool ignoreCctors = false);
 
     // Returns "true" iff "tree" or its (transitive) children have any of the side effects in "flags".
-    bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags);
+    bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors = false);
 
     void gtExtractSideEffList(GenTree*     expr,
                               GenTree**    pList,
@@ -4538,6 +4546,8 @@ protected:
     GenTree* impFixupStructReturnType(GenTree* op);
 
     GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
+
+    GenTree* impThrowIfNull(GenTreeCall* call);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
@@ -6173,6 +6183,7 @@ public:
 #endif // FEATURE_EH_WINDOWS_X86
 
     bool fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target);
+    bool fgFoldSimpleCondByForwardSub(BasicBlock* block);
 
     bool fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNum);
 
@@ -6783,6 +6794,7 @@ private:
     void fgAddCodeRef(BasicBlock* srcBlk, SpecialCodeKind kind);
     PhaseStatus fgCreateThrowHelperBlocks();
 
+
 public:
     AddCodeDsc* fgFindExcptnTarget(SpecialCodeKind kind, unsigned refData);
 
@@ -6792,6 +6804,8 @@ public:
     {
         return fgAddCodeList;
     }
+
+    void fgCreateThrowHelperBlockCode(AddCodeDsc* add);
 
 private:
     bool fgIsThrowHlpBlk(BasicBlock* block);
@@ -7243,6 +7257,7 @@ protected:
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
+    GenTree* optExtractSideEffectsForCSE(GenTree* tree);
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
@@ -8025,6 +8040,7 @@ public:
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
+    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions);
     bool           optAssertionIsNonNull(GenTree*                    op,
                                          ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
@@ -11665,6 +11681,7 @@ public:
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
+            case GT_CNS_MSK:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:

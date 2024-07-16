@@ -149,6 +149,7 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/97296 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'windows' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisabledMonoTestsOnWindows)' != 'true'">
