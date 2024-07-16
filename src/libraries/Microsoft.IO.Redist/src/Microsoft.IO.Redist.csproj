@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Downlevel support package for System.IO classes.</PackageDescription>
     <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>

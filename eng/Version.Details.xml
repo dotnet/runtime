@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-rtm.24269.3">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-rtm.24315.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>def3524876b6b84a72e8ed02db6077f9c0ce8a75</Sha>
+      <Sha>20d255e341e98186edf70b24aa52fdd81797cc51</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-servicing.22205.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -242,9 +242,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>d50065944d8b41d804448a7056351481d583ad3d</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="6.0.0-alpha.0.24271.2">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="6.0.0-alpha.0.24362.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>6f095cd6901ed48a469289f7f4f91d30a420d1ad</Sha>
+      <Sha>279b1ac2439ff27e32eb574a4b8e0d1087c09c8e</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="6.0.0-beta.24271.2">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
