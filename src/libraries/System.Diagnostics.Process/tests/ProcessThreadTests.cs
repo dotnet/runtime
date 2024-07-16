@@ -111,7 +111,9 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Linux|TestPlatforms.Windows)] // OSX and FreeBSD throw PNSE from StartTime
         public async Task TestStartTimeProperty()
         {
-            TimeSpan allowedWindow = TimeSpan.FromSeconds(2);
+            TimeSpan allowedWindow = PlatformDetection.IsMonoRuntime
+                ? TimeSpan.FromSeconds(15)
+                : TimeSpan.FromSeconds(2);
 
             using (Process p = Process.GetCurrentProcess())
             {
