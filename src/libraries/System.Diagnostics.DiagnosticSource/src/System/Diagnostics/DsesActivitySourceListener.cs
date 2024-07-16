@@ -7,17 +7,17 @@ using System.Diagnostics.Tracing;
 
 namespace System.Diagnostics;
 
-internal sealed class DiagnosticSourceEventSourceActivitySourceListener : IDisposable
+internal sealed class DsesActivitySourceListener : IDisposable
 {
-    private DiagnosticSourceEventSourceFilterAndTransform? _wildcardSpec;
-    private Dictionary<SpecLookupKey, DiagnosticSourceEventSourceFilterAndTransform>? _specsBySourceNameAndActivityName;
+    private DsesFilterAndTransform? _wildcardSpec;
+    private Dictionary<SpecLookupKey, DsesFilterAndTransform>? _specsBySourceNameAndActivityName;
     private HashSet<string>? _listenToActivitySourceNames;
     private ActivityListener? _activityListener;
 
-    public static DiagnosticSourceEventSourceActivitySourceListener Create(
-        DiagnosticSourceEventSourceFilterAndTransform activitySourceSpecs)
+    public static DsesActivitySourceListener Create(
+        DsesFilterAndTransform activitySourceSpecs)
     {
-        var listener = new DiagnosticSourceEventSourceActivitySourceListener();
+        var listener = new DsesActivitySourceListener();
 
         listener.NormalizeActivitySourceSpecsList(activitySourceSpecs);
 
@@ -26,7 +26,7 @@ internal sealed class DiagnosticSourceEventSourceActivitySourceListener : IDispo
         return listener;
     }
 
-    private DiagnosticSourceEventSourceActivitySourceListener()
+    private DsesActivitySourceListener()
     {
     }
 
@@ -40,13 +40,13 @@ internal sealed class DiagnosticSourceEventSourceActivitySourceListener : IDispo
     }
 
     private void NormalizeActivitySourceSpecsList(
-        DiagnosticSourceEventSourceFilterAndTransform? activitySourceSpecs)
+        DsesFilterAndTransform? activitySourceSpecs)
     {
         Debug.Assert(activitySourceSpecs != null);
 
         while (activitySourceSpecs != null)
         {
-            DiagnosticSourceEventSourceFilterAndTransform? currentActivitySourceSpec = activitySourceSpecs;
+            DsesFilterAndTransform? currentActivitySourceSpec = activitySourceSpecs;
 
             Debug.Assert(currentActivitySourceSpec.SourceName != null);
             Debug.Assert(currentActivitySourceSpec.SampleFunc != null);
@@ -135,7 +135,7 @@ internal sealed class DiagnosticSourceEventSourceActivitySourceListener : IDispo
     private bool TryFindSpecForActivity(
         string activitySourceName,
         string activityName,
-        [NotNullWhen(true)] out DiagnosticSourceEventSourceFilterAndTransform? spec)
+        [NotNullWhen(true)] out DsesFilterAndTransform? spec)
     {
         if (_specsBySourceNameAndActivityName != null)
         {
@@ -163,7 +163,7 @@ internal sealed class DiagnosticSourceEventSourceActivitySourceListener : IDispo
     private void OnActivityStarted(Activity activity)
     {
         if (TryFindSpecForActivity(activity.Source.Name, activity.OperationName, out var spec)
-            && (spec.Events & DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.ActivityStart) != 0)
+            && (spec.Events & DsesActivityEvents.ActivityStart) != 0)
         {
             DiagnosticSourceEventSource.Log.ActivityStart(activity.Source.Name, activity.OperationName, spec.Morph(activity));
         }
@@ -174,7 +174,7 @@ internal sealed class DiagnosticSourceEventSourceActivitySourceListener : IDispo
     private void OnActivityStopped(Activity activity)
     {
         if (TryFindSpecForActivity(activity.Source.Name, activity.OperationName, out var spec)
-            && (spec.Events & DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.ActivityStop) != 0)
+            && (spec.Events & DsesActivityEvents.ActivityStop) != 0)
         {
             DiagnosticSourceEventSource.Log.ActivityStop(activity.Source.Name, activity.OperationName, spec.Morph(activity));
         }

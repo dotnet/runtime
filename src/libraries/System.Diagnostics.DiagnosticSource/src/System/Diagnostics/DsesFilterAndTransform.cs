@@ -14,6 +14,15 @@ using System.Threading;
 
 namespace System.Diagnostics;
 
+[Flags]
+internal enum DsesActivityEvents
+{
+    None = 0x00,
+    ActivityStart = 0x01,
+    ActivityStop = 0x02,
+    All = ActivityStart | ActivityStop,
+}
+
 /// <summary>
 /// FilterAndTransform represents on transformation specification from a DiagnosticsSource
 /// to EventSource's 'Event' method. (e.g. MySource/MyEvent:out=prop1.prop2.prop3).
@@ -23,7 +32,7 @@ namespace System.Diagnostics;
 /// This method also contains that static 'Create/Destroy FilterAndTransformList, which
 /// simply parse a series of transformation specifications.
 /// </summary>
-internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposable
+internal sealed class DsesFilterAndTransform : IDisposable
 {
     private const string c_ActivitySourcePrefix = "[AS]";
     private const string c_ParentRatioSamplerPrefix = "ParentRatioSampler(";
@@ -49,8 +58,8 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
     {
         filterAndPayloadSpecs ??= "";
 
-        DiagnosticSourceEventSourceFilterAndTransform? specList = null;
-        DiagnosticSourceEventSourceFilterAndTransform? activitySourceSpecList = null;
+        DsesFilterAndTransform? specList = null;
+        DsesFilterAndTransform? activitySourceSpecList = null;
 
         // Points just beyond the last point in the string that has yet to be parsed. Thus we start with the whole string.
         int endIdx = filterAndPayloadSpecs.Length;
@@ -83,8 +92,8 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
                 break;
         }
 
-        DiagnosticSourceEventSourceActivitySourceListener? activitySourceListener = activitySourceSpecList != null
-            ? DiagnosticSourceEventSourceActivitySourceListener.Create(activitySourceSpecList)
+        DsesActivitySourceListener? activitySourceListener = activitySourceSpecList != null
+            ? DsesActivitySourceListener.Create(activitySourceSpecList)
             : null;
 
         return new ParsedFilterAndPayloadSpecs(specList, activitySourceListener);
@@ -99,7 +108,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
     /// This FilterAndTransform will subscribe to DiagnosticSources specified by the specification and forward them to 'eventSource.
     /// For convenience, the 'Next' field is set to the 'next' parameter, so you can easily form linked lists.
     /// </summary>
-    private static DiagnosticSourceEventSourceFilterAndTransform? CreateTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSourceFilterAndTransform? next)
+    private static DsesFilterAndTransform? CreateTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DsesFilterAndTransform? next)
     {
         Debug.Assert(filterAndPayloadSpec != null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
 
@@ -174,7 +183,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
             }
         }
 
-        var transform = new DiagnosticSourceEventSourceFilterAndTransform(
+        var transform = new DsesFilterAndTransform(
             next,
             noImplicitTransforms,
             explicitTransforms,
@@ -188,7 +197,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
         return transform;
     }
 
-    private static DiagnosticSourceEventSourceFilterAndTransform? CreateActivitySourceTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSourceFilterAndTransform? next)
+    private static DsesFilterAndTransform? CreateActivitySourceTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DsesFilterAndTransform? next)
     {
         Debug.Assert(endIdx - startIdx >= 4);
         Debug.Assert(IsActivitySourceEntry(filterAndPayloadSpec, startIdx, endIdx));
@@ -198,8 +207,8 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
         ReadOnlySpan<char> eventName;
         ReadOnlySpan<char> activitySourceName;
 
-        DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents supportedEvent = DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.All; // Default events
-        DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options)
+        DsesActivityEvents supportedEvent = DsesActivityEvents.All; // Default events
+        DsesSampleActivityFunc sampleFunc = static (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options)
             => ActivitySamplingResult.AllDataAndRecorded; // Default sampler
 
         int colonIdx = filterAndPayloadSpec.IndexOf(':', startIdx + c_ActivitySourcePrefix.Length, endIdx - startIdx - c_ActivitySourcePrefix.Length);
@@ -247,7 +256,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
                             return next;
                         }
 
-                        sampleFunc = DiagnosticSourceEventSourceSamplerBuilder.CreateParentRatioSampler(ratio);
+                        sampleFunc = DsesSamplerBuilder.CreateParentRatioSampler(ratio);
                     }
                     else
                     {
@@ -267,11 +276,11 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
             {
                 if (eventName.Equals("Start".AsSpan(), StringComparison.OrdinalIgnoreCase))
                 {
-                    supportedEvent = DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.ActivityStart;
+                    supportedEvent = DsesActivityEvents.ActivityStart;
                 }
                 else if (eventName.Equals("Stop".AsSpan(), StringComparison.OrdinalIgnoreCase))
                 {
-                    supportedEvent = DiagnosticSourceEventSourceFilterAndTransform.ActivityEvents.ActivityStop;
+                    supportedEvent = DsesActivityEvents.ActivityStop;
                 }
                 else
                 {
@@ -339,7 +348,7 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
             }
         }
 
-        return new DiagnosticSourceEventSourceFilterAndTransform(
+        return new DsesFilterAndTransform(
             next,
             noImplicitTransforms,
             explicitTransforms,
@@ -349,14 +358,14 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
             sampleFunc);
     }
 
-    private DiagnosticSourceEventSourceFilterAndTransform(
-        DiagnosticSourceEventSourceFilterAndTransform? next,
+    private DsesFilterAndTransform(
+        DsesFilterAndTransform? next,
         bool noImplicitTransforms,
         TransformSpec? explicitTransforms,
         string? sourceName,
         string? activityName,
-        ActivityEvents activityEvents,
-        DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc? sampleFunc)
+        DsesActivityEvents activityEvents,
+        DsesSampleActivityFunc? sampleFunc)
     {
         _noImplicitTransforms = noImplicitTransforms;
         _explicitTransforms = explicitTransforms;
@@ -513,32 +522,23 @@ internal sealed class DiagnosticSourceEventSourceFilterAndTransform : IDisposabl
         }));
     }
 
-    public DiagnosticSourceEventSourceFilterAndTransform? Next { get; }
+    public DsesFilterAndTransform? Next { get; }
 
     // Specific ActivitySource Transforms information
 
     internal string? SourceName { get; }
     internal string? ActivityName { get; }
-    internal ActivityEvents Events { get; }
-    internal DiagnosticSourceEventSourceSamplerBuilder.SampleActivityFunc? SampleFunc { get; }
-
-    [Flags]
-    internal enum ActivityEvents
-    {
-        None = 0x00,
-        ActivityStart = 0x01,
-        ActivityStop = 0x02,
-        All = ActivityStart | ActivityStop,
-    }
+    internal DsesActivityEvents Events { get; }
+    internal DsesSampleActivityFunc? SampleFunc { get; }
 
     private sealed class ParsedFilterAndPayloadSpecs : IDisposable
     {
-        private DiagnosticSourceEventSourceFilterAndTransform? _specList;
-        private DiagnosticSourceEventSourceActivitySourceListener? _activitySourceListener;
+        private DsesFilterAndTransform? _specList;
+        private DsesActivitySourceListener? _activitySourceListener;
 
         public ParsedFilterAndPayloadSpecs(
-            DiagnosticSourceEventSourceFilterAndTransform? specList,
-            DiagnosticSourceEventSourceActivitySourceListener? activitySourceListener)
+            DsesFilterAndTransform? specList,
+            DsesActivitySourceListener? activitySourceListener)
         {
             _specList = specList;
             _activitySourceListener = activitySourceListener;

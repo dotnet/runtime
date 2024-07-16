@@ -3,13 +3,13 @@
 
 namespace System.Diagnostics;
 
-internal static class DiagnosticSourceEventSourceSamplerBuilder
-{
-    internal delegate ActivitySamplingResult SampleActivityFunc(
-        bool hasActivityContext,
-        ref ActivityCreationOptions<ActivityContext> options);
+internal delegate ActivitySamplingResult DsesSampleActivityFunc(
+    bool hasActivityContext,
+    ref ActivityCreationOptions<ActivityContext> options);
 
-    public static SampleActivityFunc CreateParentRatioSampler(double ratio)
+internal static class DsesSamplerBuilder
+{
+    public static DsesSampleActivityFunc CreateParentRatioSampler(double ratio)
     {
         long idUpperBound = ratio <= 0.0
             ? long.MinValue

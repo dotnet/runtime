@@ -1481,7 +1481,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(
                     ActivitySamplingResult.None,
-                    DiagnosticSourceEventSourceSamplerBuilder.ParentRatioSampler(
+                    DsesSamplerBuilder.ParentRatioSampler(
                         (long)(0.0001D * long.MaxValue),
                         parentContext: default,
                         notSampledtraceId));
@@ -1515,7 +1515,7 @@ namespace System.Diagnostics.Tests
 
                 Assert.Equal(
                     ActivitySamplingResult.AllDataAndRecorded,
-                    DiagnosticSourceEventSourceSamplerBuilder.ParentRatioSampler(
+                    DsesSamplerBuilder.ParentRatioSampler(
                         (long)(0.0001D * long.MaxValue),
                         parentContext: default,
                         sampledtraceId));
