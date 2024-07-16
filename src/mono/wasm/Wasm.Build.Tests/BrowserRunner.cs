@@ -41,7 +41,9 @@ internal class BrowserRunner : IAsyncDisposable
         bool headless = true,
         Action<IConsoleMessage>? onConsoleMessage = null,
         Action<string>? onError = null,
-        Func<string, string>? modifyBrowserUrl = null)
+        Func<string, string>? modifyBrowserUrl = null,
+        int timeout = 10000,
+        int maxRetries = 3)
     {
         TaskCompletionSource<string> urlAvailable = new();
         Action<string?> outputHandler = msg =>
@@ -89,12 +91,28 @@ internal class BrowserRunner : IAsyncDisposable
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();
         string[] chromeArgs = new[] { $"--explicitly-allowed-ports={url.Port}" };
         _testOutput.WriteLine($"Launching chrome ('{s_chromePath.Value}') via playwright with args = {string.Join(',', chromeArgs)}");
-        Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
-            ExecutablePath = s_chromePath.Value,
-            Headless = headless,
-            Args = chromeArgs
-        });
-
+        int attempt = 0;
+        while (attempt < maxRetries)
+        {
+            try
+            {
+                Browser = await Playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions{
+                    ExecutablePath = s_chromePath.Value,
+                    Headless = headless,
+                    Args = chromeArgs,
+                    Timeout = timeout
+                });
+                break;
+            }
+            catch (System.TimeoutException ex)
+            {
+                attempt++;
+                _testOutput.WriteLine($"Attempt {attempt} failed with TimeoutException: {ex.Message}");
+            }
+        }
+        if (attempt == maxRetries)
+            throw new Exception($"Failed to launch browser after {maxRetries} attempts");
+        
         string browserUrl = urlAvailable.Task.Result;
         if (modifyBrowserUrl != null)
             browserUrl = modifyBrowserUrl(browserUrl);
