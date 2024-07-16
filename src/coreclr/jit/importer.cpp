@@ -9532,6 +9532,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1->AsCall()->compileTimeHelperArgumentHandle = (CORINFO_GENERIC_HANDLE)resolvedToken.hClass;
 
                 // Remember that this function contains 'new' of an SD array.
+                block->SetFlags(BBF_HAS_NEWARR);
                 optMethodFlags |= OMF_HAS_NEWARRAY;
 
                 // We assign the newly allocated object (by a GT_CALL to newarr node)

@@ -574,6 +574,7 @@ void BasicBlock::dspFlags() const
         {BBF_HAS_IDX_LEN, "idxlen"},
         {BBF_HAS_MD_IDX_LEN, "mdidxlen"},
         {BBF_HAS_NEWOBJ, "newobj"},
+        {BBF_HAS_NEWARR, "newarr"},
         {BBF_HAS_NULLCHECK, "nullcheck"},
         {BBF_BACKWARD_JUMP, "bwd"},
         {BBF_BACKWARD_JUMP_TARGET, "bwd-target"},

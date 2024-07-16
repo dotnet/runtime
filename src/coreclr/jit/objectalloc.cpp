@@ -385,9 +385,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
     for (BasicBlock* const block : comp->Blocks())
     {
         const bool basicBlockHasNewObj       = block->HasFlag(BBF_HAS_NEWOBJ);
+        const bool basicBlockHasNewArr       = block->HasFlag(BBF_HAS_NEWARR);
         const bool basicBlockHasBackwardJump = block->HasFlag(BBF_BACKWARD_JUMP);
 #ifndef DEBUG
-        if (!basicBlockHasNewObj)
+        if (!basicBlockHasNewObj && !basicBlockHasNewArr)
         {
             continue;
         }

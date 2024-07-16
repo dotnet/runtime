@@ -462,7 +462,8 @@ enum BasicBlockFlags : uint64_t
     BBF_NO_CSE_IN                      = MAKE_BBFLAG(38), // Block should kill off any incoming CSE
     BBF_CAN_ADD_PRED                   = MAKE_BBFLAG(39), // Ok to add pred edge to this block, even when "safe" edge creation disabled
     BBF_HAS_VALUE_PROFILE              = MAKE_BBFLAG(40), // Block has a node that needs a value probing
-
+    
+    BBF_HAS_NEWARR                     = MAKE_BBFLAG(41), // BB contains 'new' of an array type.
     // The following are sets of flags.
 
     // Flags to update when two blocks are compacted
