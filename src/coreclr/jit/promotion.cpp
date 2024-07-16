@@ -659,9 +659,14 @@ public:
             }
         }
 
+        unsigned accessCount    = access.Count + inducedCount;
+        weight_t accessCountWtd = access.CountWtd + inducedCountWtd;
+
+        unsigned countOverlappedNormalized     = 0;
         unsigned countOverlappedCallArg        = 0;
         unsigned countOverlappedStoredFromCall = 0;
 
+        weight_t countOverlappedNormalizedWtd     = 0;
         weight_t countOverlappedCallArgWtd        = 0;
         weight_t countOverlappedStoredFromCallWtd = 0;
 
@@ -680,7 +685,28 @@ public:
 
             if (otherAccess.AccessType != TYP_STRUCT)
             {
-                return false;
+                if ((otherAccess.Offset != access.Offset) || !varTypeIsSmall(access.AccessType) ||
+                    !varTypeIsSmall(otherAccess.AccessType))
+                {
+                    return false;
+                }
+
+                // Here we need to make a decision about whether we want to
+                // keep the value zero or sign extended.
+                if ((otherAccess.CountWtd > access.CountWtd) ||
+                    ((otherAccess.CountWtd == access.CountWtd) && (otherAccess.Count > access.Count)))
+                {
+                    // Other sign is accessed with higher weight or count,
+                    // so prefer that.
+                    return false;
+                }
+
+                accessCount += otherAccess.Count;
+                accessCountWtd += otherAccess.CountWtd;
+
+                countOverlappedNormalized += otherAccess.Count;
+                countOverlappedNormalizedWtd += otherAccess.CountCallArgsWtd;
+                continue;
             }
 
             countOverlappedCallArg += otherAccess.CountCallArgs;
@@ -698,8 +724,8 @@ public:
         weight_t costWithout = 0;
         weight_t sizeWithout = 0;
 
-        costWithout += (access.CountWtd + inducedCountWtd) * COST_STRUCT_ACCESS_CYCLES;
-        sizeWithout += (access.Count + inducedCount) * COST_STRUCT_ACCESS_SIZE;
+        costWithout += accessCountWtd * COST_STRUCT_ACCESS_CYCLES;
+        sizeWithout += accessCount * COST_STRUCT_ACCESS_SIZE;
 
         weight_t costWith = 0;
         weight_t sizeWith = 0;
@@ -711,8 +737,21 @@ public:
         // And 2 byte size
         const weight_t COST_REG_ACCESS_SIZE = 2;
 
-        costWith += (access.CountWtd + inducedCountWtd) * COST_REG_ACCESS_CYCLES;
-        sizeWith += (access.Count + inducedCount) * COST_REG_ACCESS_SIZE;
+        costWith += accessCountWtd * COST_REG_ACCESS_CYCLES;
+        sizeWith += accessCount * COST_REG_ACCESS_SIZE;
+
+        // Now look at the overlapping uses that promotion will make more
+        // expensive. If this is a small type being promoted, then overlapped
+        // uses of the opposite sign in most cases require a reg-reg mov and
+        // cannot be contained. For example, TYP_USHORT was promoted but we
+        // have some TYP_SHORT uses.
+        // This cost here is on top of the cost above; the overlapped uses are
+        // added to accessCount and accessCountWtd already.
+        const weight_t COST_NORMALIZED_REG_ACCESS_CYCLES = 0.5;
+        const weight_t COST_NORMALIZED_REG_ACCESS_SIZE   = 1;
+
+        costWith += countOverlappedNormalizedWtd * COST_NORMALIZED_REG_ACCESS_CYCLES;
+        sizeWith += countOverlappedNormalized * COST_NORMALIZED_REG_ACCESS_SIZE;
 
         // Now look at the overlapping struct uses that promotion will make more expensive.
 
@@ -2210,7 +2249,8 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     unsigned accessSize = genTypeSize(accessType);
     for (const Replacement& rep : replacements)
     {
-        assert(!rep.Overlaps(offs, accessSize) || ((rep.Offset == offs) && (rep.AccessType == accessType)));
+        assert(!rep.Overlaps(offs, accessSize) ||
+               ((rep.Offset == offs) && (varTypeToUnsigned(accessType) == varTypeToUnsigned(rep.AccessType))));
     }
 
     JITDUMP("Processing primitive use [%06u] of V%02u.[%03u..%03u)\n", Compiler::dspTreeID(lcl), lclNum, offs,
@@ -2225,7 +2265,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     }
 
     Replacement& rep = replacements[index];
-    assert(accessType == rep.AccessType);
+    assert(varTypeToUnsigned(accessType) == varTypeToUnsigned(rep.AccessType));
 
     bool isDef = lcl->OperIsLocalStore();
 
@@ -2235,7 +2275,7 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
     }
     else
     {
-        *use = m_compiler->gtNewLclvNode(rep.LclNum, accessType);
+        *use = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
     }
 
     if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
@@ -2285,6 +2325,11 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         //    going to be in a previous statement, so this shouldn't be too bad for CQ.
 
         m_compiler->lvaGetDesc(rep.LclNum)->lvRedefinedInEmbeddedStatement = true;
+    }
+    else if (accessType != rep.AccessType)
+    {
+        assert(genActualType(accessType) == TYP_INT);
+        *use = m_compiler->gtNewCastNode(TYP_INT, *use, false, accessType);
     }
 
     JITDUMP("  ..replaced with V%02u\n", rep.LclNum);
