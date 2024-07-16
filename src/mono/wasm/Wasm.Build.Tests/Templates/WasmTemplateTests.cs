@@ -660,8 +660,8 @@ namespace Wasm.Build.Tests
 
             void AssertFile(string suffix)
             {
-                var fileName = $"{id}{suffix}";
-                Assert.True(copyOutputSymbolsToPublishDirectory == File.Exists(Path.Combine(publishFrameworkPath, fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
+                var fileName = Directory.EnumerateFiles(publishFrameworkPath, $"*{suffix}").FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).StartsWith(id));
+                Assert.True(copyOutputSymbolsToPublishDirectory == (fileName != null && File.Exists(fileName)), $"The {fileName} file {(copyOutputSymbolsToPublishDirectory ? "should" : "shouldn't")} exist in publish folder");
             }
         }
     }
