@@ -513,7 +513,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
     GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL            = 0x08000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
+    GTF_ICON_OBJ_HDL            = 0x07000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
     GTF_ICON_CONST_PTR          = 0x08000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
     GTF_ICON_GLOBAL_PTR         = 0x09000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
     GTF_ICON_VARG_HDL           = 0x0A000000, // GT_CNS_INT -- constant is a var arg cookie handle
