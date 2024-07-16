@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_ssl.h"
-
-#define _DARWIN_C_SOURCE 1
-#include <pthread.h>
-
 #include <Foundation/Foundation.h>
 
 static SSLWriteFunc _writeFunc;
@@ -15,6 +11,9 @@ static nw_protocol_definition_t _framerDefinition;
 static nw_protocol_definition_t _tlsDefinition;
 static dispatch_queue_t _tlsQueue;
 static dispatch_queue_t _inputQueue;
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunguarded-availability-new"
 
 nw_connection_t AppleCryptoNative_NwCreateContext(int32_t isServer)
 {
@@ -91,29 +90,20 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
     assert(_statusFunc != NULL);
     size_t gcHandle = 0;
 
-    if (__builtin_available(macOS 12.3, iOS 15.4, tvOS 15.4, watchOS 2.0, *))
-    {
-        nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
-        NSNumber* num = nw_framer_options_copy_object_value(framer_options, "GCHANDLE");
-        assert(num != NULL);
+    nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
+    NSNumber* num = nw_framer_options_copy_object_value(framer_options, "GCHANDLE");
+    assert(num != NULL);
 
-        [num getValue:&gcHandle];
+    [num getValue:&gcHandle];
 
-        // Notify SafeHandle with framer instance so we can submit to it directly.
-        (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0);
+    // Notify SafeHandle with framer instance so we can submit to it directly.
+    (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStart, (size_t)framer, 0);
 
-        nw_framer_set_output_handler(framer, framer_output_handler);
+    nw_framer_set_output_handler(framer, framer_output_handler);
 
-        nw_framer_set_stop_handler(framer, framer_stop_handler);
-        nw_framer_set_cleanup_handler(framer, framer_cleanup_handler);
-        return nw_framer_start_result_ready;
-    }
-    else
-    {
-        assert(0);
-    }
-
-    return nw_framer_start_result_will_mark_ready;
+    nw_framer_set_stop_handler(framer, framer_stop_handler);
+    nw_framer_set_cleanup_handler(framer, framer_cleanup_handler);
+    return nw_framer_start_result_ready;
 };
 
 
@@ -128,15 +118,15 @@ int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_fram
         return -1;
     }
 
-     uint8_t * copy = NULL;
-     if (bufferLength > 0)
-     {
+    uint8_t * copy = NULL;
+    if (bufferLength > 0)
+    {
         copy = malloc((size_t)bufferLength);
         memcpy(copy, buffer, bufferLength);
         nw_framer_message_set_value(message, "DATA", copy,  ^(void* ptr) {
-             free(ptr);
+            free(ptr);
         });
-     }
+    }
 
     nw_framer_async(framer, ^(void) 
     {
@@ -254,10 +244,13 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
             return tls_protocol_version_TLSv11;
         case PAL_SslProtocol_Tls10:
             return tls_protocol_version_TLSv10;
+        case tls_protocol_version_DTLSv10:
         default:
-            return (tls_protocol_version_t)0;
+            break;
 #pragma clang diagnostic pop
     }
+
+    return (tls_protocol_version_t)0;
 }
 
 // This configures TLS proeprties
@@ -336,28 +329,29 @@ int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_Ss
         }
 
         tls_protocol_version_t version = sec_protocol_metadata_get_negotiated_tls_protocol_version(secMeta);
-        switch (version)
-        {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        switch (version)
+        {
             case tls_protocol_version_TLSv10:
                 *protocol = PAL_SslProtocol_Tls10;
                 break;
             case tls_protocol_version_TLSv11:
                 *protocol = PAL_SslProtocol_Tls11;
                 break;
-#pragma clang diagnostic pop
            case tls_protocol_version_TLSv12:
                 *protocol = PAL_SslProtocol_Tls12;
                 break;
            case tls_protocol_version_TLSv13:
                 *protocol = PAL_SslProtocol_Tls13;
                 break;
+           case tls_protocol_version_DTLSv10:
            case tls_protocol_version_DTLSv12:
            default:
                 *protocol = PAL_SslProtocol_None;
                 break;
         }
+#pragma clang diagnostic pop
 
         *pCipherSuiteOut = sec_protocol_metadata_get_negotiated_tls_ciphersuite(secMeta);
         return 0;
@@ -402,6 +396,7 @@ PALEXPORT int32_t AppleCryptoNative_NwCopyCertChain(nw_connection_t connection, 
 
     return 0;
 }
+#pragma clang diagnostic pop
 
 // this is called once to set everything up
 int32_t AppleCryptoNative_NwInit(SslStatusUpdateFunc statusFunc, SSLReadFunc readFunc, SSLWriteFunc writeFunc)
