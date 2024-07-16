@@ -1916,16 +1916,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             srcCount += 1;
             srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
             srcCount += BuildDelayFreeUses(emitOp3, emitOp1);
-
-            {
-                assert(numArgs == 4);
-                srcCount += BuildDelayFreeUses(intrinEmb.op4, emitOp1);
-                if (!embOp2Node->Op(4)->isContainedIntOrIImmed())
-                {
-                    buildInternalIntRegisterDefForNode(embOp2Node);
-                }
-            }
-
             srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
         }
         else
@@ -1942,6 +1932,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     assert(embHasImmediateOperand);
                     assert(numArgs == 2);
                     if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
+                    {
+                        buildInternalIntRegisterDefForNode(embOp2Node);
+                    }
+                    break;
+
+                case NI_Sve_AddRotateComplex:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 3);
+                    if (!embOp2Node->Op(3)->isContainedIntOrIImmed())
                     {
                         buildInternalIntRegisterDefForNode(embOp2Node);
                     }
