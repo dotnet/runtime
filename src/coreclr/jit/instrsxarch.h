@@ -963,8 +963,8 @@ INST1(cwde,             "cwde",             IUM_RD, 0x000098,                   
 INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_TT_NONE,    INS_FLAGS_None)
 INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2)
 INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Wbit)
-INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit)
-INST1(mulEAX,           "mul",              IUM_RD, 0x0020F6,                                                            INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Wbit)
+INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  | INS_FLAGS_Has_Wbit | Encoding_REX2)
+INST1(mulEAX,           "mul",              IUM_RD, 0x0020F6,                                                            INS_TT_NONE,    Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_FLAGS_Has_Wbit | Encoding_REX2)
 
 INST1(sahf,             "sahf",             IUM_RD, 0x00009E,                                                            INS_TT_NONE,    Restore_SF_ZF_AF_PF_CF)
 

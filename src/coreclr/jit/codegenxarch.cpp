@@ -9241,6 +9241,10 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_R(INS_idiv, EA_8BYTE, REG_EDX);
 
     theEmitter->emitIns_R_R(INS_xchg, EA_8BYTE, REG_EAX, REG_EDX);
+
+    theEmitter->emitIns_R(INS_div, EA_8BYTE, REG_EDX);
+    theEmitter->emitIns_R(INS_mulEAX, EA_8BYTE, REG_EDX);
+    
 }
 
 #endif // defined(DEBUG) && defined(TARGET_AMD64)
