@@ -801,7 +801,7 @@ namespace System
         Longer:
             // Only check that the ref is the same if buffers are large,
             // and hence its worth avoiding doing unnecessary comparisons
-            if (!Unsafe.AreSame(ref first, ref second))
+            if (!Unsafe.AreSame(in first, in second))
             {
                 // C# compiler inverts this test, making the outer goto the conditional jmp.
                 goto Vector;
@@ -965,7 +965,7 @@ namespace System
             Debug.Assert(firstLength >= 0);
             Debug.Assert(secondLength >= 0);
 
-            if (Unsafe.AreSame(ref first, ref second))
+            if (Unsafe.AreSame(in first, in second))
                 goto Equal;
 
             nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);

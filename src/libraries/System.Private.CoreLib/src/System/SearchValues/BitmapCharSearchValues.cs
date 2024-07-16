@@ -70,11 +70,11 @@ namespace System.Buffers
         private int IndexOfAny<TNegator>(ref char searchSpace, int searchSpaceLength)
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
-            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+            ref readonly char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
             ref char cur = ref searchSpace;
             uint[] bitmap = _bitmap;
 
-            while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+            while (!Unsafe.AreSame(in cur, in searchSpaceEnd))
             {
                 char c = cur;
                 if (TNegator.NegateIfNeeded(Contains(bitmap, c)))

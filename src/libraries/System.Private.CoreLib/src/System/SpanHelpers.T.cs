@@ -1196,7 +1196,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            if (Unsafe.AreSame(ref first, ref second))
+            if (Unsafe.AreSame(in first, in second))
                 goto Equal;
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations

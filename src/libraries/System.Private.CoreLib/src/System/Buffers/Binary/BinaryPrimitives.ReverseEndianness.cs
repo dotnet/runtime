@@ -294,7 +294,7 @@ namespace System.Buffers.Binary
             ref T sourceRef = ref MemoryMarshal.GetReference(source);
             ref T destRef = ref MemoryMarshal.GetReference(destination);
 
-            if (Unsafe.AreSame(ref sourceRef, ref destRef) ||
+            if (Unsafe.AreSame(in sourceRef, in destRef) ||
                 !source.Overlaps(destination, out int elementOffset) ||
                 elementOffset < 0)
             {
@@ -383,7 +383,7 @@ namespace System.Buffers.Binary
                 ThrowDestinationTooSmall();
             }
 
-            if (Unsafe.AreSame(ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination)) ||
+            if (Unsafe.AreSame(in MemoryMarshal.GetReference(source), in MemoryMarshal.GetReference(destination)) ||
                 !source.Overlaps(destination, out int elementOffset) ||
                 elementOffset < 0)
             {

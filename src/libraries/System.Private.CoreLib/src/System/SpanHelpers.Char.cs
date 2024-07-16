@@ -469,7 +469,7 @@ namespace System
 
             int lengthDelta = firstLength - secondLength;
 
-            if (Unsafe.AreSame(ref first, ref second))
+            if (Unsafe.AreSame(in first, in second))
                 goto Equal;
 
             nuint minLength = (nuint)(((uint)firstLength < (uint)secondLength) ? (uint)firstLength : (uint)secondLength);

@@ -411,7 +411,7 @@ namespace System.Numerics.Tensors
             left.Rank == right.Rank &&
             left._shape.Lengths.SequenceEqual(right._shape.Lengths) &&
             left._shape.Strides.SequenceEqual(right._shape.Strides) &&
-            Unsafe.AreSame(ref left._reference, ref right._reference);
+            Unsafe.AreSame(in left._reference, in right._reference);
 
         /// <summary>
         /// This method is not supported as spans cannot be boxed. To compare two spans, use operator==.

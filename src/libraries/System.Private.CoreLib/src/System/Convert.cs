@@ -2540,8 +2540,8 @@ namespace System
             // 1 byte at a time as is common in other vectorized operations, as nothing will remain after
             // the 4-byte loop.
 
-            Debug.Assert(Unsafe.AreSame(ref srcBeginning, ref src));
-            Debug.Assert(Unsafe.AreSame(ref srcBeginning, ref Unsafe.As<ushort, byte>(ref dest)),
+            Debug.Assert(Unsafe.AreSame(in srcBeginning, in src));
+            Debug.Assert(Unsafe.AreSame(in srcBeginning, in Unsafe.As<ushort, byte>(ref dest)),
                 "The two references should have ended up exactly at the beginning");
         }
 

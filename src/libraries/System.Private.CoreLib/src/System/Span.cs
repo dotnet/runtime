@@ -352,7 +352,7 @@ namespace System
         /// </summary>
         public static bool operator ==(Span<T> left, Span<T> right) =>
             left._length == right._length &&
-            Unsafe.AreSame(ref left._reference, ref right._reference);
+            Unsafe.AreSame(in left._reference, in right._reference);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="Span{T}"/> to a <see cref="ReadOnlySpan{T}"/>

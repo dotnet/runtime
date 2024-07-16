@@ -233,7 +233,7 @@ namespace System.Buffers
             where TUseFastContains : struct, SearchValues.IRuntimeConst
             where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
         {
-            ref char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+            ref readonly char searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
             ref char cur = ref searchSpace;
 
             if (TUseFastContains.Value)
@@ -243,7 +243,7 @@ namespace System.Buffers
                 char[] hashEntries = state._hashEntries;
                 uint multiplier = state._multiplier;
 
-                while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+                while (!Unsafe.AreSame(in cur, in searchSpaceEnd))
                 {
                     char c = cur;
                     if (TNegator.NegateIfNeeded(FastContains(hashEntries, multiplier, c)))
@@ -256,7 +256,7 @@ namespace System.Buffers
             }
             else
             {
-                while (!Unsafe.AreSame(ref cur, ref searchSpaceEnd))
+                while (!Unsafe.AreSame(in cur, in searchSpaceEnd))
                 {
                     char c = cur;
                     if (TNegator.NegateIfNeeded(state.SlowProbabilisticContains(c)))

@@ -224,7 +224,7 @@ namespace System.Buffers
 
             if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpaceStart))
             {
-                if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationVector128)))
+                if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationVector128)))
                 {
                     return -1;
                 }
@@ -276,7 +276,7 @@ namespace System.Buffers
 
             if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpaceStart))
             {
-                if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx2)))
+                if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx2)))
                 {
                     return -1;
                 }
@@ -328,7 +328,7 @@ namespace System.Buffers
 
             if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpaceStart))
             {
-                if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx512)))
+                if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx512)))
                 {
                     return -1;
                 }
@@ -398,7 +398,7 @@ namespace System.Buffers
 
             if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpaceStart))
             {
-                if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationVector128)))
+                if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationVector128)))
                 {
                     return -1;
                 }
@@ -455,7 +455,7 @@ namespace System.Buffers
 
             if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpaceStart))
             {
-                if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx2)))
+                if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx2)))
                 {
                     return -1;
                 }
@@ -510,7 +510,7 @@ namespace System.Buffers
 
             if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpaceStart))
             {
-                if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx512)))
+                if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpaceStart, CharsPerIterationAvx512)))
                 {
                     return -1;
                 }

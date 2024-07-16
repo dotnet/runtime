@@ -17,7 +17,7 @@ namespace System.Numerics.Tensors
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void ValidateInputOutputSpanNonOverlapping<T>(ReadOnlySpan<T> input, Span<T> output)
         {
-            if (!Unsafe.AreSame(ref MemoryMarshal.GetReference(input), ref MemoryMarshal.GetReference(output)) &&
+            if (!Unsafe.AreSame(in MemoryMarshal.GetReference(input), in MemoryMarshal.GetReference(output)) &&
                 input.Overlaps(output))
             {
                 ThrowHelper.ThrowArgument_InputAndDestinationSpanMustNotOverlap();

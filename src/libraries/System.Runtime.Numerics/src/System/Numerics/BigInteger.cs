@@ -3670,7 +3670,7 @@ namespace System.Numerics
                         i++;
                     }
 
-                    if (Unsafe.AreSame(ref address, ref startAddress))
+                    if (Unsafe.AreSame(in address, in startAddress))
                     {
                         // We need one extra part to represent the sign as the most
                         // significant bit of the two's complement value was 0.
@@ -3679,7 +3679,7 @@ namespace System.Numerics
                     else
                     {
                         // Otherwise we should have been precisely one part behind address
-                        Debug.Assert(Unsafe.AreSame(ref startAddress, ref Unsafe.Add(ref address, sizeof(uint))));
+                        Debug.Assert(Unsafe.AreSame(in startAddress, in Unsafe.Add(ref address, sizeof(uint))));
                     }
                 }
 
@@ -3733,7 +3733,7 @@ namespace System.Numerics
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
                     ref byte address = ref MemoryMarshal.GetReference(destination);
-                    ref byte lastAddress = ref Unsafe.Add(ref address, byteCount - sizeof(uint));
+                    ref readonly byte lastAddress = ref Unsafe.Add(ref address, byteCount - sizeof(uint));
 
                     int i = 0;
                     uint part;
@@ -3771,7 +3771,7 @@ namespace System.Numerics
                         i++;
                     }
 
-                    if (Unsafe.AreSame(ref address, ref lastAddress))
+                    if (Unsafe.AreSame(in address, in lastAddress))
                     {
                         // We need one extra part to represent the sign as the most
                         // significant bit of the two's complement value was 0.
@@ -3780,7 +3780,7 @@ namespace System.Numerics
                     else
                     {
                         // Otherwise we should have been precisely one part ahead address
-                        Debug.Assert(Unsafe.AreSame(ref lastAddress, ref Unsafe.Subtract(ref address, sizeof(uint))));
+                        Debug.Assert(Unsafe.AreSame(in lastAddress, in Unsafe.Subtract(ref address, sizeof(uint))));
                     }
                 }
 

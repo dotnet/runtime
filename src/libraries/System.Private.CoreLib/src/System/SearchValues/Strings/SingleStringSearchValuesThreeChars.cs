@@ -105,7 +105,7 @@ namespace System.Buffers
 
                     if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpace))
                     {
-                        if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpace, Vector512<ushort>.Count)))
+                        if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpace, Vector512<ushort>.Count)))
                         {
                             return -1;
                         }
@@ -152,7 +152,7 @@ namespace System.Buffers
 
                     if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpace))
                     {
-                        if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpace, Vector256<ushort>.Count)))
+                        if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpace, Vector256<ushort>.Count)))
                         {
                             return -1;
                         }
@@ -199,7 +199,7 @@ namespace System.Buffers
 
                     if (Unsafe.IsAddressGreaterThan(ref searchSpace, ref lastSearchSpace))
                     {
-                        if (Unsafe.AreSame(ref searchSpace, ref Unsafe.Add(ref lastSearchSpace, Vector128<ushort>.Count)))
+                        if (Unsafe.AreSame(in searchSpace, in Unsafe.Add(ref lastSearchSpace, Vector128<ushort>.Count)))
                         {
                             return -1;
                         }

@@ -217,9 +217,9 @@ namespace System.Buffers
 
             if (searchSpaceLength < Vector128<ushort>.Count)
             {
-                ref short searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+                ref readonly short searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-                while (!Unsafe.AreSame(ref currentSearchSpace, ref searchSpaceEnd))
+                while (!Unsafe.AreSame(in currentSearchSpace, in searchSpaceEnd))
                 {
                     char c = (char)currentSearchSpace;
                     if (TNegator.NegateIfNeeded(state.Lookup.Contains128(c)))
@@ -498,9 +498,9 @@ namespace System.Buffers
 
             if (searchSpaceLength < sizeof(ulong))
             {
-                ref byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+                ref readonly byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-                while (!Unsafe.AreSame(ref currentSearchSpace, ref searchSpaceEnd))
+                while (!Unsafe.AreSame(in currentSearchSpace, in searchSpaceEnd))
                 {
                     byte b = currentSearchSpace;
                     if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
@@ -768,9 +768,9 @@ namespace System.Buffers
 
             if (!IsVectorizationSupported || searchSpaceLength < sizeof(ulong))
             {
-                ref byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
+                ref readonly byte searchSpaceEnd = ref Unsafe.Add(ref searchSpace, searchSpaceLength);
 
-                while (!Unsafe.AreSame(ref currentSearchSpace, ref searchSpaceEnd))
+                while (!Unsafe.AreSame(in currentSearchSpace, in searchSpaceEnd))
                 {
                     byte b = currentSearchSpace;
                     if (TNegator.NegateIfNeeded(state.Lookup.Contains(b)))
