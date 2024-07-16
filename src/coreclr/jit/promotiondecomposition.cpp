@@ -541,6 +541,11 @@ private:
 
         if (addr != nullptr)
         {
+            if (addr->IsInvariant())
+            {
+                indirFlags |= GTF_IND_INVARIANT;
+            }
+
             for (int i = 0; i < m_entries.Height(); i++)
             {
                 if (!CanSkipEntry(m_entries.BottomRef(i), dstDeaths, remainderStrategy))

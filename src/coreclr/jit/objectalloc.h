@@ -140,6 +140,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(
 
     bool enableBoxedValueClasses = true;
     bool enableRefClasses        = true;
+    bool enableArrays            = true;
     *reason                      = "[ok]";
 
 #ifdef DEBUG
@@ -167,6 +168,12 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(
     }
     else if (comp->info.compCompHnd->isSDArray(clsHnd))
     {
+        if (!enableArrays)
+        {
+            *reason = "[disabled by config]";
+            return false;
+        }
+
         CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
         CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
         var_types            type       = JITtype2varType(corType);
