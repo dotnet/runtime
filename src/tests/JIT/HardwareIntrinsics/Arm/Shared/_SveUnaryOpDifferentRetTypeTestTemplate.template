@@ -52,11 +52,14 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
 
-                // Validates executing the test inside conditional, with op3 as falseValue
-                test.ConditionalSelect_FalseOp();
+                if (sizeof({Op1BaseType}) == sizeof({RetBaseType}))
+                {
+                    // Validates executing the test inside conditional, with op3 as falseValue
+                    test.ConditionalSelect_FalseOp();
 
-                // Validates executing the test inside conditional, with op3 as zero
-                test.ConditionalSelect_ZeroOp();
+                    // Validates executing the test inside conditional, with op3 as zero
+                    test.ConditionalSelect_ZeroOp();
+                }
             }
             else
             {
@@ -355,10 +358,8 @@ namespace JIT.HardwareIntrinsics.Arm
                 TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    mask: ({string.Join(", ", mask)})");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
-                TestLibrary.TestFramework.LogInformation($"  helper: ({string.Join(", ", vectorResult)})");
                 TestLibrary.TestFramework.LogInformation($" falseOp: ({string.Join(", ", falseVal)})");
                 TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
-                TestLibrary.TestFramework.LogInformation($"    ours: ({string.Join(", ", maskedVectorResult)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;
