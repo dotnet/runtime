@@ -5089,9 +5089,8 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             //
             if (!(addr->IsInvariant() || addr->OperIsLocal()))
             {
-                LIR::Use addrUse;
-                BlockRange().TryGetUse(addr, &addrUse);
-                unsigned addrLcl = addrUse.ReplaceWithLclVar(comp);
+                LIR::Use addrUse(BlockRange(), &indir->Addr(), indir);
+                addrUse.ReplaceWithLclVar(comp);
                 addr             = indir->Addr();
             }
 
@@ -5099,7 +5098,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             //
             if (indir->OperMayThrow(comp))
             {
-                GenTree* addrClone = comp->gtClone(addr);
+                GenTree* addrClone = comp->gtCloneExpr(addr);
                 GenTree* nullcheck = comp->gtNewNullCheck(addrClone, comp->compCurBB);
                 BlockRange().InsertBefore(indir, addrClone, nullcheck);
                 LowerNode(nullcheck);
