@@ -400,14 +400,10 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     allocType = OAT_NEWOBJ;
                 }
-                else if (data->IsHelperCall())
+                else if (data->IsCall() && data->AsCall()->IsHelperCall(comp, CORINFO_HELP_NEWARR_1_VC) &&
+                         data->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
                 {
-                    GenTreeCall* call = data->AsCall();
-                    if (call->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC &&
-                        call->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
-                    {
-                        allocType = OAT_NEWARR;
-                    }
+                    allocType = OAT_NEWARR;
                 }
             }
 
@@ -445,13 +441,21 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
                         CallArg*             arg       = data->AsCall()->gtArgs.GetArgByIndex(0);
                         GenTree*             node      = arg->GetNode();
-                        CORINFO_CLASS_HANDLE clsHnd    = (CORINFO_CLASS_HANDLE)node->AsIntConCommon()->IntegralValue();
-                        GenTree*             len       = arg->GetNext()->GetNode();
-                        unsigned int         blockSize = 0;
+                        bool                 isExact   = false;
+                        bool                 isNonNull = false;
+                        CORINFO_CLASS_HANDLE clsHnd =
+                            comp->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
+                        GenTree*     len       = arg->GetNext()->GetNode();
+                        unsigned int blockSize = 0;
 
-                        // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
-                        //
-                        if (!len->IsCnsIntOrI())
+                        comp->Metrics.NewArrayHelperCalls++;
+
+                        if (!isExact || !isNonNull)
+                        {
+                            onHeapReason = "[array type is either non-exact or null]";
+                            canStack     = false;
+                        }
+                        else if (!len->IsCnsIntOrI())
                         {
                             onHeapReason = "[non-constant size]";
                             canStack     = false;
@@ -619,6 +623,24 @@ GenTree* ObjectAllocator::MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* alloc
     return helperCall;
 }
 
+//------------------------------------------------------------------------
+// MorphNewArrNodeIntoStackAlloc: Morph a GT_CALL CORINFO_HELP_NEWARR_1_VC
+//                                node into stack allocation.
+//
+// Arguments:
+//    newArr       - GT_CALL that will be replaced by helper call.
+//    clsHndclsHnd - class representing the type of the array
+//    length       - length of the array
+//    blockSize    - size of the layout
+//    block        - a basic block where newArr is
+//    stmt         - a statement where newArr is
+//
+// Return Value:
+//    local num for the new stack allocated local
+//
+// Notes:
+//    This function can insert additional statements before stmt.
+//
 unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*         newArr,
                                                             CORINFO_CLASS_HANDLE clsHnd,
                                                             unsigned int         length,
@@ -819,7 +841,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_NE:
             case GT_NULLCHECK:
             case GT_ARR_LENGTH:
-            case GT_INDEX_ADDR:
                 canLclVarEscapeViaParentStack = false;
                 break;
 
@@ -836,6 +857,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_ADD:
             case GT_BOX:
             case GT_FIELD_ADDR:
+            case GT_INDEX_ADDR:
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;

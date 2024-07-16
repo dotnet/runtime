@@ -826,74 +826,6 @@ public:
 
         switch (node->OperGet())
         {
-            case GT_INDEX_ADDR:
-            {
-                assert(TopValue(2).Node() == node);
-                assert(TopValue(1).Node() == node->gtGetOp1());
-                assert(TopValue(0).Node() == node->gtGetOp2());
-
-                if (node->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_ADDR) && node->gtGetOp2()->IsCnsIntOrI())
-                {
-                    if (TopValue(1).IsAddress() &&
-                        m_compiler->lvaGetDesc(TopValue(1).LclNum())->GetLayout()->IsBlockLayout())
-                    {
-                        ssize_t offset = node->AsIndexAddr()->gtElemOffset +
-                                         node->gtGetOp2()->AsIntCon()->IconValue() * node->AsIndexAddr()->gtElemSize;
-
-                        if (offset < static_cast<ssize_t>(m_compiler->lvaLclSize(TopValue(1).LclNum())))
-                        {
-                            if (FitsIn<unsigned>(offset) &&
-                                TopValue(2).AddOffset(TopValue(1), static_cast<unsigned>(offset)))
-                            {
-                                INDEBUG(TopValue(0).Consume());
-                                PopValue();
-                                PopValue();
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            GenTree* gtThrow =
-                                m_compiler->gtNewMustThrowException(CORINFO_HELP_RNGCHKFAIL, node->TypeGet(),
-                                                                    node->AsIndexAddr()->gtStructElemClass);
-                            m_compiler->lvaGetDesc(gtThrow->AsOp()->gtOp2->AsLclVarCommon())->incLvRefCnt(1, RCS_EARLY);
-                            *use           = gtThrow;
-                            m_stmtModified = true;
-                        }
-                    }
-                }
-
-                EscapeValue(TopValue(0), node);
-                PopValue();
-                EscapeValue(TopValue(0), node);
-                PopValue();
-                break;
-            }
-            case GT_ARR_LENGTH:
-            {
-                assert(TopValue(1).Node() == node);
-                assert(TopValue(0).Node() == node->gtGetOp1());
-
-                if (node->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_ADDR))
-                {
-                    if (TopValue(0).IsAddress() &&
-                        m_compiler->lvaGetDesc(TopValue(0).LclNum())->GetLayout()->IsBlockLayout())
-                    {
-                        GenTree* gtLclFld =
-                            m_compiler->gtNewLclFldNode(TopValue(0).LclNum(), TYP_INT, OFFSETOF__CORINFO_Array__length);
-                        SequenceLocal(gtLclFld->AsLclVarCommon());
-                        *use           = gtLclFld;
-                        m_stmtModified = true;
-                        INDEBUG(TopValue(0).Consume());
-                        PopValue();
-                        break;
-                    }
-                }
-
-                EscapeValue(TopValue(0), node);
-                PopValue();
-                break;
-            }
             case GT_STORE_LCL_FLD:
                 if (node->IsPartialLclFld(m_compiler))
                 {
@@ -1171,6 +1103,73 @@ public:
                     EscapeValue(TopValue(0), node);
                     PopValue();
                 }
+                break;
+            }
+
+            case GT_INDEX_ADDR:
+            {
+                assert(TopValue(2).Node() == node);
+                assert(TopValue(1).Node() == node->gtGetOp1());
+                assert(TopValue(0).Node() == node->gtGetOp2());
+
+                if (node->gtGetOp2()->IsCnsIntOrI() && TopValue(1).IsAddress())
+                {
+                    ssize_t offset = node->AsIndexAddr()->gtElemOffset +
+                                     node->gtGetOp2()->AsIntCon()->IconValue() * node->AsIndexAddr()->gtElemSize;
+
+                    if (offset < static_cast<ssize_t>(m_compiler->lvaLclExactSize(TopValue(1).LclNum())))
+                    {
+                        if (FitsIn<unsigned>(offset) &&
+                            TopValue(2).AddOffset(TopValue(1), static_cast<unsigned>(offset)))
+                        {
+                            INDEBUG(TopValue(0).Consume());
+                            PopValue();
+                            PopValue();
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        *use           = m_compiler->gtNewOperNode(GT_COMMA, node->TypeGet(),
+                                                                   m_compiler->gtNewHelperCallNode(CORINFO_HELP_RNGCHKFAIL,
+                                                                                                   TYP_VOID),
+                                                                   m_compiler->gtNewIconNode(0, TYP_BYREF));
+                        m_stmtModified = true;
+                        INDEBUG(TopValue(0).Consume());
+                        PopValue();
+                        INDEBUG(TopValue(0).Consume());
+                        PopValue();
+                        break;
+                    }
+                }
+
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                break;
+            }
+
+            case GT_ARR_LENGTH:
+            {
+                assert(TopValue(1).Node() == node);
+                assert(TopValue(0).Node() == node->gtGetOp1());
+
+                if (TopValue(0).IsAddress())
+                {
+                    GenTree* gtLclFld =
+                        m_compiler->gtNewLclFldNode(TopValue(0).LclNum(), TYP_INT,
+                                                    TopValue(0).Offset() + OFFSETOF__CORINFO_Array__length);
+                    SequenceLocal(gtLclFld->AsLclVarCommon());
+                    *use           = gtLclFld;
+                    m_stmtModified = true;
+                    INDEBUG(TopValue(0).Consume());
+                    PopValue();
+                    break;
+                }
+
+                EscapeValue(TopValue(0), node);
+                PopValue();
                 break;
             }
 

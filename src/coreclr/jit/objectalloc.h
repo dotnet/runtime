@@ -167,22 +167,18 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(
     }
     else if (comp->info.compCompHnd->isSDArray(clsHnd))
     {
-        CorInfoType type = comp->info.compCompHnd->getChildType(clsHnd, &clsHnd);
-        if (type != CORINFO_TYPE_UNDEF && clsHnd == nullptr)
-        {
-            // This is an array of primitive types
-            classSize = (unsigned int)OFFSETOF__CORINFO_Array__data + genTypeSize(JITtype2varType(type)) * length;
-        }
-        else if (comp->info.compCompHnd->isValueClass(clsHnd))
-        {
-            classSize =
-                (unsigned int)OFFSETOF__CORINFO_Array__data + comp->info.compCompHnd->getClassSize(clsHnd) * length;
-        }
-        else
+        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
+        CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
+        var_types            type       = JITtype2varType(corType);
+        ClassLayout*         elemLayout = type == TYP_STRUCT ? comp->typGetObjLayout(elemClsHnd) : nullptr;
+        if (varTypeIsGC(type) || ((elemLayout != nullptr) && elemLayout->HasGCPtr()))
         {
             *reason = "[array contains gc refs]";
             return false;
         }
+
+        unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
+        classSize         = (unsigned int)OFFSETOF__CORINFO_Array__data + elemSize * length;
     }
     else
     {
