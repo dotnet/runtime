@@ -156,7 +156,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         static virtual void CopyTo(TSelf vector, T[] destination)
         {
-            TSelf.CopyTo(vector, new Span<T>(destination, 0, destination.Length));
+            if (destination.Length < TSelf.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            TSelf.StoreUnsafe(vector, ref MemoryMarshal.GetArrayDataReference(destination));
         }
 
         /// <summary>Copies a vector to a given array starting at the specified index.</summary>
@@ -169,7 +173,15 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="destination" /> is <c>null</c>.</exception>
         static virtual void CopyTo(TSelf vector, T[] destination, int startIndex)
         {
-            TSelf.CopyTo(vector, new Span<T>(destination, startIndex, destination.Length));
+            if ((uint)startIndex >= (uint)destination.Length)
+            {
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
+            }
+            if ((destination.Length - startIndex) < TSelf.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            TSelf.StoreUnsafe(vector, ref MemoryMarshal.GetArrayDataReference(destination), (uint)startIndex);
         }
 
         /// <summary>Copies a vector to a given span.</summary>
@@ -200,7 +212,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         static virtual TSelf Create(T[] values)
         {
-            return TSelf.Create(new Span<T>(values, 0, values.Length));
+            if (values.Length < TSelf.Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+            }
+            return TSelf.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(values));
         }
 
         /// <summary>Creates a new vector from a given array.</summary>
@@ -212,7 +228,11 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NullReferenceException"><paramref name="values" /> is <c>null</c>.</exception>
         static virtual TSelf Create(T[] values, int index)
         {
-            return TSelf.Create(new Span<T>(values, index, values.Length));
+            if ((index < 0) || ((values.Length - index) < TSelf.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+            }
+            return TSelf.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(values), (uint)index);
         }
 
         /// <summary>Creates a new vector from a given readonly span.</summary>
