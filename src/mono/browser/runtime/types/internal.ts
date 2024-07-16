@@ -508,7 +508,7 @@ export type RuntimeModuleExportsInternal = {
 }
 
 export type NativeModuleExportsInternal = {
-    default: (unificator: Function) => EmscriptenModuleInternal
+    default: (unificator: Function) => Promise<EmscriptenModuleInternal>
 }
 
 export type HybridGlobalizationModuleExportsInternal = {
