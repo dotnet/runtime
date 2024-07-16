@@ -1264,9 +1264,6 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
         {
             // These intrinsics have overloads that take op2 in a simd register and just read the lowest 8-bits
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
 
@@ -1292,9 +1289,6 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
             static_assert_no_msg(NI_AVX512F_VL_RotateRightVariable == (NI_AVX512F_VL_RotateRight + 1));
             static_assert_no_msg(NI_AVX10v1_RotateLeftVariable == (NI_AVX10v1_RotateLeft + 1));
             static_assert_no_msg(NI_AVX10v1_RotateRightVariable == (NI_AVX10v1_RotateRight + 1));
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impSIMDPopStack();
@@ -2334,9 +2328,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_X86
                 }
             }
-
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
 
             op2 = impPopStack().val;
             op1 = impPopStack().val;
@@ -3529,17 +3520,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-                op3 = impPopStack().val;
+                op4 = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
+                op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), impPopStack().val, op4);
             }
             else
             {
                 assert(sig->numArgs == 2);
-
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impPopStack().val;
@@ -3552,14 +3538,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
-                op4 = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
-                op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, op4);
                 op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
-            op1 = impSIMDPopStack();
-
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize);
+
+            // We've ordered op2 (addr) before op1 (value), so mark it as such
+            retNode->SetReverseOp();
             break;
         }
 
@@ -3568,12 +3554,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_StoreAligned:
         {
             assert(sig->numArgs == 2);
+
             assert(retType == TYP_VOID);
-
             var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
 
@@ -3583,9 +3566,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = op2->gtGetOp1();
             }
 
-            op1 = impSIMDPopStack();
-
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize);
+
+            // We've ordered op2 (addr) before op1 (value), so mark it as such
+            retNode->SetReverseOp();
             break;
         }
 
@@ -3594,12 +3579,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_StoreAlignedNonTemporal:
         {
             assert(sig->numArgs == 2);
+
             assert(retType == TYP_VOID);
-
             var_types simdType = getSIMDTypeForSize(simdSize);
-
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
 
@@ -3609,9 +3591,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = op2->gtGetOp1();
             }
 
-            op1 = impSIMDPopStack();
-
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize);
+
+            // We've ordered op2 (addr) before op1 (value), so mark it as such
+            retNode->SetReverseOp();
             break;
         }
 
@@ -3958,20 +3942,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            bool supportsAvx = compOpportunisticallyDependsOn(InstructionSet_AVX);
-
-            if (!supportsAvx)
-            {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-            }
-
             op2             = impSIMDPopStack();
             op1             = impSIMDPopStack();
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
             assert(JitType2PreciseVarType(simdBaseJitType) == TYP_FLOAT);
 
-            if (supportsAvx)
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
@@ -3982,9 +3958,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                                  nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
+                GenTree* clonedOp1 = fgMakeMultiUse(&op1);
 
                 switch (intrinsic)
                 {
@@ -4019,8 +3993,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
+
+                // We've ordered op2 before op1, so mark it as such
+                retNode->SetReverseOp();
+
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE_MoveScalar, simdBaseJitType,
                                                    simdSize);
+
+                // We've ordered op2 before op1, so mark it as such
+                retNode->SetReverseOp();
             }
             break;
         }
@@ -4050,19 +4031,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
-            bool supportsAvx = compOpportunisticallyDependsOn(InstructionSet_AVX);
-
-            if (!supportsAvx)
-            {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-            }
-
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
             assert(JitType2PreciseVarType(simdBaseJitType) == TYP_DOUBLE);
 
-            if (supportsAvx)
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX))
             {
                 // These intrinsics are "special import" because the non-AVX path isn't directly
                 // hardware supported. Instead, they start with "swapped operands" and we fix that here.
@@ -4073,9 +4046,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
             else
             {
-                GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, CHECK_SPILL_ALL,
-                                                  nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
+                GenTree* clonedOp1 = fgMakeMultiUse(&op1);
 
                 switch (intrinsic)
                 {
@@ -4110,8 +4081,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
+
+                // We've ordered op2 before op1, so mark it as such
+                retNode->SetReverseOp();
+
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, clonedOp1, retNode, NI_SSE2_MoveScalar, simdBaseJitType,
                                                    simdSize);
+
+                // We've ordered op2 before op1, so mark it as such
+                retNode->SetReverseOp();
             }
             break;
         }
@@ -4161,14 +4139,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             simdBaseJitType = getBaseJitTypeOfSIMDType(sig->retTypeSigClass);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
             // swap the two operands
             GenTree* idxVector = impSIMDPopStack();
             GenTree* srcVector = impSIMDPopStack();
 
             retNode = gtNewSimdHWIntrinsicNode(retType, idxVector, srcVector, intrinsic, simdBaseJitType, simdSize);
+
+            // We've ordered op2 before op1, so mark it as such
+            retNode->SetReverseOp();
             break;
         }
 

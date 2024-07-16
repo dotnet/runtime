@@ -1170,9 +1170,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
-            impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for SimdAsHWIntrinsic"));
-
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 
@@ -1387,8 +1384,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsByte(simdBaseType) && (simdSize == 16))
             {
-                op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
-                                   nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
+                op2 = fgMakeMultiUse(&op1);
 
                 op1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseJitType, simdSize);
                 op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_AdvSimd_Arm64_AddAcross, simdBaseJitType, 8);
@@ -1412,8 +1408,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)))
                     {
-                        op1 = impCloneExpr(op1, &op2, CHECK_SPILL_ALL,
-                                           nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
+                        op2 = fgMakeMultiUse(&op1);
                         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, NI_AdvSimd_AddPairwise, simdBaseJitType,
                                                        simdSize);
                     }
@@ -1460,6 +1455,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
             assert(varTypeIsFloating(simdBaseType));
+
+            // GTF_REVERSE_OPS only works with binary operands today, so spill
 
             impSpillSideEffect(true, verCurrentState.esStackDepth -
                                          3 DEBUGARG("Spilling op1 side effects for FusedMultiplyAdd"));
@@ -1918,6 +1915,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
+                // GTF_REVERSE_OPS only works with binary operands today, so spill
+
                 impSpillSideEffect(true, verCurrentState.esStackDepth -
                                              3 DEBUGARG("Spilling op1 side effects for MultiplyAddEstimate"));
 
@@ -2180,17 +2179,12 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
-                op3 = impPopStack().val;
+                op4 = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
+                op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), impPopStack().val, op4);
             }
             else
             {
                 assert(sig->numArgs == 2);
-
-                impSpillSideEffect(true, verCurrentState.esStackDepth -
-                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impPopStack().val;
@@ -2203,14 +2197,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
-                op4 = gtNewIconNode(genTypeSize(simdBaseType), op3->TypeGet());
-                op3 = gtNewOperNode(GT_MUL, op3->TypeGet(), op3, op4);
                 op2 = gtNewOperNode(GT_ADD, op2->TypeGet(), op2, op3);
             }
 
-            op1 = impSIMDPopStack();
-
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdStoreNode(op2, op1, simdBaseJitType, simdSize);
+
+            // We've ordered op2 (addr) before op1 (value), so mark it as such
+            retNode->SetReverseOp();
             break;
         }
 
@@ -2218,7 +2212,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_StoreAligned:
         {
             assert(sig->numArgs == 2);
-            assert(retType == TYP_VOID);
 
             if (opts.OptimizationDisabled())
             {
@@ -2230,9 +2223,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
             op2 = impPopStack().val;
 
             if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
@@ -2241,9 +2231,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = op2->gtGetOp1();
             }
 
-            op1 = impSIMDPopStack();
-
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdStoreAlignedNode(op2, op1, simdBaseJitType, simdSize);
+
+            // We've ordered op2 (addr) before op1 (value), so mark it as such
+            retNode->SetReverseOp();
             break;
         }
 
@@ -2263,9 +2255,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             var_types simdType = getSIMDTypeForSize(simdSize);
 
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
-
             op2 = impPopStack().val;
 
             if (op2->OperIs(GT_CAST) && op2->gtGetOp1()->TypeIs(TYP_BYREF))
@@ -2274,9 +2263,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op2 = op2->gtGetOp1();
             }
 
-            op1 = impSIMDPopStack();
-
+            op1     = impSIMDPopStack();
             retNode = gtNewSimdStoreNonTemporalNode(op2, op1, simdBaseJitType, simdSize);
+
+            // We've ordered op2 (addr) before op1 (value), so mark it as such
+            retNode->SetReverseOp();
             break;
         }
 

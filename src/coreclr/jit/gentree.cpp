@@ -20812,12 +20812,6 @@ GenTree* Compiler::gtNewSimdBinOpNode(
         }
     }
 
-    if (needsReverseOps)
-    {
-        // We expect op1 to have already been spilled if needed
-        std::swap(op1, op2);
-    }
-
     if (op2ForLookup == nullptr)
     {
         op2ForLookup = op2;
@@ -20844,8 +20838,18 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             std::swap(op1, op2);
 #endif // TARGET_XARCH
         }
-        return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+        GenTree* result = gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+
+        if (needsReverseOps)
+        {
+            result->SetReverseOp();
+        }
+
+        return result;
     }
+
+    assert(!needsReverseOps);
 
     switch (op)
     {
@@ -22920,6 +22924,9 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
     {
         GenTree* start = gtNewSimdCreateBroadcastNode(type, op1, simdBaseJitType, simdSize);
         result         = gtNewSimdBinOpNode(GT_ADD, type, result, start, simdBaseJitType, simdSize);
+
+        // We've ordered op2 (result) before op1 (start), so mark it as such
+        result->SetReverseOp();
     }
 
     return result;
