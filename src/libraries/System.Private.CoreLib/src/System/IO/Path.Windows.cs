@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text;
 
 #if MS_IO_REDIST
@@ -14,8 +15,14 @@ namespace Microsoft.IO
 namespace System.IO
 #endif
 {
-    public static partial class Path
+    public static unsafe partial class Path
     {
+#if MS_IO_REDIST
+        private static volatile int s_GetTempPathVersion;
+#else
+        private static volatile delegate* unmanaged<int, char*, uint> s_GetTempPathWFunc;
+#endif
+
         public static char[] GetInvalidFileNameChars() => new char[]
         {
             '\"', '<', '>', '|', '\0',
@@ -152,10 +159,37 @@ namespace System.IO
             return path;
         }
 
-        private static void GetTempPath(ref ValueStringBuilder builder)
+#if MS_IO_REDIST
+        private static int GetGetTempPathVersion()
+        {
+            IntPtr kernel32 = Interop.Kernel32.GetModuleHandle(Interop.Libraries.Kernel32);
+            if (kernel32 != IntPtr.Zero)
+            {
+                if (Interop.Kernel32.GetProcAddress(kernel32, "GetTempPath2W") != IntPtr.Zero)
+                {
+                    return 2;
+                }
+            }
+            return 1;
+        }
+#else
+        private static unsafe delegate* unmanaged<int, char*, uint> GetGetTempPathWFunc()
+        {
+            IntPtr kernel32 = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+            if (!NativeLibrary.TryGetExport(kernel32, "GetTempPath2W", out IntPtr func))
+            {
+                func = NativeLibrary.GetExport(kernel32, "GetTempPathW");
+            }
+
+            return (delegate* unmanaged<int, char*, uint>)func;
+        }
+#endif
+
+        internal static void GetTempPath(ref ValueStringBuilder builder)
         {
             uint result;
-            while ((result = Interop.Kernel32.GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
+            while ((result = GetTempPathW(builder.Capacity, ref builder.GetPinnableReference())) > builder.Capacity)
             {
                 // Reported size is greater than the buffer size. Increase the capacity.
                 builder.EnsureCapacity(checked((int)result));
@@ -165,6 +199,38 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForLastWin32Error();
 
             builder.Length = (int)result;
+
+            static uint GetTempPathW(int bufferLen, ref char buffer)
+            {
+#if MS_IO_REDIST
+                int getTempPathVersion = s_GetTempPathVersion;
+                if (getTempPathVersion == 0)
+                {
+                    s_GetTempPathVersion = getTempPathVersion = GetGetTempPathVersion();
+                }
+                return getTempPathVersion == 2
+                    ? Interop.Kernel32.GetTempPath2W(bufferLen, ref buffer)
+                    : Interop.Kernel32.GetTempPathW(bufferLen, ref buffer);
+#else
+                delegate* unmanaged<int, char*, uint> func = s_GetTempPathWFunc;
+                if (func == null)
+                {
+                    func = s_GetTempPathWFunc = GetGetTempPathWFunc();
+                }
+
+                int lastError;
+                uint retVal;
+                fixed (char* ptr = &buffer)
+                {
+                    Marshal.SetLastSystemError(0);
+                    retVal = func(bufferLen, ptr);
+                    lastError = Marshal.GetLastSystemError();
+                }
+
+                Marshal.SetLastPInvokeError(lastError);
+                return retVal;
+#endif
+            }
         }
 
         // Returns a unique temporary file name, and creates a 0-byte file by that

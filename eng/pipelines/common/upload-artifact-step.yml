@@ -6,6 +6,7 @@ parameters:
   archiveExtension: ''
   artifactName: ''
   displayName: ''
+  isOfficialBuild: false
 
 steps:
   # Zip Artifact
@@ -18,8 +19,11 @@ steps:
       tarCompression:    ${{ parameters.tarCompression }}
       includeRootFolder: ${{ parameters.includeRootFolder }}
 
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish ${{ parameters.displayName }}'
-    inputs:
-      pathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
-      artifactName:  ${{ parameters.artifactName }}
+  - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
+    parameters:
+      isOfficialBuild: ${{ parameters.isOfficialBuild }}
+      displayName: 'Publish ${{ parameters.displayName }}'
+      inputs:
+        PathtoPublish: $(Build.StagingDirectory)/${{ parameters.artifactName }}${{ parameters.archiveExtension }}
+        artifactName:  ${{ parameters.artifactName }}
+      condition: ${{ parameters.condition }}

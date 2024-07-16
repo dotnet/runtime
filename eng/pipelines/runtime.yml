@@ -51,6 +51,7 @@ variables:
 extends:
   template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
+    isOfficialBuild: false
     stages:
     - stage: Build
       jobs:
@@ -214,6 +215,7 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+          templatePath: 'templates'
           buildConfig: release
           platforms:
           - Android_x64
@@ -865,7 +867,7 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/base-job.yml
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
           buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
           platforms:
             - Linux_arm
@@ -885,7 +887,7 @@ extends:
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/installer/jobs/base-job.yml
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
           buildConfig: Release
           platforms:
             - OSX_arm64

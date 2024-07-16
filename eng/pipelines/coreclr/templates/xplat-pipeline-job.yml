@@ -12,6 +12,7 @@ parameters:
   stagedBuild: false
   strategy: ''
   pool: ''
+  templatePath: 'templates'
 
   # arcade-specific parameters
   condition: true
@@ -28,6 +29,7 @@ parameters:
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
   parameters:
+    templatePath: ${{ parameters.templatePath }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
@@ -80,13 +82,6 @@ jobs:
 
     - name: buildLinuxDacStagingPath
       value: '$(crossDacArtifactPath)/Linux.$(archType).$(buildConfigUpper)'
-
-    - name: crossDacHostArch
-      value: x64
-
-    - ${{ if eq(parameters.archType, 'arm') }}:
-      - name: crossDacHostArch
-        value: x86
 
     # We need this because both mono and coreclr build currently depends on CoreClr
     - name: coreClrProductArtifactName

@@ -141,6 +141,9 @@
   <data name="ContentException_NamedBitListValueTooBig" xml:space="preserve">
     <value>The encoded named bit list value is larger than the value size of the '{0}' enum.</value>
   </data>
+  <data name="ContentException_OidTooBig" xml:space="preserve">
+    <value>The encoded object identifier (OID) exceeds the limits supported by this library. Supported OIDs are limited to 64 arcs and each subidentifier is limited to a 128-bit value.</value>
+  </data>
   <data name="ContentException_PrimitiveEncodingRequired" xml:space="preserve">
     <value>The encoded value uses a constructed encoding, which is invalid for '{0}' values.</value>
   </data>

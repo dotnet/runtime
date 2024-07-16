@@ -875,7 +875,8 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
         int nonceCheck = req == NULL ? 1 : OCSP_check_nonce(req, basicResp);
 
         // Treat "response has no nonce" as success, since not all responders set the nonce.
-        if (nonceCheck == -1)
+        // Treat "neither has a nonce" as success, since we do not send nonces in our requests.
+        if (nonceCheck == -1 || nonceCheck == 2)
         {
             nonceCheck = 1;
         }
@@ -1074,8 +1075,9 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, i
     // Ownership was successfully transferred to req
     certId = NULL;
 
-    // Add a random nonce.
-    OCSP_request_add1_nonce(req, NULL, -1);
+    // We return the request without setting a nonce on it. Most public CA OCSP responders ignore the nonce, and in some
+    // cases flat out error when presented with a nonce.
+    // This behavior also matches Windows and Apple platforms.
     return req;
 }
 

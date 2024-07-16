@@ -4,6 +4,8 @@
     <Nullable>enable</Nullable>
     <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
     <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>1</ServicingVersion>
     <PackageDescription>Provides classes that can read and write the ASN.1 BER, CER, and DER data formats.
 
 Commonly Used Types:
@@ -11,6 +13,9 @@ System.Formats.Asn1.AsnReader
 System.Formats.Asn1.AsnWriter</PackageDescription>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
+      <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptoPool.cs">
       <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
     </Compile>
@@ -48,6 +53,7 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
     <Compile Include="System\Formats\Asn1\AsnWriter.SetOf.cs" />
     <Compile Include="System\Formats\Asn1\AsnWriter.Text.cs" />
     <Compile Include="System\Formats\Asn1\AsnWriter.UtcTime.cs" />
+    <Compile Include="System\Formats\Asn1\LocalAppContextSwitches.cs" />
     <Compile Include="System\Formats\Asn1\SetOfValueComparer.cs" />
     <Compile Include="System\Formats\Asn1\TagClass.cs" />
     <Compile Include="System\Formats\Asn1\UniversalTagNumber.cs" />
