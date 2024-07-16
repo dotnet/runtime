@@ -48,6 +48,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
 
         private const int MIN_GCINFO_VERSION_WITH_RETURN_KIND = 2;
         private const int MIN_GCINFO_VERSION_WITH_REV_PINVOKE_FRAME = 2;
+        private const int MIN_GCINFO_VERSION_WITH_NORMALIZED_CODE_OFFSETS = 3;
 
         private bool _slimHeader;
         private bool _hasSecurityObject;
@@ -88,7 +89,9 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion, ushort minorVersion)
         {
             Offset = offset;
-            _gcInfoTypes = new GcInfoTypes(machine);
+            Version = ReadyToRunVersionToGcInfoVersion(majorVersion, minorVersion);
+            bool denormalizeCodeOffsets = Version > MIN_GCINFO_VERSION_WITH_NORMALIZED_CODE_OFFSETS;
+            _gcInfoTypes = new GcInfoTypes(machine, denormalizeCodeOffsets);
             _machine = machine;
 
             SecurityObjectStackSlot = -1;
@@ -100,7 +103,6 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
             SizeOfEditAndContinuePreservedArea = 0xffffffff;
             ReversePInvokeFrameStackSlot = -1;
 
-            Version = ReadyToRunVersionToGcInfoVersion(majorVersion, minorVersion);
             int bitOffset = offset * 8;
 
             ParseHeaderFlags(image, ref bitOffset);
@@ -118,12 +120,13 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 uint normPrologSize = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
                 uint normEpilogSize = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_EPILOG_SIZE_ENCBASE, ref bitOffset);
 
-                ValidRangeStart = normPrologSize;
-                ValidRangeEnd = (uint)CodeLength - normEpilogSize;
+                ValidRangeStart = _gcInfoTypes.DenormalizeCodeOffset(normPrologSize);
+                ValidRangeEnd = (uint)CodeLength - _gcInfoTypes.DenormalizeCodeOffset(normEpilogSize);
             }
             else if (_hasSecurityObject || _hasGenericsInstContext)
             {
-                ValidRangeStart = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
+                uint normValidRangeStart = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
+                ValidRangeStart = _gcInfoTypes.DenormalizeCodeOffset(normValidRangeStart);
                 ValidRangeEnd = ValidRangeStart + 1;
             }
 
@@ -352,11 +355,11 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         private List<SafePointOffset> EnumerateSafePoints(byte[] image, ref int bitOffset)
         {
             List<SafePointOffset> safePoints = new List<SafePointOffset>();
-            uint numBitsPerOffset = GcInfoTypes.CeilOfLog2(CodeLength);
+            uint numBitsPerOffset = GcInfoTypes.CeilOfLog2((int)_gcInfoTypes.NormalizeCodeOffset((uint)CodeLength));
             for (int i = 0; i < NumSafePoints; i++)
             {
                 uint normOffset = (uint)NativeReader.ReadBits(image, (int)numBitsPerOffset, ref bitOffset);
-                safePoints.Add(new SafePointOffset(i, normOffset));
+                safePoints.Add(new SafePointOffset(i, _gcInfoTypes.DenormalizeCodeOffset(normOffset)));
             }
             return safePoints;
         }
@@ -367,18 +370,21 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         private List<InterruptibleRange> EnumerateInterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
         {
             List<InterruptibleRange> ranges = new List<InterruptibleRange>();
-            uint lastinterruptibleRangeStopOffset = 0;
+            uint normLastinterruptibleRangeStopOffset = 0;
 
             for (uint i = 0; i < NumInterruptibleRanges; i++)
             {
                 uint normStartDelta = NativeReader.DecodeVarLengthUnsigned(image, interruptibleRangeDelta1EncBase, ref bitOffset);
                 uint normStopDelta = NativeReader.DecodeVarLengthUnsigned(image, interruptibleRangeDelta2EncBase, ref bitOffset) + 1;
 
-                uint rangeStartOffset = lastinterruptibleRangeStopOffset + normStartDelta;
-                uint rangeStopOffset = rangeStartOffset + normStopDelta;
+                uint normRangeStartOffset = normLastinterruptibleRangeStopOffset + normStartDelta;
+                uint normRangeStopOffset = normRangeStartOffset + normStopDelta;
+
+                uint rangeStartOffset = _gcInfoTypes.DenormalizeCodeOffset(normRangeStopOffset);
+                uint rangeStopOffset = _gcInfoTypes.DenormalizeCodeOffset(normRangeStartOffset);
                 ranges.Add(new InterruptibleRange(i, rangeStartOffset, rangeStopOffset));
 
-                lastinterruptibleRangeStopOffset = rangeStopOffset;
+                normLastinterruptibleRangeStopOffset = normRangeStopOffset;
             }
             return ranges;
         }
