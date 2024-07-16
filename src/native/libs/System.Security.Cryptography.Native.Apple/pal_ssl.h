@@ -305,7 +305,7 @@ PALEXPORT int32_t AppleCryptoNative_NwReadFromConnection(nw_connection_t connect
 
 PALEXPORT int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * data, int dataLength);
 
-PALEXPORT int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, PAL_SslProtocol minTlsProtocl, PAL_SslProtocol maxTlsProtocol);
+PALEXPORT int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocl, PAL_SslProtocol maxTlsProtocol);
 
 PALEXPORT int32_t AppleCryptoNative_NwGetConnectionInfo(nw_connection_t connection, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, const char** negotiatedAlpn, uint32_t* alpnLength);
 

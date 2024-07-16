@@ -87,7 +87,6 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(Alpn_TestData))]
-        [ActiveIssue("ABC", TestPlatforms.OSX)]
         public async Task SslStream_StreamToStream_Alpn_Success(SslProtocols protocol, List<SslApplicationProtocol> clientProtocols, List<SslApplicationProtocol> serverProtocols, SslApplicationProtocol expected)
         {
             using X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();

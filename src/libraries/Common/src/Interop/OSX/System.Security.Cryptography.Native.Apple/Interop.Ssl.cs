@@ -164,7 +164,16 @@ internal static partial class Interop
 
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwSetTlsOptions", StringMarshalling = StringMarshalling.Utf8)]
-        internal static unsafe partial int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, SslProtocols minTlsVersion, SslProtocols maxTlsVersion);
+        private static unsafe partial int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, Span<byte> alpn, int alpnLength, SslProtocols minTlsVersion, SslProtocols maxTlsVersion);
+
+        internal static unsafe int NwSetTlsOptions(SafeSslHandle sslHandle, nint gcHandle, string targetName, List<SslApplicationProtocol>? applicationProtocols, SslProtocols minTlsVersion, SslProtocols maxTlsVersion)
+        {
+            int alpnLength = GetAlpnProtocolListSerializedLength(applicationProtocols);
+             Span<byte> alpn = alpnLength <= 256 ? stackalloc byte[256].Slice(0, alpnLength) : new byte[alpnLength];
+             SerializeAlpnProtocolList(applicationProtocols, alpn);
+
+             return NwSetTlsOptions(sslHandle, gcHandle, targetName, alpn, alpnLength, minTlsVersion, maxTlsVersion);
+        }
 
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_NwProcessInputData")]
         internal static unsafe partial int NwProcessInputData(SafeSslHandle sslHandle, IntPtr framer, void* ptr, int length);
@@ -538,6 +547,47 @@ internal static partial class Interop
                         NetEventSource.Error(null, $"AppleCryptoNative_SslIsHostnameMatch returned '{result}' for '{hostName}'");
                     Debug.Fail($"AppleCryptoNative_SslIsHostnameMatch returned {result}");
                     throw new SslException();
+            }
+        }
+
+
+        internal static int GetAlpnProtocolListSerializedLength(List<SslApplicationProtocol>? applicationProtocols)
+        {
+            int protocolSize = 0;
+
+            if (applicationProtocols != null)
+            {
+                foreach (SslApplicationProtocol protocol in applicationProtocols)
+                {
+                    if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
+                    {
+                        throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                    }
+
+                    protocolSize += protocol.Protocol.Length + 2;
+                }
+            }
+
+            return protocolSize;
+        }
+
+        private static void SerializeAlpnProtocolList(List<SslApplicationProtocol>? applicationProtocols, Span<byte> buffer)
+        {
+            if (applicationProtocols == null)
+            {
+                return;
+            }
+
+            Debug.Assert(GetAlpnProtocolListSerializedLength(applicationProtocols) == buffer.Length,
+                "GetAlpnProtocolListSerializedSize(applicationProtocols) == buffer.Length");
+
+            int offset = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                buffer[offset++] = (byte)protocol.Protocol.Length;
+                protocol.Protocol.Span.CopyTo(buffer.Slice(offset));
+                offset += protocol.Protocol.Length;
+                buffer[offset++] = 0;
             }
         }
     }

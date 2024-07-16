@@ -78,7 +78,6 @@ namespace System.Net
                 // NW freamewoprk still does not support all features and server side
                 UseNwFramework = CanUseNwFramework && sslAuthenticationOptions.IsClient &&
                                     sslAuthenticationOptions.CipherSuitesPolicy == null &&
-                                    sslAuthenticationOptions.ApplicationProtocols == null &&
                                     sslAuthenticationOptions.ClientCertificates == null &&
                                     sslAuthenticationOptions.CertificateContext == null &&
                                     sslAuthenticationOptions.CertSelectionDelegate == null;
@@ -96,13 +95,12 @@ namespace System.Net
 
                     if (sslAuthenticationOptions.EnabledSslProtocols != SslProtocols.None)
                     {
-                        //(minProtocolId, maxProtocolId) = GetMinMaxProtocols(sslAuthenticationOptions.EnabledSslProtocols);
+                        (minProtocolId, maxProtocolId) = GetMinMaxProtocols(sslAuthenticationOptions.EnabledSslProtocols, supportTls13: true);
                     }
-
-
 
                     osStatus = Interop.AppleCrypto.NwSetTlsOptions(_sslContext, GCHandle.ToIntPtr(gcHandle),
                                     sslAuthenticationOptions.TargetHost,
+                                    sslAuthenticationOptions.ApplicationProtocols,
                                     minProtocolId, maxProtocolId);
 
                     if (osStatus != 0)
@@ -621,9 +619,23 @@ namespace System.Net
             SslProtocols.Tls12
         };
 
-        private static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols)
+        private static readonly SslProtocols[] s_orderedSslProtocols13 = new SslProtocols[6]
         {
-             (int minIndex, int maxIndex) = protocols.ValidateContiguous(s_orderedSslProtocols);
+#pragma warning disable 0618
+            SslProtocols.Ssl2,
+            SslProtocols.Ssl3,
+#pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
+            SslProtocols.Tls,
+            SslProtocols.Tls11,
+#pragma warning restore SYSLIB0039
+            SslProtocols.Tls12,
+            SslProtocols.Tls13
+        };
+
+        private static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols, bool supportTls13 = false)
+        {
+            (int minIndex, int maxIndex) = protocols.ValidateContiguous(supportTls13 ? s_orderedSslProtocols13 : s_orderedSslProtocols);
             SslProtocols minProtocolId = s_orderedSslProtocols[minIndex];
             SslProtocols maxProtocolId = s_orderedSslProtocols[maxIndex];
 
@@ -632,6 +644,7 @@ namespace System.Net
 
         private static void SetProtocols(SafeSslHandle sslContext, SslProtocols protocols)
         {
+            Console.WriteLine("SetProtocols called for {0}", protocols);
             (SslProtocols minProtocolId, SslProtocols maxProtocolId) = GetMinMaxProtocols(protocols);
             // Set the min and max.
             Interop.AppleCrypto.SslSetMinProtocolVersion(sslContext, minProtocolId);

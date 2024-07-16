@@ -261,7 +261,7 @@ static tls_protocol_version_t PalSslProtocolToTlsProtocolVersion(PAL_SslProtocol
 }
 
 // This configures TLS proeprties
-int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
+int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcHandle, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol)
 {
     nw_protocol_options_t tlsOptions = nw_tls_create_options();
     sec_protocol_options_t sec_options = nw_tls_copy_sec_protocol_options(tlsOptions);
@@ -279,6 +279,17 @@ int32_t AppleCryptoNative_NwSetTlsOptions(nw_connection_t connection, size_t gcH
     if ((int)version != 0)
     {
         sec_protocol_options_set_max_tls_protocol_version(sec_options, version);
+    }
+
+    if (alpnBuffer != NULL && alpnLength > 0)
+    {
+        int offset = 0;
+        while (offset < alpnLength)
+        {
+            uint8_t length = *(alpnBuffer  + offset);
+            sec_protocol_options_add_tls_application_protocol(sec_options, (const char*) &alpnBuffer[offset + 1]);
+            offset += length + 2;
+        }
     }
 
     // we accept all certificates here and we will do validation later
