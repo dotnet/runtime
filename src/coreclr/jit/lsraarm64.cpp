@@ -1526,10 +1526,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // is not allocated the same register as the target.
     const bool isRMW = intrinsicTree->isRMWHWIntrinsic(compiler);
 
-    bool tgtPrefOp1         = false;
-    bool tgtPrefOp2         = false;
-    bool tgtPrefEmbOp2OfOp2 = false;
-    bool delayFreeMultiple  = false;
+    bool tgtPrefOp1        = false;
+    bool tgtPrefOp2        = false;
+    bool delayFreeMultiple = false;
     if (intrin.op1 != nullptr)
     {
         bool simdRegToSimdRegMove = false;
@@ -1619,7 +1618,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
             else
             {
-                SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
+                bool             tgtPrefEmbOp2 = false;
+                SingleTypeRegSet predMask      = RBM_ALLMASK.GetPredicateRegSet();
                 if (intrin.id == NI_Sve_ConditionalSelect)
                 {
                     // If this is conditional select, make sure to check the embedded
@@ -1642,8 +1642,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                             assert(embOp2Node->isRMWHWIntrinsic(compiler));
                             assert(!tgtPrefOp1);
                             assert(!tgtPrefOp2);
-                            assert(!tgtPrefEmbOp2OfOp2);
-                            tgtPrefEmbOp2OfOp2 = true;
+                            tgtPrefEmbOp2 = true;
                         }
                     }
                 }
@@ -1652,16 +1651,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if (tgtPrefEmbOp2OfOp2)
+                if (tgtPrefOp2 || tgtPrefEmbOp2)
                 {
                     assert(!tgtPrefOp1);
-                    assert(!tgtPrefOp2);
-                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2->AsHWIntrinsic()->Op(2));
-                }
-                else if (tgtPrefOp2)
-                {
-                    assert(!tgtPrefOp1);
-                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+                    srcCount += BuildDelayFreeUses(intrin.op1, nullptr, predMask);
                 }
                 else
                 {
@@ -1951,30 +1944,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 }
             }
 
-            switch (intrinEmb.id)
+            int prefUseOpNum = 1;
+            if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
             {
-                // Special-case, CreateBreakPropagateMask's op2 is the RMW node.
-                case NI_Sve_CreateBreakPropagateMask:
-                    assert(tgtPrefEmbOp2OfOp2);
-                    assert(intrin.op3->isContained());
-                    assert(intrin.op3->IsVectorZero());
-                    tgtPrefUse = BuildUse(embOp2Node->Op(2));
-                    srcCount += 1;
-                    srcCount += BuildDelayFreeUses(embOp2Node->Op(1), embOp2Node->Op(2));
-                    srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(2));
-                    break;
-
-                default:
-                    tgtPrefUse = BuildUse(embOp2Node->Op(1));
-                    srcCount += 1;
-                    for (size_t argNum = 2; argNum <= numArgs; argNum++)
-                    {
-                        srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), embOp2Node->Op(1));
-                    }
-
-                    srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
-                    break;
+                prefUseOpNum = 2;
             }
+            GenTree* prefUseNode = embOp2Node->Op(prefUseOpNum);
+            for (size_t argNum = 1; argNum <= numArgs; argNum++)
+            {
+                if (argNum == prefUseOpNum)
+                {
+                    tgtPrefUse = BuildUse(prefUseNode);
+                    srcCount += 1;
+                }
+                else
+                {
+                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), prefUseNode);
+                }
+            }
+
+            srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
         }
     }
     else if (intrin.op2 != nullptr)
