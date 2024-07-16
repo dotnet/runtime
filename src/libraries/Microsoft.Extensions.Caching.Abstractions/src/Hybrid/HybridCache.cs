@@ -110,7 +110,7 @@ public abstract class HybridCache
             _ => ForEachAsync(this, tags, cancellationToken),
         };
 
-        // default implementation is to call RemoveTagAsync for each key in turn
+        // default implementation is to call RemoveByTagAsync for each key in turn
         static async ValueTask ForEachAsync(HybridCache @this, IEnumerable<string> keys, CancellationToken cancellationToken)
         {
             foreach (var key in keys)
