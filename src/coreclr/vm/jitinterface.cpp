@@ -1182,7 +1182,7 @@ size_t CEEInfo::getClassThreadStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return result; 
+    return result;
 }
 
 size_t CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
@@ -1203,23 +1203,22 @@ size_t CEEInfo::getClassStaticDynamicInfo(CORINFO_CLASS_HANDLE cls)
 
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return result; 
+    return result;
 }
 
 CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable * pFieldMT)
 {
     STANDARD_VM_CONTRACT;
 
-    pFieldMT->AttemptToPreinit();
     bool GCStatic = (pField->GetFieldType() == ELEMENT_TYPE_CLASS ||
                   pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE);
-    bool noCtor = pFieldMT->IsClassInited();
+    bool noCtor = pFieldMT->IsClassInitedOrPreinited();
     bool threadStatic = pField->IsThreadStatic();
     bool isInexactMT = pFieldMT->IsSharedByGenericInstantiations();
     bool isCollectible = pFieldMT->Collectible();
     _ASSERTE(!isInexactMT);
     CorInfoHelpFunc helper;
-    
+
     if (threadStatic)
     {
         if (GCStatic)
@@ -1451,7 +1450,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             }
 
             // We are not going through a helper. The constructor has to be triggered explicitly.
-            if (!pFieldMT->IsClassInited())
+            if (!pFieldMT->IsClassInitedOrPreinited())
                 fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
         }
         else
@@ -1536,10 +1535,9 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Allocate space for the local class if necessary, but don't trigger
                 // class construction.
                 pFieldMT->EnsureStaticDataAllocated();
-                pFieldMT->AttemptToPreinit();
 
                 // We are not going through a helper. The constructor has to be triggered explicitly.
-                if (!pFieldMT->IsClassInited())
+                if (!pFieldMT->IsClassInitedOrPreinited())
                     fieldFlags |= CORINFO_FLG_FIELD_INITCLASS;
 
                 GCX_COOP();
@@ -1553,9 +1551,9 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     Object* frozenObj = VolatileLoad((Object**)pResult->fieldLookup.addr);
                     _ASSERT(frozenObj != nullptr);
 
-                    // ContainsPointers here is unnecessary but it's cheaper than IsInFrozenSegment
+                    // ContainsGCPointers here is unnecessary but it's cheaper than IsInFrozenSegment
                     // for structs containing gc handles
-                    if (!frozenObj->GetMethodTable()->ContainsPointers() &&
+                    if (!frozenObj->GetMethodTable()->ContainsGCPointers() &&
                         GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(frozenObj))
                     {
                         pResult->fieldLookup.addr = frozenObj->GetData();
@@ -1906,22 +1904,11 @@ CEEInfo::getHeapClassSize(
     TypeHandle VMClsHnd(clsHnd);
     MethodTable* pMT = VMClsHnd.GetMethodTable();
     _ASSERTE(pMT);
+    _ASSERTE(!pMT->IsValueType());
     _ASSERTE(!pMT->HasComponentSize());
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    _ASSERTE(!IsReadyToRunCompilation() || pMT->IsInheritanceChainLayoutFixedInCurrentVersionBubble());
-#endif
-
     // Add OBJECT_SIZE to account for method table pointer.
-    //
-    if (pMT->IsValueType())
-    {
-        result = VMClsHnd.GetSize() + OBJECT_SIZE;
-    }
-    else
-    {
-        result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
-    }
+    result = pMT->GetNumInstanceFieldBytes() + OBJECT_SIZE;
 
     EE_TO_JIT_TRANSITION_LEAF();
     return result;
@@ -2016,7 +2003,7 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
         }
         else if (pInfo->IsManagedSequential() || pInfo->IsBlittable())
         {
-            _ASSERTE(!pMT->ContainsPointers());
+            _ASSERTE(!pMT->ContainsGCPointers());
 
             // if it's managed sequential, we use the managed alignment requirement
             result = pInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
@@ -2427,7 +2414,7 @@ unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
                (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
 
         // walk the GC descriptors, turning on the correct bits
-        if (pMT->ContainsPointers())
+        if (pMT->ContainsGCPointers())
         {
             CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
             CGCDescSeries * pByValueSeries = map->GetLowestSeries();
@@ -3831,7 +3818,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
 
-        if (pMT->ContainsPointers() || pMT == g_TypedReferenceMT)
+        if (pMT->ContainsGCPointers() || pMT == g_TypedReferenceMT)
             ret |= CORINFO_FLG_CONTAINS_GC_PTR;
 
         if (pMT->IsDelegate())
@@ -3884,8 +3871,7 @@ CorInfoInitClassResult CEEInfo::initClass(
 
     MethodTable *pTypeToInitMT = typeToInitTH.AsMethodTable();
 
-    pTypeToInitMT->AttemptToPreinit();
-    if (pTypeToInitMT->IsClassInited())
+    if (pTypeToInitMT->IsClassInitedOrPreinited())
     {
         // If the type is initialized there really is nothing to do.
         result = CORINFO_INITCLASS_INITIALIZED;
@@ -8588,14 +8574,15 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      bool * isRelative)
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
     MethodDesc* method = GetMethod(methodHnd);
+    method->EnsureTemporaryEntryPoint();
 
     //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
     _ASSERTE(!method->HasMethodInstantiation());
@@ -8609,7 +8596,7 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
     *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * TARGET_POINTER_SIZE /* sizeof(MethodTable::VTableIndir2_t) */;
     *isRelative = false;
 
-    EE_TO_JIT_TRANSITION_LEAF();
+    EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
@@ -11726,7 +11713,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
     // class construction.
     pEnclosingMT->EnsureStaticDataAllocated();
 
-    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+    if (!field->IsThreadStatic() && pEnclosingMT->IsClassInitedOrPreinited() && IsFdInitOnly(field->GetAttributes()))
     {
         if (field->IsObjRef())
         {
@@ -11753,7 +11740,7 @@ bool CEEInfo::getStaticFieldContent(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buff
                 {
                     TypeHandle structType = field->GetFieldTypeHandleThrowing();
                     PTR_MethodTable structTypeMT = structType.AsMethodTable();
-                    if (!structTypeMT->ContainsPointers())
+                    if (!structTypeMT->ContainsGCPointers())
                     {
                         // Fast-path: no GC pointers in the struct, we can use memcpy
                         useMemcpy = true;
@@ -11852,7 +11839,7 @@ bool CEEInfo::getObjectContent(CORINFO_OBJECT_HANDLE handle, uint8_t* buffer, in
     {
         Object* obj = OBJECTREFToObject(objRef);
         PTR_MethodTable type = obj->GetMethodTable();
-        if (type->ContainsPointers())
+        if (type->ContainsGCPointers())
         {
             // RuntimeType has a gc field (object m_keepAlive), but if the object is in a frozen segment
             // it means that field is always nullptr so we can read any part of the object:
@@ -11914,7 +11901,7 @@ CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE
             VALIDATEOBJECTREF(fieldObj);
 
             // Check for initialization before looking at the value
-            isClassInitialized = !!pEnclosingMT->IsClassInited();
+            isClassInitialized = !!pEnclosingMT->IsClassInitedOrPreinited();
 
             if (fieldObj != NULL)
             {
@@ -13158,7 +13145,7 @@ void ComputeGCRefMap(MethodTable * pMT, BYTE * pGCRefMap, size_t cbGCRefMap)
 
     ZeroMemory(pGCRefMap, cbGCRefMap);
 
-    if (!pMT->ContainsPointers())
+    if (!pMT->ContainsGCPointers())
         return;
 
     CGCDesc* map = CGCDesc::GetCGCDescFromMT(pMT);
@@ -13307,7 +13294,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
     {
         if (dwFlags & READYTORUN_LAYOUT_GCLayout_Empty)
         {
-            if (pMT->ContainsPointers())
+            if (pMT->ContainsGCPointers())
             {
                 if (printDiff)
                 {

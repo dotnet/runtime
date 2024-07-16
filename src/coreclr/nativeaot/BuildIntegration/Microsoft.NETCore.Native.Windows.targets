@@ -46,6 +46,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)zlibstatic$(LibFileExt)" />
     </ItemGroup>
 
     <ItemGroup>

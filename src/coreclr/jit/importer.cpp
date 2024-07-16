@@ -233,6 +233,7 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
                     case GT_CNS_VEC:
+                    case GT_CNS_MSK:
                     case GT_LCL_VAR:
                         table->val = gtCloneExpr(tree);
                         break;
@@ -850,6 +851,12 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
             NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+
+            if (destAddr->OperIs(GT_LCL_ADDR))
+            {
+                lvaSetVarDoNotEnregister(destAddr->AsLclVarCommon()->GetLclNum()
+                                             DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+            }
 
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter

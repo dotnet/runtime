@@ -7690,8 +7690,6 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif
 
-    FinalizeOutgoingArgSpace();
-
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
@@ -10032,7 +10030,7 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
     GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
-    if (result->IsVectorConst())
+    if (result->IsCnsVec())
     {
         BlockRange().Remove(op1);
     }

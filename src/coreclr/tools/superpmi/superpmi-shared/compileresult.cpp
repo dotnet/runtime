@@ -65,12 +65,18 @@ bool CompileResult::IsEmpty()
     return isEmpty;
 }
 
-// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
-void* CompileResult::allocateMemory(size_t sizeInBytes)
+MemoryTracker* CompileResult::getOrCreateMemoryTracker()
 {
     if (memoryTracker == nullptr)
         memoryTracker = new MemoryTracker();
-    return memoryTracker->allocate(sizeInBytes);
+
+    return memoryTracker;
+}
+
+// Allocate memory associated with this CompileResult. Keep track of it in a list so we can free it all later.
+void* CompileResult::allocateMemory(size_t sizeInBytes)
+{
+    return getOrCreateMemoryTracker()->allocate(sizeInBytes);
 }
 
 void CompileResult::recAssert(const char* assertText)
@@ -1261,7 +1267,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     if (value.callSig.callConv == (DWORD)-1)
         return false;
 
-    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap);
+    *pCallSig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.callSig, RecordCallSiteWithSignature, CrSigInstHandleMap, getOrCreateMemoryTracker());
 
     return true;
 }
