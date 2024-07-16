@@ -580,7 +580,7 @@ namespace System.Net.Quic.Tests
                     return true;
                 };
 
-                await CreateQuicConnection(clientOptions);
+                await using QuicConnection connection = await CreateQuicConnection(clientOptions);
             }
             finally
             {

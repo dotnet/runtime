@@ -150,7 +150,7 @@ namespace JIT.HardwareIntrinsics.Arm._Sve
                 if(!dict.Add(input[i]))
                 {
                     // value already exist
-                    input[i] += 1;
+                    input[i] = (input[i] + 1) % ({Op3BaseType})OutElementCount;
                     continue;
                 }
                 i++;
@@ -421,7 +421,7 @@ private void ValidateResult({Op1BaseType}[] mask, {Op1BaseType}[] data, {Op2Base
 {
     bool succeeded = true;
 
-    var actualResult = new {Op1BaseType}[DataElementCount];
+    var actualResult = new {Op2BaseType}[DataElementCount];
     for (var i = 0; i < DataElementCount; i++)
     {
         actualResult[i] = *({Op2BaseType}*)(baseAddr + offset[i]);
@@ -430,7 +430,7 @@ private void ValidateResult({Op1BaseType}[] mask, {Op1BaseType}[] data, {Op2Base
     for (var i = 0; i < DataElementCount; i++)
     {
         {Op1BaseType} expectedResult = mask[i] == 0 ? 0 : data[i];
-        if (actualResult[i] != expectedResult)
+        if (actualResult[i] != ({Op2BaseType})expectedResult)
         {
             succeeded = false;
             break;
@@ -475,7 +475,7 @@ private void ValidateZeroResult(void* data, void* baseAddr, void* offset, [Calle
 private void ValidateZeroResult({Op1BaseType}[] data, {Op2BaseType}* baseAddr, {Op3BaseType}[] offset, [CallerMemberName] string method = "")
 {
     bool succeeded = true;
-    var actualResult = new {Op1BaseType}[DataElementCount];
+    var actualResult = new {Op2BaseType}[DataElementCount];
     for (var i = 0; i < DataElementCount; i++)
     {
         actualResult[i] = *({Op2BaseType}*)(baseAddr + offset[i]);

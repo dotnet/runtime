@@ -72,26 +72,38 @@ internal static partial class Interop
             //internal long cguest_time;
         }
 
-        internal static string GetExeFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{ExeFileName}");
+        internal static string GetExeFilePathForProcess(ProcPid pid) =>
+            pid == ProcPid.Self ? $"{RootPath}{Self}{ExeFileName}" :
+                                  string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{ExeFileName}");
 
-        internal static string GetCmdLinePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{CmdLineFileName}");
+        internal static string GetCmdLinePathForProcess(ProcPid pid) =>
+            pid == ProcPid.Self ? $"{RootPath}{Self}{CmdLineFileName}" :
+                                  string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{CmdLineFileName}");
 
-        internal static string GetStatFilePathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{StatFileName}");
+        internal static string GetStatFilePathForProcess(ProcPid pid) =>
+            pid == ProcPid.Self ? $"{RootPath}{Self}{StatFileName}" :
+                                  string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{StatFileName}");
 
-        internal static string GetTaskDirectoryPathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{TaskDirectoryName}");
+        internal static string GetTaskDirectoryPathForProcess(ProcPid pid) =>
+            pid == ProcPid.Self ? $"{RootPath}{Self}{TaskDirectoryName}" :
+                                  string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{TaskDirectoryName}");
 
-        internal static string GetFileDescriptorDirectoryPathForProcess(int pid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{FileDescriptorDirectoryName}");
+        internal static string GetFileDescriptorDirectoryPathForProcess(ProcPid pid) =>
+            pid == ProcPid.Self ? $"{RootPath}{Self}{FileDescriptorDirectoryName}" :
+                                  string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{FileDescriptorDirectoryName}");
 
-        private static string GetStatFilePathForThread(int pid, int tid) => string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{TaskDirectoryName}{(uint)tid}{StatFileName}");
+        private static string GetStatFilePathForThread(ProcPid pid, int tid) =>
+            pid == ProcPid.Self ? string.Create(null, stackalloc char[256], $"{RootPath}{Self}{TaskDirectoryName}{(uint)tid}{StatFileName}") :
+                                  string.Create(null, stackalloc char[256], $"{RootPath}{(uint)pid}{TaskDirectoryName}{(uint)tid}{StatFileName}");
 
-        internal static bool TryReadStatFile(int pid, out ParsedStat result)
+        internal static bool TryReadStatFile(ProcPid pid, out ParsedStat result)
         {
             bool b = TryParseStatFile(GetStatFilePathForProcess(pid), out result);
-            Debug.Assert(!b || result.pid == pid, "Expected process ID from stat file to match supplied pid");
+            Debug.Assert(!b || pid == ProcPid.Self|| (ProcPid)result.pid == pid, "Expected process ID from stat file to match supplied pid");
             return b;
         }
 
-        internal static bool TryReadStatFile(int pid, int tid, out ParsedStat result)
+        internal static bool TryReadStatFile(ProcPid pid, int tid, out ParsedStat result)
         {
             bool b = TryParseStatFile(GetStatFilePathForThread(pid, tid), out result);
             Debug.Assert(!b || result.pid == tid, "Expected thread ID from stat file to match supplied tid");

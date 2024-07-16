@@ -14,7 +14,7 @@ using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Tests;
 
-[CollectionDefinition(nameof(QuicTestCollection))]
+[CollectionDefinition(nameof(QuicTestCollection), DisableParallelization = true)]
 public unsafe class QuicTestCollection : ICollectionFixture<QuicTestCollection>, IDisposable
 {
     public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;

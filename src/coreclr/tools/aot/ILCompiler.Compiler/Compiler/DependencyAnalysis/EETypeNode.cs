@@ -534,7 +534,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
-                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+                            TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
+                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
                             factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }

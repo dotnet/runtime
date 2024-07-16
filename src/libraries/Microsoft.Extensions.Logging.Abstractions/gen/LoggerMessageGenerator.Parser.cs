@@ -652,6 +652,10 @@ namespace Microsoft.Extensions.Logging.Generators
                         {
                             continue;
                         }
+                        if (!fs.CanBeReferencedByName)
+                        {
+                            continue;
+                        }
                         if (IsBaseOrIdentity(fs.Type, loggerSymbol))
                         {
                             if (loggerField == null)

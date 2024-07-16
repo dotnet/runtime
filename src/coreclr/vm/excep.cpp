@@ -2975,7 +2975,7 @@ void StackTraceInfo::EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t 
         {
             memmoveGCRefs(pNewKeepAliveArray->GetDataPtr(),
                           (*ppKeepAliveArray)->GetDataPtr(),
-                          neededSize * sizeof(Object *));        
+                          (*ppKeepAliveArray)->GetNumComponents() * sizeof(Object *));
         }
         // Update the keepAlive array
         *ppKeepAliveArray = pNewKeepAliveArray;

@@ -840,6 +840,7 @@ export function preloadWorkers () {
         const workerNumber = loaderHelpers.workerNextNumber++;
         const worker: Partial<PThreadWorker> = new Worker(jsModuleWorker.resolvedUrl!, {
             name: "dotnet-worker-" + workerNumber.toString().padStart(3, "0"),
+            type: "module",
         });
         worker.info = {
             workerNumber,

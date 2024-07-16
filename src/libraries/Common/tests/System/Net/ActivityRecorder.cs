@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using Xunit;
 
 namespace System.Net.Test.Common
@@ -17,12 +18,16 @@ namespace System.Net.Test.Common
         private readonly ActivityListener _listener;
         private List<Activity> _finishedActivities = new();
 
+        private int _started;
+        private int _stopped;
+
+        public int Started => _started;
+        public int Stopped => _stopped;
+
         public Predicate<Activity> Filter { get; set; } = _ => true;
         public bool VerifyParent { get; set; } = true;
         public Activity ExpectedParent { get; set; }
 
-        public int Started { get; private set; }
-        public int Stopped { get; private set; }
         public Activity LastStartedActivity { get; private set; }
         public Activity LastFinishedActivity { get; private set; }
         public IEnumerable<Activity> FinishedActivities => _finishedActivities;
@@ -35,7 +40,8 @@ namespace System.Net.Test.Common
             {
                 ShouldListenTo = (activitySource) => activitySource.Name == _activitySourceName,
                 Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllData,
-                ActivityStarted = (activity) => {
+                ActivityStarted = (activity) =>
+                {
                     if (activity.OperationName == _activityName && Filter(activity))
                     {
                         if (VerifyParent)
@@ -43,11 +49,13 @@ namespace System.Net.Test.Common
                             Assert.Same(ExpectedParent, activity.Parent);
                         }
 
-                        Started++;
+                        Interlocked.Increment(ref _started);
+
                         LastStartedActivity = activity;
                     }
                 },
-                ActivityStopped = (activity) => {
+                ActivityStopped = (activity) =>
+                {
                     if (activity.OperationName == _activityName && Filter(activity))
                     {
                         if (VerifyParent)
@@ -55,14 +63,18 @@ namespace System.Net.Test.Common
                             Assert.Same(ExpectedParent, activity.Parent);
                         }
 
-                        Stopped++;
-                        LastFinishedActivity = activity;
-                        _finishedActivities.Add(activity);
+                        Interlocked.Increment(ref _stopped);
+
+                        lock (_finishedActivities)
+                        {
+                            LastFinishedActivity = activity;
+                            _finishedActivities.Add(activity);
+                        }
                     }
                 }
             };
 
-            ActivitySource.AddActivityListener(_listener);   
+            ActivitySource.AddActivityListener(_listener);
         }
 
         public void Dispose() => _listener.Dispose();

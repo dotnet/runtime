@@ -10030,7 +10030,7 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
     GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
-    if (result->IsVectorConst())
+    if (result->IsCnsVec())
     {
         BlockRange().Remove(op1);
     }
