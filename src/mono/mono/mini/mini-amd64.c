@@ -1322,15 +1322,15 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 			int storage_type = ainfo->pair_storage [k];
 			int reg_storage = ainfo->pair_regs [k];
 			switch (storage_type) {
-				case ArgInIReg:
-					ccontext->gregs [reg_storage] = *src_cast;
-					break;
-				case ArgInFloatSSEReg:
-				case ArgInDoubleSSEReg:
-					ccontext->fregs [reg_storage] = *(double*)src_cast;
-					break;
-				default:
-					g_assert_not_reached ();
+			case ArgInIReg:
+				ccontext->gregs [reg_storage] = *src_cast;
+				break;
+			case ArgInFloatSSEReg:
+			case ArgInDoubleSSEReg:
+				ccontext->fregs [reg_storage] = *(double*)src_cast;
+				break;
+			default:
+				g_assert_not_reached ();
 			}
 			src_cast++;
 		}
