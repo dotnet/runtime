@@ -32,23 +32,25 @@ namespace System
             return version.Major == 6 && version.Minor == 1;
         }
 
+        private static bool UseFileAPIs(bool isRedirected) => isRedirected || Console.InputEncoding.CodePage != UnicodeCodePage;
+
         public static Stream OpenStandardInput() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE,
                 FileAccess.Read,
-                useFileAPIs: Console.InputEncoding.CodePage != UnicodeCodePage || Console.IsInputRedirected);
+                useFileAPIs: UseFileAPIs(Console.IsInputRedirected));
 
         public static Stream OpenStandardOutput() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_OUTPUT_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsOutputRedirected);
+                useFileAPIs: UseFileAPIs(Console.IsOutputRedirected));
 
         public static Stream OpenStandardError() =>
             GetStandardFile(
                 Interop.Kernel32.HandleTypes.STD_ERROR_HANDLE,
                 FileAccess.Write,
-                useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage || Console.IsErrorRedirected);
+                useFileAPIs: UseFileAPIs(Console.IsErrorRedirected));
 
         private static IntPtr InputHandle =>
             Interop.Kernel32.GetStdHandle(Interop.Kernel32.HandleTypes.STD_INPUT_HANDLE);
@@ -677,28 +679,17 @@ namespace System
 
         public static void Beep()
         {
-            const char BellCharacter = '\u0007'; // Windows doesn't use terminfo, so the codepoint is hardcoded.
-
             if (!Console.IsOutputRedirected)
             {
-                Console.Out.Write(BellCharacter);
-                return;
+                ReadOnlySpan<byte> bell = "\u0007"u8; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+                int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, UseFileAPIs(isRedirected: false));
+                if (Interop.Errors.ERROR_SUCCESS == errorCode)
+                {
+                    return;
+                }
             }
 
-            if (!Console.IsErrorRedirected)
-            {
-                Console.Error.Write(BellCharacter);
-                return;
-            }
-
-            BeepFallback();
-        }
-
-        private static void BeepFallback()
-        {
-            const int BeepFrequencyInHz = 800;
-            const int BeepDurationInMs = 200;
-            Interop.Kernel32.Beep(BeepFrequencyInHz, BeepDurationInMs);
+            Interop.Kernel32.Beep(frequency: 800, duration: 200);
         }
 
         public static void Beep(int frequency, int duration)
@@ -1226,7 +1217,7 @@ namespace System
                 return errorCode;
             }
 
-            private static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
+            internal static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
             {
                 if (bytes.IsEmpty)
                     return Interop.Errors.ERROR_SUCCESS;
