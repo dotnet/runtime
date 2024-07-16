@@ -2305,6 +2305,65 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 }
 HCIMPLEND
 
+/* framed Unbox type test helper that handles enums and full-blown type equivalence */
+NOINLINE HCIMPL2(void, JIT_Unbox_TypeTest_Framed, MethodTable* pMT1, MethodTable* pMT2)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+    HELPER_METHOD_POLL();
+
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
+    {
+        // type test test passes
+    }
+    else if (pMT1->IsEquivalentTo(pMT2))
+    {
+        // the structures are equivalent
+    }
+    else
+    {
+        COMPlusThrowInvalidCastException(TypeHandle(pMT2), TypeHandle(pMT1));
+    }
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*************************************************************/
+/* Unbox type test that handles enums */
+HCIMPL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType)
+{
+    FCALL_CONTRACT;
+
+    TypeHandle typeHnd(type);
+    // boxable types have method tables
+    _ASSERTE(!typeHnd.IsTypeDesc());
+
+    MethodTable* pMT1 = typeHnd.AsMethodTable();
+    // must be a value type
+    _ASSERTE(pMT1->IsValueType());
+
+    TypeHandle boxTypeHnd(boxType);
+    MethodTable* pMT2 = boxTypeHnd.AsMethodTable();
+
+    // we allow enums and their primitive type to be interchangeable.
+    // if suspension is requested, defer to the framed helper.
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
+            g_TrapReturningThreads == 0)
+    {
+        return;
+    }
+
+    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
+    ENDFORBIDGC();
+    HCCALL2(JIT_Unbox_TypeTest_Framed, pMT1, pMT2);
+}
+HCIMPLEND
+
 /*************************************************************/
 HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByRef)
 {
@@ -4617,13 +4676,13 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         }
 
         // We've successfully created the osr method; make it available.
-        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
         ppInfo->m_osrMethodCode = osrMethodCode;
         isNewMethod = true;
     }
 
     // If we get here, we have code to transition to...
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     {
         Thread *pThread = GetThread();
@@ -4856,7 +4915,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
             }
 
             // We've successfully created the osr method; make it available.
-            _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
             ppInfo->m_osrMethodCode = newMethodCode;
             isNewMethod = true;
         }
@@ -4864,7 +4923,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     Thread *pThread = GetThread();
 
@@ -5254,7 +5313,7 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -5303,7 +5362,7 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())

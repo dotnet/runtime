@@ -463,6 +463,13 @@ namespace ILCompiler
                     ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
                 }
 
+                if (!method.IsCanonicalMethod(CanonicalFormKind.Any) && method.IsStaticConstructor)
+                {
+                    // Information about the static constructor prefixes the non-GC static base
+                    dependencies ??= new DependencyList();
+                    dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)method.OwningType), "Static constructor is reflection-callable");
+                }
+
                 GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, method.OwningType);
             }
@@ -1179,7 +1186,7 @@ namespace ILCompiler
             return null;
         }
 
-        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin = null)
         {
         }
     }

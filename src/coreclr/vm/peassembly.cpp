@@ -32,7 +32,7 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    if (pPEAssembly->IsDynamic())
+    if (pPEAssembly->IsReflectionEmit())
         return;    // PEFiles for ReflectionEmit assemblies don't cache the machine type.
 
     DWORD peKind;
@@ -74,7 +74,7 @@ void PEAssembly::EnsureLoaded()
     }
     CONTRACT_END;
 
-    if (IsDynamic())
+    if (IsReflectionEmit())
         RETURN;
 
     // Ensure that loaded layout is available.
@@ -208,7 +208,7 @@ PTR_CVOID PEAssembly::GetMetadata(COUNT_T *pSize)
     }
     CONTRACT_END;
 
-    if (IsDynamic()
+    if (IsReflectionEmit()
          || !GetPEImage()->HasNTHeaders()
          || !GetPEImage()->HasCorHeader())
     {
@@ -257,7 +257,7 @@ TADDR PEAssembly::GetIL(RVA il)
     {
         INSTANCE_CHECK;
         PRECONDITION(il != 0);
-        PRECONDITION(!IsDynamic());
+        PRECONDITION(!IsReflectionEmit());
 #ifndef DACCESS_COMPILE
         PRECONDITION(HasLoadedPEImage());
 #endif
@@ -389,7 +389,7 @@ void PEAssembly::OpenMDImport()
 
     if (m_pMDImport != NULL)
         return;
-    if (!IsDynamic()
+    if (!IsReflectionEmit()
         && GetPEImage()->HasNTHeaders()
             && GetPEImage()->HasCorHeader())
     {
@@ -497,16 +497,16 @@ PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
 
     AssemblySpec spec;
 
-    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this));
+    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this)->GetAssembly());
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
 
-
+// dwLocation maps to System.Reflection.ResourceLocation
 BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                             PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
+                             PBYTE *pbInMemoryResource, Assembly** pAssemblyRef,
                              LPCSTR *szFileName, DWORD *dwLocation,
-                             BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly, AppDomain* pAppDomain)
+                             Assembly* pAssembly)
 {
     CONTRACTL
     {
@@ -523,7 +523,6 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     DWORD              dwResourceFlags;
     DWORD              dwOffset;
     mdManifestResource mdResource;
-    Assembly*          pAssembly = NULL;
     PEAssembly*        pPEAssembly = NULL;
     IMDInternalImport* pImport = GetMDImport();
     if (SUCCEEDED(pImport->FindManifestResourceByName(szName, &mdResource)))
@@ -538,16 +537,12 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     else
     {
-        if (fSkipRaiseResolveEvent || pAppDomain == NULL)
-            return FALSE;
-
-        DomainAssembly* pParentAssembly = GetAppDomain()->FindAssembly(this);
-        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly, szName);
+        AppDomain* pAppDomain = AppDomain::GetCurrentDomain();
+        DomainAssembly* pParentAssembly = pAppDomain->FindAssembly(this);
+        pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly->GetAssembly(), szName);
         if (pAssembly == NULL)
             return FALSE;
-
-        pDomainAssembly = pAssembly->GetDomainAssembly();
-        pPEAssembly = pDomainAssembly->GetPEAssembly();
+        pPEAssembly = pAssembly->GetPEAssembly();
 
         if (FAILED(pAssembly->GetMDImport()->FindManifestResourceByName(
             szName,
@@ -559,11 +554,11 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         if (dwLocation != 0)
         {
             if (pAssemblyRef != NULL)
-                *pAssemblyRef = pDomainAssembly;
+                *pAssemblyRef = pAssembly;
 
             *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
         }
-        IfFailThrow(pPEAssembly->GetMDImport()->GetManifestResourceProps(
+        IfFailThrow(pAssembly->GetMDImport()->GetManifestResourceProps(
             mdResource,
             NULL,           //&szName,
             &mdLinkRef,
@@ -575,27 +570,27 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     switch(TypeFromToken(mdLinkRef)) {
     case mdtAssemblyRef:
         {
-            if (pDomainAssembly == NULL)
+            if (pAssembly == NULL)
                 return FALSE;
 
             AssemblySpec spec;
-            spec.InitializeSpec(mdLinkRef, GetMDImport(), pDomainAssembly);
-            pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
+            spec.InitializeSpec(mdLinkRef, GetMDImport(), pAssembly);
+            DomainAssembly* pDomainAssembly = spec.LoadDomainAssembly(FILE_LOADED);
 
             if (dwLocation) {
                 if (pAssemblyRef)
-                    *pAssemblyRef = pDomainAssembly;
+                    *pAssemblyRef = pDomainAssembly->GetAssembly();
 
                 *dwLocation = *dwLocation | 2; // ResourceLocation.containedInAnotherAssembly
             }
 
-            return pDomainAssembly->GetResource(szName,
-                                                cbResource,
-                                                pbInMemoryResource,
-                                                pAssemblyRef,
-                                                szFileName,
-                                                dwLocation,
-                                                fSkipRaiseResolveEvent);
+            return GetResource(szName,
+                                cbResource,
+                                pbInMemoryResource,
+                                pAssemblyRef,
+                                szFileName,
+                                dwLocation,
+                                pDomainAssembly->GetAssembly());
         }
 
     case mdtFile:
@@ -626,7 +621,7 @@ void PEAssembly::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(pdwKind != NULL && pdwMachine != NULL);
-    if (IsDynamic())
+    if (IsReflectionEmit())
     {
         *pdwKind = 0;
         *pdwMachine = 0;
@@ -1054,7 +1049,7 @@ LPCWSTR PEAssembly::GetPathForErrorMessages()
     }
     CONTRACTL_END
 
-    if (!IsDynamic())
+    if (!IsReflectionEmit())
     {
         return m_PEImage->GetPathForErrorMessages();
     }
@@ -1106,7 +1101,7 @@ PTR_AssemblyBinder PEAssembly::GetAssemblyBinder()
         // If we do not have a host assembly, check if we are dealing with
         // a dynamically emitted assembly and if so, use its fallback load context
         // binder reference.
-        if (IsDynamic())
+        if (IsReflectionEmit())
         {
             pBinder = GetFallbackBinder();
         }

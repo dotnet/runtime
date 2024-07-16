@@ -71,7 +71,8 @@ public class AssetsComputingHelper
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".map" when !emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => "source map file is not published",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
-            ".js" when assetType == "native" && !(dotnetJsSingleThreadNames.Contains(fileName) || (enableThreads && fileName == "dotnet.native.worker")) => $"{fileName}{extension} is not used by Blazor",
+            ".js" when assetType == "native" && !dotnetJsSingleThreadNames.Contains(fileName) => $"{fileName}{extension} is not used by Blazor",
+            ".mjs" when assetType == "native" && !(enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
             ".symbols" when fromMonoPackage => "extension .symbols is not required.",
             _ => null

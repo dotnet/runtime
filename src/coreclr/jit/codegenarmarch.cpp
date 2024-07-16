@@ -187,6 +187,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CNS_INT:
         case GT_CNS_DBL:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -3264,60 +3265,7 @@ void CodeGen::genCodeForInitBlkLoop(GenTreeBlk* initBlkNode)
 //
 void CodeGen::genCall(GenTreeCall* call)
 {
-    // Consume all the arg regs
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        if (abiInfo.GetRegNum() == REG_STK)
-            continue;
-
-        // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                GenTree* putArgRegNode = use.GetNode();
-                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-
-                genConsumeReg(putArgRegNode);
-                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ true, argReg, putArgRegNode->GetRegNum(),
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
-
-                argReg = genRegArgNext(argReg);
-
-#if defined(TARGET_ARM)
-                // A double register is modelled as an even-numbered single one
-                if (putArgRegNode->TypeGet() == TYP_DOUBLE)
-                {
-                    argReg = genRegArgNext(argReg);
-                }
-#endif // TARGET_ARM
-            }
-        }
-        else if (abiInfo.IsSplit())
-        {
-            assert(compFeatureArgSplit());
-            assert(abiInfo.NumRegs >= 1);
-            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
-            for (unsigned idx = 0; idx < abiInfo.NumRegs; idx++)
-            {
-                regNumber argReg   = (regNumber)((unsigned)abiInfo.GetRegNum() + idx);
-                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
-                inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, allocReg, /* canSkip */ true,
-                                emitActualTypeSize(TYP_I_IMPL));
-            }
-        }
-        else
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            genConsumeReg(argNode);
-            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ true, argReg, argNode->GetRegNum(), /* canSkip */ true,
-                            emitActualTypeSize(TYP_I_IMPL));
-        }
-    }
+    genCallPlaceRegArgs(call);
 
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
@@ -3548,14 +3496,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
         for (CallArg& arg : call->gtArgs.Args())
         {
-            for (unsigned j = 0; j < arg.AbiInfo.NumRegs; j++)
+            for (unsigned i = 0; i < arg.NewAbiInfo.NumSegments; i++)
             {
-                regNumber reg = arg.AbiInfo.GetRegNum(j);
-                if ((trashedByEpilog & genRegMask(reg)) != 0)
+                const ABIPassingSegment& seg = arg.NewAbiInfo.Segment(i);
+                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
                 {
                     JITDUMP("Tail call node:\n");
                     DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(reg));
+                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
                     assert(!"Argument to tailcall may be trashed by epilog");
                 }
             }

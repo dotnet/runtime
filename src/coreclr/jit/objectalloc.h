@@ -47,7 +47,7 @@ protected:
     virtual PhaseStatus DoPhase() override;
 
 private:
-    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd);
+    bool         CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, const char** reason);
     bool         CanLclVarEscape(unsigned int lclNum);
     void         MarkLclVarAsPossiblyStackPointing(unsigned int lclNum);
     void         MarkLclVarAsDefinitelyStackPointing(unsigned int lclNum);
@@ -62,7 +62,8 @@ private:
     bool         MorphAllocObjNodes();
     void         RewriteUses();
     GenTree*     MorphAllocObjNodeIntoHelperCall(GenTreeAllocObj* allocObj);
-    unsigned int MorphAllocObjNodeIntoStackAlloc(GenTreeAllocObj* allocObj, BasicBlock* block, Statement* stmt);
+    unsigned int MorphAllocObjNodeIntoStackAlloc(
+        GenTreeAllocObj* allocObj, CORINFO_CLASS_HANDLE clsHnd, bool isValueClass, BasicBlock* block, Statement* stmt);
     struct BuildConnGraphVisitorCallbackData;
     bool CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum);
     void UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType);
@@ -110,34 +111,77 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 //
 // Arguments:
 //    lclNum   - Local variable number
-//    clsHnd   - Class handle of the variable class
+//    clsHnd   - Class/struct handle of the variable class
+//    reason  - [out, required] if result is false, reason why
 //
 // Return Value:
 //    Returns true iff local variable can be allocated on the stack.
 //
-// Notes:
-//    Stack allocation of objects with gc fields and boxed objects is currently disabled.
-
-inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd)
+inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
+                                                      CORINFO_CLASS_HANDLE clsHnd,
+                                                      const char**         reason)
 {
     assert(m_AnalysisDone);
 
-    DWORD classAttribs = comp->info.compCompHnd->getClassAttribs(clsHnd);
+    bool enableBoxedValueClasses = true;
+    bool enableRefClasses        = true;
+    *reason                      = "[ok]";
 
-    if ((classAttribs & CORINFO_FLG_VALUECLASS) != 0)
+#ifdef DEBUG
+    enableBoxedValueClasses = (JitConfig.JitObjectStackAllocationBoxedValueClass() != 0);
+    enableRefClasses        = (JitConfig.JitObjectStackAllocationRefClass() != 0);
+#endif
+
+    unsigned int classSize = 0;
+
+    if (comp->info.compCompHnd->isValueClass(clsHnd))
     {
-        // TODO-ObjectStackAllocation: enable stack allocation of boxed structs
+        if (!enableBoxedValueClasses)
+        {
+            *reason = "[disabled by config]";
+            return false;
+        }
+
+        if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
+        {
+            *reason = "[no boxed type available]";
+            return false;
+        }
+
+        classSize = comp->info.compCompHnd->getClassSize(clsHnd);
+    }
+    else
+    {
+        if (!enableRefClasses)
+        {
+            *reason = "[disabled by config]";
+            return false;
+        }
+
+        if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
+        {
+            *reason = "[runtime disallows]";
+            return false;
+        }
+
+        classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
+    }
+
+    if (classSize > s_StackAllocMaxSize)
+    {
+        *reason = "[too large]";
         return false;
     }
 
-    if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
+    const bool escapes = CanLclVarEscape(lclNum);
+
+    if (escapes)
     {
+        *reason = "[escapes]";
         return false;
     }
 
-    const unsigned int classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
-
-    return !CanLclVarEscape(lclNum) && (classSize <= s_StackAllocMaxSize);
+    return true;
 }
 
 //------------------------------------------------------------------------
