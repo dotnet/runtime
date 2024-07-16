@@ -8751,6 +8751,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 				g_assert_not_reached ();
 			}
 		}
+		break;
 	}
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	case ArgSwiftValuetypeLoweredRet: {
@@ -8773,8 +8774,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 					NOT_IMPLEMENTED;
 				}
 			}
-			break;
 		}
+		break;
 	}
 #endif /* MONO_ARCH_HAVE_SWIFTCALL */
 	}
