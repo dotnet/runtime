@@ -11,7 +11,6 @@ schedules:
   branches:
     include:
     - main
-    - release/6.0
 
 variables:
   - template: ../variables.yml
@@ -23,104 +22,109 @@ variables:
     value: dotnet-sdk-libraries-current
 
 
-jobs:
-- job: linux
-  displayName: Docker Linux
-  timeoutInMinutes: 180
-  pool:
-    name: NetCore-Svc-Public
-    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+      - job: linux
+        displayName: Docker Linux
+        timeoutInMinutes: 180
+        pool:
+          name: NetCore-Svc-Public
+          demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 5
+        steps:
+        - checkout: self
+          clean: true
+          fetchDepth: 5
 
-  - bash: |
-      $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-    name: buildRuntime
-    displayName: Build CLR and Libraries
+        - bash: |
+            $(dockerfilesFolder)/build-docker-sdk.sh -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+            echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+          name: buildRuntime
+          displayName: Build CLR and Libraries
 
-  - bash: |
-      $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
-      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-    name: buildStress
-    displayName: Build HttpStress
+        - bash: |
+            $(httpStressProject)/run-docker-compose.sh -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+            echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+          name: buildStress
+          displayName: Build HttpStress
 
-  - bash: |
-      cd '$(httpStressProject)'
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
-      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run HttpStress - HTTP 3.0
-    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+        - bash: |
+            cd '$(httpStressProject)'
+            export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0"
+            export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run HttpStress - HTTP 3.0
+          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-  - bash: |
-      cd '$(httpStressProject)'
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
-      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run HttpStress - HTTP 2.0
-    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+        - bash: |
+            cd '$(httpStressProject)'
+            export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
+            export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run HttpStress - HTTP 2.0
+          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-  - bash: |
-      cd '$(httpStressProject)'
-      export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
-      export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run HttpStress - HTTP 1.1
-    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+        - bash: |
+            cd '$(httpStressProject)'
+            export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
+            export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run HttpStress - HTTP 1.1
+          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-- job: windows
-  displayName: Docker NanoServer
-  timeoutInMinutes: 150
-  pool:
-    name: NetCore-Svc-Public
-    demands: ImageOverride -equals windows.vs2019.amd64.open
+      - job: windows
+        displayName: Docker NanoServer
+        timeoutInMinutes: 150
+        pool:
+          name: NetCore-Svc-Public
+          demands: ImageOverride -equals windows.vs2019.amd64.open
 
-  steps:
-  - checkout: self
-    clean: true
-    fetchDepth: 5
-    lfs: false
+        steps:
+        - checkout: self
+          clean: true
+          fetchDepth: 5
+          lfs: false
 
-  - powershell: |
-      $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
-      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-    name: buildRuntime
-    displayName: Build CLR and Libraries
+        - powershell: |
+            $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
+            echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+          name: buildRuntime
+          displayName: Build CLR and Libraries
 
-  - powershell: |
-      $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
-      echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
-    name: buildStress
-    displayName: Build HttpStress
+        - powershell: |
+            $(httpStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
+            echo "##vso[task.setvariable variable=succeeded;isOutput=true]true"
+          name: buildStress
+          displayName: Build HttpStress
 
-    # Firewall is disabled for the test runs, since it can lead to unexpected TCP failures on CI machines, which are unrelated to the HTTP logic.
-    # See: https://github.com/dotnet/runtime/issues/50854
-  - powershell: |
-      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
-    name: disableFirewall
-    displayName: Disable Firewall
+          # Firewall is disabled for the test runs, since it can lead to unexpected TCP failures on CI machines, which are unrelated to the HTTP logic.
+          # See: https://github.com/dotnet/runtime/issues/50854
+        - powershell: |
+            Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
+          name: disableFirewall
+          displayName: Disable Firewall
 
-  - powershell: |
-      cd '$(httpStressProject)'
-      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
-      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run HttpStress - HTTP 2.0
-    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+        - powershell: |
+            cd '$(httpStressProject)'
+            $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run HttpStress - HTTP 2.0
+          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-  - powershell: |
-      cd '$(httpStressProject)'
-      $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
-      $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
-      docker-compose up --abort-on-container-exit --no-color
-    displayName: Run HttpStress - HTTP 1.1
-    condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+        - powershell: |
+            cd '$(httpStressProject)'
+            $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
+            $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
+            docker-compose up --abort-on-container-exit --no-color
+          displayName: Run HttpStress - HTTP 1.1
+          condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
-  - powershell: |
-      Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
-    name: enableFirewall
-    displayName: Enable Firewall
+        - powershell: |
+            Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True
+          name: enableFirewall
+          displayName: Enable Firewall

@@ -28,109 +28,118 @@ pr:
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
-jobs:
-#
-# Build with Release config and Debug runtimeConfiguration
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - windows_x86
-    - OSX_x64
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Runtime_Debug
-      buildArgs: -c release -runtimeConfiguration debug
-      timeoutInMinutes: 90
+    isOfficialBuild: false
+    stages:
+    - stage: Build
+      jobs:
 
-#
-# Build with Release config and runtimeConfiguration with MSBuild generator
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - windows_x86
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: MSBuild_CMake
-      buildArgs: -c Release -msbuild
-      timeoutInMinutes: 90
+      #
+      # Build with Release config and Debug runtimeConfiguration
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x86
+          - OSX_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Runtime_Debug
+            buildArgs: -c release -runtimeConfiguration debug
+            timeoutInMinutes: 90
 
-#
-# Build with Debug config and Release runtimeConfiguration
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_x64
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Runtime_Release
-      buildArgs: -c debug -runtimeConfiguration release
-      timeoutInMinutes: 90
+      #
+      # Build with Release config and runtimeConfiguration with MSBuild generator
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x86
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: MSBuild_CMake
+            buildArgs: -c Release -msbuild
+            timeoutInMinutes: 90
 
-#
-# Build with RuntimeFlavor only. This excercise code paths where only RuntimeFlavor is
-# specified. Catches cases where we depend on Configuration also being specified
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_x64
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: RuntimeFlavor_Mono
-      buildArgs: /p:RuntimeFlavor=Mono
-      timeoutInMinutes: 90
+      #
+      # Build with Debug config and Release runtimeConfiguration
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - Linux_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Runtime_Release
+            buildArgs: -c debug -runtimeConfiguration release
+            timeoutInMinutes: 90
 
-#
-# Build Mono + Libraries. This excercises the code path where we build libraries without
-# first building CoreCLR
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-    - windows_x64
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: Mono_Libraries
-      buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
-      timeoutInMinutes: 90
+      #
+      # Build with RuntimeFlavor only. This excercise code paths where only RuntimeFlavor is
+      # specified. Catches cases where we depend on Configuration also being specified
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - Linux_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: RuntimeFlavor_Mono
+            buildArgs: /p:RuntimeFlavor=Mono
+            timeoutInMinutes: 90
 
-#
-# Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
-# configurations on a non Windows operating system.
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: debug
-    platforms:
-    - Linux_x64
-    jobParameters:
-      nameSuffix: Libraries_AllConfigurations
-      buildArgs: -subset libs -allconfigurations
-      timeoutInMinutes: 90
+      #
+      # Build Mono + Libraries. This excercises the code path where we build libraries without
+      # first building CoreCLR
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - windows_x64
+          jobParameters:
+            testGroup: innerloop
+            nameSuffix: Mono_Libraries
+            buildArgs: -subset mono+libs /p:RuntimeFlavor=Mono
+            timeoutInMinutes: 90
 
-#
-# SourceBuild Build
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    buildConfig: release
-    platforms:
-    - SourceBuild_Linux_x64
-    jobParameters:
-      nameSuffix: SourceBuild
-      timeoutInMinutes: 90
+      #
+      # Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
+      # configurations on a non Windows operating system.
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: debug
+          platforms:
+          - Linux_x64
+          jobParameters:
+            nameSuffix: Libraries_AllConfigurations
+            buildArgs: -subset libs -allconfigurations
+            timeoutInMinutes: 90
+
+      #
+      # SourceBuild Build
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - SourceBuild_linux_x64
+          jobParameters:
+            nameSuffix: PortableSourceBuild
+            timeoutInMinutes: 95
+            condition:
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)

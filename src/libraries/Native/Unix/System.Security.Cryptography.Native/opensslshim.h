@@ -408,7 +408,6 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(OCSP_cert_to_id) \
     REQUIRED_FUNCTION(OCSP_check_nonce) \
     REQUIRED_FUNCTION(OCSP_request_add0_id) \
-    REQUIRED_FUNCTION(OCSP_request_add1_nonce) \
     REQUIRED_FUNCTION(OCSP_REQUEST_free) \
     REQUIRED_FUNCTION(OCSP_REQUEST_new) \
     REQUIRED_FUNCTION(OCSP_resp_find_status) \
@@ -863,7 +862,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OCSP_check_nonce OCSP_check_nonce_ptr
 #define OCSP_CERTID_free OCSP_CERTID_free_ptr
 #define OCSP_request_add0_id OCSP_request_add0_id_ptr
-#define OCSP_request_add1_nonce OCSP_request_add1_nonce_ptr
 #define OCSP_REQUEST_free OCSP_REQUEST_free_ptr
 #define OCSP_REQUEST_new OCSP_REQUEST_new_ptr
 #define OCSP_resp_find_status OCSP_resp_find_status_ptr

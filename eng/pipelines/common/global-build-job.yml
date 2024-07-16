@@ -7,7 +7,6 @@ parameters:
   osSubgroup: ''
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   variables: []
   targetRid: ''
   timeoutInMinutes: ''
@@ -29,9 +28,11 @@ parameters:
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
   richCodeNavigationEnvironment: 'production'
+  templatePath: 'templates'
+  preBuildSteps: []
 
 jobs:
-- template: /eng/common/templates/job/job.yml
+- template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
     name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
     displayName: ${{ format('Build {0}{1} {2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
@@ -64,6 +65,8 @@ jobs:
 
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
+      - name: _archParameter
+        value: -arch ${{ parameters.archType }}
 
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
         - name: _osParameter
@@ -143,7 +146,7 @@ jobs:
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
     
     - ${{ if eq(parameters.buildingOnSourceBuildImage, true) }}:
-      - template: /eng/common/templates/steps/source-build.yml
+      - template: /eng/common/${{ parameters.templatePath }}/steps/source-build.yml
         parameters:
           platform:
             buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
@@ -170,12 +173,36 @@ jobs:
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
 
+    - ${{ if ne(parameters.preBuildSteps,'') }}:
+      - ${{ each preBuildStep in parameters.preBuildSteps }}:
+        - ${{ if ne(preBuildStep.template, '') }}:
+          - template: ${{ preBuildStep.template }}
+            parameters:
+              osGroup: ${{ parameters.osGroup }}
+              osSubgroup: ${{ parameters.osSubgroup }}
+              archType: ${{ parameters.archType }}
+              buildConfig: ${{ parameters.buildConfig }}
+              runtimeFlavor: ${{ parameters.runtimeFlavor }}
+              runtimeVariant: ${{ parameters.runtimeVariant }}
+              helixQueues: ${{ parameters.helixQueues }}
+              targetRid: ${{ parameters.targetRid }}
+              nameSuffix: ${{ parameters.nameSuffix }}
+              platform: ${{ parameters.platform }}
+              shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+              ${{ if ne(preBuildStep.forwardedParameters, '') }}:
+                ${{ each parameter in preBuildStep.forwardedParameters }}:
+                  ${{ parameter }}: ${{ parameters[parameter] }}
+              ${{ if ne(preBuildStep.parameters, '') }}:
+                ${{ insert }}: ${{ preBuildStep.parameters }}
+        - ${{ else }}:
+          - ${{ preBuildStep }}
+
     # Build
-    - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:
-      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
-        displayName: Build product
-        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-          continueOnError: ${{ parameters.shouldContinueOnError }}
+    - template: /eng/pipelines/common/templates/global-build-step.yml
+      parameters:
+        buildArgs: ${{ parameters.buildArgs }}
+        useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |
@@ -209,11 +236,16 @@ jobs:
         - ${{ else }}:
           - ${{ postBuildStep }}
 
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Logs
-      inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
-        PublishLocation: Container
-        ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-      continueOnError: true
-      condition: always()
+    - template: /eng/pipelines/common/templates/publish-build-artifacts.yml
+      parameters:
+        isOfficialBuild: ${{ parameters.isOfficialBuild }}
+        displayName: Publish Logs
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+          PublishLocation: Container
+          ${{ if notin(parameters.osGroup, 'browser', 'wasi') }}:
+            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          ${{ if in(parameters.osGroup, 'browser', 'wasi') }}:
+            ArtifactName: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+          continueOnError: true
+        condition: always()

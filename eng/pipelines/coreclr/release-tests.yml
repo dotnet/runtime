@@ -8,67 +8,72 @@ schedules:
     - main
   always: true
 
-jobs:
-
-#
-# Release CoreCLR and Library builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
+extends:
+  template: /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
-    buildConfig: release
-    platformGroup: all
-    platforms:
-    # It is too early to include OSX_arm64 in platform group all
-    # Adding it here will enable it also
-    - OSX_arm64
-    jobParameters:
-      isOfficialBuild: false
+    stages:
+    - stage: Build
+      jobs:
 
-#
-# Release test builds
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-    buildConfig: release
-    platforms:
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
+      #
+      # Release CoreCLR and Library builds
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+          buildConfig: release
+          platformGroup: all
+          platforms:
+          # It is too early to include OSX_arm64 in platform group all
+          # Adding it here will enable it also
+          - OSX_arm64
+          jobParameters:
+            isOfficialBuild: false
 
-#
-# Release test runs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: release
-    platformGroup: all
-    platforms:
-    # It is too early to include OSX_arm64 in platform group all
-    # Adding it here will enable it also
-    - OSX_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
+      #
+      # Release test builds
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: release
+          platforms:
+          - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
 
-#
-# Release R2R test runs
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: release
-    platformGroup: all
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      readyToRun: true
-      displayNameArgs: R2R
+      #
+      # Release test runs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: release
+          platformGroup: all
+          platforms:
+          # It is too early to include OSX_arm64 in platform group all
+          # Adding it here will enable it also
+          - OSX_arm64
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+
+      #
+      # Release R2R test runs
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: release
+          platformGroup: all
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: outerloop
+            liveLibrariesBuildConfig: Release
+            readyToRun: true
+            displayNameArgs: R2R
 

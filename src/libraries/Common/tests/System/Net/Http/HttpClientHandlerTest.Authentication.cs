@@ -659,6 +659,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(IsNtlmInstalled))]
         [InlineData("NTLM")]
         [InlineData("Negotiate")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/95156", TestPlatforms.Linux)]
         public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
