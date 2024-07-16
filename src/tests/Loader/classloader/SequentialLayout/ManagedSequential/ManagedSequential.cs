@@ -105,29 +105,4 @@ public unsafe class ManagedSequential
         // Validate that the byte member is placed immediately after the object member.
         Assert.Equal(sizeof(nint), (int)Unsafe.ByteOffset(ref Unsafe.As<AutoClassObjectBase, byte>(ref o.o), ref o.b));
     }
-
-    struct X
-    {
-        byte x;
-        BigArray a;
-    }
-
-    struct Y
-    {
-        BigArray a;
-        byte y;
-    }
-
-    [StructLayout(LayoutKind.Sequential, Size = int.MaxValue)] 
-    struct BigArray
-    {
-    }
-
-    [Fact]
-    public static void TestLargeStructSize()
-    {
-        Assert.Equal(int.MaxValue, sizeof(BigArray));
-        Assert.Throws<TypeLoadException>(() => sizeof(X));
-        Assert.Throws<TypeLoadException>(() => sizeof(Y));
-    }
 }

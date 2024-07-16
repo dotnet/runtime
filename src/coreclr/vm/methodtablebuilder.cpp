@@ -1764,7 +1764,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
-        if ((int)bmtFP->NumInstanceFieldBytes != (INT64)bmtFP->NumInstanceFieldBytes)
+        if (bmtFP->NumInstanceFieldBytes > FIELD_OFFSET_LAST_REAL_OFFSET)
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
 
         // For simple Blittable types we still need to check if they have any overlapping
