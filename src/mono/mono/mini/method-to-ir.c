@@ -7571,11 +7571,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 							else
 								ptype = mono_class_get_byref_type (klass);
 
-							MonoInst *struct_base_address =  mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-							CHECK_ARG (idx_param);
-							NEW_ARGLOADA (cfg, struct_base_address, idx_param);
-							MONO_ADD_INS (cfg->cbb, struct_base_address);
-
 							// Load the address of the struct with 0 offset from SwiftSelf<T>
 							if (gklass && (gklass->container_class == swift_self_t))
 							{
