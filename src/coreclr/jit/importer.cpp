@@ -2832,6 +2832,70 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
+// impStoreNullableFields: create a Nullable<T> object and store
+//    'hasValue' (always true) and the given value for 'value' field
+//
+// Arguments:
+//    nullableCls - class handle for the Nullable<T> class
+//    value       - value to store in 'value' field
+//
+// Return Value:
+//    A local node representing the created Nullable<T> object
+//
+GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenTree* value)
+{
+    unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
+    unsigned valueOffset  = info.compCompHnd->getFieldOffset(info.compCompHnd->getFieldInClass(nullableCls, 1));
+
+    unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
+    lvaSetStruct(resultTmp, nullableCls, false);
+
+    // Now do two stores:
+    GenTree* hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
+    GenTree* valueStore    = gtNewStoreLclFldNode(resultTmp, value->TypeGet(), valueOffset, value);
+
+    impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
+    impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);
+    return impCreateLocalNode(resultTmp DEBUGARG(0));
+}
+
+//------------------------------------------------------------------------
+// impLoadNullableFields: get 'hasValue' and 'value' field loads for Nullable<T> object
+//
+// Arguments:
+//    nullableObj - tree representing the Nullable<T> object
+//    nullableCls - class handle for the Nullable<T> class
+//    hasValueFld - pointer to store the 'hasValue' field load tree
+//    valueFld    - pointer to store the 'value' field load tree
+//
+void Compiler::impLoadNullableFields(GenTree*             nullableObj,
+                                     CORINFO_CLASS_HANDLE nullableCls,
+                                     GenTree**            hasValueFld,
+                                     GenTree**            valueFld)
+{
+    assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
+    CORINFO_CLASS_HANDLE unboxCls = info.compCompHnd->getTypeForBox(nullableCls);
+
+    GenTreeFlags indirFlags = GTF_EMPTY;
+    GenTree*     addr       = impGetNodeAddr(nullableObj, CHECK_SPILL_ALL, &indirFlags);
+    GenTree*     addrClone  = impCloneExpr(addr, &addr, CHECK_SPILL_ALL, nullptr DEBUGARG("Nullable addr clone"));
+    // Nullable has two fields: 'bool hasValue' and 'T value'
+    //
+    // 1. '_hasValue' is simple:
+    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    *hasValueFld = gtNewIndir(TYP_UBYTE, addr);
+
+    // 2. '_value' is a bit more complex (especially for structs)
+    // and we don't know the exact offset
+    unsigned  valueOffset = info.compCompHnd->getFieldOffset(info.compCompHnd->getFieldInClass(nullableCls, 1));
+    var_types valueType   = JITtype2varType(info.compCompHnd->asCorInfoType(unboxCls));
+    GenTree*  valueAddr   = gtNewOperNode(GT_ADD, addr->TypeGet(), addrClone, gtNewIconNode(valueOffset));
+
+    *valueFld = valueType == TYP_STRUCT ? gtNewBlkIndir(typGetObjLayout(unboxCls), valueAddr)
+                                        : gtNewIndir(valueType, valueAddr);
+}
+
+//------------------------------------------------------------------------
 // impBoxPatternMatch: match and import common box idioms
 //
 // Arguments:
@@ -2903,27 +2967,10 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              (info.compCompHnd->isNullableType(pResolvedToken->hClass) == TypeCompareState::Must) &&
                              (info.compCompHnd->getTypeForBox(pResolvedToken->hClass) == unboxResolvedToken.hClass))
                     {
-                        GenTreeFlags indirFlags = GTF_EMPTY;
-                        GenTree*     addr       = impGetNodeAddr(impPopStack().val, CHECK_SPILL_ALL, &indirFlags);
-
-                        // Nullable has two fields: 'bool hasValue' and 'T value'
-                        //
-                        // 1. '_hasValue' is simple:
-                        static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                        GenTree* hasValueFldTree = gtNewIndir(TYP_UBYTE, addr);
-
-                        // 2. '_value' is a bit more complex (especially for structs)
-                        // and we don't know the exact offset
-                        unsigned valueOffset = info.compCompHnd->getFieldOffset(
-                            info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1));
-                        var_types valueType =
-                            JITtype2varType(info.compCompHnd->asCorInfoType(unboxResolvedToken.hClass));
-                        GenTree* valueAddr =
-                            gtNewOperNode(GT_ADD, addr->TypeGet(), gtCloneExpr(addr), gtNewIconNode(valueOffset));
-                        GenTree* valueFldTree =
-                            valueType == TYP_STRUCT
-                                ? gtNewBlkIndir(typGetObjLayout(unboxResolvedToken.hClass), valueAddr)
-                                : gtNewIndir(valueType, valueAddr);
+                        GenTree* hasValueFldTree;
+                        GenTree* valueFldTree;
+                        impLoadNullableFields(impPopStack().val, pResolvedToken->hClass, &hasValueFldTree,
+                                              &valueFldTree);
 
                         // Push "hasValue == 0 ? throw new NullReferenceException() : NOP" qmark
                         GenTree*      fallback = gtNewHelperCallNode(CORINFO_HELP_THROWNULLREF, TYP_VOID);
@@ -2943,25 +2990,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              (info.compCompHnd->isNullableType(unboxResolvedToken.hClass) == TypeCompareState::Must) &&
                              (info.compCompHnd->getTypeForBox(unboxResolvedToken.hClass) == pResolvedToken->hClass))
                     {
-                        unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
-                        unsigned valueOffset  = info.compCompHnd->getFieldOffset(
-                            info.compCompHnd->getFieldInClass(unboxResolvedToken.hClass, 1));
-
-                        unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
-                        lvaSetStruct(resultTmp, unboxResolvedToken.hClass, false);
-
-                        // Now do two stores:
-                        //  nullableTmp.hasValue = 1;
-                        //  nullableTmp.value    = popStack().val;
-                        GenTree* boxedVal = impPopStack().val;
-                        GenTree* hasValueStore =
-                            gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
-                        GenTree* valueStore =
-                            gtNewStoreLclFldNode(resultTmp, boxedVal->TypeGet(), valueOffset, boxedVal);
-
-                        impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
-                        impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);
-                        GenTreeLclVar* result = impCreateLocalNode(resultTmp DEBUGARG(0));
+                        GenTree* result = impStoreNullableFields(unboxResolvedToken.hClass, impPopStack().val);
                         impPushOnStack(result, typeInfo(result->TypeGet()));
                         optimize = true;
                     }
