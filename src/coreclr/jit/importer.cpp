@@ -2903,29 +2903,27 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              (info.compCompHnd->isNullableType(pResolvedToken->hClass) == TypeCompareState::Must) &&
                              (info.compCompHnd->getTypeForBox(pResolvedToken->hClass) == unboxResolvedToken.hClass))
                     {
-                        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
-                        GenTree* nullableObj = impPopStack().val;
-                        unsigned objTmp;
-                        if (nullableObj->OperIs(GT_LCL_VAR))
-                        {
-                            objTmp = nullableObj->AsLclVarCommon()->GetLclNum();
-                        }
-                        else
-                        {
-                            objTmp = lvaGrabTemp(true DEBUGARG("nullable obj temp"));
-                            impStoreToTemp(objTmp, nullableObj, nullableObj->TypeGet());
-                        }
+                        GenTreeFlags indirFlags = GTF_EMPTY;
+                        GenTree*     addr       = impGetNodeAddr(impPopStack().val, CHECK_SPILL_ALL, &indirFlags);
 
                         // Nullable has two fields: 'bool hasValue' and 'T value'
-                        // We need to create two LclFld nodes to access them
+                        //
+                        // 1. '_hasValue' is simple:
                         static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
-                        unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
-                        unsigned valueOffset  = info.compCompHnd->getFieldOffset(
+                        GenTree* hasValueFldTree = gtNewIndir(TYP_UBYTE, addr);
+
+                        // 2. '_value' is a bit more complex (especially for structs)
+                        // and we don't know the exact offset
+                        unsigned valueOffset = info.compCompHnd->getFieldOffset(
                             info.compCompHnd->getFieldInClass(pResolvedToken->hClass, 1));
                         var_types valueType =
                             JITtype2varType(info.compCompHnd->asCorInfoType(unboxResolvedToken.hClass));
-                        GenTree* hasValueFldTree = gtNewLclFldNode(objTmp, TYP_UBYTE, hasValOffset);
-                        GenTree* valueFldTree    = gtNewLclFldNode(objTmp, valueType, valueOffset);
+                        GenTree* valueAddr =
+                            gtNewOperNode(GT_ADD, addr->TypeGet(), gtCloneExpr(addr), gtNewIconNode(valueOffset));
+                        GenTree* valueFldTree =
+                            valueType == TYP_STRUCT
+                                ? gtNewBlkIndir(typGetObjLayout(unboxResolvedToken.hClass), valueAddr)
+                                : gtNewIndir(valueType, valueAddr);
 
                         // Push "hasValue == 0 ? throw new NullReferenceException() : NOP" qmark
                         GenTree*      fallback = gtNewHelperCallNode(CORINFO_HELP_THROWNULLREF, TYP_VOID);
