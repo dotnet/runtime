@@ -7954,7 +7954,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
     for (DWORD slot = g_pObjectClass->GetNumVirtuals(); slot < g_pExceptionClass->GetNumVirtuals(); slot++)
     {
         MethodDesc *pMD = g_pExceptionClass->GetMethodDescForSlot_NoThrow(slot);
-        if (pMD != NULL)
+        if (pMD != nullptr)
         {
             LPCUTF8 name = pMD->GetName();
 
