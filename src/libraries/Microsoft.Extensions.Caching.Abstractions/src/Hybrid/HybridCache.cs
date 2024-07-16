@@ -23,7 +23,7 @@ public abstract class HybridCache
     /// <typeparam name="T">The type of the data being considered.</typeparam>
     /// <param name="key">The key of the entry to look for or create.</param>
     /// <param name="factory">Provides the underlying data service is the data is not available in the cache.</param>
-    /// <param name="state">Additional state required for <paramref name="factory"/>.</param>
+    /// <param name="state">The state required for <paramref name="factory"/>.</param>
     /// <param name="options">Additional options for this cache entry.</param>
     /// <param name="tags">The tags to associate with this cache item.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
