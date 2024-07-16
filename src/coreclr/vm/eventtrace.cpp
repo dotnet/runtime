@@ -3253,7 +3253,7 @@ HRESULT ETW::CodeSymbolLog::GetInMemorySymbolsLength(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -3339,7 +3339,7 @@ HRESULT ETW::CodeSymbolLog::ReadInMemorySymbols(
     //This method would work fine on reflection.emit, but there would be no way to know
     //if some other thread was changing the size of the symbols before this method returned.
     //Adding events or locks to detect/prevent changes would make the scenario workable
-    if (pModule->IsReflection())
+    if (pModule->IsReflectionEmit())
     {
         return COR_PRF_MODULE_DYNAMIC;
     }
@@ -3867,7 +3867,7 @@ VOID ETW::LoaderLog::ModuleLoad(Module *pModule, LONG liReportedSharedModule)
                 if(bTraceFlagNgenMethodSet && bTraceFlagStartRundownSet)
                     enumerationOptions |= ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad;
 
-                if(pModule->IsManifest() && bTraceFlagLoaderSet)
+                if(bTraceFlagLoaderSet)
                     ETW::LoaderLog::SendAssemblyEvent(pModule->GetAssembly(), enumerationOptions);
 
                 if(bTraceFlagLoaderSet || bTraceFlagPerfTrackSet)
@@ -4321,7 +4321,6 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     PCWSTR szDtraceOutput1=W(""),szDtraceOutput2=W("");
     BOOL bIsDynamicAssembly = pModule->GetAssembly()->IsDynamic();
-    BOOL bIsManifestModule = pModule->IsManifest();
     ULONGLONG ullModuleId = (ULONGLONG)(TADDR) pModule;
     ULONGLONG ullAssemblyId = (ULONGLONG)pModule->GetAssembly();
     BOOL bIsIbcOptimized = FALSE;
@@ -4333,7 +4332,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
     ULONG ulReservedFlags = 0;
     ULONG ulFlags = ((bIsDynamicAssembly ? ETW::LoaderLog::LoaderStructs::DynamicModule : 0) |
-                     (bIsManifestModule ? ETW::LoaderLog::LoaderStructs::ManifestModule : 0) |
+                     // Always the manifest module - multi-module assemblies are no longer supported
+                     ETW::LoaderLog::LoaderStructs::ManifestModule |
                      (bIsIbcOptimized ? ETW::LoaderLog::LoaderStructs::IbcOptimized : 0) |
                      (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunModule : 0) |
                      (bIsPartialReadyToRun ? ETW::LoaderLog::LoaderStructs::PartialReadyToRunModule : 0));
@@ -5517,7 +5517,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
            (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart))
         {
-            Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
+            Module* pModule = pAssembly->GetModule();
             ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
         }
 

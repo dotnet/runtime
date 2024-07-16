@@ -119,6 +119,7 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
+gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -663,8 +664,8 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		addr = mono_compile_method_checked (wrapper, error);
 		mono_error_assert_ok (error);
 		mono_memory_barrier ();
-		callinfo->wrapper = addr;
-		return addr;
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->wrapper, (gpointer)addr, NULL);
+		return (gconstpointer)mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	} else {
 		if (callinfo->trampoline)
 			return callinfo->trampoline;
@@ -672,13 +673,10 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 		mono_error_assert_ok (error);
 		trampoline = mono_create_ftnptr ((gpointer)trampoline);
 
-		mono_loader_lock ();
-		if (!callinfo->trampoline) {
-			callinfo->trampoline = trampoline;
-		}
-		mono_loader_unlock ();
+		
+		mono_atomic_cas_ptr ((volatile gpointer*)&callinfo->trampoline, (gpointer)trampoline, NULL);
 
-		return callinfo->trampoline;
+		return (gconstpointer)mono_atomic_load_ptr ((volatile gpointer*)&callinfo->trampoline);
 	}
 }
 
@@ -2856,18 +2854,10 @@ lookup_start:
 	p = mono_create_ftnptr (code);
 
 	if (callinfo) {
-		// FIXME Locking here is somewhat historical due to mono_register_jit_icall_wrapper taking loader lock.
-		// atomic_compare_exchange should suffice.
-		mono_loader_lock ();
-		mono_jit_lock ();
-		if (!callinfo->wrapper) {
-			callinfo->wrapper = p;
-		}
-		mono_jit_unlock ();
-		mono_loader_unlock ();
+		mono_atomic_cas_ptr ((volatile void*)&callinfo->wrapper, p, NULL);
+		p = mono_atomic_load_ptr((volatile gpointer*)&callinfo->wrapper);
 	}
 
-	// FIXME p or callinfo->wrapper or does not matter?
 	return p;
 }
 
@@ -3767,6 +3757,17 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 		return;
 	}
+}
+
+MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
+{
+	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
+
+	mono_term_signaled = TRUE;
+
+	mono_gc_finalize_notify ();
+
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)

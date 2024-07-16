@@ -13,18 +13,18 @@ namespace System.Net.Http.Metrics
         private readonly object _protocolVersionTag;
         private readonly object _schemeTag;
         private readonly object _hostTag;
-        private readonly object? _portTag;
+        private readonly object _portTag;
         private readonly object? _peerAddressTag;
         private bool _currentlyIdle;
 
-        public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocolVersion, string scheme, string host, int? port, string? peerAddress)
+        public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocolVersion, string scheme, string host, int port, string? peerAddress)
         {
             _metrics = metrics;
             _openConnectionsEnabled = _metrics.OpenConnections.Enabled;
             _protocolVersionTag = protocolVersion;
             _schemeTag = scheme;
             _hostTag = host;
-            _portTag = port;
+            _portTag = DiagnosticsHelper.GetBoxedInt32(port);
             _peerAddressTag = peerAddress;
         }
 
@@ -36,11 +36,7 @@ namespace System.Net.Http.Metrics
             tags.Add("network.protocol.version", _protocolVersionTag);
             tags.Add("url.scheme", _schemeTag);
             tags.Add("server.address", _hostTag);
-
-            if (_portTag is not null)
-            {
-                tags.Add("server.port", _portTag);
-            }
+            tags.Add("server.port", _portTag);
 
             if (_peerAddressTag is not null)
             {

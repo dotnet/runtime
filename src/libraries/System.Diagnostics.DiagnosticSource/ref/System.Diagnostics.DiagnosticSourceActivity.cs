@@ -393,8 +393,10 @@ namespace System.Diagnostics.Metrics
     {
         public string? Description { get {throw null;} }
         public bool Enabled { get  {throw null; } }
-        protected Instrument(Meter meter, string name, string? unit, string? description) {throw null;}
-        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) {throw null;}
+        protected Instrument(Meter meter, string name) : this(meter, name, unit: null, description: null, tags: null) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        protected Instrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null) { throw null; }
+        protected Instrument(Meter meter, string name, string? unit = default, string? description = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default) { throw null; }
         public virtual bool IsObservable { get  {throw null; } }
         public Meter Meter { get {throw null;} }
         public string Name { get {throw null;} }
@@ -404,14 +406,30 @@ namespace System.Diagnostics.Metrics
     }
     public abstract class Instrument<T> : Instrument where T : struct
     {
-        protected Instrument(Meter meter, string name, string? unit, string? description) : base(meter, name, unit, description) { throw null; }
-        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) : base(meter, name, unit, description, tags)  {throw null;}
+        public InstrumentAdvice<T>? Advice { get { throw null; } }
+        protected Instrument(Meter meter, string name) : this(meter, name, unit: null, description: null, tags: null, advice: null) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        protected Instrument(Meter meter, string name, string? unit, string? description) : this(meter, name, unit, description, tags: null, advice: null) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        protected Instrument(Meter meter, string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) : this(meter, name, unit, description, tags, advice: null)  { throw null; }
+        protected Instrument(
+            Meter meter,
+            string name,
+            string? unit = default,
+            string? description = default,
+            System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default,
+            InstrumentAdvice<T>? advice = default) : base(meter, name, unit, description, tags) { throw null; }
         protected void RecordMeasurement(T measurement)  { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag) { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2)  { throw null; }
         protected void RecordMeasurement(T measurement, System.Collections.Generic.KeyValuePair<string, object?> tag1, System.Collections.Generic.KeyValuePair<string, object?> tag2, System.Collections.Generic.KeyValuePair<string, object?> tag3)  { throw null; }
         protected void RecordMeasurement(T measurement, in TagList tagList) { throw null; }
         protected void RecordMeasurement(T measurement, ReadOnlySpan<System.Collections.Generic.KeyValuePair<string, object?>> tags) { throw null; }
+    }
+    public sealed class InstrumentAdvice<T> where T : struct
+    {
+        public InstrumentAdvice() { throw null; }
+        public System.Collections.Generic.IReadOnlyList<T>? HistogramBucketBoundaries { get { throw null; } init { throw null; } }
     }
     public readonly struct Measurement<T> where T : struct
     {
@@ -431,8 +449,12 @@ namespace System.Diagnostics.Metrics
         public Gauge<T> CreateGauge<T>(string name, string? unit = null, string? description = null, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null) where T : struct { throw null; }
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
         public UpDownCounter<T> CreateUpDownCounter<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
-        public Histogram<T> CreateHistogram<T>(string name, string? unit = null, string? description = null) where T : struct { throw null; }
-        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> tags) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name) where T : struct { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description) where T : struct { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public Histogram<T> CreateHistogram<T>(string name, string? unit, string? description, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags) where T : struct { throw null; }
+        public Histogram<T> CreateHistogram<T>(string name, string? unit = default, string? description = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = default, InstrumentAdvice<T>? advice = default) where T : struct { throw null; }
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<T> observeValue,

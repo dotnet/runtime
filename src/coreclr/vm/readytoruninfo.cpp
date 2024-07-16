@@ -1396,7 +1396,7 @@ PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
     STANDARD_VM_CONTRACT;
 
     PCODE ret = m_pInfo->GetEntryPoint(GetMethodDesc(), NULL, FALSE);
-    _ASSERTE(ret != NULL);
+    _ASSERTE(ret != (PCODE)NULL);
     return ret;
 }
 

@@ -153,16 +153,16 @@ namespace System.Numerics.Tensors
 
         public static ref readonly TensorSpan<T> FillGaussianNormalDistribution<T>(in TensorSpan<T> destination) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._flattenedLength);
+            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape._memoryLength);
 
-            GaussianDistribution<T>(span, destination._flattenedLength);
+            GaussianDistribution<T>(span, destination._shape._memoryLength);
 
             return ref destination;
         }
 
         public static ref readonly TensorSpan<T> FillUniformDistribution<T>(in TensorSpan<T> destination) where T : IFloatingPoint<T>
         {
-            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._flattenedLength);
+            Span<T> span = MemoryMarshal.CreateSpan<T>(ref destination._reference, (int)destination._shape._memoryLength);
 
             for (int i = 0; i < span.Length; i++)
                 span[i] = T.CreateChecked(Random.Shared.NextDouble());

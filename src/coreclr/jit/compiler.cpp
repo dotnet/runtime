@@ -1990,6 +1990,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     m_signatureToLookupInfoMap = nullptr;
+    m_significantSegmentsMap   = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaValid                 = false;
     fgVNPassesCompleted        = 0;
@@ -5321,6 +5322,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Set stack levels and analyze throw helper usage.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
+    m_pLowering->FinalizeOutgoingArgSpace();
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -8373,6 +8375,67 @@ void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
 
 #endif // DEBUG
 
+//------------------------------------------------------------------------
+// GetSignificantSegments:
+//   Compute a segment tree containing all significant (non-padding) segments
+//   for the specified class layout.
+//
+// Parameters:
+//   layout - The layout
+//
+// Returns:
+//   Segment tree containing all significant parts of the layout.
+//
+const StructSegments& Compiler::GetSignificantSegments(ClassLayout* layout)
+{
+    StructSegments* cached;
+    if ((m_significantSegmentsMap != nullptr) && m_significantSegmentsMap->Lookup(layout, &cached))
+    {
+        return *cached;
+    }
+
+    COMP_HANDLE compHnd = info.compCompHnd;
+
+    StructSegments* newSegments = new (this, CMK_Promotion) StructSegments(getAllocator(CMK_Promotion));
+
+    if (layout->IsBlockLayout())
+    {
+        newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
+    }
+    else
+    {
+        CORINFO_TYPE_LAYOUT_NODE nodes[256];
+        size_t                   numNodes = ArrLen(nodes);
+        GetTypeLayoutResult      result   = compHnd->getTypeLayout(layout->GetClassHandle(), nodes, &numNodes);
+
+        if (result != GetTypeLayoutResult::Success)
+        {
+            newSegments->Add(StructSegments::Segment(0, layout->GetSize()));
+        }
+        else
+        {
+            for (size_t i = 0; i < numNodes; i++)
+            {
+                const CORINFO_TYPE_LAYOUT_NODE& node = nodes[i];
+                if ((node.type != CORINFO_TYPE_VALUECLASS) || (node.simdTypeHnd != NO_CLASS_HANDLE) ||
+                    node.hasSignificantPadding)
+                {
+                    newSegments->Add(StructSegments::Segment(node.offset, node.offset + node.size));
+                }
+            }
+        }
+    }
+
+    if (m_significantSegmentsMap == nullptr)
+    {
+        m_significantSegmentsMap = new (this, CMK_Promotion) ClassLayoutStructSegmentsMap(getAllocator(CMK_Promotion));
+    }
+
+    m_significantSegmentsMap->Set(layout, newSegments);
+
+    return *newSegments;
+}
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -10329,15 +10392,10 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[SPILLED_OPER]");
         }
-#if FEATURE_SET_FLAGS
         if (tree->gtFlags & GTF_SET_FLAGS)
         {
-            if ((op != GT_IND) && (op != GT_STOREIND))
-            {
-                chars += printf("[ZSF_SET_FLAGS]");
-            }
+            chars += printf("[SET_FLAGS]");
         }
-#endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
             if (tree->OperIsIndirOrArrMetaData())
@@ -10352,10 +10410,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_DONT_CSE)
         {
             chars += printf("[DONT_CSE]");
-        }
-        if (tree->gtFlags & GTF_BOOLEAN)
-        {
-            chars += printf("[BOOLEAN]");
         }
         if (tree->gtFlags & GTF_UNSIGNED)
         {
@@ -10923,9 +10977,6 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
             case DoNotEnregisterReason::NoRegVars:
                 m_noRegVars++;
                 break;
-            case DoNotEnregisterReason::MinOptsGC:
-                m_minOptsGC++;
-                break;
 #if !defined(TARGET_64BIT)
             case DoNotEnregisterReason::LongParamField:
                 m_longParamField++;
@@ -11080,7 +11131,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_structArg, notEnreg);
     PRINT_STATS(m_depField, notEnreg);
     PRINT_STATS(m_noRegVars, notEnreg);
-    PRINT_STATS(m_minOptsGC, notEnreg);
 #if !defined(TARGET_64BIT)
     PRINT_STATS(m_longParamField, notEnreg);
 #endif // !TARGET_64BIT

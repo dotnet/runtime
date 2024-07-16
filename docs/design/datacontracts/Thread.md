@@ -28,8 +28,8 @@ enum ThreadState
 }
 
 record struct ThreadData (
-    uint ThreadId;
-    TargetNUint OsThreadId;
+    uint Id;
+    TargetNUInt OSId;
     ThreadState State;
     bool PreemptiveGCDisabled
     TargetPointer AllocContextPointer;
@@ -37,7 +37,7 @@ record struct ThreadData (
     TargetPointer Frame;
     TargetPointer FirstNestedException;
     TargetPointer TEB;
-    DacGCHandle LastThrownObjectHandle;
+    TargetPointer LastThrownObjectHandle;
     TargetPointer NextThread;
 );
 ```
@@ -46,94 +46,87 @@ record struct ThreadData (
 ThreadStoreData GetThreadStoreData();
 ThreadStoreCounts GetThreadCounts();
 ThreadData GetThreadData(TargetPointer threadPointer);
-TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException);
 TargetPointer GetManagedThreadObject(TargetPointer threadPointer);
 ```
 
 ## Version 1
 
+This contract depends on the following descriptors:
 
+| Data descriptor name |
+| --- |
+| `GCAllocContext` |
+| `RuntimeThreadLocals` |
+| `Thread` |
+| `ThreadStore` |
+
+| Global name |
+| --- |
+| `AppDomain` |
+| `ThreadStore` |
+| `FeatureEHFunclets` |
+| `FinalizerThread` |
+| `GCThread` |
 
 ``` csharp
-SListReader ThreadListReader = Contracts.SList.GetReader("Thread");
-
 ThreadStoreData GetThreadStoreData()
 {
-    TargetPointer threadStore = Target.ReadGlobalPointer("s_pThreadStore");
-    var runtimeThreadStore = new ThreadStore(Target, threadStore);
+    TargetPointer threadStore = target.ReadGlobalPointer("ThreadStore");
 
-    TargetPointer firstThread = ThreadListReader.GetHead(runtimeThreadStore.SList.Pointer);
-
+    ulong threadLinkoffset = ... // offset from Thread data descriptor
     return new ThreadStoreData(
-        ThreadCount : runtimeThreadStore.m_ThreadCount,
-        FirstThread: firstThread,
-        FinalizerThread: Target.ReadGlobalPointer("g_pFinalizerThread"),
-        GCThread: Target.ReadGlobalPointer("g_pSuspensionThread"));
+        ThreadCount: target.Read<int>(threadStore + /* ThreadStore::ThreadCount offset */),
+        FirstThread: target.ReadPointer(threadStore + /* ThreadStore::FirstThreadLink offset */ - threadLinkoffset),
+        FinalizerThread: target.ReadGlobalPointer("FinalizerThread"),
+        GCThread: target.ReadGlobalPointer("GCThread"));
 }
 
 DacThreadStoreCounts GetThreadCounts()
 {
-    TargetPointer threadStore = Target.ReadGlobalPointer("s_pThreadStore");
-    var runtimeThreadStore = new ThreadStore(Target, threadStore);
+    TargetPointer threadStore = target.ReadGlobalPointer("ThreadStore");
 
     return new ThreadStoreCounts(
-        ThreadCount : runtimeThreadStore.m_ThreadCount,
-        UnstartedThreadCount : runtimeThreadStore.m_UnstartedThreadCount,
-        BackgroundThreadCount : runtimeThreadStore.m_BackgroundThreadCount,
-        PendingThreadCount : runtimeThreadStore.m_PendingThreadCount,
-        DeadThreadCount: runtimeThreadStore.m_DeadThreadCount,
+        UnstartedThreadCount: target.Read<int>(threadStore + /* ThreadStore::UnstartedCount offset */),
+        BackgroundThreadCount: target.Read<int>(threadStore + /* ThreadStore::BackgroundCount offset */),,
+        PendingThreadCount: target.Read<int>(threadStore + /* ThreadStore::PendingCount offset */),,
+        DeadThreadCount: target.Read<int>(threadStore + /* ThreadStore::DeadCount offset */),,
 }
 
-ThreadData GetThreadData(TargetPointer threadPointer)
+ThreadData GetThreadData(TargetPointer address)
 {
     var runtimeThread = new Thread(Target, threadPointer);
 
-    TargetPointer firstNestedException = TargetPointer.Null;
-    if (Target.ReadGlobalInt32("FEATURE_EH_FUNCLETS"))
+    // Exception tracker is a pointer when EH funclets are enabled
+    TargetPointer exceptionTrackerAddr = _target.ReadGlobal<byte>("FeatureEHFunclets") != 0
+        ? _target.ReadPointer(address + /* Thread::ExceptionTracker offset */)
+        : address + /* Thread::ExceptionTracker offset */;
+    TargetPointer firstNestedException = exceptionTrackerAddr != TargetPointer.Null
+        ? target.ReadPointer(exceptionTrackerAddr + /* ExceptionInfo::PreviousNestedInfo offset*/)
+        : TargetPointer.Null;
+
+    TargetPointer allocContextPointer = TargetPointer.Null;
+    TargetPointer allocContextLimit = TargetPointer.Null;
+    TargetPointer threadLocals = target.ReadPointer(address + /* Thread::RuntimeThreadLocals offset */);
+    if (threadLocals != TargetPointer.Null)
     {
-        if (runtimeThread.m_ExceptionState.m_pCurrentTracker != TargetPointer.Null)
-        {
-            firstNestedException = new ExceptionTrackerBase(Target, runtimeThread.m_ExceptionState.m_pCurrentTracker).m_pPrevNestedInfo;
-        }
-    }
-    else
-    {
-        firstNestedException = runtimeThread.m_ExceptionState.m_currentExInfo.m_pPrevNestedInfo;
+        allocContextPointer = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Pointer offset */);
+        allocContextLimit = target.ReadPointer(threadLocals + /* RuntimeThreadLocals::AllocContext offset */ + /* GCAllocContext::Limit offset */);
     }
 
+    ulong threadLinkoffset = ... // offset from Thread data descriptor
     return new ThreadData(
-        ThreadId : runtimeThread.m_ThreadId,
-        OsThreadId : (OsThreadId)runtimeThread.m_OSThreadId,
-        State : (ThreadState)runtimeThread.m_State,
-        PreemptiveGCDisabled : thread.m_fPreemptiveGCDisabled != 0,
-        AllocContextPointer : thread.m_alloc_context.alloc_ptr,
-        AllocContextLimit : thread.m_alloc_context.alloc_limit,
-        Frame : thread.m_pFrame,
-        TEB : thread.Has_m_pTEB ? thread.m_pTEB : TargetPointer.Null,
-        LastThrownObjectHandle : new DacGCHandle(thread.m_LastThrownObjectHandle),
+        Id: target.Read<uint>(address + /* Thread::Id offset */),
+        OSId: target.ReadNUInt(address + /* Thread::OSId offset */),
+        State: target.Read<uint>(address + /* Thread::State offset */),
+        PreemptiveGCDisabled: (target.Read<uint>(address + /* Thread::PreemptiveGCDisabled offset */) & 0x1) != 0,
+        AllocContextPointer: allocContextPointer,
+        AllocContextLimit: allocContextLimit,
+        Frame: target.ReadPointer(address + /* Thread::Frame offset */),
+        TEB : /* Has Thread::TEB offset */ ? target.ReadPointer(address + /* Thread::TEB offset */) : TargetPointer.Null,
+        LastThrownObjectHandle : target.ReadPointer(address + /* Thread::LastThrownObject offset */),
         FirstNestedException : firstNestedException,
-        NextThread : ThreadListReader.GetHead.GetNext(threadPointer)
+        NextThread: target.ReadPointer(address + /* Thread::LinkNext offset */) - threadLinkOffset;
     );
-}
-
-TargetPointer GetNestedExceptionInfo(TargetPointer nestedExceptionPointer, out TargetPointer nextNestedException)
-{
-    if (nestedExceptionPointer == TargetPointer.Null)
-    {
-        throw new InvalidArgumentException();
-    }
-    if (Target.ReadGlobalInt32("FEATURE_EH_FUNCLETS"))
-    {
-        var exData = new ExceptionTrackerBase(Target, nestedExceptionPointer);
-        nextNestedException = exData.m_pPrevNestedInfo;
-        return Contracts.GCHandle.GetObject(exData.m_hThrowable);
-    }
-    else
-    {
-        var exData = new ExInfo(Target, nestedExceptionPointer);
-        nextNestedException = exData.m_pPrevNestedInfo;
-        return Contracts.GCHandle.GetObject(exData.m_hThrowable);
-    }
 }
 
 TargetPointer GetManagedThreadObject(TargetPointer threadPointer)

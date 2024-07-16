@@ -132,6 +132,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_indirect_result, "System.Runtime.InteropServices.Swift", "SwiftIndirectResult")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -3698,8 +3699,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
-			int swift_error_args = 0, swift_self_args = 0;
+			int swift_error_args = 0, swift_self_args = 0, swift_indirect_result_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
 				if (param_klass) {
@@ -3711,16 +3713,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						swift_error_args++;
 					} else if (param_klass == swift_self) {
 						swift_self_args++;
+					} else if (param_klass == swift_indirect_result) {
+						swift_indirect_result_args++;
 					} else if (!type_is_blittable (method->signature->params [i]) || m_class_is_simd_type (param_klass)) {
-						swift_error_args = swift_self_args = 0;
+						swift_error_args = swift_self_args = swift_indirect_result_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-blittable types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
 					}
 				}
 			}
 
-			if (swift_self_args > 1 || swift_error_args > 1) {
-				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf or SwiftError arguments.");
+			if (swift_self_args > 1 || swift_error_args > 1 || swift_indirect_result_args > 1) {
+				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf, SwiftError, SwiftIndirectResult arguments.");
 			}
 
 			if (!is_ok (emitted_error)) {
@@ -4099,6 +4103,8 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	int i;
 	EmitMarshalContext m;
 	gboolean marshalling_enabled = FALSE;
+	int *swift_sig_to_csig_mp = NULL;
+	SwiftPhysicalLowering *swift_lowering = NULL;
 
 	g_assert (method != NULL);
 	error_init (error);
@@ -4179,6 +4185,50 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
+	if (invoke)
+		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	else
+		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (method, csig);
+
+	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+		MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
+		swift_sig_to_csig_mp = g_newa (int, sig->param_count);
+		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csig->param_count);
+		int new_param_count = 0;
+
+
+		for (i = 0; i < csig->param_count; i++) {
+			swift_lowering [i] = (SwiftPhysicalLowering){0};
+			swift_sig_to_csig_mp [i] = new_param_count;
+			MonoType *ptype = csig->params [i];
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
+				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+				swift_lowering [i] = lowered_swift_struct;
+				if (!lowered_swift_struct.by_reference) {
+					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; idx_lowered++) {
+						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+						new_param_count++;
+					}
+				} else {
+					ptype = mono_class_get_byref_type (klass);
+					g_array_append_val (new_params, ptype);
+					new_param_count++;
+				}
+			} else {
+				g_array_append_val (new_params, ptype);
+				new_param_count++;
+			}
+		}
+
+		csig = mono_metadata_signature_dup_new_params (NULL, m_method_get_mem_manager (method), csig, new_param_count, (MonoType**)new_params->data);
+		g_array_free (new_params, TRUE);
+	}
+
 	if (!marshalling_enabled)
 		csig->marshalling_disabled = 1;
 
@@ -4190,11 +4240,8 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	m.csig = csig;
 	m.image = get_method_image (method);
 	m.runtime_marshalling_enabled = marshalling_enabled;
-
-	if (invoke)
-		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
-	else
-		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute(method, csig);
+	m.swift_lowering = swift_lowering;
+	m.swift_sig_to_csig_mp = swift_sig_to_csig_mp;
 
 	/* The attribute is only available in Net 2.0 */
 	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
@@ -4270,10 +4317,10 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 			info->d.native_to_managed.klass = delegate_klass;
 
 			res = mono_mb_create_and_cache_full (cache, method,
-												 mb, csig, sig->param_count + 16,
+												 mb, csig, csig->param_count + 16,
 												 info, NULL);
 		} else {
-			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+			res = mono_mb_create (mb, csig, csig->param_count + 16, NULL);
 		}
 	}
 

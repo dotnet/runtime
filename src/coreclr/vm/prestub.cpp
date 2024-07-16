@@ -145,10 +145,8 @@ PCODE MethodDesc::DoBackpatch(MethodTable * pMT, MethodTable *pDispatchingMT, BO
                 }
             }
 
-#ifndef HAS_COMPACT_ENTRYPOINTS
             // Patch the fake entrypoint if necessary
             Precode::GetPrecodeFromEntryPoint(pExpected)->SetTargetInterlocked(pTarget);
-#endif // HAS_COMPACT_ENTRYPOINTS
         }
 
         if (HasNonVtableSlot())
@@ -971,7 +969,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
         return pOtherCode;
     }
 
-    _ASSERTE(pCode != NULL);
+    _ASSERTE(pCode != (PCODE)NULL);
 
 #ifdef HAVE_GCCOVER
     // Instrument for coverage before trying to publish this version
@@ -2553,21 +2551,6 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
 }
 #endif // defined(FEATURE_SHARE_GENERIC_CODE)
 
-#if defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
-
-extern "C" MethodDesc * STDCALL PreStubGetMethodDescForCompactEntryPoint (PCODE pCode)
-{
-    _ASSERTE (pCode >= PC_REG_RELATIVE_OFFSET);
-
-    pCode = (PCODE) (pCode - PC_REG_RELATIVE_OFFSET + THUMB_CODE);
-
-    _ASSERTE (MethodDescChunk::IsCompactEntryPointAtAddress (pCode));
-
-    return MethodDescChunk::GetMethodDescFromCompactEntryPoint(pCode, FALSE);
-}
-
-#endif // defined (HAS_COMPACT_ENTRYPOINTS) && defined (TARGET_ARM)
-
 //=============================================================================
 // This function generates the real code when from Preemptive mode.
 // It is specifically designed to work with the UnmanagedCallersOnlyAttribute.
@@ -2859,7 +2842,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     {
         pCode = GetStubForInteropMethod(this);
 
-        GetPrecode()->SetTargetInterlocked(pCode);
+        GetOrCreatePrecode()->SetTargetInterlocked(pCode);
 
         RETURN GetStableEntryPoint();
     }
@@ -2890,7 +2873,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             RETURN DoBackpatch(pMT, pDispatchingMT, doFullBackpatch);
         }
 
-        _ASSERTE(pCode != NULL);
+        _ASSERTE(pCode != (PCODE)NULL);
         _ASSERTE(!doFullBackpatch);
         RETURN pCode;
     }
@@ -2976,11 +2959,11 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
 
     /**************************   POSTJIT *************************/
-    _ASSERTE(pCode == NULL || GetNativeCode() == NULL || pCode == GetNativeCode());
+    _ASSERTE(pCode == (PCODE)NULL || GetNativeCode() == (PCODE)NULL || pCode == GetNativeCode());
 
     // At this point we must have either a pointer to managed code or to a stub. All of the above code
     // should have thrown an exception if it couldn't make a stub.
-    _ASSERTE((pStub != NULL) ^ (pCode != NULL));
+    _ASSERTE((pStub != NULL) ^ (pCode != (PCODE)NULL));
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     //
@@ -3284,6 +3267,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 if (pMD->IsVtableMethod())
                 {
                     slot = pMD->GetSlot();
+                    pMD->GetMethodTable()->GetRestoredSlot(slot); // Ensure that the target slot has an entrypoint
                     pMT = th.IsNull() ? pMD->GetMethodTable() : th.GetMethodTable();
 
                     fVirtual = true;
@@ -3362,7 +3346,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 pCode = pMgr->GetVTableCallStub(slot);
                 *(TADDR *)pIndirection = pCode;
             }
-            _ASSERTE(pCode != NULL);
+            _ASSERTE(pCode != (PCODE)NULL);
         }
         else
         {
@@ -3545,9 +3529,8 @@ static PCODE getHelperForStaticBase(Module * pModule, CORCOMPILE_FIXUP_BLOB_KIND
 {
     STANDARD_VM_CONTRACT;
 
-    pMT->AttemptToPreinit();
     bool GCStatic = (kind == ENCODE_STATIC_BASE_GC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
-    bool noCtor = pMT->IsClassInited();
+    bool noCtor = pMT->IsClassInitedOrPreinited();
     bool threadStatic = (kind == ENCODE_THREAD_STATIC_BASE_NONGC_HELPER || kind == ENCODE_THREAD_STATIC_BASE_GC_HELPER);
 
     CorInfoHelpFunc helper;
@@ -3916,7 +3899,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     else
                     {
                         // Delay the creation of the helper until the type is initialized
-                        if (pMT->IsClassInited())
+                        if (pMT->IsClassInitedOrPreinited())
                             pHelper = getHelperForInitializedStatic(pModule, (CORCOMPILE_FIXUP_BLOB_KIND)kind, pMT, pFD);
                     }
                 }
@@ -3961,7 +3944,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
 
 #ifdef _DEBUG
             // Always execute the reliable fallback in debug builds
-            pHelper = NULL;
+            pHelper = (PCODE)NULL;
 #endif
         }
         EX_CATCH

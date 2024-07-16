@@ -23,6 +23,11 @@ namespace System.Text.Json.Nodes
         /// <exception cref="InvalidOperationException"><paramref name="value"/> already has a parent.</exception>
         public void SetAt(int index, string propertyName, JsonNode? value)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             OrderedDictionary<string, JsonNode?> dictionary = Dictionary;
             KeyValuePair<string, JsonNode?> existing = dictionary.GetAt(index);
             dictionary.SetAt(index, propertyName, value);
@@ -48,7 +53,15 @@ namespace System.Text.Json.Nodes
         /// <param name="propertyName">The property name to locate.</param>
         /// <returns>The index of <paramref name="propertyName"/> if found; otherwise, -1.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="propertyName"/> is null.</exception>
-        public int IndexOf(string propertyName) => Dictionary.IndexOf(propertyName);
+        public int IndexOf(string propertyName)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
+            return Dictionary.IndexOf(propertyName);
+        }
 
         /// <summary>Inserts a property into the object at the specified index.</summary>
         /// <param name="index">The zero-based index at which the property should be inserted.</param>
@@ -59,6 +72,11 @@ namespace System.Text.Json.Nodes
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is less than 0 or greater than <see cref="Count"/>.</exception>
         public void Insert(int index, string propertyName, JsonNode? value)
         {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+
             Dictionary.Insert(index, propertyName, value);
             value?.AssignParent(this);
         }

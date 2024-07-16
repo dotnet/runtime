@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
+using ILLink.Shared.DataFlow;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
