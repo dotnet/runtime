@@ -504,6 +504,21 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = (int)SVE_PRFOP_CONST15;
                 break;
 
+            case NI_Sve_AddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 1;
+                break;
+
+            case NI_Sve_MultiplyAddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 3;
+                break;
+
+            case NI_Sve_TrigonometricMultiplyAddCoefficient:
+                immLowerBound = 0;
+                immUpperBound = 7;
+                break;
+
             default:
                 unreached();
         }
@@ -2063,7 +2078,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* indices = impStackTop(0).val;
 
-            if (!indices->IsVectorConst() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
+            if (!indices->IsCnsVec() || !IsValidForShuffle(indices->AsVecCon(), simdSize, simdBaseType))
             {
                 assert(sig->numArgs == 2);
 

@@ -233,6 +233,7 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
                     case GT_CNS_VEC:
+                    case GT_CNS_MSK:
                     case GT_LCL_VAR:
                         table->val = gtCloneExpr(tree);
                         break;

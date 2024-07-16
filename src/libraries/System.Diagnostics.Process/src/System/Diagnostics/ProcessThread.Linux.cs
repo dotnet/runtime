@@ -83,7 +83,7 @@ namespace System.Diagnostics
         private Interop.procfs.ParsedStat GetStat()
         {
             Interop.procfs.ParsedStat stat;
-            if (!Interop.procfs.TryReadStatFile(pid: _processId, tid: Id, result: out stat))
+            if (!ProcessManager.TryReadStatFile(_processId, tid: Id, out stat))
             {
                 throw new InvalidOperationException(SR.Format(SR.ThreadExited, Id));
             }
