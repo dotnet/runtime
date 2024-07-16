@@ -27,9 +27,9 @@
         <target state="translated">Koleksiyon öğesi türü desteklenmiyor: '{0}'.</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="translated">Projenin dil sürümü en az 'C# 12' olmalıdır.</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
