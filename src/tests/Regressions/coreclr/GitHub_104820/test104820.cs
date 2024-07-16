@@ -40,6 +40,6 @@ public class Test104820
     [Fact]
     public static void TestEntryPoint()
     {
-	ShadowStackPointerUpdateTest(100);
+        ShadowStackPointerUpdateTest(100);
     }
 }
