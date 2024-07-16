@@ -675,30 +675,18 @@ namespace System
             }
         }
 
-        public static void Beep()
+        public static void Beep(bool isOutTextWriterRedirected)
         {
             const char BellCharacter = '\u0007'; // Windows doesn't use terminfo, so the codepoint is hardcoded.
 
-            if (!Console.IsOutputRedirected)
+            if (!Console.IsOutputRedirected && !isOutTextWriterRedirected)
             {
                 Console.Out.Write(BellCharacter);
-                return;
             }
-
-            if (!Console.IsErrorRedirected)
+            else
             {
-                Console.Error.Write(BellCharacter);
-                return;
+                Interop.Kernel32.Beep(frequency: 800, duration: 200);
             }
-
-            BeepFallback();
-        }
-
-        private static void BeepFallback()
-        {
-            const int BeepFrequencyInHz = 800;
-            const int BeepDurationInMs = 200;
-            Interop.Kernel32.Beep(BeepFrequencyInHz, BeepDurationInMs);
         }
 
         public static void Beep(int frequency, int duration)

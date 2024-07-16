@@ -96,7 +96,7 @@ namespace System
             set => throw new PlatformNotSupportedException();
         }
 
-        public static void Beep() => throw new PlatformNotSupportedException();
+        public static void Beep(bool _) => throw new PlatformNotSupportedException();
 
         public static void Clear() => throw new PlatformNotSupportedException();
         public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();

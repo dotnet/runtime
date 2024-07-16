@@ -205,7 +205,7 @@ namespace System
             }
         }
 
-        public static void Beep()
+        public static void Beep(bool _)
         {
             if (!Console.IsOutputRedirected)
             {
