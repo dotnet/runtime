@@ -344,7 +344,7 @@ Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
     m_pAssembly = pAssembly;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
-    m_pDynamicMetadata = NULL;
+    m_pDynamicMetadata = (TADDR)NULL;
 
     pPEAssembly->AddRef();
 }
@@ -3807,7 +3807,7 @@ void ReflectionModule::Destruct()
     Module::Destruct();
 
     delete (uint32_t*)m_pDynamicMetadata;
-    m_pDynamicMetadata = NULL;
+    m_pDynamicMetadata = (TADDR)NULL;
 
     m_CrstLeafLock.Destroy();
 }
