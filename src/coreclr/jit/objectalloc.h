@@ -22,6 +22,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 class ObjectAllocator final : public Phase
 {
     typedef SmallHashTable<unsigned int, unsigned int, 8U> LocalToLocalMap;
+    enum ObjectAllocationType
+    {
+        OAT_NONE,
+        OAT_NEWOBJ,
+        OAT_NEWARR
+    };
 
     //===============================================================================
     // Data members

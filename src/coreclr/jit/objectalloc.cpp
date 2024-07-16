@@ -390,8 +390,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
             GenTree* stmtExpr = stmt->GetRootNode();
             GenTree* data     = nullptr;
 
-            bool canonicalAllocObjFound = false;
-            bool canonicalAllocArrFound = false;
+            ObjectAllocationType allocType = OAT_NONE;
 
             if (stmtExpr->OperIs(GT_STORE_LCL_VAR) && stmtExpr->TypeIs(TYP_REF))
             {
@@ -399,7 +398,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
 
                 if (data->OperGet() == GT_ALLOCOBJ)
                 {
-                    canonicalAllocObjFound = true;
+                    allocType = OAT_NEWOBJ;
                 }
                 else if (data->IsHelperCall())
                 {
@@ -407,24 +406,16 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     if (call->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC &&
                         call->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
                     {
-                        canonicalAllocArrFound = true;
+                        allocType = OAT_NEWARR;
                     }
                 }
             }
 
-            if (canonicalAllocArrFound)
+            if (allocType != OAT_NONE)
             {
-                GenTreeCall* asCall = data->AsCall();
-                assert(asCall->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC);
-
-                unsigned int         lclNum       = stmtExpr->AsLclVar()->GetLclNum();
-                CallArg*             arg          = asCall->gtArgs.GetArgByIndex(0);
-                GenTree*             node         = arg->GetNode();
-                CORINFO_CLASS_HANDLE clsHnd       = (CORINFO_CLASS_HANDLE)node->AsIntConCommon()->IntegralValue();
-                GenTree*             len          = arg->GetNext()->GetNode();
-                const char*          onHeapReason = nullptr;
-                unsigned int         blockSize    = 0;
-                bool                 canStack     = false;
+                bool         canStack     = false;
+                const char*  onHeapReason = nullptr;
+                unsigned int lclNum       = stmtExpr->AsLclVar()->GetLclNum();
 
                 // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
                 //
@@ -438,131 +429,129 @@ bool ObjectAllocator::MorphAllocObjNodes()
                     onHeapReason = "[alloc in loop]";
                     canStack     = false;
                 }
-                else if (!len->IsCnsIntOrI())
-                {
-                    onHeapReason = "[non-constant size]";
-                    canStack     = false;
-                }
-                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, (unsigned int)len->AsIntCon()->IconValue(),
-                                                   &blockSize, &onHeapReason))
-                {
-                    // reason set by the call
-                    canStack = false;
-                }
                 else
                 {
-                    JITDUMP("Allocating V%02u on the stack\n", lclNum);
-                    canStack = true;
-                    const unsigned int stackLclNum =
-                        MorphNewArrNodeIntoStackAlloc(asCall, clsHnd, (unsigned int)len->AsIntCon()->IconValue(),
-                                                      blockSize, block, stmt);
-                    m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+                    if (allocType == OAT_NEWARR)
+                    {
+                        assert(data->AsCall()->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC);
+                        //------------------------------------------------------------------------
+                        // We expect the following expression tree at this point
+                        //  STMTx (IL 0x... ???)
+                        //    * STORE_LCL_VAR   ref
+                        //    \--*  CALL helper  ref
+                        //       +--*  CNS_INT(h) long
+                        //       \--*  CNS_INT long
+                        //------------------------------------------------------------------------
+
+                        CallArg*             arg       = data->AsCall()->gtArgs.GetArgByIndex(0);
+                        GenTree*             node      = arg->GetNode();
+                        CORINFO_CLASS_HANDLE clsHnd    = (CORINFO_CLASS_HANDLE)node->AsIntConCommon()->IntegralValue();
+                        GenTree*             len       = arg->GetNext()->GetNode();
+                        unsigned int         blockSize = 0;
+
+                        // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
+                        //
+                        if (!len->IsCnsIntOrI())
+                        {
+                            onHeapReason = "[non-constant size]";
+                            canStack     = false;
+                        }
+                        else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, (unsigned int)len->AsIntCon()->IconValue(),
+                                                           &blockSize, &onHeapReason))
+                        {
+                            // reason set by the call
+                            canStack = false;
+                        }
+                        else
+                        {
+                            JITDUMP("Allocating V%02u on the stack\n", lclNum);
+                            canStack = true;
+                            const unsigned int stackLclNum =
+                                MorphNewArrNodeIntoStackAlloc(data->AsCall(), clsHnd,
+                                                              (unsigned int)len->AsIntCon()->IconValue(), blockSize,
+                                                              block, stmt);
+                            m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+                            comp->Metrics.StackAllocatedArrays++;
+                        }
+                    }
+                    else if (allocType == OAT_NEWOBJ)
+                    {
+                        assert(basicBlockHasNewObj);
+                        //------------------------------------------------------------------------
+                        // We expect the following expression tree at this point
+                        //  STMTx (IL 0x... ???)
+                        //    * STORE_LCL_VAR   ref
+                        //    \--*  ALLOCOBJ  ref
+                        //       \--*  CNS_INT(h) long
+                        //------------------------------------------------------------------------
+
+                        CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
+                        CORINFO_CLASS_HANDLE stackClsHnd  = clsHnd;
+                        const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
+
+                        if (isValueClass)
+                        {
+                            comp->Metrics.NewBoxedValueClassHelperCalls++;
+                            stackClsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
+                        }
+                        else
+                        {
+                            comp->Metrics.NewRefClassHelperCalls++;
+                        }
+
+                        if (!CanAllocateLclVarOnStack(lclNum, clsHnd, 0, nullptr, &onHeapReason))
+                        {
+                            // reason set by the call
+                            canStack = false;
+                        }
+                        else if (stackClsHnd == NO_CLASS_HANDLE)
+                        {
+                            assert(isValueClass);
+                            onHeapReason = "[no class handle for this boxed value class]";
+                            canStack     = false;
+                        }
+                        else
+                        {
+                            JITDUMP("Allocating V%02u on the stack\n", lclNum);
+                            canStack = true;
+                            const unsigned int stackLclNum =
+                                MorphAllocObjNodeIntoStackAlloc(data->AsAllocObj(), stackClsHnd, isValueClass, block,
+                                                                stmt);
+                            m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
+
+                            if (isValueClass)
+                            {
+                                comp->Metrics.StackAllocatedBoxedValueClasses++;
+                            }
+                            else
+                            {
+                                comp->Metrics.StackAllocatedRefClasses++;
+                            }
+                        }
+                    }
+                }
+
+                if (canStack)
+                {
                     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
-                    // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
+                    // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both
+                    // sets.
                     MarkLclVarAsDefinitelyStackPointing(lclNum);
                     MarkLclVarAsPossiblyStackPointing(lclNum);
                     stmt->GetRootNode()->gtBashToNOP();
                     comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
                     didStackAllocate = true;
                 }
-
-                if (canStack)
-                {
-                    comp->Metrics.StackAllocatedArrays++;
-                }
                 else
                 {
                     assert(onHeapReason != nullptr);
                     JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, onHeapReason);
-                }
-            }
-
-            if (canonicalAllocObjFound)
-            {
-                assert(basicBlockHasNewObj);
-                //------------------------------------------------------------------------
-                // We expect the following expression tree at this point
-                //  STMTx (IL 0x... ???)
-                //    * STORE_LCL_VAR   ref
-                //    \--*  ALLOCOBJ  ref
-                //       \--*  CNS_INT(h) long
-                //------------------------------------------------------------------------
-
-                GenTreeAllocObj*     asAllocObj   = data->AsAllocObj();
-                unsigned int         lclNum       = stmtExpr->AsLclVar()->GetLclNum();
-                CORINFO_CLASS_HANDLE clsHnd       = data->AsAllocObj()->gtAllocObjClsHnd;
-                CORINFO_CLASS_HANDLE stackClsHnd  = clsHnd;
-                const bool           isValueClass = comp->info.compCompHnd->isValueClass(clsHnd);
-                const char*          onHeapReason = nullptr;
-                bool                 canStack     = false;
-
-                if (isValueClass)
-                {
-                    comp->Metrics.NewBoxedValueClassHelperCalls++;
-                    stackClsHnd = comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd);
-                }
-                else
-                {
-                    comp->Metrics.NewRefClassHelperCalls++;
-                }
-
-                // Don't attempt to do stack allocations inside basic blocks that may be in a loop.
-                //
-                if (!IsObjectStackAllocationEnabled())
-                {
-                    onHeapReason = "[object stack allocation disabled]";
-                    canStack     = false;
-                }
-                else if (basicBlockHasBackwardJump)
-                {
-                    onHeapReason = "[alloc in loop]";
-                    canStack     = false;
-                }
-                else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, 0, nullptr, &onHeapReason))
-                {
-                    // reason set by the call
-                    canStack = false;
-                }
-                else if (stackClsHnd == NO_CLASS_HANDLE)
-                {
-                    assert(isValueClass);
-                    onHeapReason = "[no class handle for this boxed value class]";
-                    canStack     = false;
-                }
-                else
-                {
-                    JITDUMP("Allocating V%02u on the stack\n", lclNum);
-                    canStack = true;
-                    const unsigned int stackLclNum =
-                        MorphAllocObjNodeIntoStackAlloc(asAllocObj, stackClsHnd, isValueClass, block, stmt);
-                    m_HeapLocalToStackLocalMap.AddOrUpdate(lclNum, stackLclNum);
-                    // We keep the set of possibly-stack-pointing pointers as a superset of the set of
-                    // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
-                    MarkLclVarAsDefinitelyStackPointing(lclNum);
-                    MarkLclVarAsPossiblyStackPointing(lclNum);
-                    stmt->GetRootNode()->gtBashToNOP();
-                    comp->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
-                    didStackAllocate = true;
-                }
-
-                if (canStack)
-                {
-                    if (isValueClass)
+                    if (allocType == OAT_NEWOBJ)
                     {
-                        comp->Metrics.StackAllocatedBoxedValueClasses++;
+                        data                         = MorphAllocObjNodeIntoHelperCall(data->AsAllocObj());
+                        stmtExpr->AsLclVar()->Data() = data;
+                        stmtExpr->AddAllEffectsFlags(data);
                     }
-                    else
-                    {
-                        comp->Metrics.StackAllocatedRefClasses++;
-                    }
-                }
-                else
-                {
-                    assert(onHeapReason != nullptr);
-                    JITDUMP("Allocating V%02u on the heap: %s\n", lclNum, onHeapReason);
-                    data                         = MorphAllocObjNodeIntoHelperCall(asAllocObj);
-                    stmtExpr->AsLclVar()->Data() = data;
-                    stmtExpr->AddAllEffectsFlags(data);
                 }
             }
 #ifdef DEBUG
