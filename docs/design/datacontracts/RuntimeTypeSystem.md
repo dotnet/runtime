@@ -4,46 +4,80 @@ This contract is for exploring the properties of the runtime types of values on 
 
 ## APIs of contract
 
-A `MethodTable` is the runtime representation of the type information about a value.  Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides a `MethodTableHandle` for querying the `MethodTable`.
+A `TypeHandle` is the runtime representation of the type information about a value which is represented as a TypeHandle.
+Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides a `TypeHandle` for querying the details of the `TypeHandle`.
+
 
 ``` csharp
-struct MethodTableHandle
+struct TypeHandle
 {
     // no public properties or constructors
 
-    internal TargetPointer Address { get; }
+    public TargetPointer Address { get; }
+    public bool IsNull => Address != 0;
+}
+
+struct TypeHandle
+{
+}
+
+internal enum CorElementType
+{
+    // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
+    // + 
+    Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata separate from a live process.
 }
 ```
 
+A `TypeHandle` is the runtime representation of the type information about a value.  This can be constructed from either a `TypeHandle` or 
+struct TypeHandle
+
 ``` csharp
     #region MethodTable inspection APIs
-    public virtual MethodTableHandle GetMethodTableHandle(TargetPointer targetPointer);
+    public virtual TypeHandle GetTypeHandle(TargetPointer targetPointer);
 
-    public virtual TargetPointer GetModule(MethodTableHandle methodTable);
+    public virtual TargetPointer GetModule(TypeHandle typeHandle);
     // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
     // MethodTable of the prototypical instance.
-    public virtual TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTable);
-    public virtual TargetPointer GetParentMethodTable(MethodTableHandle methodTable);
+    public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
+    public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
 
-    public virtual uint GetBaseSize(MethodTableHandle methodTable);
+    public virtual uint GetBaseSize(TypeHandle typeHandle);
     // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
-    public virtual uint GetComponentSize(MethodTableHandle methodTable);
+    public virtual uint GetComponentSize(TypeHandle typeHandle);
 
     // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
-    public virtual bool IsFreeObjectMethodTable(MethodTableHandle methodTable);
-    public virtual bool IsString(MethodTableHandle methodTable);
+    public virtual bool IsFreeObjectMethodTable(TypeHandle typeHandle);
+    public virtual bool IsString(TypeHandle typeHandle);
     // True if the MethodTable represents a type that contains managed references
-    public virtual bool ContainsGCPointers(MethodTableHandle methodTable);
-    public virtual bool IsDynamicStatics(MethodTableHandle methodTable);
-    public virtual ushort GetNumMethods(MethodTableHandle methodTable);
-    public virtual ushort GetNumInterfaces(MethodTableHandle methodTable);
+    public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    public virtual bool IsDynamicStatics(TypeHandle typeHandle);
+    public virtual ushort GetNumMethods(TypeHandle typeHandle);
+    public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
 
     // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
-    public virtual uint GetTypeDefToken(MethodTableHandle methodTable);
+    public virtual uint GetTypeDefToken(TypeHandle typeHandle);
     // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
     // or for its generic type definition if it is a generic instantiation
-    public virtual uint GetTypeDefTypeAttributes(MethodTableHandle methodTable);
-    #endregion MethodTable inspection APIs
+    public virtual uint GetTypeDefTypeAttributes(TypeHandle typeHandle);
+    public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
+    public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
+
+    public virtual TypeHandle TypeHandleFromAddress(TargetPointer address);
+    public virtual bool HasTypeParam(TypeHandle typeHandle);
+
+    // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
+    // NOTE: If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view of a structure
+    // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
+    public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
+
+    // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
+    public virtual bool IsArray(TypeHandle typeHandle, out uint rank);
+    public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
+    public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
+    public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+
+    #endregion TypeHandle inspection APIs
 ```
 
 ## Version 1
@@ -60,6 +94,7 @@ internal partial struct RuntimeTypeSystem_1
     {
         GenericsMask = 0x00000030,
         GenericsMask_NonGeneric = 0x00000000,   // no instantiation
+        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
 
         StringArrayValues = GenericsMask_NonGeneric,
     }
@@ -69,9 +104,17 @@ internal partial struct RuntimeTypeSystem_1
     internal enum WFLAGS_HIGH : uint
     {
         Category_Mask = 0x000F0000,
-        Category_Array = 0x00080000,
+        Category_ElementType_Mask = 0x000E0000,
         Category_Array_Mask = 0x000C0000,
+
+        Category_IfArrayThenSzArray = 0x00020000,
+        Category_Array = 0x00080000,
+        Category_ValueType = 0x00040000,
+        Category_Nullable = 0x00050000,
+        Category_PrimitiveValueType = 0x00060000,
+        Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
+
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
                                        // otherwise the lower bits are used for WFLAGS_LOW
@@ -118,6 +161,7 @@ internal partial struct RuntimeTypeSystem_1
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+        public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
 
     [Flags]
@@ -126,6 +170,16 @@ internal partial struct RuntimeTypeSystem_1
         EEClass = 0,
         CanonMT = 1,
         Mask = 1,
+    }
+
+    // Low order bits of TypeHandle address.
+    // If the low bits contain a 2, then it is a TypeDesc
+    [Flags]
+    internal enum TypeHandleBits
+    {
+        MethodTable = 0,
+        TypeDesc = 2,
+        ValidMask = 2,
     }
 }
 ```
@@ -141,6 +195,7 @@ internal struct MethodTable_1
     internal TargetPointer ParentMethodTable { get; }
     internal TargetPointer Module { get; }
     internal TargetPointer EEClassOrCanonMT { get; }
+    internal TargetPointer PerInstInfo { get; }
     internal MethodTable_1(Data.MethodTable data)
     {
         Flags = new RuntimeTypeSystem_1.MethodTableFlags
@@ -154,24 +209,77 @@ internal struct MethodTable_1
         EEClassOrCanonMT = data.EEClassOrCanonMT;
         Module = data.Module;
         ParentMethodTable = data.ParentMethodTable;
+        PerInstInfo = data.PerInstInfo;
+    }
+}
+```
+
+Internally the contract uses extension methods on the `TypeHandle` api so that it can distinguish between `MethodTable` and `TypeDesc`
+```csharp
+static class RuntimeTypeSystem_1_Helpers
+{
+    public static bool IsTypeDesc(this TypeHandle type)
+    {
+        return type.Address != 0 && (type.Address & TypeHandleBits.ValidMask) == TypeHandleBits.TypeDesc;
+    }
+
+    public static bool IsMethodTable(this TypeHandle type)
+    {
+        return type.Address != 0 && (type.Address & TypeHandleBits.ValidMask) == TypeHandleBits.MethodTable;
+    }
+
+    public static TargetPointer TypeDescAddress(this TypeHandle type)
+    {
+        if (!type.IsTypeDesc())
+            return 0;
+
+        return (ulong)type.Address & ~(ulong)TypeHandleBits.ValidMask;
     }
 }
 ```
 
 The contract depends on the global pointer value `FreeObjectMethodTablePointer`.
-The contract additionally depends on the `EEClass` data descriptor.
+
+The contract additionally depends on these data descriptors
+
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `MethodTable` | `MTFlags` | One of the flags fields on `MethodTable` |
+| `MethodTable` | `MTFlags2` | One of the flags fields on `MethodTable` |
+| `MethodTable` | `BaseSize` | BaseSize of a `MethodTable` |
+| `MethodTable` | `EEClassOrCanonMT` | Path to both EEClass and canonical MethodTable of a MethodTable |
+| `MethodTable` | `Module` | Module for `MethodTable` |
+| `MethodTable` | `ParentMethodTable` | Parent type pointer of `MethodTable` |
+| `MethodTable` | `NumInterfaces` | Number of interfaces of `MethodTable` |
+| `MethodTable` | `NumVirtuals` | Number of virtual methods in `MethodTable` |
+| `MethodTable` | `PerInstInfo` | Either the array element type, or pointer to generic information for `MethodTable` |
+| `EEClass` | `InternalCorElementType` | An InternalCorElementType uses the enum values of a CorElementType to indicate some of the information about the type of the type which uses the EEClass In particular, all reference types are CorElementType.Class, Enums are the element type of their underlying type and ValueTypes which can exactly be represented as an element type are represented as such, all other values types are represented as CorElementType.ValueType. |
+| `EEClass` | `MethodTable` | Pointer to the canonical MethodTable of this type |
+| `EEClass` | `NumMethods` | Count of methods attached to the EEClass |
+| `EEClass` | `CorTypeAttr` | Various flags |
+| `ArrayClass` | `Rank` | Rank of the associated array MethodTable |
+| `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
+| `ParamTypeDesc` | `TypeArg` | Associated type argument |
+| `TypeVarTypeDesc` | `Module` | Pointer to module which defines the type variable |
+| `TypeVarTypeDesc` | `Token` | Token of the type variable |
+| `FnPtrTypeDesc` | `NumArgs` | Number of arguments to the function described by the `TypeDesc` |
+| `FnPtrTypeDesc` | `CallConv` | Lower 8 bits is the calling convention bit as extracted by the signature that defines this `TypeDesc` |
+| `FnPtrTypeDesc` | `RetAndArgTypes` | Pointer to an array of TypeHandle addresses. This length of this is 1 more than `NumArgs` |
+| `GenericsDictInfo` | `NumTypeArgs` | Number of type arguments in the type or method instantiation described by this `GenericsDictInfo` |
+
 
 ```csharp
     private readonly Dictionary<TargetPointer, MethodTable_1> _methodTables;
 
     internal TargetPointer FreeObjectMethodTablePointer {get; }
 
-    public MethodTableHandle GetMethodTableHandle(TargetPointer methodTablePointer)
+    public TypeHandle GetTypeHandle(TargetPointer typeHandlePointer)
     {
-        ... // validate that methodTablePointer points to something that looks like a MethodTable.
-        ... // read Data.MethodTable from methodTablePointer.
-        ... // create a MethodTable_1 and add it to _methodTables.
-        return MethodTableHandle { Address = methodTablePointer }
+        ... // validate that typeHandlePointer points to something that looks like a MethodTable or a TypeDesc.
+        ... // If this is a MethodTable
+        ... //     read Data.MethodTable from typeHandlePointer.
+        ... //     create a MethodTable_1 and add it to _methodTables.
+        return TypeHandle { Address = typeHandlePointer }
     }
 
     internal static EEClassOrCanonMTBits GetEEClassOrCanonMTBits(TargetPointer eeClassOrCanonMTPtr)
@@ -179,11 +287,11 @@ The contract additionally depends on the `EEClass` data descriptor.
         return (EEClassOrCanonMTBits)(eeClassOrCanonMTPtr & (ulong)EEClassOrCanonMTBits.Mask);
     }
 
-    public uint GetBaseSize(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.BaseSize;
+    public uint GetBaseSize(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? (uint)0 : _methodTables[TypeHandle.Address].Flags.BaseSize;
 
-    public uint GetComponentSize(MethodTableHandle methodTableHandle) => GetComponentSize(_methodTables[methodTableHandle.Address]);
+    public uint GetComponentSize(TypeHandle TypeHandle) =>!typeHandle.IsMethodTable() ? (uint)0 :  GetComponentSize(_methodTables[TypeHandle.Address]);
 
-    private TargetPointer GetClassPointer(MethodTableHandle methodTableHandle)
+    private TargetPointer GetClassPointer(TypeHandle TypeHandle)
     {
         ... // if the MethodTable stores a pointer to the EEClass, return it
             // otherwise the MethodTable stores a pointer to the canonical MethodTable
@@ -191,34 +299,232 @@ The contract additionally depends on the `EEClass` data descriptor.
             // Canonical MethodTables always store an EEClass pointer.
     }
 
-    private Data.EEClass GetClassData(MethodTableHandle methodTableHandle)
+    private Data.EEClass GetClassData(TypeHandle TypeHandle)
     {
-        TargetPointer eeClassPtr = GetClassPointer(methodTableHandle);
+        TargetPointer eeClassPtr = GetClassPointer(TypeHandle);
         ... // read Data.EEClass data from eeClassPtr
     }
 
 
-    public TargetPointer GetCanonicalMethodTable(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).MethodTable;
+    public TargetPointer GetCanonicalMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : GetClassData(TypeHandle).MethodTable;
 
-    public TargetPointer GetModule(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Module;
-    public TargetPointer GetParentMethodTable(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].ParentMethodTable;
-
-    public bool IsFreeObjectMethodTable(MethodTableHandle methodTableHandle) => FreeObjectMethodTablePointer == methodTableHandle.Address;
-
-    public bool IsString(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsString;
-    public bool ContainsGCPointers(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.ContainsGCPointers;
-
-    public uint GetTypeDefToken(MethodTableHandle methodTableHandle)
+    public TargetPointer GetModule(TypeHandle TypeHandle)
     {
-        MethodTable_1 methodTable = _methodTables[methodTableHandle.Address];
-        return (uint)(methodTable.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
+        if (typeHandle.IsMethodTable())
+        {
+            return _methodTables[TypeHandle.Address].Module;
+        }
+        else if (typeHandle.IsTypeDesc())
+        {
+            if (HasTypeParam(typeHandle))
+            {
+                return GetModule(GetTypeParam(typeHandle));
+            }
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            {
+                return genericParamModule;
+            }
+        }
+        return TargetPointer.Null;
     }
 
-    public ushort GetNumMethods(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).NumMethods;
+    public TargetPointer GetParentMethodTable(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? TargetPointer.Null : _methodTables[TypeHandle.Address].ParentMethodTable;
 
-    public ushort GetNumInterfaces(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].NumInterfaces;
+    public bool IsFreeObjectMethodTable(TypeHandle TypeHandle) => FreeObjectMethodTablePointer == TypeHandle.Address;
 
-    public uint GetTypeDefTypeAttributes(MethodTableHandle methodTableHandle) => GetClassData(methodTableHandle).CorTypeAttr;
+    public bool IsString(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsString;
+    public bool ContainsGCPointers(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.ContainsGCPointers;
 
-    public bool IsDynamicStatics(MethodTableHandle methodTableHandle) => _methodTables[methodTableHandle.Address].Flags.IsDynamicStatics;
+    public uint GetTypeDefToken(TypeHandle TypeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return 0;
+
+        MethodTable_1 typeHandle = _methodTables[TypeHandle.Address];
+        return (uint)(typeHandle.Flags.GetTypeDefRid() | ((int)TableIndex.TypeDef << 24));
+    }
+
+    public ushort GetNumMethods(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).NumMethods;
+
+    public ushort GetNumInterfaces(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : _methodTables[TypeHandle.Address].NumInterfaces;
+
+    public uint GetTypeDefTypeAttributes(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? 0 : GetClassData(TypeHandle).CorTypeAttr;
+
+    public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
+
+    public ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle TypeHandle)
+    {
+        if (!typeHandle.IsMethodTable())
+            return default;
+
+        MethodTable_1 typeHandle = _methodTables[TypeHandle.Address];
+        if (!typeHandle.Flags.HasInstantiation)
+            return default;
+
+        TargetPointer perInstInfo = typeHandle.PerInstInfo;
+        TargetPointer genericsDictInfo = perInstInfo - (ulong)_target.PointerSize;
+        TargetPointer dictionaryPointer = _target.ReadPointer(perInstInfo);
+
+        int NumTypeArgs = // Read NumTypeArgs from genericsDictInfo using GenericsDictInfo contract
+        TypeHandle[] instantiation = new TypeHandle[NumTypeArgs];
+        for (int i = 0; i < NumTypeArgs; i++)
+            instantiation[i] = GetTypeHandle(_target.ReadPointer(dictionaryPointer + _target.PointerSize * i));
+
+        return instantiation;
+    }
+
+    public bool IsDynamicStatics(TypeHandle TypeHandle) => !typeHandle.IsMethodTable() ? false : _methodTables[TypeHandle.Address].Flags.IsDynamicStatics;
+
+    public bool HasTypeParam(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable())
+        {
+            MethodTable typeHandle = _methodTables[typeHandle.Address];
+            return typeHandle.Flags.IsArray;
+        }
+        else if (typeHandle.IsTypeDesc())
+        {
+            int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
+            CorElementType elemType = (CorElementType)(TypeAndFlags & 0xFF);
+            switch (elemType)
+            {
+                case CorElementType.ValueType:
+                case CorElementType.Byref:
+                case CorElementType.Ptr:
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public CorElementType GetSignatureCorElementType(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable())
+        {
+            MethodTable typeHandle = _methodTables[typeHandle.Address];
+
+            switch (typeHandle.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            {
+                case WFLAGS_HIGH.Category_Array:
+                    return CorElementType.Array;
+                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                    return CorElementType.SzArray;
+                case WFLAGS_HIGH.Category_ValueType:
+                case WFLAGS_HIGH.Category_Nullable:
+                case WFLAGS_HIGH.Category_PrimitiveValueType:
+                    return CorElementType.ValueType;
+                case WFLAGS_HIGH.Category_TruePrimitive:
+                    return (CorElementType)GetClassData(typeHandle).InternalCorElementType;
+                default:
+                    return CorElementType.Class;
+            }
+        }
+        else if (typeHandle.IsTypeDesc())
+        {
+            int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
+            return (CorElementType)(TypeAndFlags & 0xFF);
+        }
+        return default(CorElementType);
+    }
+
+    // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
+    public bool IsArray(TypeHandle typeHandle, out uint rank)
+    {
+        if (typeHandle.IsMethodTable())
+        {
+            MethodTable typeHandle = _methodTables[typeHandle.Address];
+
+            switch (typeHandle.Flags.GetFlag(WFLAGS_HIGH.Category_Mask))
+            {
+                case WFLAGS_HIGH.Category_Array:
+                    TargetPointer clsPtr = GetClassPointer(typeHandle);
+                    rank = // Read Rank field from ArrayClass contract using address clsPtr
+                    return true;
+
+                case WFLAGS_HIGH.Category_Array | WFLAGS_HIGH.Category_IfArrayThenSzArray:
+                    rank = 1;
+                    return true;
+            }
+        }
+
+        rank = 0;
+        return false;
+    }
+
+    public TypeHandle GetTypeParam(TypeHandle typeHandle)
+    {
+        if (typeHandle.IsMethodTable())
+        {
+            MethodTable typeHandle = _methodTables[typeHandle.Address];
+
+            // Validate that this is an array
+            if (!typeHandle.Flags.IsArray)
+                throw new ArgumentException(nameof(typeHandle));
+
+            return TypeHandleFromAddress(typeHandle.PerInstInfo);
+        }
+        else if (typeHandle.IsTypeDesc())
+        {
+            int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
+            CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+
+            switch (elemType)
+            {
+                case CorElementType.ValueType:
+                case CorElementType.Byref:
+                case CorElementType.Ptr:
+                    TargetPointer typeArgPointer = // Read TypeArg field from ParamTypeDesc contract using address typeHandle.TypeDescAddress()
+                    return TypeHandleFromAddress(typeArgPointer);
+            }
+        }
+        throw new ArgumentException(nameof(typeHandle));
+    }
+
+    public bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token)
+    {
+        module = TargetPointer.Null;
+        token = 0;
+
+        if (!typeHandle.IsTypeDesc())
+            return false;
+
+        int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+
+        switch (elemType)
+        {
+            case CorElementType.MVar:
+            case CorElementType.Var:
+                module = // Read Module field from TypeVarTypeDesc contract using address typeHandle.TypeDescAddress()
+                token = // Read Module field from TypeVarTypeDesc contract using address typeHandle.TypeDescAddress()
+                return true;
+        }
+        return false;
+    }
+
+    public bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv)
+    {
+        retAndArgTypes = default;
+        callConv = default;
+
+        if (!typeHandle.IsTypeDesc())
+            return false;
+
+        int TypeAndFlags = // Read TypeAndFlags field from TypeDesc contract using address typeHandle.TypeDescAddress()
+        CorElementType elemType = (CorElementType)(typeDesc.TypeAndFlags & 0xFF);
+
+        if (elemType != CorElementType.FnPtr)
+            return false;
+
+        int NumArgs = // Read NumArgs field from FnPtrTypeDesc contract using address typeHandle.TypeDescAddress()
+        TargetPointer RetAndArgTypes = // Read NumArgs field from FnPtrTypeDesc contract using address typeHandle.TypeDescAddress()
+
+        TypeHandle[] retAndArgTypesArray = new TypeHandle[NumTypeArgs + 1];
+        for (int i = 0; i <= NumTypeArgs; i++)
+            retAndArgTypesArray[i] = GetTypeHandle(_target.ReadPointer(RetAndArgTypes + _target.PointerSize * i));
+
+        retAndArgTypes = retAndArgTypesArray;
+        callConv = (byte) // Read CallConv field from FnPtrTypeDesc contract using address typeHandle.TypeDescAddress(), and then ignore all but the low 8 bits.
+        return true;
+    }
 ```

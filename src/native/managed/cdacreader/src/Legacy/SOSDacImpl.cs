@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -89,7 +93,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodTableHandle methodTable = contract.GetMethodTableHandle(mt);
+            Contracts.TypeHandle methodTable = contract.GetTypeHandle(mt);
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
@@ -123,7 +127,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             *data = result;
             return HResults.S_OK;
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             return ex.HResult;
         }
@@ -137,11 +141,11 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodTableHandle methodTableHandle = contract.GetMethodTableHandle(eeClassReallyCanonMT);
+            Contracts.TypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT);
             *value = methodTableHandle.Address;
             return HResults.S_OK;
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }
@@ -191,7 +195,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->dwBaseClassIndex = 0;
             data->dwModuleIndex = 0;
         }
-        catch (Exception e)
+        catch (global::System.Exception e)
         {
             return e.HResult;
         }
@@ -208,7 +212,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             *exceptionObject = exceptionObjectLocal;
             *nextNestedException = nextNestedExceptionLocal;
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }
@@ -234,7 +238,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->HResult = exceptionData.HResult;
             data->XCode = exceptionData.XCode;
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             return ex.HResult;
         }
@@ -284,7 +288,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->lastThrownObjectHandle = threadData.LastThrownObjectHandle;
             data->nextThread = threadData.NextThread;
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }
@@ -314,7 +318,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
 
             data->fHostConfig = 0; // Always 0 for non-Framework
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }

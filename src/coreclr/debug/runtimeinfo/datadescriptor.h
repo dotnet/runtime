@@ -202,6 +202,7 @@ CDAC_TYPE_FIELD(MethodTable, /*pointer*/, Module, cdac_offsets<MethodTable>::Mod
 CDAC_TYPE_FIELD(MethodTable, /*pointer*/, ParentMethodTable, cdac_offsets<MethodTable>::ParentMethodTable)
 CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumInterfaces, cdac_offsets<MethodTable>::NumInterfaces)
 CDAC_TYPE_FIELD(MethodTable, /*uint16*/, NumVirtuals, cdac_offsets<MethodTable>::NumVirtuals)
+CDAC_TYPE_FIELD(MethodTable, /*pointer*/, PerInstInfo, cdac_offsets<MethodTable>::PerInstInfo)
 CDAC_TYPE_END(MethodTable)
 
 CDAC_TYPE_BEGIN(EEClass)
@@ -209,7 +210,41 @@ CDAC_TYPE_INDETERMINATE(EEClass)
 CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_offsets<EEClass>::MethodTable)
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_offsets<EEClass>::NumMethods)
 CDAC_TYPE_FIELD(EEClass, /*uint32*/, CorTypeAttr, cdac_offsets<EEClass>::CorTypeAttr)
+CDAC_TYPE_FIELD(EEClass, /*uint8*/, InternalCorElementType, cdac_offsets<EEClass>::InternalCorElementType)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(ArrayClass)
+CDAC_TYPE_INDETERMINATE(ArrayClass)
+CDAC_TYPE_FIELD(ArrayClass, /*uint8*/, Rank, cdac_offsets<ArrayClass>::Rank)
+CDAC_TYPE_END(ArrayClass)
+
+CDAC_TYPE_BEGIN(GenericsDictInfo)
+CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
+CDAC_TYPE_FIELD(GenericsDictInfo, /*uint16*/, NumTypeArgs, cdac_offsets<GenericsDictInfo>::NumTypeArgs)
+CDAC_TYPE_END(GenericsDictInfo)
+
+CDAC_TYPE_BEGIN(TypeDesc)
+CDAC_TYPE_INDETERMINATE(TypeDesc)
+CDAC_TYPE_FIELD(TypeDesc, /*uint32*/, TypeAndFlags, cdac_offsets<TypeDesc>::TypeAndFlags)
+CDAC_TYPE_END(TypeDesc)
+
+CDAC_TYPE_BEGIN(ParamTypeDesc)
+CDAC_TYPE_INDETERMINATE(ParamTypeDesc)
+CDAC_TYPE_FIELD(ParamTypeDesc, /*pointer*/, TypeArg, cdac_offsets<ParamTypeDesc>::TypeArg)
+CDAC_TYPE_END(ParamTypeDesc)
+
+CDAC_TYPE_BEGIN(TypeVarTypeDesc)
+CDAC_TYPE_INDETERMINATE(TypeVarTypeDesc)
+CDAC_TYPE_FIELD(TypeVarTypeDesc, /*pointer*/, Module, cdac_offsets<TypeVarTypeDesc>::Module)
+CDAC_TYPE_FIELD(TypeVarTypeDesc, /*uint32*/, Token, cdac_offsets<TypeVarTypeDesc>::Token)
+CDAC_TYPE_END(TypeVarTypeDesc)
+
+CDAC_TYPE_BEGIN(FnPtrTypeDesc)
+CDAC_TYPE_INDETERMINATE(FnPtrTypeDesc)
+CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, NumArgs, cdac_offsets<FnPtrTypeDesc>::NumArgs)
+CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, CallConv, cdac_offsets<FnPtrTypeDesc>::CallConv)
+CDAC_TYPE_FIELD(FnPtrTypeDesc, /*uint32*/, RetAndArgTypes, cdac_offsets<FnPtrTypeDesc>::RetAndArgTypes)
+CDAC_TYPE_END(FnPtrTypeDesc)
 
 CDAC_TYPES_END()
 

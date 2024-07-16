@@ -20,6 +20,7 @@ internal sealed class MethodTable : IData<MethodTable>
         ParentMethodTable = target.ReadPointer(address + (ulong)type.Fields[nameof(ParentMethodTable)].Offset);
         NumInterfaces = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumInterfaces)].Offset);
         NumVirtuals = target.Read<ushort>(address + (ulong)type.Fields[nameof(NumVirtuals)].Offset);
+        PerInstInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PerInstInfo)].Offset);
     }
 
     public uint MTFlags { get; init; }
@@ -28,6 +29,7 @@ internal sealed class MethodTable : IData<MethodTable>
     public TargetPointer EEClassOrCanonMT { get; init; }
     public TargetPointer Module { get; init; }
     public TargetPointer ParentMethodTable { get; init; }
+    public TargetPointer PerInstInfo { get; init; }
     public ushort NumInterfaces { get; init; }
     public ushort NumVirtuals { get; init; }
 }
