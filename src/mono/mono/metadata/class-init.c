@@ -4232,22 +4232,27 @@ build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_si
 	}
 }
 
+typedef struct VarianceSearchTable {
+	int count;
+	MonoClass *klasses[1]; // a total of count items, at least 1
+} VarianceSearchTable;
+
 // Only call this with the loader lock held
 static void
 build_variance_search_table (MonoClass *klass) {
 	// FIXME: Is there a way to deterministically compute the right capacity?
 	int buf_size = m_class_get_interface_offsets_count (klass), buf_count = 0;
 	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *));
-	MonoClass **result = NULL;
+	VarianceSearchTable *result = NULL;
 	memset (buf, 0, buf_size * sizeof(MonoClass *));
 	build_variance_search_table_inner (klass, buf, buf_size, &buf_count);
 
 	if (buf_count) {
-		guint bytes = buf_count * sizeof(MonoClass *);
-		result = mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes);
-		memcpy (result, buf, bytes);
+		guint bytes = (buf_count * sizeof(MonoClass *)) + sizeof(VarianceSearchTable);
+		result = (VarianceSearchTable *)mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes);
+		result->count = buf_count;
+		memcpy (result->klasses, buf, bytes);
 	}
-	klass->variant_search_table_length = buf_count;
 	klass->variant_search_table = result;
 	// Ensure we do not set the inited flag until we've stored the result pointer
 	mono_memory_barrier ();
@@ -4275,8 +4280,14 @@ mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int 
 		mono_loader_unlock ();
 	}
 
-	*table = klass->variant_search_table;
-	*table_size = klass->variant_search_table_length;
+	VarianceSearchTable *vst = klass->variant_search_table;
+	if (vst) {
+		*table = vst->klasses;
+		*table_size = vst->count;
+	} else {
+		*table = NULL;
+		*table_size = 0;
+	}
 }
 
 /**
