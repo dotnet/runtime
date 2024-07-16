@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Net;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Microsoft.Diagnostics.DataContractReader.Data;

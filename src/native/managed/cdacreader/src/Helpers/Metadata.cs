@@ -3,13 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Microsoft.Diagnostics.DataContractReader.Helpers;
 
