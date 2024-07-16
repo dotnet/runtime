@@ -40,7 +40,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public bool IsFingerprintingSupported { get; protected set; }
 
-    public bool IsFinterprintingEnabled => IsFingerprintingSupported && EnvironmentVariables.UseFingerprinting;
+    public bool IsFingerprintingEnabled => IsFingerprintingSupported && EnvironmentVariables.UseFingerprinting;
 
     // Returns the actual files on disk
     public IReadOnlyDictionary<string, DotNetFileName> AssertBasicBundle(AssertBundleOptionsBase assertOptions)
@@ -50,10 +50,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.dll" },
-                                   expectToExist: IsFinterprintingEnabled ? false : !BuildTestBase.UseWebcil);
+                                   expectToExist: IsFingerprintingEnabled ? false : !BuildTestBase.UseWebcil);
         TestUtils.AssertFilesExist(assertOptions.BinFrameworkDir,
                                    new[] { "System.Private.CoreLib.wasm" },
-                                   expectToExist: IsFinterprintingEnabled ? false : BuildTestBase.UseWebcil);
+                                   expectToExist: IsFingerprintingEnabled ? false : BuildTestBase.UseWebcil);
 
         var bootJson = AssertBootJson(assertOptions);
 
@@ -322,7 +322,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
     }
 
     public bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile)
-        => IsFinterprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile);
+        => IsFingerprintingEnabled && ((expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile);
 
 
     public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
@@ -385,7 +385,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
             actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
 
-        if (IsFinterprintingEnabled)
+        if (IsFingerprintingEnabled)
         {
             var expectedFingerprinted = new List<string>(expected.Count);
             foreach (var expectedItem in expected)
@@ -422,7 +422,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         BootJsonData bootJson = ParseBootData(bootJsonPath);
         string spcExpectedFilename = $"System.Private.CoreLib{WasmAssemblyExtension}";
 
-        if (IsFinterprintingEnabled)
+        if (IsFingerprintingEnabled)
         {
             spcExpectedFilename = bootJson.resources.fingerprinting.Where(kv => kv.Value == spcExpectedFilename).SingleOrDefault().Key;
             if (string.IsNullOrEmpty(spcExpectedFilename))
