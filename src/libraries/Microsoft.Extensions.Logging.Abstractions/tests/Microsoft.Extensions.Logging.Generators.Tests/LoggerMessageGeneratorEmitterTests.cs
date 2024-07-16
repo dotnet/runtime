@@ -204,6 +204,26 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
         }
 
         [Fact]
+        public async Task TestBaseline_TestWithLoggerFromPrimaryConstructorWithParameterUsedInMethod_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
+{
+    internal partial class TestWithLoggerFromPrimaryConstructorWithParameterUsedInMethod(ILogger logger)
+    {
+        [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M0"")]
+        public partial void M0();
+
+        private void M1()
+        {
+            logger.LogInformation(""M1"");
+        }
+    }
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithLoggerFromPrimaryConstructorWithParameterUsedInMethod.generated.txt", testSourceCode);
+        }
+
+        [Fact]
         public async Task TestBaseline_TestWithLoggerInFieldAndFromPrimaryConstructor_UsesField()
         {
             string testSourceCode = @"

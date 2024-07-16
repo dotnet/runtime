@@ -674,6 +674,9 @@
   <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
     <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
   </data>
+  <data name="OnDeserializingCallbacksNotSupported" xml:space="preserve">
+    <value>The type '{0}' does not support setting OnDeserializing callbacks.</value>
+  </data>
   <data name="CreateObjectConverterNotCompatible" xml:space="preserve">
     <value>The converter for type '{0}' does not support setting 'CreateObject' delegates.</value>
   </data>

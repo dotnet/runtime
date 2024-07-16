@@ -29,7 +29,8 @@ namespace System.Net.Http.Metrics
             _requestsDuration = meter.CreateHistogram<double>(
                 "http.client.request.duration",
                 unit: "s",
-                description: "Duration of HTTP client requests.");
+                description: "Duration of HTTP client requests.",
+                advice: DiagnosticsHelper.ShortHistogramAdvice);
         }
 
         internal override ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
@@ -109,7 +110,7 @@ namespace System.Net.Http.Metrics
 
             if (response is not null)
             {
-                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedStatusCode((int)response.StatusCode));
+                tags.Add("http.response.status_code", DiagnosticsHelper.GetBoxedInt32((int)response.StatusCode));
                 tags.Add("network.protocol.version", DiagnosticsHelper.GetProtocolVersionString(response.Version));
             }
 
@@ -139,11 +140,7 @@ namespace System.Net.Http.Metrics
             {
                 tags.Add("url.scheme", requestUri.Scheme);
                 tags.Add("server.address", requestUri.Host);
-                // Add port tag when not the default value for the current scheme
-                if (!requestUri.IsDefaultPort)
-                {
-                    tags.Add("server.port", requestUri.Port);
-                }
+                tags.Add("server.port", DiagnosticsHelper.GetBoxedInt32(requestUri.Port));
             }
             tags.Add(DiagnosticsHelper.GetMethodTag(request.Method, out _));
 

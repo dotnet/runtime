@@ -26,6 +26,12 @@ namespace System.Globalization.Tests
             yield return new object[] { "m" };
         }
 
+        public static IEnumerable<object[]> MonthDayPattern_Get_TestData_ICU()
+        {
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, "MMMM d" };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat,  "d MMMM" };
+        }
+
         public static IEnumerable<object[]> MonthDayPattern_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
@@ -149,7 +155,6 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-ZA").DateTimeFormat, "d MMMM" };
             yield return new object[] { new CultureInfo("en-ZM").DateTimeFormat, "d MMMM" };
             yield return new object[] { new CultureInfo("en-ZW").DateTimeFormat, "d MMMM" };
-            yield return new object[] { new CultureInfo("en-US").DateTimeFormat, "MMMM d" };
             yield return new object[] { new CultureInfo("es-419").DateTimeFormat, "d de MMMM" }; // d 'de' MMMM
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, "d de MMMM" }; // d 'de' MMMM
             yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, "d de MMMM" }; // d 'de' MMMM
@@ -215,6 +220,13 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, "M月d日" };
             yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, "M月d日" };
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, "M月d日" };
+        }
+        
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(MonthDayPattern_Get_TestData_ICU))]
+        public void MonthDayPattern_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string expected)
+        {
+            Assert.Equal(expected, format.MonthDayPattern);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
