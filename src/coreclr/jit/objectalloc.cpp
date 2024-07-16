@@ -408,7 +408,7 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     allocType = OAT_NEWOBJ;
                 }
-                else if (data->IsCall() && data->AsCall()->IsHelperCall(comp, CORINFO_HELP_NEWARR_1_VC) &&
+                else if (data->IsHelperCall(comp, CORINFO_HELP_NEWARR_1_VC) &&
                          data->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
                 {
                     allocType = OAT_NEWARR;
