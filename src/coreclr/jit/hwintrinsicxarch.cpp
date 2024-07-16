@@ -1423,10 +1423,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // We need to ensure we import even if SSE2 is disabled
                 assert(intrinsic == NI_SSE_AndNot);
 
-                op3     = gtNewAllBitsSetConNode(retType);
+                op3 = gtNewAllBitsSetConNode(retType);
 
-                op1     = gtNewSimdHWIntrinsicNode(retType, op1, op3, NI_SSE_Xor, simdBaseJitType, simdSize);
-                op1     = gtFoldExpr(op1);
+                op1 = gtNewSimdHWIntrinsicNode(retType, op1, op3, NI_SSE_Xor, simdBaseJitType, simdSize);
+                op1 = gtFoldExpr(op1);
 
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, NI_SSE_And, simdBaseJitType, simdSize);
             }
