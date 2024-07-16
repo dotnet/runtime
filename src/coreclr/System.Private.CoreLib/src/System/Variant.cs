@@ -352,7 +352,11 @@ namespace System
                     case VarEnum.VT_RECORD:
                         MarshalHelperConvertObjectToVariant(pValue, out v);
                         if (v.VarType != VarEnum.VT_RECORD)
+                        {
+                            // v can hold disposable content like BSTR
+                            v.Dispose();
                             throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
+                        }
                         break;
 
                     case VarEnum.VT_BSTR: /*VT_BSTR*/
