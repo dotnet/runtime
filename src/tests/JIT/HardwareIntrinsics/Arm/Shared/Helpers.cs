@@ -7081,21 +7081,75 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float RoundToZero(float op1) => MathF.Round(op1, MidpointRounding.ToZero);
 
-        public static int ConvertDoubleToInt32(double op1) => (int)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        private static int ConvertToInt32(double op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
 
-        public static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        public static int[] ConvertToInt32(double[] op1)
+        {
+            int[] result = new int[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                int index = i * 2;
+                result[index] = ConvertToInt32(op1[i]);
+                if (op1[i] < 0)
+                {
+                    // Sign-extend next lane with all ones
+                    result[index + 1] = -1;
+                }
+            }
+
+            return result;
+        }
+
+        public static int[] ConvertToInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToInt32(num));
+
+        private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
         
-        public static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        public static long[] ConvertToInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToInt64(num));
 
-        public static long ConvertFloatToInt64(float op1) => (long)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        public static long[] ConvertToInt64(float[] op1)
+        {
+            long[] result = new long[op1.Length / 2];
 
-        public static uint ConvertDoubleToUInt32(double op1) => (uint)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = ConvertToInt64(op1[i * 2]);
+            }
 
-        public static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+            return result;
+        }
 
-        public static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+        private static uint ConvertToUInt32(double op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
-        public static ulong ConvertFloatToUInt64(float op1) => (ulong)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+        public static uint[] ConvertToUInt32(double[] op1)
+        {
+            uint[] result = new uint[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = ConvertToUInt32(op1[i]);
+            }
+
+            return result;
+        }
+
+        public static uint[] ConvertToUInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToUInt32(num));
+
+        private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+        public static ulong[] ConvertToUInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToUInt64(num));
+
+        public static ulong[] ConvertToUInt64(float[] op1)
+        {
+            ulong[] result = new ulong[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = ConvertToUInt64(op1[i * 2]);
+            }
+
+            return result;
+        }
 
         public static Int32 ConvertToInt32RoundAwayFromZero(float op1) => ConvertToInt32(RoundAwayFromZero(op1));
 
@@ -7143,15 +7197,95 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float ConvertToSingle(double op1) => (float)op1;
 
+        public static float[] ConvertToSingle(double[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
+        public static float[] ConvertToSingle(int[] op1) => Array.ConvertAll(op1, num => (float)num);
+
+        public static float[] ConvertToSingle(long[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
+        public static float[] ConvertToSingle(uint[] op1) => Array.ConvertAll(op1, num => (float)num);
+
+        public static float[] ConvertToSingle(ulong[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
         public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
 
         public static double ConvertToDouble(float op1) => op1;
 
-        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
-
         public static double ConvertToDouble(long op1) => op1;
 
         public static double ConvertToDouble(ulong op1) => op1;
+
+        public static double[] ConvertToDouble(float[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(int[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(long[] op1) => Array.ConvertAll(op1, num => (double)num);
+
+        public static double[] ConvertToDouble(uint[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(ulong[] op1) => Array.ConvertAll(op1, num => (double)num);
+
+        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
 
         public static short ReverseElement8(short val)
         {

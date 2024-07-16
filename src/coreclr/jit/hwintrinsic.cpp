@@ -2088,9 +2088,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
                 switch (intrinsic)
                 {
+                    case NI_Sve_ConvertToDouble:
                     case NI_Sve_ConvertToInt32:
-                    case NI_Sve_ConvertToUInt32:
                     case NI_Sve_ConvertToInt64:
+                    case NI_Sve_ConvertToSingle:
+                    case NI_Sve_ConvertToUInt32:
                     case NI_Sve_ConvertToUInt64:
                         // Save the base type of return SIMD. It is used to contain this intrinsic inside
                         // ConditionalSelect.
