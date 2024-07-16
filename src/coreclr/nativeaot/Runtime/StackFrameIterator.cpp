@@ -518,10 +518,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PAL_LIMITED_CO
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pCtx, R15);
 
+#if defined(TARGET_WINDOWS)
     //
     // SSP, we only need the value
     //
     m_RegDisplay.SSP  = pCtx->SSP;
+#endif
 
     //
     // preserved xmm regs
@@ -639,10 +641,12 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, NATIVE_CONTEXT* pC
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_REG(pCtx, R15);
 
+#if defined(TARGET_WINDOWS)
     //
     // SSP, not needed. Unwind from native context is never for EH.
     //
     m_RegDisplay.SSP  = 0;
+#endif
 
     //
     // scratch regs
@@ -1016,10 +1020,12 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
     m_RegDisplay.pR14 = SP++;
     m_RegDisplay.pR15 = SP++;
 
+#if defined(TARGET_WINDOWS)
     if (m_RegDisplay.SSP)
     {
         m_RegDisplay.SSP += 8;
     }
+#endif
 
 #elif defined(TARGET_X86)
     SP = (PTR_uintptr_t)(m_RegDisplay.SP + 0x4);   // skip the saved assembly-routine-EBP
@@ -1452,10 +1458,12 @@ void StackFrameIterator::UnwindThrowSiteThunk()
     m_RegDisplay.pR14 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R14);
     m_RegDisplay.pR15 = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R15);
 
+#if defined(TARGET_WINDOWS)
     if (m_RegDisplay.SSP)
     {
         m_RegDisplay.SSP += 8;
     }
+#endif
 
 #elif defined(TARGET_ARM)
     m_RegDisplay.pR4  = (PTR_uintptr_t)PTR_TO_MEMBER_TADDR(PAL_LIMITED_CONTEXT, pContext, R4);
