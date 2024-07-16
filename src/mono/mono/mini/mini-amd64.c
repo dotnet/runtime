@@ -8771,7 +8771,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 					amd64_movsd_reg_membase (code, ainfo->pair_regs [i], ins->inst_basereg, ins->inst_offset + ainfo->offsets [i]);
 					break;
 				default:
-					NOT_IMPLEMENTED;
+					g_assert_not_reached ();
 				}
 			}
 		}
