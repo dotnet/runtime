@@ -13,7 +13,7 @@ public abstract class JaggedArrayTests<T> : SerializationTest<T> where T : ISeri
         Stream stream = Serialize(jaggedArray);
         object deserialized = Deserialize(stream);
 
-        deserialized.Should().BeEquivalentTo(jaggedArray);
+        Assert.Equal(jaggedArray, deserialized);
     }
 
     [Fact]
@@ -23,7 +23,7 @@ public abstract class JaggedArrayTests<T> : SerializationTest<T> where T : ISeri
 
         Stream stream = Serialize(jaggedArray);
         object deserialized = Deserialize(stream);
-        deserialized.Should().BeEquivalentTo(jaggedArray);
+        Assert.Equal(jaggedArray, deserialized);
     }
 
     [Fact]
@@ -32,6 +32,6 @@ public abstract class JaggedArrayTests<T> : SerializationTest<T> where T : ISeri
         int[][] jaggedEmpty = new int[1][];
 
         object deserialized = Deserialize(Serialize(jaggedEmpty));
-        deserialized.Should().BeEquivalentTo(jaggedEmpty);
+        Assert.Equal(jaggedEmpty, deserialized);
     }
 }

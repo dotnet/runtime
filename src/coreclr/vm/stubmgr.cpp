@@ -1009,13 +1009,6 @@ BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
 
     MethodDesc* pMD = NULL;
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::IsCompactEntryPointAtAddress(stubStartAddress))
-    {
-        pMD = MethodDescChunk::GetMethodDescFromCompactEntryPoint(stubStartAddress);
-    }
-    else
-#endif // HAS_COMPACT_ENTRYPOINTS
     {
         // When the target slot points to the fixup part of the fixup precode, we need to compensate
         // for that to get the actual stub address
@@ -1422,7 +1415,7 @@ static BOOL TraceManagedThunk(
 
 #else
     PORTABILITY_ASSERT("TraceManagedThunk");
-    destAddr = NULL;
+    destAddr = (PCODE)NULL;
 #endif
 
     LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: ppbDest: %p\n", destAddr));
@@ -1810,14 +1803,12 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
 
     PCODE traceDestination = (PCODE)NULL;
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
         traceDestination = GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper);
     }
     else
-#endif // FEATURE_MULTICASTSTUB_AS_IL
     {
         // This call is going out to unmanaged code, either through pinvoke or COM interop.
         traceDestination = stubStartAddress;
@@ -1872,13 +1863,11 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (stubIP == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper))
     {
         stubIP = (PCODE)*pRetAddr;
         *pRetAddr = (BYTE*)StubManagerHelpers::GetRetAddrFromMulticastILStubFrame(pContext);
     }
-#endif
 
     DynamicMethodDesc *pStubMD = Entry2MethodDesc(stubIP, NULL)->AsDynamicMethodDesc();
     TADDR arg = StubManagerHelpers::GetHiddenArg(pContext);
@@ -1889,7 +1878,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
     PCODE target = (PCODE)NULL;
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (pStubMD->IsMulticastStub())
     {
         _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper));
@@ -1913,9 +1901,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
             return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
         }
     }
-    else
-#endif // FEATURE_MULTICASTSTUB_AS_IL
-    if (pStubMD->IsReverseStub())
+    else if (pStubMD->IsReverseStub())
     {
         if (pStubMD->IsStatic())
         {

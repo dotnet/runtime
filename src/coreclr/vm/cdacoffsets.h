@@ -8,8 +8,8 @@
 //
 // If the offset of some field F in class C must be provided to cDAC, but the field is private, the
 // class C should declare cdac_offsets<T> as a friend:
-// 
-//     friend template<typename T> struct cdac_offsets;
+//
+//     template<typename T> friend struct ::cdac_offsets;
 //
 // and provide a specialization cdac_offsets<C> with a constexpr size_t member providing the offset:
 //

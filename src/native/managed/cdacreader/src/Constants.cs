@@ -16,6 +16,8 @@ internal static class Constants
         internal const string FeatureEHFunclets = nameof(FeatureEHFunclets);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 
+        internal const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
+
         internal const string StressLogEnabled = nameof(StressLogEnabled);
         internal const string StressLog = nameof(StressLog);
         internal const string StressLogModuleTable = nameof(StressLogModuleTable);

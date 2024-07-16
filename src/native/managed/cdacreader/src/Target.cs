@@ -12,7 +12,7 @@ using Microsoft.Diagnostics.DataContractReader.Data;
 
 namespace Microsoft.Diagnostics.DataContractReader;
 
-public readonly struct TargetPointer
+public readonly struct TargetPointer : IEquatable<TargetPointer>
 {
     public static TargetPointer Null = new(0);
 
@@ -21,6 +21,14 @@ public readonly struct TargetPointer
 
     public static implicit operator ulong(TargetPointer p) => p.Value;
     public static implicit operator TargetPointer(ulong v) => new TargetPointer(v);
+
+    public static bool operator ==(TargetPointer left, TargetPointer right) => left.Value == right.Value;
+    public static bool operator !=(TargetPointer left, TargetPointer right) => left.Value != right.Value;
+
+    public override bool Equals(object? obj) => obj is TargetPointer pointer && Equals(pointer);
+    public bool Equals(TargetPointer other) => Value == other.Value;
+
+    public override int GetHashCode() => Value.GetHashCode();
 }
 
 public readonly struct TargetNUInt
@@ -336,6 +344,16 @@ public sealed unsafe class Target
         return false;
     }
 
+    public static bool IsAligned(ulong value, int alignment)
+        => (value & (ulong)(alignment - 1)) == 0;
+
+    public bool IsAlignedToPointerSize(uint value)
+        => IsAligned(value, _config.PointerSize);
+    public bool IsAlignedToPointerSize(ulong value)
+        => IsAligned(value, _config.PointerSize);
+    public bool IsAlignedToPointerSize(TargetPointer pointer)
+        => IsAligned(pointer.Value, _config.PointerSize);
+
     public T ReadGlobal<T>(string name) where T : struct, INumber<T>
         => ReadGlobal<T>(name, out _);
 
@@ -411,7 +429,7 @@ public sealed unsafe class Target
             return result!;
         }
 
-        private bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
+        public bool TryGet<T>(ulong address, [NotNullWhen(true)] out T? data)
         {
             data = default;
             if (!_readDataByAddress.TryGetValue((address, typeof(T)), out object? dataObj))

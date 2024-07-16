@@ -991,15 +991,6 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-                    case TYP_MASK:
-                    {
-                        simdmask_t constValue;
-                        memcpy(&constValue, &op->AsVecCon()->gtSimdVal, sizeof(simdmask_t));
-                        return OperandDesc(emit->emitSimdMaskConst(constValue));
-                    }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
                     default:
@@ -1007,6 +998,17 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                         unreached();
                     }
                 }
+            }
+
+            case GT_CNS_MSK:
+            {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+                simdmask_t constValue;
+                memcpy(&constValue, &op->AsMskCon()->gtSimdMaskVal, sizeof(simdmask_t));
+                return OperandDesc(emit->emitSimdMaskConst(constValue));
+#else
+                unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
             }
 
             default:
@@ -1721,7 +1723,6 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
 #if defined(TARGET_XARCH)
         return INS_kmovq_msk;
 #elif defined(TARGET_ARM64)
-        unreached(); // TODO-SVE: This needs testing
         return INS_sve_mov;
 #endif
     }
@@ -2039,13 +2040,13 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
             return ins_Copy(dstType);
         }
 
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_XARCH)
         if (genIsValidMaskReg(srcReg))
         {
             // mask to int
             return INS_kmovq_gpr;
         }
-#endif // TARGET_XARCH && FEATURE_SIMD
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_XARCH
 
         // float to int
         assert(genIsValidFloatReg(srcReg));
@@ -2085,7 +2086,6 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
 #if defined(TARGET_XARCH)
         return INS_kmovq_gpr;
 #elif defined(TARGET_ARM64)
-        unreached(); // TODO-SVE: This needs testing
         return INS_sve_mov;
 #endif
     }
