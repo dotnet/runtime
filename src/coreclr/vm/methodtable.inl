@@ -415,6 +415,10 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     CONTRACTL_END;
 
     PCODE pCode = GetRestoredSlot(slot);
+    if (pCode == (PCODE)NULL)
+    {
+        return nullptr;
+    }
 
     // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
     // for an interface virtual, since their slots usually point to stub.
