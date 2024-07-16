@@ -76,6 +76,7 @@ public static class Program
         var valueRanges = new CliOption<IntegerRange[]>("-values", "-v")
         {
             Arity = ArgumentArity.OneOrMore,
+            DefaultValueFactory = argument => [],
             CustomParser = argument =>
             {
                 IntegerRange[] values = new IntegerRange[argument.Tokens.Count];
@@ -148,6 +149,7 @@ public static class Program
         var levelFilter = new CliOption<IReadOnlyList<IntegerRange>>("--level", "-l")
         {
             Arity = ArgumentArity.OneOrMore,
+            DefaultValueFactory = argument => [],
             CustomParser = argument =>
             {
                 List<IntegerRange> levels = [];
@@ -207,15 +209,14 @@ public static class Program
             HelpName = "gc index or range",
         };
 
-        var includeFacilityOption = new CliOption<ulong[]>("--include", "-i")
+        var ignoreFacilityOption = new CliOption<ulong?>("--ignore", "-i")
         {
-            Arity = ArgumentArity.OneOrMore,
             CustomParser = argument =>
             {
-                return argument.Tokens.Select(token => ulong.Parse(token.Value, NumberStyles.HexNumber)).ToArray();
+                return ulong.Parse(argument.Tokens.Single().Value, NumberStyles.HexNumber);
             },
-            Description = "Include messages only from these from log facilities",
-            HelpName = "hex facility code",
+            Description = "Ignore messages only from these from log facilities",
+            HelpName = "facility bitmap in hex",
         };
 
         var earliestOption = new CliOption<ThreadFilter>("--earliest", "-e")
@@ -263,7 +264,7 @@ public static class Program
             levelFilter,
             prefixOption,
             gcIndex,
-            includeFacilityOption,
+            ignoreFacilityOption,
             earliestOption,
             threadFilter,
             hexThreadId,
@@ -277,13 +278,13 @@ public static class Program
             Options options = new(
                 args.GetValue(inputFile)!,
                 args.GetValue(outputFile),
-                args.GetValue(valueRanges),
+                args.GetValue(valueRanges)!,
                 args.GetValue(timeRanges),
                 args.GetValue(allMessagesOption),
                 !args.GetValue(defaultMessagesOption), // The option specifies suppressing default messages
-                args.GetValue(levelFilter),
+                args.GetValue(levelFilter)!,
                 args.GetValue(gcIndex),
-                args.GetValue(includeFacilityOption),
+                args.GetValue(ignoreFacilityOption),
                 args.GetValue(earliestOption),
                 PrintHexThreadIds: args.GetValue(hexThreadId) ?? threads is { HasAnyFilter: false },
                 threads ?? new ThreadFilter([]),
@@ -316,8 +317,11 @@ public static class Program
             bool runAgain = false;
             do
             {
-                var analyzer = new StressLogAnalyzer(target, stressLogContract, options);
+                using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
+                var analyzer = new StressLogAnalyzer(target, stressLogContract, options, outputFile ?? Console.Out);
                 await analyzer.AnalyzeLogsAsync(logs, token).ConfigureAwait(false);
+
+                // TODO: Print footer.
 
                 Console.Write("'q' to quit, 'r' to run again\n>");
 
