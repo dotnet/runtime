@@ -103,10 +103,5 @@ namespace Microsoft.Extensions.Http
 
         internal bool SuppressDefaultLogging { get; set; }
         internal List<Action<HttpMessageHandlerBuilder>> LoggingBuilderActions { get; } = new List<Action<HttpMessageHandlerBuilder>>();
-
-        internal ServiceLifetime? AnyKeyLifetime { get; set; }
-        internal bool DropAnyKey { get; set; }
-        internal ServiceLifetime? KeyedLifetime { get; set; }
-        internal bool DropKeyed { get; set; }
     }
 }

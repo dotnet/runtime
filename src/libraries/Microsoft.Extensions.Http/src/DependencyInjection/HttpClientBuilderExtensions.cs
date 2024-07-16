@@ -648,75 +648,53 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder AsKeyed(this IHttpClientBuilder builder, ServiceLifetime lifetime)
         {
             ThrowHelper.ThrowIfNull(builder);
-            object serviceKey = builder.Name ?? KeyedService.AnyKey;
 
-            builder.Services.Add(ServiceDescriptor.DescribeKeyed(typeof(HttpClient), serviceKey, CreateKeyedClient, lifetime));
-            builder.Services.Add(ServiceDescriptor.DescribeKeyed(typeof(HttpMessageHandler), serviceKey, CreateKeyedHandler, lifetime));
+            string? name = builder.Name;
+            IServiceCollection services = builder.Services;
+            HttpClientMappingRegistry registry = services.GetMappingRegistry();
 
-            if (builder.Name is null)
+            if (name == null)
             {
-                builder.Services.Configure<HttpClientFactoryOptions>(null, options =>
-                {
-                    options.AnyKeyLifetime = lifetime;
-                    options.DropAnyKey = false;
-                });
+                registry.DefaultKeyedLifetime?.RemoveRegistration(services);
+
+                registry.DefaultKeyedLifetime = new HttpClientKeyedLifetime(lifetime);
+                registry.DefaultKeyedLifetime.AddRegistration(services);
             }
             else
             {
-                builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+                if (registry.KeyedLifetimeMap.TryGetValue(name, out HttpClientKeyedLifetime? clientLifetime))
                 {
-                    options.KeyedLifetime = lifetime;
-                    options.DropKeyed = false;
-                });
+                    clientLifetime.RemoveRegistration(services);
+                }
+
+                clientLifetime = new HttpClientKeyedLifetime(name, lifetime);
+                registry.KeyedLifetimeMap[name] = clientLifetime;
+                clientLifetime.AddRegistration(services);
             }
 
             return builder;
-        }
-
-        private static HttpClient CreateKeyedClient(IServiceProvider serviceProvider, object? key)
-        {
-            if (key is not string name || IsKeyedLifetimeDisabled(serviceProvider, name))
-            {
-                return null!;
-            }
-            return serviceProvider.GetRequiredService<IHttpClientFactory>().CreateClient(name);
-        }
-
-        private static HttpMessageHandler CreateKeyedHandler(IServiceProvider serviceProvider, object? key)
-        {
-            if (key is not string name || IsKeyedLifetimeDisabled(serviceProvider, name))
-            {
-                return null!;
-            }
-            return serviceProvider.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler(name);
-        }
-
-        private static bool IsKeyedLifetimeDisabled(IServiceProvider serviceProvider, string name)
-        {
-            HttpClientFactoryOptions options = serviceProvider.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>().Get(name);
-
-            return options.DropKeyed || (options.KeyedLifetime == null && options.DropAnyKey);
         }
 
         public static IHttpClientBuilder DropKeyed(this IHttpClientBuilder builder)
         {
             ThrowHelper.ThrowIfNull(builder);
 
-            if (builder.Name is null)
+            string? name = builder.Name;
+            IServiceCollection services = builder.Services;
+            HttpClientMappingRegistry registry = services.GetMappingRegistry();
+
+            if (name == null)
             {
-                builder.Services.Configure<HttpClientFactoryOptions>(null, options =>
-                {
-                    options.AnyKeyLifetime = null;
-                    options.DropAnyKey = true;
-                });
+                registry.DefaultKeyedLifetime?.RemoveRegistration(services);
+                registry.DefaultKeyedLifetime = HttpClientKeyedLifetime.Disabled;
             }
             else
             {
-                builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+                if (registry.KeyedLifetimeMap.TryGetValue(name, out HttpClientKeyedLifetime? clientLifetime))
                 {
-                    options.KeyedLifetime = null;
-                    options.DropKeyed = true;
-                });
+                    clientLifetime.RemoveRegistration(services);
+                }
+                registry.KeyedLifetimeMap[name] = HttpClientKeyedLifetime.Disabled;
             }
 
             return builder;
@@ -730,8 +708,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new InvalidOperationException($"{nameof(HttpClientBuilderExtensions.AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
             }
 
-            var registry = (HttpClientMappingRegistry?)builder.Services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
-            Debug.Assert(registry != null);
+            HttpClientMappingRegistry registry = GetMappingRegistry(builder.Services);
 
             // Check for same name registered to two types. This won't work because we rely on named options for the configuration.
             if (registry.NamedClientRegistrations.TryGetValue(name, out Type? otherType) &&
@@ -753,6 +730,13 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 registry.NamedClientRegistrations[name] = type;
             }
+        }
+
+        internal static HttpClientMappingRegistry GetMappingRegistry(this IServiceCollection services)
+        {
+            var registry = (HttpClientMappingRegistry?)services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
+            Debug.Assert(registry != null);
+            return registry;
         }
     }
 }
