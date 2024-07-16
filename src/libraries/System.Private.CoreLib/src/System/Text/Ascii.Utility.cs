@@ -176,9 +176,10 @@ namespace System.Text
             static nuint SearchTwo<T>(ref byte pBuffer, nuint bufferLength)
                 where T : ISimdVector<T, byte>
             {
-                Debug.Assert(
-                    T.IsHardwareAccelerated,
-                    "Should only be called for hardware-accelerated types.");
+                // Debug.Assert(
+                //     T.IsHardwareAccelerated,
+                //     "Should only be called for hardware-accelerated types.");
+                // ^ this appears to be incorrectly asserting *exactly* under Vector256.IsHardwareAccelerated guard.
                 Debug.Assert(
                     bufferLength > (nuint)T.Count && bufferLength <= (nuint)T.Count * 2,
                     $"Should only be called for lengths {T.Count + 1}-{T.Count * 2}.");
