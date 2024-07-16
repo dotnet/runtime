@@ -463,7 +463,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                                            expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
                                            expectFingerprintForThisFile: expectFingerprint))
                 {
-                    return Regex.Match($"{prefix}{s_dotnetVersionHashRegex}{extension}", item).Success;
+                    return Regex.Match(item, $"{prefix}{s_dotnetVersionHashRegex}{extension}").Success;
                 }
                 else
                 {
