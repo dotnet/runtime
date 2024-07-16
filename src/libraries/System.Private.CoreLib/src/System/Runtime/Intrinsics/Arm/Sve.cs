@@ -377,6 +377,26 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<ulong> AddAcross(Vector<ulong> value) => AddAcross(value);
 
+        ///  Complex add with rotate
+
+        /// <summary>
+        /// svfloat64_t svcadd[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D, #imm_rotation
+        /// svfloat64_t svcadd[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.D, Pg/M, Ztied1.D, Zop2.D, #imm_rotation
+        /// svfloat64_t svcadd[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<double> AddRotateComplex(Vector<double> left, Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddRotateComplex(left, right, rotation);
+
+        /// <summary>
+        /// svfloat32_t svcadd[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S, #imm_rotation
+        /// svfloat32_t svcadd[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        ///   FCADD Ztied1.S, Pg/M, Ztied1.S, Zop2.S, #imm_rotation
+        /// svfloat32_t svcadd[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<float> AddRotateComplex(Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rotation) => AddRotateComplex(left, right, rotation);
+
         ///  AddSaturate : Saturating add
 
         /// <summary>
@@ -1917,6 +1937,54 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<double> ConditionalSelect(Vector<double> mask, Vector<double> left, Vector<double> right) => ConditionalSelect(mask, left, right);
 
 
+        ///  ConvertToDouble : Floating-point convert
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_s32]_m(svfloat64_t inactive, svbool_t pg, svint32_t op)
+        ///   SCVTF Ztied.D, Pg/M, Zop.S
+        /// svfloat64_t svcvt_f64[_s32]_x(svbool_t pg, svint32_t op)
+        ///   SCVTF Ztied.D, Pg/M, Ztied.S
+        /// svfloat64_t svcvt_f64[_s32]_z(svbool_t pg, svint32_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<int> value) => ConvertToDouble(value);
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_s64]_m(svfloat64_t inactive, svbool_t pg, svint64_t op)
+        ///   SCVTF Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svcvt_f64[_s64]_x(svbool_t pg, svint64_t op)
+        ///   SCVTF Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svcvt_f64[_s64]_z(svbool_t pg, svint64_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<long> value) => ConvertToDouble(value);
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_f32]_m(svfloat64_t inactive, svbool_t pg, svfloat32_t op)
+        ///   FCVT Ztied.D, Pg/M, Zop.S
+        /// svfloat64_t svcvt_f64[_f32]_x(svbool_t pg, svfloat32_t op)
+        ///   FCVT Ztied.D, Pg/M, Ztied.S
+        /// svfloat64_t svcvt_f64[_f32]_z(svbool_t pg, svfloat32_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<float> value) => ConvertToDouble(value);
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_u32]_m(svfloat64_t inactive, svbool_t pg, svuint32_t op)
+        ///   UCVTF Ztied.D, Pg/M, Zop.S
+        /// svfloat64_t svcvt_f64[_u32]_x(svbool_t pg, svuint32_t op)
+        ///   UCVTF Ztied.D, Pg/M, Ztied.S
+        /// svfloat64_t svcvt_f64[_u32]_z(svbool_t pg, svuint32_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<uint> value) => ConvertToDouble(value);
+
+        /// <summary>
+        /// svfloat64_t svcvt_f64[_u64]_m(svfloat64_t inactive, svbool_t pg, svuint64_t op)
+        ///   UCVTF Ztied.D, Pg/M, Zop.D
+        /// svfloat64_t svcvt_f64[_u64]_x(svbool_t pg, svuint64_t op)
+        ///   UCVTF Ztied.D, Pg/M, Ztied.D
+        /// svfloat64_t svcvt_f64[_u64]_z(svbool_t pg, svuint64_t op)
+        /// </summary>
+        public static unsafe Vector<double> ConvertToDouble(Vector<ulong> value) => ConvertToDouble(value);
+
+
         ///  ConvertToInt32 : Floating-point convert
 
         /// <summary>
@@ -1957,6 +2025,54 @@ namespace System.Runtime.Intrinsics.Arm
         /// svint64_t svcvt_s64[_f32]_z(svbool_t pg, svfloat32_t op)
         /// </summary>
         public static unsafe Vector<long> ConvertToInt64(Vector<float> value) => ConvertToInt64(value);
+
+
+        ///  ConvertToSingle : Floating-point convert
+
+        /// <summary>
+        /// svfloat32_t svcvt_f32[_f64]_m(svfloat32_t inactive, svbool_t pg, svfloat64_t op)
+        ///   FCVT Ztied.S, Pg/M, Zop.D
+        /// svfloat32_t svcvt_f32[_f64]_x(svbool_t pg, svfloat64_t op)
+        ///   FCVT Ztied.S, Pg/M, Ztied.D
+        /// svfloat32_t svcvt_f32[_f64]_z(svbool_t pg, svfloat64_t op)
+        /// </summary>
+        public static unsafe Vector<float> ConvertToSingle(Vector<double> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// svfloat32_t svcvt_f32[_s32]_m(svfloat32_t inactive, svbool_t pg, svint32_t op)
+        ///   SCVTF Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svcvt_f32[_s32]_x(svbool_t pg, svint32_t op)
+        ///   SCVTF Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svcvt_f32[_s32]_z(svbool_t pg, svint32_t op)
+        /// </summary>
+        public static unsafe Vector<float> ConvertToSingle(Vector<int> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// svfloat32_t svcvt_f32[_s64]_m(svfloat32_t inactive, svbool_t pg, svint64_t op)
+        ///   SCVTF Ztied.S, Pg/M, Zop.D
+        /// svfloat32_t svcvt_f32[_s64]_x(svbool_t pg, svint64_t op)
+        ///   SCVTF Ztied.S, Pg/M, Ztied.D
+        /// svfloat32_t svcvt_f32[_s64]_z(svbool_t pg, svint64_t op)
+        /// </summary>
+        public static unsafe Vector<float> ConvertToSingle(Vector<long> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// svfloat32_t svcvt_f32[_u32]_m(svfloat32_t inactive, svbool_t pg, svuint32_t op)
+        ///   UCVTF Ztied.S, Pg/M, Zop.S
+        /// svfloat32_t svcvt_f32[_u32]_x(svbool_t pg, svuint32_t op)
+        ///   UCVTF Ztied.S, Pg/M, Ztied.S
+        /// svfloat32_t svcvt_f32[_u32]_z(svbool_t pg, svuint32_t op)
+        /// </summary>
+        public static unsafe Vector<float> ConvertToSingle(Vector<uint> value) => ConvertToSingle(value);
+
+        /// <summary>
+        /// svfloat32_t svcvt_f32[_u64]_m(svfloat32_t inactive, svbool_t pg, svuint64_t op)
+        ///   UCVTF Ztied.S, Pg/M, Zop.D
+        /// svfloat32_t svcvt_f32[_u64]_x(svbool_t pg, svuint64_t op)
+        ///   UCVTF Ztied.S, Pg/M, Ztied.D
+        /// svfloat32_t svcvt_f32[_u64]_z(svbool_t pg, svuint64_t op)
+        /// </summary>
+        public static unsafe Vector<float> ConvertToSingle(Vector<ulong> value) => ConvertToSingle(value);
 
 
         ///  ConvertToUInt32 : Floating-point convert
@@ -5772,6 +5888,26 @@ namespace System.Runtime.Intrinsics.Arm
         ///   MLA Ztied1.D, Pg/M, Zop2.D, Zop3.D
         /// </summary>
         public static unsafe Vector<ulong> MultiplyAdd(Vector<ulong> addend, Vector<ulong> left, Vector<ulong> right) => MultiplyAdd(addend, left, right);
+
+        ///  Complex multiply-add with rotate
+
+        /// <summary>
+        /// svfloat64_t svcmla[_f64]_m(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.D, Pg/M, Zop2.D, Zop3.D, #imm_rotation
+        /// svfloat64_t svcmla[_f64]_x(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.D, Pg/M, Zop2.D, Zop3.D, #imm_rotation
+        /// svfloat64_t svcmla[_f64]_z(svbool_t pg, svfloat64_t op1, svfloat64_t op2, svfloat64_t op3, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<double> MultiplyAddRotateComplex(Vector<double> addend, Vector<double> left, Vector<double> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRotateComplex(addend, left, right, rotation);
+
+        /// <summary>
+        /// svfloat32_t svcmla[_f32]_m(svbool_t pg, svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.S, Pg/M, Zop2.S, Zop3.S, #imm_rotation
+        /// svfloat32_t svcmla[_f32]_x(svbool_t pg, svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.S, Pg/M, Zop2.S, Zop3.S, #imm_rotation
+        /// svfloat32_t svcmla[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_rotation)
+        /// </summary>
+        public static unsafe Vector<float> MultiplyAddRotateComplex(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRotateComplex(addend, left, right, rotation);
 
         ///  MultiplyBySelectedScalar : Multiply
 

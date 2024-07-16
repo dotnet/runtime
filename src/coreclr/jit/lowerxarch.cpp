@@ -1418,7 +1418,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     bool       isScalar = false;
     genTreeOps oper     = node->GetOperForHWIntrinsicId(&isScalar);
 
-    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper))
+    if (GenTreeHWIntrinsic::OperIsBitwiseHWIntrinsic(oper) && !varTypeIsMask(node))
     {
         // These are the control bytes used for TernaryLogic
 
