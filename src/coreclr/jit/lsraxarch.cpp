@@ -152,6 +152,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
         {
             srcCount = 0;
 
