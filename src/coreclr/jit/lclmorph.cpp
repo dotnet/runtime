@@ -840,7 +840,7 @@ public:
                         ssize_t offset = node->AsIndexAddr()->gtElemOffset +
                                          node->gtGetOp2()->AsIntCon()->IconValue() * node->AsIndexAddr()->gtElemSize;
 
-                        if (offset < m_compiler->lvaLclSize(TopValue(1).LclNum()))
+                        if (offset < static_cast<ssize_t>(m_compiler->lvaLclSize(TopValue(1).LclNum())))
                         {
                             if (FitsIn<unsigned>(offset) &&
                                 TopValue(2).AddOffset(TopValue(1), static_cast<unsigned>(offset)))
