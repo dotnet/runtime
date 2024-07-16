@@ -112,10 +112,10 @@ LPVOID ProfileArgIterator::CopyStructFromRegisters(const ArgLocDesc* sir)
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(m_handle);
 
     struct { bool isFloat, is8; } fields[] = {
-        { sir->m_structFields & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE),
-          sir->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8 },
-        { sir->m_structFields & (STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO),
-          sir->m_structFields & STRUCT_SECOND_FIELD_SIZE_IS8 },
+        { (bool) (sir->m_structFields & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_ONLY_ONE)),
+          (bool) (sir->m_structFields & STRUCT_FIRST_FIELD_SIZE_IS8) },
+        { (bool) (sir->m_structFields & (STRUCT_FLOAT_FIELD_SECOND | STRUCT_FLOAT_FIELD_ONLY_TWO)),
+          (bool) (sir->m_structFields & STRUCT_SECOND_FIELD_SIZE_IS8) },
     };
     int fieldCount = (sir->m_structFields & STRUCT_FLOAT_FIELD_ONLY_ONE) ? 1 : 2;
     UINT64 bufferPosBegin = m_bufferPos;
@@ -191,11 +191,11 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
         }
     }
 
-    int argSize = m_argIterator.IsArgPassedByRef() ? sizeof(void*) : m_argIterator.GetArgSize();
+    int argSize = m_argIterator.IsArgPassedByRef() ? (int)sizeof(void*) : m_argIterator.GetArgSize();
     if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
     {
         int offset = argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters();
-        _ASSERTE(offset + argSize <= sizeof(pData->floatArgumentRegisters));
+        _ASSERTE(offset + argSize <= (int)sizeof(pData->floatArgumentRegisters));
         return (LPBYTE)&pData->floatArgumentRegisters + offset;
     }
 
@@ -204,7 +204,7 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     if (TransitionBlock::IsArgumentRegisterOffset(argOffset))
     {
         int offset = argOffset - TransitionBlock::GetOffsetOfArgumentRegisters();
-        if (offset + argSize > sizeof(pData->argumentRegisters))
+        if (offset + argSize > (int)sizeof(pData->argumentRegisters))
         {
             // Struct partially spilled on stack
             const int regIndex = NUM_ARGUMENT_REGISTERS - 1;  // first part of struct must be in last register

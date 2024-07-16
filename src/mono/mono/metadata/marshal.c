@@ -132,6 +132,7 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (unmanaged_callconv_attribute, "System.
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_error, "System.Runtime.InteropServices.Swift", "SwiftError")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_self, "System.Runtime.InteropServices.Swift", "SwiftSelf")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (swift_indirect_result, "System.Runtime.InteropServices.Swift", "SwiftIndirectResult")
 
 static gboolean type_is_blittable (MonoType *type);
 
@@ -3698,8 +3699,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 			MonoClass *swift_self = mono_class_try_get_swift_self_class ();
 			MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+			MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
 			MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
-			int swift_error_args = 0, swift_self_args = 0;
+			int swift_error_args = 0, swift_self_args = 0, swift_indirect_result_args = 0;
 			for (int i = 0; i < method->signature->param_count; ++i) {
 				MonoClass *param_klass = mono_class_from_mono_type_internal (method->signature->params [i]);
 				if (param_klass) {
@@ -3711,16 +3713,18 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						swift_error_args++;
 					} else if (param_klass == swift_self) {
 						swift_self_args++;
-					} else if (!m_class_is_blittable (param_klass) || m_class_is_simd_type (param_klass)) {
-						swift_error_args = swift_self_args = 0;
+					} else if (param_klass == swift_indirect_result) {
+						swift_indirect_result_args++;
+					} else if (!type_is_blittable (method->signature->params [i]) || m_class_is_simd_type (param_klass)) {
+						swift_error_args = swift_self_args = swift_indirect_result_args = 0;
 						mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Passing non-blittable types to a P/Invoke with the Swift calling convention is unsupported.");
 						break;
 					}
 				}
 			}
 
-			if (swift_self_args > 1 || swift_error_args > 1) {
-				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf or SwiftError arguments.");
+			if (swift_self_args > 1 || swift_error_args > 1 || swift_indirect_result_args > 1) {
+				mono_error_set_generic_error (emitted_error, "System", "InvalidProgramException", "Method signature contains multiple SwiftSelf, SwiftError, SwiftIndirectResult arguments.");
 			}
 
 			if (!is_ok (emitted_error)) {
@@ -4099,6 +4103,8 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	int i;
 	EmitMarshalContext m;
 	gboolean marshalling_enabled = FALSE;
+	int *swift_sig_to_csig_mp = NULL;
+	SwiftPhysicalLowering *swift_lowering = NULL;
 
 	g_assert (method != NULL);
 	error_init (error);
@@ -4179,6 +4185,50 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	csig->hasthis = 0;
 	csig->pinvoke = 1;
 
+	if (invoke)
+		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	else
+		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (method, csig);
+
+	if (mono_method_signature_has_ext_callconv (csig, MONO_EXT_CALLCONV_SWIFTCALL)) {
+		MonoClass *swift_self = mono_class_try_get_swift_self_class ();
+		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
+		MonoClass *swift_indirect_result = mono_class_try_get_swift_indirect_result_class ();
+		swift_lowering = g_newa (SwiftPhysicalLowering, sig->param_count);
+		swift_sig_to_csig_mp = g_newa (int, sig->param_count);
+		GArray *new_params = g_array_sized_new (FALSE, FALSE, sizeof (MonoType*), csig->param_count);
+		int new_param_count = 0;
+
+
+		for (i = 0; i < csig->param_count; i++) {
+			swift_lowering [i] = (SwiftPhysicalLowering){0};
+			swift_sig_to_csig_mp [i] = new_param_count;
+			MonoType *ptype = csig->params [i];
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
+
+			if (mono_type_is_struct (ptype) && !(klass == swift_self || klass == swift_error || klass == swift_indirect_result)) {
+				SwiftPhysicalLowering lowered_swift_struct = mono_marshal_get_swift_physical_lowering (ptype, FALSE);
+				swift_lowering [i] = lowered_swift_struct;
+				if (!lowered_swift_struct.by_reference) {
+					for (uint32_t idx_lowered = 0; idx_lowered < lowered_swift_struct.num_lowered_elements; idx_lowered++) {
+						g_array_append_val (new_params, lowered_swift_struct.lowered_elements [idx_lowered]);
+						new_param_count++;
+					}
+				} else {
+					ptype = mono_class_get_byref_type (klass);
+					g_array_append_val (new_params, ptype);
+					new_param_count++;
+				}
+			} else {
+				g_array_append_val (new_params, ptype);
+				new_param_count++;
+			}
+		}
+
+		csig = mono_metadata_signature_dup_new_params (NULL, m_method_get_mem_manager (method), csig, new_param_count, (MonoType**)new_params->data);
+		g_array_free (new_params, TRUE);
+	}
+
 	if (!marshalling_enabled)
 		csig->marshalling_disabled = 1;
 
@@ -4190,11 +4240,8 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 	m.csig = csig;
 	m.image = get_method_image (method);
 	m.runtime_marshalling_enabled = marshalling_enabled;
-
-	if (invoke)
-		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
-	else
-		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute(method, csig);
+	m.swift_lowering = swift_lowering;
+	m.swift_sig_to_csig_mp = swift_sig_to_csig_mp;
 
 	/* The attribute is only available in Net 2.0 */
 	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
@@ -4270,10 +4317,10 @@ marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass, Mono
 			info->d.native_to_managed.klass = delegate_klass;
 
 			res = mono_mb_create_and_cache_full (cache, method,
-												 mb, csig, sig->param_count + 16,
+												 mb, csig, csig->param_count + 16,
 												 info, NULL);
 		} else {
-			res = mono_mb_create (mb, csig, sig->param_count + 16, NULL);
+			res = mono_mb_create (mb, csig, csig->param_count + 16, NULL);
 		}
 	}
 
@@ -6693,7 +6740,8 @@ typedef enum {
 	SWIFT_DOUBLE,
 } SwiftPhysicalLoweringKind;
 
-static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
+static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) 
+{
 	switch (kind) {
 	case SWIFT_INT64:
 	case SWIFT_DOUBLE:
@@ -6705,7 +6753,8 @@ static int get_swift_lowering_alignment (SwiftPhysicalLoweringKind kind) {
 	}
 }
 
-static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) {
+static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 size, SwiftPhysicalLoweringKind kind) 
+{
 	bool force_opaque = false;
 	
 	if (offset != ALIGN_TO(offset, get_swift_lowering_alignment(kind))) {
@@ -6736,7 +6785,8 @@ static void set_lowering_range(guint8* lowered_bytes, guint32 offset, guint32 si
 
 static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset);
 
-static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) {
+static void record_inlinearray_struct_physical_lowering (guint8* lowered_bytes, MonoClass* klass, guint32 offset) 
+{
 	// Get the first field and record its physical lowering N times
 	MonoClassField* field = mono_class_get_fields_internal (klass, NULL);
 	MonoType* fieldType = field->type;
@@ -6755,17 +6805,21 @@ static void record_struct_physical_lowering (guint8* lowered_bytes, MonoClass* k
 	// For each field, we need to record the physical lowering of it.
 	gpointer iter = NULL;
 	MonoClassField* field;
+	int type_offset = MONO_ABI_SIZEOF (MonoObject);
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
 
-		record_struct_field_physical_lowering(lowered_bytes, field->type, offset + m_field_get_offset(field));
+		record_struct_field_physical_lowering(lowered_bytes, field->type, (offset + m_field_get_offset(field)) - type_offset);
 	}
 }
 
-static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) {
+static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoType* type, guint32 offset) 
+{
+	int align;
+
 	// Normalize pointer types to IntPtr and resolve generic classes.
 	// We don't need to care about specific pointer types at this ABI level.
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
@@ -6793,7 +6847,7 @@ static void record_struct_field_physical_lowering (guint8* lowered_bytes, MonoTy
 			kind = SWIFT_DOUBLE;
 		}
 
-		set_lowering_range(lowered_bytes, offset, mono_type_size(type, NULL), kind);
+		set_lowering_range(lowered_bytes, offset, mono_type_size(type, &align), kind);
 	}
 }
 
@@ -6811,22 +6865,24 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	// Non-value types are illegal at the interop boundary.
-	if (type->type == MONO_TYPE_GENERICINST && !mono_type_generic_inst_is_valuetype (type)) {
-		lowering.by_reference = TRUE;
-		return lowering;
+	if (type->type == MONO_TYPE_GENERICINST) {
+		if (!mono_type_generic_inst_is_valuetype (type)) {
+			lowering.by_reference = TRUE;
+			return lowering;
+		}
 	} else if (type->type != MONO_TYPE_VALUETYPE && !mono_type_is_primitive(type)) {
 		lowering.by_reference = TRUE;
 		return lowering;
 	}
 
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
-
+	int vtype_size = mono_class_value_size (klass, NULL);
 	// TODO: We currently don't support vector types, so we can say that the maximum size of a non-by_reference struct
 	// is 4 * PointerSize.
 	// Strictly, this is inaccurate in the case where a struct has a fully-empty 8 bytes of padding using explicit layout,
 	// but that's not possible in the Swift layout algorithm.
 
-	if (m_class_get_instance_size(klass) > 4 * TARGET_SIZEOF_VOID_P) {
+	if (vtype_size > 4 * TARGET_SIZEOF_VOID_P) {
 		lowering.by_reference = TRUE;
 		return lowering;
 	}
@@ -6845,8 +6901,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	GArray* intervals = g_array_new(FALSE, TRUE, sizeof(struct _SwiftInterval));
 
 	// Now we'll build the intervals from the lowered_bytes array
-	int instance_size = m_class_get_instance_size(klass);
-	for (int i = 0; i < instance_size; ++i) {
+	for (int i = 0; i < vtype_size; ++i) {
         	// Don't create an interval for empty bytes
 		if (lowered_bytes[i] == SWIFT_EMPTY) {
 			continue;
@@ -6874,19 +6929,23 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 	}
 
 	// Merge opaque intervals that are in the same pointer-sized block
-	for (int i = 0; i < intervals->len - 1; ++i) {
-		struct _SwiftInterval current = g_array_index(intervals, struct _SwiftInterval, i);
-		struct _SwiftInterval next = g_array_index(intervals, struct _SwiftInterval, i + 1);
+	for (int i = 0; i < intervals->len; ++i) {
+		struct _SwiftInterval interval = g_array_index(intervals, struct _SwiftInterval, i);
 
-		if (current.kind == SWIFT_OPAQUE && next.kind == SWIFT_OPAQUE && current.start / TARGET_SIZEOF_VOID_P == next.start / TARGET_SIZEOF_VOID_P) {
-			current.size = next.start + next.size - current.start;
-			g_array_remove_index(intervals, i + 1);
-			i--;
+		if (i != 0 && interval.kind == SWIFT_OPAQUE) {
+			// Merge two opaque intervals when the previous interval ends in the same pointer-sized block
+			struct _SwiftInterval prevInterval = g_array_index(intervals, struct _SwiftInterval, i - 1);
+			if (prevInterval.kind == SWIFT_OPAQUE && (prevInterval.start + prevInterval.size) / TARGET_SIZEOF_VOID_P == interval.start / TARGET_SIZEOF_VOID_P) {
+				(g_array_index(intervals, struct _SwiftInterval, i - 1)).size = interval.start + interval.size - prevInterval.start;
+				g_array_remove_index(intervals, i);
+				--i;
+				continue;
+			}
 		}
 	}
 
 	// Now that we have the intervals, we can calculate the lowering
-	MonoTypeEnum lowered_types[4];
+	MonoType *lowered_types[4];
 	guint32 offsets[4];
 	guint32 num_lowered_types = 0;
 	
@@ -6904,13 +6963,13 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 
 		switch (interval.kind) {
 			case SWIFT_INT64:
-				lowered_types[num_lowered_types++] = MONO_TYPE_I8;
+				lowered_types[num_lowered_types++] = m_class_get_byval_arg (mono_defaults.int64_class);
 				break;
 			case SWIFT_FLOAT:
-				lowered_types[num_lowered_types++] = MONO_TYPE_R4;
+				lowered_types[num_lowered_types++] = m_class_get_byval_arg (mono_defaults.single_class);
 				break;
 			case SWIFT_DOUBLE:
-				lowered_types[num_lowered_types++] = MONO_TYPE_R8;
+				lowered_types[num_lowered_types++] = m_class_get_byval_arg (mono_defaults.double_class);
 				break;
 			case SWIFT_OPAQUE:
 			{
@@ -6943,20 +7002,20 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 
 					offsets[num_lowered_types] = opaque_interval_start;
 
-					if (remaining_interval_size > 8 && (opaque_interval_start % 8 == 0)) {
-						lowered_types[num_lowered_types] = MONO_TYPE_I8;
+					if (remaining_interval_size > 4 && (opaque_interval_start % 8 == 0)) {
+						lowered_types[num_lowered_types] = m_class_get_byval_arg (mono_defaults.int64_class);
 						remaining_interval_size -= 8;
 						opaque_interval_start += 8;
-					} else if (remaining_interval_size > 4 && (opaque_interval_start % 4 == 0)) {
-						lowered_types[num_lowered_types] = MONO_TYPE_I4;
+					} else if (remaining_interval_size > 2 && (opaque_interval_start % 4 == 0)) {
+						lowered_types[num_lowered_types] = m_class_get_byval_arg (mono_defaults.int32_class);
 						remaining_interval_size -= 4;
 						opaque_interval_start += 4;
-					} else if (remaining_interval_size > 2 && (opaque_interval_start % 2 == 0)) {
-						lowered_types[num_lowered_types] = MONO_TYPE_I2;
+					} else if (remaining_interval_size > 1 && (opaque_interval_start % 2 == 0)) {
+						lowered_types[num_lowered_types] = m_class_get_byval_arg (mono_defaults.int16_class);
 						remaining_interval_size -= 2;
 						opaque_interval_start += 2;
 					} else {
-						lowered_types[num_lowered_types] = MONO_TYPE_U1;
+						lowered_types[num_lowered_types] = m_class_get_byval_arg (mono_defaults.byte_class);
 						remaining_interval_size -= 1;
 						opaque_interval_start += 1;
 					}
@@ -6967,7 +7026,7 @@ mono_marshal_get_swift_physical_lowering (MonoType *type, gboolean native_layout
 		}
 	}
 
-	memcpy(lowering.lowered_elements, lowered_types, num_lowered_types * sizeof(MonoTypeEnum));
+	memcpy(lowering.lowered_elements, lowered_types, num_lowered_types * sizeof(MonoType*));
 	memcpy(lowering.offsets, offsets, num_lowered_types * sizeof(guint32));
 	lowering.num_lowered_elements = num_lowered_types;
 	lowering.by_reference = FALSE;

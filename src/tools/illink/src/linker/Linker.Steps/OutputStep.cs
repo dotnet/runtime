@@ -189,6 +189,7 @@ namespace Mono.Linker.Steps
 				return parameters;
 
 			parameters.WriteSymbols = true;
+			parameters.SymbolWriterProvider = new CustomSymbolWriterProvider (Context.PreserveSymbolPaths);
 			return parameters;
 		}
 

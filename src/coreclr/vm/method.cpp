@@ -48,9 +48,9 @@ bool FixupSignatureContainingInternalTypes(
     DWORD           cSig,
     bool checkOnly = false);
 
-// Alias ComPlusCallMethodDesc to regular MethodDesc to simplify definition of the size table
+// Alias CLRToCOMCallMethodDesc to regular MethodDesc to simplify definition of the size table
 #ifndef FEATURE_COMINTEROP
-#define ComPlusCallMethodDesc MethodDesc
+#define CLRToCOMCallMethodDesc MethodDesc
 #endif
 
 // Verify that the structure sizes of our MethodDescs support proper
@@ -62,7 +62,7 @@ static_assert_no_msg((sizeof(FCallMethodDesc)       & MethodDesc::ALIGNMENT_MASK
 static_assert_no_msg((sizeof(NDirectMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(EEImplMethodDesc)      & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(ArrayMethodDesc)       & MethodDesc::ALIGNMENT_MASK) == 0);
-static_assert_no_msg((sizeof(ComPlusCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
+static_assert_no_msg((sizeof(CLRToCOMCallMethodDesc) & MethodDesc::ALIGNMENT_MASK) == 0);
 static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK) == 0);
 
 #define METHOD_DESC_SIZES(adjustment)                                       \
@@ -72,7 +72,7 @@ static_assert_no_msg((sizeof(DynamicMethodDesc)     & MethodDesc::ALIGNMENT_MASK
     adjustment + sizeof(EEImplMethodDesc),           /* mcEEImpl        */  \
     adjustment + sizeof(ArrayMethodDesc),            /* mcArray         */  \
     adjustment + sizeof(InstantiatedMethodDesc),     /* mcInstantiated  */  \
-    adjustment + sizeof(ComPlusCallMethodDesc),      /* mcComInterOp    */  \
+    adjustment + sizeof(CLRToCOMCallMethodDesc),      /* mcComInterOp    */  \
     adjustment + sizeof(DynamicMethodDesc)           /* mcDynamic       */
 
 const BYTE MethodDesc::s_ClassificationSizeTable[] = {
@@ -92,7 +92,7 @@ const BYTE MethodDesc::s_ClassificationSizeTable[] = {
 };
 
 #ifndef FEATURE_COMINTEROP
-#undef ComPlusCallMethodDesc
+#undef CLRToCOMCallMethodDesc
 #endif
 
 class ArgIteratorBaseForPInvoke : public ArgIteratorBase
@@ -209,8 +209,63 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 }
 
+HRESULT MethodDesc::EnsureCodeDataExists(AllocMemTracker *pamTracker)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // Assert that the associated type is published. This isn't quite sufficient to cover the case of allocating
+    // this while creating a standalone MethodDesc, but catches most of the cases where lost allocations are easy to have happen.
+    _ASSERTE(pamTracker != NULL || GetMethodTable()->GetAuxiliaryData()->IsPublished());
+
+    if (m_codeData != NULL)
+        return S_OK;
+
+    LoaderHeap* heap = GetLoaderAllocator()->GetHighFrequencyHeap();
+
+    AllocMemTracker amTracker;
+    if (pamTracker == NULL)
+        pamTracker = &amTracker;
+
+    MethodDescCodeData* alloc = (MethodDescCodeData*)pamTracker->Track_NoThrow(heap->AllocMem_NoThrow(S_SIZE_T(sizeof(MethodDescCodeData))));
+    if (alloc == NULL)
+        return E_OUTOFMEMORY;
+
+    // Try to set the field. Suppress clean-up if we win the race.
+    if (InterlockedCompareExchangeT(&m_codeData, (MethodDescCodeData*)alloc, NULL) == NULL)
+        amTracker.SuppressRelease();
+
+    return S_OK;
+}
+
+HRESULT MethodDesc::SetMethodDescVersionState(PTR_MethodDescVersioningState state)
+{
+    WRAPPER_NO_CONTRACT;
+
+    HRESULT hr;
+    IfFailRet(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    if (InterlockedCompareExchangeT(&m_codeData->VersioningState, state, NULL) != NULL)
+        return S_FALSE;
+
+    return S_OK;
+}
+
 #endif //!DACCESS_COMPILE
 
+PTR_MethodDescVersioningState MethodDesc::GetMethodDescVersionState()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NULL;
+    return VolatileLoadWithoutBarrier(&codeData->VersioningState);
+}
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetNameThrowing()
@@ -446,7 +501,7 @@ Signature MethodDesc::GetSignature()
     return Signature(pSig, cSig);
 }
 
-PCODE MethodDesc::GetMethodEntryPoint()
+PCODE MethodDesc::GetMethodEntryPointIfExists()
 {
     CONTRACTL
     {
@@ -460,7 +515,7 @@ PCODE MethodDesc::GetMethodEntryPoint()
     // Similarly to SetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized
 
-    // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
+    // Keep implementations of MethodDesc::GetMethodEntryPoint, MethodDesc::GetMethodEntryPointIfExists, and MethodDesc::GetAddrOfSlot in sync!
 
     if (HasNonVtableSlot())
     {
@@ -475,6 +530,42 @@ PCODE MethodDesc::GetMethodEntryPoint()
     return GetMethodTable()->GetSlot(GetSlot());
 }
 
+#ifndef DACCESS_COMPILE
+PCODE MethodDesc::GetMethodEntryPoint()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    // Similarly to SetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
+    // synchronized
+
+    // Keep implementations of MethodDesc::GetMethodEntryPoint, MethodDesc::GetMethodEntryPointIfExists, and MethodDesc::GetAddrOfSlot in sync!
+
+    if (HasNonVtableSlot())
+    {
+        SIZE_T size = GetBaseSize();
+
+        TADDR pSlot = dac_cast<TADDR>(this) + size;
+
+        if (*PTR_PCODE(pSlot) == (PCODE)NULL)
+        {
+            EnsureTemporaryEntryPoint();
+            _ASSERTE(*PTR_PCODE(pSlot) != (PCODE)NULL);
+        }
+        return *PTR_PCODE(pSlot);
+    }
+
+    _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
+    return GetMethodTable()->GetRestoredSlot(GetSlot());
+}
+#endif // DACCESS_COMPILE
+
 PTR_PCODE MethodDesc::GetAddrOfSlot()
 {
     CONTRACTL
@@ -486,7 +577,7 @@ PTR_PCODE MethodDesc::GetAddrOfSlot()
     }
     CONTRACTL_END;
 
-    // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
+    // Keep implementations of MethodDesc::GetMethodEntryPoint, MethodDesc::GetMethodEntryPointIfExists, and MethodDesc::GetAddrOfSlot in sync!
     if (HasNonVtableSlot())
     {
         SIZE_T size = GetBaseSize();
@@ -871,6 +962,95 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     return wOldState;
 }
 
+BYTE MethodDesc::InterlockedUpdateFlags4(BYTE bMask, BOOL fSet)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    BYTE    bOldState = m_bFlags4;
+    DWORD   dwMask = bMask;
+
+    // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
+    // is a byte and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
+    // dword (along with the intended bitfield mask). Note that we make the assumption that the flags byte is aligned itself, so we
+    // only have four possibilities: the field already lies on a dword boundary or it's 1, 2 or 3 bytes out
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_bFlags4 - (offsetof(MethodDesc, m_bFlags4) & 0x3));
+
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
+#endif // _PREFAST_
+
+#if BIGENDIAN
+    if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 0) {
+#else // !BIGENDIAN
+    if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 3) {
+#endif // !BIGENDIAN
+        dwMask <<= 24;
+    }
+#if BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 1) {
+#else // !BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 2) {
+#endif // !BIGENDIAN
+        dwMask <<= 16;
+    }
+#if BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 2) {
+#else // !BIGENDIAN
+    else if ((offsetof(MethodDesc, m_bFlags4) & 0x3) == 1) {
+#endif // !BIGENDIAN
+        dwMask <<= 8;
+    }
+#ifdef _PREFAST_
+#pragma warning(pop)
+#endif
+
+    if (fSet)
+        InterlockedOr(pdwFlags, dwMask);
+    else
+        InterlockedAnd(pdwFlags, ~dwMask);
+
+    return bOldState;
+}
+
+WORD MethodDescChunk::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    WORD    wOldState = m_flagsAndTokenRange;
+    DWORD   dwMask = wMask;
+
+    // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
+    // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
+    // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_flagsAndTokenRange - (offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3));
+
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable:6326) // "Suppress PREFast warning about comparing two constants"
+#endif // _PREFAST_
+
+#if BIGENDIAN
+    if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) == 0) {
+#else // !BIGENDIAN
+    if ((offsetof(MethodDescChunk, m_flagsAndTokenRange) & 0x3) != 0) {
+#endif // !BIGENDIAN
+        static_assert_no_msg(sizeof(m_flagsAndTokenRange) == 2);
+        dwMask <<= 16;
+    }
+#ifdef _PREFAST_
+#pragma warning(pop)
+#endif
+
+    if (fSet)
+        InterlockedOr(pdwFlags, dwMask);
+    else
+        InterlockedAnd(pdwFlags, ~dwMask);
+
+    return wOldState;
+}
+
 #endif // !DACCESS_COMPILE
 
 //*******************************************************************************
@@ -1055,7 +1235,7 @@ COR_ILMETHOD* MethodDesc::GetILHeader()
     }
 
 #ifdef _DEBUG_IMPL
-    if (pIL != NULL)
+    if (pIL != (TADDR)NULL)
     {
         //
         // This is convenient place to verify that COR_ILMETHOD_DECODER::GetOnDiskSize is in sync
@@ -1145,7 +1325,7 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
                         }
 #endif // UNIX_AMD64_ABI
 
-                        if (pReturnTypeMT->ContainsPointers() || pReturnTypeMT->IsByRefLike())
+                        if (pReturnTypeMT->ContainsGCPointers() || pReturnTypeMT->IsByRefLike())
                         {
                             if (pReturnTypeMT->GetNumInstanceFields() == 1)
                             {
@@ -1689,13 +1869,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
 
     DWORD maxMethodDescsPerChunk = (DWORD)(MethodDescChunk::MaxSizeOfMethodDescs / oneSize);
 
-    // Limit the maximum MethodDescs per chunk by the number of precodes that can fit to a single memory page,
-    // since we allocate consecutive temporary entry points for all MethodDescs in the whole chunk.
-    DWORD maxPrecodesPerPage = Precode::GetMaxTemporaryEntryPointsCount();
-
-    if (maxPrecodesPerPage < maxMethodDescsPerChunk)
-        maxMethodDescsPerChunk = maxPrecodesPerPage;
-
     if (methodDescCount == 0)
         methodDescCount = maxMethodDescsPerChunk;
 
@@ -1706,10 +1879,10 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         DWORD count = min(methodDescCount, maxMethodDescsPerChunk);
 
         void * pMem = pamTracker->Track(
-                pHeap->AllocMem(S_SIZE_T(sizeof(TADDR) + sizeof(MethodDescChunk) + oneSize * count)));
+                pHeap->AllocMem(S_SIZE_T(sizeof(MethodDescChunk) + oneSize * count)));
 
         // Skip pointer to temporary entrypoints
-        MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem + sizeof(TADDR));
+        MethodDescChunk * pChunk = (MethodDescChunk *)((BYTE*)pMem);
 
         pChunk->SetSizeAndCount(oneSize * count, count);
         pChunk->SetMethodTable(pInitialMT);
@@ -1718,7 +1891,6 @@ MethodDescChunk *MethodDescChunk::CreateChunk(LoaderHeap *pHeap, DWORD methodDes
         for (DWORD i = 0; i < count; i++)
         {
             pMD->SetChunkIndex(pChunk);
-            pMD->SetMethodDescIndex(i);
 
             pMD->SetClassification(classification);
             if (fNonVtableSlot)
@@ -1984,6 +2156,9 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
         _ASSERTE((accessFlags & ~CORINFO_ACCESS_LDFTN) == 0);
     }
 
+    if (RequiresStableEntryPoint() && !HasStableEntryPoint())
+        GetOrCreatePrecode();
+
     // We create stable entrypoints for these upfront
     if (IsWrapperStub() || IsEnCAddedMethod())
         return GetStableEntryPoint();
@@ -2023,6 +2198,10 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsVersionableWithVtableSlotBackpatch())
     {
         // Caller has to call via slot or allocate funcptr stub
+
+        // But we need to ensure that some entrypoint is allocated and present in the slot, so that
+        // it can be used.
+        EnsureTemporaryEntryPoint();
         return (PCODE)NULL;
     }
 
@@ -2030,16 +2209,24 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (MayHavePrecode())
         return GetOrCreatePrecode()->GetEntryPoint();
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    // Caller has to call via slot or allocate funcptr stub
-    return NULL;
-#else // HAS_COMPACT_ENTRYPOINTS
-    //
-    // Embed call to the temporary entrypoint into the code. It will be patched
-    // to point to the actual code later.
-    //
-    return GetTemporaryEntryPoint();
-#endif // HAS_COMPACT_ENTRYPOINTS
+    _ASSERTE(!RequiresStableEntryPoint());
+
+    if (accessFlags & CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT)
+    {
+        // If this access flag is set, prefer returning NULL over returning the temporary entrypoint
+        // But we need to ensure that some entrypoint is allocated and present in the slot, so that
+        // it can be used.
+        EnsureTemporaryEntryPoint();
+        return (PCODE)NULL;
+    }
+    else
+    {
+        //
+        // Embed call to the temporary entrypoint into the code. It will be patched
+        // to point to the actual code later.
+        //
+        return GetTemporaryEntryPoint();
+    }
 }
 
 //*******************************************************************************
@@ -2167,7 +2354,8 @@ BOOL MethodDesc::IsPointingToPrestub()
     {
         if (IsVersionableWithVtableSlotBackpatch())
         {
-            return GetMethodEntryPoint() == GetTemporaryEntryPoint();
+            PCODE methodEntrypoint = GetMethodEntryPointIfExists();
+            return methodEntrypoint == GetTemporaryEntryPointIfExists() && methodEntrypoint != (PCODE)NULL;
         }
         return TRUE;
     }
@@ -2189,7 +2377,7 @@ void MethodDesc::Reset()
 
     _ASSERTE(InEnCEnabledModule() || // The process is frozen by the debugger
              IsDynamicMethod() || // These are used in a very restricted way
-             GetLoaderModule()->IsReflection()); // Rental methods
+             GetLoaderModule()->IsReflectionEmit()); // Rental methods
 
     // Reset any flags relevant to the old code
     ClearFlagsOnUpdate();
@@ -2201,7 +2389,7 @@ void MethodDesc::Reset()
     else
     {
         // We should go here only for the rental methods
-        _ASSERTE(GetLoaderModule()->IsReflection());
+        _ASSERTE(GetLoaderModule()->IsReflectionEmit());
 
         InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, FALSE);
 
@@ -2265,7 +2453,7 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
     LIMITED_METHOD_CONTRACT;
 
     // Interop marshaling is implemented using shared stubs
-    if (IsNDirect() || IsComPlusCall())
+    if (IsNDirect() || IsCLRToCOMCall())
         return TRUE;
 
 
@@ -2274,6 +2462,24 @@ BOOL MethodDesc::RequiresMethodDescCallingConvention(BOOL fEstimateForChunk /*=F
 
 //*******************************************************************************
 BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
+{
+    BYTE bFlags4 = VolatileLoadWithoutBarrier(&m_bFlags4);
+    if (bFlags4 & enum_flag4_ComputedRequiresStableEntryPoint)
+    {
+        return (bFlags4 & enum_flag4_RequiresStableEntryPoint) != 0;
+    }
+    else
+    {
+        if (fEstimateForChunk)
+            return RequiresStableEntryPointCore(fEstimateForChunk);
+        BOOL fRequiresStableEntryPoint = RequiresStableEntryPointCore(FALSE);
+        BYTE requiresStableEntrypointFlags = (BYTE)(enum_flag4_ComputedRequiresStableEntryPoint | (fRequiresStableEntryPoint ? enum_flag4_RequiresStableEntryPoint : 0));
+        InterlockedUpdateFlags4(requiresStableEntrypointFlags, TRUE);
+        return fRequiresStableEntryPoint;
+    }
+}
+
+BOOL MethodDesc::RequiresStableEntryPointCore(BOOL fEstimateForChunk)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -2302,7 +2508,7 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
             return TRUE;
 
         // TODO: Can we avoid early allocation of precodes for interfaces and cominterop?
-        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsComPlusCall())
+        if ((IsInterface() && !IsStatic() && IsVirtual()) || IsCLRToCOMCall())
             return TRUE;
     }
 
@@ -2417,14 +2623,6 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
 
     MethodDesc *  pMD = NULL;
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (MethodDescChunk::IsCompactEntryPointAtAddress(addr))
-    {
-        pMD = MethodDescChunk::GetMethodDescFromCompactEntryPoint(addr, fSpeculative);
-        RETURN(pMD);
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
     // Otherwise this must be some kind of precode
     //
     PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
@@ -2438,435 +2636,27 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     RETURN(NULL); // Not found
 }
 
-#ifdef HAS_COMPACT_ENTRYPOINTS
-
-#if defined(TARGET_X86)
-
-#include <pshpack1.h>
-static const struct CentralJumpCode {
-    BYTE m_movzxEAX[3];
-    BYTE m_shlEAX[3];
-    BYTE m_addEAX[1];
-    MethodDesc* m_pBaseMD;
-    BYTE m_jmp[1];
-    INT32 m_rel32;
-
-    inline void Setup(CentralJumpCode* pCodeRX, MethodDesc* pMD, PCODE target, LoaderAllocator *pLoaderAllocator) {
-        WRAPPER_NO_CONTRACT;
-        m_pBaseMD = pMD;
-        m_rel32 = rel32UsingJumpStub(&pCodeRX->m_rel32, target, pMD, pLoaderAllocator);
-    }
-
-    inline BOOL CheckTarget(TADDR target) {
-        LIMITED_METHOD_CONTRACT;
-        TADDR addr = rel32Decode(PTR_HOST_MEMBER_TADDR(CentralJumpCode, this, m_rel32));
-        return (addr == target);
-    }
-}
-c_CentralJumpCode = {
-    { 0x0F, 0xB6, 0xC0 },                         //   movzx eax,al
-    { 0xC1, 0xE0, MethodDesc::ALIGNMENT_SHIFT },  //   shl   eax, MethodDesc::ALIGNMENT_SHIFT
-    { 0x05 }, NULL,                               //   add   eax, pBaseMD
-    { 0xE9 }, 0                                   //   jmp   PreStub
-};
-#include <poppack.h>
-
-#elif defined(TARGET_ARM)
-
-#include <pshpack1.h>
-struct CentralJumpCode {
-    BYTE m_ldrPC[4];
-    BYTE m_short[2];
-    MethodDescChunk *m_pChunk;
-    PCODE m_target;
-
-    inline void Setup(PCODE target, MethodDescChunk *pChunk) {
-        WRAPPER_NO_CONTRACT;
-
-        m_target = target;
-        m_pChunk = pChunk;
-    }
-
-    inline BOOL CheckTarget(TADDR target) {
-        WRAPPER_NO_CONTRACT;
-        return ((TADDR)m_target == target);
-    }
-}
-c_CentralJumpCode = {
-    { 0xDF, 0xF8, 0x08, 0xF0 },                         //   ldr pc, =pTarget
-    { 0x00, 0x00 },                                     //   short offset for alignment
-    0,                                                  //   pChunk
-    0                                                   //   pTarget
-};
-#include <poppack.h>
-
-#else
-#error Unsupported platform
-#endif
-
-typedef DPTR(struct CentralJumpCode) PTR_CentralJumpCode;
-#define TEP_CENTRAL_JUMP_SIZE   sizeof(c_CentralJumpCode)
-static_assert_no_msg((TEP_CENTRAL_JUMP_SIZE & 1) == 0);
-
-#define TEP_ENTRY_SIZE          4
-
-#ifdef TARGET_ARM
-
-#define TEP_HALF_ENTRY_SIZE (TEP_ENTRY_SIZE / 2)
-
-// Compact entry point on arm consists of two thumb instructions:
-//   mov r12, pc
-//   b CentralJumpCode
-
-// First instruction 0x46fc
-#define TEP_ENTRY_INSTR1_BYTE1 0xFC
-#define TEP_ENTRY_INSTR1_BYTE2 0x46
-
-// Mask for unconditional branch opcode
-#define TEP_ENTRY_INSTR2_MASK1 0xE0
-
-// Mask for opcode
-#define TEP_ENTRY_INSTR2_MASK2 0xF8
-
-// Bit used for ARM to identify compact entry points
-#define COMPACT_ENTRY_ARM_CODE 0x2
-
-/* static */ int MethodDescChunk::GetCompactEntryPointMaxCount ()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB / TEP_ENTRY_SIZE;
-}
-
-// Get offset from the start of current compact entry point to the CentralJumpCode
-static uint16_t DecodeOffsetFromBranchToCentralJump (uint16_t instr)
-{
-    int16_t offset = decodeUnconditionalBranchThumb ((LPBYTE) &instr);
-
-    offset += PC_REG_RELATIVE_OFFSET + TEP_HALF_ENTRY_SIZE;
-
-    _ASSERTE (offset >= TEP_ENTRY_SIZE && (offset % TEP_ENTRY_SIZE == 0));
-
-    return (uint16_t) offset;
-}
-
+//*******************************************************************************
 #ifndef DACCESS_COMPILE
-
-// Encode branch instruction to central jump for current compact entry point
-static uint16_t EncodeBranchToCentralJump (int16_t offset)
-{
-    _ASSERTE (offset >= 0 && (offset % TEP_ENTRY_SIZE == 0));
-
-    offset += TEP_HALF_ENTRY_SIZE - PC_REG_RELATIVE_OFFSET;
-
-    uint16_t instr;
-    emitUnconditionalBranchThumb ((LPBYTE) &instr, offset);
-
-    return instr;
-}
-
-#endif // DACCESS_COMPILE
-
-#else // TARGET_ARM
-
-#define TEP_MAX_BEFORE_INDEX    (1 + (127 / TEP_ENTRY_SIZE))
-#define TEP_MAX_BLOCK_INDEX     (TEP_MAX_BEFORE_INDEX + (128 - TEP_CENTRAL_JUMP_SIZE) / TEP_ENTRY_SIZE)
-#define TEP_FULL_BLOCK_SIZE     (TEP_MAX_BLOCK_INDEX * TEP_ENTRY_SIZE + TEP_CENTRAL_JUMP_SIZE)
-
-#endif // TARGET_ARM
-
-BOOL MethodDescChunk::IsCompactEntryPointAtAddress(PCODE addr)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-    // Compact entrypoints start at odd addresses
-    return (addr & 1) != 0;
-
-#elif defined(TARGET_ARM)
-
-    // Compact entrypoints start at odd addresses (thumb) with second bit set to 1
-    uint8_t compactEntryPointMask = THUMB_CODE | COMPACT_ENTRY_ARM_CODE;
-    return (addr & compactEntryPointMask) == compactEntryPointMask;
-
-#else
-    #error Unsupported platform
-#endif
-}
-
-//*******************************************************************************
-/* static */ MethodDesc* MethodDescChunk::GetMethodDescFromCompactEntryPoint(PCODE addr, BOOL fSpeculative /*=FALSE*/)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef DACCESS_COMPILE
-    // Always use speculative checks with DAC
-    fSpeculative = TRUE;
-#endif
-
-    // Always do consistency check in debug
-    if (fSpeculative INDEBUG(|| TRUE))
-    {
-#ifdef TARGET_ARM
-        TADDR instrCodeAddr = PCODEToPINSTR(addr);
-        if (!IsCompactEntryPointAtAddress(addr) ||
-            *PTR_BYTE(instrCodeAddr) != TEP_ENTRY_INSTR1_BYTE1 ||
-            *PTR_BYTE(instrCodeAddr+1) != TEP_ENTRY_INSTR1_BYTE2)
-#else // TARGET_ARM
-        if ((addr & 3) != 1 ||
-            *PTR_BYTE(addr) != X86_INSTR_MOV_AL ||
-            *PTR_BYTE(addr+2) != X86_INSTR_JMP_REL8)
-#endif // TARGET_ARM
-        {
-            if (fSpeculative) return NULL;
-            _ASSERTE(!"Unexpected code in temporary entrypoint");
-        }
-    }
-
-#ifdef TARGET_ARM
-
-    // On ARM compact entry points are thumb
-    _ASSERTE ((addr & THUMB_CODE) != 0);
-    addr = addr - THUMB_CODE;
-
-    // Get offset for CentralJumpCode from current compact entry point
-    PTR_UINT16 pBranchInstr = (PTR_UINT16(addr)) + 1;
-    uint16_t offset = DecodeOffsetFromBranchToCentralJump (*pBranchInstr);
-
-    TADDR centralJump = addr + offset;
-    int index = (centralJump - addr - TEP_ENTRY_SIZE) / TEP_ENTRY_SIZE;
-
-#else // TARGET_ARM
-
-    int index = *PTR_BYTE(addr+1);
-    TADDR centralJump = addr + 4 + *PTR_SBYTE(addr+3);
-
-#endif // TARGET_ARM
-
-    CentralJumpCode* pCentralJumpCode = PTR_CentralJumpCode(centralJump);
-
-    // Always do consistency check in debug
-    if (fSpeculative INDEBUG(|| TRUE))
-    {
-        SIZE_T i;
-        for (i = 0; i < TEP_CENTRAL_JUMP_SIZE; i++)
-        {
-            BYTE b = ((BYTE*)&c_CentralJumpCode)[i];
-            if (b != 0 && b != *PTR_BYTE(centralJump+i))
-            {
-                if (fSpeculative) return NULL;
-                _ASSERTE(!"Unexpected code in temporary entrypoint");
-            }
-        }
-
-#ifdef TARGET_ARM
-
-        _ASSERTE_IMPL(pCentralJumpCode->CheckTarget(GetPreStubCompactARMEntryPoint()));
-
-#else // TARGET_ARM
-
-        _ASSERTE_IMPL(pCentralJumpCode->CheckTarget(GetPreStubEntryPoint()));
-
-#endif // TARGET_ARM
-    }
-
-#ifdef TARGET_ARM
-    // Go through all MethodDesc in MethodDescChunk and find the one with the required index
-    PTR_MethodDescChunk pChunk = *((DPTR(PTR_MethodDescChunk))(centralJump + offsetof(CentralJumpCode, m_pChunk)));
-    TADDR pMD = PTR_HOST_TO_TADDR (pChunk->GetFirstMethodDesc ());
-
-    _ASSERTE (index >= 0 && index < ((int) pChunk->GetCount ()));
-
-    index = ((int) pChunk->GetCount ()) - 1 - index;
-
-    SIZE_T totalSize = 0;
-    int curIndex = 0;
-
-    while (index != curIndex)
-    {
-        SIZE_T sizeCur = (PTR_MethodDesc (pMD))->SizeOf ();
-        totalSize += sizeCur;
-
-        pMD += sizeCur;
-        ++curIndex;
-    }
-
-    return PTR_MethodDesc (pMD);
-#else // TARGET_ARM
-    return PTR_MethodDesc((TADDR)pCentralJumpCode->m_pBaseMD + index * MethodDesc::ALIGNMENT);
-#endif // TARGET_ARM
-}
-
-//*******************************************************************************
-SIZE_T MethodDescChunk::SizeOfCompactEntryPoints(int count)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-#ifdef TARGET_ARM
-
-    return COMPACT_ENTRY_ARM_CODE + count * TEP_ENTRY_SIZE + TEP_CENTRAL_JUMP_SIZE;
-
-#else // TARGET_ARM
-
-    int fullBlocks = count / TEP_MAX_BLOCK_INDEX;
-    int remainder = count % TEP_MAX_BLOCK_INDEX;
-
-    return 1 + (fullBlocks * TEP_FULL_BLOCK_SIZE) +
-        (remainder * TEP_ENTRY_SIZE) + ((remainder != 0) ? TEP_CENTRAL_JUMP_SIZE : 0);
-
-#endif // TARGET_ARM
-}
-
-#ifndef DACCESS_COMPILE
-TADDR MethodDescChunk::AllocateCompactEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
-{
-    CONTRACTL {
-        THROWS;
-        GC_NOTRIGGER;
-    } CONTRACTL_END;
-
-    int count = GetCount();
-
-    SIZE_T size = SizeOfCompactEntryPoints(count);
-
-    TADDR temporaryEntryPoints = (TADDR)pamTracker->Track(pLoaderAllocator->GetPrecodeHeap()->AllocAlignedMem(size, sizeof(TADDR)));
-    ExecutableWriterHolder<void> temporaryEntryPointsWriterHolder((void *)temporaryEntryPoints, size);
-    size_t rxOffset = temporaryEntryPoints - (TADDR)temporaryEntryPointsWriterHolder.GetRW();
-
-#ifdef TARGET_ARM
-    BYTE* p = (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + COMPACT_ENTRY_ARM_CODE;
-    int relOffset        = count * TEP_ENTRY_SIZE - TEP_ENTRY_SIZE; // relative offset for the short jump
-
-    _ASSERTE (relOffset < MAX_OFFSET_UNCONDITIONAL_BRANCH_THUMB);
-#else // TARGET_ARM
-    // make the temporary entrypoints unaligned, so they are easy to identify
-    BYTE* p = (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + 1;
-    int indexInBlock     = TEP_MAX_BLOCK_INDEX;         // recompute relOffset in first iteration
-    int relOffset        = 0;                           // relative offset for the short jump
-#endif // TARGET_ARM
-
-    MethodDesc * pBaseMD = 0;                   // index of the start of the block
-
-    MethodDesc * pMD = GetFirstMethodDesc();
-    for (int index = 0; index < count; index++)
-    {
-#ifdef TARGET_ARM
-
-        uint8_t *pMovInstrByte1 = (uint8_t *)p;
-        uint8_t *pMovInstrByte2 = (uint8_t *)p+1;
-        uint16_t *pBranchInstr = ((uint16_t *)p)+1;
-
-        *pMovInstrByte1 = TEP_ENTRY_INSTR1_BYTE1;
-        *pMovInstrByte2 = TEP_ENTRY_INSTR1_BYTE2;
-        *pBranchInstr = EncodeBranchToCentralJump ((int16_t) relOffset);
-
-        p += TEP_ENTRY_SIZE;
-
-#else // TARGET_ARM
-
-        if (indexInBlock == TEP_MAX_BLOCK_INDEX)
-        {
-            relOffset = (min(count - index, TEP_MAX_BEFORE_INDEX) - 1) * TEP_ENTRY_SIZE;
-            indexInBlock = 0;
-            pBaseMD = pMD;
-        }
-
-        *(p+0) = X86_INSTR_MOV_AL;
-        int methodDescIndex = pMD->GetMethodDescChunkIndex() - pBaseMD->GetMethodDescChunkIndex();
-        _ASSERTE(FitsInU1(methodDescIndex));
-        *(p+1) = (BYTE)methodDescIndex;
-
-        *(p+2) = X86_INSTR_JMP_REL8;
-        _ASSERTE(FitsInI1(relOffset));
-        *(p+3) = (BYTE)relOffset;
-
-        p += TEP_ENTRY_SIZE; static_assert_no_msg(TEP_ENTRY_SIZE == 4);
-
-        if (relOffset == 0)
-        {
-            CentralJumpCode* pCode = (CentralJumpCode*)p;
-            CentralJumpCode* pCodeRX = (CentralJumpCode*)(p + rxOffset);
-
-            memcpy(pCode, &c_CentralJumpCode, TEP_CENTRAL_JUMP_SIZE);
-
-            pCode->Setup(pCodeRX, pBaseMD, GetPreStubEntryPoint(), pLoaderAllocator);
-
-            p += TEP_CENTRAL_JUMP_SIZE;
-
-            relOffset -= TEP_CENTRAL_JUMP_SIZE;
-        }
-
-        indexInBlock++;
-
-#endif // TARGET_ARM
-
-        relOffset -= TEP_ENTRY_SIZE;
-        pMD = (MethodDesc *)((BYTE *)pMD + pMD->SizeOf());
-    }
-
-#ifdef TARGET_ARM
-
-    CentralJumpCode* pCode = (CentralJumpCode*)p;
-    memcpy(pCode, &c_CentralJumpCode, TEP_CENTRAL_JUMP_SIZE);
-    pCode->Setup (GetPreStubCompactARMEntryPoint(), this);
-
-    _ASSERTE(p + TEP_CENTRAL_JUMP_SIZE == (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + size);
-
-#else // TARGET_ARM
-
-    _ASSERTE(p == (BYTE*)temporaryEntryPointsWriterHolder.GetRW() + size);
-
-#endif // TARGET_ARM
-
-    ClrFlushInstructionCache((LPVOID)temporaryEntryPoints, size);
-
-    SetHasCompactEntryPoints();
-    return temporaryEntryPoints;
-}
-#endif // !DACCESS_COMPILE
-
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-//*******************************************************************************
-PCODE MethodDescChunk::GetTemporaryEntryPoint(int index)
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (HasCompactEntryPoints())
-    {
-#ifdef TARGET_ARM
-
-        return GetTemporaryEntryPoints() + COMPACT_ENTRY_ARM_CODE + THUMB_CODE + index * TEP_ENTRY_SIZE;
-
-#else // TARGET_ARM
-
-        int fullBlocks = index / TEP_MAX_BLOCK_INDEX;
-        int remainder = index % TEP_MAX_BLOCK_INDEX;
-
-        return GetTemporaryEntryPoints() + 1 + (fullBlocks * TEP_FULL_BLOCK_SIZE) +
-            (remainder * TEP_ENTRY_SIZE) + ((remainder >= TEP_MAX_BEFORE_INDEX) ? TEP_CENTRAL_JUMP_SIZE : 0);
-
-#endif // TARGET_ARM
-    }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    return Precode::GetPrecodeForTemporaryEntryPoint(GetTemporaryEntryPoints(), index)->GetEntryPoint();
-}
-
 PCODE MethodDesc::GetTemporaryEntryPoint()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    MethodDescChunk* pChunk = GetMethodDescChunk();
-    TADDR pEntryPoint = pChunk->GetTemporaryEntryPoint(GetMethodDescIndex());
+    _ASSERTE(GetMethodTable()->GetAuxiliaryData()->IsPublished());
+
+    PCODE pEntryPoint = GetTemporaryEntryPointIfExists();
+    if (pEntryPoint != (PCODE)NULL)
+        return pEntryPoint;
+
+    EnsureTemporaryEntryPoint();
+    pEntryPoint = GetTemporaryEntryPointIfExists();
+    _ASSERTE(pEntryPoint != (PCODE)NULL);
 
 #ifdef _DEBUG
     MethodDesc * pMD = MethodDesc::GetMethodDescFromStubAddr(pEntryPoint);
@@ -2875,48 +2665,138 @@ PCODE MethodDesc::GetTemporaryEntryPoint()
 
     return pEntryPoint;
 }
+#endif
 
 #ifndef DACCESS_COMPILE
 //*******************************************************************************
-void MethodDesc::SetTemporaryEntryPoint(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+void MethodDesc::SetTemporaryEntryPoint(AllocMemTracker *pamTracker)
 {
     WRAPPER_NO_CONTRACT;
 
-    GetMethodDescChunk()->EnsureTemporaryEntryPointsCreated(pLoaderAllocator, pamTracker);
+    _ASSERTE(pamTracker != NULL);
+    EnsureTemporaryEntryPointCore(pamTracker);
 
+#ifdef _DEBUG
     PTR_PCODE pSlot = GetAddrOfSlot();
-    _ASSERTE(*pSlot == NULL);
-    *pSlot = GetTemporaryEntryPoint();
+    _ASSERTE(*pSlot != (PCODE)NULL);
+#endif
 
     if (RequiresStableEntryPoint())
     {
         // The rest of the system assumes that certain methods always have stable entrypoints.
-        // Create them now.
-        GetOrCreatePrecode();
+        // Mark the precode as such
+        MarkPrecodeAsStableEntrypoint();
+    }
+}
+
+void MethodDesc::EnsureTemporaryEntryPoint()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Since this can allocate memory that won't be freed, we need to make sure that the associated MethodTable
+    // is fully allocated and permanent.
+    _ASSERTE(GetMethodTable()->GetAuxiliaryData()->IsPublished());
+
+    if (GetTemporaryEntryPointIfExists() == (PCODE)NULL)
+    {
+        EnsureTemporaryEntryPointCore(NULL);
+    }
+}
+
+void MethodDesc::EnsureTemporaryEntryPointCore(AllocMemTracker *pamTracker)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (GetTemporaryEntryPointIfExists() == (PCODE)NULL)
+    {
+        GetMethodDescChunk()->DetermineAndSetIsEligibleForTieredCompilation();
+        PTR_PCODE pSlot = GetAddrOfSlot();
+
+        AllocMemTracker amt;
+        AllocMemTracker *pamTrackerPrecode = pamTracker != NULL ? pamTracker : &amt;
+        Precode* pPrecode = Precode::Allocate(GetPrecodeType(), this, GetLoaderAllocator(), pamTrackerPrecode);
+
+        IfFailThrow(EnsureCodeDataExists(pamTracker));
+
+        if (InterlockedCompareExchangeT(&m_codeData->TemporaryEntryPoint, pPrecode->GetEntryPoint(), (PCODE)NULL) == (PCODE)NULL)
+            amt.SuppressRelease(); // We only need to suppress the release if we are working with a MethodDesc which is not newly allocated
+
+        PCODE tempEntryPoint = m_codeData->TemporaryEntryPoint;
+        _ASSERTE(tempEntryPoint != (PCODE)NULL);
+
+        if (*pSlot == (PCODE)NULL)
+        {
+            InterlockedCompareExchangeT(pSlot, tempEntryPoint, (PCODE)NULL);
+        }
+        InterlockedUpdateFlags4(enum_flag4_TemporaryEntryPointAssigned, TRUE);
     }
 }
 
 //*******************************************************************************
-void MethodDescChunk::CreateTemporaryEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
+void MethodDescChunk::DetermineAndSetIsEligibleForTieredCompilation()
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(GetTemporaryEntryPoints() == NULL);
-
-    TADDR temporaryEntryPoints = Precode::AllocateTemporaryEntryPoints(this, pLoaderAllocator, pamTracker);
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    // Precodes allocated only if they provide more compact representation or if it is required
-    if (temporaryEntryPoints == NULL)
+    if (!DeterminedIfMethodsAreEligibleForTieredCompilation())
     {
-        temporaryEntryPoints = AllocateCompactEntryPoints(pLoaderAllocator, pamTracker);
+        int count = GetCount();
+
+        // Determine eligibility for tiered compilation
+        {
+            MethodDesc *pMD = GetFirstMethodDesc();
+            bool chunkContainsEligibleMethods = pMD->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk();
+
+    #ifdef _DEBUG
+            // Validate every MethodDesc has the same result for DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk
+            MethodDesc *pMDDebug = GetFirstMethodDesc();
+            for (int i = 0; i < count; ++i)
+            {
+                _ASSERTE(chunkContainsEligibleMethods == pMDDebug->DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk());
+                pMDDebug = (MethodDesc *)(dac_cast<TADDR>(pMDDebug) + pMDDebug->SizeOf());
+            }
+    #endif
+            if (chunkContainsEligibleMethods)
+            {
+                for (int i = 0; i < count; ++i)
+                {
+                    bool isEligible = pMD->DetermineAndSetIsEligibleForTieredCompilation();
+                    _ASSERTE(isEligible == pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
+
+                    pMD = (MethodDesc *)(dac_cast<TADDR>(pMD) + pMD->SizeOf());
+                }
+            }
+        }
+
+        InterlockedUpdateFlags(enum_flag_DeterminedIsEligibleForTieredCompilation, TRUE);
+
+#ifdef _DEBUG
+        {
+            MethodDesc *pMD = GetFirstMethodDesc();
+            for (int i = 0; i < count; ++i)
+            {
+                _ASSERTE(pMD->IsEligibleForTieredCompilation() == pMD->IsEligibleForTieredCompilation_NoCheckMethodDescChunk());
+                if (pMD->IsEligibleForTieredCompilation())
+                {
+                    _ASSERTE(!pMD->IsVersionableWithPrecode() || pMD->RequiresStableEntryPoint());
+                }
+            }
+        }
+#endif
     }
-#endif // HAS_COMPACT_ENTRYPOINTS
-
-    *(((TADDR *)this)-1) = temporaryEntryPoints;
-
-    _ASSERTE(GetTemporaryEntryPoints() != NULL);
 }
+
 
 //*******************************************************************************
 Precode* MethodDesc::GetOrCreatePrecode()
@@ -2924,40 +2804,45 @@ Precode* MethodDesc::GetOrCreatePrecode()
     WRAPPER_NO_CONTRACT;
     _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
 
+    // Since this can allocate memory that won't be freed, we need to make sure that the associated MethodTable
+    // is fully allocated and permanent.
+    _ASSERTE(GetMethodTable()->GetAuxiliaryData()->IsPublished());
+
     if (HasPrecode())
     {
         return GetPrecode();
     }
 
-    PTR_PCODE pSlot = GetAddrOfSlot();
     PCODE tempEntry = GetTemporaryEntryPoint();
 
+#ifdef _DEBUG
+    PTR_PCODE pSlot = GetAddrOfSlot();
     PrecodeType requiredType = GetPrecodeType();
-    PrecodeType availableType = PRECODE_INVALID;
-
-    if (!GetMethodDescChunk()->HasCompactEntryPoints())
-    {
-        availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
-    }
-
-    // Allocate the precode if necessary
-    if (requiredType != availableType)
-    {
-        // code:Precode::AllocateTemporaryEntryPoints should always create precode of the right type for dynamic methods.
-        // If we took this path for dynamic methods, the precode may leak since we may allocate it in domain-neutral loader heap.
-        _ASSERTE(!IsLCGMethod());
-
-        AllocMemTracker amt;
-        Precode* pPrecode = Precode::Allocate(requiredType, this, GetLoaderAllocator(), &amt);
-
-        if (InterlockedCompareExchangeT(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
-            amt.SuppressRelease();
-    }
+    PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
+    _ASSERTE(requiredType == availableType);
+    _ASSERTE(*pSlot != (PCODE)NULL);
+    _ASSERTE(*pSlot == tempEntry);
+#endif
 
     // Set the flags atomically
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
 
-    return Precode::GetPrecodeFromEntryPoint(*pSlot);
+    return Precode::GetPrecodeFromEntryPoint(tempEntry);
+}
+
+void MethodDesc::MarkPrecodeAsStableEntrypoint()
+{
+#if _DEBUG
+    PCODE tempEntry = GetTemporaryEntryPointIfExists();
+    _ASSERTE(tempEntry != (PCODE)NULL);
+    PrecodeType requiredType = GetPrecodeType();
+    PrecodeType availableType = Precode::GetPrecodeFromEntryPoint(tempEntry)->GetType();
+    _ASSERTE(requiredType == availableType);
+#endif
+    _ASSERTE(!HasPrecode());
+    _ASSERTE(RequiresStableEntryPoint());
+
+    InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint | enum_flag3_HasPrecode, TRUE);
 }
 
 bool MethodDesc::DetermineIsEligibleForTieredCompilationInvariantForAllMethodsInChunk()
@@ -3013,8 +2898,7 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functions with NoOptimization or AggressiveOptimization don't participate in tiering
         !IsJitOptimizationLevelRequested())
     {
-        m_wFlags3AndTokenRemainder |= enum_flag3_IsEligibleForTieredCompilation;
-        _ASSERTE(IsVersionable());
+        InterlockedUpdateFlags3(enum_flag3_IsEligibleForTieredCompilation, TRUE);
         return true;
     }
 #endif
@@ -3095,7 +2979,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot_Locked(
     _ASSERTE(mdLoaderAllocator != nullptr);
     _ASSERTE(mdLoaderAllocator == GetLoaderAllocator());
     _ASSERTE(slotLoaderAllocator != nullptr);
-    _ASSERTE(slot != NULL);
+    _ASSERTE(slot != (TADDR)NULL);
     _ASSERTE(slotType < EntryPointSlots::SlotType_Count);
     _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
 
@@ -3117,7 +3001,7 @@ FORCEINLINE bool MethodDesc::TryBackpatchEntryPointSlots(
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(MayHaveEntryPointSlotsToBackpatch());
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
     _ASSERTE(isPrestubEntryPoint == (entryPoint == GetPrestubEntryPointToBackpatch()));
     _ASSERTE(!isPrestubEntryPoint || !onlyFromPrestubEntryPoint);
     _ASSERTE(MethodDescBackpatchInfoTracker::IsLockOwnedByCurrentThread());
@@ -3172,7 +3056,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
     bool mayHaveEntryPointSlotsToBackpatch)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
     _ASSERTE(IsVersionable());
     _ASSERTE(mayHaveEntryPointSlotsToBackpatch == MayHaveEntryPointSlotsToBackpatch());
 
@@ -3190,7 +3074,7 @@ void MethodDesc::TrySetInitialCodeEntryPointForVersionableMethod(
 void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(entryPoint != NULL);
+    _ASSERTE(entryPoint != (PCODE)NULL);
 
     if (MayHaveEntryPointSlotsToBackpatch())
     {
@@ -3205,9 +3089,12 @@ void MethodDesc::SetCodeEntryPoint(PCODE entryPoint)
         // can continue assuming it was successful, similarly to it successfully updating the target and another thread
         // updating the target again shortly afterwards.
     }
-    else if (HasPrecode())
+    else if (HasPrecode() || RequiresStableEntryPoint())
     {
-        GetPrecode()->SetTargetInterlocked(entryPoint);
+        // Use this path if there already exists a Precode, OR if RequiresStableEntryPoint is set.
+        //
+        // RequiresStableEntryPoint currently requires that the entrypoint must be a Precode
+        GetOrCreatePrecode()->SetTargetInterlocked(entryPoint);
     }
     else if (!HasStableEntryPoint())
     {
@@ -3284,7 +3171,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
         return InterlockedCompareExchangeT(GetAddrOfNativeCodeSlot(), addr, pExpected) == pExpected;
     }
 
-    _ASSERTE(pExpected == NULL);
+    _ASSERTE(pExpected == (PCODE)NULL);
     return SetStableEntryPointInterlocked(addr);
 }
 
@@ -3293,7 +3180,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 void MethodDesc::SetMethodEntryPoint(PCODE addr)
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(addr != NULL);
+    _ASSERTE(addr != (PCODE)NULL);
 
     // Similarly to GetMethodEntryPoint(), it is up to the caller to ensure that calls to this function are appropriately
     // synchronized. Currently, the only caller synchronizes with the following lock.
@@ -3320,6 +3207,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags3(enum_flag3_HasStableEntryPoint, TRUE);
+    _ASSERTE(!RequiresStableEntryPoint()); // The RequiresStableEntryPoint scenarios should all result in a stable entry point which is a PreCode, so that it can be replaced and adjusted over time.
 
     return fResult;
 }
@@ -3650,7 +3538,7 @@ BOOL MethodDesc::ShouldSuppressGCTransition()
 
 #ifdef FEATURE_COMINTEROP
 //*******************************************************************************
-void ComPlusCallMethodDesc::InitComEventCallInfo()
+void CLRToCOMCallMethodDesc::InitComEventCallInfo()
 {
     CONTRACTL
     {
@@ -3667,16 +3555,16 @@ void ComPlusCallMethodDesc::InitComEventCallInfo()
 
     // Retrieve the event provider class.
     WORD cbExtraSlots = ComMethodTable::GetNumExtraSlots(pItfMT->GetComInterfaceType());
-    WORD itfSlotNum = (WORD) m_pComPlusCallInfo->m_cachedComSlot - cbExtraSlots;
+    WORD itfSlotNum = (WORD) m_pCLRToCOMCallInfo->m_cachedComSlot - cbExtraSlots;
     pItfMT->GetEventInterfaceInfo(&pSrcItfClass, &pEvProvClass);
-    m_pComPlusCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
+    m_pCLRToCOMCallInfo->m_pEventProviderMD = MemberLoader::FindMethodForInterfaceSlot(pEvProvClass, pItfMT, itfSlotNum);
 
     // If we could not find the method, then the event provider does not support
     // this event. This is a fatal error.
-    if (!m_pComPlusCallInfo->m_pEventProviderMD)
+    if (!m_pCLRToCOMCallInfo->m_pEventProviderMD)
     {
         // Init the interface MD for error reporting.
-        pItfMD = (ComPlusCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
+        pItfMD = (CLRToCOMCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
 
         // Retrieve the event provider class name.
         StackSString ssEvProvClassName;
@@ -3810,21 +3698,6 @@ MethodDescChunk::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         pMT->EnumMemoryRegions(flags);
     }
-
-    SIZE_T size;
-
-#ifdef HAS_COMPACT_ENTRYPOINTS
-    if (HasCompactEntryPoints())
-    {
-        size = SizeOfCompactEntryPoints(GetCount());
-    }
-    else
-#endif // HAS_COMPACT_ENTRYPOINTS
-    {
-        size = Precode::SizeOfTemporaryEntryPoints(GetTemporaryEntryPoints(), GetCount());
-    }
-
-    DacEnumMemoryRegion(GetTemporaryEntryPoints(), size);
 
     MethodDesc * pMD = GetFirstMethodDesc();
     MethodDesc * pOldMD = NULL;
@@ -4000,19 +3873,19 @@ PrecodeType MethodDesc::GetPrecodeType()
 
 #ifdef FEATURE_COMINTEROP
 #ifndef DACCESS_COMPILE
-void ComPlusCallMethodDesc::InitRetThunk()
+void CLRToCOMCallMethodDesc::InitRetThunk()
 {
     WRAPPER_NO_CONTRACT;
 
 #ifdef TARGET_X86
-    if (m_pComPlusCallInfo->m_pRetThunk != NULL)
+    if (m_pCLRToCOMCallInfo->m_pRetThunk != NULL)
         return;
 
     UINT numStackBytes = CbStackPop();
 
-    LPVOID pRetThunk = ComPlusCall::GetRetThunk(numStackBytes);
+    LPVOID pRetThunk = CLRToCOMCall::GetRetThunk(numStackBytes);
 
-    InterlockedCompareExchangeT<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
+    InterlockedCompareExchangeT<void *>(&m_pCLRToCOMCallInfo->m_pRetThunk, pRetThunk, NULL);
 #endif // TARGET_X86
 }
 #endif //!DACCESS_COMPILE

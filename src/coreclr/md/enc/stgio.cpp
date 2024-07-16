@@ -826,7 +826,7 @@ HRESULT StgIO::MapFileToMem(            // Return code.
 
             DWORD dwProtectionFlags = PAGE_READONLY;
 
-            if ((m_hMapping = WszCreateFileMapping(m_hFile, pAttributes, dwProtectionFlags,
+            if ((m_hMapping = CreateFileMapping(m_hFile, pAttributes, dwProtectionFlags,
                 0, 0, nullptr)) == 0)
             {
                 return (MapFileError(GetLastError()));

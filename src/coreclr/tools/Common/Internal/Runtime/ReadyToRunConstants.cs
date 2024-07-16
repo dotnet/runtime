@@ -267,6 +267,7 @@ namespace Internal.ReadyToRunConstants
         Unbox                       = 0x5A,
         Unbox_Nullable              = 0x5B,
         NewMultiDimArr              = 0x5C,
+        Unbox_TypeTest              = 0x5D,
 
         // Helpers used with generic handle lookup cases
         NewObject                   = 0x60,

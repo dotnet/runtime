@@ -50,6 +50,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonUnknownTypeHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
     <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
+    <Compile Include="System\Runtime\InteropServices\JsonMarshal.cs" />
     <Compile Include="System\Text\Json\AppContextSwitchHelper.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
@@ -72,12 +73,10 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Escaping.cs" />
-    <Compile Include="System\Text\Json\JsonPropertyDictionary.cs" />
-    <Compile Include="System\Text\Json\JsonPropertyDictionary.KeyCollection.cs" />
-    <Compile Include="System\Text\Json\JsonPropertyDictionary.ValueCollection.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonArray.IList.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueOfElement.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Operators.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonNode.Parse.cs" />
@@ -85,6 +84,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Nodes\JsonNodeOptions.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonObject.IList.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfTCustomized.cs" />
@@ -100,9 +100,13 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.MultiSegment.cs" />
     <Compile Include="System\Text\Json\Reader\Utf8JsonReader.TryGet.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchema.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaExporter.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaExporterOptions.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaExporterContext.cs" />
+    <Compile Include="System\Text\Json\Schema\JsonSchemaType.cs" />
     <Compile Include="System\Text\Json\Serialization\Arguments.cs" />
     <Compile Include="System\Text\Json\Serialization\ArgumentState.cs" />
-    <Compile Include="System\Text\Json\Serialization\AsyncSerializationBufferWriterContext.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonObjectCreationHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConstructorAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonConverterAttribute.cs" />
@@ -121,6 +125,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ReadOnlyMemoryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\MemoryConverterFactory.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\RootLevelListConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Large.Reflection.cs" />
@@ -154,7 +159,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoKind.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolverChain.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolverWithAddedModifiers.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRefCacheBuilder.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
+    <Compile Include="System\Text\Json\ValueQueue.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
@@ -276,7 +283,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.Cache.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\MemberAccessor.cs" />
-    <Compile Include="System\Text\Json\Serialization\Metadata\ParameterRef.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PolymorphicTypeResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\PropertyRef.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\ReflectionEmitCachingMemberAccessor.Cache.cs" />
@@ -347,6 +353,14 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\DynamicallyAccessedMemberTypes.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfo.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Reflection\NullabilityInfoContext.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp' or $([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '9.0'))">
+    <Compile Include="System\Text\Json\OrderedDictionary.cs" />
+    <Compile Include="System\Text\Json\OrderedDictionary.KeyCollection.cs" />
+    <Compile Include="System\Text\Json\OrderedDictionary.ValueCollection.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '7.0'))">
@@ -410,9 +424,10 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
+  <!-- Important: Only the most recent source generator project should be referenced when building from source. -->
   <ItemGroup>
     <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
-    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
+    <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
   </ItemGroup>
 

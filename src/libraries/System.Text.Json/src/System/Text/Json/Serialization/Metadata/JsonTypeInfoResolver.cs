@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// which typically define contract metadata for small subsets of types.
         /// It can also be used to fall back to <see cref="DefaultJsonTypeInfoResolver"/> wherever necessary.
         /// </remarks>
-        public static IJsonTypeInfoResolver Combine(/*params*/ ReadOnlySpan<IJsonTypeInfoResolver?> resolvers)
+        public static IJsonTypeInfoResolver Combine(params ReadOnlySpan<IJsonTypeInfoResolver?> resolvers)
         {
             var resolverChain = new JsonTypeInfoResolverChain();
             foreach (IJsonTypeInfoResolver? resolver in resolvers)

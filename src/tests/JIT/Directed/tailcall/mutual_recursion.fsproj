@@ -7,8 +7,6 @@
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
   <PropertyGroup>
-    <NoStandardLib>True</NoStandardLib>
-    <Noconfig>True</Noconfig>
     <Optimize>True</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>

@@ -51,6 +51,7 @@ set(COMMON_RUNTIME_SOURCES
     ${GC_DIR}/softwarewritewatch.cpp
 
     ${CLR_SRC_NATIVE_DIR}/minipal/cpufeatures.c
+    ${CLR_SRC_NATIVE_DIR}/minipal/time.c
 )
 
 set(SERVER_GC_SOURCES
@@ -264,7 +265,7 @@ if(CLR_CMAKE_TARGET_WIN32)
   set(FEATURE_ETW 1)
   add_definitions(-DFEATURE_ETW)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
-  if (CLR_CMAKE_TARGET_ARCH_AMD64)
+  if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64)
     add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
   endif()
   if (CLR_CMAKE_TARGET_ARCH_I386)

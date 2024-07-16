@@ -3347,11 +3347,19 @@ function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcod
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
             // value
             append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-            builder.callImport("stelem_ref");
+            builder.callImport("stelemr_tc");
             builder.appendU8(WasmOpcode.br_if);
             builder.appendULeb(0);
             append_bailout(builder, ip, BailoutReason.ArrayStoreFailed);
             builder.endBlock();
+            return true;
+        }
+        case MintOpcode.MINT_STELEM_REF_UNCHECKED: {
+            // dest
+            append_getelema1(builder, ip, objectOffset, indexOffset, 4);
+            // &value (src)
+            append_ldloca(builder, valueOffset, 0);
+            builder.callImport("copy_ptr");
             return true;
         }
         case MintOpcode.MINT_LDELEM_REF:
@@ -3644,6 +3652,13 @@ function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
     }
 
     switch (index) {
+        case SimdIntrinsic2.V128_BITCAST: {
+            // BitCast is a no-op and so we just load the value and return it "as is"
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            append_simd_store(builder, ip);
+            return true;
+        }
+
         case SimdIntrinsic2.V128_I1_CREATE_SCALAR:
         case SimdIntrinsic2.V128_I2_CREATE_SCALAR:
         case SimdIntrinsic2.V128_I4_CREATE_SCALAR:
@@ -3850,15 +3865,19 @@ function emit_shuffle (builder: WasmBuilder, ip: MintOpcodePtr, elementCount: nu
                 builder.appendU8(i);
         }
         builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);
-        // multiply indices by 2 to scale from char indices to byte indices
+        // multiply indices by 2 or 4 to scale from elt indices to byte indices
         builder.i32_const(elementCount === 4 ? 2 : 1);
         builder.appendSimd(WasmSimdOpcode.i8x16_shl);
-        // now add 1 to the secondary lane of each char
+        // now add an offset to the additional bytes of each lane, i.e.
+        // 0 1 2 3 0 1 2 3 ...
         builder.appendSimd(WasmSimdOpcode.v128_const);
         for (let i = 0; i < elementCount; i++) {
             for (let j = 0; j < elementSize; j++)
                 builder.appendU8(j);
         }
+        // we can do a bitwise or since we know we previously multiplied all the lanes by 2 or 4,
+        //  so the 1 and 2 bits are already clear
+        builder.appendSimd(WasmSimdOpcode.v128_or);
     }
     // we now have two vectors on the stack, the values and the byte indices
     builder.appendSimd(WasmSimdOpcode.i8x16_swizzle);

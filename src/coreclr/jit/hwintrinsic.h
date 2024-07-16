@@ -232,10 +232,14 @@ enum HWIntrinsicFlag : unsigned int
     // The intrinsic has an enum operand. Using this implies HW_Flag_HasImmediateOperand.
     HW_Flag_HasEnumOperand = 0x1000000,
 
+    // The intrinsic comes in both vector and scalar variants. During the import stage if the basetype is scalar,
+    // then the intrinsic should be switched to a scalar only version.
+    HW_Flag_HasScalarInputVariant = 0x2000000,
+
 #endif // TARGET_XARCH
 
     // The intrinsic is a FusedMultiplyAdd intrinsic
-    HW_Flag_FmaIntrinsic = 0x20000000,
+    HW_Flag_FmaIntrinsic = 0x40000000,
 
 #if defined(TARGET_ARM64)
     // The intrinsic uses a mask in arg1 to select elements present in the result, and must use a low vector register.
@@ -477,6 +481,10 @@ struct TernaryLogicInfo
 
     static const TernaryLogicInfo& lookup(uint8_t control);
 
+    static uint8_t GetTernaryControlByte(genTreeOps oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(TernaryLogicOperKind oper, uint8_t op1, uint8_t op2);
+    static uint8_t GetTernaryControlByte(const TernaryLogicInfo& info, uint8_t op1, uint8_t op2, uint8_t op3);
+
     TernaryLogicUseFlags GetAllUseFlags() const
     {
         uint8_t useFlagsBits = 0;
@@ -531,6 +539,10 @@ struct HWIntrinsicInfo
 #ifdef TARGET_XARCH
     static bool                isAVX2GatherIntrinsic(NamedIntrinsic id);
     static FloatComparisonMode lookupFloatComparisonModeForSwappedArgs(FloatComparisonMode comparison);
+    static NamedIntrinsic      lookupIdForFloatComparisonMode(NamedIntrinsic      intrinsic,
+                                                              FloatComparisonMode comparison,
+                                                              var_types           simdBaseType,
+                                                              unsigned            simdSize);
 #endif
 
     // Member lookup
@@ -551,8 +563,10 @@ struct HWIntrinsicInfo
         return static_cast<CORINFO_InstructionSet>(result);
     }
 
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH)
     static int lookupIval(Compiler* comp, NamedIntrinsic id, var_types simdBaseType);
+#elif defined(TARGET_ARM64)
+    static int lookupIval(NamedIntrinsic id);
 #endif
 
     static bool tryLookupSimdSize(NamedIntrinsic id, unsigned* pSimdSize)
@@ -823,34 +837,37 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadPairVector64NonTemporal:
             case NI_AdvSimd_Arm64_LoadPairVector128:
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
-            case NI_AdvSimd_LoadVector64x2AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x2AndUnzip:
-            case NI_AdvSimd_LoadVector64x2:
-            case NI_AdvSimd_Arm64_LoadVector128x2:
+            case NI_AdvSimd_Load2xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load2xVector128AndUnzip:
+            case NI_AdvSimd_Load2xVector64:
+            case NI_AdvSimd_Arm64_Load2xVector128:
             case NI_AdvSimd_LoadAndInsertScalarVector64x2:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
             case NI_AdvSimd_LoadAndReplicateToVector64x2:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x2:
+            case NI_Sve_Load2xVectorAndUnzip:
                 return 2;
 
-            case NI_AdvSimd_LoadVector64x3AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x3AndUnzip:
-            case NI_AdvSimd_LoadVector64x3:
-            case NI_AdvSimd_Arm64_LoadVector128x3:
+            case NI_AdvSimd_Load3xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load3xVector128AndUnzip:
+            case NI_AdvSimd_Load3xVector64:
+            case NI_AdvSimd_Arm64_Load3xVector128:
             case NI_AdvSimd_LoadAndInsertScalarVector64x3:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
             case NI_AdvSimd_LoadAndReplicateToVector64x3:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x3:
+            case NI_Sve_Load3xVectorAndUnzip:
                 return 3;
 
-            case NI_AdvSimd_LoadVector64x4AndUnzip:
-            case NI_AdvSimd_Arm64_LoadVector128x4AndUnzip:
-            case NI_AdvSimd_LoadVector64x4:
-            case NI_AdvSimd_Arm64_LoadVector128x4:
+            case NI_AdvSimd_Load4xVector64AndUnzip:
+            case NI_AdvSimd_Arm64_Load4xVector128AndUnzip:
+            case NI_AdvSimd_Load4xVector64:
+            case NI_AdvSimd_Arm64_Load4xVector128:
             case NI_AdvSimd_LoadAndInsertScalarVector64x4:
             case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
             case NI_AdvSimd_LoadAndReplicateToVector64x4:
             case NI_AdvSimd_Arm64_LoadAndReplicateToVector128x4:
+            case NI_Sve_Load4xVectorAndUnzip:
                 return 4;
 #endif
 
@@ -865,17 +882,23 @@ struct HWIntrinsicInfo
         }
     }
 
+    static bool HasImmediateOperand(NamedIntrinsic id)
+    {
+#if defined(TARGET_ARM64)
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
+#elif defined(TARGET_XARCH)
+        return lookupCategory(id) == HW_Category_IMM;
+#else
+        return false;
+#endif
+    }
+
 #ifdef TARGET_ARM64
     static bool SIMDScalar(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_SIMDScalar) != 0;
-    }
-
-    static bool HasImmediateOperand(NamedIntrinsic id)
-    {
-        const HWIntrinsicFlag flags = lookupFlags(id);
-        return ((flags & HW_Flag_HasImmediateOperand) != 0) || HasEnumOperand(id);
     }
 
     static bool IsScalable(NamedIntrinsic id)
@@ -926,6 +949,47 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_HasEnumOperand) != 0;
     }
 
+    static bool HasScalarInputVariant(NamedIntrinsic id)
+    {
+        const HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_HasScalarInputVariant) != 0;
+    }
+
+    static NamedIntrinsic GetScalarInputVariant(NamedIntrinsic id)
+    {
+        assert(HasScalarInputVariant(id));
+
+        switch (id)
+        {
+            case NI_Sve_ConditionalExtractAfterLastActiveElement:
+                return NI_Sve_ConditionalExtractAfterLastActiveElementScalar;
+
+            case NI_Sve_ConditionalExtractLastActiveElement:
+                return NI_Sve_ConditionalExtractLastActiveElementScalar;
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+                return NI_Sve_SaturatingDecrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+                return NI_Sve_SaturatingDecrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+                return NI_Sve_SaturatingDecrementBy64BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+                return NI_Sve_SaturatingIncrementBy16BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+                return NI_Sve_SaturatingIncrementBy32BitElementCountScalar;
+
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+                return NI_Sve_SaturatingIncrementBy64BitElementCountScalar;
+
+            default:
+                unreached();
+        }
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)
@@ -964,7 +1028,72 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_PermuteVar2x) != 0;
     }
+
+    static bool IsTernaryLogic(NamedIntrinsic id)
+    {
+        return (id == NI_AVX512F_TernaryLogic) || (id == NI_AVX512F_VL_TernaryLogic) || (id == NI_AVX10v1_TernaryLogic);
+    }
 #endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+    static void GetImmOpsPositions(NamedIntrinsic id, CORINFO_SIG_INFO* sig, int* imm1Pos, int* imm2Pos)
+    {
+        switch (id)
+        {
+            case NI_AdvSimd_Insert:
+            case NI_AdvSimd_InsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalar:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x2:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x3:
+            case NI_AdvSimd_LoadAndInsertScalarVector64x4:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalar:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x2:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x3:
+            case NI_AdvSimd_Arm64_LoadAndInsertScalarVector128x4:
+            {
+                assert(sig->numArgs == 3);
+                *imm1Pos = 1;
+                break;
+            }
+
+            case NI_AdvSimd_Arm64_InsertSelectedScalar:
+            {
+                assert(sig->numArgs == 4);
+                *imm1Pos = 2;
+                *imm2Pos = 0;
+                break;
+            }
+
+            case NI_Sve_SaturatingDecrementBy16BitElementCount:
+            case NI_Sve_SaturatingDecrementBy32BitElementCount:
+            case NI_Sve_SaturatingDecrementBy64BitElementCount:
+            case NI_Sve_SaturatingDecrementBy8BitElementCount:
+            case NI_Sve_SaturatingIncrementBy16BitElementCount:
+            case NI_Sve_SaturatingIncrementBy32BitElementCount:
+            case NI_Sve_SaturatingIncrementBy64BitElementCount:
+            case NI_Sve_SaturatingIncrementBy8BitElementCount:
+            case NI_Sve_SaturatingDecrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingDecrementBy64BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy16BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy32BitElementCountScalar:
+            case NI_Sve_SaturatingIncrementBy64BitElementCountScalar:
+            {
+                assert(sig->numArgs == 3);
+                *imm1Pos = 1;
+                *imm2Pos = 0;
+                break;
+            }
+
+            default:
+            {
+                assert(sig->numArgs > 0);
+                *imm1Pos = 0;
+                break;
+            }
+        }
+    }
+#endif // TARGET_ARM64
 };
 
 #ifdef TARGET_ARM64

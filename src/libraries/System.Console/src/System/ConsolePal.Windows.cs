@@ -350,12 +350,34 @@ namespace System
                     while (true)
                     {
                         r = Interop.Kernel32.ReadConsoleInput(InputHandle, out ir, 1, out int numEventsRead);
-                        if (!r || numEventsRead == 0)
+                        if (!r)
                         {
                             // This will fail when stdin is redirected from a file or pipe.
                             // We could theoretically call Console.Read here, but I
                             // think we might do some things incorrectly then.
                             throw new InvalidOperationException(SR.InvalidOperation_ConsoleReadKeyOnFile);
+                        }
+
+                        if (numEventsRead == 0)
+                        {
+                            // This can happen when there are multiple console-attached
+                            // processes waiting for input, and another one is terminated
+                            // while we are waiting for input.
+                            //
+                            // (This is "almost certainly" a bug, but behavior has been
+                            // this way for a long time, so we should handle it:
+                            // https://github.com/microsoft/terminal/issues/15859)
+                            //
+                            // (It's a rare case to have multiple console-attached
+                            // processes waiting for input, but it can happen sometimes,
+                            // such as when ctrl+c'ing a build process that is spawning
+                            // tons of child processes--sometimes, due to the order in
+                            // which processes exit, a managed shell process (like pwsh)
+                            // might get back to the prompt and start trying to read input
+                            // while there are still child processes getting cleaned up.)
+                            //
+                            // In this case, we just need to retry the read.
+                            continue;
                         }
 
                         if (!IsReadKeyEvent(ref ir))
@@ -624,6 +646,25 @@ namespace System
         }
 
         public static void Beep()
+        {
+            const char BellCharacter = '\u0007'; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+
+            if (!Console.IsOutputRedirected)
+            {
+                Console.Out.Write(BellCharacter);
+                return;
+            }
+
+            if (!Console.IsErrorRedirected)
+            {
+                Console.Error.Write(BellCharacter);
+                return;
+            }
+
+            BeepFallback();
+        }
+
+        private static void BeepFallback()
         {
             const int BeepFrequencyInHz = 800;
             const int BeepDurationInMs = 200;
@@ -1175,7 +1216,7 @@ namespace System
 
                         // If the code page could be Unicode, we should use ReadConsole instead, e.g.
                         // Note that WriteConsoleW has a max limit on num of chars to write (64K)
-                        // [https://docs.microsoft.com/en-us/windows/console/writeconsole]
+                        // [https://learn.microsoft.com/windows/console/writeconsole]
                         // However, we do not need to worry about that because the StreamWriter in Console has
                         // a much shorter buffer size anyway.
                         int charsWritten;

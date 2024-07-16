@@ -28,12 +28,16 @@ namespace System.Diagnostics
         /// <param name="name">Event name.</param>
         /// <param name="timestamp">Event timestamp. Timestamp MUST only be used for the events that happened in the past, not at the moment of this call.</param>
         /// <param name="tags">Event Tags.</param>
-        public ActivityEvent(string name, DateTimeOffset timestamp = default, ActivityTagsCollection? tags = null)
+        public ActivityEvent(string name, DateTimeOffset timestamp = default, ActivityTagsCollection? tags = null) : this(name, timestamp, tags, tags is null ? 0 : tags.Count) { }
+
+        internal ActivityEvent(string name, DateTimeOffset timestamp, ref TagList tags) : this(name, timestamp, tags, tags.Count) { }
+
+        private ActivityEvent(string name, DateTimeOffset timestamp, IEnumerable<KeyValuePair<string, object?>>? tags, int tagsCount)
         {
             Name = name ?? string.Empty;
             Timestamp = timestamp != default ? timestamp : DateTimeOffset.UtcNow;
 
-            _tags = tags?.Count > 0 ? new Activity.TagsLinkedList(tags) : null;
+            _tags = tagsCount > 0 ? new Activity.TagsLinkedList(tags!) : null;
         }
 
         /// <summary>

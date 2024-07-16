@@ -65,7 +65,7 @@
         - src/tasks/AotCompilerTask/MonoAOTCompiler.props
         - src/tasks/AppleAppBuilder/Xcode.cs
         - src/tasks/MobileBuildTasks/Apple/AppleProject.cs
-        - dotnet/installer repo > src/redist/targets/GeneratePKG.targets
+        - https://github.com/dotnet/sdk repo > src/Installer/redist-installer/targets/GeneratePKG.targets
      -->
     <AndroidApiLevelMin>21</AndroidApiLevelMin>
     <iOSVersionMin>12.2</iOSVersionMin>
@@ -324,6 +324,7 @@
     <NoTargetFrameworkFiltering>true</NoTargetFrameworkFiltering>
 
     <NativeBuildPartitionPropertiesToRemove>ClrFullNativeBuild;ClrRuntimeSubset;ClrJitSubset;ClrPalTestsSubset;ClrAllJitsSubset;ClrILToolsSubset;ClrNativeAotSubset;ClrSpmiSubset;ClrCrossComponentsSubset;ClrDebugSubset;HostArchitecture;PgoInstrument;NativeOptimizationDataSupported;CMakeArgs;CxxStandardLibrary;CxxStandardLibraryStatic;CxxAbiLibrary</NativeBuildPartitionPropertiesToRemove>
+    <UseSystemZlib Condition="'$(TargetsAppleMobile)' == 'true' or '$(TargetOS)' == 'android' or '$(TargetArchitecture)' == 'armv6'">true</UseSystemZlib>
   </PropertyGroup>
 
   <!-- RepositoryEngineeringDir isn't set when Installer tests import this file. -->
@@ -390,7 +391,6 @@
     <NoWarn>$(NoWarn),CS8969</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">true</KeepNativeSymbols>
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == ''">false</KeepNativeSymbols>
     <!-- Used for launchSettings.json and runtime config files. -->

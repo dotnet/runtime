@@ -2833,8 +2833,8 @@ bool emitter::emitNoGChelper(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_CHECKED_ASSIGN_REF:
         case CORINFO_HELP_ASSIGN_BYREF:
 
-        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GET_NONGCSTATIC_BASE_NOCTOR:
 
         case CORINFO_HELP_INIT_PINVOKE_FRAME:
 
@@ -8225,6 +8225,9 @@ CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
     return emitComp->eeFindJitDataOffs(cnum);
 }
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
 {
     unsigned cnsSize  = 8;
@@ -8240,7 +8243,7 @@ CORINFO_FIELD_HANDLE emitter::emitSimdMaskConst(simdmask_t constValue)
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_MASK);
     return emitComp->eeFindJitDataOffs(cnum);
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 /*****************************************************************************
@@ -8787,7 +8790,7 @@ void emitter::emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize)
     callDsc* call;
 
 #ifdef JIT32_GCENCODER
-    unsigned regs = (emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET;
+    unsigned regs = (unsigned)((emitThisGCrefRegs | emitThisByrefRegs) & ~RBM_INTRET).GetIntRegSet();
 
     // The JIT32 GCInfo encoder allows us to (as the comment previously here said):
     // "Bail if this is a totally boring call", but the GCInfoEncoder/Decoder interface
@@ -10482,7 +10485,27 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 }
 
 #if !defined(JIT32_GCENCODER)
-// Start a new instruction group that is not interruptible
+//------------------------------------------------------------------------
+// emitDisableGC: Requests that the following instruction groups are not GC-interruptible.
+//
+// Assumptions:
+//    A NoGC request can be closed by a coresponding emitEnableGC.
+//    Overlapping/nested NoGC requests are supported - when number of requests
+//    drops to zero the region is closed. This is not expected to be common.
+//    A completion of an epilog will close NoGC region in progress and clear the request count
+//    regardless of request nesting. If a block after the epilog needs to be no-GC, it needs
+//    to call emitDisableGC() again.
+//
+// Notes:
+//    The semantic of NoGC region is that once the first instruction executes,
+//    some tracking invariants are violated and GC cannot happen, until the execution
+//    of the last instruction in the region makes GC safe again.
+//    In particular - once the IP is on the first instruction, but not executed it yet,
+//    it is still safe to do GC.
+//    The only special case is when NoGC region is used for prologs/epilogs.
+//    In such case the GC info could be incorrect until the prolog completes and epilogs
+//    may have unwindability restrictions, so the first instruction cannot have GC.
+
 void emitter::emitDisableGC()
 {
     assert(emitNoGCRequestCount < 10); // We really shouldn't have many nested "no gc" requests.
@@ -10511,7 +10534,17 @@ void emitter::emitDisableGC()
     }
 }
 
-// Start a new instruction group that is interruptible
+//------------------------------------------------------------------------
+// emitEnableGC(): Removes a request that the following instruction groups are not GC-interruptible.
+//
+// Assumptions:
+//    We should have nonzero count of NoGC requests.
+//    "emitEnableGC()" reduces the number of requests by 1.
+//    If the number of requests goes to 0, the subsequent instruction groups are GC-interruptible.
+//
+// Notes:
+//    See emitDisableGC for more details.
+
 void emitter::emitEnableGC()
 {
     assert(emitNoGCRequestCount > 0);

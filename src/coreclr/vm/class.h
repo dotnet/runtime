@@ -590,9 +590,6 @@ class EEClassOptionalFields
     // MISC FIELDS
     //
 
-    #define    MODULE_NON_DYNAMIC_STATICS      ((DWORD)-1)
-    DWORD m_cbModuleDynamicID;
-
 #if defined(UNIX_AMD64_ABI)
     // Number of eightBytes in the following arrays
     int m_numberEightBytes;
@@ -903,22 +900,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         m_NumThreadStaticFields = wNumThreadStaticFields;
-    }
-
-    // Statics are stored in a big chunk inside the module
-
-    inline  DWORD GetModuleDynamicID()
-    {
-        LIMITED_METHOD_CONTRACT;
-        SUPPORTS_DAC;
-        return HasOptionalFields() ? GetOptionalFields()->m_cbModuleDynamicID : MODULE_NON_DYNAMIC_STATICS;
-    }
-
-    inline void SetModuleDynamicID(DWORD cbModuleDynamicID)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasOptionalFields());
-        GetOptionalFields()->m_cbModuleDynamicID = cbModuleDynamicID;
     }
 
     /*
@@ -1817,6 +1798,14 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<> struct cdac_offsets<EEClass>
+{
+    static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
+    static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1894,7 +1883,7 @@ public:
 class UMThunkMarshInfo;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class DelegateEEClass : public EEClass
@@ -1912,7 +1901,7 @@ public:
     Volatile<PCODE>                  m_pMarshalStub;
 
 #ifdef FEATURE_COMINTEROP
-    ComPlusCallInfo *m_pComPlusCallInfo;
+    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
@@ -1994,7 +1983,6 @@ public:
         PCCOR_SIGNATURE pShortSig,
         DWORD   cShortSig,
         DWORD   dwVtableSlot,
-        LoaderAllocator *pLoaderAllocator,
         AllocMemTracker *pamTracker);
 
     // Generate a short sig for an array accessor
@@ -2003,10 +1991,8 @@ public:
                                       PCCOR_SIGNATURE *ppSig, // Generated signature
                                       DWORD * pcSig,      // Generated signature size
                                       LoaderAllocator *pLoaderAllocator,
-                                      AllocMemTracker *pamTracker
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-                                      ,BOOL fForStubAsIL
-#endif
+                                      AllocMemTracker *pamTracker,
+                                      BOOL fForStubAsIL
     );
 
 
@@ -2076,17 +2062,6 @@ inline PCODE GetPreStubEntryPoint()
 {
     return GetEEFuncEntryPoint(ThePreStub);
 }
-
-#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
-
-EXTERN_C void STDCALL ThePreStubCompactARM();
-
-inline PCODE GetPreStubCompactARMEntryPoint()
-{
-    return GetEEFuncEntryPoint(ThePreStubCompactARM);
-}
-
-#endif // defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
 
 PCODE TheUMThunkPreStub();
 

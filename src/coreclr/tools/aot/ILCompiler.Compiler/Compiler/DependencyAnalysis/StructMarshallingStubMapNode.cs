@@ -58,45 +58,54 @@ namespace ILCompiler.DependencyAnalysis
                 // the order of data written is as follows:
                 //  managed struct type
                 //  NumFields<< 2 | (HasInvalidLayout ? (2:0)) | (MarshallingRequired ? (1:0))
-                //  If MarshallingRequired:
-                //    size
-                //    struct marshalling thunk
-                //    struct unmarshalling thunk
-                //    struct cleanup thunk
-                //  For each field field:
-                //     name
-                //     offset
+                //  If !HasInvalidLayout
+                //    If MarshallingRequired:
+                //      size
+                //      struct marshalling thunk
+                //      struct unmarshalling thunk
+                //      struct cleanup thunk
+                //    For each field field:
+                //      name
+                //      offset
 
                 var nativeType = _interopStateManager.GetStructMarshallingNativeType(structType);
 
                 Vertex marshallingData = null;
-                if (MarshalHelpers.IsStructMarshallingRequired(structType))
-                {
-                    Vertex thunks = writer.GetTuple(
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingManagedToNativeThunk(structType)))),
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingNativeToManagedThunk(structType)))),
-                        writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingCleanupThunk(structType)))));
-
-                    uint size = (uint)nativeType.InstanceFieldSize.AsInt;
-                    marshallingData = writer.GetTuple(writer.GetUnsignedConstant(size), thunks);
-                }
-
                 Vertex fieldOffsetData = null;
-                for (int i = 0; i < nativeType.Fields.Length; i++)
-                {
-                    var row = writer.GetTuple(
-                        writer.GetStringConstant(nativeType.Fields[i].Name),
-                        writer.GetUnsignedConstant((uint)nativeType.Fields[i].Offset.AsInt)
-                        );
+                uint header;
 
-                    fieldOffsetData = (fieldOffsetData != null) ? writer.GetTuple(fieldOffsetData, row) : row;
+                if (!nativeType.HasInvalidLayout)
+                {
+                    if (MarshalHelpers.IsStructMarshallingRequired(structType))
+                    {
+                        Vertex thunks = writer.GetTuple(
+                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingManagedToNativeThunk(structType)))),
+                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingNativeToManagedThunk(structType)))),
+                            writer.GetUnsignedConstant(_externalReferences.GetIndex(factory.MethodEntrypoint(_interopStateManager.GetStructMarshallingCleanupThunk(structType)))));
+
+                        uint size = (uint)nativeType.InstanceFieldSize.AsInt;
+                        marshallingData = writer.GetTuple(writer.GetUnsignedConstant(size), thunks);
+                    }
+
+                    for (int i = 0; i < nativeType.Fields.Length; i++)
+                    {
+                        var row = writer.GetTuple(
+                            writer.GetStringConstant(nativeType.Fields[i].Name),
+                            writer.GetUnsignedConstant((uint)nativeType.Fields[i].Offset.AsInt)
+                            );
+
+                        fieldOffsetData = (fieldOffsetData != null) ? writer.GetTuple(fieldOffsetData, row) : row;
+                    }
+
+                    header = (uint)((marshallingData != null) ? InteropDataConstants.HasMarshallers : 0) |
+                            (uint)(nativeType.Fields.Length << InteropDataConstants.FieldCountShift);
+                }
+                else
+                {
+                    header = InteropDataConstants.HasInvalidLayout;
                 }
 
-                uint mask = (uint)((marshallingData != null) ? InteropDataConstants.HasMarshallers : 0) |
-                            (uint)(nativeType.HasInvalidLayout ? InteropDataConstants.HasInvalidLayout : 0) |
-                            (uint)(nativeType.Fields.Length << InteropDataConstants.FieldCountShift);
-
-                Vertex data = writer.GetUnsignedConstant(mask);
+                Vertex data = writer.GetUnsignedConstant(header);
                 if (marshallingData != null)
                     data = writer.GetTuple(data, marshallingData);
 

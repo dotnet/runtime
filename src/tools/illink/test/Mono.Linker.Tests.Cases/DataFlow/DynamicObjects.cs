@@ -154,7 +154,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[ExpectedWarning ("IL2026", nameof (MethodWithRequires))]
-			[ExpectedWarning ("IL3050", nameof (MethodWithRequires), Tool.Analyzer | Tool.NativeAot, "")]
+			[ExpectedWarning ("IL3050", nameof (MethodWithRequires), Tool.Analyzer | Tool.NativeAot, "NativeAOT Specific Warning")]
 			public static void Test ()
 			{
 				MethodWithRequires ();

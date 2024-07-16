@@ -17,6 +17,7 @@
     <Compile Include="..\Helpers.cs" />
     <Compile Include="..\TensorPrimitives.NonGeneric.Single.cs" />
     <Compile Include="..\TensorPrimitivesTests.cs" />
+    <Compile Include="..\TensorPrimitivesTests.Reference.cs" />
     <Compile Include="..\TensorPrimitives.ConvertTo.cs" />
     <Compile Include="..\TensorPrimitives.Generic.cs" />
   </ItemGroup>

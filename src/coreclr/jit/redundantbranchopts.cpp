@@ -118,30 +118,6 @@ static const ValueNumStore::VN_RELATION_KIND s_vnRelations[] = {ValueNumStore::V
                                                                 ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
 
 //------------------------------------------------------------------------
-// RelopImplicationInfo
-//
-// Describes information needed to check for and describe the
-// inferences between two relops.
-//
-struct RelopImplicationInfo
-{
-    // Dominating relop, whose value may be determined by control flow
-    ValueNum domCmpNormVN = ValueNumStore::NoVN;
-    // Dominated relop, whose value we would like to determine
-    ValueNum treeNormVN = ValueNumStore::NoVN;
-    // Relationship between the two relops, if any
-    ValueNumStore::VN_RELATION_KIND vnRelation = ValueNumStore::VN_RELATION_KIND::VRK_Same;
-    // Can we draw an inference?
-    bool canInfer = false;
-    // If canInfer and dominating relop is true, can we infer value of dominated relop?
-    bool canInferFromTrue = true;
-    // If canInfer and dominating relop is false, can we infer value of dominated relop?
-    bool canInferFromFalse = true;
-    // Reverse the sense of the inference
-    bool reverseSense = false;
-};
-
-//------------------------------------------------------------------------
 // RelopImplicationRule
 //
 // A rule allowing inference between two otherwise unrelated relops.
@@ -2248,12 +2224,10 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
                 return BasicBlockVisit::Abort;
             }
 
-            if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
+            if (!BitVecOps::TryAddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
             {
                 return BasicBlockVisit::Continue;
             }
-
-            BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
             stack.Push(succ);
             return BasicBlockVisit::Continue;

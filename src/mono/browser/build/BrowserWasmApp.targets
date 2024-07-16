@@ -61,9 +61,6 @@
   <ItemGroup>
     <!-- Allow running/debugging from VS -->
     <ProjectCapability Include="DotNetCoreWeb"/>
-
-    <_BoolPropertiesThatTriggerRelinking Include="WasmEnableSIMD" DefaultValueInRuntimePack="true" />
-    <_BoolPropertiesThatTriggerRelinking Include="WasmEnableExceptionHandling" DefaultValueInRuntimePack="true" />
   </ItemGroup>
 
   <Target Name="_GetWasmGenerateAppBundleDependencies">
@@ -73,7 +70,7 @@
 
     <PropertyGroup>
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.wasm'">true</_HasDotnetWasm>
-      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.js'">true</_HasDotnetJsWorker>
+      <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.worker.mjs'">true</_HasDotnetJsWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetNativeJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.native.js'">true</_HasDotnetNativeJs>
       <_HasDotnetGlobalizationJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.globalization.js'">true</_HasDotnetGlobalizationJs>
@@ -88,7 +85,7 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.runtime.js" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.js" Condition="'$(_HasDotnetNativeJs)' != 'true'" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.js')" />
+      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.native.worker.mjs')" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.globalization.js"
                        Condition="'$(HybridGlobalization)' == 'true' and
                                   '$(_HasDotnetGlobalizationJs)' != 'true' and
@@ -127,6 +124,7 @@
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.native.js -->
       <_WasmPThreadPoolInitialSize Condition="'$(_WasmPThreadPoolInitialSize)' == ''">-1</_WasmPThreadPoolInitialSize>
       <_WasmPThreadPoolUnusedSize Condition="'$(_WasmPThreadPoolUnusedSize)' == ''">-1</_WasmPThreadPoolUnusedSize>
+      <_WasmIsPublishing Condition="'$(_WasmIsPublishing)' == '' and '$(_IsPublishing)' != ''">$(_IsPublishing)</_WasmIsPublishing>
     </PropertyGroup>
 
     <ItemGroup>
@@ -152,6 +150,7 @@
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
+      IsPublish="$(_WasmIsPublishing)"
       IncludeThreadsWorker="$(WasmEnableThreads)"
       PThreadPoolInitialSize="$(_WasmPThreadPoolInitialSize)"
       PThreadPoolUnusedSize="$(_WasmPThreadPoolUnusedSize)"
@@ -551,7 +550,7 @@
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.worker.js" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.native.worker.js')" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.worker.mjs" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.native.worker.mjs')" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.globalization.js" Condition="'$(HybridGlobalization)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.globalization.js')" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />
       <_WasmAssembliesInternal Remove="$(_WasmDedupAssembly)"/>

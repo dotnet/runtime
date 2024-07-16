@@ -26,7 +26,7 @@ jobs:
     # Linux arm
     - ${{ if eq(parameters.platform, 'linux_arm') }}:
       - ${{ if or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true)) }}:
-        - (Debian.11.Arm32.Open)Ubuntu.2004.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7
+        - (Debian.12.Arm32.Open)Ubuntu.2004.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7
 
     # Linux armv6
     - ${{ if eq(parameters.platform, 'linux_armv6') }}:
@@ -177,6 +177,6 @@ jobs:
 
     # Browser WebAssembly windows
     - ${{ if in(parameters.platform, 'browser_wasm_win', 'wasi_wasm_win') }}:
-      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly
+      - (Windows.Amd64.Server2022.Open)windows.amd64.server2022.open@mcr.microsoft.com/dotnet-buildtools/prereqs:windowsservercore-ltsc2022-helix-webassembly-20240702174122-7aba2af
 
     ${{ insert }}: ${{ parameters.jobParameters }}

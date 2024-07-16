@@ -1681,7 +1681,7 @@ namespace System.Threading.Tasks
             {
                 // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
                 Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
-                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.GetMethodName(), 0);
             }
 
             try
@@ -4704,7 +4704,7 @@ namespace System.Threading.Tasks
         /// the execution of at least one of the <see cref="Task"/> instances.
         /// </exception>
         [UnsupportedOSPlatform("browser")]
-        public static void WaitAll(/*params*/ ReadOnlySpan<Task> tasks)
+        public static void WaitAll(params ReadOnlySpan<Task> tasks)
         {
             bool waitResult = WaitAllCore(tasks, Timeout.Infinite, default);
             Debug.Assert(waitResult, "expected wait to succeed");
@@ -5973,7 +5973,7 @@ namespace System.Threading.Tasks
         /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
-        public static Task WhenAll(/*params*/ ReadOnlySpan<Task> tasks) =>
+        public static Task WhenAll(params ReadOnlySpan<Task> tasks) =>
             tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
 
         /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
@@ -6300,7 +6300,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task.
         /// </exception>
-        public static Task<TResult[]> WhenAll<TResult>(/*params*/ ReadOnlySpan<Task<TResult>> tasks)
+        public static Task<TResult[]> WhenAll<TResult>(params ReadOnlySpan<Task<TResult>> tasks)
         {
             if (tasks.IsEmpty)
             {
@@ -6471,7 +6471,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task, or was empty.
         /// </exception>
-        public static Task<Task> WhenAny(/*params*/ ReadOnlySpan<Task> tasks) =>
+        public static Task<Task> WhenAny(params ReadOnlySpan<Task> tasks) =>
             WhenAnyCore(tasks);
 
         /// <summary>
@@ -6755,7 +6755,7 @@ namespace System.Threading.Tasks
         /// <exception cref="ArgumentException">
         /// The <paramref name="tasks"/> array contained a null task, or was empty.
         /// </exception>
-        public static Task<Task<TResult>> WhenAny<TResult>(/*params*/ ReadOnlySpan<Task<TResult>> tasks) =>
+        public static Task<Task<TResult>> WhenAny<TResult>(params ReadOnlySpan<Task<TResult>> tasks) =>
             WhenAnyCore(tasks);
 
         /// <summary>Creates a task that will complete when either of the supplied tasks have completed.</summary>

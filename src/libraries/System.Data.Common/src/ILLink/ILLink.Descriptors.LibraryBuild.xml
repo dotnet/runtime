@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Data.Common">
+    <type fullname="System.Data.DataColumn">
+      <method name="ResetCaption" />
+      <method name="ResetNamespace" />
+      <method name="ShouldSerializeCaption" />
+      <method name="ShouldSerializeDefaultValue" />
+      <method name="ShouldSerializeNamespace" />
+    </type>
+    <type fullname="System.Data.DataRow">
+      <method name="ResetLastChangedColumn" />
+    </type>
+    <type fullname="System.Data.DataSet">
+      <method name="ResetRelations" />
+      <method name="ResetTables" />
+      <method name="ShouldSerializeLocale" />
+      <method name="ShouldSerializeRelations" />
+      <method name="ShouldSerializeTables" />
+    </type>
+    <type fullname="System.Data.DataTable">
+      <method name="ResetCaseSensitive" />
+      <method name="ResetColumns" />
+      <method name="ResetConstraints" />
+      <method name="ResetIndexes" />
+      <method name="ResetNamespace" />
+      <method name="ResetPrimaryKey" />
+      <method name="ShouldSerializeCaseSensitive" />
+      <method name="ShouldSerializeLocale" />
+      <method name="ShouldSerializeNamespace" />
+      <method name="ShouldSerializePrimaryKey" />
+    </type>
+  </assembly>
+</linker>

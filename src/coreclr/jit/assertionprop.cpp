@@ -2997,18 +2997,21 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         }
         break;
 
+#endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case TYP_MASK:
         {
             simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, &value, sizeof(simdmask_t));
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+            memcpy(&mskCon->gtSimdMaskVal, &value, sizeof(simdmask_t));
 
-            conValTree = vecCon;
+            conValTree = mskCon;
             break;
         }
         break;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
         case TYP_BYREF:
@@ -3117,114 +3120,23 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
 
         if (inspectIntrinsic)
         {
-            GenTreeHWIntrinsic* parent = destParent->AsHWIntrinsic();
-            GenTreeVecCon*      vecCon = value->AsVecCon();
-
-            NamedIntrinsic intrinsicId  = parent->GetHWIntrinsicId();
-            var_types      simdBaseType = parent->GetSimdBaseType();
+            GenTreeHWIntrinsic* parent      = destParent->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = parent->GetHWIntrinsicId();
 
             if (!HWIntrinsicInfo::CanBenefitFromConstantProp(intrinsicId))
             {
                 return false;
             }
 
-            switch (intrinsicId)
-            {
-#if defined(TARGET_ARM64)
-                case NI_Vector64_op_Equality:
-                case NI_Vector64_op_Inequality:
-#endif // TARGET_ARM64
-                case NI_Vector128_op_Equality:
-                case NI_Vector128_op_Inequality:
-#if defined(TARGET_XARCH)
-                case NI_Vector256_op_Equality:
-                case NI_Vector256_op_Inequality:
-                case NI_Vector512_op_Equality:
-                case NI_Vector512_op_Inequality:
-#endif // TARGET_XARCH
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for non floating-point since +0.0 == -0.0
+            // For several of the scenarios we may skip the costing logic
+            // since we know that the operand is always containable and therefore
+            // is always cost effective to propagate.
 
-                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
-                }
-
-#if defined(TARGET_ARM64)
-                case NI_AdvSimd_CompareEqual:
-                case NI_AdvSimd_Arm64_CompareEqual:
-                case NI_AdvSimd_Arm64_CompareEqualScalar:
-                {
-                    // We can optimize when the constant is zero due to a
-                    // specialized encoding for the instruction
-
-                    if (!vecCon->IsZero())
-                    {
-                        return false;
-                    }
-                    break;
-                }
-
-                case NI_AdvSimd_CompareGreaterThan:
-                case NI_AdvSimd_CompareGreaterThanOrEqual:
-                case NI_AdvSimd_Arm64_CompareGreaterThan:
-                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqual:
-                case NI_AdvSimd_Arm64_CompareGreaterThanScalar:
-                case NI_AdvSimd_Arm64_CompareGreaterThanOrEqualScalar:
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for signed types, due to a specialized encoding for
-                    // the instruction
-
-                    if (!vecCon->IsZero() || varTypeIsUnsigned(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
-                }
-#endif // TARGET_ARM64
-
-#if defined(TARGET_XARCH)
-                case NI_SSE2_Insert:
-                case NI_SSE41_Insert:
-                case NI_SSE41_X64_Insert:
-                {
-                    // We can optimize for float when the constant is zero
-                    // due to a specialized encoding for the instruction
-
-                    if ((simdBaseType != TYP_FLOAT) || !vecCon->IsZero())
-                    {
-                        return false;
-                    }
-                    break;
-                }
-
-                case NI_AVX512F_CompareEqualMask:
-                case NI_AVX512F_CompareNotEqualMask:
-                {
-                    // We can optimize when the constant is zero, but only
-                    // for non floating-point since +0.0 == -0.0
-
-                    if (!vecCon->IsZero() || varTypeIsFloating(simdBaseType))
-                    {
-                        return false;
-                    }
-                    break;
-                }
-#endif // TARGET_XARCH
-
-                default:
-                {
-                    break;
-                }
-            }
+            return parent->ShouldConstantProp(dest, value->AsVecCon());
         }
 #endif // FEATURE_HW_INTRINSICS
     }
-    else if (!value->IsCnsFltOrDbl())
+    else if (!value->IsCnsFltOrDbl() && !value->IsCnsMsk())
     {
         return true;
     }
@@ -4934,6 +4846,52 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*                 
         }
     }
     return NO_ASSERTION_INDEX;
+}
+
+//------------------------------------------------------------------------
+// optAssertionVNIsNonNull: See if we can prove that the value of a VN is
+// non-null using assertions.
+//
+// Arguments:
+//   vn         - VN to check
+//   assertions - set of live assertions
+//
+// Return Value:
+//   True if the VN could be proven non-null.
+//
+bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions)
+{
+    if (vnStore->IsKnownNonNull(vn))
+    {
+        return true;
+    }
+
+    // Check each assertion to find if we have a vn != null assertion.
+    //
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
+        {
+            break;
+        }
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        if (!curAssertion->CanPropNonNull())
+        {
+            continue;
+        }
+
+        if (curAssertion->op1.vn != vn)
+        {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 /*****************************************************************************
