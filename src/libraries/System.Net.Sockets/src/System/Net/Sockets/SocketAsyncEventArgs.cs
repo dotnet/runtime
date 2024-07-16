@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,6 +72,7 @@ namespace System.Net.Sockets
         private readonly bool _flowExecutionContext;
         private ExecutionContext? _context;
         private static readonly ContextCallback s_executionCallback = ExecutionCallback;
+        private static ConditionalWeakTable<SocketAsyncEventArgs, Activity>? s_connectActivityTable;
         private Socket? _currentSocket;
         private bool _userSocket; // if false when performing Connect, _currentSocket should be disposed
         private bool _disposeCalled;
@@ -224,7 +226,8 @@ namespace System.Net.Sockets
                     break;
 
                 case SocketAsyncOperation.Connect:
-                    SocketsTelemetry.Log.AfterConnect(SocketError);
+                    SocketsTelemetry.Log.AfterConnect(SocketError, ConnectActivity);
+                    ConnectActivity = null;
                     break;
 
                 default:
@@ -300,6 +303,26 @@ namespace System.Net.Sockets
         {
             get { return _userToken; }
             set { _userToken = value; }
+        }
+
+        internal Activity? ConnectActivity
+        {
+            // ConditionalWeakTable is used to avoid penalizing every SAEA with a new field in the the vast majority of the cases,
+            // when ConnectActivity is null. Accessors of this property should never race over the same SAEA instance.
+            // Telemetry logic ensures that getter calls are always preceded by a setter call.
+            get => s_connectActivityTable?.TryGetValue(this, out Activity? result) == true ? result : null;
+            set
+            {
+                if (value is not null)
+                {
+                    LazyInitializer.EnsureInitialized(ref s_connectActivityTable, () => new ConditionalWeakTable<SocketAsyncEventArgs, Activity>());
+                    s_connectActivityTable.AddOrUpdate(this, value);
+                }
+                else
+                {
+                    s_connectActivityTable?.Remove(this);
+                }
+            }
         }
 
         public void SetBuffer(int offset, int count)

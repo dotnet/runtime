@@ -566,7 +566,7 @@ BOOL PrestubMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
         // native code versions, even if they aren't the one that was reported by this trace, see
         // DebuggerController::PatchTrace() under case TRACE_MANAGED. This alleviates the StubManager from having to prevent the
         // race that occurs here.
-        trace->InitForStub(GetFunction()->GetMethodEntryPoint());
+        trace->InitForStub(GetFunction()->GetMethodEntryPointIfExists());
     }
     else
     {
@@ -612,7 +612,7 @@ MethodDesc* StubDispatchFrame::GetFunction()
     {
         if (m_pRepresentativeMT != NULL)
         {
-            pMD = m_pRepresentativeMT->GetMethodDescForSlot(m_representativeSlot);
+            pMD = m_pRepresentativeMT->GetMethodDescForSlot_NoThrow(m_representativeSlot);
 #ifndef DACCESS_COMPILE
             m_pMD = pMD;
 #endif
