@@ -11,27 +11,27 @@ using Microsoft.Diagnostics.DataContractReader;
 
 namespace StressLogAnalyzer
 {
-    internal sealed class GCHeapMap
+    internal sealed class GCThreadMap
     {
         private ulong _seenHeapBitmap;
         private readonly ConcurrentDictionary<ulong, (ulong heap, bool background)> _heapMap = [];
 
-        public void ProcessInterestingMessage(ulong threadId, InterestingStringFinder.WellKnownString wellKnownString, IReadOnlyList<TargetPointer> args)
+        public void ProcessInterestingMessage(ulong threadId, WellKnownString wellKnownString, IReadOnlyList<TargetPointer> args)
         {
             switch (wellKnownString)
             {
-                case InterestingStringFinder.WellKnownString.THREAD_WAIT:
-                case InterestingStringFinder.WellKnownString.THREAD_WAIT_DONE:
-                case InterestingStringFinder.WellKnownString.MARK_START:
-                case InterestingStringFinder.WellKnownString.PLAN_START:
-                case InterestingStringFinder.WellKnownString.RELOCATE_START:
-                case InterestingStringFinder.WellKnownString.RELOCATE_END:
-                case InterestingStringFinder.WellKnownString.COMPACT_START:
-                case InterestingStringFinder.WellKnownString.COMPACT_END:
+                case WellKnownString.THREAD_WAIT:
+                case WellKnownString.THREAD_WAIT_DONE:
+                case WellKnownString.MARK_START:
+                case WellKnownString.PLAN_START:
+                case WellKnownString.RELOCATE_START:
+                case WellKnownString.RELOCATE_END:
+                case WellKnownString.COMPACT_START:
+                case WellKnownString.COMPACT_END:
                     RememberHeapForThread(threadId, (ulong)args[0], false);
                     break;
 
-                case InterestingStringFinder.WellKnownString.DESIRED_NEW_ALLOCATION:
+                case WellKnownString.DESIRED_NEW_ALLOCATION:
                     if (args[1] <= 1)
                     {
                         // do this only for gen 0 and 1, because otherwise it
@@ -40,7 +40,7 @@ namespace StressLogAnalyzer
                     }
                     break;
 
-                case InterestingStringFinder.WellKnownString.START_BGC_THREAD:
+                case WellKnownString.START_BGC_THREAD:
                     RememberHeapForThread(threadId, (ulong)args[0], true);
                     break;
             }
@@ -60,6 +60,8 @@ namespace StressLogAnalyzer
         }
 
         public bool ThreadHasHeap(ulong threadId) => _heapMap.ContainsKey(threadId);
+
+        public (ulong heap, bool background) GetThreadHeap(ulong threadId) => _heapMap[threadId];
 
         public bool IncludeThread(ulong threadId, ThreadFilter filter)
         {

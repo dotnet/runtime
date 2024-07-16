@@ -13,33 +13,8 @@ using Microsoft.Diagnostics.DataContractReader;
 
 namespace StressLogAnalyzer
 {
-    internal sealed class InterestingStringFinder(Target target, string[] userStrings, string[] userStringPrefixes, bool enableDefaultMessages)
+    internal sealed class InterestingStringFinder(Target target, string[] userStrings, string[] userStringPrefixes, bool enableDefaultMessages) : IInterestingStringFinder
     {
-        public enum WellKnownString
-        {
-            THREAD_WAIT,
-            THREAD_WAIT_DONE,
-            GCSTART,
-            GCEND,
-            MARK_START,
-            PLAN_START,
-            RELOCATE_START,
-            RELOCATE_END,
-            COMPACT_START,
-            COMPACT_END,
-            GCROOT,
-            PLUG_MOVE,
-            GCMEMCOPY,
-            GCROOT_PROMOTE,
-            PLAN_PLUG,
-            PLAN_PINNED_PLUG,
-            DESIRED_NEW_ALLOCATION,
-            MAKE_UNUSED_ARRAY,
-            START_BGC_THREAD,
-            RELOCATE_REFERENCE,
-            LOGGING_OFF,
-        }
-
         private static readonly Dictionary<string, WellKnownString> _knownStrings =
             new()
             {
@@ -101,7 +76,7 @@ namespace StressLogAnalyzer
 
         public bool IsInteresting(TargetPointer formatStringPointer, out WellKnownString? wellKnownStringKind)
         {
-            (bool isInteresting, WellKnownString? wellKnown)  = _addressCache.GetOrAdd(formatStringPointer.Value, (address) =>
+            (bool isInteresting, WellKnownString? wellKnown) = _addressCache.GetOrAdd(formatStringPointer.Value, (address) =>
             {
                 string formatString = ReadZeroTerminatedString(formatStringPointer, 1024);
                 WellKnownString? wellKnownId = null;

@@ -8,11 +8,14 @@ using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO.MemoryMappedFiles;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.DataContractReader;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Win32.SafeHandles;
+using StressLogAnalyzer.Filters;
+using StressLogAnalyzer.Output;
 
 namespace StressLogAnalyzer;
 
@@ -114,6 +117,7 @@ public static class Program
         var timeRanges = new CliOption<TimeRange>("--time", "-t")
         {
             Arity = ArgumentArity.OneOrMore,
+            DefaultValueFactory = argument => new TimeRange(0, double.MaxValue),
             CustomParser = argument =>
             {
                 string value = argument.Tokens[0].Value;
@@ -279,7 +283,7 @@ public static class Program
                 args.GetValue(inputFile)!,
                 args.GetValue(outputFile),
                 args.GetValue(valueRanges)!,
-                args.GetValue(timeRanges),
+                args.GetValue(timeRanges)!,
                 args.GetValue(allMessagesOption),
                 !args.GetValue(defaultMessagesOption), // The option specifies suppressing default messages
                 args.GetValue(levelFilter)!,
@@ -318,10 +322,37 @@ public static class Program
             do
             {
                 using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
-                var analyzer = new StressLogAnalyzer(target, stressLogContract, options, outputFile ?? Console.Out);
-                await analyzer.AnalyzeLogsAsync(logs, token).ConfigureAwait(false);
 
-                // TODO: Print footer.
+                InterestingStringFinder stringFinder = new(target, options.FormatFilter ?? [], options.FormatPrefixFilter ?? [], options.IncludeDefaultMessages);
+
+                IMessageFilter messageFilter = CreateMessageFilter(options, stringFinder);
+
+                GCThreadMap gcThreadMap = new();
+
+                IThreadNameOutput threadNameOutput = options.PrintHexThreadIds
+                    ? new HexThreadNameOutput() : new GCThreadNameOutput(gcThreadMap);
+
+                TimeTracker timeTracker = CreateTimeTracker(accessor.SafeMemoryMappedViewHandle, options);
+
+                var analyzer = new StressLogAnalyzer(
+                    stressLogContract,
+                    stringFinder,
+                    messageFilter,
+                    options.ThreadFilter,
+                    options.EarliestMessageThreads);
+                await analyzer.AnalyzeLogsAsync(
+                    logs,
+                    timeTracker,
+                    gcThreadMap,
+                    new StressMessageWriter(
+                        threadNameOutput,
+                        timeTracker,
+                        target,
+                        options.PrintFormatStrings,
+                        outputFile ?? Console.Out),
+                    token).ConfigureAwait(false);
+
+                PrintFooter(accessor.SafeMemoryMappedViewHandle, stressLogContract, logs);
 
                 Console.Write("'q' to quit, 'r' to run again\n>");
 
@@ -348,6 +379,57 @@ public static class Program
         }
     }
 
+    private static unsafe void PrintFooter(SafeMemoryMappedViewHandle handle, IStressLog stressLogContract, TargetPointer logs)
+    {
+        byte* buffer = null;
+        try
+        {
+            handle.AcquirePointer(ref buffer);
+            StressLogHeader* header = (StressLogHeader*)buffer;
+
+            double usedSize = (double)(header->memoryCur - header->memoryBase) / (1024 * 1024 * 1024);
+            double availableSize = (double)(header->memoryLimit - header->memoryCur) / (1024 * 1024 * 1024);
+
+            ThreadStressLogData[] threadLogs = [.. stressLogContract.GetThreadStressLogs(logs)];
+
+            Console.WriteLine($"Use file size: {usedSize:F3} GB, still available {availableSize:F3} GB, {threadLogs.Length} threads total, {threadLogs.Count(t => t.WriteHasWrapped)} overwrote earlier messages");
+            Console.WriteLine($"{header->threadsWithNoLog} threads did not get a log!");
+        }
+        finally
+        {
+            handle.ReleasePointer();
+        }
+    }
+
+    private static IMessageFilter CreateMessageFilter(Options options, IInterestingStringFinder stringFinder)
+    {
+        if (options.IncludeAllMessages)
+        {
+            return new AllMessagesFilter(true);
+        }
+
+        IMessageFilter filter = new AllMessagesFilter(false);
+        if (options.ValueRanges is not [])
+        {
+            filter = new ValueFilter(filter, options.ValueRanges);
+            filter = new ValueRangeFilter(filter, stringFinder, options.ValueRanges);
+        }
+
+        if (options.LevelFilter is not [])
+        {
+            filter = new DPrintLevelFilter(filter, options.LevelFilter);
+        }
+
+        filter = new InterestingMessageFilter(filter, stringFinder);
+
+        if (options.IgnoreFacility is ulong ignore)
+        {
+            filter = new FacilityMessageFilter(filter, ignore);
+        }
+
+        return filter;
+    }
+
     private static unsafe (Target target, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
     {
         byte* buffer = null;
@@ -370,6 +452,21 @@ public static class Program
             nuint.Size);
 
         return (target, header->logs);
+    }
+
+    private static unsafe TimeTracker CreateTimeTracker(SafeMemoryMappedViewHandle handle, Options options)
+    {
+        byte* buffer = null;
+        try
+        {
+            handle.AcquirePointer(ref buffer);
+            StressLogHeader* header = (StressLogHeader*)buffer;
+            return new TimeTracker(header->startTimeStamp, header->tickFrequency, options.Time, options.GCIndex);
+        }
+        finally
+        {
+            handle.ReleasePointer();
+        }
     }
 
     private static ContractDescriptorParser.ContractDescriptor GetDescriptor(int stressLogVersion)

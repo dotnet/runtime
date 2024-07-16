@@ -7,7 +7,7 @@ namespace StressLogAnalyzer;
 
 public record struct IntegerRange(ulong Start, ulong End);
 
-public record struct TimeRange(double StartTimestamp, double EndTimestamp);
+public sealed record TimeRange(double StartTimestamp, double EndTimestamp);
 
 public sealed class ThreadFilter
 {

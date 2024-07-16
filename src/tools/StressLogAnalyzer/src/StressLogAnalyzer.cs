@@ -11,28 +11,38 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader;
 using System.Buffers;
 using System.Collections;
+using StressLogAnalyzer.Filters;
+using StressLogAnalyzer.Output;
 
 namespace StressLogAnalyzer;
 
-internal class StressLogAnalyzer(Target target, IStressLog stressLogContract, Options options, TextWriter output)
+internal sealed class StressLogAnalyzer(
+    IStressLog stressLogContract,
+    IInterestingStringFinder stringFinder,
+    IMessageFilter messageFilter,
+    ThreadFilter threadFilter,
+    ThreadFilter? earliestMessageFilter)
 {
-    private readonly InterestingStringFinder _messageStringChecker = new(target, options.FormatFilter ?? [], options.FormatPrefixFilter ?? [], options.IncludeDefaultMessages);
-
-    public async Task AnalyzeLogsAsync(TargetPointer logsPointer, CancellationToken token)
+    public async Task AnalyzeLogsAsync(TargetPointer logsPointer, TimeTracker timeTracker, GCThreadMap gcThreadMap, IStressMessageOutput messageOutput, CancellationToken token)
     {
         IEnumerable<ThreadStressLogData> logs = [.. stressLogContract.GetThreadStressLogs(logsPointer)];
 
-        if (!options.ThreadFilter.HasAnyGCThreadFilter)
+        // The "end" timestamp is the timestamp of the most recent message.
+        timeTracker.SetEndTimestamp(
+            logs.Select(
+                log => stressLogContract.GetStressMessages(log).FirstOrDefault().Timestamp)
+            .Max());
+
+        if (!threadFilter.HasAnyGCThreadFilter)
         {
             // If we don't have any GC thread filters, we can pre-filter on thread ID now.
             // Otherwise, we need to wait until we identify which threads are GC threads before
             // we can filter.
-            logs = logs.Where(log => options.ThreadFilter.IncludeThread(log.ThreadId));
+            logs = logs.Where(log => threadFilter.IncludeThread(log.ThreadId));
         }
 
-        GCHeapMap gcThreadMap = new();
         ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> earliestMessages = [];
-        ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> messages = [];
+        ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> allMessages = [];
 
         await Parallel.ForEachAsync(logs, token, (log, ct) =>
         {
@@ -42,30 +52,45 @@ internal class StressLogAnalyzer(Target target, IStressLog stressLogContract, Op
             {
                 token.ThrowIfCancellationRequested();
 
-                InterestingStringFinder.WellKnownString? wellKnownString = null;
-                bool shouldPrintMessage = options.IncludeAllMessages || FilterMessage(message, out wellKnownString);
-
-                if (wellKnownString.HasValue)
-                {
-                    gcThreadMap.ProcessInterestingMessage(log.ThreadId, wellKnownString.Value, message.Args);
-                    // TODO: Record GC Times
-                }
-
-                if (!shouldPrintMessage && options.ValueRanges is [_, ..] interestingValueRanges)
-                {
-                    shouldPrintMessage = interestingValueRanges.Any(range => message.Args.Any(arg => range.Start <= arg && arg <= range.End));
-                }
-
-                if (shouldPrintMessage)
-                {
-                    messages.Add((log, message));
-                }
-
                 earliestMessage = message;
 
-                if (options.ThreadFilter.HasAnyGCThreadFilter
+                TimeTracker.TimeQueryResult time = timeTracker.IsInTimeRange(message.Timestamp);
+
+                if (time == TimeTracker.TimeQueryResult.AfterRange)
+                {
+                    // We still haven't reached the interesting time range.
+                    // Skip this message.
+                    continue;
+                }
+                else if (time == TimeTracker.TimeQueryResult.BeforeRange)
+                {
+                    // We've passed the interesting time range.
+                    // We can stop processing this thread.
+                    break;
+                }
+                // Otherwise, we're in the interesting time range.
+
+                if (messageFilter.IncludeMessage(message))
+                {
+                    allMessages.Add((log, message));
+                }
+
+                if (stringFinder.IsWellKnown(out WellKnownString? wellKnown))
+                {
+                    gcThreadMap.ProcessInterestingMessage(log.ThreadId, wellKnown.Value, message.Args);
+                    if (wellKnown.Value == WellKnownString.GCSTART)
+                    {
+                        timeTracker.RecordGCStart(message.Args[0], message.Timestamp);
+                    }
+                    else if (wellKnown.Value == WellKnownString.GCEND)
+                    {
+                        timeTracker.RecordGCEnd(message.Args[0], message.Timestamp);
+                    }
+                }
+
+                if (threadFilter.HasAnyGCThreadFilter
                     && gcThreadMap.ThreadHasHeap(log.ThreadId)
-                    && !gcThreadMap.IncludeThread(log.ThreadId, options.ThreadFilter))
+                    && !gcThreadMap.IncludeThread(log.ThreadId, threadFilter))
                 {
                     // As soon as we know that this thread corresponds a GC heap that we don't want, we can skip the rest of the messages.
                     break;
@@ -74,141 +99,39 @@ internal class StressLogAnalyzer(Target target, IStressLog stressLogContract, Op
 
             // If we're recording the earliest messages for this thread, do so now.
             if (earliestMessage is not null
-                && options.EarliestMessageThreads is not null
-                && gcThreadMap.IncludeThread(log.ThreadId, options.EarliestMessageThreads))
+                && earliestMessageFilter is not null
+                && gcThreadMap.IncludeThread(log.ThreadId, earliestMessageFilter))
             {
                 earliestMessages.Add((log, earliestMessage.Value));
             }
             return ValueTask.CompletedTask;
         }).ConfigureAwait(false);
 
-        // TODO: Re-filter out the messages we added before we knew a thread was a filtered-out GC thread
+        IEnumerable<(ThreadStressLogData thread, StressMsgData message)> messages = allMessages;
 
-        StressMessageFormatter formatter = new(target, new DefaultSpecialPointerFormatter());
+        if (threadFilter.HasAnyGCThreadFilter)
+        {
+            // Re-filter out the messages we added before we knew a thread was a filtered-out GC thread
+            messages = messages.Where(message => gcThreadMap.IncludeThread(message.thread.ThreadId, threadFilter));
+        }
 
-        // TODO: Sort messages by timestamp
+        // Now that we know all GC times, we can filter out messages that aren't in interesting GC time ranges.
+        messages = messages.Where(message => timeTracker.IsInInterestingGCTimeRange(message.message.Timestamp));
+
+        // Order by timestamp and then by thread id
+        messages = messages.OrderBy(message => (message.message.Timestamp, message.thread.ThreadId));
+
         foreach (var message in messages)
         {
-            // TODO: Write out thread id
-            await output.WriteLineAsync(formatter.GetFormattedMessage(message.message)).ConfigureAwait(false);
+            await messageOutput.OutputMessageAsync(message.thread, message.message).ConfigureAwait(false);
         }
 
-        await output.WriteLineAsync("\nEarliest messages:").ConfigureAwait(false);
+        await messageOutput.OutputLineAsync("\nEarliest messages:").ConfigureAwait(false);
 
         // TODO: Sort messages by timestamp
-        foreach (var message in earliestMessages)
+        foreach ((ThreadStressLogData thread, StressMsgData message) in earliestMessages.OrderBy(message => (message.message.Timestamp, message.thread.ThreadId)))
         {
-            await output.WriteLineAsync(formatter.GetFormattedMessage(message.message)).ConfigureAwait(false);
+            await messageOutput.OutputMessageAsync(thread, message).ConfigureAwait(false);
         }
-    }
-
-    private bool CheckWellKnownMessageRanges(InterestingStringFinder.WellKnownString wellKnownString, IReadOnlyList<TargetPointer> args)
-    {
-        switch (wellKnownString)
-        {
-            case InterestingStringFinder.WellKnownString.PLAN_PLUG:
-            case InterestingStringFinder.WellKnownString.PLAN_PINNED_PLUG:
-            {
-                ulong gapSize = args[0];
-                ulong plugStart = args[1];
-                ulong gapStart = plugStart - gapSize;
-                ulong plugEnd = args[2];
-                return RangeIsInteresting(gapStart, plugEnd);
-            }
-            case InterestingStringFinder.WellKnownString.GCMEMCOPY:
-                return RangeIsInteresting(args[0], args[2]) || RangeIsInteresting(args[1], args[3]);
-            case InterestingStringFinder.WellKnownString.MAKE_UNUSED_ARRAY:
-                return RangeIsInteresting(args[0], args[1]);
-            case InterestingStringFinder.WellKnownString.RELOCATE_REFERENCE:
-            {
-                ulong src = args[0];
-                ulong destFrom = args[1];
-                ulong destTo = args[2];
-
-                foreach (IntegerRange filter in options.ValueRanges)
-                {
-                    if ((filter.End < src || src > filter.Start)
-                        && (filter.End < destFrom || destFrom > filter.Start)
-                        && (filter.End < destTo || destTo > filter.Start))
-                    {
-                        continue;
-                    }
-                    return true;
-                }
-
-                return false;
-            }
-        }
-        return false;
-
-        bool RangeIsInteresting(ulong start, ulong end)
-        {
-            foreach (IntegerRange filter in options.ValueRanges)
-            {
-                if (filter.End < start || end > filter.Start)
-                {
-                    continue;
-                }
-                return true;
-            }
-
-            return false;
-        }
-    }
-
-    private static uint GcLogLevel(uint facility)
-    {
-        if ((facility & ((uint)LogFacility.LF_ALWAYS | 0xfffeu | (uint)LogFacility.LF_GC)) == (uint)(LogFacility.LF_ALWAYS | LogFacility.LF_GC))
-        {
-            return (facility >> 16) & 0x7fff;
-        }
-        return 0;
-    }
-
-    private bool FilterMessage(StressMsgData message, out InterestingStringFinder.WellKnownString? wellKnownString)
-    {
-        wellKnownString = null;
-        // Filter out messages by log facility immediately.
-        if (options.IgnoreFacility != 0)
-        {
-            if ((message.Facility & ((uint)LogFacility.LF_ALWAYS | 0xfffe | (uint)LogFacility.LF_GC)) == ((uint)LogFacility.LF_ALWAYS | (uint)LogFacility.LF_GC))
-            {
-                // specially encoded GC message including dprintf level
-                if ((options.IgnoreFacility & (uint)LogFacility.LF_GC) != 0)
-                {
-                    return false;
-                }
-            }
-            else if ((options.IgnoreFacility & message.Facility) != 0)
-            {
-                return false;
-            }
-        }
-
-        bool shouldPrintMessage = _messageStringChecker.IsInteresting(message.FormatString, out wellKnownString);
-
-        if (wellKnownString.HasValue)
-        {
-            if (CheckWellKnownMessageRanges(wellKnownString.Value, message.Args))
-            {
-                return true;
-            }
-        }
-
-        if (options.LevelFilter is not [])
-        {
-            // Check level and facility
-            uint level = GcLogLevel(message.Facility);
-            shouldPrintMessage |= options.LevelFilter.Any(filter => filter.Start <= level && level <= filter.End);
-        }
-
-        return shouldPrintMessage;
-    }
-
-    [Flags]
-    private enum LogFacility : uint
-    {
-        LF_GC = 0x00000001,
-        LF_ALWAYS = 0x80000000,
     }
 }

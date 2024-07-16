@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -389,7 +390,7 @@ public sealed unsafe class Target
     internal sealed class DataCache
     {
         private readonly Target _target;
-        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+        private readonly ConcurrentDictionary<(ulong, Type), object?> _readDataByAddress = [];
 
         public DataCache(Target target)
         {
