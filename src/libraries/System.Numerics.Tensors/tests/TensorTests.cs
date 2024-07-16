@@ -543,21 +543,21 @@ namespace System.Numerics.Tensors.Tests
             // Make sure strides can't be negative
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([1, 2], [-1, 0], false);
+                var t1 = Tensor.Create<int>((Span<nint>)[1, 2], [-1, 0], false);
             });
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([1, 2], [0, -1], false);
+                var t1 = Tensor.Create<int>((Span<nint>)[1, 2], [0, -1], false);
             });
 
             // Make sure lengths can't be negative
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([-1, 2], [], false);
+                var t1 = Tensor.Create<int>([-1, 2], false);
             });
             Assert.Throws<ArgumentOutOfRangeException>(() => {
                 Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([1, -2], [], false);
+                var t1 = Tensor.Create<int>([1, -2], false);
             });
 
             // Make sure 2D array works with strides to hit element 0,0,2,2
@@ -572,8 +572,7 @@ namespace System.Numerics.Tensors.Tests
 
             // Make sure you can't overlap elements using strides
             Assert.Throws<ArgumentOutOfRangeException>(() => {
-                Span<int> a = [91, 92, -93, 94];
-                var t1 = Tensor.Create<int>([2, 2], [1, 1], false);
+                var t1 = Tensor.Create<int>((Span<nint>)[2, 2], [1, 1], false);
             });
         }
         
@@ -905,7 +904,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(1, t1[1, 1, 0]);
             Assert.Equal(0, t1[1, 1, 1]);
 
-            t1 = Tensor.Reverse<int>(t0, 0);
+            t1 = Tensor.ReverseDimension<int>(t0, 0);
             Assert.Equal(4, t1[0, 0, 0]);
             Assert.Equal(5, t1[0, 0, 1]);
             Assert.Equal(6, t1[0, 1, 0]);
@@ -915,7 +914,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, t1[1, 1, 0]);
             Assert.Equal(3, t1[1, 1, 1]);
 
-            t1 = Tensor.Reverse<int>(t0, 1);
+            t1 = Tensor.ReverseDimension<int>(t0, 1);
             Assert.Equal(2, t1[0, 0, 0]);
             Assert.Equal(3, t1[0, 0, 1]);
             Assert.Equal(0, t1[0, 1, 0]);
@@ -925,7 +924,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(4, t1[1, 1, 0]);
             Assert.Equal(5, t1[1, 1, 1]);
 
-            t1 = Tensor.Reverse<int>(t0, 2);
+            t1 = Tensor.ReverseDimension<int>(t0, 2);
             Assert.Equal(1, t1[0, 0, 0]);
             Assert.Equal(0, t1[0, 0, 1]);
             Assert.Equal(3, t1[0, 1, 0]);
@@ -1017,7 +1016,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, resultTensor[1, 1, 3]);
             Assert.Equal(9, resultTensor[1, 1, 4]);
 
-            resultTensor = Tensor.Stack([t0, t1], axis:1);
+            resultTensor = Tensor.StackAlongDimension(1, [t0, t1]);
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
             Assert.Equal(2, resultTensor.Lengths[1]);
@@ -1044,7 +1043,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(8, resultTensor[1, 1, 3]);
             Assert.Equal(9, resultTensor[1, 1, 4]);
 
-            resultTensor = Tensor.Stack([t0, t1], axis: 2);
+            resultTensor = Tensor.StackAlongDimension(2, [t0, t1]);
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
             Assert.Equal(5, resultTensor.Lengths[1]);
@@ -1096,7 +1095,7 @@ namespace System.Numerics.Tensors.Tests
         {
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
 
-            Assert.Equal(Mean([0, 1, 2, 3]), Tensor.Mean<float>(t0), .1);
+            Assert.Equal(Mean([0, 1, 2, 3]), Tensor.Average<float>(t0), .1);
         }
 
         public static float Mean(float[] values)
@@ -1114,7 +1113,7 @@ namespace System.Numerics.Tensors.Tests
         {
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
             Tensor<float> t1 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
-            var resultTensor = Tensor.Concatenate([t0, t1]);
+            var resultTensor = Tensor.ConcatenateOnDimension(0, [t0, t1]);
 
             Assert.Equal(2, resultTensor.Rank);
             Assert.Equal(4, resultTensor.Lengths[0]);
@@ -1128,7 +1127,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[3, 0]);
             Assert.Equal(3, resultTensor[3, 1]);
 
-            resultTensor = Tensor.Concatenate([t0, t1], 1);
+            resultTensor = Tensor.ConcatenateOnDimension(1, [t0, t1]);
             Assert.Equal(2, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
             Assert.Equal(4, resultTensor.Lengths[1]);
@@ -1141,7 +1140,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[1, 2]);
             Assert.Equal(3, resultTensor[1, 3]);
 
-            resultTensor = Tensor.Concatenate([t0, t1], -1);
+            resultTensor = Tensor.Concatenate([t0, t1]);
             Assert.Equal(1, resultTensor.Rank);
             Assert.Equal(8, resultTensor.Lengths[0]);
             Assert.Equal(0, resultTensor[0]);
@@ -1154,7 +1153,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(3, resultTensor[7]);
 
             Tensor<float> t2 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
-            resultTensor = Tensor.Concatenate([t0, t1, t2]);
+            resultTensor = Tensor.ConcatenateOnDimension(0, [t0, t1, t2]);
 
             Assert.Equal(2, resultTensor.Rank);
             Assert.Equal(6, resultTensor.Lengths[0]);
@@ -1172,7 +1171,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[5, 0]);
             Assert.Equal(3, resultTensor[5, 1]);
 
-            resultTensor = Tensor.Concatenate([t0, t1, t2], -1);
+            resultTensor = Tensor.Concatenate([t0, t1, t2]);
 
             Assert.Equal(1, resultTensor.Rank);
             Assert.Equal(12, resultTensor.Lengths[0]);
@@ -1189,7 +1188,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, resultTensor[10]);
             Assert.Equal(3, resultTensor[11]);
 
-            resultTensor = Tensor.Concatenate([t0, t1, t2], 1);
+            resultTensor = Tensor.ConcatenateOnDimension(1, [t0, t1, t2]);
 
             Assert.Equal(2, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
@@ -1210,17 +1209,17 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 3, 2]);
             t1 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 3, 2]);
             t2 = Tensor.Create<float>((Enumerable.Range(0, 8).Select(i => (float)i)), [2, 2, 2]);
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2]));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 2));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 5));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], -2));
-            resultTensor = Tensor.Concatenate([t0, t1, t2], -1);
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(0, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(2, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(5, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(-2, [t0, t1, t2]));
+            resultTensor = Tensor.ConcatenateOnDimension(-1, [t0, t1, t2]);
             float[] result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7];
             Assert.Equal(1, resultTensor.Rank);
             Assert.Equal(32, resultTensor.Lengths[0]);
             Assert.Equal(result, resultTensor.ToArray());
 
-            resultTensor = Tensor.Concatenate([t0, t1, t2], 1);
+            resultTensor = Tensor.ConcatenateOnDimension(1, [t0, t1, t2]);
             result = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 6, 7, 8, 9, 10, 11, 6, 7, 8, 9, 10, 11, 4, 5, 6, 7];
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
@@ -1237,9 +1236,9 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
             t1 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
             t2 = Tensor.Create<float>((Enumerable.Range(0, 8).Select(i => (float)i)), [2, 2, 2]);
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 0));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 1));
-            resultTensor = Tensor.Concatenate([t0, t1, t2], 2);
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(0, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(1, [t0, t1, t2]));
+            resultTensor = Tensor.ConcatenateOnDimension(2, [t0, t1, t2]);
             result = [0, 1, 2, 0, 1, 2, 0, 1, 3, 4, 5, 3, 4, 5, 2, 3, 6, 7, 8, 6, 7, 8, 4, 5, 9, 10, 11, 9, 10, 11, 6, 7];
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(2, resultTensor.Lengths[0]);
@@ -1256,9 +1255,9 @@ namespace System.Numerics.Tensors.Tests
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [3, 2, 2]);
             t1 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [3, 2, 2]);
             t2 = Tensor.Create<float>((Enumerable.Range(0, 8).Select(i => (float)i)), [2, 2, 2]);
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 1));
-            Assert.Throws<ArgumentException>(() => Tensor.Concatenate([t0, t1, t2], 2));
-            resultTensor = Tensor.Concatenate([t0, t1, t2]);
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(1, [t0, t1, t2]));
+            Assert.Throws<ArgumentException>(() => Tensor.ConcatenateOnDimension(2, [t0, t1, t2]));
+            resultTensor = Tensor.ConcatenateOnDimension(0, [t0, t1, t2]);
             result = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7];
             Assert.Equal(3, resultTensor.Rank);
             Assert.Equal(8, resultTensor.Lengths[0]);
@@ -1277,7 +1276,7 @@ namespace System.Numerics.Tensors.Tests
         public static void TensorTransposeTests()
         {
             Tensor<float> t0 = Tensor.Create<float>((Enumerable.Range(0, 4).Select(i => (float)i)), [2, 2]);
-            var t1 = Tensor.Permute(t0);
+            var t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(0, t1[0, 0]);
             Assert.Equal(2, t1[0, 1]);
@@ -1285,7 +1284,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(3, t1[1, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 6).Select(i => (float)i)), [2, 3]);
-            t1 = Tensor.Permute(t0);
+            t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1297,7 +1296,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(5, t1[2, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 6).Select(i => (float)i)), [1, 2, 3]);
-            t1 = Tensor.Permute(t0);
+            t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1310,7 +1309,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(5, t1[2, 1, 0]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
-            t1 = Tensor.Permute(t0);
+            t1 = Tensor.PermuteDimensions(t0);
 
             Assert.Equal(3, t1.Lengths[0]);
             Assert.Equal(2, t1.Lengths[1]);
@@ -1329,7 +1328,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(11, t1[2, 1, 1]);
 
             t0 = Tensor.Create<float>((Enumerable.Range(0, 12).Select(i => (float)i)), [2, 2, 3]);
-            t1 = Tensor.Permute(t0, 1, 2, 0);
+            t1 = Tensor.PermuteDimensions(t0, 1, 2, 0);
 
             Assert.Equal(2, t1.Lengths[0]);
             Assert.Equal(3, t1.Lengths[1]);
@@ -2063,7 +2062,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[1]);
             Assert.Equal(1, tensor.Lengths[2]);
 
-            tensor = Tensor.Squeeze(tensor, 0);
+            tensor = Tensor.SqueezeDimension(tensor, 0);
             Assert.Equal(2, tensor.Rank);
             Assert.Equal(2, tensor.Lengths[0]);
             Assert.Equal(1, tensor.Lengths[1]);
@@ -2075,7 +2074,7 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[1]);
             Assert.Equal(1, tensor.Lengths[2]);
 
-            tensor = Tensor.Squeeze(tensor, 2);
+            tensor = Tensor.SqueezeDimension(tensor, 2);
             Assert.Equal(2, tensor.Rank);
             Assert.Equal(1, tensor.Lengths[0]);
             Assert.Equal(2, tensor.Lengths[1]);
@@ -2087,8 +2086,8 @@ namespace System.Numerics.Tensors.Tests
             Assert.Equal(2, tensor.Lengths[1]);
             Assert.Equal(1, tensor.Lengths[2]);
 
-            Assert.Throws<ArgumentException>(() => tensor = Tensor.Squeeze(tensor, 1));
-            Assert.Throws<ArgumentException>(() => tensor = Tensor.Squeeze(tensor, 3));
+            Assert.Throws<ArgumentException>(() => tensor = Tensor.SqueezeDimension(tensor, 1));
+            Assert.Throws<ArgumentException>(() => tensor = Tensor.SqueezeDimension(tensor, 3));
         }
 
         [Fact]

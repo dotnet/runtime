@@ -20,51 +20,65 @@ namespace System.Numerics.Tensors
 {
     public static partial class Tensor
     {
-        #region AsTensorSpan
-        /// <summary>
-        /// Extension method to more easily create a TensorSpan from an array.
-        /// </summary>
-        /// <typeparam name="T">The type of the elements in the array</typeparam>
-        /// <param name="array">The <see cref="System.Array"/> with the data</param>
-        /// <param name="shape">The shape for the <see cref="TensorSpan{T}"/></param>
-        /// <returns></returns>
-        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, 0, shape, default);
-        #endregion
-
         #region AsReadOnlySpan
         /// <summary>
         /// Extension method to more easily create a TensorSpan from an array.
         /// </summary>
         /// <typeparam name="T">The type of the elements in the array</typeparam>
         /// <param name="array">The <see cref="System.Array"/> with the data</param>
-        /// <param name="shape">The shape for the <see cref="TensorSpan{T}"/></param>
+        /// <param name="lengths">The shape for the <see cref="TensorSpan{T}"/></param>
         /// <returns></returns>
-        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> shape) => new(array, 0, shape, default);
+        public static ReadOnlyTensorSpan<T> AsReadOnlyTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> lengths) => new(array, 0, lengths, default);
+        #endregion
+
+        #region AsTensorSpan
+        /// <summary>
+        /// Extension method to more easily create a TensorSpan from an array.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the array</typeparam>
+        /// <param name="array">The <see cref="System.Array"/> with the data</param>
+        /// <param name="lengths">The shape for the <see cref="TensorSpan{T}"/></param>
+        /// <returns></returns>
+        public static TensorSpan<T> AsTensorSpan<T>(this T[]? array, params scoped ReadOnlySpan<nint> lengths) => new(array, 0, lengths, default);
+        #endregion
+
+        #region Average
+        /// <summary>
+        /// Returns the average of the elements in the <paramref name="input"/> tensor.
+        /// </summary>
+        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the mean of.</param>
+        /// <returns><typeparamref name="T"/> representing the mean.</returns>
+        public static T Average<T>(scoped in ReadOnlyTensorSpan<T> input)
+            where T : IFloatingPoint<T>
+        {
+            T sum = Sum(input);
+            return T.CreateChecked(sum / T.CreateChecked(input._shape._memoryLength));
+        }
         #endregion
 
         #region Broadcast
         /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="lengthsSource"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
+        /// Broadcast the data from <paramref name="source"/> to the smallest broadcastable shape compatible with <paramref name="lengthsSource"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="source">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="lengthsSource">Other <see cref="Tensor{T}"/> to make shapes broadcastable.</param>
-        public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> input, scoped in ReadOnlyTensorSpan<T> lengthsSource)
+        public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped in ReadOnlyTensorSpan<T> lengthsSource)
         {
-            return Broadcast(input, lengthsSource.Lengths);
+            return Broadcast(source, lengthsSource.Lengths);
         }
 
         /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the new shape <paramref name="lengths"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
-        /// If the shape of the <paramref name="input"/> is not compatible with the new shape, an exception is thrown.
+        /// Broadcast the data from <paramref name="source"/> to the new shape <paramref name="lengths"/>. Creates a new <see cref="Tensor{T}"/> and allocates new memory.
+        /// If the shape of the <paramref name="source"/> is not compatible with the new shape, an exception is thrown.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="source">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
         /// <exception cref="ArgumentException">Thrown when the shapes are not broadcast compatible.</exception>
-        public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> input, scoped ReadOnlySpan<nint> lengths)
+        public static Tensor<T> Broadcast<T>(scoped in ReadOnlyTensorSpan<T> source, scoped ReadOnlySpan<nint> lengths)
         {
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(input.Lengths, lengths);
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(source.Lengths, lengths);
 
-            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(input, newSize);
+            ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             Tensor<T> output = Tensor.CreateUninitialized<T>(intermediate.Lengths);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan<T>(ref output._values[0], (int)output.FlattenedLength));
             return output;
@@ -86,6 +100,7 @@ namespace System.Numerics.Tensors
             ReadOnlyTensorSpan<T> intermediate = LazyBroadcast(source, newSize);
             intermediate.FlattenTo(MemoryMarshal.CreateSpan(ref destination._reference, (int)destination.FlattenedLength));
         }
+
         /// <summary>
         /// Broadcast the data from <paramref name="source"/> to <paramref name="destination"/>.
         /// </summary>
@@ -251,13 +266,22 @@ namespace System.Numerics.Tensors
         /// Join a sequence of tensors along an existing axis.
         /// </summary>
         /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
-        /// <param name="axis">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
-        public static Tensor<T> Concatenate<T>(scoped ReadOnlySpan<Tensor<T>> tensors, int axis = 0)
+        public static Tensor<T> Concatenate<T>(params scoped ReadOnlySpan<Tensor<T>> tensors)
+        {
+            return ConcatenateOnDimension(-1, tensors);
+        }
+
+        /// <summary>
+        /// Join a sequence of tensors along an existing axis.
+        /// </summary>
+        /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
+        /// <param name="dimension">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
+        public static Tensor<T> ConcatenateOnDimension<T>(int dimension, params scoped ReadOnlySpan<Tensor<T>> tensors)
         {
             if (tensors.Length < 2)
                 ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
 
-            if (axis < -1 || axis > tensors[0].Rank)
+            if (dimension < -1 || dimension > tensors[0].Rank)
                 ThrowHelper.ThrowArgument_InvalidAxis();
 
             // Calculate total space needed.
@@ -267,22 +291,22 @@ namespace System.Numerics.Tensors
 
             nint sumOfAxis = 0;
             // If axis != -1, make sure all dimensions except the one to concatenate on match.
-            if (axis != -1)
+            if (dimension != -1)
             {
-                sumOfAxis = tensors[0].Lengths[axis];
+                sumOfAxis = tensors[0].Lengths[dimension];
                 for (int i = 1; i < tensors.Length; i++)
                 {
                     if (tensors[0].Rank != tensors[i].Rank)
                         ThrowHelper.ThrowArgument_InvalidConcatenateShape();
                     for (int j = 0; j < tensors[0].Rank; j++)
                     {
-                        if (j != axis)
+                        if (j != dimension)
                         {
                             if (tensors[0].Lengths[j] != tensors[i].Lengths[j])
                                 ThrowHelper.ThrowArgument_InvalidConcatenateShape();
                         }
                     }
-                    sumOfAxis += tensors[i].Lengths[axis];
+                    sumOfAxis += tensors[i].Lengths[dimension];
                 }
             }
 
@@ -311,16 +335,16 @@ namespace System.Numerics.Tensors
                 for (int i = 0; i < tensors.Length; i++)
                 {
                     srcIndex = TensorSpanHelpers.ComputeLinearIndex(curIndex, tensors[i].Strides, tensors[i].Lengths);
-                    copyLength = CalculateCopyLength(tensors[i].Lengths, axis);
+                    copyLength = CalculateCopyLength(tensors[i].Lengths, dimension);
                     Span<T> srcSpan = MemoryMarshal.CreateSpan(ref tensors[i]._values[srcIndex], (int)copyLength);
                     TensorSpanHelpers.Memmove(dstSpan, srcSpan, copyLength, valuesCopied);
                     valuesCopied += copyLength;
                 }
-                TensorSpanHelpers.AdjustIndexes(axis - 1, 1, curIndex, tensors[0].Lengths);
+                TensorSpanHelpers.AdjustIndexes(dimension - 1, 1, curIndex, tensors[0].Lengths);
             }
 
             Tensor<T> tensor;
-            if (axis == -1)
+            if (dimension == -1)
             {
                 tensor = new Tensor<T>(values, [valuesCopied], tensors[0].IsPinned);
             }
@@ -328,7 +352,7 @@ namespace System.Numerics.Tensors
             {
                 nint[] lengths = new nint[tensors[0].Rank];
                 tensors[0].Lengths.CopyTo(lengths);
-                lengths[axis] = sumOfAxis;
+                lengths[dimension] = sumOfAxis;
                 tensor = new Tensor<T>(values, lengths, tensors[0].IsPinned);
             }
 
@@ -336,6 +360,103 @@ namespace System.Numerics.Tensors
                 ArrayPool<nint>.Shared.Return(curIndexArray);
 
             return tensor;
+        }
+
+        /// <summary>
+        /// Join a sequence of tensors along an existing axis.
+        /// </summary>
+        /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
+        /// <param name="destination"></param>
+        public static TensorSpan<T> Concatenate<T>(scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
+        {
+            return ConcatenateOnDimension(-1, tensors, destination);
+        }
+
+        /// <summary>
+        /// Join a sequence of tensors along an existing axis.
+        /// </summary>
+        /// <param name="tensors">The tensors must have the same shape, except in the dimension corresponding to axis (the first, by default).</param>
+        /// <param name="dimension">The axis along which the tensors will be joined. If axis is -1, arrays are flattened before use. Default is 0.</param>
+        /// <param name="destination"></param>
+
+        public static TensorSpan<T> ConcatenateOnDimension<T>(int dimension, scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
+        {
+            if (tensors.Length < 2)
+                ThrowHelper.ThrowArgument_ConcatenateTooFewTensors();
+
+            if (dimension < -1 || dimension > tensors[0].Rank)
+                ThrowHelper.ThrowArgument_InvalidAxis();
+
+            // Calculate total space needed.
+            nint totalLength = 0;
+            for (int i = 0; i < tensors.Length; i++)
+                totalLength += TensorSpanHelpers.CalculateTotalLength(tensors[i].Lengths);
+
+            nint sumOfAxis = 0;
+            // If axis != -1, make sure all dimensions except the one to concatenate on match.
+            if (dimension != -1)
+            {
+                sumOfAxis = tensors[0].Lengths[dimension];
+                for (int i = 1; i < tensors.Length; i++)
+                {
+                    if (tensors[0].Rank != tensors[i].Rank)
+                        ThrowHelper.ThrowArgument_InvalidConcatenateShape();
+                    for (int j = 0; j < tensors[0].Rank; j++)
+                    {
+                        if (j != dimension)
+                        {
+                            if (tensors[0].Lengths[j] != tensors[i].Lengths[j])
+                                ThrowHelper.ThrowArgument_InvalidConcatenateShape();
+                        }
+                    }
+                    sumOfAxis += tensors[i].Lengths[dimension];
+                }
+            }
+
+            // Make sure the destination tensor has the correct shape.
+            nint[] lengths = new nint[tensors[0].Rank];
+            tensors[0].Lengths.CopyTo(lengths);
+            lengths[dimension] = sumOfAxis;
+
+            if (!TensorHelpers.AreLengthsTheSame(destination.Lengths, lengths))
+                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(destination));
+
+            Span<T> dstSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)totalLength);
+            nint valuesCopied = 0;
+
+            scoped Span<nint> curIndex;
+            nint[]? curIndexArray;
+
+            if (tensors[0].Rank > 6)
+            {
+                curIndexArray = ArrayPool<nint>.Shared.Rent(tensors[0].Rank);
+                curIndex = curIndexArray;
+            }
+            else
+            {
+                curIndexArray = null;
+                curIndex = stackalloc nint[tensors[0].Rank];
+            }
+            nint srcIndex;
+            nint copyLength;
+
+            while (valuesCopied < totalLength)
+            {
+                for (int i = 0; i < tensors.Length; i++)
+                {
+                    srcIndex = TensorSpanHelpers.ComputeLinearIndex(curIndex, tensors[i].Strides, tensors[i].Lengths);
+                    copyLength = CalculateCopyLength(tensors[i].Lengths, dimension);
+                    Span<T> srcSpan = MemoryMarshal.CreateSpan(ref tensors[i]._values[srcIndex], (int)copyLength);
+                    TensorSpanHelpers.Memmove(dstSpan, srcSpan, copyLength, valuesCopied);
+                    valuesCopied += copyLength;
+                }
+                TensorSpanHelpers.AdjustIndexes(dimension - 1, 1, curIndex, tensors[0].Lengths);
+            }
+
+            if (curIndexArray != null)
+                ArrayPool<nint>.Shared.Return(curIndexArray);
+
+            return destination;
         }
 
         private static nint CalculateCopyLength(ReadOnlySpan<nint> lengths, int startingAxis)
@@ -485,9 +606,6 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region FilteredUpdate
-        //  REVIEW: PYTORCH/NUMPY DO THIS.
-        //  t0[t0 < 2] = -1;
-        //  OR SHOULD THIS BE AN OVERLOAD OF FILL THAT TAKES IN A FUNC TO KNOW WHICH ONE TO UPDATE?
         /// <summary>
         /// Updates the <paramref name="tensor"/> tensor with the <paramref name="value"/> where the <paramref name="filter"/> is true.
         /// </summary>
@@ -919,86 +1037,72 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
-        #region Mean
-        /// <summary>
-        /// Returns the mean of the elements in the <paramref name="input"/> tensor.
-        /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the mean of.</param>
-        /// <returns><typeparamref name="T"/> representing the mean.</returns>
-        public static T Mean<T>(scoped in ReadOnlyTensorSpan<T> input)
-            where T : IFloatingPoint<T>
-        {
-            T sum = Sum(input);
-            return T.CreateChecked(sum / T.CreateChecked(input._shape._memoryLength));
-        }
-        #endregion
-
         #region Permute
 
         /// <summary>
-        /// Swaps the dimensions of the <paramref name="input"/> tensor according to the <paramref name="axis"/> parameter.
-        /// If <paramref name="input"/> is a 1D tensor, it will return <paramref name="input"/>. Otherwise it creates a new <see cref="Tensor{T}"/>
+        /// Swaps the dimensions of the <paramref name="tensor"/> tensor according to the <paramref name="dimensions"/> parameter.
+        /// If <paramref name="tensor"/> is a 1D tensor, it will return <paramref name="tensor"/>. Otherwise it creates a new <see cref="Tensor{T}"/>
         /// with the new axis ordering by allocating new memory.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/></param>
-        /// <param name="axis"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
-        public static Tensor<T> Permute<T>(this Tensor<T> input, params ReadOnlySpan<int> axis)
+        /// <param name="tensor">Input <see cref="Tensor{T}"/></param>
+        /// <param name="dimensions"><see cref="ReadOnlySpan{T}"/> with the new axis ordering.</param>
+        public static Tensor<T> PermuteDimensions<T>(this Tensor<T> tensor, params ReadOnlySpan<int> dimensions)
         {
-            if (input.Rank == 1)
+            if (tensor.Rank == 1)
             {
-                return input;
+                return tensor;
             }
             else
             {
-                T[] values = input.IsPinned ? GC.AllocateArray<T>((int)input._flattenedLength) : (new T[input._flattenedLength]);
-                nint[] lengths = new nint[input.Rank];
-                Tensor<T> tensor;
+                T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)tensor._flattenedLength) : (new T[tensor._flattenedLength]);
+                nint[] lengths = new nint[tensor.Rank];
+                Tensor<T> outTensor;
                 TensorSpan<T> ospan;
                 TensorSpan<T> ispan;
                 ReadOnlySpan<int> permutation;
 
-                if (axis.IsEmpty)
+                if (dimensions.IsEmpty)
                 {
-                    lengths = input._lengths.Reverse().ToArray();
-                    permutation = Enumerable.Range(0, input.Rank).Reverse().ToArray();
+                    lengths = tensor._lengths.Reverse().ToArray();
+                    permutation = Enumerable.Range(0, tensor.Rank).Reverse().ToArray();
                 }
                 else
                 {
-                    if (axis.Length != input.Lengths.Length)
+                    if (dimensions.Length != tensor.Lengths.Length)
                         ThrowHelper.ThrowArgument_PermuteAxisOrder();
                     for (int i = 0; i < lengths.Length; i++)
-                        lengths[i] = input.Lengths[axis[i]];
-                    permutation = axis.ToArray();
+                        lengths[i] = tensor.Lengths[dimensions[i]];
+                    permutation = dimensions.ToArray();
                 }
-                tensor = new Tensor<T>(values, lengths, Array.Empty<nint>(), input._isPinned);
+                outTensor = new Tensor<T>(values, lengths, Array.Empty<nint>(), tensor._isPinned);
 
-                ospan = tensor.AsTensorSpan();
-                ispan = input.AsTensorSpan();
+                ospan = outTensor.AsTensorSpan();
+                ispan = tensor.AsTensorSpan();
 
                 scoped Span<nint> indexes;
                 nint[]? indicesArray;
                 scoped Span<nint> permutedIndices;
                 nint[]? permutedIndicesArray;
-                if (tensor.Rank > 6)
+                if (outTensor.Rank > 6)
                 {
-                    indicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
+                    indicesArray = ArrayPool<nint>.Shared.Rent(outTensor.Rank);
                     indexes = indicesArray;
-                    permutedIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
+                    permutedIndicesArray = ArrayPool<nint>.Shared.Rent(outTensor.Rank);
                     permutedIndices = permutedIndicesArray;
                 }
                 else
                 {
                     indicesArray = null;
-                    indexes = stackalloc nint[tensor.Rank];
+                    indexes = stackalloc nint[outTensor.Rank];
                     permutedIndicesArray = null;
-                    permutedIndices = stackalloc nint[tensor.Rank];
+                    permutedIndices = stackalloc nint[outTensor.Rank];
                 }
 
-                for (int i = 0; i < input._flattenedLength; i++)
+                for (int i = 0; i < tensor._flattenedLength; i++)
                 {
                     TensorHelpers.PermuteIndices(indexes, permutedIndices, permutation);
                     ospan[permutedIndices] = ispan[indexes];
-                    TensorSpanHelpers.AdjustIndexes(tensor.Rank - 1, 1, indexes, input._lengths);
+                    TensorSpanHelpers.AdjustIndexes(outTensor.Rank - 1, 1, indexes, tensor._lengths);
                 }
 
                 if (indicesArray != null && permutedIndicesArray != null)
@@ -1007,21 +1111,20 @@ namespace System.Numerics.Tensors
                     ArrayPool<nint>.Shared.Return(permutedIndicesArray);
                 }
 
-                return tensor;
+                return outTensor;
             }
         }
         #endregion
 
         #region Reshape
-        // REVIEW: SENTINAL VALUE? CONSTANT VALUE FOR -1 WILDCARD?
         /// <summary>
-        /// Reshapes the <paramref name="input"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
+        /// Reshapes the <paramref name="tensor"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
         /// Does not change the length of the underlying memory nor does it allocate new memory. If the new shape is not compatible with the old shape,
         /// an exception is thrown.
         /// </summary>
-        /// <param name="input"><see cref="Tensor{T}"/> you want to reshape.</param>
+        /// <param name="tensor"><see cref="Tensor{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static Tensor<T> Reshape<T>(this Tensor<T> input, params ReadOnlySpan<nint> lengths)
+        public static Tensor<T> Reshape<T>(this Tensor<T> tensor, params ReadOnlySpan<nint> lengths)
         {
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
@@ -1029,7 +1132,7 @@ namespace System.Numerics.Tensors
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
-                nint tempTotal = input._flattenedLength;
+                nint tempTotal = tensor._flattenedLength;
                 for (int i = 0; i < lengths.Length; i++)
                 {
                     if (lengths[i] != -1)
@@ -1042,20 +1145,20 @@ namespace System.Numerics.Tensors
             }
 
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
-            if (tempLinear != input.FlattenedLength)
+            if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
-            return new Tensor<T>(input._values, arrLengths, strides);
+            return new Tensor<T>(tensor._values, arrLengths, strides);
         }
 
         /// <summary>
-        /// Reshapes the <paramref name="input"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
+        /// Reshapes the <paramref name="tensor"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
         /// Does not change the length of the underlying memory nor does it allocate new memory. If the new shape is not compatible with the old shape,
         /// an exception is thrown.
         /// </summary>
-        /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
+        /// <param name="tensor"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static TensorSpan<T> Reshape<T>(this in TensorSpan<T> input, params scoped ReadOnlySpan<nint> lengths)
+        public static TensorSpan<T> Reshape<T>(in this TensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
         {
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
@@ -1063,7 +1166,7 @@ namespace System.Numerics.Tensors
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
-                nint tempTotal = input.FlattenedLength;
+                nint tempTotal = tensor.FlattenedLength;
                 for (int i = 0; i < lengths.Length; i++)
                 {
                     if (lengths[i] != -1)
@@ -1076,21 +1179,21 @@ namespace System.Numerics.Tensors
             }
 
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
-            if (tempLinear != input.FlattenedLength)
+            if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
-            TensorSpan<T> output = new TensorSpan<T>(ref input._reference, arrLengths, strides, input._shape._memoryLength);
+            TensorSpan<T> output = new TensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape._memoryLength);
             return output;
         }
 
         /// <summary>
-        /// Reshapes the <paramref name="input"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
+        /// Reshapes the <paramref name="tensor"/> tensor to the specified <paramref name="lengths"/>. If one of the lengths is -1, it will be calculated automatically.
         /// Does not change the length of the underlying memory nor does it allocate new memory. If the new shape is not compatible with the old shape,
         /// an exception is thrown.
         /// </summary>
-        /// <param name="input"><see cref="TensorSpan{T}"/> you want to reshape.</param>
+        /// <param name="tensor"><see cref="TensorSpan{T}"/> you want to reshape.</param>
         /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> with the new dimensions.</param>
-        public static ReadOnlyTensorSpan<T> Reshape<T>(this in ReadOnlyTensorSpan<T> input, params scoped ReadOnlySpan<nint> lengths)
+        public static ReadOnlyTensorSpan<T> Reshape<T>(in this ReadOnlyTensorSpan<T> tensor, params scoped ReadOnlySpan<nint> lengths)
         {
             nint[] arrLengths = lengths.ToArray();
             // Calculate wildcard info.
@@ -1098,7 +1201,7 @@ namespace System.Numerics.Tensors
             {
                 if (lengths.Count(-1) > 1)
                     ThrowHelper.ThrowArgument_OnlyOneWildcard();
-                nint tempTotal = input.FlattenedLength;
+                nint tempTotal = tensor.FlattenedLength;
                 for (int i = 0; i < lengths.Length; i++)
                 {
                     if (lengths[i] != -1)
@@ -1111,30 +1214,30 @@ namespace System.Numerics.Tensors
             }
 
             nint tempLinear = TensorSpanHelpers.CalculateTotalLength(arrLengths);
-            if (tempLinear != input.FlattenedLength)
+            if (tempLinear != tensor.FlattenedLength)
                 ThrowHelper.ThrowArgument_InvalidReshapeDimensions();
             nint[] strides = TensorSpanHelpers.CalculateStrides(arrLengths);
-            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref input._reference, arrLengths, strides, input._shape._memoryLength);
+            ReadOnlyTensorSpan<T> output = new ReadOnlyTensorSpan<T>(ref tensor._reference, arrLengths, strides, tensor._shape._memoryLength);
             return output;
         }
         #endregion
 
         #region Resize
         /// <summary>
-        /// Creates a new <see cref="Tensor{T}"/>, allocates new memory, and copies the data from <paramref name="input"/>. If the final shape is smaller all data after
+        /// Creates a new <see cref="Tensor{T}"/>, allocates new memory, and copies the data from <paramref name="tensor"/>. If the final shape is smaller all data after
         /// that point is ignored.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="shape"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
-        public static Tensor<T> Resize<T>(Tensor<T> input, ReadOnlySpan<nint> shape)
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="lengths"><see cref="ReadOnlySpan{T}"/> of the desired new shape.</param>
+        public static Tensor<T> Resize<T>(Tensor<T> tensor, ReadOnlySpan<nint> lengths)
         {
-            nint newSize = TensorSpanHelpers.CalculateTotalLength(shape);
-            T[] values = input.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
-            Tensor<T> output = new Tensor<T>(values, shape, false);
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input.AsTensorSpan()._reference, (int)input._values.Length);
+            nint newSize = TensorSpanHelpers.CalculateTotalLength(lengths);
+            T[] values = tensor.IsPinned ? GC.AllocateArray<T>((int)newSize) : (new T[newSize]);
+            Tensor<T> output = new Tensor<T>(values, lengths, false);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor.AsTensorSpan()._reference, (int)tensor._values.Length);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
-            if (newSize > input._values.Length)
-                TensorSpanHelpers.Memmove(ospan, span, input._values.Length);
+            if (newSize > tensor._values.Length)
+                TensorSpanHelpers.Memmove(ospan, span, tensor._values.Length);
             else
                 TensorSpanHelpers.Memmove(ospan, span, newSize);
 
@@ -1142,54 +1245,106 @@ namespace System.Numerics.Tensors
         }
 
         /// <summary>
-        /// Copies the data from <paramref name="input"/>. If the final shape is smaller all data after that point is ignored.
+        /// Copies the data from <paramref name="tensor"/>. If the final shape is smaller all data after that point is ignored.
         /// If the final shape is bigger it is filled with 0s.
         /// </summary>
-        /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
-        public static ref readonly TensorSpan<T> Resize<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static void ResizeTo<T>(scoped in Tensor<T> tensor, in TensorSpan<T> destination)
         {
-            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._values[0], tensor._values.Length);
             Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
-            if (destination._shape._memoryLength > input._shape._memoryLength)
-                TensorSpanHelpers.Memmove(ospan, span, input._shape._memoryLength);
+            if (destination._shape._memoryLength > tensor._values.Length)
+                TensorSpanHelpers.Memmove(ospan, span, tensor._values.Length);
             else
                 TensorSpanHelpers.Memmove(ospan, span, destination._shape._memoryLength);
+        }
 
-            return ref destination;
+        /// <summary>
+        /// Copies the data from <paramref name="tensor"/>. If the final shape is smaller all data after that point is ignored.
+        /// If the final shape is bigger it is filled with 0s.
+        /// </summary>
+        /// <param name="tensor">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
+        public static void ResizeTo<T>(scoped in TensorSpan<T> tensor, in TensorSpan<T> destination)
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape._memoryLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
+            if (destination._shape._memoryLength > tensor._shape._memoryLength)
+                TensorSpanHelpers.Memmove(ospan, span, tensor._shape._memoryLength);
+            else
+                TensorSpanHelpers.Memmove(ospan, span, destination._shape._memoryLength);
+        }
+
+        /// <summary>
+        /// Copies the data from <paramref name="tensor"/>. If the final shape is smaller all data after that point is ignored.
+        /// If the final shape is bigger it is filled with 0s.
+        /// </summary>
+        /// <param name="tensor">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="destination">Destination <see cref="TensorSpan{T}"/> with the desired new shape.</param>
+        public static void ResizeTo<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination)
+        {
+            ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape._memoryLength);
+            Span<T> ospan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
+            if (destination._shape._memoryLength > tensor._shape._memoryLength)
+                TensorSpanHelpers.Memmove(ospan, span, tensor._shape._memoryLength);
+            else
+                TensorSpanHelpers.Memmove(ospan, span, destination._shape._memoryLength);
         }
         #endregion
 
         #region Reverse
         /// <summary>
-        /// Reverse the order of elements in the <paramref name="input"/> along the given axis. The shape of the tensor is preserved, but the elements are reordered.
-        /// <paramref name="axis"/> defaults to -1 when not provided, which reverses the entire tensor.
+        /// Reverse the order of elements in the <paramref name="tensor"/>. The shape of the tensor is preserved, but the elements are reordered.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left tensor.</param>
-        public static Tensor<T> Reverse<T>(in ReadOnlyTensorSpan<T> input, nint axis = -1)
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Reverse<T>(in ReadOnlyTensorSpan<T> tensor)
         {
-            Tensor<T> output = Tensor.Create<T>(input.Lengths);
-            Reverse<T>(input, output, axis);
+            Tensor<T> output = Tensor.Create<T>(tensor.Lengths);
+            ReverseDimension(tensor, output, -1);
 
             return output;
         }
 
         /// <summary>
-        /// Reverse the order of elements in the <paramref name="input"/> along the given axis. The shape of the tensor is preserved, but the elements are reordered.
-        /// <paramref name="axis"/> defaults to -1 when not provided, which reverses the entire span.
+        /// Reverse the order of elements in the <paramref name="tensor"/> along the given dimension. The shape of the tensor is preserved, but the elements are reordered.
+        /// <paramref name="dimension"/> defaults to -1 when not provided, which reverses the entire tensor.
         /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
-        /// <param name="destination"></param>
-        /// <param name="axis">Axis along which to reverse over. The default, -1, will reverse over all of the axes of the left span.</param>
-        public static ref readonly TensorSpan<T> Reverse<T>(scoped in ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination, nint axis = -1)
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="dimension">dimension along which to reverse over. -1 will reverse over all of the dimensions of the left tensor.</param>
+        public static Tensor<T> ReverseDimension<T>(in ReadOnlyTensorSpan<T> tensor, int dimension)
         {
-            if (axis == -1)
+            Tensor<T> output = Tensor.Create<T>(tensor.Lengths);
+            ReverseDimension(tensor, output, dimension);
+
+            return output;
+        }
+
+        /// <summary>
+        /// Reverse the order of elements in the <paramref name="tensor"/>. The shape of the tensor is preserved, but the elements are reordered.
+        /// </summary>
+        /// <param name="tensor">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination"></param>
+        public static ref readonly TensorSpan<T> Reverse<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination)
+        {
+            return ref ReverseDimension(tensor, destination, -1);
+        }
+
+        /// <summary>
+        /// Reverse the order of elements in the <paramref name="tensor"/> along the given axis. The shape of the tensor is preserved, but the elements are reordered.
+        /// <paramref name="dimension"/> defaults to -1 when not provided, which reverses the entire span.
+        /// </summary>
+        /// <param name="tensor">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="destination"></param>
+        /// <param name="dimension">dimension along which to reverse over. -1 will reverse over all of the dimensions of the left tensor.</param>
+        public static ref readonly TensorSpan<T> ReverseDimension<T>(scoped in ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination, int dimension)
+        {
+            if (dimension == -1)
             {
-                nint index = input._shape._memoryLength - 1;
-                Span<T> inputSpan = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
+                nint index = tensor._shape._memoryLength - 1;
+                Span<T> inputSpan = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape._memoryLength);
                 Span<T> outputSpan = MemoryMarshal.CreateSpan(ref destination._reference, (int)destination._shape._memoryLength);
-                for (int i = 0; i <= input._shape._memoryLength / 2; i++)
+                for (int i = 0; i <= tensor._shape._memoryLength / 2; i++)
                 {
                     outputSpan[i] = inputSpan[(int)index];
                     outputSpan[(int)index--] = inputSpan[i];
@@ -1198,40 +1353,40 @@ namespace System.Numerics.Tensors
             else
             {
                 nint copyLength = 1;
-                for (nint i = axis; i < input.Lengths.Length; i++)
+                for (nint i = dimension; i < tensor.Lengths.Length; i++)
                 {
-                    copyLength *= input.Lengths[(int)i];
+                    copyLength *= tensor.Lengths[(int)i];
                 }
-                copyLength /= input.Lengths[(int)axis];
+                copyLength /= tensor.Lengths[(int)dimension];
 
                 scoped Span<nint> oIndices;
                 nint[]? oIndicesArray;
                 scoped Span<nint> iIndices;
                 nint[]? iIndicesArray;
-                if (input.Rank > 6)
+                if (tensor.Rank > 6)
                 {
-                    oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                    oIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
                     oIndices = oIndicesArray;
-                    iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                    iIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
                     iIndices = iIndicesArray;
                 }
                 else
                 {
                     oIndicesArray = null;
-                    oIndices = stackalloc nint[input.Rank];
+                    oIndices = stackalloc nint[tensor.Rank];
                     iIndicesArray = null;
-                    iIndices = stackalloc nint[input.Rank];
+                    iIndices = stackalloc nint[tensor.Rank];
                 }
 
-                iIndices[(int)axis] = input.Lengths[(int)axis] - 1;
+                iIndices[(int)dimension] = tensor.Lengths[(int)dimension] - 1;
                 nint copiedValues = 0;
-                ReadOnlyTensorSpan<T> islice = input.Slice(input.Lengths);
+                ReadOnlyTensorSpan<T> islice = tensor.Slice(tensor.Lengths);
 
-                while (copiedValues < input.FlattenedLength)
+                while (copiedValues < tensor.FlattenedLength)
                 {
-                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destination._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, input.Strides, input.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, input.Lengths);
-                    TensorSpanHelpers.AdjustIndexesDown((int)axis, 1, iIndices, input.Lengths);
+                    TensorSpanHelpers.Memmove(ref Unsafe.Add(ref destination._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, tensor.Strides, tensor.Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
+                    TensorSpanHelpers.AdjustIndexes((int)dimension, 1, oIndices, tensor.Lengths);
+                    TensorSpanHelpers.AdjustIndexesDown((int)dimension, 1, iIndices, tensor.Lengths);
                     copiedValues += copyLength;
                 }
 
@@ -1251,15 +1406,35 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
         /// </summary>
-        public static bool SequenceEqual<T>(this scoped in ReadOnlyTensorSpan<T> span, scoped in ReadOnlyTensorSpan<T> other)
+        public static bool SequenceEqual<T>(this Tensor<T> tensor, in Tensor<T> other)
+            where T : IEquatable<T>?
         {
-            return span.FlattenedLength == other.FlattenedLength
-                && MemoryMarshal.CreateReadOnlySpan(in span.GetPinnableReference(), (int)span._shape._memoryLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape._memoryLength));
+            return tensor.FlattenedLength == other.FlattenedLength
+                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), tensor._values.Length).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), other._values.Length));
+        }
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
+        /// </summary>
+        public static bool SequenceEqual<T>(this scoped in TensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
+            where T : IEquatable<T>?
+        {
+            return tensor.FlattenedLength == other.FlattenedLength
+                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape._memoryLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape._memoryLength));
+        }
+
+        /// <summary>
+        /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
+        /// </summary>
+        public static bool SequenceEqual<T>(this scoped in ReadOnlyTensorSpan<T> tensor, scoped in ReadOnlyTensorSpan<T> other)
+            where T : IEquatable<T>?
+        {
+            return tensor.FlattenedLength == other.FlattenedLength
+                && MemoryMarshal.CreateReadOnlySpan(in tensor.GetPinnableReference(), (int)tensor._shape._memoryLength).SequenceEqual(MemoryMarshal.CreateReadOnlySpan(in other.GetPinnableReference(), (int)other._shape._memoryLength));
         }
         #endregion
 
         #region SetSlice
-        // REVIEW: WHAT DO WE WANT TO CALL THIS? COPYTO? IT DOES FIT IN WITH THE EXISTING COPY TO CONVENTIONS FOR VECTOR (albeit backwards).
         /// <summary>
         /// Sets a slice of the given <paramref name="tensor"/> with the provided <paramref name="values"/> for the given <paramref name="ranges"/>
         /// </summary>
@@ -1302,46 +1477,46 @@ namespace System.Numerics.Tensors
 
         #region Split
         /// <summary>
-        /// Split a <see cref="Tensor{T}"/> into <paramref name="numSplits"/> along the given <paramref name="axis"/>. If the tensor cannot be split
-        /// evenly on the given <paramref name="axis"/> an exception is thrown.
+        /// Split a <see cref="Tensor{T}"/> into <paramref name="splitCount"/> along the given <paramref name="dimension"/>. If the tensor cannot be split
+        /// evenly on the given <paramref name="dimension"/> an exception is thrown.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        /// <param name="numSplits">How many times to split the <paramref name="input"/></param>
-        /// <param name="axis">The axis to split on.</param>
-        public static Tensor<T>[] Split<T>(scoped in ReadOnlyTensorSpan<T> input, nint numSplits, nint axis)
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="splitCount">How many times to split the <paramref name="tensor"/></param>
+        /// <param name="dimension">The axis to split on.</param>
+        public static Tensor<T>[] Split<T>(scoped in ReadOnlyTensorSpan<T> tensor, int splitCount, nint dimension)
         {
-            if (input.Lengths[(int)axis] % numSplits != 0)
+            if (tensor.Lengths[(int)dimension] % splitCount != 0)
                 ThrowHelper.ThrowArgument_SplitNotSplitEvenly();
 
-            Tensor<T>[] outputs = new Tensor<T>[numSplits];
+            Tensor<T>[] outputs = new Tensor<T>[splitCount];
 
-            nint totalToCopy = input.FlattenedLength / numSplits;
+            nint totalToCopy = tensor.FlattenedLength / splitCount;
             nint copyLength = 1;
-            for (nint i = axis; i < input.Lengths.Length; i++)
+            for (nint i = dimension; i < tensor.Lengths.Length; i++)
             {
-                copyLength *= input.Lengths[(int)i];
+                copyLength *= tensor.Lengths[(int)i];
             }
-            copyLength /= numSplits;
-            nint[] newShape = input.Lengths.ToArray();
-            newShape[(int)axis] = newShape[(int)axis] / numSplits;
+            copyLength /= splitCount;
+            nint[] newShape = tensor.Lengths.ToArray();
+            newShape[(int)dimension] = newShape[(int)dimension] / splitCount;
 
             scoped Span<nint> oIndices;
             nint[]? oIndicesArray;
             scoped Span<nint> iIndices;
             nint[]? iIndicesArray;
-            if (input.Rank > 6)
+            if (tensor.Rank > 6)
             {
-                oIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                oIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
                 oIndices = oIndicesArray;
-                iIndicesArray = ArrayPool<nint>.Shared.Rent(input.Rank);
+                iIndicesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
                 iIndices = iIndicesArray;
             }
             else
             {
                 oIndicesArray = null;
-                oIndices = stackalloc nint[input.Rank];
+                oIndices = stackalloc nint[tensor.Rank];
                 iIndicesArray = null;
-                iIndices = stackalloc nint[input.Rank];
+                iIndices = stackalloc nint[tensor.Rank];
             }
 
             for (int i = 0; i < outputs.Length; i++)
@@ -1351,16 +1526,16 @@ namespace System.Numerics.Tensors
                 oIndices.Clear();
                 iIndices.Clear();
 
-                iIndices[(int)axis] = i;
-                ReadOnlyTensorSpan<T> islice = input.Slice(input.Lengths);
+                iIndices[(int)dimension] = i;
+                ReadOnlyTensorSpan<T> islice = tensor.Slice(tensor.Lengths);
                 TensorSpan<T> oslice = outputs[i].AsTensorSpan().Slice(outputs[i]._lengths);
 
                 nint copiedValues = 0;
                 while (copiedValues < totalToCopy)
                 {
                     TensorSpanHelpers.Memmove(ref Unsafe.Add(ref oslice._reference, TensorSpanHelpers.ComputeLinearIndex(oIndices, outputs[0].Strides, outputs[0].Lengths)), ref Unsafe.Add(ref islice._reference, TensorSpanHelpers.ComputeLinearIndex(iIndices, islice.Strides, islice.Lengths)), copyLength);
-                    TensorSpanHelpers.AdjustIndexes((int)axis, 1, oIndices, outputs[i]._lengths);
-                    TensorSpanHelpers.AdjustIndexes((int)axis - 1, 1, iIndices, input.Lengths);
+                    TensorSpanHelpers.AdjustIndexes((int)dimension, 1, oIndices, outputs[i]._lengths);
+                    TensorSpanHelpers.AdjustIndexes((int)dimension - 1, 1, iIndices, tensor.Lengths);
                     copiedValues += copyLength;
                 }
             }
@@ -1376,76 +1551,37 @@ namespace System.Numerics.Tensors
         #endregion
 
         #region Squeeze
-        // REVIEW: NAME?
         /// <summary>
-        /// Removes axis of length one from the <paramref name="input"/>. <paramref name="axis"/> defaults to -1 and will remove all axis with length of 1.
-        /// If <paramref name="axis"/> is specified, it will only remove that axis and if it is not of length one it will throw an exception.
+        /// Removes all dimensions of length one from the <paramref name="tensor"/>.
         /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to remove axis of length 1.</param>
-        /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
-        public static Tensor<T> Squeeze<T>(this Tensor<T> input, int axis = -1)
+        /// <param name="tensor">The <see cref="Tensor{T}"/> to remove all dimensions of length 1.</param>
+        public static Tensor<T> Squeeze<T>(this Tensor<T> tensor)
         {
-            if (axis >= input.Rank)
-                ThrowHelper.ThrowArgument_AxisLargerThanRank();
-
-            nint[] lengths;
-            nint[] strides;
-
-            List<nint> tempLengths = new List<nint>();
-            if (axis == -1)
-            {
-                for (int i = 0; i < input.Lengths.Length; i++)
-                {
-                    if (input.Lengths[i] != 1)
-                    {
-                        tempLengths.Add(input.Lengths[i]);
-                    }
-                }
-                lengths = tempLengths.ToArray();
-                strides = TensorSpanHelpers.CalculateStrides(lengths);
-            }
-            else
-            {
-                if (input.Lengths[axis] != 1)
-                {
-                    ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
-                }
-                for (int i = 0; i < input.Lengths.Length; i++)
-                {
-                    if (i != axis)
-                    {
-                        tempLengths.Add(input.Lengths[i]);
-                    }
-                }
-                lengths = tempLengths.ToArray();
-                strides = TensorSpanHelpers.CalculateStrides(lengths);
-            }
-
-            return new Tensor<T>(input._values, lengths, strides);
+            return SqueezeDimension(tensor, -1);
         }
 
         /// <summary>
-        /// Removes axis of length one from the <paramref name="input"/>. <paramref name="axis"/> defaults to -1 and will remove all axis with length of 1.
-        /// If <paramref name="axis"/> is specified, it will only remove that axis and if it is not of length one it will throw an exception.
+        /// Removes axis of length one from the <paramref name="tensor"/> for the given <paramref name="dimension"/>.
+        /// If the dimension is not of length one it will throw an exception.
         /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
-        /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
-        public static TensorSpan<T> Squeeze<T>(in this TensorSpan<T> input, int axis = -1)
+        /// <param name="tensor">The <see cref="Tensor{T}"/> to remove dimension of length 1.</param>
+        /// <param name="dimension">The dimension to remove.</param>
+        public static Tensor<T> SqueezeDimension<T>(this Tensor<T> tensor, int dimension)
         {
-            if (axis >= input.Rank)
+            if (dimension >= tensor.Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
             nint[] lengths;
             nint[] strides;
 
             List<nint> tempLengths = new List<nint>();
-            if (axis == -1)
+            if (dimension == -1)
             {
-                for (int i = 0; i < input.Lengths.Length; i++)
+                for (int i = 0; i < tensor.Lengths.Length; i++)
                 {
-                    if (input.Lengths[i] != 1)
+                    if (tensor.Lengths[i] != 1)
                     {
-                        tempLengths.Add(input.Lengths[i]);
+                        tempLengths.Add(tensor.Lengths[i]);
                     }
                 }
                 lengths = tempLengths.ToArray();
@@ -1453,46 +1589,55 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                if (input.Lengths[axis] != 1)
+                if (tensor.Lengths[dimension] != 1)
                 {
                     ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
                 }
-                for (int i = 0; i < input.Lengths.Length; i++)
+                for (int i = 0; i < tensor.Lengths.Length; i++)
                 {
-                    if (i != axis)
+                    if (i != dimension)
                     {
-                        tempLengths.Add(input.Lengths[i]);
+                        tempLengths.Add(tensor.Lengths[i]);
                     }
                 }
                 lengths = tempLengths.ToArray();
                 strides = TensorSpanHelpers.CalculateStrides(lengths);
             }
 
-            return new TensorSpan<T>(ref input._reference, lengths, strides, input._shape._memoryLength);
+            return new Tensor<T>(tensor._values, lengths, strides);
         }
 
         /// <summary>
-        /// Removes axis of length one from the <paramref name="input"/>. <paramref name="axis"/> defaults to -1 and will remove all axis with length of 1.
-        /// If <paramref name="axis"/> is specified, it will only remove that axis and if it is not of length one it will throw an exception.
+        /// Removes all dimensions of length one from the <paramref name="tensor"/>.
         /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
-        /// <param name="axis">The axis to remove. Defaults to -1 which removes all axis of length 1.</param>
-        public static ReadOnlyTensorSpan<T> Squeeze<T>(in this ReadOnlyTensorSpan<T> input, int axis = -1)
+        /// <param name="tensor">The <see cref="TensorSpan{T}"/> to remove all dimensions of length 1.</param>
+        public static TensorSpan<T> Squeeze<T>(in this TensorSpan<T> tensor)
         {
-            if (axis >= input.Rank)
+            return SqueezeDimension(tensor, -1);
+        }
+
+        /// <summary>
+        /// Removes axis of length one from the <paramref name="tensor"/> for the given <paramref name="dimension"/>.
+        /// If the dimension is not of length one it will throw an exception.
+        /// </summary>
+        /// <param name="tensor">The <see cref="TensorSpan{T}"/> to remove dimension of length 1.</param>
+        /// <param name="dimension">The dimension to remove.</param>
+        public static TensorSpan<T> SqueezeDimension<T>(in this TensorSpan<T> tensor, int dimension)
+        {
+            if (dimension >= tensor.Rank)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
 
             nint[] lengths;
             nint[] strides;
 
             List<nint> tempLengths = new List<nint>();
-            if (axis == -1)
+            if (dimension == -1)
             {
-                for (int i = 0; i < input.Lengths.Length; i++)
+                for (int i = 0; i < tensor.Lengths.Length; i++)
                 {
-                    if (input.Lengths[i] != 1)
+                    if (tensor.Lengths[i] != 1)
                     {
-                        tempLengths.Add(input.Lengths[i]);
+                        tempLengths.Add(tensor.Lengths[i]);
                     }
                 }
                 lengths = tempLengths.ToArray();
@@ -1500,72 +1645,174 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                if (input.Lengths[axis] != 1)
+                if (tensor.Lengths[dimension] != 1)
                 {
                     ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
                 }
-                for (int i = 0; i < input.Lengths.Length; i++)
+                for (int i = 0; i < tensor.Lengths.Length; i++)
                 {
-                    if (i != axis)
+                    if (i != dimension)
                     {
-                        tempLengths.Add(input.Lengths[i]);
+                        tempLengths.Add(tensor.Lengths[i]);
                     }
                 }
                 lengths = tempLengths.ToArray();
                 strides = TensorSpanHelpers.CalculateStrides(lengths);
             }
 
-            return new ReadOnlyTensorSpan<T>(ref input._reference, lengths, strides, input._shape._memoryLength);
+            return new TensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
+        }
+
+        /// <summary>
+        /// Removes all dimensions of length one from the <paramref name="tensor"/>.
+        /// </summary>
+        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> to remove all dimensions of length 1.</param>
+        public static ReadOnlyTensorSpan<T> Squeeze<T>(in this ReadOnlyTensorSpan<T> tensor)
+        {
+            return SqueezeDimension(tensor, -1);
+        }
+
+        /// <summary>
+        /// Removes axis of length one from the <paramref name="tensor"/> for the given <paramref name="dimension"/>.
+        /// If the dimension is not of length one it will throw an exception.
+        /// </summary>
+        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> to remove dimension of length 1.</param>
+        /// <param name="dimension">The dimension to remove.</param>
+        public static ReadOnlyTensorSpan<T> SqueezeDimension<T>(in this ReadOnlyTensorSpan<T> tensor, int dimension)
+        {
+            if (dimension >= tensor.Rank)
+                ThrowHelper.ThrowArgument_AxisLargerThanRank();
+
+            nint[] lengths;
+            nint[] strides;
+
+            List<nint> tempLengths = new List<nint>();
+            if (dimension == -1)
+            {
+                for (int i = 0; i < tensor.Lengths.Length; i++)
+                {
+                    if (tensor.Lengths[i] != 1)
+                    {
+                        tempLengths.Add(tensor.Lengths[i]);
+                    }
+                }
+                lengths = tempLengths.ToArray();
+                strides = TensorSpanHelpers.CalculateStrides(lengths);
+            }
+            else
+            {
+                if (tensor.Lengths[dimension] != 1)
+                {
+                    ThrowHelper.ThrowArgument_InvalidSqueezeAxis();
+                }
+                for (int i = 0; i < tensor.Lengths.Length; i++)
+                {
+                    if (i != dimension)
+                    {
+                        tempLengths.Add(tensor.Lengths[i]);
+                    }
+                }
+                lengths = tempLengths.ToArray();
+                strides = TensorSpanHelpers.CalculateStrides(lengths);
+            }
+
+            return new ReadOnlyTensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
         #endregion
 
         #region Stack
         /// <summary>
-        /// Join an array of <see cref="Tensor{T}"/> along a new axis. The axis parameter specifies the index of the new axis in the dimensions of the result and
-        /// defaults to 0. All tensors must have the same shape.
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension that is added at position 0. All tensors must have the same shape.
         /// </summary>
-        /// <param name="input">Array of <see cref="Tensor{T}"/>.</param>
-        /// <param name="axis">Index of where the new axis will be. Defaults to 0.</param>
-        public static Tensor<T> Stack<T>(ReadOnlySpan<Tensor<T>> input, int axis = 0)
+        /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Stack<T>(params ReadOnlySpan<Tensor<T>> tensors)
         {
-            if (input.Length < 2)
+            return StackAlongDimension(0, tensors);
+        }
+
+        /// <summary>
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension. The axis parameter specifies the index of the new dimension. All tensors must have the same shape.
+        /// </summary>
+        /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="dimension">Index of where the new dimension will be.</param>
+        public static Tensor<T> StackAlongDimension<T>(int dimension, params ReadOnlySpan<Tensor<T>> tensors)
+        {
+            if (tensors.Length < 2)
                 ThrowHelper.ThrowArgument_StackTooFewTensors();
 
-            for (int i = 1; i < input.Length; i++)
+            for (int i = 1; i < tensors.Length; i++)
             {
-                if (!TensorHelpers.AreLengthsTheSame<T>(input[0], input[i]))
+                if (!TensorHelpers.AreLengthsTheSame<T>(tensors[0], tensors[i]))
                     ThrowHelper.ThrowArgument_StackShapesNotSame();
             }
 
-            if (axis < 0)
-                axis = input[0].Rank - axis;
+            if (dimension < 0)
+                dimension = tensors[0].Rank - dimension;
 
-            Tensor<T>[] outputs = new Tensor<T>[input.Length];
-            for (int i = 0; i < input.Length; i++)
+            Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
+            for (int i = 0; i < tensors.Length; i++)
             {
-                outputs[i] = Tensor.Unsqueeze(input[0], axis);
+                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
             }
-            return Tensor.Concatenate<T>(outputs, axis);
+            return Tensor.ConcatenateOnDimension<T>(dimension, outputs);
+        }
+
+        /// <summary>
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension that is added at position 0. All tensors must have the same shape.
+        /// </summary>
+        /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="destination"></param>
+        public static TensorSpan<T> Stack<T>(scoped in ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination)
+        {
+            return StackAlongDimension(tensors, destination, 0);
+        }
+
+        /// <summary>
+        /// Join multiple <see cref="Tensor{T}"/> along a new dimension. The axis parameter specifies the index of the new dimension. All tensors must have the same shape.
+        /// </summary>
+        /// <param name="tensors">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="destination"></param>
+        /// <param name="dimension">Index of where the new dimension will be.</param>
+        public static TensorSpan<T> StackAlongDimension<T>(scoped ReadOnlySpan<Tensor<T>> tensors, in TensorSpan<T> destination, int dimension)
+        {
+            if (tensors.Length < 2)
+                ThrowHelper.ThrowArgument_StackTooFewTensors();
+
+            for (int i = 1; i < tensors.Length; i++)
+            {
+                if (!TensorHelpers.AreLengthsTheSame<T>(tensors[0], tensors[i]))
+                    ThrowHelper.ThrowArgument_StackShapesNotSame();
+            }
+
+            if (dimension < 0)
+                dimension = tensors[0].Rank - dimension;
+
+            Tensor<T>[] outputs = new Tensor<T>[tensors.Length];
+            for (int i = 0; i < tensors.Length; i++)
+            {
+                outputs[i] = Tensor.Unsqueeze(tensors[0], dimension);
+            }
+            return Tensor.ConcatenateOnDimension<T>(dimension, tensors, destination);
         }
         #endregion
 
         #region StdDev
         /// <summary>
-        /// Returns the standard deviation of the elements in the <paramref name="input"/> tensor.
+        /// Returns the standard deviation of the elements in the <paramref name="tensor"/> tensor.
         /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
+        /// <param name="tensor">The <see cref="TensorSpan{T}"/> to take the standard deviation of.</param>
         /// <returns><typeparamref name="T"/> representing the standard deviation.</returns>
-        public static T StdDev<T>(in ReadOnlyTensorSpan<T> input)
+        public static T StdDev<T>(in ReadOnlyTensorSpan<T> tensor)
             where T : IFloatingPoint<T>, IPowerFunctions<T>, IAdditionOperators<T, T, T>, IAdditiveIdentity<T, T>
         {
-            T mean = Mean(input);
-            Span<T> span = MemoryMarshal.CreateSpan(ref input._reference, (int)input._shape._memoryLength);
-            Span<T> output = new T[input.FlattenedLength];
+            T mean = Average(tensor);
+            Span<T> span = MemoryMarshal.CreateSpan(ref tensor._reference, (int)tensor._shape._memoryLength);
+            Span<T> output = new T[tensor.FlattenedLength];
             TensorPrimitives.Subtract(span, mean, output);
             TensorPrimitives.Abs(output, output);
             TensorPrimitives.Pow((ReadOnlySpan<T>)output, T.CreateChecked(2), output);
             T sum = TensorPrimitives.Sum((ReadOnlySpan<T>)output);
-            return T.CreateChecked(sum / T.CreateChecked(input._shape._memoryLength));
+            return T.CreateChecked(sum / T.CreateChecked(tensor._shape._memoryLength));
         }
         #endregion
 
@@ -1573,46 +1820,50 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Creates a <see cref="string"/> representation of the <see cref="TensorSpan{T}"/>."/>
         /// </summary>
-        /// <param name="span">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="tensor">The <see cref="TensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        /// <returns>A <see cref="string"/> representation of the <paramref name="span"/></returns>
-        public static string ToString<T>(this in TensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)span).ToString(maximumLengths);
+        /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
+        public static string ToString<T>(this in TensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)tensor).ToString(maximumLengths);
 
         /// <summary>
         /// Creates a <see cref="string"/> representation of the <see cref="ReadOnlyTensorSpan{T}"/>."/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="span">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
+        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> you want to represent as a string.</param>
         /// <param name="maximumLengths">Maximum Length of each dimension</param>
-        public static string ToString<T>(this in ReadOnlyTensorSpan<T> span, params ReadOnlySpan<nint> maximumLengths)
+        public static string ToString<T>(this in ReadOnlyTensorSpan<T> tensor, params ReadOnlySpan<nint> maximumLengths)
         {
+
+            if (maximumLengths.Length != tensor.Rank)
+                ThrowHelper.ThrowArgument_DimensionsNotSame(nameof(tensor));
+
             var sb = new StringBuilder();
             scoped Span<nint> curIndexes;
             nint[]? curIndexesArray;
-            if (span.Rank > 6)
+            if (tensor.Rank > 6)
             {
-                curIndexesArray = ArrayPool<nint>.Shared.Rent(span.Rank);
+                curIndexesArray = ArrayPool<nint>.Shared.Rent(tensor.Rank);
                 curIndexes = curIndexesArray;
             }
             else
             {
                 curIndexesArray = null;
-                curIndexes = stackalloc nint[span.Rank];
+                curIndexes = stackalloc nint[tensor.Rank];
             }
 
             nint copiedValues = 0;
 
-            T[] values = new T[span.Lengths[span.Rank - 1]];
-            while (copiedValues < span.FlattenedLength)
+            T[] values = new T[tensor.Lengths[tensor.Rank - 1]];
+            while (copiedValues < tensor.FlattenedLength)
             {
-                var sp = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref span._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, span.Strides, span.Lengths)), [span.Lengths[span.Rank - 1]], [1], span.Lengths[span.Rank - 1]);
+                var sp = new ReadOnlyTensorSpan<T>(ref Unsafe.Add(ref tensor._reference, TensorSpanHelpers.ComputeLinearIndex(curIndexes, tensor.Strides, tensor.Lengths)), [tensor.Lengths[tensor.Rank - 1]], [1], tensor.Lengths[tensor.Rank - 1]);
                 sb.Append('{');
                 sp.FlattenTo(values);
                 sb.Append(string.Join(",", values));
                 sb.AppendLine("}");
 
-                TensorSpanHelpers.AdjustIndexes(span.Rank - 2, 1, curIndexes, span.Lengths);
-                copiedValues += span.Lengths[span.Rank - 1];
+                TensorSpanHelpers.AdjustIndexes(tensor.Rank - 2, 1, curIndexes, tensor.Lengths);
+                copiedValues += tensor.Lengths[tensor.Rank - 1];
             }
 
             if (curIndexesArray != null)
@@ -1620,127 +1871,133 @@ namespace System.Numerics.Tensors
 
             return sb.ToString();
         }
+
+        /// <summary>
+        /// Creates a <see cref="string"/> representation of the <see cref="Tensor{T}"/>."/>
+        /// </summary>
+        /// <param name="tensor">The <see cref="Span{T}"/> you want to represent as a string.</param>
+        /// <param name="maximumLengths">Maximum Length of each dimension</param>
+        /// <returns>A <see cref="string"/> representation of the <paramref name="tensor"/></returns>
+        public static string ToString<T>(this Tensor<T> tensor, params ReadOnlySpan<nint> maximumLengths) => ((ReadOnlyTensorSpan<T>)tensor).ToString(maximumLengths);
+
         #endregion
 
         #region Transpose
         /// <summary>
-        /// Swaps the last two dimensions of the <paramref name="input"/> tensor.
+        /// Swaps the last two dimensions of the <paramref name="tensor"/> tensor.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
-        public static Tensor<T> Transpose<T>(Tensor<T> input)
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
+        public static Tensor<T> Transpose<T>(Tensor<T> tensor)
         {
-            if (input.Lengths.Length < 2)
+            if (tensor.Lengths.Length < 2)
                 ThrowHelper.ThrowArgument_TransposeTooFewDimensions();
-            int[] axis = Enumerable.Range(0, input.Rank).ToArray();
-            int temp = axis[input.Rank - 1];
-            axis[input.Rank - 1] = axis[input.Rank - 2];
-            axis[input.Rank - 2] = temp;
-            return Permute(input, axis.AsSpan());
+            int[] dimension = Enumerable.Range(0, tensor.Rank).ToArray();
+            int temp = dimension[tensor.Rank - 1];
+            dimension[tensor.Rank - 1] = dimension[tensor.Rank - 2];
+            dimension[tensor.Rank - 2] = temp;
+            return PermuteDimensions(tensor, dimension.AsSpan());
         }
         #endregion
 
         #region TryBroadcastTo
         /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
+        /// Broadcast the data from <paramref name="tensor"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
         /// If the shapes are not compatible, false is returned.
         /// </summary>
-        /// <param name="input">Input <see cref="Tensor{T}"/>.</param>
+        /// <param name="tensor">Input <see cref="Tensor{T}"/>.</param>
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/>.</param>
-        public static bool TryBroadcastTo<T>(this Tensor<T> input, in TensorSpan<T> destination)
+        public static bool TryBroadcastTo<T>(this Tensor<T> tensor, in TensorSpan<T> destination)
         {
-            return TryBroadcastTo((ReadOnlyTensorSpan<T>)input, destination);
+            return TryBroadcastTo((ReadOnlyTensorSpan<T>)tensor, destination);
         }
 
         /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
+        /// Broadcast the data from <paramref name="tensor"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
         /// If the shapes are not compatible, false is returned.
         /// </summary>
-        /// <param name="input">Input <see cref="TensorSpan{T}"/>.</param>
+        /// <param name="tensor">Input <see cref="TensorSpan{T}"/>.</param>
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/>.</param>
-        public static bool TryBroadcastTo<T>(in this TensorSpan<T> input, in TensorSpan<T> destination)
+        public static bool TryBroadcastTo<T>(in this TensorSpan<T> tensor, in TensorSpan<T> destination)
         {
-            return TryBroadcastTo((ReadOnlyTensorSpan<T>)input, destination);
+            return TryBroadcastTo((ReadOnlyTensorSpan<T>)tensor, destination);
         }
 
         /// <summary>
-        /// Broadcast the data from <paramref name="input"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
+        /// Broadcast the data from <paramref name="tensor"/> to the smallest broadcastable shape compatible with <paramref name="destination"/> and stores it in <paramref name="destination"/>
         /// If the shapes are not compatible, false is returned.
         /// </summary>
-        /// <param name="input">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="tensor">Input <see cref="ReadOnlyTensorSpan{T}"/>.</param>
         /// <param name="destination">Destination <see cref="TensorSpan{T}"/>.</param>
-        public static bool TryBroadcastTo<T>(in this ReadOnlyTensorSpan<T> input, in TensorSpan<T> destination)
+        public static bool TryBroadcastTo<T>(in this ReadOnlyTensorSpan<T> tensor, in TensorSpan<T> destination)
         {
-            if (!TensorHelpers.IsBroadcastableTo(input.Lengths, destination.Lengths))
+            if (!TensorHelpers.IsBroadcastableTo(tensor.Lengths, destination.Lengths))
                 return false;
 
-            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(input.Lengths, destination.Lengths);
+            nint[] newSize = Tensor.GetSmallestBroadcastableLengths(tensor.Lengths, destination.Lengths);
             if (!TensorHelpers.AreLengthsTheSame(destination.Lengths, newSize))
                 return false;
 
-            LazyBroadcast(input, newSize).CopyTo(destination);
+            LazyBroadcast(tensor, newSize).CopyTo(destination);
             return true;
         }
         #endregion
 
         #region Unsqueeze
-        // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
         /// <summary>
-        /// Insert a new axis of length 1 that will appear at the axis position.
+        /// Insert a new dimension of length 1 that will appear at the dimension position.
         /// </summary>
-        /// <param name="input">The <see cref="Tensor{T}"/> to remove axis of length 1.</param>
-        /// <param name="axis">The axis to add.</param>
-        public static Tensor<T> Unsqueeze<T>(this Tensor<T> input, int axis)
+        /// <param name="tensor">The <see cref="Tensor{T}"/> to add a dimension of length 1.</param>
+        /// <param name="dimension">The index of the dimension to add.</param>
+        public static Tensor<T> Unsqueeze<T>(this Tensor<T> tensor, int dimension)
         {
-            if (axis > input.Lengths.Length)
+            if (dimension > tensor.Lengths.Length)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
-            if (axis < 0)
-                axis = input.Rank - axis;
+            if (dimension < 0)
+                dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = input._lengths.ToList();
-            tempLengths.Insert(axis, 1);
+            List<nint> tempLengths = tensor._lengths.ToList();
+            tempLengths.Insert(dimension, 1);
             nint[] lengths = tempLengths.ToArray();
             nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
-            return new Tensor<T>(input._values, lengths, strides);
+            return new Tensor<T>(tensor._values, lengths, strides);
         }
 
-        // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
         /// <summary>
-        /// Insert a new axis of length 1 that will appear at the axis position.
+        /// Insert a new dimension of length 1 that will appear at the dimension position.
         /// </summary>
-        /// <param name="input">The <see cref="TensorSpan{T}"/> to remove axis of length 1.</param>
-        /// <param name="axis">The axis to add.</param>
-        public static TensorSpan<T> Unsqueeze<T>(in this TensorSpan<T> input, int axis)
+        /// <param name="tensor">The <see cref="TensorSpan{T}"/> to add a dimension of length 1.</param>
+        /// <param name="dimension">The index of the dimension to add.</param>
+        public static TensorSpan<T> Unsqueeze<T>(in this TensorSpan<T> tensor, int dimension)
         {
-            if (axis > input.Lengths.Length)
+            if (dimension > tensor.Lengths.Length)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
-            if (axis < 0)
-                axis = input.Rank - axis;
+            if (dimension < 0)
+                dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = input.Lengths.ToArray().ToList();
-            tempLengths.Insert(axis, 1);
+            List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
+            tempLengths.Insert(dimension, 1);
             nint[] lengths = tempLengths.ToArray();
             nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
-            return new TensorSpan<T>(ref input._reference, lengths, strides, input._shape._memoryLength);
+            return new TensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
 
-        // REVIEW: NAME? NUMPY CALLS THIS expand_dims.
         /// <summary>
-        /// Insert a new axis of length 1 that will appear at the axis position.
+        /// Insert a new dimension of length 1 that will appear at the dimension position.
         /// </summary>
-        /// <param name="input">The <see cref="ReadOnlyTensorSpan{T}"/> to remove axis of length 1.</param>
-        /// <param name="axis">The axis to add.</param>
-        public static ReadOnlyTensorSpan<T> Unsqueeze<T>(in this ReadOnlyTensorSpan<T> input, int axis)
+        /// <param name="tensor">The <see cref="ReadOnlyTensorSpan{T}"/> to add a dimension of length 1.</param>
+        /// <param name="dimension">The index of the dimension to add.</param>
+        public static ReadOnlyTensorSpan<T> Unsqueeze<T>(in this ReadOnlyTensorSpan<T> tensor, int dimension)
         {
-            if (axis > input.Lengths.Length)
+            if (dimension > tensor.Lengths.Length)
                 ThrowHelper.ThrowArgument_AxisLargerThanRank();
-            if (axis < 0)
-                axis = input.Rank - axis;
+            if (dimension < 0)
+                dimension = tensor.Rank - dimension;
 
-            List<nint> tempLengths = input.Lengths.ToArray().ToList();
-            tempLengths.Insert(axis, 1);
+            List<nint> tempLengths = tensor.Lengths.ToArray().ToList();
+            tempLengths.Insert(dimension, 1);
             nint[] lengths = tempLengths.ToArray();
             nint[] strides = TensorSpanHelpers.CalculateStrides(lengths);
-            return new ReadOnlyTensorSpan<T>(ref input._reference, lengths, strides, input._shape._memoryLength);
+            return new ReadOnlyTensorSpan<T>(ref tensor._reference, lengths, strides, tensor._shape._memoryLength);
         }
         #endregion
 
