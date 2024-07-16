@@ -113,9 +113,9 @@ simd_intrinsic_info_compare_by_name (const void *key, const void *value)
 }
 
 static int
-lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
+lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 {
-	const guint16 *result = (const guint16 *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
+	const guint16 *result = (const guint16 *)mono_binary_search (cmethod_name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
 
 	if (result == NULL)
 		return -1;
@@ -124,7 +124,7 @@ lookup_intrins (guint16 *intrinsics, int size, MonoMethod *cmethod)
 }
 
 static SimdIntrinsic*
-lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
+lookup_intrins_info (SimdIntrinsic *intrinsics, int size, const char *cmethod_name)
 {
 #if 0
 	for (int i = 0; i < (size / sizeof (SimdIntrinsic)) - 1; ++i) {
@@ -142,7 +142,7 @@ lookup_intrins_info (SimdIntrinsic *intrinsics, int size, MonoMethod *cmethod)
 		}
 	}
 #endif
-	return (SimdIntrinsic *)mono_binary_search (cmethod->name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
+	return (SimdIntrinsic *)mono_binary_search (cmethod_name, intrinsics, size / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_info_compare_by_name);
 }
 
 static gboolean
@@ -995,7 +995,7 @@ emit_hardware_intrinsics (
 	const SimdIntrinsic *intrinsics = intrin_group->intrinsics;
 	int intrinsics_size = intrin_group->intrinsics_size;
 	MonoCPUFeatures feature = intrin_group->feature;
-	const SimdIntrinsic *info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod);
+	const SimdIntrinsic *info = lookup_intrins_info ((SimdIntrinsic *) intrinsics, intrinsics_size, cmethod->name);
 	{
 		if (!info)
 			goto support_probe_complete;
@@ -1492,7 +1492,25 @@ emit_dot (MonoCompile *cfg, MonoClass *klass, MonoType *vector_type, MonoTypeEnu
 static MonoInst*
 emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
+	const char *cmethod_name = cmethod->name;
+
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+		// but, they all prefix the qualified name of the interface first, so we'll check for that and
+		// skip the prefix before trying to resolve the method.
+
+		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
+			cmethod_name += 77;
+		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+			cmethod_name += 79;
+		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+			cmethod_name += 80;
+		}
+	}
+
+	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod_name);
 	if (id == -1) {
 		//check_no_intrinsic_cattr (cmethod);
 		return NULL;
@@ -2635,10 +2653,36 @@ static guint16 sri_vector_t_methods [] = {
 static MonoInst*
 emit_sri_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod);
+	const char *cmethod_name = cmethod->name;
+	bool explicitly_implemented = false;
+
+	if (strncmp(cmethod_name, "System.Runtime.Intrinsics.ISimdVector<System.Runtime.Intrinsics.Vector", 70) == 0) {
+		// We want explicitly implemented ISimdVector<TSelf, T> APIs to still be expanded where possible
+		// but, they all prefix the qualified name of the interface first, so we'll check for that and
+		// skip the prefix before trying to resolve the method.
+
+		if (strncmp(cmethod_name + 70, "<T>,T>.", 7) == 0) {
+			cmethod_name += 77;
+			explicitly_implemented = true;
+		} else if (strncmp(cmethod_name + 70, "64<T>,T>.", 9) == 0) {
+			cmethod_name += 79;
+			explicitly_implemented = true;
+		} else if ((strncmp(cmethod_name + 70, "128<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "256<T>,T>.", 10) == 0) ||
+			(strncmp(cmethod_name + 70, "512<T>,T>.", 10) == 0)) {
+			cmethod_name += 80;
+			explicitly_implemented = true;
+		}
+	}
+
+	int id = lookup_intrins (sri_vector_t_methods, sizeof (sri_vector_t_methods), cmethod_name);
 	if (id == -1) {
-		//check_no_intrinsic_cattr (cmethod);
-		return NULL;
+		if (explicitly_implemented) {
+			return emit_sri_vector (cfg, cmethod, fsig, args);
+		} else {
+			//check_no_intrinsic_cattr (cmethod);
+			return NULL;
+		}
 	}
 
 	MonoClass *klass = cmethod->klass;
@@ -2896,7 +2940,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	MonoClass *klass;
 	MonoType *type, *etype;
 
-	id = lookup_intrins (vector_2_3_4_methods, sizeof (vector_2_3_4_methods), cmethod);
+	id = lookup_intrins (vector_2_3_4_methods, sizeof (vector_2_3_4_methods), cmethod->name);
 	if (id == -1) {
 		// https://github.com/dotnet/runtime/issues/81961
 		// check_no_intrinsic_cattr (cmethod);
@@ -5448,7 +5492,7 @@ emit_wasm_zero_count (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **ar
 static MonoInst*
 emit_wasm_bitoperations_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
-	int id = lookup_intrins (bitoperations_methods, sizeof (bitoperations_methods), cmethod);
+	int id = lookup_intrins (bitoperations_methods, sizeof (bitoperations_methods), cmethod->name);
 	if (id == -1) {
 		return NULL;
 	}
