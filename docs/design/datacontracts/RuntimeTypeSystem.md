@@ -20,13 +20,12 @@ struct TypeHandle
 internal enum CorElementType
 {
     // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
-    // + 
-    Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata separate from a live process.
+    // +
+    Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata that is saved into a serialized format.
 }
 ```
 
-A `TypeHandle` is the runtime representation of the type information about a value.  This can be constructed from either a `TypeHandle` or 
-struct TypeHandle
+A `TypeHandle` is the runtime representation of the type information about a value.  This can be constructed from the address of a `TypeHandle` or a `MethodTable`.
 
 ``` csharp
     #region TypeHandle inspection APIs
