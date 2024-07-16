@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -27,9 +27,9 @@ namespace System.Net.Quic.Tests
             {
                 await using QuicListener listener = await CreateQuicListener();
 
-                var clientStreamTask = CreateQuicConnection(listener.LocalEndPoint);
+                var clientConnectionTask = CreateQuicConnection(listener.LocalEndPoint);
                 await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                await using QuicConnection clientConnection = await clientStreamTask;
+                await using QuicConnection clientConnection = await clientConnectionTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
@@ -57,9 +57,9 @@ namespace System.Net.Quic.Tests
 
                 await using QuicListener listener = await CreateQuicListener(new IPEndPoint(IPv6Any, 0));
 
-                var clientStreamTask = CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.LocalEndPoint.Port));
+                var clientConnectionTask = CreateQuicConnection(new IPEndPoint(IPAddress.Loopback, listener.LocalEndPoint.Port));
                 await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-                await using QuicConnection clientConnection = await clientStreamTask;
+                await using QuicConnection clientConnection = await clientConnectionTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
@@ -73,6 +73,7 @@ namespace System.Net.Quic.Tests
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
             await Assert.ThrowsAnyAsync<ArgumentException>(async () => await listener.AcceptConnectionAsync());
+            await Assert.ThrowsAnyAsync<AuthenticationException>(async () => await connectTask);
         }
 
         [Fact]
@@ -305,7 +306,7 @@ namespace System.Net.Quic.Tests
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             // Kick off requested number of parallel connects.
-            List<Task> connectTasks = new List<Task>();
+            List<Task<QuicConnection>> connectTasks = new List<Task<QuicConnection>>();
             for (int i = 0; i < connectCount; ++i)
             {
                 connectTasks.Add(CreateQuicConnection(listener.LocalEndPoint).AsTask());
@@ -318,7 +319,7 @@ namespace System.Net.Quic.Tests
             {
                 try
                 {
-                    await connectTask;
+                    await using var connection = await connectTask;
                     Interlocked.Increment(ref success);
                 }
                 catch (QuicException qex) when (qex.QuicError == QuicError.ConnectionRefused)

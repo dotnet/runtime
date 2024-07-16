@@ -727,6 +727,29 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
         }
 
+        case GT_CNS_MSK:
+        {
+            GenTreeMskCon* mskCon = tree->AsMskCon();
+
+            if (mskCon->IsAllBitsSet() || mskCon->IsZero())
+            {
+                // Directly encode constant to instructions.
+            }
+            else
+            {
+                // Reserve int to load constant from memory (IF_LARGELDC)
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            RefPosition* def               = BuildDef(tree);
+            def->getInterval()->isConstant = true;
+            break;
+        }
+
         case GT_BOX:
         case GT_COMMA:
         case GT_QMARK:
@@ -1450,6 +1473,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_Sve_PrefetchInt32:
                     case NI_Sve_PrefetchInt64:
                     case NI_Sve_ExtractVector:
+                    case NI_Sve_TrigonometricMultiplyAddCoefficient:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1919,18 +1943,44 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+            const bool embHasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrinEmb.id);
+            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3) || (embHasImmediateOperand && (numArgs == 4)));
 
-            // Special handling for ShiftRightArithmeticForDivide:
+            // Special handling for embedded intrinsics with immediates:
             // We might need an additional register to hold branch targets into the switch table
             // that encodes the immediate
-            if (intrinEmb.id == NI_Sve_ShiftRightArithmeticForDivide)
+            switch (intrinEmb.id)
             {
-                assert(embOp2Node->GetOperandCount() == 2);
-                if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
-                {
-                    buildInternalIntRegisterDefForNode(embOp2Node);
-                }
+                case NI_Sve_ShiftRightArithmeticForDivide:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 2);
+                    if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
+                    {
+                        buildInternalIntRegisterDefForNode(embOp2Node);
+                    }
+                    break;
+
+                case NI_Sve_AddRotateComplex:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 3);
+                    if (!embOp2Node->Op(3)->isContainedIntOrIImmed())
+                    {
+                        buildInternalIntRegisterDefForNode(embOp2Node);
+                    }
+                    break;
+
+                case NI_Sve_MultiplyAddRotateComplex:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 4);
+                    if (!embOp2Node->Op(4)->isContainedIntOrIImmed())
+                    {
+                        buildInternalIntRegisterDefForNode(embOp2Node);
+                    }
+                    break;
+
+                default:
+                    assert(!embHasImmediateOperand);
+                    break;
             }
 
             tgtPrefUse = BuildUse(embOp2Node->Op(1));
@@ -1980,18 +2030,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_LoadVectorNonTemporal:
                 case NI_Sve_LoadVector128AndReplicateToVector:
                 case NI_Sve_StoreAndZip:
-                case NI_Sve_PrefetchBytes:
-                case NI_Sve_PrefetchInt16:
-                case NI_Sve_PrefetchInt32:
-                case NI_Sve_PrefetchInt64:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     srcCount += BuildAddrUses(intrin.op2);
                     break;
 
-                case NI_Sve_GatherPrefetch8Bit:
-                case NI_Sve_GatherPrefetch16Bit:
-                case NI_Sve_GatherPrefetch32Bit:
-                case NI_Sve_GatherPrefetch64Bit:
                 case NI_Sve_GatherVector:
                 case NI_Sve_GatherVectorByteZeroExtend:
                 case NI_Sve_GatherVectorInt16SignExtend:
@@ -2004,6 +2046,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
                 case NI_Sve_GatherVectorUInt32ZeroExtend:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    FALLTHROUGH;
+
+                case NI_Sve_PrefetchBytes:
+                case NI_Sve_PrefetchInt16:
+                case NI_Sve_PrefetchInt32:
+                case NI_Sve_PrefetchInt64:
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
                     if (!varTypeIsSIMD(intrin.op2->gtType))
                     {
                         srcCount += BuildAddrUses(intrin.op2);
