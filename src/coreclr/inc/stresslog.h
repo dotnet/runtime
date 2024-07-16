@@ -647,10 +647,9 @@ public:
         timeStamp = time;
     }
 
-    static const size_t maxArgCnt = 63;
+    static constexpr size_t maxArgCnt = 63;
     static const int64_t maxOffset = (int64_t)1 << (formatOffsetLowBits + formatOffsetHighBits);
-    static constexpr size_t maxMsgSize ()
-    { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
+    static constexpr size_t maxMsgSize = sizeof(uint64_t) * 2 + maxArgCnt * sizeof(void*);
 };
 
 static_assert(sizeof(StressMsg) == sizeof(uint64_t) * 2, "StressMsg bitfields aren't aligned correctly");
@@ -879,7 +878,7 @@ public:
         // a previous record.  Update curPtr to reflect the last safe beginning of a record,
         // but curPtr shouldn't wrap around, otherwise it'll break our assumptions about stress
         // log
-        curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize());
+        curPtr = (StressMsg*)((char*)curPtr - StressMsg::maxMsgSize);
         if (curPtr < (StressMsg*)curWriteChunk->StartPtr())
         {
             curPtr = (StressMsg *)curWriteChunk->StartPtr();
@@ -973,7 +972,7 @@ inline StressMsg* ThreadStressLog::AdvReadPastBoundary() {
     }
     curReadChunk = curReadChunk->next;
     void** p = (void**)curReadChunk->StartPtr();
-    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr()) < (StressMsg::maxMsgSize() / sizeof(void*)))
+    while (*p == NULL && (size_t)(p-(void**)curReadChunk->StartPtr()) < (StressMsg::maxMsgSize / sizeof(void*)))
     {
         ++p;
     }
