@@ -232,6 +232,7 @@
 #define g_utf8_strlen monoeg_g_utf8_strlen
 #define g_utf8_to_utf16 monoeg_g_utf8_to_utf16
 #define g_utf8_to_utf16_custom_alloc monoeg_g_utf8_to_utf16_custom_alloc
+#define g_utf8_validate_part monoeg_g_utf8_validate_part
 #define g_utf8_validate monoeg_g_utf8_validate
 #define g_unichar_to_utf8 monoeg_g_unichar_to_utf8
 #define g_utf8_offset_to_pointer monoeg_g_utf8_offset_to_pointer
