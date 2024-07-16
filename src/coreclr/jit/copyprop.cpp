@@ -211,7 +211,7 @@ bool Compiler::optCopyProp(
                 continue;
             }
 
-            JITDUMP("orig [%06] copy [%06u] VNs proved equivalent\n", dspTreeID(tree),
+            JITDUMP("orig [%06u] copy [%06u] VNs proved equivalent\n", dspTreeID(tree),
                     dspTreeID(newLclDef.GetDefNode()));
         }
 
@@ -281,6 +281,24 @@ bool Compiler::optCopyProp(
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
+
+        // Update VN to match, and propagate up through any enclosing commas.
+        // (we could in principle try updating through other parents, but
+        // we lack VN's context for memory, so can't get them all).
+        //
+        if (newLclDefVN != lclDefVN)
+        {
+            tree->SetVNs(newLclSsaDef->m_vnPair);
+            GenTree* parent = tree->gtGetParent(nullptr);
+
+            while ((parent != nullptr) && parent->OperIs(GT_COMMA))
+            {
+                JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
+                ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
+                parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
+                parent = tree->gtGetParent(nullptr);
+            }
+        }
         gtUpdateSideEffects(stmt, tree);
         newLclSsaDef->AddUse(block);
 
