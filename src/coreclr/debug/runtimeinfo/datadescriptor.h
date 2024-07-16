@@ -228,7 +228,6 @@ CDAC_GLOBAL_POINTER(StressLogModuleTable, &g_pStressLog->modules)
 CDAC_GLOBAL(StressLogMaxModules, uint64, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, uint32, STRESSLOG_CHUNK_SIZE)
 CDAC_GLOBAL(StressLogMaxMessageSize, uint64, (uint64_t)StressMsg::maxMsgSize())
-CDAC_GLOBAL(StressMsgHeaderSize, uint32, (uint32_t)sizeof(StressMsg))
 #else
 CDAC_GLOBAL(StressLogEnabled, uint8, 0)
 #endif

@@ -545,7 +545,6 @@ public static class Program
                     "StressLogMaxModules": [ "0x5", "uint64" ],
                     "StressLogChunkSize": [ "0x8000", "uint32" ],
                     "StressLogMaxMessageSize": [ "0x208", "uint64" ],
-                    "StressMsgHeaderSize": [ "0x10", "uint32" ],
                     "StressLogModuleTable": [[ 1 ], "pointer" ],
                 },
                 "contracts": {

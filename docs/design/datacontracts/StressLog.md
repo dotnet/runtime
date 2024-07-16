@@ -40,6 +40,41 @@ IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog);
 
 ## Versions 0 to 2
 
+Data descriptors used:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| StressLog | LoggedFacilities | Bitmask of facilities that are logged |
+| StressLog | Level | Level of logging |
+| StressLog | MaxSizePerThread | Maximum size of the log per thread |
+| StressLog | MaxSizeTotal | Maximum size of the log |
+| StressLog | TotalChunks | Total number of chunks across all thread-specific logs |
+| StressLog | TickFrequency | Number of ticks per second for stresslog timestamps |
+| StressLog | StartTimestamp | Timestamp when the stress log was started |
+| StressLog | Logs | Pointer to the thread-specific logs |
+| ThreadStressLog | Next | Pointer to the next thread-specific log |
+| ThreadStressLog | ThreadId | ID of the thread |
+| ThreadStressLog | WriteHasWrapped | Whether the write pointer is writing to previously used chunks |
+| ThreadStressLog | CurrentPtr | Pointer to the most recently written message |
+| ThreadStressLog | ChunkListHead | Pointer to the head of the chunk list |
+| ThreadStressLog | ChunkListTail | Pointer to the tail of the chunk list |
+| ThreadStressLog | CurrentWriteChunk | Pointer to the chunk currently being written to |
+| StressLogChunk | Prev | Pointer to the previous chunk |
+| StressLogChunk | Next | Pointer to the next chunk |
+| StressLogChunk | Buf | The data stored in the chunk |
+| StressLogChunk | Sig1 | First byte of the chunk signature (to ensure validity) |
+| StressLogChunk | Sig2 | Second byte of the chunk signature (to ensure validity) |
+| StressMsgHeader | Opaque structure | Header of a stress message. Meaning of bits is version-dependent. |
+| StressMsg | Header | The message header |
+| StressMsg | Args | The arguments of the message (number of arguments specified in the header) |
+
+Global variables used:
+| Global Name | Type | Purpose |
+| --- | --- | --- |
+| StressLogEnabled | byte | Whether the stress log is enabled |
+| StressLog | pointer | Pointer to the stress log |
+| StressLogChunkSize | uint | Size of a stress log chunk |
+| StressLogMaxMessageSize | ulong | Maximum size of a stress log message |
+
 ```csharp
 bool HasStressLog()
 {
@@ -192,6 +227,11 @@ IEnumerable<StressMsgData> GetStressMessages(ThreadStressLog threadLog, uint for
 
 ## Version 0
 
+Data descriptors used:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| StressLog | ModuleOffset | Offset of the module in the stress log |
+
 Version 0 stress logs are included in .NET runtime versions corresponding to an SOS breaking change version of 0, 1, or 2. This stress log has no memory mapped header and no module table.
 
 These functions implement additional logic required for the shared contract implementation above.
@@ -233,6 +273,17 @@ StressMsgData GetStressMsgData(StressMsg msg)
 ```
 
 ## Version 1
+
+Data descriptors used:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| StressLogModuleDesc | BaseAddress | Base address of the module |
+| StressLogModuleDesc | Size | Size of the module |
+
+Global variables used:
+| Global Name | Type | Purpose |
+| --- | --- | --- |
+| StressLogModuleTable | pointer | Pointer to the stress log's module table |
 
 Version 1 stress logs are included in any .NET runtime version corresponding to an SOS breaking change version of 3 or a memory-mapped version of `0x00010001`. This stress log has a module table.
 
@@ -295,6 +346,17 @@ StressMsgData GetStressMsgData(StressMsg msg)
 
 ## Version 2
 
+Data descriptors used:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| StressLogModuleDesc | BaseAddress | Base address of the module |
+| StressLogModuleDesc | Size | Size of the module |
+
+Global variables used:
+| Global Name | Type | Purpose |
+| --- | --- | --- |
+| StressLogModuleTable | pointer | Pointer to the stress log's module table |
+
 Version 2 stress logs are included in any .NET runtime version corresponding to an SOS breaking change version of 4 or a memory-mapped version of `0x00010002`. This stress log has a module table.
 
 These functions implement additional logic required for the shared contract implementation above.
@@ -331,7 +393,7 @@ StressMsgData GetStressMsgData(StressMsg msg)
     {
         args[i] = target.ReadPointer((ulong)msg.Args + (ulong)(i * pointerSize));
     }
-    ulong formatOffset = (payload1 & ((1 << 26) - 1) | ((payload2 & ((1 << 13) - 1)) << 26));
+    ulong formatOffset = ((payload1 >> 38) & ((1 << 26) - 1)) | ((payload2 & ((1ul << 13) - 1)) << 26);
 
     TargetPointer formatString = TargetPointer.Null;
     ulong cumulativeOffset = 0;
