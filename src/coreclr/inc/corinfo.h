@@ -2093,7 +2093,8 @@ public:
     //
     // Remarks:
     //   This is equivalent of Type.GetGenericTypeDefinition(). Given a generic type handle, it will
-    //   return the original type definition (eg. for Foo<int> it will return Foo<>). This method
+    //   return the original type definition (eg. for Foo<int> it will return Foo<>). If called with
+    //   an unconstructed generic type, the method returns the same type as the input. This method
     //   should only be called when the input type is in fact a generic type.
     virtual CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) = 0;
 
