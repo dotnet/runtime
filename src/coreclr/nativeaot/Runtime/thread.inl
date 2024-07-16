@@ -15,10 +15,7 @@ inline uint8_t* ee_alloc_context::GetCombinedLimit()
     return combined_limit;
 }
 
-// It seems like there is a desire not to include a definition of gc_alloc_context in a more global place within
-// the NativeAOT runtime? Instead some individual files include their own definition as needed and others reference
-// gcinterface.h to get the official definition. This .inl file gets included from multiple places some of which
-// do define the type and others that do not. To avoid getting a redefinition error I added this private definition.
+// Workaround for https://github.com/dotnet/runtime/issues/96081
 struct _thread_inl_gc_alloc_context
 {
     uint8_t* alloc_ptr;
