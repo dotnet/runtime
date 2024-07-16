@@ -88,7 +88,7 @@ public unsafe class StressMessageFormatterTests
 
     public static IEnumerable<object[]> UnsignedIntegerSpecifierTestCases()
     {
-        foreach (string specifier in new[] { "%u", "%llu", "%zu", "%I64u" })
+        foreach (string specifier in new[] { "%u", "%lu", "%llu", "%zu", "%I64u" })
         {
             foreach (ulong value in new[] { 0ul, uint.MaxValue, ulong.MaxValue, ulong.MaxValue - 1, 42ul })
             {

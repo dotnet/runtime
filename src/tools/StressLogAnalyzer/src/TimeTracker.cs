@@ -5,7 +5,7 @@ using System.Collections.Concurrent;
 
 namespace StressLogAnalyzer;
 
-internal class TimeTracker(ulong startTimestamp, ulong tickFrequency, TimeRange timeRange, IntegerRange? gcIndex)
+internal sealed class TimeTracker(ulong startTimestamp, ulong tickFrequency, TimeRange timeRange, IntegerRange? gcIndex)
 {
     private readonly ConcurrentDictionary<ulong, (double start, double end)> _gcTimes = [];
 

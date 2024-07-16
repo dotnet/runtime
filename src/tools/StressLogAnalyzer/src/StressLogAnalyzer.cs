@@ -13,6 +13,7 @@ using System.Buffers;
 using System.Collections;
 using StressLogAnalyzer.Filters;
 using StressLogAnalyzer.Output;
+using System.Diagnostics;
 
 namespace StressLogAnalyzer;
 
@@ -44,7 +45,9 @@ internal sealed class StressLogAnalyzer(
         ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> earliestMessages = [];
         ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> allMessages = [];
 
-        await Parallel.ForEachAsync(logs, token, (log, ct) =>
+        var parallelOptions = new ParallelOptions { CancellationToken = token, MaxDegreeOfParallelism = Debugger.IsAttached ? 1 : Environment.ProcessorCount };
+
+        await Parallel.ForEachAsync(logs, parallelOptions, (log, ct) =>
         {
             // Stress logs are traversed from newest message to oldest, so the last message we see is the earliest one.
             StressMsgData? earliestMessage = null;
@@ -75,14 +78,14 @@ internal sealed class StressLogAnalyzer(
                     allMessages.Add((log, message));
                 }
 
-                if (stringFinder.IsWellKnown(out WellKnownString? wellKnown))
+                if (stringFinder.IsWellKnown(message.FormatString, out WellKnownString wellKnown))
                 {
-                    gcThreadMap.ProcessInterestingMessage(log.ThreadId, wellKnown.Value, message.Args);
-                    if (wellKnown.Value == WellKnownString.GCSTART)
+                    gcThreadMap.ProcessInterestingMessage(log.ThreadId, wellKnown, message.Args);
+                    if (wellKnown == WellKnownString.GCSTART)
                     {
                         timeTracker.RecordGCStart(message.Args[0], message.Timestamp);
                     }
-                    else if (wellKnown.Value == WellKnownString.GCEND)
+                    else if (wellKnown == WellKnownString.GCEND)
                     {
                         timeTracker.RecordGCEnd(message.Args[0], message.Timestamp);
                     }

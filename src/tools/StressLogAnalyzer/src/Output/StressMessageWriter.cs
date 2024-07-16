@@ -7,7 +7,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace StressLogAnalyzer.Output;
 
-internal class StressMessageWriter(IThreadNameOutput threadOutput, TimeTracker timeTracker, Target target, bool writeFormatString, TextWriter output) : IStressMessageOutput
+internal sealed class StressMessageWriter(IThreadNameOutput threadOutput, TimeTracker timeTracker, Target target, bool writeFormatString, TextWriter output) : IStressMessageOutput
 {
     private StressMessageFormatter formatter = new(target, new DefaultSpecialPointerFormatter());
 
@@ -19,6 +19,8 @@ internal class StressMessageWriter(IThreadNameOutput threadOutput, TimeTracker t
         await output.WriteAsync($" {timeTracker.TicksToSecondsFromStart(message.Timestamp):0000.000000000} : ").ConfigureAwait(false);
 
         await WriteFacility((LogFacility)message.Facility).ConfigureAwait(false);
+
+        await output.WriteAsync($" ").ConfigureAwait(false);
 
         if (writeFormatString)
         {

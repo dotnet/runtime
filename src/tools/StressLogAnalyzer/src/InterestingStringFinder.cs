@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -108,6 +109,11 @@ namespace StressLogAnalyzer
 
             wellKnownStringKind = wellKnown;
             return isInteresting;
+        }
+
+        public bool IsWellKnown(TargetPointer formatStringPointer, out WellKnownString wellKnownString)
+        {
+            return _knownStrings.TryGetValue(ReadZeroTerminatedString(formatStringPointer, 1024), out wellKnownString);
         }
     }
 }

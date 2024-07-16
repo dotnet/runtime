@@ -294,7 +294,7 @@ file sealed class StressLog_2(Target target): StressLog_0_2(target)
         {
             args[i] = target.ReadPointer((ulong)msg.Args + (ulong)(i * pointerSize));
         }
-        ulong formatOffset = (payload1 & ((1 << 26) - 1) | ((payload2 & ((1 << 13) - 1)) << 26));
+        ulong formatOffset = ((payload1 >> 38) & ((1 << 26) - 1)) | ((payload2 & ((1ul << 13) - 1)) << 26);
 
         TargetPointer formatString = TargetPointer.Null;
         ulong cumulativeOffset = 0;

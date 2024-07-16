@@ -35,5 +35,5 @@ public interface IInterestingStringFinder
 {
     bool IsInteresting(TargetPointer formatStringPointer, out WellKnownString? wellKnownString);
 
-    bool IsWellKnown([NotNullWhen(true)] out WellKnownString? wellKnownString);
+    bool IsWellKnown(TargetPointer formatStringPointer, out WellKnownString wellKnownString);
 }

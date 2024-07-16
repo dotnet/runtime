@@ -31,7 +31,7 @@ public static class Program
         Span<byte> moduleImageData = header->moduleImageData;
         foreach (StressLogHeader.ModuleDesc module in header->moduleTable)
         {
-            if (address >= module.baseAddr && address < module.baseAddr + module.size)
+            if (address >= module.baseAddr && address + bytesToRead < module.baseAddr + module.size)
             {
                 ulong moduleOffset = address - module.baseAddr;
                 Debug.Assert(cumulativeSize + moduleOffset < (ulong)moduleImageData.Length, "Address is out of bounds");
@@ -193,9 +193,10 @@ public static class Program
             HelpName = "format string"
         };
 
-        var gcIndex = new CliOption<IntegerRange>("--gc", "-g")
+        var gcIndex = new CliOption<IntegerRange?>("--gc", "-g")
         {
             Arity = ArgumentArity.OneOrMore,
+            DefaultValueFactory = argument => null,
             CustomParser = argument =>
             {
                 string value = argument.Tokens[0].Value;
@@ -234,9 +235,10 @@ public static class Program
             HelpName = "thread id or GC heap number",
         };
 
-        var threadFilter = new CliOption<ThreadFilter>("--threads", "-tid")
+        var threadFilter = new CliOption<ThreadFilter?>("--threads", "-tid")
         {
             Arity = ArgumentArity.ZeroOrMore,
+            DefaultValueFactory = argument => null,
             CustomParser = argument =>
             {
                 return new ThreadFilter(argument.Tokens.Select(token => token.Value));
@@ -247,6 +249,7 @@ public static class Program
 
         var hexThreadId = new CliOption<bool?>("--hexThreadId", "--hex")
         {
+            DefaultValueFactory = argument => null,
             Description = "Print hex thread ids, e.g. 2a08 instead of GC12",
         };
 
@@ -255,6 +258,12 @@ public static class Program
             Arity = ArgumentArity.ZeroOrMore,
             Description = "Print the raw format strings along with the message. Use -f:<format string> to search for a specific format string",
             HelpName = "format string",
+        };
+
+        var printFormatStrings = new CliOption<bool?>("--printFormatStrings", "-pf")
+        {
+            DefaultValueFactory = argument => null,
+            Description = "Print the raw format strings along with the message",
         };
 
         var rootCommand = new CliRootCommand
@@ -272,6 +281,7 @@ public static class Program
             earliestOption,
             threadFilter,
             hexThreadId,
+            printFormatStrings,
             formatFilter,
             new DiagramDirective(),
         };
@@ -279,6 +289,7 @@ public static class Program
         rootCommand.SetAction(async (args, ct) =>
         {
             ThreadFilter? threads = args.GetValue(threadFilter);
+            string[]? formats = args.GetResult(formatFilter) is not null ? args.GetValue(formatFilter) : null;
             Options options = new(
                 args.GetValue(inputFile)!,
                 args.GetValue(outputFile),
@@ -292,9 +303,9 @@ public static class Program
                 args.GetValue(earliestOption),
                 PrintHexThreadIds: args.GetValue(hexThreadId) ?? threads is { HasAnyFilter: false },
                 threads ?? new ThreadFilter([]),
-                PrintFormatStrings: args.GetValue(formatFilter) is [],
+                PrintFormatStrings: args.GetValue(printFormatStrings) ?? formats is [],
                 args.GetValue(prefixOption),
-                args.GetValue(formatFilter));
+                formats);
             return await AnalyzeStressLog(options, ct).ConfigureAwait(false);
         });
 

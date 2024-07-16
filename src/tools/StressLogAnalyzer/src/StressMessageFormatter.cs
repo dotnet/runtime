@@ -39,6 +39,7 @@ public sealed class StressMessageFormatter
             { "u", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "x", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
             { "X", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat)) },
+            { "lu", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "lld", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "lli", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "llu", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
@@ -214,13 +215,9 @@ public sealed class StressMessageFormatter
                 if (operand == 'l')
                 {
                     char nextChar = formatString[startIndex++];
-                    if (nextChar == 's')
+                    if (nextChar != 'l')
                     {
-                        specifier = "ls";
-                    }
-                    else if (nextChar != 'l')
-                    {
-                        throw new InvalidOperationException("Unsupported format width specifier 'l'");
+                        specifier = "l" + nextChar;
                     }
                     else
                     {
