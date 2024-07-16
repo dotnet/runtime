@@ -22,40 +22,24 @@ namespace System.Security.Cryptography.X509Certificates
             ICertificatePalCore certificatePal,
             ReadOnlySpan<char> password)
         {
-            AsymmetricAlgorithm? alg = null;
+            AsymmetricAlgorithm alg;
             SafeEvpPKeyHandle? privateKey = ((OpenSslX509CertificateReader)certificatePal).PrivateKeyHandle;
 
-            try
+            switch (privateKey?.GetKeyType())
             {
-                alg = new RSAOpenSsl(privateKey!);
-            }
-            catch (CryptographicException)
-            {
-            }
-
-            if (alg == null)
-            {
-                try
-                {
-                    alg = new ECDsaOpenSsl(privateKey!);
-                }
-                catch (CryptographicException)
-                {
-                }
+                case Interop.Crypto.EvpAlgorithmId.RSA:
+                    alg = new RSAOpenSsl(privateKey);
+                    break;
+                case Interop.Crypto.EvpAlgorithmId.ECC:
+                    alg = new ECDsaOpenSsl(privateKey);
+                    break;
+                case Interop.Crypto.EvpAlgorithmId.DSA:
+                    alg = new DSAOpenSsl(privateKey);
+                    break;
+                default:
+                    throw new CryptographicException(SR.Cryptography_InvalidHandle);
             }
 
-            if (alg == null)
-            {
-                try
-                {
-                    alg = new DSAOpenSsl(privateKey!);
-                }
-                catch (CryptographicException)
-                {
-                }
-            }
-
-            Debug.Assert(alg != null);
             return alg.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
         }
 

@@ -26,7 +26,6 @@ set(NATIVECRYPTO_SOURCES
     pal_bignum.c
     pal_bio.c
     pal_dsa.c
-    pal_ecdsa.c
     pal_ecc_import_export.c
     pal_eckey.c
     pal_err.c

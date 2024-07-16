@@ -73,10 +73,8 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
             ThrowIfNotSupported();
-            SafeEvpPKeyHandle newKey = Interop.Crypto.EvpPKeyDuplicate(
-                pkeyHandle,
-                Interop.Crypto.EvpAlgorithmId.RSA);
 
+            SafeEvpPKeyHandle newKey = pkeyHandle.DuplicateHandle();
             SetKey(newKey);
         }
 
@@ -87,7 +85,7 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the RSA key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            return Interop.Crypto.EvpPKeyDuplicate(GetKey(), Interop.Crypto.EvpAlgorithmId.RSA);
+            return GetKey().DuplicateHandle();
         }
 
         static partial void ThrowIfNotSupported()

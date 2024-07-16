@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
@@ -30,16 +31,9 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
             ThrowIfNotSupported();
-            // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
-            if (key.IsInvalid)
-            {
-                key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
 
-            _key = new ECOpenSsl(key);
-            KeySizeValue = _key.KeySize;
+            _key = new Lazy<SafeEvpPKeyHandle>(pkeyHandle.DuplicateHandle());
+            ForceSetKeySize(pkeyHandle.GetKeySizeBits());
         }
 
         /// <summary>
@@ -63,39 +57,24 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
             ThrowIfNotSupported();
+
+            // This handle is meant for ECOpenSsl which will take ownership of this handle and will dispose it.
             SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
-            _key = new ECOpenSsl(ecKeyHandle);
-            KeySizeValue = _key.KeySize;
+
+            // CreateEvpPkeyFromEcKey already uprefs so nothing else to do
+            _key = new Lazy<SafeEvpPKeyHandle>(Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle));
+            ForceSetKeySize(_key.Value.GetKeySizeBits());
         }
 
         /// <summary>
-        /// Obtain a SafeHandle version of an EVP_PKEY* which wraps an EC_KEY* equivalent
+        /// Obtain a SafeHandle version of an EVP_PKEY* equivalent
         /// to the current key for this instance.
         /// </summary>
-        /// <returns>A SafeHandle for the EC_KEY key in OpenSSL</returns>
+        /// <returns>A SafeHandle for the EVP_PKEY key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             ThrowIfDisposed();
-            SafeEcKeyHandle currentKey = _key.Value;
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return _key.Value.DuplicateHandle();
         }
 
         static partial void ThrowIfNotSupported()

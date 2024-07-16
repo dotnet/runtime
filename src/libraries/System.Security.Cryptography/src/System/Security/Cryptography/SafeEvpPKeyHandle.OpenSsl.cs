@@ -4,12 +4,19 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class SafeEvpPKeyHandle : SafeHandle
     {
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
+
+        /// <summary>
+        /// In some cases like when a key is loaded from a provided, the key may have an associated data
+        /// we need to keep alive for the lifetime of the key. This field is used to track that data.
+        /// </summary>
+        internal IntPtr ExtraHandle { get; private set; } = IntPtr.Zero;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -31,11 +38,51 @@ namespace System.Security.Cryptography
         {
         }
 
+        internal SafeEvpPKeyHandle(IntPtr handle, IntPtr extraHandle)
+            : base(handle, ownsHandle: true)
+        {
+            ExtraHandle = extraHandle;
+        }
+
         protected override bool ReleaseHandle()
         {
-            Interop.Crypto.EvpPkeyDestroy(handle);
+            Interop.Crypto.EvpPkeyDestroy(handle, ExtraHandle);
+            ExtraHandle = IntPtr.Zero;
+
             SetHandle(IntPtr.Zero);
             return true;
+        }
+
+        internal static SafeEvpPKeyHandle GenerateRSAKey(int keySize)
+        {
+            return Interop.Crypto.RsaGenerateKey(keySize);
+        }
+
+        internal static SafeEvpPKeyHandle GenerateECKey(int keySize)
+        {
+            SafeEvpPKeyHandle ret = GenerateECKeyCore(new ECOpenSsl(keySize), out int createdKeySize);
+            Debug.Assert(keySize == createdKeySize);
+            return ret;
+        }
+
+        internal static SafeEvpPKeyHandle GenerateECKey(ECCurve curve, out int keySize)
+        {
+            return  GenerateECKeyCore(new ECOpenSsl(curve), out keySize);
+        }
+
+        internal static SafeEvpPKeyHandle GenerateECKey(ECParameters parameters, out int keySize)
+        {
+            return GenerateECKeyCore(new ECOpenSsl(parameters), out keySize);
+        }
+
+        private static SafeEvpPKeyHandle GenerateECKeyCore(ECOpenSsl ecOpenSsl, out int keySize)
+        {
+            using (ECOpenSsl ec = ecOpenSsl)
+            {
+                SafeEvpPKeyHandle handle = Interop.Crypto.CreateEvpPkeyFromEcKey(ec.Value);
+                keySize = ec.KeySize;
+                return handle;
+            }
         }
 
         public override bool IsInvalid
@@ -70,6 +117,8 @@ namespace System.Security.Cryptography
             // Since we didn't actually create a new handle, copy the handle
             // to the new SafeHandle.
             safeHandle.SetHandle(handle);
+            // ExtraHandle is upref'd by UpRefEvpPkey
+            safeHandle.ExtraHandle = ExtraHandle;
             return safeHandle;
         }
 
@@ -176,6 +225,51 @@ namespace System.Security.Cryptography
             }
 
             return Interop.Crypto.LoadPublicKeyFromEngine(engineName, keyId);
+        }
+
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public static SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(providerName);
+            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+
+            if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
+            }
+
+            return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri);
+        }
+
+        internal int GetKeySizeBits()
+        {
+            return Interop.Crypto.EvpPKeyBits(this);
+        }
+
+        internal int GetKeySizeBytes()
+        {
+            // EVP_PKEY_size returns the maximum suitable size for the output buffers for almost all operations that can be done with the key.
+            // For most of the OpenSSL 'default' provider keys it will return the same size as this method,
+            // but other providers such as 'tpm2' it may return larger size.
+            // Instead we will round up EVP_PKEY_bits result.
+            int keySizeBits = GetKeySizeBits();
+
+            if (keySizeBits <= 0)
+            {
+                Debug.Fail($"EVP_PKEY_bits returned non-positive value: {keySizeBits}");
+                throw new CryptographicException();
+            }
+
+            return (GetKeySizeBits() + 7) / 8;
+        }
+
+        internal Interop.Crypto.EvpAlgorithmId GetKeyType()
+        {
+            return Interop.Crypto.EvpPKeyType(this);
         }
     }
 }

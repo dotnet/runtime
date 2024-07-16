@@ -48,6 +48,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaDecrypt(
             SafeEvpPKeyHandle pkey,
+            IntPtr extraHandle,
             ref byte source,
             int sourceLength,
             RSAEncryptionPaddingMode paddingMode,
@@ -64,6 +65,7 @@ internal static partial class Interop
         {
             int written = CryptoNative_RsaDecrypt(
                 pkey,
+                pkey.ExtraHandle,
                 ref MemoryMarshal.GetReference(source),
                 source.Length,
                 paddingMode,
@@ -83,6 +85,7 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_RsaEncrypt(
             SafeEvpPKeyHandle pkey,
+            IntPtr extraHandle,
             ref byte source,
             int sourceLength,
             RSAEncryptionPaddingMode paddingMode,
@@ -99,6 +102,7 @@ internal static partial class Interop
         {
             int written = CryptoNative_RsaEncrypt(
                 pkey,
+                pkey.ExtraHandle,
                 ref MemoryMarshal.GetReference(source),
                 source.Length,
                 paddingMode,
@@ -116,78 +120,53 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_RsaSignHash(
-            SafeEvpPKeyHandle pkey,
+        private static partial int CryptoNative_EvpPKeyCtxConfigureForRsaSign(
+            SafeEvpPKeyCtxHandle ctx,
             RSASignaturePaddingMode paddingMode,
-            IntPtr digestAlgorithm,
-            ref byte hash,
-            int hashLength,
-            ref byte destination,
-            int destinationLength);
+            IntPtr digestAlgorithm);
 
-        internal static int RsaSignHash(
-            SafeEvpPKeyHandle pkey,
+        internal static void CryptoNative_ConfigureForRsaSign(
+            SafeEvpPKeyCtxHandle ctx,
             RSASignaturePaddingMode paddingMode,
-            IntPtr digestAlgorithm,
-            ReadOnlySpan<byte> hash,
-            Span<byte> destination)
+            HashAlgorithmName digestAlgorithm)
         {
-            int written = CryptoNative_RsaSignHash(
-                pkey,
-                paddingMode,
-                digestAlgorithm,
-                ref MemoryMarshal.GetReference(hash),
-                hash.Length,
-                ref MemoryMarshal.GetReference(destination),
-                destination.Length);
-
-            if (written < 0)
+            if (digestAlgorithm.Name == null)
             {
-                Debug.Assert(written == -1);
-                throw CreateOpenSslCryptographicException();
+                throw new ArgumentNullException(nameof(digestAlgorithm));
             }
 
-            return written;
+            IntPtr digestAlgorithmPtr = Interop.Crypto.HashAlgorithmToEvp(digestAlgorithm.Name);
+            int ret = CryptoNative_EvpPKeyCtxConfigureForRsaSign(ctx, paddingMode, digestAlgorithmPtr);
+
+            if (ret != 1)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
         }
 
         [LibraryImport(Libraries.CryptoNative)]
-        private static partial int CryptoNative_RsaVerifyHash(
-            SafeEvpPKeyHandle pkey,
+        private static partial int CryptoNative_EvpPKeyCtxConfigureForRsaVerify(
+            SafeEvpPKeyCtxHandle ctx,
             RSASignaturePaddingMode paddingMode,
-            IntPtr digestAlgorithm,
-            ref byte hash,
-            int hashLength,
-            ref byte signature,
-            int signatureLength);
+            IntPtr digestAlgorithm);
 
-        internal static bool RsaVerifyHash(
-            SafeEvpPKeyHandle pkey,
+        internal static void CryptoNative_ConfigureForRsaVerify(
+            SafeEvpPKeyCtxHandle ctx,
             RSASignaturePaddingMode paddingMode,
-            IntPtr digestAlgorithm,
-            ReadOnlySpan<byte> hash,
-            ReadOnlySpan<byte> signature)
+            HashAlgorithmName digestAlgorithm)
         {
-            int ret = CryptoNative_RsaVerifyHash(
-                pkey,
-                paddingMode,
-                digestAlgorithm,
-                ref MemoryMarshal.GetReference(hash),
-                hash.Length,
-                ref MemoryMarshal.GetReference(signature),
-                signature.Length);
-
-            if (ret == 1)
+            if (digestAlgorithm.Name == null)
             {
-                return true;
+                throw new ArgumentNullException(nameof(digestAlgorithm));
             }
 
-            if (ret == 0)
-            {
-                return false;
-            }
+            IntPtr digestAlgorithmPtr = Interop.Crypto.HashAlgorithmToEvp(digestAlgorithm.Name);
+            int ret = CryptoNative_EvpPKeyCtxConfigureForRsaVerify(ctx, paddingMode, digestAlgorithmPtr);
 
-            Debug.Assert(ret == -1);
-            throw CreateOpenSslCryptographicException();
+            if (ret != 1)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
         }
     }
 }

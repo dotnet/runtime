@@ -17,9 +17,15 @@
 #define OSSL_MAC_PARAM_XOF    "xof"
 #define OSSL_MAC_PARAM_SIZE   "size"
 
-typedef struct ossl_provider_st OSSL_PROVIDER;
+#define OSSL_STORE_INFO_PKEY 4
+#define OSSL_STORE_INFO_PUBKEY 3
+
 typedef struct ossl_lib_ctx_st OSSL_LIB_CTX;
 typedef struct ossl_param_st OSSL_PARAM;
+typedef struct ossl_provider_st OSSL_PROVIDER;
+typedef struct ossl_store_ctx_st OSSL_STORE_CTX;
+typedef struct ossl_store_info_st OSSL_STORE_INFO;
+typedef OSSL_STORE_INFO* (*OSSL_STORE_post_process_info_fn)(OSSL_STORE_INFO*, void*);
 
 struct ossl_param_st
 {
@@ -54,10 +60,28 @@ int EVP_PKEY_CTX_set_rsa_pss_saltlen(EVP_PKEY_CTX* ctx, int saltlen);
 int EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md);
 int EVP_PKEY_get_base_id(const EVP_PKEY* pkey);
 int EVP_PKEY_get_size(const EVP_PKEY* pkey);
+int EVP_PKEY_get_bits(const EVP_PKEY* pkey);
 
 OSSL_PARAM OSSL_PARAM_construct_end(void);
 OSSL_PARAM OSSL_PARAM_construct_int32(const char *key, int32_t *buf);
 OSSL_PARAM OSSL_PARAM_construct_octet_string(const char *key, void *buf, size_t bsize);
 
 OSSL_PROVIDER* OSSL_PROVIDER_try_load(OSSL_LIB_CTX* , const char* name, int retain_fallbacks);
+void OSSL_LIB_CTX_free(OSSL_LIB_CTX*);
+OSSL_LIB_CTX* OSSL_LIB_CTX_new(void);
+OSSL_PROVIDER* OSSL_PROVIDER_load(OSSL_LIB_CTX*, const char* name);
+OSSL_PROVIDER* OSSL_PROVIDER_try_load(OSSL_LIB_CTX*, const char* name, int retain_fallbacks);
+int OSSL_PROVIDER_unload(OSSL_PROVIDER* prov);
+int OSSL_STORE_close(OSSL_STORE_CTX* ctx);
+int OSSL_STORE_eof(OSSL_STORE_CTX* ctx);
+OSSL_STORE_INFO* OSSL_STORE_load(OSSL_STORE_CTX* ctx);
+void OSSL_STORE_INFO_free(OSSL_STORE_INFO* info);
+int OSSL_STORE_INFO_get_type(const OSSL_STORE_INFO* info);
+EVP_PKEY* OSSL_STORE_INFO_get1_PKEY(const OSSL_STORE_INFO* info);
+EVP_PKEY* OSSL_STORE_INFO_get1_PUBKEY(const OSSL_STORE_INFO* info);
+OSSL_STORE_CTX* OSSL_STORE_open(
+    const char*, const UI_METHOD*, void*, OSSL_STORE_post_process_info_fn post_process, void*);
+OSSL_STORE_CTX* OSSL_STORE_open_ex(
+    const char*, OSSL_LIB_CTX*, const char*, const UI_METHOD*, void*, const OSSL_PARAM*, OSSL_STORE_post_process_info_fn post_process, void*);
+
 X509* SSL_get1_peer_certificate(const SSL* ssl);

@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class ECDiffieHellmanOpenSsl : ECDiffieHellman
     {
-        private ECOpenSsl? _key;
+        private SafeEvpPKeyHandle _key;
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -19,8 +19,8 @@ namespace System.Security.Cryptography
         public ECDiffieHellmanOpenSsl(ECCurve curve)
         {
             ThrowIfNotSupported();
-            _key = new ECOpenSsl(curve);
-            KeySizeValue = _key.KeySize;
+            _key = SafeEvpPKeyHandle.GenerateECKey(curve, out int keySize);
+            KeySizeValue = keySize;
         }
 
         [UnsupportedOSPlatform("android")]
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
             base.KeySize = keySize;
-            _key = new ECOpenSsl(this);
+            _key = SafeEvpPKeyHandle.GenerateECKey(keySize);
         }
 
         public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 _key?.Dispose();
-                _key = null;
+                _key = null!;
             }
 
             base.Dispose(disposing);
@@ -76,14 +76,17 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
                 _key.Dispose();
-                _key = new ECOpenSsl(this);
+                _key = SafeEvpPKeyHandle.GenerateECKey(value);
             }
         }
 
         public override void GenerateKey(ECCurve curve)
         {
             ThrowIfDisposed();
-            KeySizeValue = _key.GenerateKey(curve);
+
+            _key.Dispose();
+            _key = SafeEvpPKeyHandle.GenerateECKey(curve, out int keySizeValue);
+            KeySizeValue = keySizeValue;
         }
 
         public override ECDiffieHellmanPublicKey PublicKey
@@ -91,25 +94,37 @@ namespace System.Security.Cryptography
             get
             {
                 ThrowIfDisposed();
-
-                using (SafeEvpPKeyHandle handle = _key.UpRefKeyHandle())
-                {
-                    return new ECDiffieHellmanOpenSslPublicKey(handle);
-                }
+                return new ECDiffieHellmanOpenSslPublicKey(_key);
             }
         }
 
         public override void ImportParameters(ECParameters parameters)
         {
             ThrowIfDisposed();
-            KeySizeValue = _key.ImportParameters(parameters);
+            _key.Dispose();
+            _key = SafeEvpPKeyHandle.GenerateECKey(parameters, out int keySize);
+            KeySizeValue = keySize;
         }
 
-        public override ECParameters ExportExplicitParameters(bool includePrivateParameters) =>
-            ECOpenSsl.ExportExplicitParameters(GetKey(), includePrivateParameters);
+        public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
+        {
+            ThrowIfDisposed();
 
-        public override ECParameters ExportParameters(bool includePrivateParameters) =>
-            ECOpenSsl.ExportParameters(GetKey(), includePrivateParameters);
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
+            {
+                return ECOpenSsl.ExportExplicitParameters(ecKey, includePrivateParameters);
+            }
+        }
+
+        public override ECParameters ExportParameters(bool includePrivateParameters)
+        {
+            ThrowIfDisposed();
+
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
+            {
+                return ECOpenSsl.ExportParameters(ecKey, includePrivateParameters);
+            }
+        }
 
         public override void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
@@ -133,12 +148,6 @@ namespace System.Security.Cryptography
         private void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(_key is null, this);
-        }
-
-        private SafeEcKeyHandle GetKey()
-        {
-            ThrowIfDisposed();
-            return _key.Value;
         }
 
         static partial void ThrowIfNotSupported();

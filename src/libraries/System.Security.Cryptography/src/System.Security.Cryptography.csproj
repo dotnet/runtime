@@ -729,8 +729,6 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"
@@ -1201,8 +1199,6 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs"

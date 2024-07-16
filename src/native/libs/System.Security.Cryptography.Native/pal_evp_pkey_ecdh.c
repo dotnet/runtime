@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_evp_pkey_ecdh.h"
+#include "pal_evp_pkey.h"
 
-EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, EVP_PKEY* peerkey, uint32_t* secretLength)
+EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, void* extraHandle, EVP_PKEY* peerkey, uint32_t* secretLength)
 {
     if (secretLength != NULL)
         *secretLength = 0;
@@ -16,7 +17,7 @@ EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, EVP_PKEY* peerkey, u
     }
 
     /* Create the context for the shared secret derivation */
-    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+    EVP_PKEY_CTX* ctx = CryptoNative_EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     if (ctx == NULL)
     {

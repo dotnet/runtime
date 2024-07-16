@@ -3,6 +3,21 @@
 
 #include <assert.h>
 #include "pal_evp_pkey.h"
+#include "pal_utilities.h"
+
+#ifdef NEED_OPENSSL_3_0
+c_static_assert(OSSL_STORE_INFO_PKEY == 4);
+c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
+#endif
+
+struct EvpPKeyExtraHandle_st
+{
+    int references;
+    OSSL_LIB_CTX* libCtx;
+    OSSL_PROVIDER* prov;
+};
+
+typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
 {
@@ -10,83 +25,80 @@ EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
     return EVP_PKEY_new();
 }
 
-EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
+static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
 {
-    assert(currentKey != NULL);
+    assert(handle->references >= 1);
+    assert(handle->prov != NULL);
+    assert(handle->libCtx != NULL);
 
-    ERR_clear_error();
+    handle->references--;
 
-    int currentAlgId = EVP_PKEY_get_base_id(currentKey);
-
-    if (algId != NID_undef && algId != currentAlgId)
+    if (handle->references == 0)
     {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DIFFERENT_KEY_TYPES, __FILE__, __LINE__);
-        return NULL;
+        OSSL_PROVIDER_unload(handle->prov);
+        OSSL_LIB_CTX_free(handle->libCtx);
+        free(handle);
     }
-
-    EVP_PKEY* newKey = EVP_PKEY_new();
-
-    if (newKey == NULL)
-    {
-        return NULL;
-    }
-
-    bool success = true;
-
-    if (currentAlgId == EVP_PKEY_RSA)
-    {
-        const RSA* rsa = EVP_PKEY_get0_RSA(currentKey);
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-        if (rsa == NULL || !EVP_PKEY_set1_RSA(newKey, (RSA*)rsa))
-#pragma clang diagnostic pop
-        {
-            success = false;
-        }
-    }
-    else
-    {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
-        success = false;
-    }
-
-    if (!success)
-    {
-        EVP_PKEY_free(newKey);
-        newKey = NULL;
-    }
-
-    return newKey;
 }
 
-void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
+void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
 {
     if (pkey != NULL)
     {
         EVP_PKEY_free(pkey);
     }
+
+    if (extraHandle != NULL)
+    {
+        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
+        CryptoNative_EvpPkeyExtraHandleDestroy(extra);
+    }
 }
 
-int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey)
+int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
 {
     // This function is not expected to populate the error queue with
     // any errors, but it's technically possible that an external
     // ENGINE or OSSL_PROVIDER populate the queue in their implementation,
     // but the calling code does not check for one.
     assert(pkey != NULL);
-    return EVP_PKEY_get_size(pkey);
+    return EVP_PKEY_get_bits(pkey);
 }
 
-int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
+int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
 {
+    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
+
     if (!pkey)
     {
         return 0;
     }
 
+    if (extra != NULL)
+    {
+        extra->references++;
+    }
+
     // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
+}
+
+int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
+{
+    int32_t base_id = EVP_PKEY_get_base_id(key);
+    switch (base_id) {
+    case EVP_PKEY_RSA:
+    case EVP_PKEY_EC:
+    case EVP_PKEY_DSA:
+        return base_id;
+    case EVP_PKEY_RSA_PSS:
+        return EVP_PKEY_RSA;
+    case EVP_PKEY_ED448:
+    case EVP_PKEY_ED25519:
+        return EVP_PKEY_EC;
+    default:
+        return 0;
+    }
 }
 
 static bool Lcm(const BIGNUM* num1, const BIGNUM* num2, BN_CTX* ctx, BIGNUM* result)
@@ -579,4 +591,205 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     (void)haveEngine;
     *haveEngine = 0;
     return NULL;
+}
+
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle)
+{
+    ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(OSSL_PROVIDER_load))
+    {
+        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+        return NULL;
+    }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
+    EVP_PKEY* ret = NULL;
+    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
+    OSSL_PROVIDER* prov = NULL;
+    OSSL_STORE_CTX* store = NULL;
+    OSSL_STORE_INFO* firstPubKey = NULL;
+
+    if (libCtx == NULL)
+    {
+        goto end;
+    }
+
+    prov = OSSL_PROVIDER_load(libCtx, providerName);
+
+    if (prov == NULL)
+    {
+        goto end;
+    }
+
+    store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (store == NULL)
+    {
+        goto end;
+    }
+
+    // Quite similar to loading a single certificate from a PFX, if we find a private key that wins.
+    // Otherwise, the first public key wins.
+    // Otherwise, we'll push a keyload error
+    while (ret == NULL && !OSSL_STORE_eof(store))
+    {
+        OSSL_STORE_INFO* info = OSSL_STORE_load(store);
+
+        if (info == NULL)
+        {
+            continue;
+        }
+
+        int type = OSSL_STORE_INFO_get_type(info);
+
+        if (type == OSSL_STORE_INFO_PKEY)
+        {
+            ret = OSSL_STORE_INFO_get1_PKEY(info);
+            break;
+        }
+        else if (type == OSSL_STORE_INFO_PUBKEY && firstPubKey == NULL)
+        {
+            firstPubKey = info;
+            // skip the free
+            continue;
+        }
+
+        OSSL_STORE_INFO_free(info);
+    }
+
+    if (ret == NULL && firstPubKey != NULL)
+    {
+        ret = OSSL_STORE_INFO_get1_PUBKEY(firstPubKey);
+    }
+
+    if (ret == NULL)
+    {
+        ERR_clear_error();
+        ERR_put_error(ERR_LIB_NONE, 0, EVP_R_NO_KEY_SET, __FILE__, __LINE__);
+    }
+
+end:
+    if (firstPubKey != NULL)
+    {
+        OSSL_STORE_INFO_free(firstPubKey);
+    }
+
+    if (store != NULL)
+    {
+        OSSL_STORE_close(store);
+    }
+
+    if (ret == NULL)
+    {
+        if (prov != NULL)
+        {
+            assert(libCtx != NULL);
+            // we still want a separate check for libCtx as only prov could be NULL
+            OSSL_PROVIDER_unload(prov);
+        }
+
+        if (libCtx != NULL)
+        {
+            OSSL_LIB_CTX_free(libCtx);
+        }
+
+        *extraHandle = NULL;
+    }
+    else
+    {
+        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
+        extra->prov = prov;
+        extra->libCtx = libCtx;
+        extra->references = 1;
+        *extraHandle = extra;
+    }
+
+    return ret;
+#else
+    (void)providerName;
+    (void)keyUri;
+    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+    *extraHandle = NULL;
+    return NULL;
+#endif
+}
+
+EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
+{
+    assert(pkey != NULL);
+
+#ifdef NEED_OPENSSL_3_0
+    EvpPKeyExtraHandle* handle = (EvpPKeyExtraHandle*)extraHandle;
+    OSSL_LIB_CTX* libCtx = (handle != NULL) ? handle->libCtx : NULL;
+    return EVP_PKEY_CTX_new_from_pkey(libCtx, pkey, NULL);
+#else
+    assert(libCtx == NULL);
+    return EVP_PKEY_CTX_new(pkey, NULL);
+#endif
+}
+
+int32_t CryptoNative_EvpPKeyCtxConfigureForECDSASign(EVP_PKEY_CTX* ctx)
+{
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    if (EVP_PKEY_sign_init(ctx) <= 0)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+int32_t CryptoNative_EvpPKeyCtxConfigureForECDSAVerify(EVP_PKEY_CTX* ctx)
+{
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    if (EVP_PKEY_verify_init(ctx) <= 0)
+    {
+        return 0;
+    }
+
+    return 1;
+}
+
+int32_t CryptoNative_EvpPKeyCtxSignHash(EVP_PKEY_CTX* ctx,
+                                 const uint8_t* hash,
+                                 int32_t hashLen,
+                                 uint8_t* destination,
+                                 int32_t* destinationLen)
+{
+    assert(ctx != NULL);
+    assert(hash != NULL);
+    assert(hashLen > 0);
+    assert(destinationLen != NULL);
+    assert(destination != NULL || *destinationLen == 0);
+
+    ERR_clear_error();
+    size_t written = Int32ToSizeT(*destinationLen);
+
+    if (EVP_PKEY_sign(ctx, destination, &written, hash, Int32ToSizeT(hashLen)) > 0)
+    {
+        *destinationLen = SizeTToInt32(written);
+        return 1;
+    }
+
+    return 0;
+}
+
+int32_t CryptoNative_EvpPKeyCtxVerifyHash(EVP_PKEY_CTX* ctx,
+                                 const uint8_t* hash,
+                                 int32_t hashLen,
+                                 uint8_t* signature,
+                                 int32_t signatureLen)
+{
+    ERR_clear_error();
+    return EVP_PKEY_verify(ctx, signature, Int32ToSizeT(signatureLen), hash, Int32ToSizeT(hashLen)) > 0;
 }

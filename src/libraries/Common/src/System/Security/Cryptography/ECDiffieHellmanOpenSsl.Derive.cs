@@ -88,10 +88,13 @@ namespace System.Security.Cryptography
             Debug.Assert(otherPartyPublicKey != null);
             Debug.Assert(_key is not null); // Callers should validate prior.
 
-            // Ensure that this ECDH object contains a private key by attempting a parameter export
-            // which will throw an OpenSslCryptoException if no private key is available
-            ECParameters thisKeyExplicit = ExportExplicitParameters(true);
-            bool thisIsNamed = Interop.Crypto.EcKeyHasCurveName(_key.Value);
+            bool thisIsNamed;
+
+            using (SafeEcKeyHandle ecKey = Interop.Crypto.EvpPkeyGetEcKey(_key))
+            {
+                thisIsNamed = Interop.Crypto.EcKeyHasCurveName(ecKey);
+            }
+
             ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
             bool disposeOtherKey = false;
 
@@ -109,7 +112,11 @@ namespace System.Security.Cryptography
 
             bool otherIsNamed = otherKey.HasCurveName;
 
-            SafeEvpPKeyHandle? ourKey = null;
+            // The only case when we will not directly use our key is when peer key is an explicit curve
+            // but we're using named in which case we'll recreate our key with explicit parameters.
+            SafeEvpPKeyHandle ourKey = _key;
+            bool disposeOurKey = false;
+
             SafeEvpPKeyHandle? theirKey = null;
             byte[]? rented = null;
             int secretLength = 0;
@@ -123,23 +130,33 @@ namespace System.Security.Cryptography
 
                 if (otherIsNamed == thisIsNamed)
                 {
-                    ourKey = _key.UpRefKeyHandle();
                     theirKey = otherKey.DuplicateKeyHandle();
                 }
                 else if (otherIsNamed)
                 {
-                    ourKey = _key.UpRefKeyHandle();
-
                     using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
                     {
-                        theirKey = tmp.UpRefKeyHandle();
+                        theirKey = tmp.CreateKeyHandle();
                     }
                 }
                 else
                 {
-                    using (ECOpenSsl tmp = new ECOpenSsl(thisKeyExplicit))
+                    try
                     {
-                        ourKey = tmp.UpRefKeyHandle();
+                        // This is generally not expected to fail except:
+                        // - when key can't be accessed but is available (i.e. TPM)
+                        // - private key is actually missing
+
+                        using (ECOpenSsl tmp = new ECOpenSsl(ExportExplicitParameters(true)))
+                        {
+                            ourKey = tmp.CreateKeyHandle();
+                            disposeOurKey = true;
+                        }
+                    }
+                    catch (CryptographicException)
+                    {
+                        // In both cases of failure we'll report lack of private key
+                        throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
 
                     theirKey = otherKey.DuplicateKeyHandle();
@@ -186,11 +203,15 @@ namespace System.Security.Cryptography
             finally
             {
                 theirKey?.Dispose();
-                ourKey?.Dispose();
 
                 if (disposeOtherKey)
                 {
                     otherKey.Dispose();
+                }
+
+                if (disposeOurKey)
+                {
+                    ourKey.Dispose();
                 }
 
                 if (rented != null)
