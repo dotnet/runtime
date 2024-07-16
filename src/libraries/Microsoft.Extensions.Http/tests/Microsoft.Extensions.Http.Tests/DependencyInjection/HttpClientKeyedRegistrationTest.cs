@@ -2,259 +2,536 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Http;
-using Microsoft.Extensions.Http.Logging;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public class HttpClientKeyedRegistrationTest
     {
+        public const string Test = "test";
+        public const string Other = "other";
+        public const string Disabled = "disabled";
+        public const string KeyedDefaults = "keyed-defaults";
+        public const string Absent = "absent";
+
         [Fact]
-        public void HttpClient_ResolvedAsKeyedService_Success()
+        public void HttpClient_RespectsSingletonLifetime()
         {
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddHttpClient("test", c => c.BaseAddress = new Uri("http://example.com")).AsKeyed(ServiceLifetime.Transient);
 
-            var services = serviceCollection.BuildServiceProvider();
+            AddConfiguredClient(serviceCollection, Test)
+                .AsKeyed(ServiceLifetime.Singleton);
 
-            var client = services.GetRequiredKeyedService<HttpClient>("test");
+            serviceCollection.AddTransient<KeyedClientTestService>(); // [FromKeyedServices(Test)] HttpClient
 
-            Assert.Equal(new Uri("http://example.com"), client.BaseAddress);
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var factory = rootServices.GetRequiredService<IHttpClientFactory>();
+
+            Assert.Same(GetKeyedClient(rootServices), GetKeyedClient(rootServices));
+            Assert.Same(
+                rootServices.GetRequiredService<KeyedClientTestService>().HttpClient, // same singleton instance injected into a transient service
+                GetKeyedClient(rootServices));
+            Assert.NotSame(factory.CreateClient(Test), GetKeyedClient(rootServices)); // factory creates a new instance each time
+
+            var scopeA = rootServices.CreateScope();
+            Assert.Same(GetKeyedClient(scopeA), GetKeyedClient(scopeA));
+            Assert.Same(
+                scopeA.ServiceProvider.GetRequiredService<KeyedClientTestService>().HttpClient,
+                GetKeyedClient(scopeA));
+            Assert.Same(GetKeyedClient(rootServices), GetKeyedClient(scopeA));
+            Assert.NotSame(factory.CreateClient(Test), GetKeyedClient(scopeA)); // factory creates a new instance each time
+
+            var scopeB = rootServices.CreateScope();
+            Assert.Same(GetKeyedClient(scopeB), GetKeyedClient(scopeB));
+            Assert.Same(GetKeyedClient(scopeA), GetKeyedClient(scopeB));
+
+            var clientA = GetKeyedClient(scopeA);
+            var factoryClient = factory.CreateClient(Test);
+            AssertAlive(clientA);
+            AssertAlive(factoryClient);
+
+            scopeA.Dispose();
+            AssertAlive(clientA);
+            AssertAlive(factoryClient);
         }
 
         [Fact]
-        public void HttpClient_ResolvedAsKeyedService_AbsentClient()
+        public void HttpClient_RespectsTransientLifetime()
         {
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddHttpClient("test").AsKeyed(ServiceLifetime.Transient);
 
-            var services = serviceCollection.BuildServiceProvider();
+            AddConfiguredClient(serviceCollection, Test)
+                .AsKeyed(ServiceLifetime.Transient);
 
-            var client = services.GetKeyedService<HttpClient>("absent");
+            serviceCollection.AddTransient<KeyedClientTestService>(); // [FromKeyedServices(Test)] HttpClient
 
-            Assert.Null(client);
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var factory = rootServices.GetRequiredService<IHttpClientFactory>();
+
+            Assert.NotSame(GetKeyedClient(rootServices), GetKeyedClient(rootServices));
+            Assert.NotSame(
+                rootServices.GetRequiredService<KeyedClientTestService>().HttpClient,
+                GetKeyedClient(rootServices));
+            Assert.NotSame(factory.CreateClient(Test), GetKeyedClient(rootServices));
+
+            var scopeA = rootServices.CreateScope();
+            Assert.NotSame(GetKeyedClient(scopeA), GetKeyedClient(scopeA));
+            Assert.NotSame(
+                scopeA.ServiceProvider.GetRequiredService<KeyedClientTestService>().HttpClient,
+                GetKeyedClient(scopeA));
+            Assert.NotSame(GetKeyedClient(rootServices), GetKeyedClient(scopeA));
+            Assert.NotSame(factory.CreateClient(Test), GetKeyedClient(scopeA));
+
+            var scopeB = rootServices.CreateScope();
+            Assert.NotSame(GetKeyedClient(scopeB), GetKeyedClient(scopeB));
+            Assert.NotSame(GetKeyedClient(scopeA), GetKeyedClient(scopeB));
+
+            var clientA = GetKeyedClient(scopeA);
+            var clientB = GetKeyedClient(scopeB);
+            var rootClient = GetKeyedClient(rootServices);
+            var factoryClient = factory.CreateClient(Test);
+            AssertAlive(clientA);
+            AssertAlive(rootClient);
+            AssertAlive(factoryClient);
+
+            scopeA.Dispose();
+            AssertDisposed(clientA); // transient instance disposed with the scope
+            AssertAlive(clientB);
+            AssertAlive(rootClient);
+            AssertAlive(factoryClient);
         }
-        [Fact]
-        public void HttpMessageHandler_ResolvedAsKeyedService_Success()
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void HttpClient_RespectsScopedLifetime(bool validateScopes)
         {
             var serviceCollection = new ServiceCollection();
-            serviceCollection.AddHttpClient("test").AsKeyed(ServiceLifetime.Transient)
-                .ConfigurePrimaryHttpMessageHandler(() => new TestMessageHandler());
 
-            var services = serviceCollection.BuildServiceProvider();
+            AddConfiguredClient(serviceCollection, Test)
+                .AsKeyed(ServiceLifetime.Scoped);
 
-            var handler = services.GetRequiredKeyedService<HttpMessageHandler>("test");
-            while (handler is DelegatingHandler dh)
+            serviceCollection.AddTransient<KeyedClientTestService>(); // [FromKeyedServices(Test)] HttpClient
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes);
+            var factory = rootServices.GetRequiredService<IHttpClientFactory>();
+
+            if (validateScopes)
             {
-                handler = dh.InnerHandler;
+                Assert.Throws<InvalidOperationException>(() => GetKeyedClient(rootServices)); // root scope is invalid
+            }
+            else
+            {
+                Assert.Same(GetKeyedClient(rootServices), GetKeyedClient(rootServices)); // root-capturing scoped instance
+                Assert.Same(
+                    rootServices.GetRequiredService<KeyedClientTestService>().HttpClient, // same root-captured instance injected into a transient service
+                    GetKeyedClient(rootServices));
+                Assert.NotSame(factory.CreateClient(Test), GetKeyedClient(rootServices));
             }
 
-            Assert.IsType<TestMessageHandler>(handler);
-        }
-
-        [Fact]
-        public void HttpMessageHandler_ResolvedAsKeyedService_AbsentHandler()
-        {
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddHttpClient("test").AsKeyed(ServiceLifetime.Transient);
-
-            var services = serviceCollection.BuildServiceProvider();
-
-            var handler = services.GetKeyedService<HttpMessageHandler>("absent");
-
-            Assert.Null(handler);
-        }
-
-        [Fact]
-        public void HttpClient_InjectedAsKeyedService_Success()
-        {
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddHttpClient("test", c => c.BaseAddress = new Uri("http://example.com")).AsKeyed(ServiceLifetime.Transient);
-            serviceCollection.AddSingleton<KeyedClientTestService>();
-
-            var services = serviceCollection.BuildServiceProvider();
-
-            var testService = services.GetRequiredService<KeyedClientTestService>();
-
-            Assert.Equal(new Uri("http://example.com"), testService.HttpClient.BaseAddress);
-        }
-
-        [Fact]
-        public void AdditionalHandler_InjectedAsKeyedService_Success()
-        {
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddKeyedTransient<KeyedDelegatingHandler>(KeyedService.AnyKey);
-            serviceCollection.AddHttpClient("test").AsKeyed(ServiceLifetime.Transient)
-                .AddHttpMessageHandler<KeyedDelegatingHandler>();
-            serviceCollection.AddHttpClient("test2").AsKeyed(ServiceLifetime.Transient)
-                .AddHttpMessageHandler<KeyedDelegatingHandler>();
-
-            var services = serviceCollection.BuildServiceProvider();
-
-            ValidateHandler("test");
-            ValidateHandler("test2");
-
-            void ValidateHandler(string clientName)
+            var scopeA = rootServices.CreateScope();
+            Assert.Same(GetKeyedClient(scopeA), GetKeyedClient(scopeA));
+            Assert.Same(
+                scopeA.ServiceProvider.GetRequiredService<KeyedClientTestService>().HttpClient,  // same scoped instance injected into a transient service
+                GetKeyedClient(scopeA));
+            Assert.NotSame(factory.CreateClient(Test), GetKeyedClient(scopeA));
+            if (!validateScopes)
             {
-                var handler = services.GetRequiredKeyedService<HttpMessageHandler>(clientName);
-                while (handler is DelegatingHandler dh)
-                {
-                    if (dh is KeyedDelegatingHandler)
-                    {
-                        break;
-                    }
-                    handler = dh.InnerHandler;
-                }
-
-                var keyedHandler = Assert.IsType<KeyedDelegatingHandler>(handler);
-                Assert.Equal(clientName, keyedHandler.Key);
+                Assert.NotSame(GetKeyedClient(rootServices), GetKeyedClient(scopeA));
             }
+
+            var scopeB = rootServices.CreateScope();
+            Assert.Same(GetKeyedClient(scopeB), GetKeyedClient(scopeB));
+            Assert.NotSame(GetKeyedClient(scopeA), GetKeyedClient(scopeB));
+
+            var clientA = GetKeyedClient(scopeA);
+            var clientB = GetKeyedClient(scopeB);
+            var rootClient = validateScopes ? null! : GetKeyedClient(rootServices);
+            var factoryClient = factory.CreateClient(Test);
+            AssertAlive(clientA);
+            AssertAlive(clientB);
+            AssertAlive(rootClient, skipIfNull: validateScopes);
+            AssertAlive(factoryClient);
+
+            scopeA.Dispose();
+            AssertDisposed(clientA); // scoped instance disposed with the scope
+            AssertAlive(clientB);
+            AssertAlive(rootClient, skipIfNull: validateScopes);
+            AssertAlive(factoryClient);
         }
 
         [Fact]
-        public void PrimaryHandler_InjectedAsKeyedService_Success()
+        public void HttpClient_ResolvedAsKeyedService()
         {
             var serviceCollection = new ServiceCollection();
 
-            serviceCollection.AddKeyedTransient<BaseKeyedHandler, KeyedPrimaryHandler>("test");
-            serviceCollection.AddKeyedTransient<BaseKeyedHandler, OtherKeyedPrimaryHandler>("other-implementation");
-            serviceCollection.AddTransient<BaseKeyedHandler>(_ => new KeyedPrimaryHandler("non-keyed-fallback"));
+            AddConfiguredClient(serviceCollection, Test).AsKeyed(ServiceLifetime.Scoped);
+            AddConfiguredClient(serviceCollection, Other).AsKeyed(ServiceLifetime.Scoped);
+            AddConfiguredClient(serviceCollection, Disabled).DropKeyed();
+            AddConfiguredClient(serviceCollection, KeyedDefaults); // no Keyed APIs called
 
-            serviceCollection.AddHttpClient("test").AsKeyed(ServiceLifetime.Transient)
-                .ConfigurePrimaryHttpMessageHandler<BaseKeyedHandler>();
-            serviceCollection.AddHttpClient("other-implementation").AsKeyed(ServiceLifetime.Transient)
-                .ConfigurePrimaryHttpMessageHandler<BaseKeyedHandler>();
-            serviceCollection.AddHttpClient("non-keyed").AsKeyed(ServiceLifetime.Transient)
-                .ConfigurePrimaryHttpMessageHandler<BaseKeyedHandler>();
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
 
-            var services = serviceCollection.BuildServiceProvider();
+            AssertConfigured(GetKeyedClient(services, Test), Test);
+            AssertConfigured(GetKeyedClient(services, Other), Other);
+            Assert.Null(GetKeyedClientOrNull(services, Disabled));
+            Assert.Null(GetKeyedClientOrNull(services, KeyedDefaults));
+            Assert.Null(GetKeyedClientOrNull(services, Absent));
 
-            var handler = services.GetRequiredKeyedService<HttpMessageHandler>("test");
-            while (handler is DelegatingHandler dh)
-            {
-                handler = dh.InnerHandler;
-            }
-            var keyedHandler = Assert.IsType<KeyedPrimaryHandler>(handler);
-            Assert.Equal("test", keyedHandler.Key);
-
-            var otherHandler = services.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler("other-implementation");
-            while (otherHandler is DelegatingHandler odh)
-            {
-                otherHandler = odh.InnerHandler;
-            }
-            var otherKeyedHandler = Assert.IsType<OtherKeyedPrimaryHandler>(otherHandler);
-            Assert.Equal("{ \"key\": \"other-implementation\" }", otherKeyedHandler.Key);
-
-            var fallbackHandler = services.GetRequiredKeyedService<HttpMessageHandler>("non-keyed");
-            while (fallbackHandler is DelegatingHandler fdh)
-            {
-                fallbackHandler = fdh.InnerHandler;
-            }
-            var nonKeyedHandler = Assert.IsType<KeyedPrimaryHandler>(fallbackHandler);
-            Assert.Equal("non-keyed-fallback", nonKeyedHandler.Key);
-        }
-
-        [Fact]
-        public async Task HttpClientLogger_InjectedAsKeyedService_Success()
-        {
-            var sink = new TestSink();
-            var serviceCollection = new ServiceCollection();
-            serviceCollection.AddLogging();
-            serviceCollection.AddSingleton<ILoggerFactory>(new TestLoggerFactory(sink, enabled: true));
-            serviceCollection.AddTransient<TestMessageHandler>();
-            serviceCollection.AddKeyedSingleton<KeyedHttpClientLogger>(KeyedService.AnyKey);
-
-            serviceCollection.AddHttpClient("FirstClient").AsKeyed(ServiceLifetime.Transient)
-                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .RemoveAllLoggers()
-                .AddLogger<KeyedHttpClientLogger>();
-
-            serviceCollection.AddHttpClient("SecondClient").AsKeyed(ServiceLifetime.Transient)
-                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .RemoveAllLoggers()
-                .AddLogger<KeyedHttpClientLogger>();
-
-            var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
 
-            var client1 = factory.CreateClient("FirstClient");
-            var client2 = factory.CreateClient("SecondClient");
+            AssertConfigured(factory.CreateClient(Test), Test);
+            AssertConfigured(factory.CreateClient(Other), Other);
+            AssertConfigured(factory.CreateClient(Disabled), Disabled);
+            AssertConfigured(factory.CreateClient(KeyedDefaults), KeyedDefaults);
 
-            _ = await client1.GetAsync(new Uri("http://example.com"));
-            Assert.Equal(2, sink.Writes.Count);
-            Assert.Equal(2, sink.Writes.Count(w => w.LoggerName == typeof(KeyedHttpClientLogger).FullName + ".FirstClient"));
-
-            _ = await client2.GetAsync(new Uri("http://example.com"));
-            Assert.Equal(4, sink.Writes.Count);
-            Assert.Equal(2, sink.Writes.Count(w => w.LoggerName == typeof(KeyedHttpClientLogger).FullName + ".SecondClient"));
+            var absentClient = factory.CreateClient(Absent); // it's possible to create a (default) client for a name that wasn't explicitly registered
+            Assert.Null(absentClient.BaseAddress); // not configured
         }
+
+        [Fact]
+        public void HttpClient_InjectedAsKeyedService()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            AddConfiguredClient(serviceCollection, Test).AsKeyed(ServiceLifetime.Scoped);
+            serviceCollection.AddTransient<KeyedClientTestService>(); // [FromKeyedServices(Test)] HttpClient
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
+
+            var service = services.GetRequiredService<KeyedClientTestService>();
+            AssertConfigured(service.HttpClient, Test);
+        }
+
+        [Fact]
+        public void HttpMessageHandler_ResolvedAsKeyedService()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            AddConfiguredClient(serviceCollection, Test).AsKeyed(ServiceLifetime.Scoped);
+            AddConfiguredClient(serviceCollection, Other).AsKeyed(ServiceLifetime.Scoped);
+            AddConfiguredClient(serviceCollection, Disabled).DropKeyed();
+            AddConfiguredClient(serviceCollection, KeyedDefaults); // no Keyed APIs called
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
+
+            AssertConfigured(GetKeyedHandler(services, Test), Test);
+            AssertConfigured(GetKeyedHandler(services, Other), Other);
+            Assert.Null(GetKeyedHandlerOrNull(services, Disabled));
+            Assert.Null(GetKeyedHandlerOrNull(services, KeyedDefaults));
+            Assert.Null(GetKeyedHandlerOrNull(services, Absent));
+
+            var factory = services.GetRequiredService<IHttpMessageHandlerFactory>();
+
+            AssertConfigured(factory.CreateHandler(Test), Test);
+            AssertConfigured(factory.CreateHandler(Other), Other);
+            AssertConfigured(factory.CreateHandler(Disabled), Disabled);
+            AssertConfigured(factory.CreateHandler(KeyedDefaults), KeyedDefaults);
+
+            var absentHandler = factory.CreateHandler(Absent); // it's possible to create a (default) handler for a name that wasn't explicitly registered
+
+            Type defaultPrimaryHandlerType =
+#if NET
+                SocketsHttpHandler.IsSupported ? typeof(SocketsHttpHandler) :
+#endif
+                typeof(HttpClientHandler);
+
+            Assert.Equal(defaultPrimaryHandlerType, GetPrimaryHandler(absentHandler).GetType()); // not configured
+        }
+
+        [Fact]
+        public void HttpMessageHandler_InjectedAsKeyedService()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            AddConfiguredClient(serviceCollection, Test).AsKeyed(ServiceLifetime.Scoped);
+            serviceCollection.AddTransient<KeyedHandlerTestService>(); // [FromKeyedServices(Test)] HttpMessageHandler
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
+
+            var service = services.GetRequiredService<KeyedHandlerTestService>();
+            AssertConfigured(service.Handler, Test);
+        }
+
+        [Fact]
+        public void HttpClient_LastRegistrationWins()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            AddConfiguredClient(serviceCollection, Test)
+                .AsKeyed(ServiceLifetime.Transient)
+                .DropKeyed()
+                .AsKeyed(ServiceLifetime.Scoped);
+
+            AddConfiguredClient(serviceCollection, Other)
+                .DropKeyed()
+                .AsKeyed(ServiceLifetime.Scoped)
+                .AsKeyed(ServiceLifetime.Transient);
+
+            AddConfiguredClient(serviceCollection, Disabled)
+                .AsKeyed(ServiceLifetime.Transient)
+                .AsKeyed(ServiceLifetime.Singleton)
+                .DropKeyed();
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
+
+            Assert.Same(GetKeyedClient(services, Test), GetKeyedClient(services, Test)); // scoped was last
+            Assert.NotSame(GetKeyedClient(services, Other), GetKeyedClient(services, Other)); // transient was last
+            Assert.Null(GetKeyedClientOrNull(services, Disabled)); // DropKeyed was last
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void HttpClientDefaults_KeyedByDefault(bool defaultsFirst)
+        {
+            var serviceCollection = new ServiceCollection();
+
+            void SetupDefaults() => serviceCollection.ConfigureHttpClientDefaults(b => b.AsKeyed(ServiceLifetime.Scoped));
+
+            void SetupNamedClients()
+            {
+                AddConfiguredClient(serviceCollection, Test).AsKeyed(ServiceLifetime.Transient);
+                AddConfiguredClient(serviceCollection, Disabled).DropKeyed();
+                AddConfiguredClient(serviceCollection, KeyedDefaults); // no Keyed APIs called
+            }
+
+            if (defaultsFirst)
+            {
+                SetupDefaults();
+                SetupNamedClients();
+            }
+            else
+            {
+                SetupNamedClients();
+                SetupDefaults();
+            }
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
+
+            Assert.NotSame(GetKeyedClient(services, Test), GetKeyedClient(services, Test)); // per-name config should win
+            Assert.Null(GetKeyedClientOrNull(services, Disabled)); // per-name config should win
+            Assert.Same(GetKeyedClient(services, KeyedDefaults), GetKeyedClient(services, KeyedDefaults)); // defaults only
+            Assert.Same(GetKeyedClient(services, Absent), GetKeyedClient(services, Absent)); // defaults applied for absent as well
+            Assert.NotSame(GetKeyedClient(services, Absent), GetKeyedClient(services, "other-absent")); // absent clients are still different per name
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void HttpClientDefaults_DropKeyedByDefault(bool defaultsFirst)
+        {
+            var serviceCollection = new ServiceCollection();
+
+            void SetupDefaults() => serviceCollection.ConfigureHttpClientDefaults(b => b.DropKeyed());
+
+            void SetupNamedClients()
+            {
+                AddConfiguredClient(serviceCollection, Test).AsKeyed(ServiceLifetime.Scoped);
+                AddConfiguredClient(serviceCollection, Disabled).DropKeyed();
+                AddConfiguredClient(serviceCollection, KeyedDefaults); // no Keyed APIs called
+            }
+
+            if (defaultsFirst)
+            {
+                SetupDefaults();
+                SetupNamedClients();
+            }
+            else
+            {
+                SetupNamedClients();
+                SetupDefaults();
+            }
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
+
+            Assert.Same(GetKeyedClient(services, Test), GetKeyedClient(services, Test)); // per-name config should win
+            Assert.Null(GetKeyedClientOrNull(services, Disabled));
+            Assert.Null(GetKeyedClientOrNull(services, KeyedDefaults));
+            Assert.Null(GetKeyedClientOrNull(services, Absent));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void HttpClientDefaults_LastRegistrationWins(bool dropKeyedByDefault)
+        {
+            var serviceCollection = new ServiceCollection();
+
+            Action<IHttpClientBuilder> finalConfigureDefaults = dropKeyedByDefault
+                ? b => b.DropKeyed()
+                : b => b.AsKeyed(ServiceLifetime.Scoped);
+
+            AddConfiguredClient(serviceCollection, Test)
+                .DropKeyed();                          // #4 [####.....] tst-1
+
+            AddConfiguredClient(serviceCollection, Other)
+                .AsKeyed(ServiceLifetime.Transient);   // #5 [#####....] oth-1
+
+            AddConfiguredClient(serviceCollection, Disabled)
+                .AsKeyed(ServiceLifetime.Scoped);      // #6 [######...] dis-1
+
+            // this adds to existing configuration
+            serviceCollection.AddHttpClient(Other)
+                .AsKeyed(ServiceLifetime.Scoped);      // #7 [#######..] oth-2 [fin] -> scoped
+
+            serviceCollection.ConfigureHttpClientDefaults(b =>
+                b.AsKeyed(ServiceLifetime.Transient)); // #1 [#........]
+
+            // no keyed APIs called
+            serviceCollection.AddHttpClient(KeyedDefaults); //           key-0 [fin] -> (#3)
+
+            serviceCollection.ConfigureHttpClientDefaults(b =>
+                b.DropKeyed());                        // #2 [##.......]
+
+            // this adds to existing configuration
+            serviceCollection.AddHttpClient(Test)
+                .AsKeyed(ServiceLifetime.Transient);   // #8 [########.] tst-2 [fin] -> transient
+
+
+            serviceCollection.ConfigureHttpClientDefaults(
+                finalConfigureDefaults);               // #3 [###......]
+
+            // this adds to existing configuration
+            serviceCollection.AddHttpClient(Disabled)
+                .DropKeyed();                          // #9 [#########] dis-2 [fin] -> disabled
+
+
+            var rootServices = serviceCollection.BuildServiceProvider(validateScopes: true);
+            var services = rootServices.CreateScope().ServiceProvider;
+
+            Assert.NotSame(GetKeyedClient(services, Test), GetKeyedClient(services, Test)); // tst-2 [fin] -> transient
+            Assert.Same(GetKeyedClient(services, Other), GetKeyedClient(services, Other)); // oth-2 [fin] -> scoped
+            Assert.Null(GetKeyedClientOrNull(services, Disabled)); //  dis-2 [fin] -> disabled
+
+            if (dropKeyedByDefault)
+            {
+                Assert.Null(GetKeyedClientOrNull(services, KeyedDefaults)); // key-0 [fin] -> (#3) -> disabled
+                Assert.Null(GetKeyedClientOrNull(services, Absent));
+            }
+            else
+            {
+                Assert.Same(GetKeyedClient(services, KeyedDefaults), GetKeyedClient(services, KeyedDefaults)); // key-0 [fin] -> (#3) -> scoped
+                Assert.Same(GetKeyedClient(services, Absent), GetKeyedClient(services, Absent));
+            }
+        }
+
+        private static HttpMessageHandler GetPrimaryHandler(HttpMessageHandler handler)
+        {
+            while (handler is DelegatingHandler dh)
+            {
+                handler = dh.InnerHandler;
+            }
+            return handler;
+        }
+
+        private static Uri GetUri(string name) => new Uri($"http://{name}.example.com");
+
+        private static IHttpClientBuilder AddConfiguredClient(ServiceCollection services, string name, Action<KeyedPrimaryHandler>? configurePrimaryHandler = null)
+        {
+            services.AddKeyedTransient(name, (_, _) =>
+            {
+                var handler = new KeyedPrimaryHandler(name);
+                configurePrimaryHandler?.Invoke(handler);
+                return handler;
+            });
+
+            return services
+                .AddHttpClient(name, c => c.BaseAddress = GetUri(name))
+                .ConfigurePrimaryHttpMessageHandler(sp => sp.GetRequiredKeyedService<KeyedPrimaryHandler>(name));
+        }
+
+        private static void AssertConfigured(HttpClient client, string name = Test)
+        {
+            Assert.Equal(GetUri(name), client.BaseAddress);
+            AssertAlive(client, name);
+        }
+
+        private static void AssertConfigured(HttpMessageHandler candlerChain, string name = Test)
+        {
+            var primaryHandler = GetPrimaryHandler(candlerChain);
+            var keyedPrimaryHandler = Assert.IsType<KeyedPrimaryHandler>(primaryHandler);
+            Assert.Equal(name, keyedPrimaryHandler.Name);
+        }
+
+        private static void AssertAlive(HttpClient client, string name = Test, bool skipIfNull = false)
+        {
+            if (skipIfNull && client is null)
+            {
+                return;
+            }
+            Assert.Equal(name, client.GetStringAsync("/").GetAwaiter().GetResult());
+        }
+
+        private static void AssertDisposed(HttpClient client, bool skipIfNull = false)
+        {
+            if (skipIfNull && client is null)
+            {
+                return;
+            }
+            var exception = Assert.Throws<ObjectDisposedException>(() => client.GetStringAsync("/").GetAwaiter().GetResult());
+            Assert.Contains(typeof(HttpClient).FullName, exception.Message);
+        }
+
+        private static HttpClient GetKeyedClient(IServiceScope scope, string name = Test) => GetKeyedClient(scope.ServiceProvider, name);
+        private static HttpClient GetKeyedClient(IServiceProvider sp, string name = Test) => sp.GetRequiredKeyedService<HttpClient>(name);
+        private static HttpMessageHandler GetKeyedHandler(IServiceProvider sp, string name = Test) => sp.GetRequiredKeyedService<HttpMessageHandler>(name);
+        private static HttpClient? GetKeyedClientOrNull(IServiceProvider sp, string name) => sp.GetKeyedService<HttpClient>(name);
+        private static HttpMessageHandler? GetKeyedHandlerOrNull(IServiceProvider sp, string name) => sp.GetKeyedService<HttpMessageHandler>(name);
 
         internal class KeyedClientTestService
         {
-            public KeyedClientTestService([FromKeyedServices("test")] HttpClient httpClient)
+            public HttpClient HttpClient { get; }
+            public KeyedClientTestService([FromKeyedServices(Test)] HttpClient httpClient)
             {
                 HttpClient = httpClient;
             }
-
-            public HttpClient HttpClient { get; }
         }
 
-        internal class KeyedDelegatingHandler : DelegatingHandler
+        internal class KeyedHandlerTestService
         {
-            public string Key { get; }
-
-            public KeyedDelegatingHandler([ServiceKey] string key)
+            public HttpMessageHandler Handler { get; }
+            public KeyedHandlerTestService([FromKeyedServices(Test)] HttpMessageHandler handler)
             {
-                Key = key;
+                Handler = handler;
             }
         }
 
-        internal abstract class BaseKeyedHandler : TestMessageHandler
+        internal class KeyedPrimaryHandler : TestMessageHandler
         {
-            public string Key { get; protected set; }
-        }
+            private bool _disposed;
 
-        internal class KeyedPrimaryHandler : BaseKeyedHandler
-        {
-            public KeyedPrimaryHandler([ServiceKey] string key)
-            {
-                Key = key;
-            }
-        }
+            public string Name { get; }
 
-        internal class OtherKeyedPrimaryHandler : BaseKeyedHandler
-        {
-            public OtherKeyedPrimaryHandler([ServiceKey] string key)
+            public KeyedPrimaryHandler([ServiceKey] string name) : base()
             {
-                Key = "{ \"key\": \"" + key + "\" }";
-            }
-        }
-
-        internal class KeyedHttpClientLogger : IHttpClientLogger
-        {
-            private readonly ILogger _logger;
-            public KeyedHttpClientLogger(ILoggerFactory loggerFactory, [ServiceKey] string key)
-            {
-                _logger = loggerFactory.CreateLogger(typeof(KeyedHttpClientLogger).FullName + "." + key);
+                Name = name;
+                _responseFactory = _ => CreateResponse();
             }
 
-            public object? LogRequestStart(HttpRequestMessage request)
+            protected override void Dispose(bool disposing)
             {
-                _logger.LogInformation("LogRequestStart");
-                return null;
+                _disposed = true;
+                base.Dispose(disposing);
             }
 
-            public void LogRequestStop(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed)
-                => _logger.LogInformation("LogRequestStop");
-
-            public void LogRequestFailed(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,TimeSpan elapsed)
-                => _logger.LogInformation("LogRequestFailed");
+            private HttpResponseMessage CreateResponse()
+            {
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(GetType().FullName);
+                }
+                return new HttpResponseMessage() { Content = new StringContent(Name) };
+            }
         }
     }
 }

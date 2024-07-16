@@ -133,8 +133,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
-                options.HttpMessageHandlerBuilderActions.Add(b => b.AdditionalHandlers.Add(
-                    TryGetKeyedService<THandler>(b.Services, b.Name!) ?? b.Services.GetRequiredService<THandler>()));
+                options.HttpMessageHandlerBuilderActions.Add(b => b.AdditionalHandlers.Add(b.Services.GetRequiredService<THandler>()));
             });
 
             return builder;
@@ -216,9 +215,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
-                options.HttpMessageHandlerBuilderActions.Add(b =>
-                    b.PrimaryHandler = TryGetKeyedService<THandler>(b.Services, b.Name!)
-                        ?? b.Services.GetRequiredService<THandler>());
+                options.HttpMessageHandlerBuilderActions.Add(b => b.PrimaryHandler = b.Services.GetRequiredService<THandler>());
             });
 
             return builder;
@@ -724,22 +721,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder;
         }
-
-        private static TService? TryGetKeyedService<TService>(IServiceProvider serviceProvider, string name)
-        {
-            if (serviceProvider is not IKeyedServiceProvider keyedServiceProvider)
-            {
-                return default;
-            }
-
-            var checker = keyedServiceProvider.GetRequiredService<IServiceProviderIsKeyedService>();
-            if (!checker.IsKeyedService(typeof(TService), name))
-            {
-                return default;
-            }
-            return serviceProvider.GetKeyedService<TService>(name);
-        }
-
 
         // See comments on HttpClientMappingRegistry.
         private static void ReserveClient(IHttpClientBuilder builder, Type type, string name, bool validateSingleType)

@@ -110,27 +110,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(builder);
 
-            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
-            {
-                options.LoggingBuilderActions.Add(b =>
-                {
-                    IHttpClientLogger httpClientLogger = TryGetKeyedService<TLogger>(b.Services, b.Name!)
-                        ?? b.Services.GetRequiredService<TLogger>();
-
-                    HttpClientLoggerHandler handler = new HttpClientLoggerHandler(httpClientLogger);
-
-                    if (wrapHandlersPipeline)
-                    {
-                        b.AdditionalHandlers.Insert(0, handler);
-                    }
-                    else
-                    {
-                        b.AdditionalHandlers.Add(handler);
-                    }
-                });
-            });
-
-            return builder;
+            return AddLogger(builder, services => services.GetRequiredService<TLogger>(), wrapHandlersPipeline);
         }
 
         /// <summary>
