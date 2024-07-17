@@ -2,18 +2,14 @@
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
-
-    <!-- Mobile platforms don't have apphost and we don't need it. However, restore requires
-         "some" apphost. Use PackageRID of host machine to satisfy that bogus requirement. -->
-    <RuntimeIdentifier Condition="'$(TargetsMobile)' == 'true'">$(PackageRID)</RuntimeIdentifier>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetsMobile)' != 'true'">
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true'">
     <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetsMobile)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetsMobile)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseLocalTargetingRuntimePack)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" Condition="'$(UseLocalTargetingRuntimePack)' != 'true'" />
 
   <Import Project="ILCompiler.props" />
 
