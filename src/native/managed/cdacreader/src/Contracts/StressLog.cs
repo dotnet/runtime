@@ -215,6 +215,27 @@ file abstract class StressLog_0_2(Target target) : IStressLog
             readPointer = new TargetPointer((ulong)readPointer + stressMsgHeaderSize + pointerSize * (uint)parsedMessage.Args.Count);
         }
     }
+
+    public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
+    {
+        ulong chunckSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
+        foreach (ThreadStressLogData threadLog in GetThreadStressLogs(stressLog.Logs))
+        {
+            TargetPointer chunkPtr = threadLog.ChunkListHead;
+            do
+            {
+                if (pointer.Value >= chunkPtr.Value && pointer.Value <= chunkPtr.Value + chunckSize)
+                {
+                    return true;
+                }
+
+                Data.StressLogChunk chunk = target.ProcessedData.GetOrAdd<Data.StressLogChunk>(chunkPtr);
+                chunkPtr = chunk.Next;
+            } while (chunkPtr != TargetPointer.Null && chunkPtr != threadLog.ChunkListHead);
+        }
+
+        return false;
+    }
 }
 
 file sealed class StressLog_0(Target target) : StressLog_0_2(target)

@@ -36,6 +36,7 @@ bool HasStressLog();
 StressLogData GetStressLogData();
 IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs);
 IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog);
+bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
 
 ## Versions 0 to 2
@@ -222,6 +223,27 @@ IEnumerable<StressMsgData> GetStressMessages(ThreadStressLog threadLog, uint for
         // We'll check if we passed the end of the chunk at the start of the loop.
         readPointer = new TargetPointer((ulong)readPointer + stressMsgHeaderSize + pointerSize * (uint)parsedMessage.Args.Count);
     }
+}
+
+bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
+{
+    ulong chunckSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
+    foreach (ThreadStressLogData threadLog in GetThreadStressLogs(stressLog.Logs))
+    {
+        TargetPointer chunkPtr = threadLog.ChunkListHead;
+        do
+        {
+            if (pointer.Value >= chunkPtr.Value && pointer.Value <= chunkPtr.Value + chunckSize)
+            {
+                return true;
+            }
+
+            Data.StressLogChunk chunk = target.ProcessedData.GetOrAdd<Data.StressLogChunk>(chunkPtr);
+            chunkPtr = chunk.Next;
+        } while (chunkPtr != TargetPointer.Null && chunkPtr != threadLog.ChunkListHead);
+    }
+
+    return false;
 }
 ```
 
