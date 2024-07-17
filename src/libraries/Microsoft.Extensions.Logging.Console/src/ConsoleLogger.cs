@@ -90,12 +90,12 @@ namespace Microsoft.Extensions.Logging.Console
 
                 string computedAnsiString = sb.ToString();
                 sb.Clear();
-                if (sb.Capacity > 1024)
-                {
-                    sb.Capacity = 1024;
-                }
-
                 _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: rec.LogLevel >= Options.LogToStandardErrorThreshold));
+            }
+
+            if (sb.Capacity > 1024)
+            {
+                sb.Capacity = 1024;
             }
         }
 
