@@ -388,7 +388,7 @@
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors Condition="'$(TreatWarningsAsErrors)' == ''">true</TreatWarningsAsErrors>
     <!-- Warnings to always disable -->
-    <NoWarn>$(NoWarn),CS8969</NoWarn>
+    <NoWarn>$(NoWarn);CS8500;CS8969</NoWarn>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == '' and '$(DotNetBuildSourceOnly)' == 'true'">true</KeepNativeSymbols>

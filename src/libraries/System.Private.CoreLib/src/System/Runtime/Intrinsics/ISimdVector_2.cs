@@ -399,7 +399,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
         static abstract bool LessThanOrEqualAny(TSelf left, TSelf right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <param name="source">The source from which the vector will be loaded.</param>
         /// <returns>The vector loaded from <paramref name="source" />.</returns>
@@ -425,7 +424,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual TSelf LoadAlignedNonTemporal(T* source) => TSelf.LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -584,7 +582,6 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         static abstract TSelf Sqrt(TSelf vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <param name="source">The vector that will be stored.</param>
         /// <param name="destination">The destination at which <paramref name="source" /> will be stored.</param>
@@ -610,7 +607,6 @@ namespace System.Runtime.Intrinsics
         /// <remarks>This method may bypass the cache on certain platforms.</remarks>
         /// <exception cref="NotSupportedException">The type of <paramref name="source" /> (<typeparamref name="T" />) is not supported.</exception>
         static virtual void StoreAlignedNonTemporal(TSelf source, T* destination) => TSelf.StoreAligned(source, destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <param name="vector">The vector that will be stored.</param>

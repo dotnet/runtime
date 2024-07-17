@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
-
 namespace System.Numerics.Tensors
 {
     public static unsafe partial class TensorPrimitives
@@ -90,7 +88,7 @@ namespace System.Numerics.Tensors
 
             nuint remainder = (uint)x.Length;
 
-            if (Vector512.IsHardwareAccelerated && Vector512<TInput>.IsSupported && Vector512<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
+            if (Vector512.IsHardwareAccelerated && Vector512<TInput>.IsSupported && Vector512<TOutput>.IsSupported && TUnaryOperator.Vectorizable && sizeof(TInput) == sizeof(TOutput))
             {
                 if (remainder >= (uint)Vector512<TInput>.Count)
                 {
@@ -108,7 +106,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector256.IsHardwareAccelerated && Vector256<TInput>.IsSupported && Vector256<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
+            if (Vector256.IsHardwareAccelerated && Vector256<TInput>.IsSupported && Vector256<TOutput>.IsSupported && TUnaryOperator.Vectorizable && sizeof(TInput) == sizeof(TOutput))
             {
                 if (remainder >= (uint)Vector256<TInput>.Count)
                 {
@@ -126,7 +124,7 @@ namespace System.Numerics.Tensors
                 return;
             }
 
-            if (Vector128.IsHardwareAccelerated && Vector128<TInput>.IsSupported && Vector128<TOutput>.IsSupported && TUnaryOperator.Vectorizable && Unsafe.SizeOf<TInput>() == Unsafe.SizeOf<TOutput>())
+            if (Vector128.IsHardwareAccelerated && Vector128<TInput>.IsSupported && Vector128<TOutput>.IsSupported && TUnaryOperator.Vectorizable && sizeof(TInput) == sizeof(TOutput))
             {
                 if (remainder >= (uint)Vector128<TInput>.Count)
                 {

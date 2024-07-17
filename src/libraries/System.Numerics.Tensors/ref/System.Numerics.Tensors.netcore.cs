@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-#pragma warning disable 8500 // address / sizeof of managed types
-
 namespace System.Buffers
 {
     public readonly partial struct NIndex : System.IEquatable<System.Buffers.NIndex>

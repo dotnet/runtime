@@ -7,13 +7,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
 
-//
 // The implementations of most the methods in this file are provided as intrinsics.
 // In CoreCLR, the body of the functions are replaced by the EE with unsafe code. See see getILIntrinsicImplementationForUnsafe for details.
 // In AOT compilers, see Internal.IL.Stubs.UnsafeIntrinsics for details.
-//
-
-#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System.Runtime.CompilerServices
 {

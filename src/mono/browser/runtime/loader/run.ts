@@ -486,7 +486,7 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     await configureRuntimeStartup(emscriptenModule);
     loaderHelpers.runtimeModuleLoaded.promise_control.resolve();
 
-    emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
+    const result = emscriptenFactory((originalModule: EmscriptenModuleInternal) => {
         Object.assign(emscriptenModule, {
             ready: originalModule.ready,
             __dotnet_runtime: {
@@ -495,6 +495,12 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
         });
 
         return emscriptenModule;
+    });
+    result.catch((error) => {
+        if (error.message && error.message.toLowerCase().includes("out of memory")) {
+            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize. See also https://aka.ms/dotnet-wasm-features");
+        }
+        throw error;
     });
 }
 

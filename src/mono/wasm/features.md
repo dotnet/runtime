@@ -71,7 +71,7 @@ WebSocket support in NodeJS hosts requires the `ws` npm package.
 ### Initial Memory Size
 By default the .NET runtime will reserve a small amount of memory at startup, and as your application allocates more objects the runtime will attempt to "grow" this memory. This growth operation takes time and could fail if your device's memory is limited, which would result in an application error or "tab crash".
 
-To reduce startup time and increase the odds that your application will work on devices with limited memory, you can set an initial size for the memory allocation, based on an estimate of how much memory your application typically uses. To set an initial memory size, include an MSBuild property like `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`, where you have changed the number of bytes to an appropriate value for your application. This value must be a multiple of 16384.
+To reduce startup time and increase the odds that your application will work on devices with limited memory, you can set an initial size for the memory allocation, based on an estimate of how much memory your application typically uses. To set an initial memory size, include an MSBuild property like `<EmccInitialHeapSize>16777216</EmccInitialHeapSize>`, where you have changed the number of bytes to an appropriate value for your application. This value must be a multiple of 16384. The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
 
