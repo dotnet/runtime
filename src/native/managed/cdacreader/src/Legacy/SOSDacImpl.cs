@@ -319,7 +319,21 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     public unsafe int GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetStackLimits(ulong threadPtr, ulong* lower, ulong* upper, ulong* fp) => HResults.E_NOTIMPL;
     public unsafe int GetStackReferences(int osThreadID, void** ppEnum) => HResults.E_NOTIMPL;
-    public unsafe int GetStressLogAddress(ulong* stressLog) => HResults.E_NOTIMPL;
+
+    public unsafe int GetStressLogAddress(ulong* stressLog)
+    {
+        try
+        {
+            *stressLog = _target.ReadGlobalPointer(Constants.Globals.StressLog);
+        }
+        catch (global::System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetSyncBlockCleanupData(ulong addr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetSyncBlockData(uint number, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetThreadAllocData(ulong thread, void* data) => HResults.E_NOTIMPL;

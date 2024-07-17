@@ -364,18 +364,57 @@ ClrDataAccess::GetStressLogAddress(CLRDATA_ADDRESS *stressLog)
     if (stressLog == NULL)
         return E_INVALIDARG;
 
-#ifdef STRESS_LOG
     SOSDacEnter();
-    if (g_pStressLog.IsValid())
-        *stressLog = HOST_CDADDR(g_pStressLog);
+#ifdef STRESS_LOG
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetStressLogAddress(stressLog);
+        if (FAILED(hr))
+        {
+            if (g_pStressLog.IsValid())
+            {
+                *stressLog = HOST_CDADDR(g_pStressLog);
+                hr = S_OK;
+            }
+            else
+            {
+                hr = E_FAIL;
+            }
+        }
+#ifdef _DEBUG
+        else
+        {
+            // The cDAC should return the same value as the DAC.
+            _ASSERTE(*stressLog == HOST_CDADDR(g_pStressLog));
+        }
+#endif // _DEBUG
+    }
     else
-        hr = E_FAIL;
-
+    {
+        if (g_pStressLog.IsValid())
+        {
+            *stressLog = HOST_CDADDR(g_pStressLog);
+            hr = S_OK;
+        }
+        else
+        {
+            hr = E_FAIL;
+        }
+    }
+#else
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC - it will return E_NOTIMPL if it doesn't support this method yet.
+        hr = m_cdacSos->GetStressLogAddress(stressLog);
+    }
+    else
+    {
+        hr = E_NOTIMPL;
+    }
+#endif // STRESS_LOG
     SOSDacLeave();
     return hr;
-#else
-    return E_NOTIMPL;
-#endif // STRESS_LOG
 }
 
 HRESULT
