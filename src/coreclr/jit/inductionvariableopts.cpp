@@ -1339,7 +1339,10 @@ bool StrengthReductionContext::TryStrengthReduce()
 
         ScevAddRec* primaryIV = static_cast<ScevAddRec*>(candidate);
 
-        InitializeCursors(primaryIVLcl, primaryIV);
+        if (!InitializeCursors(primaryIVLcl, primaryIV))
+        {
+            continue;
+        }
 
         ArrayStack<CursorInfo>* cursors     = &m_cursors1;
         ArrayStack<CursorInfo>* nextCursors = &m_cursors2;
@@ -1517,7 +1520,7 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 
     if (!m_loopLocals.VisitOccurrences(m_loop, primaryIVLcl->GetLclNum(), visitor) || (m_cursors1.Height() <= 0))
     {
-        JITDUMP("  Could not create cursors for all loop uses of primary IV");
+        JITDUMP("  Could not create cursors for all loop uses of primary IV\n");
         return false;
     }
 
