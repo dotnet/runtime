@@ -575,7 +575,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.Utf8.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Split.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MethodAccessException.cs" />
@@ -1187,6 +1186,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Rune.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanLineEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanRuneEnumerator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\SpanSplitEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.Debug.cs" Condition="'$(Configuration)' == 'Debug'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringRuneEnumerator.cs" />
