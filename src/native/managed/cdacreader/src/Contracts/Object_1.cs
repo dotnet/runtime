@@ -33,9 +33,6 @@ internal readonly struct Object_1 : IObject
         if (mt != _stringMethodTable)
             throw new ArgumentException("Address does not represent a string object", nameof(address));
 
-        // Validates the method table
-        _ = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(mt);
-
         Data.String str = _target.ProcessedData.GetOrAdd<Data.String>(address);
         Span<byte> span = stackalloc byte[(int)str.StringLength * sizeof(char)];
         _target.ReadBuffer(str.FirstChar, span);
