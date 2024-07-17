@@ -3121,7 +3121,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		linfo->ret.esize = cinfo->ret.esize;
 		break;
 	case ArgSwiftVtypeLoweredRet:
-		// LLVM compilation of P/Invoke wrappers is not supported
+		linfo->ret.storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
 		break;
 	default:
 		g_assert_not_reached ();
@@ -3188,7 +3188,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			lainfo->storage = LLVMArgVtypeInSIMDReg;
 			break;
 		case ArgSwiftError:
-			// LLVM compilation of P/Invoke wrappers is not supported
+			lainfo->storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
 			break;
 		default:
 			g_assert_not_reached ();

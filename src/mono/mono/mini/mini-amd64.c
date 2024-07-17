@@ -2401,7 +2401,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		linfo->vret_arg_index = cinfo->vret_arg_index;
 		break;
 	case ArgSwiftValuetypeLoweredRet:
-		// LLVM compilation of P/Invoke wrappers is not supported
+		linfo->ret.storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2470,7 +2470,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			linfo->args [i].storage = LLVMArgVtypeAddr;
 			break;
 		case ArgSwiftError:
-			// LLVM compilation of P/Invoke wrappers is not supported
+			linfo->args [i].storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
 			break;
 		default:
 			cfg->exception_message = g_strdup ("ainfo->storage");
