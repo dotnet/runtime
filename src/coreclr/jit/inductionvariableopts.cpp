@@ -5,29 +5,46 @@
 // scalar evolution analysis (see scev.h and scev.cpp for more information
 // about the scalar evolution analysis).
 //
-// Currently the only optimization done is widening of primary induction
-// variables from 32 bits into 64 bits. This is generally only profitable on
-// x64 that does not allow zero extension of 32-bit values in addressing modes
-// (in contrast, arm64 does have the capability of including zero extensions in
-// addressing modes). For x64 this saves a zero extension for every array
-// access inside the loop, in exchange for some widening or narrowing stores
-// outside the loop:
-//   - To make sure the new widened IV starts at the right value it is
-//   initialized to the value of the narrow IV outside the loop (either in the
-//   preheader or at the def location of the narrow IV). Usually the start
-//   value is a constant, in which case the widened IV is just initialized to
-//   the constant value.
-//   - If the narrow IV is used after the loop we need to store it back from
-//   the widened IV in the exits. We depend on liveness sets to figure out
-//   which exits to insert IR into.
+// Currently the following optimizations are done:
 //
-// These steps ensure that the wide IV has the right value to begin with and
-// the old narrow IV still has the right value after the loop. Additionally,
-// we must replace every use of the narrow IV inside the loop with the widened
-// IV. This is done by a traversal of the IR inside the loop. We do not
-// actually widen the uses of the IV; rather, we keep all uses and defs as
-// 32-bit, which the backend is able to handle efficiently on x64. Because of
-// this we do not need to worry about overflow.
+// IV widening:
+//   This widens primary induction variables from 32 bits into 64 bits. This is
+//   generally only profitable on x64 that does not allow zero extension of
+//   32-bit values in addressing modes (in contrast, arm64 does have the
+//   capability of including zero extensions in addressing modes). For x64 this
+//   saves a zero extension for every array access inside the loop, in exchange
+//   for some widening or narrowing stores outside the loop:
+//     - To make sure the new widened IV starts at the right value it is
+//     initialized to the value of the narrow IV outside the loop (either in
+//     the preheader or at the def location of the narrow IV). Usually the
+//     start value is a constant, in which case the widened IV is just
+//     initialized to the constant value.
+//     - If the narrow IV is used after the loop we need to store it back from
+//     the widened IV in the exits. We depend on liveness sets to figure out
+//     which exits to insert IR into.
+//
+//   These steps ensure that the wide IV has the right value to begin with and
+//   the old narrow IV still has the right value after the loop. Additionally,
+//   we must replace every use of the narrow IV inside the loop with the widened
+//   IV. This is done by a traversal of the IR inside the loop. We do not
+//   actually widen the uses of the IV; rather, we keep all uses and defs as
+//   32-bit, which the backend is able to handle efficiently on x64. Because of
+//   this we do not need to worry about overflow.
+//
+// Loop reversing:
+//   This converts loops that are up-counted into loops that are down-counted.
+//   Down-counted loops can generally do their IV update and compare in a
+//   single instruction, bypassing the need to do a separate comparison with a
+//   bound.
+//
+// Strength reduction (disabled):
+//   This changes the stride of primary IVs in a loop to avoid more expensive
+//   multiplications inside the loop. Commonly the primary IVs are only used
+//   for indexing memory at some element size, which can end up with these
+//   multiplications.
+//
+//   Strength reduction frequently relies on reversing the loop to remove the
+//   last non-multiplied use of the primary IV.
 //
 
 #include "jitpch.h"
@@ -1227,6 +1244,7 @@ class StrengthReductionContext
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, int derivedLevel, ScevAddRec** nextIV);
+    bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
     BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors);
 
@@ -1344,13 +1362,11 @@ bool StrengthReductionContext::TryStrengthReduce()
             }
             assert(nextIV != nullptr);
 
-            // We need more sanity checks to allow materializing GC-typed add
-            // recs. Otherwise we may eagerly form a GC pointer that was only
-            // lazily formed under some conditions before, which can be
-            // illegal. For now we just bail.
-            if (varTypeIsGC(nextIV->Type))
+            if (varTypeIsGC(nextIV->Type) && !StaysWithinManagedObject(nextCursors, nextIV))
             {
-                JITDUMP("    Next IV has type %s. Bailing.\n", varTypeName(nextIV->Type));
+                JITDUMP(
+                    "    Next IV computes a GC pointer that we cannot prove to be inside a managed object. Bailing.\n",
+                    varTypeName(nextIV->Type));
                 break;
             }
 
@@ -1692,6 +1708,127 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
     }
 
     return *nextIV != nullptr;
+}
+
+//------------------------------------------------------------------------
+// StaysWithinManagedObject: Check whether the specified GC-pointer add-rec can
+// be guaranteed to be inside the same managed object for the whole loop.
+//
+// Parameters:
+//   cursors - Cursors pointing to next uses that correspond to the specific add-rec.
+//   addRec  - The add recurrence
+//
+// Returns:
+//   True if we were able to prove so.
+//
+bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec)
+{
+    int64_t offset;
+    Scev*   baseScev = addRec->Start->PeelAdditions(&offset);
+    offset           = static_cast<target_ssize_t>(offset);
+
+    // We only support arrays here. To strength reduce Span<T> accesses we need
+    // additional properies on the range designated by a Span<T> that we
+    // currently do not specify, or we need to prove that the byref we may form
+    // in the IV update would have been formed anyway by the loop.
+    if (!baseScev->OperIs(ScevOper::Local) || !baseScev->TypeIs(TYP_REF))
+    {
+        return false;
+    }
+
+    // Now use the fact that we keep ARR_ADDRs in the IR when we have array
+    // accesses.
+    GenTreeArrAddr* arrAddr = nullptr;
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        CursorInfo& cursor = cursors->BottomRef(i);
+        GenTree*    parent = cursor.Tree->gtGetParent(nullptr);
+        if ((parent != nullptr) && parent->OperIs(GT_ARR_ADDR))
+        {
+            arrAddr = parent->AsArrAddr();
+            break;
+        }
+    }
+
+    if (arrAddr == nullptr)
+    {
+        return false;
+    }
+
+    unsigned arrElemSize = arrAddr->GetElemType() == TYP_STRUCT
+                               ? m_comp->typGetObjLayout(arrAddr->GetElemClassHandle())->GetSize()
+                               : genTypeSize(arrAddr->GetElemType());
+
+    int64_t stepCns;
+    if (!addRec->Step->GetConstantValue(m_comp, &stepCns) || ((unsigned)stepCns > arrElemSize))
+    {
+        return false;
+    }
+
+    ScevLocal* local = (ScevLocal*)baseScev;
+
+    ValueNum vn = m_scevContext.MaterializeVN(baseScev);
+    if (vn == ValueNumStore::NoVN)
+    {
+        return false;
+    }
+
+    BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
+    if (!m_comp->optAssertionVNIsNonNull(vn, preheader->bbAssertionOut))
+    {
+        return false;
+    }
+
+    // We have a non-null array. Check that the 'start' offset looks fine.
+    // TODO: We could also use assertions on the length of the array. E.g. if
+    // we know the length of the array is > 3, then we can allow the add rec to
+    // have a later start. Maybe range check can be used?
+    if ((offset < 0) || (offset > (int64_t)OFFSETOF__CORINFO_Array__data))
+    {
+        return false;
+    }
+
+    // Now see if we have a bound that guarantees that we iterate less than the
+    // array length's times.
+    for (int i = 0; i < m_backEdgeBounds.Height(); i++)
+    {
+        // TODO: EvaluateRelop ought to be powerful enough to prove something
+        // like bound < ARR_LENGTH(vn), but it is not able to prove that
+        // currently, even for bound = ARR_LENGTH(vn) - 1 (common case).
+        Scev* bound = m_backEdgeBounds.Bottom(i);
+
+        int64_t boundOffset;
+        Scev*   boundBase = bound->PeelAdditions(&boundOffset);
+
+        if (bound->TypeIs(TYP_INT))
+        {
+            boundOffset = static_cast<int32_t>(boundOffset);
+        }
+
+        if (boundOffset >= 0)
+        {
+            // If we take the backedge >= the array length times, then we would
+            // advance the addrec past the end.
+            continue;
+        }
+
+        ValueNum boundBaseVN = m_scevContext.MaterializeVN(boundBase);
+
+        VNFuncApp vnf;
+        if (!m_comp->vnStore->GetVNFunc(boundBaseVN, &vnf))
+        {
+            continue;
+        }
+
+        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vn))
+        {
+            continue;
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

@@ -3055,6 +3055,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type, void* data);
 
+    GenTreeMskCon* gtNewMskConNode(var_types type);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
@@ -3232,7 +3234,9 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtMaskToVectorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCvtNode(var_types   type,
                               GenTree*    op1,
@@ -3246,7 +3250,9 @@ public:
                                     CorInfoType simdSourceBaseJitType,
                                     unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3455,7 +3461,7 @@ public:
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
-    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
+    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout = nullptr);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
@@ -3648,10 +3654,10 @@ public:
     void gtSetStmtInfo(Statement* stmt);
 
     // Returns "true" iff "node" has any of the side effects in "flags".
-    bool gtNodeHasSideEffects(GenTree* node, GenTreeFlags flags);
+    bool gtNodeHasSideEffects(GenTree* node, GenTreeFlags flags, bool ignoreCctors = false);
 
     // Returns "true" iff "tree" or its (transitive) children have any of the side effects in "flags".
-    bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags);
+    bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors = false);
 
     void gtExtractSideEffList(GenTree*     expr,
                               GenTree**    pList,
@@ -4499,6 +4505,10 @@ protected:
         MakeInlineObservation = 2,
     };
 
+    GenTree* impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls,
+        GenTree* value);
+    void impLoadNullableFields(GenTree* nullableObj, CORINFO_CLASS_HANDLE nullableCls, GenTree** hasValueFld, GenTree** valueFld);
+
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
                            const BYTE*             codeEndp,
@@ -4540,6 +4550,8 @@ protected:
     GenTree* impFixupStructReturnType(GenTree* op);
 
     GenTree* impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOffset);
+
+    GenTree* impThrowIfNull(GenTreeCall* call);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
@@ -6175,6 +6187,7 @@ public:
 #endif // FEATURE_EH_WINDOWS_X86
 
     bool fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock* target);
+    bool fgFoldSimpleCondByForwardSub(BasicBlock* block);
 
     bool fgBlockEndFavorsTailDuplication(BasicBlock* block, unsigned lclNum);
 
@@ -7248,6 +7261,7 @@ protected:
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
     void optValnumCSE_Heuristic(CSE_HeuristicCommon* heuristic);
+    GenTree* optExtractSideEffectsForCSE(GenTree* tree);
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
@@ -8030,6 +8044,7 @@ public:
     AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
+    bool           optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions);
     bool           optAssertionIsNonNull(GenTree*                    op,
                                          ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased) DEBUGARG(AssertionIndex* pIndex));
 
@@ -8224,6 +8239,7 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
@@ -11670,6 +11686,7 @@ public:
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
+            case GT_CNS_MSK:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:

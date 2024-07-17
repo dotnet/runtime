@@ -2160,9 +2160,6 @@ namespace System.Diagnostics.Tracing
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                     Justification = "The call to TraceLoggingEventTypes with the below parameter values are trim safe")]
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
-                    Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
-                                    "constructor that requires unreferenced code. EventSource will not access this local function.")]
                 static TraceLoggingEventTypes GetTrimSafeTraceLoggingEventTypes() =>
                     new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { typeof(string) });
 
