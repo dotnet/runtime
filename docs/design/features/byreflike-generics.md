@@ -7,13 +7,13 @@ Using ByRefLike types in Generic parameters is possible by building upon support
 
 ## Runtime impact
 
-Supporting ByRefLike type as Generic parameters will impact the following IL instructions.
+Supporting ByRefLike types as Generic parameters will impact the following IL instructions.
 
-Providing a ByRefLike type to the `box` instructions remains invalid and `InvalidProgramException` will be thrown when detected.
+Providing a ByRefLike type to the `box` instruction remains invalid and `InvalidProgramException` will be thrown when detected.
 
 The `constrained.callvirt` sequence is valid if a ByRefLike type is provided. A `NotSupportedException` will be thrown at the callsite, if the target resolves to a method implemented on `object` or a default interface method.
 
-Throws `TypeLoadException` when pass a ByRefLike type.
+Throws `TypeLoadException` when passed a ByRefLike type.
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
 - `newarr` / `stelem` / `ldelem` / `ldelema` &ndash; Arrays are not able to contain ByRefLike types.
     - `newobj` &ndash; For multi-dimensional array construction.
@@ -125,14 +125,14 @@ The first indented IL sequences below represents the `is-type` sequence. Combini
 // Type check
 ldarg.0
     box <Source>
-    isinst <Target_A>
+    isinst <Target>
     brfalse.s NOT_INST
 
 // Unbox and store unboxed instance
 ldarg.0
     box <Source>
-    isinst <Target_A>
-    unbox.any <Target_A>
+    isinst <Target>
+    unbox.any <Target>
 stloc.X
 
 NOT_INST:
@@ -181,7 +181,7 @@ void M<T, U>(T t) where T: allows ref struct
 
 ### Option 1) Compiler helpers
 
-The following two helper functions could be introduced and would replace currently invalid IL sequences. Their behavior would broadly be defined to operate as if the ByRefLike aspect of either the `TFrom` and `TTo` is not present. An alternative approach would be consult with the Roslyn team and define the semantics of these functions to adhere to C# language rules.
+The following two helper functions could be introduced and would replace currently invalid `is-type` IL sequences when ByRefLike types are involved. Their behavior would broadly be defined to operate as if the ByRefLike aspect of either the `TFrom` and `TTo` is not present. An alternative approach would be consult with the Roslyn team and define the semantics of these functions to adhere to C# language rules.
 
 ```csharp
 namespace System.Runtime.CompilerServices
