@@ -386,7 +386,7 @@ namespace System.Diagnostics
                             filterAndPayloadSpecs = NewLineSeparate(filterAndPayloadSpecs, EntityFrameworkCoreCommandsKeywordValue);
                     }
                     _listener?.Dispose();
-                    _listener = DsesFilterAndTransform.ParseFilterAndPayloadSpecs(filterAndPayloadSpecs);
+                    _listener = DsesFilterAndTransform.ParseFilterAndPayloadSpecs(this, filterAndPayloadSpecs);
                 }
                 else if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable)
                 {

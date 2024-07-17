@@ -54,7 +54,9 @@ internal sealed class DsesFilterAndTransform : IDisposable
     /// in the output payload, however this feature and be tuned off by prefixing the
     /// PAYLOADSPEC with a '-'.
     /// </summary>
-    public static IDisposable ParseFilterAndPayloadSpecs(string? filterAndPayloadSpecs)
+    public static IDisposable ParseFilterAndPayloadSpecs(
+        DiagnosticSourceEventSource eventSource,
+        string? filterAndPayloadSpecs)
     {
         filterAndPayloadSpecs ??= "";
 
@@ -80,11 +82,11 @@ internal sealed class DsesFilterAndTransform : IDisposable
 
             if (IsActivitySourceEntry(filterAndPayloadSpecs, startIdx, endIdx))
             {
-                activitySourceSpecList = CreateActivitySourceTransform(filterAndPayloadSpecs, startIdx, endIdx, activitySourceSpecList);
+                activitySourceSpecList = CreateActivitySourceTransform(eventSource, filterAndPayloadSpecs, startIdx, endIdx, activitySourceSpecList);
             }
             else
             {
-                specList = CreateTransform(filterAndPayloadSpecs, startIdx, endIdx, specList);
+                specList = CreateTransform(eventSource, filterAndPayloadSpecs, startIdx, endIdx, specList);
             }
 
             endIdx = newlineIdx;
@@ -93,7 +95,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         }
 
         DsesActivitySourceListener? activitySourceListener = activitySourceSpecList != null
-            ? DsesActivitySourceListener.Create(activitySourceSpecList)
+            ? DsesActivitySourceListener.Create(eventSource, activitySourceSpecList)
             : null;
 
         return new ParsedFilterAndPayloadSpecs(specList, activitySourceListener);
@@ -108,7 +110,12 @@ internal sealed class DsesFilterAndTransform : IDisposable
     /// This FilterAndTransform will subscribe to DiagnosticSources specified by the specification and forward them to 'eventSource.
     /// For convenience, the 'Next' field is set to the 'next' parameter, so you can easily form linked lists.
     /// </summary>
-    private static DsesFilterAndTransform? CreateTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DsesFilterAndTransform? next)
+    private static DsesFilterAndTransform? CreateTransform(
+        DiagnosticSourceEventSource eventSource,
+        string filterAndPayloadSpec,
+        int startIdx,
+        int endIdx,
+        DsesFilterAndTransform? next)
     {
         Debug.Assert(filterAndPayloadSpec != null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
 
@@ -149,12 +156,12 @@ internal sealed class DsesFilterAndTransform : IDisposable
             listenerNameFilter = filterAndPayloadSpec.Substring(startIdx, endEventNameIdx - startIdx);
         }
 
-        DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Enabling '" + (listenerNameFilter ?? "*") + "/" + (eventNameFilter ?? "*") + "'");
+        eventSource.Message("DiagnosticSource: Enabling '" + (listenerNameFilter ?? "*") + "/" + (eventNameFilter ?? "*") + "'");
 
         // If the transform spec begins with a - it means you don't want implicit transforms.
         if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
         {
-            DiagnosticSourceEventSource.Log.Message("DiagnosticSource: suppressing implicit transforms.");
+            eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
             noImplicitTransforms = true;
             startTransformIdx++;
         }
@@ -172,10 +179,10 @@ internal sealed class DsesFilterAndTransform : IDisposable
                 // Ignore empty specifications.
                 if (specStartIdx < endIdx)
                 {
-                    if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Informational, DiagnosticSourceEventSource.Keywords.Messages))
-                        DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
+                    if (eventSource.IsEnabled(EventLevel.Informational, DiagnosticSourceEventSource.Keywords.Messages))
+                        eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
 
-                    explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, explicitTransforms);
+                    explicitTransforms = new TransformSpec(eventSource, filterAndPayloadSpec, specStartIdx, endIdx, explicitTransforms);
                 }
                 if (startTransformIdx == specStartIdx)
                     break;
@@ -184,6 +191,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         }
 
         var transform = new DsesFilterAndTransform(
+            eventSource,
             next,
             noImplicitTransforms,
             explicitTransforms,
@@ -197,7 +205,12 @@ internal sealed class DsesFilterAndTransform : IDisposable
         return transform;
     }
 
-    private static DsesFilterAndTransform? CreateActivitySourceTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DsesFilterAndTransform? next)
+    private static DsesFilterAndTransform? CreateActivitySourceTransform(
+        DiagnosticSourceEventSource eventSource,
+        string filterAndPayloadSpec,
+        int startIdx,
+        int endIdx,
+        DsesFilterAndTransform? next)
     {
         Debug.Assert(endIdx - startIdx >= 4);
         Debug.Assert(IsActivitySourceEntry(filterAndPayloadSpec, startIdx, endIdx));
@@ -251,8 +264,8 @@ internal sealed class DsesFilterAndTransform : IDisposable
                             || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
 #endif
                         {
-                            if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
-                                DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling ratio was invalid");
+                            if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                                eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling ratio was invalid");
                             return next;
                         }
 
@@ -260,8 +273,8 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     }
                     else
                     {
-                        if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
-                            DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling method was invalid");
+                        if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                            eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling method was invalid");
                         return next;
                     }
                 }
@@ -284,8 +297,8 @@ internal sealed class DsesFilterAndTransform : IDisposable
                 }
                 else
                 {
-                    if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
-                        DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because event name was invalid");
+                    if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                        eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because event name was invalid");
                     return next;
                 }
             }
@@ -305,8 +318,8 @@ internal sealed class DsesFilterAndTransform : IDisposable
 
             if (activityName.Length > 0 && activitySourceName.Length == 1 && activitySourceName[0] == '*')
             {
-                if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
-                    DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because activity name cannot be specified for wildcard activity sources");
+                if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                    eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because activity name cannot be specified for wildcard activity sources");
                 return next;
             }
         }
@@ -318,7 +331,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
             // If the transform spec begins with a - it means you don't want implicit transforms.
             if (startTransformIdx < endIdx && filterAndPayloadSpec[startTransformIdx] == '-')
             {
-                DiagnosticSourceEventSource.Log.Message("DiagnosticSource: suppressing implicit transforms.");
+                eventSource.Message("DiagnosticSource: suppressing implicit transforms.");
                 noImplicitTransforms = true;
                 startTransformIdx++;
             }
@@ -336,10 +349,10 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     // Ignore empty specifications.
                     if (specStartIdx < endIdx)
                     {
-                        if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Informational, DiagnosticSourceEventSource.Keywords.Messages))
-                            DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
+                        if (eventSource.IsEnabled(EventLevel.Informational, DiagnosticSourceEventSource.Keywords.Messages))
+                            eventSource.Message("DiagnosticSource: Parsing Explicit Transform '" + filterAndPayloadSpec.Substring(specStartIdx, endIdx - specStartIdx) + "'");
 
-                        explicitTransforms = new TransformSpec(filterAndPayloadSpec, specStartIdx, endIdx, explicitTransforms);
+                        explicitTransforms = new TransformSpec(eventSource, filterAndPayloadSpec, specStartIdx, endIdx, explicitTransforms);
                     }
                     if (startTransformIdx == specStartIdx)
                         break;
@@ -349,6 +362,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         }
 
         return new DsesFilterAndTransform(
+            eventSource,
             next,
             noImplicitTransforms,
             explicitTransforms,
@@ -359,6 +373,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
     }
 
     private DsesFilterAndTransform(
+        DiagnosticSourceEventSource eventSource,
         DsesFilterAndTransform? next,
         bool noImplicitTransforms,
         TransformSpec? explicitTransforms,
@@ -367,6 +382,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         DsesActivityEvents activityEvents,
         DsesSampleActivityFunc? sampleFunc)
     {
+        _eventSource = eventSource;
         _noImplicitTransforms = noImplicitTransforms;
         _explicitTransforms = explicitTransforms;
 
@@ -424,7 +440,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     // _firstImplicitTransformsEntry is empty, we should fill it.
                     // Note that it is OK that two threads may race and both call MakeImplicitTransforms on their own
                     // (that is we don't expect exactly once initialization of _firstImplicitTransformsEntry)
-                    implicitTransforms = MakeImplicitTransforms(argType);
+                    implicitTransforms = MakeImplicitTransforms(_eventSource, argType);
                     Interlocked.CompareExchange(ref _firstImplicitTransformsEntry,
                         new ImplicitTransformEntry() { Type = argType, Transforms = implicitTransforms }, null);
                 }
@@ -439,7 +455,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                         Interlocked.CompareExchange(ref _implicitTransformsTable,
                             new ConcurrentDictionary<Type, TransformSpec?>(1, 8), null);
                     }
-                    implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, MakeImplicitTransforms);
+                    implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, t => MakeImplicitTransforms(_eventSource, t));
                 }
 
                 // implicitTransformas now fetched from cache or constructed, use it to Fetch all the implicit fields.
@@ -473,20 +489,20 @@ internal sealed class DsesFilterAndTransform : IDisposable
         {
             writeEvent = activityName switch
             {
-                nameof(DiagnosticSourceEventSource.Activity1Start) => DiagnosticSourceEventSource.Log.Activity1Start,
-                nameof(DiagnosticSourceEventSource.Activity1Stop) => DiagnosticSourceEventSource.Log.Activity1Stop,
-                nameof(DiagnosticSourceEventSource.Activity2Start) => DiagnosticSourceEventSource.Log.Activity2Start,
-                nameof(DiagnosticSourceEventSource.Activity2Stop) => DiagnosticSourceEventSource.Log.Activity2Stop,
-                nameof(DiagnosticSourceEventSource.RecursiveActivity1Start) => DiagnosticSourceEventSource.Log.RecursiveActivity1Start,
-                nameof(DiagnosticSourceEventSource.RecursiveActivity1Stop) => DiagnosticSourceEventSource.Log.RecursiveActivity1Stop,
+                nameof(DiagnosticSourceEventSource.Activity1Start) => _eventSource.Activity1Start,
+                nameof(DiagnosticSourceEventSource.Activity1Stop) => _eventSource.Activity1Stop,
+                nameof(DiagnosticSourceEventSource.Activity2Start) => _eventSource.Activity2Start,
+                nameof(DiagnosticSourceEventSource.Activity2Stop) => _eventSource.Activity2Stop,
+                nameof(DiagnosticSourceEventSource.RecursiveActivity1Start) => _eventSource.RecursiveActivity1Start,
+                nameof(DiagnosticSourceEventSource.RecursiveActivity1Stop) => _eventSource.RecursiveActivity1Stop,
                 _ => null
             };
 
             if (writeEvent == null)
-                DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
+                _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
         }
 
-        writeEvent ??= DiagnosticSourceEventSource.Log.Event;
+        writeEvent ??= _eventSource.Event;
 
         // Set up a subscription that watches for the given Diagnostic Sources and events which will call back
         // to the EventSource.
@@ -494,7 +510,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         {
             if (listenerNameFilter == null || listenerNameFilter == newListener.Name)
             {
-                DiagnosticSourceEventSource.Log.NewDiagnosticListener(newListener.Name);
+                _eventSource.NewDiagnosticListener(newListener.Name);
                 Predicate<string>? eventNameFilterPredicate = null;
                 if (eventNameFilter != null)
                     eventNameFilterPredicate = (string eventName) => eventNameFilter == eventName;
@@ -578,7 +594,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         /// parse the strings 'spec' from startIdx to endIdx (points just beyond the last considered char)
         /// The syntax is ID1=ID2.ID3.ID4 .... Where ID1= is optional.
         /// </summary>
-        public TransformSpec(string transformSpec, int startIdx, int endIdx, TransformSpec? next = null)
+        public TransformSpec(DiagnosticSourceEventSource eventSource, string transformSpec, int startIdx, int endIdx, TransformSpec? next = null)
         {
             Debug.Assert(transformSpec != null && startIdx >= 0 && startIdx < endIdx && endIdx <= transformSpec.Length);
             Next = next;
@@ -600,7 +616,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     idIdx = dotIdx + 1;
 
                 string propertyName = transformSpec.Substring(idIdx, endIdx - idIdx);
-                _fetches = new PropertySpec(propertyName, _fetches);
+                _fetches = new PropertySpec(eventSource, propertyName, _fetches);
 
                 // If the user did not explicitly set a name, it is the last one (first to be processed from the end).
                 _outputName ??= propertyName;
@@ -650,10 +666,12 @@ internal sealed class DsesFilterAndTransform : IDisposable
             /// For convenience you can set he 'next' field to form a linked
             /// list of PropertySpecs.
             /// </summary>
-            public PropertySpec(string propertyName, PropertySpec? next)
+            public PropertySpec(DiagnosticSourceEventSource eventSource, string propertyName, PropertySpec? next)
             {
-                Next = next;
+                _eventSource = eventSource;
                 _propertyName = propertyName;
+
+                Next = next;
 
                 // detect well-known names that are static functions
                 if (_propertyName == CurrentActivityPropertyName)
@@ -663,6 +681,8 @@ internal sealed class DsesFilterAndTransform : IDisposable
             }
 
             public bool IsStatic { get; }
+
+            public PropertySpec? Next { get; }
 
             /// <summary>
             /// Given an object fetch the property that this PropertySpec represents.
@@ -679,18 +699,13 @@ internal sealed class DsesFilterAndTransform : IDisposable
                 Type? objType = obj?.GetType();
                 if (fetch == null || fetch.Type != objType)
                 {
-                    _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(objType, _propertyName);
+                    _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(_eventSource, objType, _propertyName);
                 }
                 object? ret = null;
                 // Avoid the exception which can be thrown during accessing the object properties.
-                try { ret = fetch!.Fetch(obj); } catch (Exception e) { DiagnosticSourceEventSource.Log.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
+                try { ret = fetch!.Fetch(obj); } catch (Exception e) { _eventSource.Message($"Property {objType}.{_propertyName} threw the exception {e}"); }
                 return ret;
             }
-
-            /// <summary>
-            /// A public field that can be used to form a linked list.
-            /// </summary>
-            public PropertySpec? Next;
 
             #region private
             /// <summary>
@@ -718,7 +733,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-                public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
+                public static PropertyFetch FetcherForProperty(DiagnosticSourceEventSource eventSource, Type? type, string propertyName)
                 {
                     if (propertyName == null)
                         return new PropertyFetch(type);     // returns null on any fetch.
@@ -745,7 +760,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                         }
 
                         // no implementation of IEnumerable<T> found, return a null fetcher
-                        DiagnosticSourceEventSource.Log.Message($"*Enumerate applied to non-enumerable type {type}");
+                        eventSource.Message($"*Enumerate applied to non-enumerable type {type}");
                         return new PropertyFetch(type);
                     }
                     else
@@ -765,13 +780,13 @@ internal sealed class DsesFilterAndTransform : IDisposable
 
                         if (propertyInfo == null)
                         {
-                            DiagnosticSourceEventSource.Log.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
+                            eventSource.Message($"Property {propertyName} not found on {type}. Ensure the name is spelled correctly. If you published the application with PublishTrimmed=true, ensure the property was not trimmed away.");
                             return new PropertyFetch(type);
                         }
                         // Delegate creation below is incompatible with static properties.
                         else if (propertyInfo.GetMethod?.IsStatic == true || propertyInfo.SetMethod?.IsStatic == true)
                         {
-                            DiagnosticSourceEventSource.Log.Message($"Property {propertyName} is static.");
+                            eventSource.Message($"Property {propertyName} is static.");
                             return new PropertyFetch(type);
                         }
 
@@ -951,6 +966,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                 #endregion
             }
 
+            private readonly DiagnosticSourceEventSource _eventSource;
             private readonly string _propertyName;
             private volatile PropertyFetch? _fetchForExpectedType;
             #endregion
@@ -1000,7 +1016,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                         "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-    private static TransformSpec? MakeImplicitTransforms(Type type)
+    private static TransformSpec? MakeImplicitTransforms(DiagnosticSourceEventSource eventSource, Type type)
     {
         TransformSpec? newSerializableArgs = null;
         TypeInfo curTypeInfo = type.GetTypeInfo();
@@ -1009,7 +1025,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
             // prevent TransformSpec from attempting to implicitly transform index properties
             if (property.GetMethod == null || property.GetMethod!.GetParameters().Length > 0)
                 continue;
-            newSerializableArgs = new TransformSpec(property.Name, 0, property.Name.Length, newSerializableArgs);
+            newSerializableArgs = new TransformSpec(eventSource, property.Name, 0, property.Name.Length, newSerializableArgs);
         }
         return Reverse(newSerializableArgs);
     }
@@ -1028,6 +1044,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
         return ret;
     }
 
+    private readonly DiagnosticSourceEventSource _eventSource;
     private IDisposable? _diagnosticsListenersSubscription; // This is our subscription that listens for new Diagnostic source to appear.
     private Subscriptions? _liveSubscriptions;              // These are the subscriptions that we are currently forwarding to the EventSource.
     private readonly bool _noImplicitTransforms;                    // Listener can say they don't want implicit transforms.

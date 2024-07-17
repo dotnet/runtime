@@ -9,6 +9,7 @@ namespace System.Diagnostics;
 
 internal sealed class DsesActivitySourceListener : IDisposable
 {
+    private readonly DiagnosticSourceEventSource _eventSource;
     private DsesFilterAndTransform? _wildcardSpec;
     private Dictionary<SpecLookupKey, DsesFilterAndTransform>? _specsBySourceNameAndActivityName;
     private HashSet<string>? _listenToActivitySourceNames;
@@ -16,9 +17,10 @@ internal sealed class DsesActivitySourceListener : IDisposable
     private ActivityListener? _activityListener;
 
     public static DsesActivitySourceListener Create(
+        DiagnosticSourceEventSource eventSource,
         DsesFilterAndTransform activitySourceSpecs)
     {
-        var listener = new DsesActivitySourceListener();
+        var listener = new DsesActivitySourceListener(eventSource);
 
         listener.NormalizeActivitySourceSpecsList(activitySourceSpecs);
 
@@ -27,8 +29,9 @@ internal sealed class DsesActivitySourceListener : IDisposable
         return listener;
     }
 
-    private DsesActivitySourceListener()
+    private DsesActivitySourceListener(DiagnosticSourceEventSource eventSource)
     {
+        _eventSource = eventSource;
     }
 
     public void Dispose()
@@ -58,8 +61,8 @@ internal sealed class DsesActivitySourceListener : IDisposable
             {
                 if (_wildcardSpec != null)
                 {
-                    if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
-                        DiagnosticSourceEventSource.Log.Message("DiagnosticSource: Ignoring wildcard activity source filterAndPayloadSpec rule because a previous rule was defined");
+                    if (_eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                        _eventSource.Message("DiagnosticSource: Ignoring wildcard activity source filterAndPayloadSpec rule because a previous rule was defined");
                     continue;
                 }
 
@@ -96,17 +99,17 @@ internal sealed class DsesActivitySourceListener : IDisposable
 
         Debug.Assert(_wildcardSpec != null || _specsBySourceNameAndActivityName != null);
 
-        static void LogIgnoredSpecRule(string activitySourceName, string? activityName)
+        void LogIgnoredSpecRule(string activitySourceName, string? activityName)
         {
-            if (DiagnosticSourceEventSource.Log.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+            if (_eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
             {
                 if (activityName == null)
                 {
-                    DiagnosticSourceEventSource.Log.Message($"DiagnosticSource: Ignoring filterAndPayloadSpec rule for '[AS]{activitySourceName}' because a previous rule was defined");
+                    _eventSource.Message($"DiagnosticSource: Ignoring filterAndPayloadSpec rule for '[AS]{activitySourceName}' because a previous rule was defined");
                 }
                 else
                 {
-                    DiagnosticSourceEventSource.Log.Message($"DiagnosticSource: Ignoring filterAndPayloadSpec rule for '[AS]{activitySourceName}+{activityName}' because a previous rule was defined");
+                    _eventSource.Message($"DiagnosticSource: Ignoring filterAndPayloadSpec rule for '[AS]{activitySourceName}+{activityName}' because a previous rule was defined");
                 }
             }
         }
@@ -171,7 +174,7 @@ internal sealed class DsesActivitySourceListener : IDisposable
         if (TryFindSpecForActivity(activity.Source.Name, activity.OperationName, out var spec)
             && (spec.Events & DsesActivityEvents.ActivityStart) != 0)
         {
-            DiagnosticSourceEventSource.Log.ActivityStart(activity.Source.Name, activity.OperationName, spec.Morph(activity));
+            _eventSource.ActivityStart(activity.Source.Name, activity.OperationName, spec.Morph(activity));
         }
     }
 
@@ -182,7 +185,7 @@ internal sealed class DsesActivitySourceListener : IDisposable
         if (TryFindSpecForActivity(activity.Source.Name, activity.OperationName, out var spec)
             && (spec.Events & DsesActivityEvents.ActivityStop) != 0)
         {
-            DiagnosticSourceEventSource.Log.ActivityStop(activity.Source.Name, activity.OperationName, spec.Morph(activity));
+            _eventSource.ActivityStop(activity.Source.Name, activity.OperationName, spec.Morph(activity));
         }
     }
 
