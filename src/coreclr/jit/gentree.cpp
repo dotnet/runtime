@@ -2397,7 +2397,6 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
     return 0;
 }
 
-
 //-------------------------------------------------------------------------
 // IsHelperCall: Determine if this GT_CALL node is a specific helper call.
 //
