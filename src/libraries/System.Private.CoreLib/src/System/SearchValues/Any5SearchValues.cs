@@ -6,8 +6,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 8500 // address of managed types
-
 namespace System.Buffers
 {
     internal sealed class Any5SearchValues<T, TImpl> : SearchValues<T>
@@ -16,9 +14,9 @@ namespace System.Buffers
     {
         private readonly TImpl _e0, _e1, _e2, _e3, _e4;
 
-        public Any5SearchValues(ReadOnlySpan<TImpl> values)
+        public unsafe Any5SearchValues(ReadOnlySpan<TImpl> values)
         {
-            Debug.Assert(Unsafe.SizeOf<T>() == Unsafe.SizeOf<TImpl>());
+            Debug.Assert(sizeof(T) == sizeof(TImpl));
             Debug.Assert(values.Length == 5);
             (_e0, _e1, _e2, _e3, _e4) = (values[0], values[1], values[2], values[3], values[4]);
         }

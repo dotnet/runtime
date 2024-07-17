@@ -182,9 +182,9 @@ namespace ILLink.Shared
 		DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers = 2115,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
 		MethodsAreAssociatedWithUserMethod = 2117,
-		CompilerGeneratedMemberAccessedViaReflection = 2118,
-		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
-		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
+		_unused_CompilerGeneratedMemberAccessedViaReflection = 2118,
+		_unused_DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
+		_unused_DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
 		RedundantSuppression = 2121,
 		TypeNameIsNotAssemblyQualified = 2122,
 
