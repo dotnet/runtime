@@ -6,8 +6,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable 8500 // address of managed types
-
 namespace System.Buffers
 {
     internal sealed class Any3SearchValues<T, TImpl> : SearchValues<T>
@@ -16,9 +14,9 @@ namespace System.Buffers
     {
         private readonly TImpl _e0, _e1, _e2;
 
-        public Any3SearchValues(ReadOnlySpan<TImpl> values)
+        public unsafe Any3SearchValues(ReadOnlySpan<TImpl> values)
         {
-            Debug.Assert(Unsafe.SizeOf<T>() == Unsafe.SizeOf<TImpl>());
+            Debug.Assert(sizeof(T) == sizeof(TImpl));
             Debug.Assert(values.Length == 3);
             (_e0, _e1, _e2) = (values[0], values[1], values[2]);
         }

@@ -14,6 +14,7 @@ public abstract class BasicObjectTests<T> : SerializationTest<T> where T : ISeri
 
     [Theory]
     [MemberData(nameof(SerializableObjects))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/105020", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsPpc64leProcess))]
     public void DeserializeStoredObjects(object value, TypeSerializableValue[] serializedData)
     {
         // Following call may change the contents of the fields by invoking lazy-evaluated properties.
