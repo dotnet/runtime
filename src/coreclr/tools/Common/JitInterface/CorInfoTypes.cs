@@ -1500,7 +1500,7 @@ namespace Internal.JitInterface
         public bool hasSignificantPadding { get => _hasSignificantPadding != 0; set => _hasSignificantPadding = value ? (byte)1 : (byte)0; }
     }
 
-    public struct CORINFO_SWIFT_LOWERING
+    public struct CORINFO_SWIFT_LOWERING : IEquatable<CORINFO_SWIFT_LOWERING>
     {
         private byte _byReference;
         public bool byReference { get => _byReference != 0; set => _byReference = value ? (byte)1 : (byte)0; }
@@ -1531,11 +1531,11 @@ namespace Internal.JitInterface
 
         public override bool Equals(object obj)
         {
-            if (obj is not CORINFO_SWIFT_LOWERING other)
-            {
-                return false;
-            }
+            return obj is CORINFO_SWIFT_LOWERING other && Equals(other);
+        }
 
+        public bool Equals(CORINFO_SWIFT_LOWERING other)
+        {
             if (byReference != other.byReference)
             {
                 return false;
@@ -1553,7 +1553,7 @@ namespace Internal.JitInterface
 
         public override int GetHashCode()
         {
-            HashCode code = new HashCode();
+            HashCode code = default;
             code.Add(byReference);
 
             if (byReference)
