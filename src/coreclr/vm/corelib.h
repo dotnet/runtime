@@ -694,6 +694,10 @@ DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDa
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_RefObject_Object_Object_RetObject)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_BYTE,  CompareExchange, SM_RefByte_Byte_Byte_RetByte)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_USHRT, CompareExchange, SM_RefUShrt_UShrt_UShrt_RetUShrt)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_UINT,  CompareExchange, SM_RefUInt_UInt_UInt_RetUInt)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_ULONG, CompareExchange, SM_RefULong_ULong_ULong_RetULong)
 
 DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
 DEFINE_FIELD(RAW_DATA,              DATA,                   Data)

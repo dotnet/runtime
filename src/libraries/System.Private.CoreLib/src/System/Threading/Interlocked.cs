@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+#pragma warning disable CS8500 // takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
 namespace System.Threading
 {
@@ -222,6 +226,65 @@ namespace System.Threading
             return (UIntPtr)Exchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value);
 #endif
         }
+
+        /// <summary>Sets a variable of the specified type <typeparamref name="T"/> to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <param name="location1">The variable to set to the specified value.</param>
+        /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
+        /// <returns>The original value of <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
+        /// <exception cref="NotSupportedException">An unsupported <typeparamref name="T"/> is specified.</exception>
+        /// <typeparam name="T">
+        /// The type to be used for <paramref name="location1"/> and <paramref name="value"/>.
+        /// This type must be a reference type, an enum type (i.e. typeof(T).IsEnum is true), or a primitive type (i.e. typeof(T).IsPrimitive is true).
+        /// </typeparam>
+        [return: NotNullIfNotNull(nameof(location1))]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value)
+        {
+            // Handle all reference types with CompareExchange(ref object, ...).
+            if (!typeof(T).IsValueType)
+            {
+                object? result = Exchange(ref Unsafe.As<T, object?>(ref location1), value);
+                return Unsafe.As<object?, T>(ref result);
+            }
+
+            // Handle everything else with a CompareExchange overload for the unsigned integral type of the corresponding size.
+            // Only primitive types and enum types (which are backed by primitive types) are supported.
+            if (!typeof(T).IsPrimitive && !typeof(T).IsEnum)
+            {
+                throw new NotSupportedException(SR.NotSupported_ReferenceEnumOrPrimitiveTypeRequired);
+            }
+
+            if (sizeof(T) == 1)
+            {
+                return Unsafe.BitCast<byte, T>(
+                    Exchange(
+                        ref Unsafe.As<T, byte>(ref location1),
+                        Unsafe.BitCast<T, byte>(value)));
+            }
+
+            if (sizeof(T) == 2)
+            {
+                return Unsafe.BitCast<ushort, T>(
+                    Exchange(
+                        ref Unsafe.As<T, ushort>(ref location1),
+                        Unsafe.BitCast<T, ushort>(value)));
+            }
+
+            if (sizeof(T) == 4)
+            {
+                return Unsafe.BitCast<uint, T>(
+                    Exchange(
+                        ref Unsafe.As<T, uint>(ref location1),
+                        Unsafe.BitCast<T, uint>(value)));
+            }
+
+            Debug.Assert(sizeof(T) == 8);
+            return Unsafe.BitCast<ulong, T>(
+                Exchange(
+                    ref Unsafe.As<T, ulong>(ref location1),
+                    Unsafe.BitCast<T, ulong>(value)));
+        }
         #endregion
 
         #region CompareExchange
@@ -412,6 +475,70 @@ namespace System.Threading
 #else
             return (UIntPtr)CompareExchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value, (int)comparand);
 #endif
+        }
+
+        /// <summary>Compares two instances of the specified type <typeparamref name="T"/> for equality and, if they are equal, replaces the first one.</summary>
+        /// <param name="location1">The destination, whose value is compared with <paramref name="comparand"/> and possibly replaced.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The object that is compared to the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        /// <exception cref="NotSupportedException">An unsupported <typeparamref name="T"/> is specified.</exception>
+        /// <typeparam name="T">
+        /// The type to be used for <paramref name="location1"/>, <paramref name="value"/>, and <paramref name="comparand"/>.
+        /// This type must be a reference type, an enum type (i.e. typeof(T).IsEnum is true), or a primitive type (i.e. typeof(T).IsPrimitive is true).
+        /// </typeparam>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [return: NotNullIfNotNull(nameof(location1))]
+        public static unsafe T CompareExchange<T>(ref T location1, T value, T comparand)
+        {
+            // Handle all reference types with CompareExchange(ref object, ...).
+            if (!typeof(T).IsValueType)
+            {
+                object? result = CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand);
+                return Unsafe.As<object?, T>(ref result);
+            }
+
+            // Handle everything else with a CompareExchange overload for the unsigned integral type of the corresponding size.
+            // Only primitive types and enum types (which are backed by primitive types) are supported.
+            if (!typeof(T).IsPrimitive && !typeof(T).IsEnum)
+            {
+                throw new NotSupportedException(SR.NotSupported_ReferenceEnumOrPrimitiveTypeRequired);
+            }
+
+            if (sizeof(T) == 1)
+            {
+                return Unsafe.BitCast<byte, T>(
+                    CompareExchange(
+                        ref Unsafe.As<T, byte>(ref location1),
+                        Unsafe.BitCast<T, byte>(value),
+                        Unsafe.BitCast<T, byte>(comparand)));
+            }
+
+            if (sizeof(T) == 2)
+            {
+                return Unsafe.BitCast<ushort, T>(
+                    CompareExchange(
+                        ref Unsafe.As<T, ushort>(ref location1),
+                        Unsafe.BitCast<T, ushort>(value),
+                        Unsafe.BitCast<T, ushort>(comparand)));
+            }
+
+            if (sizeof(T) == 4)
+            {
+                return Unsafe.BitCast<uint, T>(
+                    CompareExchange(
+                        ref Unsafe.As<T, uint>(ref location1),
+                        Unsafe.BitCast<T, uint>(value),
+                        Unsafe.BitCast<T, uint>(comparand)));
+            }
+
+            Debug.Assert(sizeof(T) == 8);
+            return Unsafe.BitCast<ulong, T>(
+                CompareExchange(
+                    ref Unsafe.As<T, ulong>(ref location1),
+                    Unsafe.BitCast<T, ulong>(value),
+                    Unsafe.BitCast<T, ulong>(comparand)));
         }
         #endregion
 

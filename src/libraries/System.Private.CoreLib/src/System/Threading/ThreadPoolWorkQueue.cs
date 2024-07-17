@@ -399,7 +399,7 @@ namespace System.Threading
 
         private bool _loggingEnabled;
         private bool _dispatchNormalPriorityWorkFirst;
-        private int _mayHaveHighPriorityWorkItems;
+        private bool _mayHaveHighPriorityWorkItems;
 
         // SOS's ThreadPool command depends on the following names
         internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>();
@@ -443,7 +443,7 @@ namespace System.Threading
         {
             private readonly Internal.PaddingFor32 pad1;
 
-            public int queueProcessingStage;
+            public QueueProcessingStage queueProcessingStage;
 
             private readonly Internal.PaddingFor32 pad2;
         }
@@ -611,7 +611,7 @@ namespace System.Threading
             // Otherwise let the current requested thread handle parallelization.
             if (Interlocked.Exchange(
                 ref _separated.queueProcessingStage,
-                (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
+                QueueProcessingStage.Scheduled) == QueueProcessingStage.NotScheduled)
             {
                 ThreadPool.RequestWorkerThread();
             }
@@ -696,7 +696,7 @@ namespace System.Threading
             highPriorityWorkItems.Enqueue(workItem);
 
             // If the change below is seen by another thread, ensure that the enqueued work item will also be visible
-            Volatile.Write(ref _mayHaveHighPriorityWorkItems, 1);
+            Volatile.Write(ref _mayHaveHighPriorityWorkItems, true);
 
             EnsureThreadRequested();
         }
@@ -736,8 +736,8 @@ namespace System.Threading
                 tl.isProcessingHighPriorityWorkItems = false;
             }
             else if (
-                _mayHaveHighPriorityWorkItems != 0 &&
-                Interlocked.CompareExchange(ref _mayHaveHighPriorityWorkItems, 0, 1) != 0 &&
+                _mayHaveHighPriorityWorkItems &&
+                Interlocked.CompareExchange(ref _mayHaveHighPriorityWorkItems, false, true) &&
                 TryStartProcessingHighPriorityWorkItemsAndDequeue(tl, out workItem))
             {
                 return workItem;
@@ -816,7 +816,7 @@ namespace System.Threading
             }
 
             tl.isProcessingHighPriorityWorkItems = true;
-            _mayHaveHighPriorityWorkItems = 1;
+            _mayHaveHighPriorityWorkItems = true;
             return true;
         }
 
@@ -906,8 +906,8 @@ namespace System.Threading
             // thread because it sees a Determining or Scheduled stage, and the current thread is the last thread processing
             // work items, the current thread must either see the work item queued by the enqueuer, or it must see a stage of
             // Scheduled, and try to dequeue again or request another thread.
-            Debug.Assert(workQueue._separated.queueProcessingStage == (int)QueueProcessingStage.Scheduled);
-            workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Determining;
+            Debug.Assert(workQueue._separated.queueProcessingStage == QueueProcessingStage.Scheduled);
+            workQueue._separated.queueProcessingStage = QueueProcessingStage.Determining;
             Interlocked.MemoryBarrier();
 
             object? workItem = null;
@@ -935,8 +935,8 @@ namespace System.Threading
                             workQueue.UnassignWorkItemQueue(tl);
                         }
 
-                        Debug.Assert(workQueue._separated.queueProcessingStage != (int)QueueProcessingStage.NotScheduled);
-                        workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Scheduled;
+                        Debug.Assert(workQueue._separated.queueProcessingStage != QueueProcessingStage.NotScheduled);
+                        workQueue._separated.queueProcessingStage = QueueProcessingStage.Scheduled;
                         ThreadPool.RequestWorkerThread();
                         return true;
                     }
@@ -944,13 +944,13 @@ namespace System.Threading
                     // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
                     // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
                     // would not have scheduled a work item to process the work, so try to dequeue a work item again.
-                    int stageBeforeUpdate =
+                    QueueProcessingStage stageBeforeUpdate =
                         Interlocked.CompareExchange(
                             ref workQueue._separated.queueProcessingStage,
-                            (int)QueueProcessingStage.NotScheduled,
-                            (int)QueueProcessingStage.Determining);
-                    Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
-                    if (stageBeforeUpdate == (int)QueueProcessingStage.Determining)
+                            QueueProcessingStage.NotScheduled,
+                            QueueProcessingStage.Determining);
+                    Debug.Assert(stageBeforeUpdate != QueueProcessingStage.NotScheduled);
+                    if (stageBeforeUpdate == QueueProcessingStage.Determining)
                     {
                         if (s_assignableWorkItemQueueCount > 0)
                         {
@@ -964,7 +964,7 @@ namespace System.Threading
                     // by the enqueuer. Set the stage back to Determining and try to dequeue a work item again.
                     //
                     // See the first similarly used memory barrier in the method for why it's necessary.
-                    workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Determining;
+                    workQueue._separated.queueProcessingStage = QueueProcessingStage.Determining;
                     Interlocked.MemoryBarrier();
                 }
             }
@@ -976,7 +976,7 @@ namespace System.Threading
                 // be able to detect if an enqueue races with the dequeue below.
                 //
                 // See the first similarly used memory barrier in the method for why it's necessary.
-                workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Determining;
+                workQueue._separated.queueProcessingStage = QueueProcessingStage.Determining;
                 Interlocked.MemoryBarrier();
 
                 object? secondWorkItem = DequeueWithPriorityAlternation(workQueue, tl, out bool missedSteal);
@@ -993,8 +993,8 @@ namespace System.Threading
                     // responsibility of the new thread and other enqueuers to request more threads as necessary. The
                     // parallelization may be necessary here for correctness (aside from perf) if the work item blocks for some
                     // reason that may have a dependency on other queued work items.
-                    Debug.Assert(workQueue._separated.queueProcessingStage != (int)QueueProcessingStage.NotScheduled);
-                    workQueue._separated.queueProcessingStage = (int)QueueProcessingStage.Scheduled;
+                    Debug.Assert(workQueue._separated.queueProcessingStage != QueueProcessingStage.NotScheduled);
+                    workQueue._separated.queueProcessingStage = QueueProcessingStage.Scheduled;
                     ThreadPool.RequestWorkerThread();
                 }
                 else
@@ -1002,13 +1002,13 @@ namespace System.Threading
                     // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
                     // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
                     // would not have requested a thread, so request one now.
-                    int stageBeforeUpdate =
+                    QueueProcessingStage stageBeforeUpdate =
                         Interlocked.CompareExchange(
                             ref workQueue._separated.queueProcessingStage,
-                            (int)QueueProcessingStage.NotScheduled,
-                            (int)QueueProcessingStage.Determining);
-                    Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
-                    if (stageBeforeUpdate == (int)QueueProcessingStage.Scheduled)
+                            QueueProcessingStage.NotScheduled,
+                            QueueProcessingStage.Determining);
+                    Debug.Assert(stageBeforeUpdate != QueueProcessingStage.NotScheduled);
+                    if (stageBeforeUpdate == QueueProcessingStage.Scheduled)
                     {
                         // A work item was enqueued after the stage was set to Determining earlier, and a thread was not
                         // requested by the enqueuer, so request a thread now. An alternate is to retry dequeuing, as requesting
@@ -1269,7 +1269,7 @@ namespace System.Threading
             Scheduled
         }
 
-        private int _queueProcessingStage;
+        private QueueProcessingStage _queueProcessingStage;
         private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
 
         public int Count => _workItems.Count;
@@ -1287,7 +1287,7 @@ namespace System.Threading
             // Otherwise there must be a work item already queued or another thread already handling parallelization.
             if (Interlocked.Exchange(
                 ref _queueProcessingStage,
-                (int)QueueProcessingStage.Scheduled) == (int)QueueProcessingStage.NotScheduled)
+                QueueProcessingStage.Scheduled) == QueueProcessingStage.NotScheduled)
             {
                 ThreadPool.UnsafeQueueHighPriorityWorkItemInternal(this);
             }
@@ -1298,20 +1298,20 @@ namespace System.Threading
             if (!isQueueEmpty)
             {
                 // There are more items to process, set stage to Scheduled and enqueue a TP work item.
-                _queueProcessingStage = (int)QueueProcessingStage.Scheduled;
+                _queueProcessingStage = QueueProcessingStage.Scheduled;
             }
             else
             {
                 // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
                 // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
                 // would not have scheduled a work item to process the work, so schedule one one.
-                int stageBeforeUpdate =
+                QueueProcessingStage stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _queueProcessingStage,
-                        (int)QueueProcessingStage.NotScheduled,
-                        (int)QueueProcessingStage.Determining);
-                Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
-                if (stageBeforeUpdate == (int)QueueProcessingStage.Determining)
+                        QueueProcessingStage.NotScheduled,
+                        QueueProcessingStage.Determining);
+                Debug.Assert(stageBeforeUpdate != QueueProcessingStage.NotScheduled);
+                if (stageBeforeUpdate == QueueProcessingStage.Determining)
                 {
                     return;
                 }
@@ -1325,14 +1325,14 @@ namespace System.Threading
             T workItem;
             while (true)
             {
-                Debug.Assert(_queueProcessingStage == (int)QueueProcessingStage.Scheduled);
+                Debug.Assert(_queueProcessingStage == QueueProcessingStage.Scheduled);
 
                 // The change needs to be visible to other threads that may request a worker thread before a work item is attempted
                 // to be dequeued by the current thread. In particular, if an enqueuer queues a work item and does not request a
                 // thread because it sees a Determining or Scheduled stage, and the current thread is the last thread processing
                 // work items, the current thread must either see the work item queued by the enqueuer, or it must see a stage of
                 // Scheduled, and try to dequeue again or request another thread.
-                _queueProcessingStage = (int)QueueProcessingStage.Determining;
+                _queueProcessingStage = QueueProcessingStage.Determining;
                 Interlocked.MemoryBarrier();
 
                 if (_workItems.TryDequeue(out workItem))
@@ -1343,13 +1343,13 @@ namespace System.Threading
                 // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
                 // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
                 // would not have scheduled a work item to process the work, so try to dequeue a work item again.
-                int stageBeforeUpdate =
+                QueueProcessingStage stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _queueProcessingStage,
-                        (int)QueueProcessingStage.NotScheduled,
-                        (int)QueueProcessingStage.Determining);
-                Debug.Assert(stageBeforeUpdate != (int)QueueProcessingStage.NotScheduled);
-                if (stageBeforeUpdate == (int)QueueProcessingStage.Determining)
+                        QueueProcessingStage.NotScheduled,
+                        QueueProcessingStage.Determining);
+                Debug.Assert(stageBeforeUpdate != QueueProcessingStage.NotScheduled);
+                if (stageBeforeUpdate == QueueProcessingStage.Determining)
                 {
                     return;
                 }
@@ -1401,13 +1401,12 @@ namespace System.Threading
     internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
 #if DEBUG
-        private int executed;
+        private bool _executed;
 
         ~QueueUserWorkItemCallbackBase()
         {
             Interlocked.MemoryBarrier(); // ensure that an old cached value is not read below
-            Debug.Assert(
-                executed != 0, "A QueueUserWorkItemCallback was never called!");
+            Debug.Assert(_executed, "A QueueUserWorkItemCallback was never called!");
         }
 #endif
 
@@ -1415,9 +1414,7 @@ namespace System.Threading
         {
 #if DEBUG
             GC.SuppressFinalize(this);
-            Debug.Assert(
-                0 == Interlocked.Exchange(ref executed, 1),
-                "A QueueUserWorkItemCallback was called twice!");
+            Debug.Assert(!Interlocked.Exchange(ref _executed, true), "A QueueUserWorkItemCallback was called twice!");
 #endif
         }
     }
