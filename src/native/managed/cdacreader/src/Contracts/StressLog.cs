@@ -51,6 +51,7 @@ public interface IStressLog : IContract
 
     public virtual bool HasStressLog() => throw new NotImplementedException();
     public virtual StressLogData GetStressLogData() => throw new NotImplementedException();
+    public virtual StressLogData GetStressLogData(TargetPointer stressLog) => throw new NotImplementedException();
     public virtual IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => throw new NotImplementedException();
     public virtual IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog) => throw new NotImplementedException();
 }
@@ -78,7 +79,12 @@ file abstract class StressLog_0_2(Target target) : IStressLog
             return default;
         }
 
-        Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(target.ReadGlobalPointer(Constants.Globals.StressLog));
+        return GetStressLogData(target.ReadGlobalPointer(Constants.Globals.StressLog));
+    }
+
+    public StressLogData GetStressLogData(TargetPointer stressLogPointer)
+    {
+        Data.StressLog stressLog = target.ProcessedData.GetOrAdd<Data.StressLog>(stressLogPointer);
         return new StressLogData(
             stressLog.LoggedFacilities,
             stressLog.Level,
@@ -100,12 +106,14 @@ file abstract class StressLog_0_2(Target target) : IStressLog
             if (threadStressLog.ChunkListHead == TargetPointer.Null)
             {
                 // If the chunk list head is null, this thread log isn't valid.
+                currentPointer = threadStressLog.Next;
                 continue;
             }
 
             if (threadStressLog.CurrentWriteChunk == TargetPointer.Null)
             {
                 // If the current write chunk is null, this thread log isn't valid.
+                currentPointer = threadStressLog.Next;
                 continue;
             }
 
@@ -113,6 +121,7 @@ file abstract class StressLog_0_2(Target target) : IStressLog
             if (!StressLogChunkValid(currentChunkData))
             {
                 // If the current write chunk isn't valid, this thread log isn't valid.
+                currentPointer = threadStressLog.Next;
                 continue;
             }
 
@@ -219,22 +228,50 @@ file abstract class StressLog_0_2(Target target) : IStressLog
     public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer)
     {
         ulong chunckSize = target.GetTypeInfo(DataType.StressLogChunk).Size!.Value;
-        foreach (ThreadStressLogData threadLog in GetThreadStressLogs(stressLog.Logs))
+        StressLogMemory stressLogMemory = target.ProcessedData.GetOrAdd<StressLogMemory>(stressLog.Logs);
+        foreach (TargetPointer chunk in stressLogMemory.Chunks)
         {
-            TargetPointer chunkPtr = threadLog.ChunkListHead;
-            do
+            if (pointer >= chunk && pointer < chunk + chunckSize)
             {
-                if (pointer.Value >= chunkPtr.Value && pointer.Value <= chunkPtr.Value + chunckSize)
-                {
-                    return true;
-                }
-
-                Data.StressLogChunk chunk = target.ProcessedData.GetOrAdd<Data.StressLogChunk>(chunkPtr);
-                chunkPtr = chunk.Next;
-            } while (chunkPtr != TargetPointer.Null && chunkPtr != threadLog.ChunkListHead);
+                return true;
+            }
         }
 
         return false;
+    }
+
+    private sealed class StressLogMemory(IReadOnlyList<TargetPointer> chunks) : Data.IData<StressLogMemory>
+    {
+        public static StressLogMemory Create(Target target, TargetPointer address)
+        {
+            List<TargetPointer> chunks = [];
+            // Do a simple traversal of the thread stress log list.
+            while (address != TargetPointer.Null)
+            {
+                Data.ThreadStressLog threadLog = target.ProcessedData.GetOrAdd<Data.ThreadStressLog>(address);
+                TargetPointer chunkPtr = threadLog.ChunkListHead;
+
+                if (chunkPtr == TargetPointer.Null)
+                {
+                    address = threadLog.Next;
+                    continue;
+                }
+
+                do
+                {
+                    // Record each chunk in the stress log.
+                    chunks.Add(chunkPtr);
+                    Data.StressLogChunk chunk = target.ProcessedData.GetOrAdd<Data.StressLogChunk>(chunkPtr);
+                    chunkPtr = chunk.Next;
+                } while (chunkPtr != TargetPointer.Null && chunkPtr != threadLog.ChunkListHead);
+
+                address = threadLog.Next;
+            }
+
+            return new StressLogMemory(chunks);
+        }
+
+        public IReadOnlyList<TargetPointer> Chunks { get; } = chunks;
     }
 }
 
@@ -301,7 +338,7 @@ file sealed class StressLog_1(Target target) : StressLog_0_2(target)
     }
 }
 
-file sealed class StressLog_2(Target target): StressLog_0_2(target)
+file sealed class StressLog_2(Target target) : StressLog_0_2(target)
 {
     protected override StressMsgData GetStressMsgData(Data.StressMsg msg)
     {

@@ -34,7 +34,8 @@ internal record struct StressMsgData(
 ```csharp
 bool HasStressLog();
 StressLogData GetStressLogData();
-IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs);
+StressLogData GetStressLogData(TargetPointer stressLogPointer);
+IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs);
 IEnumerable<StressMsgData> GetStressMessages(ThreadStressLogData threadLog);
 bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
@@ -101,6 +102,20 @@ StressLogData GetStressLogData()
         stressLog.Logs);
 }
 
+StressLogData GetStressLogData(TargetPointer stressLogPointer)
+{
+    StressLog stressLog = new StressLog(Target, stressLogPointer);
+    return new StressLogData(
+        stressLog.LoggedFacilities,
+        stressLog.Level,
+        stressLog.MaxSizePerThread,
+        stressLog.MaxSizeTotal,
+        stressLog.TotalChunks,
+        stressLog.TickFrequency,
+        stressLog.StartTimestamp,
+        stressLog.Logs);
+}
+
 IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
 {
     TargetPointer currentPointer = logs;
@@ -111,12 +126,14 @@ IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
         if (threadStressLog.ChunkListHead == TargetPointer.Null)
         {
             // If the chunk list head is null, this thread log isn't valid.
+            currentPointer = threadStressLog.Next;
             continue;
         }
 
         if (threadStressLog.CurrentWriteChunk == TargetPointer.Null)
         {
             // If the current write chunk is null, this thread log isn't valid.
+            currentPointer = threadStressLog.Next;
             continue;
         }
 
@@ -124,6 +141,7 @@ IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer logs)
         if (currentChunkData.Sig1 != 0xCFCFCFCF || currentChunkData.Sig2 != 0xCFCFCFCF)
         {
             // If the current write chunk isn't valid, this thread log isn't valid.
+            currentPointer = threadStressLog.Next;
             continue;
         }
 

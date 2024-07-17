@@ -7,6 +7,7 @@
     <Nullable>enable</Nullable>
     <IsShipping>false</IsShipping>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CA1852;CS0649</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,7 @@
     <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Data\*.cs" Link="CDAC\Data\%(FileName).cs" />
     <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Root.cs" Link="CDAC\Root.cs" />
     <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Target.cs" Link="CDAC\Target.cs" />
+    <Compile Include="$(RepoRoot)\src\native\managed\cdacreader\src\Helpers\*.cs" Link="CDAC\Helpers\%(FileName).cs" />
   </ItemGroup>
 
   <ItemGroup>
