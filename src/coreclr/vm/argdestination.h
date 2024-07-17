@@ -173,6 +173,26 @@ public:
             _ASSERTE(!"---------UNReachable-------LoongArch64/RISC-V64!!!");
         }
     }
+
+#ifdef TARGET_RISCV64
+    void CopySingleFloatToRegister(void* src)
+    {
+        void* dest = GetDestinationAddress();
+        UINT32 value = *(UINT32*)src;
+        if (TransitionBlock::IsFloatArgumentRegisterOffset(m_offset))
+        {
+            // NaN-box the floating register value or single-float instructions will treat it as NaN
+            *(UINT64*)dest = 0xffffffff00000000L | value;
+        }
+        else
+        {
+            // When a single float is passed according to integer calling convention
+            // (in integer register or on stack), the upper bits are not speciifed.
+            *(UINT32*)dest = value;
+        }
+    }
+#endif // TARGET_RISCV64
+
 #endif // !DACCESS_COMPILE
 
     PTR_VOID GetStructGenRegDestinationAddress()
@@ -182,7 +202,6 @@ public:
         return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + argOfs);
     }
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
 #if defined(UNIX_AMD64_ABI)
 
     // Returns true if the ArgDestination represents a struct passed in registers.
