@@ -25402,7 +25402,7 @@ void gc_heap::calculate_new_heap_count ()
     for (int i = 0; i < dynamic_heap_count_data_t::sample_size; i++)
     {
         dynamic_heap_count_data_t::sample& sample = dynamic_heap_count_data.samples[i];
-        // assert (sample.elapsed_between_gcs > 0);
+        assert (sample.elapsed_between_gcs > 0);
         throughput_cost_percents[i] = (sample.elapsed_between_gcs ? (((float)sample.msl_wait_time / n_heaps + sample.gc_pause_time) * 100.0f / (float)sample.elapsed_between_gcs) : 0.0f);
         assert (throughput_cost_percents[i] >= 0.0);
         if (throughput_cost_percents[i] > 100.0)
