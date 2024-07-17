@@ -2356,9 +2356,29 @@ class Generics
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DeepAV(int x)
+        {
+            if (x > 0)
+                DeepAV(x - 1);
+
+            // Call an instance method on something we never allocated, but overrides a used virtual.
+            // This asserted the compiler when trying to build a template for Unused<__Canon>.
+            ((Unused<object>)s_ref).Blagh();
+        }
+
         public static void Run()
         {
             new Used().DoStuff();
+
+            for (int i = 0; i < 10; i++)
+            try
+            {
+                DeepAV(i);
+            }
+            catch (NullReferenceException)
+            {
+            }
 
             try
             {
