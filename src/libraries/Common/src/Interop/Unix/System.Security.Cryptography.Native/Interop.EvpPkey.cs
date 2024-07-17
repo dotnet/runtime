@@ -282,9 +282,6 @@ internal static partial class Interop
             return new SafeEvpPKeyHandle(evpPKeyHandle, extraHandle: extraHandle);
         }
 
-        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
-        internal static partial void CryptoNative_EvpPkeyExtraHandleDestroy(IntPtr extraHandle);
-
         internal enum EvpAlgorithmId
         {
             Unknown = 0,
