@@ -160,17 +160,6 @@ namespace System.Diagnostics
     /// See the DiagnosticSourceEventSourceBridgeTest.cs for more explicit examples of using this bridge.
     /// </summary>
     [EventSource(Name = "Microsoft-Diagnostics-DiagnosticSource")]
-    // These suppressions can go away with https://github.com/mono/linker/issues/2175
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
-        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
-                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
-                        "This includes Delegate and MulticastDelegate methods which require unreferenced code, but " +
-                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2115:ReflectionToDynamicallyAccessedMembers",
-        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves methods on Delegate and MulticastDelegate " +
-                        "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
-                        "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
-                        "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
     internal sealed class DiagnosticSourceEventSource : EventSource
     {
         public static readonly DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();

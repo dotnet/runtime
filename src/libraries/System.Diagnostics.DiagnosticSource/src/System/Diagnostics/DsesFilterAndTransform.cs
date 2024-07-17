@@ -404,9 +404,6 @@ internal sealed class DsesFilterAndTransform : IDisposable
         }
     }
 
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                        "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
     public List<KeyValuePair<string, string?>> Morph(object? args)
     {
@@ -621,9 +618,6 @@ internal sealed class DsesFilterAndTransform : IDisposable
         /// if the spec is OUTSTR=EVENT_VALUE.PROP1.PROP2.PROP3 and the ultimate value of PROP3 is
         /// 10 then the return key value pair is  KeyValuePair("OUTSTR","10")
         /// </summary>
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-            Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                            "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
         public KeyValuePair<string, string?> Morph(object? obj)
         {
@@ -679,9 +673,6 @@ internal sealed class DsesFilterAndTransform : IDisposable
             /// Given an object fetch the property that this PropertySpec represents.
             /// obj may be null when IsStatic is true, otherwise it must be non-null.
             /// </summary>
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
             public object? Fetch(object? obj)
             {
@@ -720,9 +711,6 @@ internal sealed class DsesFilterAndTransform : IDisposable
                 /// <summary>
                 /// Create a property fetcher for a propertyName
                 /// </summary>
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-                    Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                                    "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
                 public static PropertyFetch FetcherForProperty(DiagnosticSourceEventSource eventSource, Type? type, string propertyName)
                 {
@@ -1003,9 +991,6 @@ internal sealed class DsesFilterAndTransform : IDisposable
 
     // Given a type generate all the implicit transforms for type (that is for every field
     // generate the spec that fetches it).
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
-        Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
-                        "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
     private static TransformSpec? MakeImplicitTransforms(DiagnosticSourceEventSource eventSource, Type type)
     {
