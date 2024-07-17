@@ -39,12 +39,7 @@ namespace Microsoft.Extensions.Logging.Console
             if (logEntry.State is BufferedLogRecord bufferedRecord)
             {
                 string message = bufferedRecord.FormattedMessage ?? string.Empty;
-                if (bufferedRecord.Exception == null && message == null)
-                {
-                    return;
-                }
-
-                WriteInternal(scopeProvider, textWriter, message, bufferedRecord.LogLevel, logEntry.Category, bufferedRecord.EventId.Id, bufferedRecord.Exception, bufferedRecord.Timestamp);
+                WriteInternal(null, textWriter, message, bufferedRecord.LogLevel, logEntry.Category, bufferedRecord.EventId.Id, bufferedRecord.Exception, bufferedRecord.Timestamp);
             }
             else
             {
