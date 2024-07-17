@@ -49,6 +49,19 @@ namespace System.Net.Http.Functional.Tests
             yield return new object[] { "InvokerSend" };
         }
 
+        public static IEnumerable<object[]> Redaction_MemberData()
+        {
+            string[] uriTails = new string[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" };
+            foreach (string uriTail in new[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" })
+            {
+                foreach (string fragment in new[] { "", "#frag" })
+                {
+                    yield return new object[] { uriTail + fragment, true };
+                    yield return new object[] { uriTail + fragment, false };
+                }
+            }
+        }
+
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(TestMethods_MemberData))]
@@ -402,23 +415,8 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [InlineData("/test/path?q1=a&q2=b", true)]
-        [InlineData("/test/path?q1=a&q2=b", false)]
-        [InlineData("/test/path", true)]
-        [InlineData("/test/path", false)]
-        [InlineData("?q1=a&q2=b", true)]
-        [InlineData("?q1=a&q2=b", false)]
-        [InlineData("", true)]
-        [InlineData("", false)]
-        [InlineData("/test/path?q1=a&q2=b#frag", true)]
-        [InlineData("/test/path?q1=a&q2=b#frag", false)]
-        [InlineData("/test/path#frag", true)]
-        [InlineData("/test/path#frag", false)]
-        [InlineData("?q1=a&q2=b#frag", true)]
-        [InlineData("?q1=a&q2=b#frag", false)]
-        [InlineData("#frag", true)]
-        [InlineData("#frag", false)]
-        public async Task EventSource_PathAndQueryRedaction_LogsStartStop(string uriTail, bool disableRedaction)
+        [MemberData(nameof(Redaction_MemberData))]
+        public async Task EventSource_SendingRequest_PathAndQueryRedaction_LogsStartStop(string uriTail, bool disableRedaction)
         {
             var psi = new ProcessStartInfo();
             psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
@@ -542,7 +540,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // The validation asssumes that the connection id's are in range 0..(connectionCount-1)
+        // The validation assumes that the connection id's are in range 0..(connectionCount-1)
         protected static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, Uri uri, int connectionCount = 1)
         {
             EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
@@ -909,6 +907,66 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(expectedUri.ToString(), (string)redirectEvent.Payload[0]);
                 Assert.Equal("redirectUri", redirectEvent.PayloadNames[0]);
             }, UseVersion.ToString()).DisposeAsync();
+        }
+
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [MemberData(nameof(Redaction_MemberData))]
+        public async Task EventSource_Redirect_PathAndQueryRedaction_LogsRedirect(string uriTail, bool disableRedaction)
+        {
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
+            var fragIndex = uriTail.IndexOf('#');
+            var expectedUriTail = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+            if (!disableRedaction)
+            {
+                var queryIndex = expectedUriTail.IndexOf('?');
+                expectedUriTail = expectedUriTail.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedUriTail.Length);
+                expectedUriTail = queryIndex >= 0 ? expectedUriTail + '*' : expectedUriTail;
+            }
+            expectedUriTail = fragIndex >= 0 ? expectedUriTail + uriTail.Substring(fragIndex) : expectedUriTail;
+
+            await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedUriTail) =>
+            {
+                Version version = Version.Parse(useVersionString);
+
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
+
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    await GetFactoryForVersion(version).CreateServerAsync((originalServer, originalUri) =>
+                    {
+                        return GetFactoryForVersion(version).CreateServerAsync(async (redirectServer, redirectUri) =>
+                        {
+                            expectedUri = redirectUri;
+                            using HttpClient client = CreateHttpClient(useVersionString);
+
+                            using HttpRequestMessage request = new(HttpMethod.Get, originalUri) { Version = version };
+
+                            Task clientTask = client.SendAsync(request);
+                            Task serverTask = originalServer.HandleRequestAsync(HttpStatusCode.Redirect, new[] { new HttpHeaderData("Location", redirectUri.AbsoluteUri + uriTail) });
+
+                            await Task.WhenAny(clientTask, serverTask);
+                            Assert.False(clientTask.IsCompleted, $"{clientTask.Status}: {clientTask.Exception}");
+                            await serverTask;
+
+                            serverTask = redirectServer.HandleRequestAsync();
+                            await TestHelper.WhenAllCompletedOrAnyFailed(clientTask, serverTask);
+                            await clientTask;
+                        });
+                    });
+
+                    await WaitForEventCountersAsync(events);
+                });
+
+                EventWrittenEventArgs redirectEvent = events.Where(e => e.Event.EventName == "Redirect").Single().Event;
+                Assert.Equal(1, redirectEvent.Payload.Count);
+                Assert.Equal(expectedUri.ToString() + expectedUriTail, (string)redirectEvent.Payload[0]);
+                Assert.Equal("redirectUri", redirectEvent.PayloadNames[0]);
+            }, UseVersion.ToString(), uriTail, expectedUriTail, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
 
         public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
