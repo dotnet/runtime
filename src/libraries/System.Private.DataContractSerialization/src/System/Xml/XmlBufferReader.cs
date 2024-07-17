@@ -935,7 +935,6 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-#pragma warning disable 8500 // sizeof of managed types
         private unsafe T ReadRawBytes<T>() where T : unmanaged
         {
             ReadOnlySpan<byte> buffer = GetBuffer(sizeof(T), out int offset)
@@ -948,7 +947,6 @@ namespace System.Xml
 
         private unsafe T ReadRawBytes<T>(int offset) where T : unmanaged
             => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, sizeof(T)));
-#pragma warning restore 8500
 
         public int GetInt16(int offset)
             => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));

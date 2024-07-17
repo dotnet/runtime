@@ -1642,7 +1642,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
             else
             {
-                SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
+                bool             tgtPrefEmbOp2 = false;
+                SingleTypeRegSet predMask      = RBM_ALLMASK.GetPredicateRegSet();
                 if (intrin.id == NI_Sve_ConditionalSelect)
                 {
                     // If this is conditional select, make sure to check the embedded
@@ -1658,6 +1659,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         {
                             predMask = RBM_LOWMASK.GetPredicateRegSet();
                         }
+
+                        // Special-case, CreateBreakPropagateMask's op2 is the RMW node.
+                        if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
+                        {
+                            assert(embOp2Node->isRMWHWIntrinsic(compiler));
+                            assert(!tgtPrefOp1);
+                            assert(!tgtPrefOp2);
+                            tgtPrefEmbOp2 = true;
+                        }
                     }
                 }
                 else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
@@ -1665,9 +1675,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if (tgtPrefOp2)
+                if (tgtPrefOp2 || tgtPrefEmbOp2)
                 {
-                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+                    assert(!tgtPrefOp1);
+                    srcCount += BuildDelayFreeUses(intrin.op1, nullptr, predMask);
                 }
                 else
                 {
@@ -1983,15 +1994,26 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     break;
             }
 
-            tgtPrefUse = BuildUse(embOp2Node->Op(1));
-            srcCount += 1;
-
-            for (size_t argNum = 2; argNum <= numArgs; argNum++)
+            size_t prefUseOpNum = 1;
+            if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
             {
-                srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), embOp2Node->Op(1));
+                prefUseOpNum = 2;
+            }
+            GenTree* prefUseNode = embOp2Node->Op(prefUseOpNum);
+            for (size_t argNum = 1; argNum <= numArgs; argNum++)
+            {
+                if (argNum == prefUseOpNum)
+                {
+                    tgtPrefUse = BuildUse(prefUseNode);
+                    srcCount += 1;
+                }
+                else
+                {
+                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), prefUseNode);
+                }
             }
 
-            srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
+            srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
         }
     }
     else if (intrin.op2 != nullptr)
