@@ -9,7 +9,7 @@ import type { EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModu
 import { ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, emscriptenModule, exportedRuntimeAPI, globalObjectsRoot, monoConfig, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { installUnhandledErrorHandler, mono_exit, registerEmscriptenExitHandlers } from "./exit";
-import { setup_proxy_console, mono_log_info, mono_log_debug, mono_log_error } from "./logging";
+import { setup_proxy_console, mono_log_info, mono_log_debug } from "./logging";
 import { mono_download_assets, preloadWorkers, prepareAssets, prepareAssetsWorker, resolve_single_asset_path, streamingCompileWasm } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers, globalizationHelpers } from "./globals";
@@ -498,9 +498,8 @@ async function initializeModules (es6Modules: [RuntimeModuleExportsInternal, Nat
     });
     result.catch((error) => {
         if (error.message && error.message.toLowerCase().includes("out of memory")) {
-            mono_log_error("Memory allocation exceeded. Please increase the memory by adjusting EmccMaximumHeapSize.", error);
+            throw new Error(".NET runtime has failed to start, because too much memory was requested. Please decrease the memory by adjusting EmccMaximumHeapSize. See also https://aka.ms/dotnet-wasm-features");
         }
-        mono_exit(1, error);
         throw error;
     });
 }
