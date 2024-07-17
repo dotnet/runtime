@@ -17,7 +17,15 @@ namespace System.Diagnostics.Metrics.Tests
 
         private static readonly string[] s_genNames = ["gen0", "gen1", "gen2", "loh", "poh"];
 
-        private static readonly Action s_forceGc = () => GC.Collect(0, GCCollectionMode.Forced);
+        private static readonly Func<bool> s_forceGc = () =>
+        {
+            for (var gen = 0; gen <= GC.MaxGeneration; gen++)
+            {
+                GC.Collect(gen, GCCollectionMode.Forced);
+            }
+
+            return GC.GetGCMemoryInfo().Index > 0;
+        };
 
         private static readonly Func<long, (bool, string?)> s_longGreaterThanZero = v => v > 0
             ? (true, null)
@@ -31,14 +39,15 @@ namespace System.Diagnostics.Metrics.Tests
             ? (true, null)
             : (false, $"{GreaterThanZeroMessage} Actual value was: {v}.");
 
+        private static readonly Func<long, (bool, string?)> s_doubleGreaterThanOrEqualToZero = v => v >= 0
+            ? (true, null)
+            : (false, $"{GreaterThanOrEqualToZeroMessage} Actual value was: {v}.");
+
         private readonly ITestOutputHelper _output = output;
 
         [Fact]
         public void GcCollectionsCount()
         {
-            var pause = GC.GetTotalPauseDuration();
-            _output.WriteLine($"GC pause time: {pause.TotalSeconds} [{pause.Ticks}]");
-
             using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections");
 
             for (var gen = 0; gen <= GC.MaxGeneration; gen++)
@@ -212,7 +221,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         [Theory]
         [MemberData(nameof(LongMeasurements))]
-        public void ValidateMeasurements<T>(string metricName, Func<T, (bool, string?)>? valueAssertion, Action? beforeRecord)
+        public void ValidateMeasurements<T>(string metricName, Func<T, (bool, string?)>? valueAssertion, Func<bool>? beforeRecord)
             where T : struct
         {
             ValidateSingleMeasurement(metricName, valueAssertion, beforeRecord);
@@ -225,7 +234,7 @@ namespace System.Diagnostics.Metrics.Tests
             new object[] { "dotnet.process.cpu.count", s_longGreaterThanZero, null },
             new object[] { "dotnet.gc.heap.total_allocated", s_longGreaterThanZero, null },
             new object[] { "dotnet.gc.last_collection.memory.committed_size", s_longGreaterThanZero, s_forceGc },
-            new object[] { "dotnet.gc.pause.time", s_doubleGreaterThanZero, s_forceGc },
+            new object[] { "dotnet.gc.pause.time", s_doubleGreaterThanOrEqualToZero, s_forceGc }, // may be zero if no GC has occurred
             new object[] { "dotnet.jit.compiled_il.size", s_longGreaterThanZero, null },
             new object[] { "dotnet.jit.compiled_methods", s_longGreaterThanZero, null },
             new object[] { "dotnet.jit.compilation.time", s_doubleGreaterThanZero, null },
@@ -266,8 +275,11 @@ namespace System.Diagnostics.Metrics.Tests
             _output.WriteLine($"Count of measurements: {measurements.Count}");
             _output.WriteLine($"GenerationInfo.TotalCommittedBytes: {gcInfo.TotalCommittedBytes}");
             _output.WriteLine($"GC.MaxGeneration: {GC.MaxGeneration}");
+            _output.WriteLine($"GCMemoryInfo.Index: {gcInfo.Index}");
 
-            Assert.True(measurements.Count >= GC.MaxGeneration + 1, "Expected to find at least one measurement for each generation.");
+            var gensExpected = GC.MaxGeneration + 1;
+            Assert.True(measurements.Count >= gensExpected, $"Expected to find at least one measurement for each generation ({gensExpected}) " +
+                $"but received {measurements.Count} measurements.");
 
             foreach (Measurement<long> measurement in measurements)
             {
@@ -297,12 +309,16 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        private static void ValidateSingleMeasurement<T>(string metricName, Func<T, (bool, string?)>? valueAssertion = null, Action? beforeRecord = null)
+        private static void ValidateSingleMeasurement<T>(string metricName, Func<T, (bool, string?)>? valueAssertion = null, Func<bool>? beforeRecord = null)
             where T : struct
         {
             using InstrumentRecorder<T> instrumentRecorder = new(metricName);
 
-            beforeRecord?.Invoke();
+            var shouldContinue = beforeRecord?.Invoke() ?? true;
+
+            if (!shouldContinue)
+                return;
+
             instrumentRecorder.RecordObservableInstruments();
             var measurements = instrumentRecorder.GetMeasurements();
             Assert.Single(measurements);
