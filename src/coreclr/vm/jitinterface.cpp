@@ -7244,83 +7244,64 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
     TypeHandle typeHandle = ftn->GetMethodInstantiation()[0];
 
+    // Setup up the body of the CompareExchange methods; the method token will be patched on first use.
+    static BYTE il[5][9] =
+    {
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // object
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // byte
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // ushort
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // uint
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // ulong
+    };
+
     // Based on the generic method parameter, determine which overload of CompareExchange
     // to delegate to, or if we can't handle the type at all.
-    int ilIndex = 0;
-    if (typeHandle.IsValueType())
+    int ilIndex;
+    MethodDesc* cmpxchgMethod;
+    if (!typeHandle.IsValueType())
     {
-        if (!CorTypeInfo::IsPrimitiveType(typeHandle.GetVerifierCorElementType()))
-            return false;
-
+        ilIndex = 0;
+        cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);
+    }
+    else if (!CorTypeInfo::IsPrimitiveType(typeHandle.GetVerifierCorElementType()))
+    {
+        return false;
+    }
+    else
+    {
         switch (typeHandle.GetSize())
         {
-            case 1: ilIndex = 1; break;
-            case 2: ilIndex = 1; break;
-            case 4: ilIndex = 1; break;
-            case 8: ilIndex = 1; break;
-            default: _ASSERT(!"Unexpected primitive type size"); break;
+            case 1:
+                ilIndex = 1;
+                cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_BYTE);
+                break;
+
+            case 2:
+                ilIndex = 2;
+                cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_USHRT);
+                break;
+
+            case 4:
+                ilIndex = 3;
+                cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_UINT);
+                break;
+
+            case 8:
+                ilIndex = 4;
+                cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_ULONG);
+                break;
+
+            default:
+                _ASSERT(!"Unexpected primitive type size");
+                return false;
         }
     }
 
-    // Setup up the body of the CompareExchange methods
-    mdMethodDef cmpxchgTokenObject = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT)->GetMemberDef();
-    mdMethodDef cmpxchgTokenSize1  = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_BYTE)->GetMemberDef();
-    mdMethodDef cmpxchgTokenSize2  = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_USHRT)->GetMemberDef();
-    mdMethodDef cmpxchgTokenSize4  = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_UINT)->GetMemberDef();
-    mdMethodDef cmpxchgTokenSize8  = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_ULONG)->GetMemberDef();
-
-    static BYTE il[5][9] =
-    {
-        // object
-        {
-            CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL,
-            (BYTE)((int)cmpxchgTokenObject >> 0),
-            (BYTE)((int)cmpxchgTokenObject >> 8),
-            (BYTE)((int)cmpxchgTokenObject >> 16),
-            (BYTE)((int)cmpxchgTokenObject >> 24),
-            CEE_RET
-        },
-
-        // byte
-        {
-            CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL,
-            (BYTE)((int)cmpxchgTokenSize1 >> 0),
-            (BYTE)((int)cmpxchgTokenSize1 >> 8),
-            (BYTE)((int)cmpxchgTokenSize1 >> 16),
-            (BYTE)((int)cmpxchgTokenSize1 >> 24),
-            CEE_RET
-        },
-
-        // ushort
-        {
-            CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL,
-            (BYTE)((int)cmpxchgTokenSize2 >> 0),
-            (BYTE)((int)cmpxchgTokenSize2 >> 8),
-            (BYTE)((int)cmpxchgTokenSize2 >> 16),
-            (BYTE)((int)cmpxchgTokenSize2 >> 24),
-            CEE_RET
-        },
-
-        // uint
-        {
-            CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL,
-            (BYTE)((int)cmpxchgTokenSize4 >> 0),
-            (BYTE)((int)cmpxchgTokenSize4 >> 8),
-            (BYTE)((int)cmpxchgTokenSize4 >> 16),
-            (BYTE)((int)cmpxchgTokenSize4 >> 24),
-            CEE_RET
-        },
-
-        // ulong
-        {
-            CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL,
-            (BYTE)((int)cmpxchgTokenSize8 >> 0),
-            (BYTE)((int)cmpxchgTokenSize8 >> 8),
-            (BYTE)((int)cmpxchgTokenSize8 >> 16),
-            (BYTE)((int)cmpxchgTokenSize8 >> 24),
-            CEE_RET
-        },
-    };
+    mdMethodDef cmpxchgToken = cmpxchgMethod->GetMemberDef();
+    il[ilIndex][4] = (BYTE)((int)cmpxchgToken >> 0);
+    il[ilIndex][5] = (BYTE)((int)cmpxchgToken >> 8);
+    il[ilIndex][6] = (BYTE)((int)cmpxchgToken >> 16);
+    il[ilIndex][7] = (BYTE)((int)cmpxchgToken >> 24);
 
     // Initialize methInfo
     methInfo->ILCode = const_cast<BYTE*>(il[ilIndex]);

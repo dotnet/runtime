@@ -237,6 +237,7 @@ namespace System.Threading
         /// The type to be used for <paramref name="location1"/> and <paramref name="value"/>.
         /// This type must be a reference type, an enum type (i.e. typeof(T).IsEnum is true), or a primitive type (i.e. typeof(T).IsPrimitive is true).
         /// </typeparam>
+        [Intrinsic]
         [return: NotNullIfNotNull(nameof(location1))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value)
