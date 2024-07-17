@@ -1919,6 +1919,12 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
             ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
             ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+            DWORD numMethodPtr = pCode->NewLocal(ELEMENT_TYPE_I);
+            
+            // Load the method pointer
+            pCode->EmitLoadThis();
+            pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR)));
+            pCode->EmitSTLOC(numMethodPtr);
 
             // Load the target object
             pCode->EmitLoadThis();
@@ -1928,16 +1934,13 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
             for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
                 pCode->EmitLDARG(paramCount);
 
-            // Load the method pointer
-            pCode->EmitLoadThis();
-            pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR)));
-
             PCCOR_SIGNATURE pSig;
             DWORD cbSig;
             pMD->GetSig(&pSig,&cbSig);
 
             // call the delegate
-            pCode->EmitCALLI(pCode->GetSigToken(pSig, cbSig), sig.NumFixedArgs() + 1, fReturnVal);
+            pCode->EmitLDLOC(numMethodPtr);
+            pCode->EmitCALLI(pCode->GetSigToken(pSig, cbSig), sig.NumFixedArgs() + 1, fReturnVal); // NumFixedArgs doesn't include "this"
 
             // return
             pCode->EmitRET();
