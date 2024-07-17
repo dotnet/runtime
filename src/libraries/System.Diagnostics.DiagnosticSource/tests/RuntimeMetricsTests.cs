@@ -39,7 +39,7 @@ namespace System.Diagnostics.Metrics.Tests
             ? (true, null)
             : (false, $"{GreaterThanZeroMessage} Actual value was: {v}.");
 
-        private static readonly Func<long, (bool, string?)> s_doubleGreaterThanOrEqualToZero = v => v >= 0
+        private static readonly Func<double, (bool, string?)> s_doubleGreaterThanOrEqualToZero = v => v >= 0
             ? (true, null)
             : (false, $"{GreaterThanOrEqualToZeroMessage} Actual value was: {v}.");
 
@@ -65,7 +65,9 @@ namespace System.Diagnostics.Metrics.Tests
 
             var measurements = instrumentRecorder.GetMeasurements();
 
-            Assert.True(measurements.Count >= GC.MaxGeneration + 1, "Expected to find at least one measurement for each generation.");
+            var gensExpected = GC.MaxGeneration + 1;
+            Assert.True(measurements.Count >= gensExpected, $"Expected to find at least one measurement for each generation ({gensExpected}) " +
+                $"but received {measurements.Count} measurements.");
 
             foreach (Measurement<long> measurement in measurements.Where(m => m.Value >= 1))
             {
@@ -219,14 +221,6 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(LongMeasurements))]
-        public void ValidateMeasurements<T>(string metricName, Func<T, (bool, string?)>? valueAssertion, Func<bool>? beforeRecord)
-            where T : struct
-        {
-            ValidateSingleMeasurement(metricName, valueAssertion, beforeRecord);
-        }
-
         public static IEnumerable<object[]> LongMeasurements => new List<object[]>
         {
             new object[] { "dotnet.process.memory.working_set", s_longGreaterThanZero, null },
@@ -246,67 +240,11 @@ namespace System.Diagnostics.Metrics.Tests
         };
 
         [Theory]
-        [InlineData("dotnet.gc.last_collection.heap.size")]
-        [InlineData("dotnet.gc.last_collection.heap.fragmentation.size")]
-        public void HeapTags(string metricName) => EnsureAllHeapTags(metricName);
-
-        private void EnsureAllHeapTags(string metricName)
+        [MemberData(nameof(LongMeasurements))]
+        public void ValidateMeasurements<T>(string metricName, Func<T, (bool, string?)>? valueAssertion, Func<bool>? beforeRecord)
+            where T : struct
         {
-            using InstrumentRecorder<long> instrumentRecorder = new(metricName);
-
-            for (var gen = 0; gen <= GC.MaxGeneration; gen++)
-            {
-                GC.Collect(gen, GCCollectionMode.Forced);
-            }
-
-            instrumentRecorder.RecordObservableInstruments();
-
-            bool[] foundGenerations = new bool[s_genNames.Length];
-            for (int i = 0; i < 5; i++)
-            {
-                foundGenerations[i] = false;
-            }
-
-            var measurements = instrumentRecorder.GetMeasurements();
-
-            var gcInfo = GC.GetGCMemoryInfo();
-
-            _output.WriteLine($"GCMemoryInfo.GenerationInfo.Length: {gcInfo.GenerationInfo.Length}");
-            _output.WriteLine($"Count of measurements: {measurements.Count}");
-            _output.WriteLine($"GenerationInfo.TotalCommittedBytes: {gcInfo.TotalCommittedBytes}");
-            _output.WriteLine($"GC.MaxGeneration: {GC.MaxGeneration}");
-            _output.WriteLine($"GCMemoryInfo.Index: {gcInfo.Index}");
-
-            var gensExpected = GC.MaxGeneration + 1;
-            Assert.True(measurements.Count >= gensExpected, $"Expected to find at least one measurement for each generation ({gensExpected}) " +
-                $"but received {measurements.Count} measurements.");
-
-            foreach (Measurement<long> measurement in measurements)
-            {
-                var tags = measurement.Tags.ToArray();
-                var tag = tags.SingleOrDefault(k => k.Key == "gc.heap.generation");
-
-                if (tag.Key is not null)
-                {
-                    Assert.True(tag.Value is string, "Expected generation tag to be a string.");
-
-                    string tagValue = (string)tag.Value;
-
-                    _output.WriteLine($"Found tag value: {tagValue}");
-
-                    var index = Array.FindIndex(s_genNames, x => x == tagValue);
-
-                    if (index == -1)
-                        Assert.Fail($"Unexpected generation tag value '{tagValue}'.");
-
-                    foundGenerations[index] = true;
-                }
-            }
-
-            for (int i = 0; i < foundGenerations.Length; i++)
-            {
-                Assert.True(foundGenerations[i], $"Expected to find a measurement for '{s_genNames[i]}'.");
-            }
+            ValidateSingleMeasurement(metricName, valueAssertion, beforeRecord);
         }
 
         private static void ValidateSingleMeasurement<T>(string metricName, Func<T, (bool, string?)>? valueAssertion = null, Func<bool>? beforeRecord = null)
@@ -330,6 +268,66 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
+        [Theory]
+        [InlineData("dotnet.gc.last_collection.heap.size")]
+        [InlineData("dotnet.gc.last_collection.heap.fragmentation.size")]
+        public void HeapTags(string metricName) => EnsureAllHeapTags(metricName);
+
+        private void EnsureAllHeapTags(string metricName)
+        {
+            using InstrumentRecorder<long> instrumentRecorder = new(metricName);
+
+            for (var gen = 0; gen <= GC.MaxGeneration; gen++)
+            {
+                GC.Collect(gen, GCCollectionMode.Forced);
+            }
+
+            instrumentRecorder.RecordObservableInstruments();
+            var measurements = instrumentRecorder.GetMeasurements();
+
+            if (GC.GetGCMemoryInfo().Index == 0)
+            {
+                // No GC has occurred which can be the case on some platforms.
+                Assert.Empty(measurements);
+                return;
+            }
+
+            bool[] foundGenerations = new bool[s_genNames.Length];
+            for (int i = 0; i < 5; i++)
+            {
+                foundGenerations[i] = false;
+            }
+
+            var gensExpected = GC.MaxGeneration + 1;
+            Assert.True(measurements.Count >= gensExpected, $"Expected to find at least one measurement for each generation ({gensExpected}) " +
+                $"but received {measurements.Count} measurements.");
+
+            foreach (Measurement<long> measurement in measurements)
+            {
+                var tags = measurement.Tags.ToArray();
+                var tag = tags.SingleOrDefault(k => k.Key == "gc.heap.generation");
+
+                if (tag.Key is not null)
+                {
+                    Assert.True(tag.Value is string, "Expected generation tag to be a string.");
+
+                    string tagValue = (string)tag.Value;
+
+                    var index = Array.FindIndex(s_genNames, x => x == tagValue);
+
+                    if (index == -1)
+                        Assert.Fail($"Unexpected generation tag value '{tagValue}'.");
+
+                    foundGenerations[index] = true;
+                }
+            }
+
+            for (int i = 0; i < foundGenerations.Length; i++)
+            {
+                Assert.True(foundGenerations[i], $"Expected to find a measurement for '{s_genNames[i]}'.");
+            }
+        }
+
         private sealed class RuntimeMeterException() : Exception { }
 
         private sealed class InstrumentRecorderException() : Exception { }
@@ -342,6 +340,7 @@ namespace System.Diagnostics.Metrics.Tests
 
             public InstrumentRecorder(string instrumentName, bool injectException = false)
             {
+                _injectException = injectException;
                 _meterListener.InstrumentPublished = (instrument, listener) =>
                 {
                     if (instrument.Meter.Name == "System.Runtime" && instrument.Name == instrumentName)
@@ -351,11 +350,12 @@ namespace System.Diagnostics.Metrics.Tests
                 };
                 _meterListener.SetMeasurementEventCallback<T>(OnMeasurementRecorded);
                 _meterListener.Start();
-                _injectException = injectException;
             }
 
             private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state)
             {
+                _values.Enqueue(new Measurement<T>(measurement, tags));
+
                 if (_injectException)
                 {
                     try
@@ -367,14 +367,12 @@ namespace System.Diagnostics.Metrics.Tests
                         // Ignore the exception.
                     }
                 }
-
-                _values.Enqueue(new Measurement<T>(measurement, tags));
             }
 
             public IReadOnlyList<Measurement<T>> GetMeasurements()
             {
                 // Wait enough time for all the measurements to be enqueued via the
-                // OnMeasurementRecorded callback. 50ms seems to be sufficient.
+                // OnMeasurementRecorded callback. This value seems to be sufficient.
                 Thread.Sleep(100);
                 return _values.ToArray();
             }
