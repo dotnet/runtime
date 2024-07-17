@@ -404,6 +404,7 @@ inline BOOL MethodTable::HasLayout()
 }
 
 //==========================================================================================
+#ifndef DACCESS_COMPILE
 inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 {
     CONTRACTL
@@ -425,6 +426,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 
     return MethodTable::GetMethodDescForSlotAddress(pCode);
 }
+#endif // DACCESS_COMPILE
 
 //==========================================================================================
 inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)

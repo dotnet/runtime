@@ -213,18 +213,9 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
 #ifdef TARGET_ARM
     // Ensure that code offset doesn't have the Thumb bit set. We need
-    // it to be aligned to instruction start to make the !isActiveStackFrame
-    // branch below work.
+    // it to be aligned to instruction start
     ASSERT(((uintptr_t)codeOffset & 1) == 0);
 #endif
-
-    bool executionAborted = ((UnixNativeMethodInfo*)pMethodInfo)->executionAborted;
-
-    if (!isActiveStackFrame && !executionAborted)
-    {
-        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
-        codeOffset--;
-    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
@@ -232,25 +223,8 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
         codeOffset
     );
 
-    if (isActiveStackFrame)
-    {
-        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
-        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
-        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
-        //           does not seem possible.
-        if (!decoder.HasInterruptibleRanges())
-        {
-            decoder = GcInfoDecoder(
-                GCInfoToken(gcInfo),
-                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-                codeOffset - 1
-            );
-
-            assert(decoder.IsInterruptibleSafePoint());
-        }
-    }
-
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    bool executionAborted = ((UnixNativeMethodInfo*)pMethodInfo)->executionAborted;
     if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
