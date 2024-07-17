@@ -19,18 +19,19 @@ namespace System.Net
         private const int NumberOfLabels = 4;
 
         // Only called from the IPv6Helper, only parse the canonical format
-        internal static int ParseHostNumber<TChar>(ReadOnlySpan<TChar> str)
+        internal static int ParseHostNumber<TChar>(ReadOnlySpan<TChar> str, int start, int end)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             Span<byte> numbers = stackalloc byte[NumberOfLabels];
-            int start = 0;
 
             for (int i = 0; i < numbers.Length; ++i)
             {
                 int b = 0;
                 int ch;
 
-                for (; (start < str.Length) && (ch = int.CreateTruncating(str[start])) != '.' && ch != ':'; ++start)
+                for (; (start < end) && (ch = int.CreateTruncating(str[start])) != '.' && ch != ':'; ++start)
                 {
                     b = unchecked((b * 10) + ch - '0');
                 }
@@ -114,12 +115,12 @@ namespace System.Net
         internal static unsafe bool IsValidCanonical<TChar>(TChar* name, int start, ref int end, bool allowIPv6, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int dots = 0;
             int number = 0;
             bool haveNumber = false;
             bool firstCharIsZero = false;
-
-            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             while (start < end)
             {
@@ -133,11 +134,12 @@ namespace System.Net
                         break;
                     }
                 }
-                // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
-                // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
                 else if (ch == TChar.CreateTruncating('/') || ch == TChar.CreateTruncating('\\')
                     || (notImplicitFile && (ch == TChar.CreateTruncating(':') || ch == TChar.CreateTruncating('?') || ch == TChar.CreateTruncating('#'))))
                 {
+                    // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
+                    // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
+
                     break;
                 }
 
@@ -164,9 +166,10 @@ namespace System.Net
                         return false;
                     }
                 }
-                // If the current character is not an integer, it may be the IPv4 component separator ('.')
                 else if (ch == TChar.CreateTruncating('.'))
                 {
+                    // If the current character is not an integer, it may be the IPv4 component separator ('.')
+
                     if (!haveNumber || (number > 0 && firstCharIsZero))
                     {
                         // 0 is not allowed to prefix a number.
@@ -198,27 +201,28 @@ namespace System.Net
         internal static unsafe long ParseNonCanonical<TChar>(TChar* name, int start, ref int end, bool notImplicitFile)
             where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int numberBase = IPv4AddressHelper.Decimal;
-            Span<uint> parts = stackalloc uint[4];
+            uint* parts = stackalloc uint[4];
             long currentValue = 0;
             bool atLeastOneChar = false;
 
             // Parse one dotted section at a time
             int dotCount = 0; // Limit 3
-            int current;
+            int current = start;
 
-            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
-
-            for (current = start; current < end; current++)
+            for (; current < end; current++)
             {
                 TChar ch = name[current];
                 int maxCharacterValue = '9';
                 currentValue = 0;
 
-                // Figure out what base this section is in, default to base 10
-                numberBase = IPv4AddressHelper.Decimal;
+                // Figure out what base this section is in, default to base 10.
                 // A number starting with zero should be interpreted in base 8 / octal
                 // If the number starts with 0x, it should be interpreted in base 16 / hex
+                numberBase = IPv4AddressHelper.Decimal;
+
                 if (ch == TChar.CreateTruncating('0'))
                 {
                     current++;
@@ -227,7 +231,7 @@ namespace System.Net
                     {
                         ch = name[current];
 
-                        if ((ch == TChar.CreateTruncating('x')) || (ch == TChar.CreateTruncating('X')))
+                        if (ch == TChar.CreateTruncating('x') || ch == TChar.CreateTruncating('X'))
                         {
                             numberBase = IPv4AddressHelper.Hex;
 
@@ -283,7 +287,7 @@ namespace System.Net
                     atLeastOneChar = true;
                 }
 
-                if (ch == TChar.CreateTruncating('.'))
+                if (current < end && ch == TChar.CreateTruncating('.'))
                 {
                     if (dotCount >= 3 // Max of 3 dots and 4 segments
                         || !atLeastOneChar // No empty segments: 1...1
@@ -310,12 +314,13 @@ namespace System.Net
             {
                 // end of string, allowed
             }
-            // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
-            // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
             else if (name[current] == TChar.CreateTruncating('/') || name[current] == TChar.CreateTruncating('\\')
                     || (notImplicitFile && (name[current] == TChar.CreateTruncating(':') || name[current] == TChar.CreateTruncating('?') || name[current] == TChar.CreateTruncating('#'))))
             {
-                // end of string, (as terminated) allowed
+                // For a normal IPv4 address, the terminator is the prefix ('/' or its counterpart, '\'). If notImplicitFile is set, the terminator
+                // is one of the characters which signify the start of the rest of the URI - the port number (':'), query string ('?') or fragment ('#')
+
+                end = current;
             }
             else
             {
@@ -324,7 +329,6 @@ namespace System.Net
             }
 
             parts[dotCount] = unchecked((uint)currentValue);
-            end = current;
 
             // Parsed, reassemble and check for overflows in the last part. Previous parts have already been checked in the loop
             switch (dotCount)
