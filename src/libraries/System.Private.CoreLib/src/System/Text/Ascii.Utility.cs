@@ -77,9 +77,10 @@ namespace System.Text
             if (bufferLength < 8)
             {
                 uint found4;
+                const uint mask = 0x80808080;
                 if ((bufferLength & 4) != 0)
                 {
-                    uint test4 = Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref pBuffer, index)) & 0x80808080;
+                    uint test4 = Unsafe.ReadUnaligned<uint>(ref pBuffer) & mask;
                     if (test4 != 0)
                     {
                         found4 = test4;
@@ -89,7 +90,7 @@ namespace System.Text
                 }
                 if ((bufferLength & 2) != 0)
                 {
-                    uint test2 = (uint)Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref pBuffer, index)) & 0x8080;
+                    uint test2 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref pBuffer, index)) & mask;
                     if (test2 != 0)
                     {
                         found4 = test2;
@@ -108,7 +109,9 @@ namespace System.Text
                 goto Done;
 
             Found1to7:
-                index += uint.TrailingZeroCount(found4) / 8;
+                index += BitConverter.IsLittleEndian
+                    ? uint.TrailingZeroCount(found4) / 8
+                    : uint.LeadingZeroCount(found4) / 8;
                 goto Done;
             }
 
@@ -176,8 +179,6 @@ namespace System.Text
             static nuint SearchTwo<T>(ref byte pBuffer, nuint bufferLength)
                 where T : ISimdVector<T, byte>
             {
-                // This is currently disabled due to incorrectly asserting on R2R builds.
-                // Debug.Assert(T.IsHardwareAccelerated);
                 Debug.Assert(bufferLength > (nuint)T.Count && bufferLength <= (nuint)T.Count * 2);
 
                 T mask = T.Create(0x80);
@@ -249,7 +250,6 @@ namespace System.Text
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Unrolled2<T>(ref byte pBuffer, nuint bufferLength)
             where T : ISimdVector<T, byte>
         {
-            Debug.Assert(T.IsHardwareAccelerated);
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(bufferLength > (nuint)T.Count);
 
@@ -342,7 +342,6 @@ namespace System.Text
         private static unsafe nuint GetIndexOfFirstNonAsciiByte_Unrolled4<T>(ref byte pBuffer, nuint bufferLength)
             where T : ISimdVector<T, byte>
         {
-            Debug.Assert(T.IsHardwareAccelerated);
             Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(bufferLength > (nuint)T.Count);
 
@@ -478,8 +477,6 @@ namespace System.Text
         private static nuint IndexOfNonAscii<T>(T value)
             where T : ISimdVector<T, byte>
         {
-            Debug.Assert(T.IsHardwareAccelerated);
-
             return value switch
             {
                 Vector128<byte> v128 => AdvSimd.IsSupported
