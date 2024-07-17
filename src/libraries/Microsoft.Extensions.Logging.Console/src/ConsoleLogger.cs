@@ -77,12 +77,12 @@ namespace Microsoft.Extensions.Logging.Console
 
             StringWriter writer = t_stringWriter ??= new StringWriter();
 
+            var sb = writer.GetStringBuilder();
             foreach (var rec in records)
             {
                 var logEntry = new LogEntry<BufferedLogRecord>(rec.LogLevel, _name, rec.EventId, rec, null, static (s, _) => s.FormattedMessage ?? string.Empty);
                 Formatter.Write(in logEntry, null, writer);
 
-                var sb = writer.GetStringBuilder();
                 if (sb.Length == 0)
                 {
                     continue;

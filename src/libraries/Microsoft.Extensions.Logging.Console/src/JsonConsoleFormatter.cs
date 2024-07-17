@@ -42,7 +42,9 @@ namespace Microsoft.Extensions.Logging.Console
                     return;
                 }
 
-                DateTimeOffset stamp = FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
+                DateTimeOffset stamp = FormatterOptions.TimestampFormat != null
+                    ? (FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now)
+                    : DateTimeOffset.MinValue;
 
                 // We extract most of the work into a non-generic method to save code size. If this was left in the generic
                 // method, we'd get generic specialization for all TState parameters, but that's unnecessary.

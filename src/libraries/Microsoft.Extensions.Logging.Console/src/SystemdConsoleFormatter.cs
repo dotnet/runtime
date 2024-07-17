@@ -112,7 +112,9 @@ namespace Microsoft.Extensions.Logging.Console
 
         private DateTimeOffset GetCurrentDateTime()
         {
-            return FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
+            return FormatterOptions.TimestampFormat != null
+                ? (FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now)
+                : DateTimeOffset.MinValue;
         }
 
         private static string GetSyslogSeverityString(LogLevel logLevel)
