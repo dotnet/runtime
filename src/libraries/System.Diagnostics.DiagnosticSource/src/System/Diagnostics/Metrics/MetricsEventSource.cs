@@ -121,9 +121,9 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value,
-                                    string instrumentFormattedTags, string instrumentHash, string meterFormattedTags, string meterHash, string formattedScopeHash)
+                                    string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
         {
-            WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentFormattedTags, instrumentHash, meterFormattedTags, meterHash, formattedScopeHash);
+            WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
 
         [Event(5, Keywords = Keywords.TimeSeriesValues, Version = 2)]
@@ -132,9 +132,9 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void GaugeValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string lastValue,
-                                    string instrumentFormattedTags, string instrumentHash, string meterFormattedTags, string meterHash, string formattedScopeHash)
+                                    string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
         {
-            WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue, instrumentFormattedTags, instrumentHash, meterFormattedTags, meterHash, formattedScopeHash);
+            WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
 
         [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 2)]
@@ -143,9 +143,9 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void HistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string quantiles, int count, double sum,
-                                        string instrumentFormattedTags, string instrumentHash, string meterFormattedTags, string meterHash, string formattedScopeHash)
+                                        string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
         {
-            WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles, count, sum, instrumentFormattedTags, instrumentHash, meterFormattedTags, meterHash, formattedScopeHash);
+            WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles, count, sum, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
 
         // Sent when we begin to monitor the value of a instrument, either because new session filter arguments changed subscriptions
@@ -264,9 +264,9 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value,
-                                    string instrumentFormattedTags, string instrumentHash, string meterFormattedTags, string meterHash, string formattedScopeHash)
+                                    string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
         {
-            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentFormattedTags, instrumentHash, meterFormattedTags, meterHash, formattedScopeHash);
+            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
 
         [Event(17, Keywords = Keywords.TimeSeriesValues)]
