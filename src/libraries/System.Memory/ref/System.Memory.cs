@@ -350,10 +350,10 @@ namespace System
         public static void Sort<TKey, TValue>(this System.Span<TKey> keys, System.Span<TValue> items, System.Comparison<TKey> comparison) { }
         public static void Sort<T, TComparer>(this System.Span<T> span, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<T>? { }
         public static void Sort<TKey, TValue, TComparer>(this System.Span<TKey> keys, System.Span<TValue> items, TComparer comparer) where TComparer : System.Collections.Generic.IComparer<TKey>? { }
-        public static System.Text.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, T separator) where T : IEquatable<T> { throw null; }
-        public static System.Text.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, System.ReadOnlySpan<T> separator) where T : IEquatable<T> { throw null; }
-        public static System.Text.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, [System.Diagnostics.CodeAnalysis.UnscopedRef] params System.ReadOnlySpan<T> separators) where T : IEquatable<T> { throw null; }
-        public static System.Text.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, System.Buffers.SearchValues<T> separators) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, T separator) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> Split<T>(this System.ReadOnlySpan<T> source, System.ReadOnlySpan<T> separator) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, [System.Diagnostics.CodeAnalysis.UnscopedRef] params System.ReadOnlySpan<T> separators) where T : IEquatable<T> { throw null; }
+        public static System.MemoryExtensions.SpanSplitEnumerator<T> SplitAny<T>(this System.ReadOnlySpan<T> source, System.Buffers.SearchValues<T> separators) where T : IEquatable<T> { throw null; }
         public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, char separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static int Split(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separator, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
         public static int SplitAny(this System.ReadOnlySpan<char> source, System.Span<System.Range> destination, System.ReadOnlySpan<char> separators, System.StringSplitOptions options = System.StringSplitOptions.None) { throw null; }
@@ -415,6 +415,14 @@ namespace System
         public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params System.ReadOnlySpan<object?> args) { throw null; }
+        public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public readonly System.Range Current { get { throw null; } }
+            public System.MemoryExtensions.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
+            public bool MoveNext() { throw null; }
+        }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
         public ref struct TryWriteInterpolatedStringHandler
@@ -741,14 +749,6 @@ namespace System.Text
         private int _dummyPrimitive;
         public System.Text.Rune Current { get { throw null; } }
         public System.Text.SpanRuneEnumerator GetEnumerator() { throw null; }
-        public bool MoveNext() { throw null; }
-    }
-    public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
-    {
-        private object _dummy;
-        private int _dummyPrimitive;
-        public readonly System.Range Current { get { throw null; } }
-        public System.Text.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
     }
 }
