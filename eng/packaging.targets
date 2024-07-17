@@ -88,7 +88,7 @@
                                   TargetFramework="$(NetFrameworkMinimum)" />
   </ItemGroup>
 
-  <!-- Add a package README file from. -->
+  <!-- Add a package README file -->
   <ItemGroup Condition="'$(PackageReadmeFilePath)' != ''">
     <None Include="$(PackageReadmeFilePath)" Pack="true" PackagePath="\" />
   </ItemGroup>
