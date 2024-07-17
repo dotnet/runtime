@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -18,7 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 /// corresponding error code.
 /// </remarks>
 [GeneratedComClass]
-internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
+internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, ISOSDacInterface9
 {
     private readonly Target _target;
 
@@ -151,14 +150,61 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetMethodTableSlot(ulong mt, uint slot, ulong* value) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetModule(ulong addr, void** mod) => HResults.E_NOTIMPL;
-    public unsafe int GetModuleData(ulong moduleAddr, void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetModuleData(ulong moduleAddr, DacpModuleData* data)
+    {
+        if (moduleAddr == 0 || data == null)
+            return HResults.E_INVALIDARG;
+
+        try
+        {
+            Contracts.ILoader contract = _target.Contracts.Loader;
+            Contracts.ModuleHandle handle = contract.GetModuleHandle(moduleAddr);
+
+            data->Address = moduleAddr;
+            data->PEAssembly = moduleAddr; // Module address in .NET 9+ - correspondingly, SOS-DAC APIs for PE assemblies expect a module address
+            data->Assembly = contract.GetAssembly(handle);
+
+            Contracts.ModuleFlags flags = contract.GetFlags(handle);
+            bool isReflectionEmit = flags.HasFlag(Contracts.ModuleFlags.ReflectionEmit);
+            data->isReflection = (uint)(isReflectionEmit ? 1 : 0);
+            data->isPEFile = (uint)(isReflectionEmit ? 0 : 1);      // ReflectionEmit module means it is not a PE file
+            data->dwTransientFlags = (uint)flags;
+
+            data->ilBase = contract.GetILBase(handle);
+            data->metadataStart = contract.GetMetadataAddress(handle, out ulong metadataSize);
+            data->metadataSize = metadataSize;
+
+            data->LoaderAllocator = contract.GetLoaderAllocator(handle);
+            data->ThunkHeap = contract.GetThunkHeap(handle);
+
+            Contracts.ModuleLookupTables tables = contract.GetLookupTables(handle);
+            data->FieldDefToDescMap = tables.FieldDefToDesc;
+            data->ManifestModuleReferencesMap = tables.ManifestModuleReferences;
+            data->MemberRefToDescMap = tables.MemberRefToDesc;
+            data->MethodDefToDescMap = tables.MethodDefToDesc;
+            data->TypeDefToMethodTableMap = tables.TypeDefToMethodTable;
+            data->TypeRefToMethodTableMap = tables.TypeRefToMethodTable;
+
+            // Always 0 - .NET no longer has these concepts
+            data->dwModuleID = 0;
+            data->dwBaseClassIndex = 0;
+            data->dwModuleIndex = 0;
+        }
+        catch (Exception e)
+        {
+            return e.HResult;
+        }
+
+        return HResults.S_OK;
+    }
 
     public unsafe int GetNestedExceptionData(ulong exception, ulong* exceptionObject, ulong* nextNestedException)
     {
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
-            TargetPointer exceptionObjectLocal = contract.GetExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
+            TargetPointer exceptionObjectLocal = contract.GetNestedExceptionInfo(exception, out TargetPointer nextNestedExceptionLocal);
             *exceptionObject = exceptionObjectLocal;
             *nextNestedException = nextNestedExceptionLocal;
         }
@@ -172,6 +218,30 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
 
     public unsafe int GetObjectClassName(ulong obj, uint count, char* className, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetObjectData(ulong objAddr, void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)
+    {
+        try
+        {
+            Contracts.IException contract = _target.Contracts.Exception;
+            Contracts.ExceptionData exceptionData = contract.GetExceptionData(objectAddress);
+            data->Message = exceptionData.Message;
+            data->InnerException = exceptionData.InnerException;
+            data->StackTrace = exceptionData.StackTrace;
+            data->WatsonBuckets = exceptionData.WatsonBuckets;
+            data->StackTraceString = exceptionData.StackTraceString;
+            data->RemoteStackTraceString = exceptionData.RemoteStackTraceString;
+            data->HResult = exceptionData.HResult;
+            data->XCode = exceptionData.XCode;
+        }
+        catch (Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
@@ -255,6 +325,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface9
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
     public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;
+    public unsafe int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy) => HResults.E_NOTIMPL;
     public unsafe int TraverseEHInfo(ulong ip, void* pCallback, void* token) => HResults.E_NOTIMPL;
     public unsafe int TraverseLoaderHeap(ulong loaderHeapAddr, void* pCallback) => HResults.E_NOTIMPL;
     public unsafe int TraverseModuleMap(int mmt, ulong moduleAddr, void* pCallback, void* token) => HResults.E_NOTIMPL;

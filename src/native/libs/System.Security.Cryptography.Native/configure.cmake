@@ -1,5 +1,6 @@
 include(CheckLibraryExists)
 include(CheckFunctionExists)
+include(CheckSourceCompiles)
 
 set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
 set(CMAKE_REQUIRED_LIBRARIES ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
@@ -26,6 +27,11 @@ check_function_exists(
     EVP_DigestSqueeze
     HAVE_OPENSSL_SHA3_SQUEEZE
 )
+
+check_source_compiles(C "
+#include <openssl/engine.h>
+int main(void) { ENGINE_init(NULL); return 1; }"
+HAVE_OPENSSL_ENGINE)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/pal_crypto_config.h.in

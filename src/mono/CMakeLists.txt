@@ -150,7 +150,7 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-none")
     set(TARGET_SYSTEM_NAME "emscripten")
     set(TARGET_ARCH "wasm")
-  elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-wasi")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "wasm32-unknown-wasip2")
     set(TARGET_SYSTEM_NAME "wasi")
     set(TARGET_ARCH "wasm")
   elseif(AOT_TARGET_TRIPLE STREQUAL "x86_64-none-linux-android")
@@ -897,6 +897,13 @@ if(CLR_CMAKE_HOST_APPLE)
   endif()
 endif()
 
+if(HOST_ANDROID)
+  if(HOST_AMD64 OR HOST_ARM64)
+    # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+    # This applies only to 64-bit binaries
+    add_link_options(LINKER:-z,max-page-size=16384)
+  endif()
+endif()
 ### End of OS specific checks
 
 include_directories("${CLR_SRC_NATIVE_DIR}")
