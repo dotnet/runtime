@@ -266,6 +266,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonStringEnumMemberNameAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonCollectionInfoValuesOfTCollection.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />

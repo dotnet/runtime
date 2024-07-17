@@ -93,3 +93,15 @@ let ``Successful Deserialize Numeric label Of Enum But as Underlying value When 
     let actual = JsonSerializer.Deserialize<NumericLabelEnum>("\"3\"", options)
     Assert.NotEqual(NumericLabelEnum.``3``, actual)
     Assert.Equal(LanguagePrimitives.EnumOfValue 3, actual)
+
+type CharEnum =
+  | A = 'A'
+  | B = 'B'
+  | C = 'C'
+
+[<Fact>]
+let ``Serializing char enums throws NotSupportedException`` () =
+    Assert.Throws<NotSupportedException>(fun () -> JsonSerializer.Serialize(CharEnum.A) |> ignore) |> ignore
+    Assert.Throws<NotSupportedException>(fun () -> JsonSerializer.Serialize(CharEnum.A, options) |> ignore) |> ignore
+    Assert.Throws<NotSupportedException>(fun () -> JsonSerializer.Deserialize<CharEnum>("0") |> ignore) |> ignore
+    Assert.Throws<NotSupportedException>(fun () -> JsonSerializer.Deserialize<CharEnum>("\"A\"", options) |> ignore) |> ignore

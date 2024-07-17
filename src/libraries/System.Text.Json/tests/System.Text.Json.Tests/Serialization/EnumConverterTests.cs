@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -831,6 +831,95 @@ namespace System.Text.Json.Serialization.Tests
         private static JsonSerializerOptions CreateStringEnumOptionsForType<TEnum>(bool useGenericVariant, JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) where TEnum : struct, Enum
         {
             return CreateStringEnumOptionsForType(typeof(TEnum), useGenericVariant, namingPolicy, allowIntegerValues);
+        }
+
+        [Theory]
+        [InlineData(EnumWithMemberAttributes.Value1, "CustomValue1")]
+        [InlineData(EnumWithMemberAttributes.Value2, "CustomValue2")]
+        [InlineData(EnumWithMemberAttributes.Value3, "Value3")]
+        public static void EnumWithMemberAttributes_StringEnumConverter_SerializesAsExpected(EnumWithMemberAttributes value, string expectedJson)
+        {
+            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter() } };
+
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal($"\"{expectedJson}\"", json);
+            Assert.Equal(value, JsonSerializer.Deserialize<EnumWithMemberAttributes>(json, options));
+        }
+
+        [Theory]
+        [InlineData(EnumWithMemberAttributes.Value1)]
+        [InlineData(EnumWithMemberAttributes.Value2)]
+        [InlineData(EnumWithMemberAttributes.Value3)]
+        public static void EnumWithMemberAttributes_NoStringEnumConverter_SerializesAsNumber(EnumWithMemberAttributes value)
+        {
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal($"{(int)value}", json);
+            Assert.Equal(value, JsonSerializer.Deserialize<EnumWithMemberAttributes>(json));
+        }
+
+        [Theory]
+        [InlineData(EnumWithMemberAttributes.Value1, "CustomValue1")]
+        [InlineData(EnumWithMemberAttributes.Value2, "CustomValue2")]
+        [InlineData(EnumWithMemberAttributes.Value3, "value3")]
+        public static void EnumWithMemberAttributes_StringEnumConverterWithNamingPolicy_NotAppliedToCustomNames(EnumWithMemberAttributes value, string expectedJson)
+        {
+            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } };
+
+            string json = JsonSerializer.Serialize(value, options);
+            Assert.Equal($"\"{expectedJson}\"", json);
+            Assert.Equal(value, JsonSerializer.Deserialize<EnumWithMemberAttributes>(json, options));
+        }
+
+        public enum EnumWithMemberAttributes
+        {
+            [JsonStringEnumMemberName("CustomValue1")]
+            Value1 = 1,
+            [JsonStringEnumMemberName("CustomValue2")]
+            Value2 = 2,
+            Value3 = 3,
+        }
+
+        [Theory]
+        [InlineData(EnumFlagsWithMemberAttributes.Value1, "A")]
+        [InlineData(EnumFlagsWithMemberAttributes.Value1 | EnumFlagsWithMemberAttributes.Value2, "A, B")]
+        [InlineData(EnumFlagsWithMemberAttributes.Value1 | EnumFlagsWithMemberAttributes.Value2 | EnumFlagsWithMemberAttributes.Value3, "A, B, C")]
+        public static void EnumFlagsWithMemberAttributes_SerializesAsExpected(EnumFlagsWithMemberAttributes value, string expectedJson)
+        {
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal($"\"{expectedJson}\"", json);
+            Assert.Equal(value, JsonSerializer.Deserialize<EnumFlagsWithMemberAttributes>(json));
+        }
+
+        [Flags, JsonConverter(typeof(JsonStringEnumConverter<EnumFlagsWithMemberAttributes>))]
+        public enum EnumFlagsWithMemberAttributes
+        {
+            [JsonStringEnumMemberName("A")]
+            Value1 = 1,
+            [JsonStringEnumMemberName("B")]
+            Value2 = 2,
+            [JsonStringEnumMemberName("C")]
+            Value3 = 4,
+        }
+
+        [Theory]
+        [InlineData(EnumWithConflictingMemberAttributes.Value1)]
+        [InlineData(EnumWithConflictingMemberAttributes.Value2)]
+        [InlineData(EnumWithConflictingMemberAttributes.Value3)]
+        public static void EnumWithConflictingMemberAttributes_IsTolerated(EnumWithConflictingMemberAttributes value)
+        {
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal("\"Value3\"", json);
+            Assert.Equal(EnumWithConflictingMemberAttributes.Value1, JsonSerializer.Deserialize<EnumWithConflictingMemberAttributes>(json));
+        }
+
+        [JsonConverter(typeof(JsonStringEnumConverter<EnumWithConflictingMemberAttributes>))]
+        public enum EnumWithConflictingMemberAttributes
+        {
+            [JsonStringEnumMemberName("Value3")]
+            Value1 = 1,
+            [JsonStringEnumMemberName("Value3")]
+            Value2 = 2,
+            Value3 = 3,
         }
     }
 }
