@@ -3698,6 +3698,18 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                assert(hasImmediateOperand);
+                assert(varTypeIsIntegral(intrin.op4));
+                assert(varTypeIsIntegral(intrin.op5));
+                // Can only avoid generating a table if both immediates are constant.
+                if (intrin.op4->IsCnsIntOrI() && intrin.op5->IsCnsIntOrI())
+                {
+                    MakeSrcContained(node, intrin.op4);
+                    MakeSrcContained(node, intrin.op5);
+                }
+                break;
+
             default:
                 unreached();
         }
