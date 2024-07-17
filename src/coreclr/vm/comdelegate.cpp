@@ -1931,20 +1931,20 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
             // Load the method pointer
             pCode->EmitLoadThis();
             pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR)));
-        
+
             PCCOR_SIGNATURE pSig;
             DWORD cbSig;
             pMD->GetSig(&pSig,&cbSig);
 
             // call the delegate
-            pCode->EmitCALLI(pCode->GetSigToken(pSig, cbSig), sig.NumFixedArgs(), fReturnVal);
+            pCode->EmitCALLI(pCode->GetSigToken(pSig, cbSig), sig.NumFixedArgs() + 1, fReturnVal);
 
             // return
             pCode->EmitRET();
 
             MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
                                                                    pMD->GetMethodTable(),
-                                                                   ILSTUB_MULTICASTDELEGATE_INVOKE,
+                                                                   ILSTUB_SINGLECASTDELEGATE_INVOKE,
                                                                    pMD->GetModule(),
                                                                    pSig, cbSig,
                                                                    NULL,
