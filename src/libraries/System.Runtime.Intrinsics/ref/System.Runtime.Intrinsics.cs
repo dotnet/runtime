@@ -4651,6 +4651,15 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<uint> CreateBreakBeforePropagateMask(System.Numerics.Vector<uint> mask, System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<ulong> CreateBreakBeforePropagateMask(System.Numerics.Vector<ulong> mask, System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
 
+        public static unsafe System.Numerics.Vector<sbyte> CreateBreakPropagateMask(System.Numerics.Vector<sbyte> totalMask, System.Numerics.Vector<sbyte> fromMask) { throw null; }
+        public static unsafe System.Numerics.Vector<short> CreateBreakPropagateMask(System.Numerics.Vector<short> totalMask, System.Numerics.Vector<short> fromMask) { throw null; }
+        public static unsafe System.Numerics.Vector<int> CreateBreakPropagateMask(System.Numerics.Vector<int> totalMask, System.Numerics.Vector<int> fromMask) { throw null; }
+        public static unsafe System.Numerics.Vector<long> CreateBreakPropagateMask(System.Numerics.Vector<long> totalMask, System.Numerics.Vector<long> fromMask) { throw null; }
+        public static unsafe System.Numerics.Vector<byte> CreateBreakPropagateMask(System.Numerics.Vector<byte> totalMask, System.Numerics.Vector<byte> fromMask) { throw null; }
+        public static unsafe System.Numerics.Vector<ushort> CreateBreakPropagateMask(System.Numerics.Vector<ushort> totalMask, System.Numerics.Vector<ushort> fromMask) { throw null; }
+        public static unsafe System.Numerics.Vector<uint> CreateBreakPropagateMask(System.Numerics.Vector<uint> totalMask, System.Numerics.Vector<uint> fromMask) { throw null; }
+        public static unsafe System.Numerics.Vector<ulong> CreateBreakPropagateMask(System.Numerics.Vector<ulong> totalMask, System.Numerics.Vector<ulong> fromMask) { throw null; }
+
         public static System.Numerics.Vector<byte> CreateFalseMaskByte() { throw null; }
         public static System.Numerics.Vector<double> CreateFalseMaskDouble() { throw null; }
         public static System.Numerics.Vector<short> CreateFalseMaskInt16() { throw null; }
