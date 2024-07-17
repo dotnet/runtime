@@ -1010,12 +1010,12 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
         }
 
         bool hasUseInTest      = false;
-        auto checkRemovableUse = [=, &hasUseInTest](BasicBlock* block, Statement* stmt, GenTree* tree) {
+        auto checkRemovableUse = [=, &hasUseInTest](BasicBlock* block, Statement* stmt) {
             if (stmt == jtrueStmt)
             {
                 hasUseInTest = true;
                 // Use is inside the loop test that we know we can change (from
-                // calling optCanChangeExitTest above)
+                // calling optCanAndShouldChangeExitTest above)
                 return true;
             }
 
@@ -1044,7 +1044,7 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
             return true;
         };
 
-        if (!loopLocals->VisitOccurrences(loop, candidateLclNum, checkRemovableUse))
+        if (!loopLocals->VisitStatementsWithOccurrences(loop, candidateLclNum, checkRemovableUse))
         {
             // Aborted means we found a non-removable use
             continue;
