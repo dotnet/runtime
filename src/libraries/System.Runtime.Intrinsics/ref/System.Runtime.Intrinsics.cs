@@ -202,14 +202,12 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> LessThan<T>(System.Runtime.Intrinsics.Vector128<T> left, System.Runtime.Intrinsics.Vector128<T> right) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector128<T> Load<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector128<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
@@ -302,14 +300,12 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<ulong> Shuffle(System.Runtime.Intrinsics.Vector128<ulong> vector, System.Runtime.Intrinsics.Vector128<ulong> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Shuffle(System.Runtime.Intrinsics.Vector128<double> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Sqrt<T>(System.Runtime.Intrinsics.Vector128<T> vector) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector128<T> source, ref T destination, nuint elementOffset) { throw null; }
@@ -579,14 +575,12 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> LessThan<T>(System.Runtime.Intrinsics.Vector256<T> left, System.Runtime.Intrinsics.Vector256<T> right) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector256<T> Load<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector256<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
@@ -679,14 +673,12 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<ulong> Shuffle(System.Runtime.Intrinsics.Vector256<ulong> vector, System.Runtime.Intrinsics.Vector256<ulong> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<double> Shuffle(System.Runtime.Intrinsics.Vector256<double> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Sqrt<T>(System.Runtime.Intrinsics.Vector256<T> vector) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector256<T> source, ref T destination, nuint elementOffset) { throw null; }
@@ -957,14 +949,12 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> LessThan<T>(System.Runtime.Intrinsics.Vector512<T> left, System.Runtime.Intrinsics.Vector512<T> right) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector512<T> Load<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector512<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector512<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector512<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
@@ -1057,14 +1047,12 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector512<ulong> Shuffle(System.Runtime.Intrinsics.Vector512<ulong> vector, System.Runtime.Intrinsics.Vector512<ulong> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<double> Shuffle(System.Runtime.Intrinsics.Vector512<double> vector, System.Runtime.Intrinsics.Vector512<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector512<T> Sqrt<T>(System.Runtime.Intrinsics.Vector512<T> vector) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector512<T> source, T* destination) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector512<T> source, ref T destination, nuint elementOffset) { throw null; }
@@ -1304,14 +1292,12 @@ namespace System.Runtime.Intrinsics
         public static bool LessThanOrEqualAny<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> LessThanOrEqual<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> LessThan<T>(System.Runtime.Intrinsics.Vector64<T> left, System.Runtime.Intrinsics.Vector64<T> right) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector64<T> Load<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Runtime.Intrinsics.Vector64<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
@@ -1400,14 +1386,12 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<uint> Shuffle(System.Runtime.Intrinsics.Vector64<uint> vector, System.Runtime.Intrinsics.Vector64<uint> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<float> Shuffle(System.Runtime.Intrinsics.Vector64<float> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Sqrt<T>(System.Runtime.Intrinsics.Vector64<T> vector) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAligned<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe<T>(this System.Runtime.Intrinsics.Vector64<T> source, ref T destination, nuint elementOffset) { throw null; }
