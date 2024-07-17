@@ -91,7 +91,8 @@
 #define CONTEXT_KMask0 CONTEXT_Ymm0H+(16*16)
 #define CONTEXT_Zmm0H CONTEXT_KMask0+(8*8)
 #define CONTEXT_Zmm16 CONTEXT_Zmm0H+(32*16)
-#define CONTEXT_Size CONTEXT_Zmm16+(64*16)
+#define CONTEXT_Egpr  CONTEXT_Zmm16+(16*8)
+#define CONTEXT_Size CONTEXT_Egpr+(64*16)
 
 #else // HOST_64BIT
 
