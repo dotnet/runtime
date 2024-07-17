@@ -2322,7 +2322,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
         if (!HasValidThreadHandle())
         {
             SelfDelete = this == pCurThread;
-            m_ExceptionState.FreeAllStackTraces();
             if (SelfDelete) {
                 SetThread(NULL);
             }
@@ -8066,6 +8065,15 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
             frame->EnumMemoryRegions(flags);
             frame = frame->m_Next;
         }
+    }
+
+    //
+    // Add the thread local variables like alloc_context, etc.
+    //
+
+    if (m_pRuntimeThreadLocals.IsValid())
+    {
+        m_pRuntimeThreadLocals.EnumMem();
     }
 
     //

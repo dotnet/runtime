@@ -4829,7 +4829,7 @@ public:
 
     CGCDesc *GetSlotMap ()
     {
-        assert (GetMethodTable()->ContainsPointers());
+        assert (GetMethodTable()->ContainsGCPointers());
         return CGCDesc::GetCGCDescFromMT(GetMethodTable());
     }
 
@@ -4893,9 +4893,9 @@ public:
     }
 #endif // FEATURE_STRUCTALIGN
 
-    BOOL ContainsPointers() const
+    BOOL ContainsGCPointers() const
     {
-        return GetMethodTable()->ContainsPointers();
+        return GetMethodTable()->ContainsGCPointers();
     }
 
 #ifdef COLLECTIBLE_CLASS
@@ -4904,10 +4904,10 @@ public:
         return GetMethodTable()->Collectible();
     }
 
-    FORCEINLINE BOOL ContainsPointersOrCollectible() const
+    FORCEINLINE BOOL ContainsGCPointersOrCollectible() const
     {
         MethodTable *pMethodTable = GetMethodTable();
-        return (pMethodTable->ContainsPointers() || pMethodTable->Collectible());
+        return (pMethodTable->ContainsGCPointers() || pMethodTable->Collectible());
     }
 #endif //COLLECTIBLE_CLASS
 
@@ -6066,7 +6066,7 @@ void gc_heap::release_segment (heap_segment* sg)
     FIRE_EVENT(GCFreeSegment_V1, heap_segment_mem(sg));
     size_t reserved_size = (uint8_t*)heap_segment_reserved (sg) - (uint8_t*)sg;
     reduce_committed_bytes (
-        sg, 
+        sg,
         ((uint8_t*)heap_segment_committed (sg) - (uint8_t*)sg),
         (int) heap_segment_oh (sg)
 #ifdef MULTIPLE_HEAPS
@@ -9083,7 +9083,7 @@ void destroy_card_table (uint32_t* c_table)
 void gc_heap::destroy_card_table_helper (uint32_t* c_table)
 {
     uint8_t* lowest = card_table_lowest_address (c_table);
-    uint8_t* highest = card_table_highest_address (c_table);    
+    uint8_t* highest = card_table_highest_address (c_table);
     get_card_table_element_layout(lowest, highest, card_table_element_layout);
     size_t result = card_table_element_layout[seg_mapping_table_element + 1];
     gc_heap::reduce_committed_bytes (&card_table_refcount(c_table), result, recorded_committed_bookkeeping_bucket, -1, true);
@@ -11555,14 +11555,14 @@ inline size_t my_get_size (Object* ob)
 
 #define size(i) my_get_size (header(i))
 
-#define contain_pointers(i) header(i)->ContainsPointers()
+#define contain_pointers(i) header(i)->ContainsGCPointers()
 #ifdef COLLECTIBLE_CLASS
-#define contain_pointers_or_collectible(i) header(i)->ContainsPointersOrCollectible()
+#define contain_pointers_or_collectible(i) header(i)->ContainsGCPointersOrCollectible()
 
 #define get_class_object(i) GCToEEInterface::GetLoaderAllocatorObjectForGC((Object *)i)
 #define is_collectible(i) method_table(i)->Collectible()
 #else //COLLECTIBLE_CLASS
-#define contain_pointers_or_collectible(i) header(i)->ContainsPointers()
+#define contain_pointers_or_collectible(i) header(i)->ContainsGCPointers()
 #endif //COLLECTIBLE_CLASS
 
 #ifdef BACKGROUND_GC
@@ -21507,10 +21507,13 @@ int gc_heap::generation_to_condemn (int n_initial,
     }
 
 #ifdef USE_REGIONS
-    if (!try_get_new_free_region())
+    if (!check_only_p)
     {
-        dprintf (GTC_LOG, ("can't get an empty region -> full compacting"));
-        last_gc_before_oom = TRUE;
+        if (!try_get_new_free_region())
+        {
+            dprintf (GTC_LOG, ("can't get an empty region -> full compacting"));
+            last_gc_before_oom = TRUE;
+        }
     }
 #endif //USE_REGIONS
 
@@ -26683,7 +26686,7 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
 #ifndef COLLECTIBLE_CLASS
 #define go_through_object_cl(mt,o,size,parm,exp)                            \
 {                                                                           \
-    if (header(o)->ContainsPointers())                                      \
+    if (header(o)->ContainsGCPointers())                                      \
     {                                                                       \
         go_through_object_nostart(mt,o,size,parm,exp);                      \
     }                                                                       \
@@ -26697,7 +26700,7 @@ BOOL gc_heap::background_mark (uint8_t* o, uint8_t* low, uint8_t* high)
         uint8_t** parm = &class_obj;                                           \
         do {exp} while (false);                                             \
     }                                                                       \
-    if (header(o)->ContainsPointers())                                      \
+    if (header(o)->ContainsGCPointers())                                      \
     {                                                                       \
         go_through_object_nostart(mt,o,size,parm,exp);                      \
     }                                                                       \
@@ -30812,10 +30815,7 @@ retry:
                 else
                 {
                     if (loh_size_fit_p (size, generation_allocation_pointer (gen), heap_segment_reserved (seg), true) &&
-                        // We are overestimating here by padding with 2 loh_padding_obj_size objects which we shouldn't need
-                        // to do if it's at the end of the region. However, grow_heap_segment is already overestimating by
-                        // a lot more - it would be worth fixing when we are in extreme low memory situations.
-                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + 2* AlignQword (loh_padding_obj_size)))))
+                        (grow_heap_segment (seg, (generation_allocation_pointer (gen) + size + AlignQword (loh_padding_obj_size)))))
                     {
                         dprintf (1235, ("growing seg from %p to %p\n", heap_segment_committed (seg),
                                          (generation_allocation_pointer (gen) + size)));
@@ -49310,7 +49310,29 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }
     Interlocked::Decrement(&OneAtATime);
 #endif // !MULTIPLE_HEAPS
-    if (IsConcurrentGCEnabled())
+
+    if (g_pConfig->GetGCStressLevel() & EEConfig::GCSTRESS_INSTR_JIT)
+    {
+        // When GCSTRESS_INSTR_JIT is set we see lots of GCs - on every GC-eligible instruction.
+        // We do not want all these GC to be gen2 because:
+        // - doing only or mostly gen2 is very expensive in this mode
+        // - doing only or mostly gen2 prevents coverage of generation-aware behaviors
+        // - the main value of this stress mode is to catch stack scanning issues at various/rare locations
+        //    in the code and gen2 is not needed for that.
+
+        int rgen = StressRNG(100);
+
+        // gen0:gen1:gen2 distribution: 90:8:2
+        if (rgen >= 98)
+            rgen = 2;
+        else if (rgen >= 90)
+            rgen = 1;
+        else
+            rgen = 0;
+
+        GarbageCollectTry (rgen, FALSE, collection_gcstress);
+    }
+    else if (IsConcurrentGCEnabled())
     {
         int rgen = StressRNG(10);
 
@@ -49319,7 +49341,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
             rgen = 2;
         else if (rgen >= 4)
             rgen = 1;
-    else
+        else
             rgen = 0;
 
         GarbageCollectTry (rgen, FALSE, collection_gcstress);
@@ -49351,7 +49373,6 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }                                                                                       \
 } while (false)
 
-#ifdef FEATURE_64BIT_ALIGNMENT
 // Allocate small object with an alignment requirement of 8-bytes.
 Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
@@ -49417,7 +49438,6 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
 
     return newAlloc;
 }
-#endif // FEATURE_64BIT_ALIGNMENT
 
 Object*
 GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_DCL)
@@ -49478,15 +49498,11 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
         if (flags & GC_ALLOC_ALIGN8)
         {
             newAlloc = AllocAlign8 (acontext, hp, size, flags);
         }
         else
-#else
-        assert ((flags & GC_ALLOC_ALIGN8) == 0);
-#endif
         {
             newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
         }
@@ -52117,6 +52133,38 @@ void GCHeap::DiagWalkSurvivorsWithType (void* gc_context, record_surv_fn fn, voi
 void GCHeap::DiagWalkHeap (walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p)
 {
     gc_heap::walk_heap (fn, context, gen_number, walk_large_object_heap_p);
+}
+
+// Walking the GC Heap requires that the EE is suspended and all heap allocation contexts are fixed.
+// DiagWalkHeap is invoked only during a GC, where both requirements are met.
+// So DiagWalkHeapWithACHandling facilitates a GC Heap walk outside of a GC by handling allocation contexts logic,
+// and it leaves the responsibility of suspending and resuming EE to the callers.
+void GCHeap::DiagWalkHeapWithACHandling (walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p)
+{
+#ifdef MULTIPLE_HEAPS
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        hp->fix_allocation_contexts (FALSE);
+    }
+
+    DiagWalkHeap (fn, context, gen_number, walk_large_object_heap_p);
+
+
+#ifdef MULTIPLE_HEAPS
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+#else
+    {
+        gc_heap* hp = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        hp->repair_allocation_contexts (TRUE);
+    }
 }
 
 void GCHeap::DiagWalkFinalizeQueue (void* gc_context, fq_walk_fn fn)

@@ -119,6 +119,11 @@ inline bool IS_ALIGNED(T* val, uintptr_t alignment);
 #define LOG2_PTRSIZE 2
 #define POINTER_SIZE 4
 
+#elif defined(HOST_LOONGARCH64)
+
+#define LOG2_PTRSIZE 3
+#define POINTER_SIZE 8
+
 #else
 #error Unsupported target architecture
 #endif

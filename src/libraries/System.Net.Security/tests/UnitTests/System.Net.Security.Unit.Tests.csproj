@@ -7,9 +7,9 @@
       Dependencies are broken via Fakes. Since we are referencing netstandard, the real types can conflict with the ones
       imported. We are disabling the "Type conflicts with the imported type CS0436 warning" for these types of projects.
     -->
-    <NoWarn>436</NoWarn>
+    <NoWarn>$(NoWarn);436</NoWarn>
     <!-- Disable: CLSCompliant attribute is not needed -->
-    <NoWarn>$(NoWarn);3021</NoWarn>
+    <NoWarn>$(NoWarn);3021;SYSLIB0057</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-android</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
   </PropertyGroup>

@@ -494,9 +494,23 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
+if (CLR_CMAKE_TARGET_ANDROID)
+    # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+    # This applies only to 64-bit binaries
+    if(CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+        add_link_options(LINKER:-z,max-page-size=16384)
+    endif()
+endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
 if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
     # Clear _FORTIFY_SOURCE=2, if set
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE "-D_FORTIFY_SOURCE=2 " "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+endif()
+
+if (CLR_CMAKE_TARGET_ANDROID OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS OR CLR_CMAKE_HOST_ARCH_ARMV6)
+    # Some platforms are opted-out from using the in-tree zlib-ng by default:
+    # - Android and iOS-like platforms: concerns about extra binary size
+    # - Armv6: zlib-ng has build breaks
+    set(CLR_CMAKE_USE_SYSTEM_ZLIB 1)
 endif()

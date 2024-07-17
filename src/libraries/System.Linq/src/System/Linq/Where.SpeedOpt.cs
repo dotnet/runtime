@@ -55,18 +55,22 @@ namespace System.Linq
 
             public override List<TSource> ToList()
             {
-                var list = new List<TSource>();
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
 
                 Func<TSource, bool> predicate = _predicate;
                 foreach (TSource item in _source)
                 {
                     if (predicate(item))
                     {
-                        list.Add(item);
+                        builder.Add(item);
                     }
                 }
 
-                return list;
+                List<TSource> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -199,17 +203,21 @@ namespace System.Linq
 
             public static List<TSource> ToList(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate)
             {
-                var list = new List<TSource>();
+                SegmentedArrayBuilder<TSource>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TSource> builder = new(scratch);
 
                 foreach (TSource item in source)
                 {
                     if (predicate(item))
                     {
-                        list.Add(item);
+                        builder.Add(item);
                     }
                 }
 
-                return list;
+                List<TSource> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TSource? TryGetFirst(out bool found)
@@ -398,17 +406,21 @@ namespace System.Linq
 
             public static List<TResult> ToList(ReadOnlySpan<TSource> source, Func<TSource, bool> predicate, Func<TSource, TResult> selector)
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 foreach (TSource item in source)
                 {
                     if (predicate(item))
                     {
-                        list.Add(selector(item));
+                        builder.Add(selector(item));
                     }
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TResult? TryGetFirst(out bool found) => TryGetFirst(_source, _predicate, _selector, out found);
@@ -538,7 +550,8 @@ namespace System.Linq
 
             public override List<TResult> ToList()
             {
-                var list = new List<TResult>();
+                SegmentedArrayBuilder<TResult>.ScratchBuffer scratch = default;
+                SegmentedArrayBuilder<TResult> builder = new(scratch);
 
                 Func<TSource, bool> predicate = _predicate;
                 Func<TSource, TResult> selector = _selector;
@@ -546,11 +559,14 @@ namespace System.Linq
                 {
                     if (predicate(item))
                     {
-                        list.Add(selector(item));
+                        builder.Add(selector(item));
                     }
                 }
 
-                return list;
+                List<TResult> result = builder.ToList();
+                builder.Dispose();
+
+                return result;
             }
 
             public override TResult? TryGetFirst(out bool found)

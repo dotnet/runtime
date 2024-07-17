@@ -44,6 +44,8 @@ public:
         lowerer.LowerRange(range);
     }
 
+    void FinalizeOutgoingArgSpace();
+
 private:
     // LowerRange handles new code that is introduced by or after Lowering.
     void LowerRange(LIR::ReadOnlyRange& range)
@@ -410,11 +412,11 @@ private:
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void     LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
-    GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
@@ -602,7 +604,6 @@ private:
     }
 
     void RequireOutgoingArgSpace(GenTree* node, unsigned numBytes);
-    void FinalizeOutgoingArgSpace();
 
     LinearScan*           m_lsra;
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls

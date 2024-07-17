@@ -2977,9 +2977,13 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
 #ifdef TARGET_AMD64
 VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 {
-    if (pMD->HasStableEntryPoint())
+    STANDARD_VM_CONTRACT;
+
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
+
+    if (multiCallableAddr != (PCODE)NULL)
     {
-        X86EmitRegLoad(kRAX, pMD->GetStableEntryPoint());// MOV RAX, DWORD
+        X86EmitRegLoad(kRAX, multiCallableAddr);// MOV RAX, DWORD
     }
     else
     {
@@ -2992,14 +2996,17 @@ VOID StubLinkerCPU::EmitLoadMethodAddressIntoAX(MethodDesc *pMD)
 
 VOID StubLinkerCPU::EmitTailJumpToMethod(MethodDesc *pMD)
 {
+    STANDARD_VM_CONTRACT;
+
 #ifdef TARGET_AMD64
     EmitLoadMethodAddressIntoAX(pMD);
     Emit16(X86_INSTR_JMP_EAX);
 #else
+    PCODE multiCallableAddr = pMD->TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT);
     // Use direct call if possible
-    if (pMD->HasStableEntryPoint())
+    if (multiCallableAddr != (PCODE)NULL)
     {
-        X86EmitNearJump(NewExternalCodeLabel((LPVOID) pMD->GetStableEntryPoint()));
+        X86EmitNearJump(NewExternalCodeLabel((LPVOID)multiCallableAddr));
     }
     else
     {

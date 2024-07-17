@@ -42,6 +42,55 @@ internal struct DacpThreadData
     public ulong lastThrownObjectHandle;
     public ulong nextThread;
 }
+
+internal struct DacpModuleData
+{
+    public ulong Address;
+    public ulong PEAssembly; // Actually the module address in .NET 9+
+    public ulong ilBase;
+    public ulong metadataStart;
+    public ulong metadataSize;
+    public ulong Assembly; // Assembly pointer
+    public uint isReflection;
+    public uint isPEFile;
+
+    public ulong dwBaseClassIndex; // Always 0 - .NET no longer has this
+    public ulong dwModuleID; // Always 0 - .NET no longer has this
+
+    public uint dwTransientFlags;
+
+    public ulong TypeDefToMethodTableMap;
+    public ulong TypeRefToMethodTableMap;
+    public ulong MethodDefToDescMap;
+    public ulong FieldDefToDescMap;
+    public ulong MemberRefToDescMap;
+    public ulong FileReferencesMap;
+    public ulong ManifestModuleReferencesMap;
+
+    public ulong LoaderAllocator;
+    public ulong ThunkHeap;
+
+    public ulong dwModuleIndex; // Always 0 - .NET no longer has this
+}
+
+internal struct DacpMethodTableData
+{
+    public int bIsFree; // everything else is NULL if this is true.
+    public ulong module;
+    public ulong klass;
+    public ulong parentMethodTable;
+    public ushort wNumInterfaces;
+    public ushort wNumMethods;
+    public ushort wNumVtableSlots;
+    public ushort wNumVirtuals;
+    public uint baseSize;
+    public uint componentSize;
+    public uint /*mdTypeDef*/ cl; // Metadata token
+    public uint dwAttrClass; // cached metadata
+    public int bIsShared;  // Always false, preserved for backward compatibility
+    public int bIsDynamic;
+    public int bContainsGCPointers;
+}
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
 [GeneratedComInterface]
@@ -79,7 +128,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetModule(ulong addr, /*IXCLRDataModule*/ void** mod);
     [PreserveSig]
-    int GetModuleData(ulong moduleAddr, /*struct DacpModuleData*/ void* data);
+    int GetModuleData(ulong moduleAddr, DacpModuleData* data);
     [PreserveSig]
     int TraverseModuleMap(/*ModuleMapType*/ int mmt, ulong moduleAddr, /*MODULEMAPTRAVERSE*/ void* pCallback, void* token);
     [PreserveSig]
@@ -139,7 +188,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded);
     [PreserveSig]
-    int GetMethodTableData(ulong mt, /*struct DacpMethodTableData*/ void* data);
+    int GetMethodTableData(ulong mt, DacpMethodTableData* data);
     [PreserveSig]
     int GetMethodTableSlot(ulong mt, uint slot, ulong* value);
     [PreserveSig]
@@ -284,6 +333,30 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetFailedAssemblyDisplayName(ulong assembly, uint count, char* name, uint* pNeeded);
 };
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+internal struct DacpExceptionObjectData
+{
+    public ulong Message;
+    public ulong InnerException;
+    public ulong StackTrace;
+    public ulong WatsonBuckets;
+    public ulong StackTraceString;
+    public ulong RemoteStackTraceString;
+    public int HResult;
+    public int XCode;
+}
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+[GeneratedComInterface]
+[Guid("A16026EC-96F4-40BA-87FB-5575986FB7AF")]
+internal unsafe partial interface ISOSDacInterface2
+{
+    [PreserveSig]
+    int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data);
+    [PreserveSig]
+    int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy);
+}
 
 [GeneratedComInterface]
 [Guid("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")]

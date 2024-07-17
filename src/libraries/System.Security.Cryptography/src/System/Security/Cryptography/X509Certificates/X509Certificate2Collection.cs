@@ -136,6 +136,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         IEnumerator<X509Certificate2> IEnumerable<X509Certificate2>.GetEnumerator() => GetEnumerator();
 
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(byte[] rawData)
         {
             ArgumentNullException.ThrowIfNull(rawData);
@@ -149,6 +150,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="rawData">
         ///   The certificate data to read.
         /// </param>
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(ReadOnlySpan<byte> rawData)
         {
             using (var safePasswordHandle = new SafePasswordHandle((string?)null, passwordProvided: false))
@@ -158,6 +160,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
             ArgumentNullException.ThrowIfNull(rawData);
@@ -177,6 +180,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="keyStorageFlags">
         ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
         /// </param>
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(ReadOnlySpan<byte> rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
             Import(rawData, password.AsSpan(), keyStorageFlags);
@@ -194,6 +198,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="keyStorageFlags">
         ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
         /// </param>
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
@@ -205,6 +210,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(string fileName)
         {
             ArgumentNullException.ThrowIfNull(fileName);
@@ -216,6 +222,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
             ArgumentNullException.ThrowIfNull(fileName);
@@ -241,6 +248,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="keyStorageFlags">
         ///   A bitwise combination of the enumeration values that control where and how to import the certificate.
         /// </param>
+        [Obsolete(Obsoletions.X509CtorCertDataObsoleteMessage, DiagnosticId = Obsoletions.X509CtorCertDataObsoleteDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void Import(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
             ArgumentNullException.ThrowIfNull(fileName);
@@ -396,8 +404,9 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             throw new CryptographicException(SR.Cryptography_X509_NoPemCertificate);
                         }
-
-                        Import(certBytes);
+#pragma warning disable CA1416 // X509CertificateLoader is not available on browser.
+                        Add(X509CertificateLoader.LoadCertificate(certBytes));
+#pragma warning restore CA1416
                         added++;
                     }
                 }

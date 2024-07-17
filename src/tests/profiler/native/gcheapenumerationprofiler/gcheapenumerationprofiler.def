@@ -1,0 +1,5 @@
+LIBRARY     Profiler.dll
+
+EXPORTS
+            EnumerateGCHeapObjectsWithoutProfilerRequestedRuntimeSuspension PRIVATE
+            EnumerateGCHeapObjectsWithinProfilerRequestedRuntimeSuspension  PRIVATE

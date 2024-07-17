@@ -546,7 +546,7 @@ namespace Internal.JitInterface
     {
         CORINFO_ACCESS_ANY = 0x0000, // Normal access
         CORINFO_ACCESS_THIS = 0x0001, // Accessed via the this reference
-        // CORINFO_ACCESS_UNUSED = 0x0002,
+        CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
 
         CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
 
@@ -1391,15 +1391,13 @@ namespace Internal.JitInterface
     // These are error codes returned by CompileMethod
     public enum CorJitResult
     {
-        // Note that I dont use FACILITY_NULL for the facility number,
-        // we may want to get a 'real' facility number
-        CORJIT_OK = 0 /*NO_ERROR*/,
-        CORJIT_BADCODE = unchecked((int)0x80000001)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 1)*/,
-        CORJIT_OUTOFMEM = unchecked((int)0x80000002)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2)*/,
-        CORJIT_INTERNALERROR = unchecked((int)0x80000003)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3)*/,
-        CORJIT_SKIPPED = unchecked((int)0x80000004)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4)*/,
-        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/,
-        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006)/*MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 6)*/,
+        CORJIT_OK = 0,
+        CORJIT_BADCODE = unchecked((int)0x80000001),
+        CORJIT_OUTOFMEM = unchecked((int)0x80000002),
+        CORJIT_INTERNALERROR = unchecked((int)0x80000003),
+        CORJIT_SKIPPED = unchecked((int)0x80000004),
+        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
+        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
     };
 
     public enum TypeCompareState

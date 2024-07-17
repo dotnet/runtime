@@ -487,6 +487,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD12:
         {
             simd12_t val12 = *(simd12_t*)val;
@@ -516,6 +517,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD16:
         {
             simd16_t val16 = *(simd16_t*)val;
@@ -543,6 +545,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD32:
         {
             simd32_t val32 = *(simd32_t*)val;
@@ -570,6 +573,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD64:
         {
             simd64_t val64 = *(simd64_t*)val;
@@ -595,10 +599,41 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         default:
         {
             unreached();
         }
+    }
+}
+
+//----------------------------------------------------------------------------------
+// genSetRegToConst: generate code to set target SIMD register to a given constant value
+//
+// Arguments:
+//    targetReg  - target SIMD register
+//    targetType - target's type
+//    simdmask_t - constant data (its width depends on type)
+//
+void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val)
+{
+    assert(varTypeIsMask(targetType));
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitTypeSize(targetType);
+
+    if (val->IsAllBitsSet())
+    {
+        emit->emitIns_SIMD_R_R_R(INS_kxnorq, EA_8BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+    }
+    else if (val->IsZero())
+    {
+        emit->emitIns_SIMD_R_R_R(INS_kxorq, EA_8BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+    }
+    else
+    {
+        CORINFO_FIELD_HANDLE hnd = emit->emitSimdMaskConst(*val);
+        emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
     }
 }
 #endif // FEATURE_SIMD
@@ -606,7 +641,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
 /***********************************************************************************
  *
  * Generate code to set a register 'targetReg' of type 'targetType' to the constant
- * specified by the constant (GT_CNS_INT, GT_CNS_DBL, or GT_CNS_VEC) in 'tree'. This
+ * specified by the constant (GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC, or GT_CNS_MSK) in 'tree'. This
  * does not call genProduceReg() on the target register.
  */
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
@@ -694,6 +729,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 #if defined(FEATURE_SIMD)
             GenTreeVecCon* vecCon = tree->AsVecCon();
             genSetRegToConst(vecCon->GetRegNum(), targetType, &vecCon->gtSimdVal);
+#else
+            unreached();
+#endif
+            break;
+        }
+
+        case GT_CNS_MSK:
+        {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            GenTreeMskCon* mskCon = tree->AsMskCon();
+            genSetRegToConst(mskCon->GetRegNum(), targetType, &mskCon->gtSimdMaskVal);
 #else
             unreached();
 #endif
@@ -1860,11 +1906,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             FALLTHROUGH;
 
         case GT_CNS_DBL:
-            genSetRegToConst(targetReg, targetType, treeNode);
-            genProduceReg(treeNode);
-            break;
-
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;

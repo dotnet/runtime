@@ -9,6 +9,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx</TargetFrameworks>
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
+    <NoWarn>$(NoWarn);SYSLIB0057</NoWarn>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -24,7 +25,7 @@
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
+    <!-- This WASM test is slow on NodeJS. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
     <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
   </PropertyGroup>
 
@@ -78,6 +79,8 @@
              Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\ActivityRecorder.cs"
+             Link="Common\System\Net\ActivityRecorder.cs" />
     <Compile Include="$(CommonTestPath)System\Net\EventSourceTestLogging.cs"
              Link="Common\System\Net\EventSourceTestLogging.cs" />
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs"

@@ -80,7 +80,43 @@
 
 #if HAVE___GREGSET_T
 
-#ifdef HOST_64BIT
+#if defined(HOST_LOONGARCH64)
+
+#define MCREG_R0(mc)        ((mc).__gregs[0])
+#define MCREG_Ra(mc)        ((mc).__gregs[1])
+#define MCREG_Tp(mc)        ((mc).__gregs[2])
+#define MCREG_Sp(mc)        ((mc).__gregs[3])
+#define MCREG_A0(mc)        ((mc).__gregs[4])
+#define MCREG_A1(mc)        ((mc).__gregs[5])
+#define MCREG_A2(mc)        ((mc).__gregs[6])
+#define MCREG_A3(mc)        ((mc).__gregs[7])
+#define MCREG_A4(mc)        ((mc).__gregs[8])
+#define MCREG_A5(mc)        ((mc).__gregs[9])
+#define MCREG_A6(mc)        ((mc).__gregs[10])
+#define MCREG_A7(mc)        ((mc).__gregs[11])
+#define MCREG_T0(mc)        ((mc).__gregs[12])
+#define MCREG_T1(mc)        ((mc).__gregs[13])
+#define MCREG_T2(mc)        ((mc).__gregs[14])
+#define MCREG_T3(mc)        ((mc).__gregs[15])
+#define MCREG_T4(mc)        ((mc).__gregs[16])
+#define MCREG_T5(mc)        ((mc).__gregs[17])
+#define MCREG_T6(mc)        ((mc).__gregs[18])
+#define MCREG_T7(mc)        ((mc).__gregs[19])
+#define MCREG_T8(mc)        ((mc).__gregs[20])
+#define MCREG_X0(mc)        ((mc).__gregs[21])
+#define MCREG_Fp(mc)        ((mc).__gregs[22])
+#define MCREG_S0(mc)        ((mc).__gregs[23])
+#define MCREG_S1(mc)        ((mc).__gregs[24])
+#define MCREG_S2(mc)        ((mc).__gregs[25])
+#define MCREG_S3(mc)        ((mc).__gregs[26])
+#define MCREG_S4(mc)        ((mc).__gregs[27])
+#define MCREG_S5(mc)        ((mc).__gregs[28])
+#define MCREG_S6(mc)        ((mc).__gregs[29])
+#define MCREG_S7(mc)        ((mc).__gregs[30])
+#define MCREG_S8(mc)        ((mc).__gregs[31])
+#define MCREG_Pc(mc)        ((mc).__pc)
+
+#elif HOST_64BIT
 #define MCREG_Rip(mc)       ((mc).__gregs[_REG_RIP])
 #define MCREG_Rsp(mc)       ((mc).__gregs[_REG_RSP])
 #define MCREG_Rax(mc)       ((mc).__gregs[_REG_RAX])
@@ -115,7 +151,43 @@
 
 #elif HAVE_GREGSET_T
 
-#ifdef HOST_64BIT
+#if defined(HOST_LOONGARCH64)
+
+#define MCREG_R0(mc)        ((mc).__gregs[0])
+#define MCREG_Ra(mc)        ((mc).__gregs[1])
+#define MCREG_Tp(mc)        ((mc).__gregs[2])
+#define MCREG_Sp(mc)        ((mc).__gregs[3])
+#define MCREG_A0(mc)        ((mc).__gregs[4])
+#define MCREG_A1(mc)        ((mc).__gregs[5])
+#define MCREG_A2(mc)        ((mc).__gregs[6])
+#define MCREG_A3(mc)        ((mc).__gregs[7])
+#define MCREG_A4(mc)        ((mc).__gregs[8])
+#define MCREG_A5(mc)        ((mc).__gregs[9])
+#define MCREG_A6(mc)        ((mc).__gregs[10])
+#define MCREG_A7(mc)        ((mc).__gregs[11])
+#define MCREG_T0(mc)        ((mc).__gregs[12])
+#define MCREG_T1(mc)        ((mc).__gregs[13])
+#define MCREG_T2(mc)        ((mc).__gregs[14])
+#define MCREG_T3(mc)        ((mc).__gregs[15])
+#define MCREG_T4(mc)        ((mc).__gregs[16])
+#define MCREG_T5(mc)        ((mc).__gregs[17])
+#define MCREG_T6(mc)        ((mc).__gregs[18])
+#define MCREG_T7(mc)        ((mc).__gregs[19])
+#define MCREG_T8(mc)        ((mc).__gregs[20])
+#define MCREG_X0(mc)        ((mc).__gregs[21])
+#define MCREG_Fp(mc)        ((mc).__gregs[22])
+#define MCREG_S0(mc)        ((mc).__gregs[23])
+#define MCREG_S1(mc)        ((mc).__gregs[24])
+#define MCREG_S2(mc)        ((mc).__gregs[25])
+#define MCREG_S3(mc)        ((mc).__gregs[26])
+#define MCREG_S4(mc)        ((mc).__gregs[27])
+#define MCREG_S5(mc)        ((mc).__gregs[28])
+#define MCREG_S6(mc)        ((mc).__gregs[29])
+#define MCREG_S7(mc)        ((mc).__gregs[30])
+#define MCREG_S8(mc)        ((mc).__gregs[31])
+#define MCREG_Pc(mc)        ((mc).__pc)
+
+#elif HOST_64BIT
 #define MCREG_Rip(mc)       ((mc).gregs[REG_RIP])
 #define MCREG_Rsp(mc)       ((mc).gregs[REG_RSP])
 #define MCREG_Rax(mc)       ((mc).gregs[REG_RAX])
@@ -222,6 +294,42 @@
 #define MCREG_Fp(mc)      ((mc).regs[29])
 #define MCREG_Lr(mc)      ((mc).regs[30])
 #define MCREG_Sp(mc)      ((mc).sp)
+#define MCREG_Pc(mc)      ((mc).pc)
+
+#elif defined(HOST_LOONGARCH64)
+
+#define MCREG_R0(mc)      ((mc).regs[0])
+#define MCREG_Ra(mc)      ((mc).regs[1])
+#define MCREG_Tp(mc)      ((mc).regs[2])
+#define MCREG_Sp(mc)      ((mc).regs[3])
+#define MCREG_A0(mc)      ((mc).regs[4])
+#define MCREG_A1(mc)      ((mc).regs[5])
+#define MCREG_A2(mc)      ((mc).regs[6])
+#define MCREG_A3(mc)      ((mc).regs[7])
+#define MCREG_A4(mc)      ((mc).regs[8])
+#define MCREG_A5(mc)      ((mc).regs[9])
+#define MCREG_A6(mc)      ((mc).regs[10])
+#define MCREG_A7(mc)      ((mc).regs[11])
+#define MCREG_T0(mc)      ((mc).regs[12])
+#define MCREG_T1(mc)      ((mc).regs[13])
+#define MCREG_T2(mc)      ((mc).regs[14])
+#define MCREG_T3(mc)      ((mc).regs[15])
+#define MCREG_T4(mc)      ((mc).regs[16])
+#define MCREG_T5(mc)      ((mc).regs[17])
+#define MCREG_T6(mc)      ((mc).regs[18])
+#define MCREG_T7(mc)      ((mc).regs[19])
+#define MCREG_T8(mc)      ((mc).regs[20])
+#define MCREG_X0(mc)      ((mc).regs[21])
+#define MCREG_Fp(mc)      ((mc).regs[22])
+#define MCREG_S0(mc)      ((mc).regs[23])
+#define MCREG_S1(mc)      ((mc).regs[24])
+#define MCREG_S2(mc)      ((mc).regs[25])
+#define MCREG_S3(mc)      ((mc).regs[26])
+#define MCREG_S4(mc)      ((mc).regs[27])
+#define MCREG_S5(mc)      ((mc).regs[28])
+#define MCREG_S6(mc)      ((mc).regs[29])
+#define MCREG_S7(mc)      ((mc).regs[30])
+#define MCREG_S8(mc)      ((mc).regs[31])
 #define MCREG_Pc(mc)      ((mc).pc)
 
 #else
@@ -364,6 +472,29 @@
 #define ASSIGN_TWO_ARGUMENT_REGS \
     MCREG_X0(nativeContext->uc_mcontext) = arg0Reg;       \
     MCREG_X1(nativeContext->uc_mcontext) = arg1Reg;
+
+#elif defined(HOST_LOONGARCH64)
+
+#define ASSIGN_CONTROL_REGS  \
+    ASSIGN_REG(Pc, IP)    \
+    ASSIGN_REG(Sp, SP)    \
+    ASSIGN_REG(Fp, FP)    \
+    ASSIGN_REG(Ra, RA)
+
+#define ASSIGN_INTEGER_REGS  \
+    ASSIGN_REG(S0, R23)   \
+    ASSIGN_REG(S1, R24)   \
+    ASSIGN_REG(S2, R25)   \
+    ASSIGN_REG(S3, R26)   \
+    ASSIGN_REG(S4, R27)   \
+    ASSIGN_REG(S5, R28)   \
+    ASSIGN_REG(S6, R29)   \
+    ASSIGN_REG(S7, R30)   \
+    ASSIGN_REG(S8, R31)
+
+#define ASSIGN_TWO_ARGUMENT_REGS \
+    MCREG_A0(nativeContext->uc_mcontext) = arg0Reg;       \
+    MCREG_A1(nativeContext->uc_mcontext) = arg1Reg;
 
 #elif defined(HOST_WASM)
     // TODO: determine how unwinding will work on WebAssembly
@@ -528,6 +659,42 @@ uint64_t GetPC(void* context)
     uint64_t& UNIX_CONTEXT::R10(){ return (uint64_t&)MCREG_R10(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::R11(){ return (uint64_t&)MCREG_R11(ctx.uc_mcontext); }
     uint64_t& UNIX_CONTEXT::R12(){ return (uint64_t&)MCREG_R12(ctx.uc_mcontext); }
+
+#elif TARGET_LOONGARCH64
+
+    uint64_t& UNIX_CONTEXT::R0() { return (uint64_t&)MCREG_R0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R2() { return (uint64_t&)MCREG_Tp(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R4() { return (uint64_t&)MCREG_A0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R5() { return (uint64_t&)MCREG_A1(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R6() { return (uint64_t&)MCREG_A2(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R7() { return (uint64_t&)MCREG_A3(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R8() { return (uint64_t&)MCREG_A4(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R9() { return (uint64_t&)MCREG_A5(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R10() { return (uint64_t&)MCREG_A6(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R11() { return (uint64_t&)MCREG_A7(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R12() { return (uint64_t&)MCREG_T0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R13() { return (uint64_t&)MCREG_T1(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R14() { return (uint64_t&)MCREG_T2(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R15() { return (uint64_t&)MCREG_T3(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R16() { return (uint64_t&)MCREG_T4(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R17() { return (uint64_t&)MCREG_T5(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R18() { return (uint64_t&)MCREG_T6(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R19() { return (uint64_t&)MCREG_T7(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R20() { return (uint64_t&)MCREG_T8(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R21() { return (uint64_t&)MCREG_X0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R23() { return (uint64_t&)MCREG_S0(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R24() { return (uint64_t&)MCREG_S1(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R25() { return (uint64_t&)MCREG_S2(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R26() { return (uint64_t&)MCREG_S3(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R27() { return (uint64_t&)MCREG_S4(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R28() { return (uint64_t&)MCREG_S5(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R29() { return (uint64_t&)MCREG_S6(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R30() { return (uint64_t&)MCREG_S7(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::R31() { return (uint64_t&)MCREG_S8(ctx.uc_mcontext); }
+    uint64_t& UNIX_CONTEXT::Fp() { return (uint64_t&)MCREG_Fp(ctx.uc_mcontext); } // R22
+    uint64_t& UNIX_CONTEXT::Ra() { return (uint64_t&)MCREG_Ra(ctx.uc_mcontext); } // R1
+    uint64_t& UNIX_CONTEXT::Sp() { return (uint64_t&)MCREG_Sp(ctx.uc_mcontext); } // R3
+    uint64_t& UNIX_CONTEXT::Pc() { return (uint64_t&)MCREG_Pc(ctx.uc_mcontext); }
 
 #else
     PORTABILITY_ASSERT("UNIX_CONTEXT");

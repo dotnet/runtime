@@ -27,7 +27,7 @@ using namespace clr;
 // is relied on by the EH code and the JIT code (for handling patched
 // managed code, and GC stress exception) after GC stress is dynamically
 // turned off.
-Volatile<DWORD> GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
+int GCStressPolicy::InhibitHolder::s_nGcStressDisabled = 0;
 #endif // STRESS_HEAP
 
 /**************************************************************/

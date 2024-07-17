@@ -2,23 +2,11 @@
   <PropertyGroup>
     <!-- Needed for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-  </PropertyGroup>
-  <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
-
-    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
-    <CLRTestEnvironmentVariable Include="DOTNET_ProfApi_RejitOnAttach" Value="0" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitNoForceFallback" Value="1" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitDebuggable" Value="0" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNamesNot" Value="STRESS_RANDOM_INLINE,STRESS_MIN_OPTS" />
-    <CLRTestEnvironmentVariable Include="DOTNET_JitObjectStackAllocation" Value="1" />
   </ItemGroup>
-  <PropertyGroup>
-    <CrossGen2TestExtraArguments>--codegenopt JitObjectStackAllocation=1</CrossGen2TestExtraArguments>
-  </PropertyGroup>
 </Project>

@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
-    public static class Debugger
+    public static partial class Debugger
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         [DebuggerHidden] // this helps VS appear to stop on the source line calling Debugger.Break() instead of inside it

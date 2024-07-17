@@ -28,6 +28,13 @@ interp_v128_i4_all_bits_set (gpointer res)
 	memset (res, 0xff, SIZEOF_V128);
 }
 
+// Vector128<TTo> As<TFrom, TTo>(Vector128<TFrom> v1)
+static void
+interp_v128_bitcast (gpointer res, gpointer v1)
+{
+	*(v128_i1*)res = *(v128_i1*)v1;
+}
+
 // op_Addition
 static void
 interp_v128_i1_op_addition (gpointer res, gpointer v1, gpointer v2)

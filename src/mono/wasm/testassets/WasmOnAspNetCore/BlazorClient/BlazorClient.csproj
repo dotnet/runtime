@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <WasmEnableThreads>true</WasmEnableThreads>
     <!-- nullablility warning, async warning -->
-    <NoWarn>CS8604;CS4014</NoWarn>
+    <NoWarn>$(NoWarn);CS8604;CS4014</NoWarn>
     <StaticWebAssetBasePath>blazorclient</StaticWebAssetBasePath>
   </PropertyGroup>
 

@@ -481,6 +481,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void VerifyNamesWithDuplicateAttributes()
+        {
+            // This is the same as the Windows Attributes test for X509CertificateLoaderPkcs12Tests,
+            // but using the legacy X509Certificate2 ctor, to test the settings for that set of
+            // loader limits with respect to duplicates.
+
+            X509Certificate2 cert = new X509Certificate2(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw);
+
+            using (cert)
+            {
+                Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                if (OperatingSystem.IsWindows())
+                {
+                    Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cert.FriendlyName);
+
+                    using (RSA key = cert.GetRSAPrivateKey())
+                    using (CngKey cngKey = Assert.IsType<RSACng>(key).Key)
+                    {
+                        Assert.Equal("Microsoft Enhanced RSA and AES Cryptographic Provider", cngKey.Provider.Provider);
+                        Assert.True(cngKey.IsMachineKey, "cngKey.IsMachineKey");
+
+                        // If keyname000 gets taken, we'll get a random key name on import.  What's important is that we
+                        // don't pick the second entry: keyname001.
+                        Assert.NotEqual("keyname001", cngKey.KeyName);
+                    }
+                }
+            }
+        }
+
         internal static bool IsPkcs12IterationCountAllowed(long iterationCount, long allowedIterations)
         {
             if (allowedIterations == UnlimitedIterations)

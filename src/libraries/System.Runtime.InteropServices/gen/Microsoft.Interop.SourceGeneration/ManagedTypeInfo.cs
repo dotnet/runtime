@@ -88,7 +88,7 @@ namespace Microsoft.Interop
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
         public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
         public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
-        public static readonly SpecialTypeInfo IntPtr = new("System.IntPtr", "System.IntPtr", SpecialType.System_IntPtr);
+        public static readonly SpecialTypeInfo IntPtr = new("nint", "nint", SpecialType.System_IntPtr);
 
         public bool Equals(SpecialTypeInfo? other)
         {

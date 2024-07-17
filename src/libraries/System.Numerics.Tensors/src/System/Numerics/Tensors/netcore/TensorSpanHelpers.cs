@@ -8,8 +8,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System.Numerics.Tensors
 {
     internal static partial class TensorSpanHelpers

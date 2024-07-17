@@ -58,6 +58,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			RUCOnVirtualOnAnnotatedBase.Test ();
 			RUCOnVirtualOnAnnotatedBaseUsedByDerived.Test ();
+			RUCOnVirtualOnAnnotatedInterface.Test ();
+			RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Test ();
 			UseByDerived.Test ();
 
 			CompilerGeneratedCodeRUC.Test (null);
@@ -699,16 +701,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[Kept]
 				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 				[RequiresUnreferencedCode ("--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--")]
-				// Compare to the case above - the only difference is the type of the field
-				// and it causes different warnings to be produced.
-				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.None, "https://github.com/dotnet/runtime/issues/86580")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
 				public virtual void RUCVirtualMethod () { }
 			}
 
 			[Kept]
 			[KeptMember (".ctor()")]
 			[KeptBaseType (typeof (Base))]
-			[UnexpectedWarning ("IL2113", "--RUCOnVirtualMethodDerivedAnnotated.Base.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/86580")]
 			public class Derived : Base
 			{
 				[Kept]
@@ -730,6 +729,82 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
+		class RUCOnVirtualOnAnnotatedInterface
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			public interface Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Interface.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
+				void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptInterface (typeof (Interface))]
+			public class Implementation : Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RUCOnVirtualOnAnnotatedInterface.Implementation.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RUCOnVirtualOnAnnotatedInterface.Implementation.RUCVirtualMethod--")]
+				public void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			static Interface _interfaceInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				_interfaceInstance = new Implementation ();
+				_interfaceInstance.GetType ().RequiresAll ();
+			}
+		}
+
+		[Kept]
+		class RucOnVirtualOnAnnotatedInterfaceUsedByImplementation
+		{
+			[Kept]
+			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.All)]
+			public interface Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Interface.RUCVirtualMethod--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
+				void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			[KeptMember (".ctor()")]
+			[KeptInterface (typeof (Interface))]
+			public class Implementation : Interface
+			{
+				[Kept]
+				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
+				[RequiresUnreferencedCode ("--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Implementation.RUCVirtualMethod--")]
+				[ExpectedWarning ("IL2112", "--RucOnVirtualOnAnnotatedInterfaceUsedByImplementation.Implementation.RUCVirtualMethod--")]
+				public void RUCVirtualMethod () { }
+			}
+
+			[Kept]
+			static Implementation _implementationInstance;
+
+			[Kept]
+			public static void Test ()
+			{
+				_implementationInstance = new Implementation ();
+				_implementationInstance.GetType ().RequiresAll ();
+			}
+		}
+
+		[Kept]
 		class UseByDerived
 		{
 			[Kept]
@@ -745,13 +820,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				[RequiresUnreferencedCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresDynamicCode ("--AnnotatedBase.VirtualMethodWithRequires--")]
 				[RequiresAssemblyFiles ("--AnnotatedBase.VirtualMethodWithRequires--")]
+				[ExpectedWarning ("IL2112", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/104740")]
 				public virtual void VirtualMethodWithRequires () { }
 			}
 
 			[Kept]
 			[KeptBaseType (typeof (AnnotatedBase))]
 			[KeptMember (".ctor()")]
-			[UnexpectedWarning ("IL2113", "--AnnotatedBase.VirtualMethodWithRequires--", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/86580")]
 			class Derived : AnnotatedBase
 			{
 				[Kept]
@@ -951,7 +1026,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (IteratorStateMachineAttribute))]
-			[UnexpectedWarning ("IL2119", nameof (IteratorWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static IEnumerable<bool> IteratorWithGenericDAM<
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> ()
@@ -963,7 +1037,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			[KeptAttributeAttribute (typeof (AsyncStateMachineAttribute))]
 			[KeptAttributeAttribute (typeof (DebuggerStepThroughAttribute))]
-			[UnexpectedWarning ("IL2119", nameof (AsyncWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static async Task AsyncWithGenericDAM<
 				[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()
@@ -974,7 +1047,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 			[Kept]
 			[KeptAttributeAttribute (typeof (AsyncIteratorStateMachineAttribute))]
-			[ExpectedWarning("IL2119", nameof(AsyncIteratorWithGenericDAM), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<bool> AsyncIteratorWithGenericDAM<
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>()

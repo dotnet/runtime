@@ -40,7 +40,7 @@ namespace System.Collections.Generic
             uint bitArrayIndex = (uint)bitPosition / IntSize;
 
             // Workaround for https://github.com/dotnet/runtime/issues/72004
-            Span<int> span = _span;
+            ReadOnlySpan<int> span = _span;
             return
                 bitArrayIndex < (uint)span.Length &&
                 (span[(int)bitArrayIndex] & (1 << ((int)((uint)bitPosition % IntSize)))) != 0;

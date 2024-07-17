@@ -172,6 +172,7 @@ namespace BinderTracingTests
                 Func<BindOperation> func = (Func<BindOperation>)method.CreateDelegate(typeof(Func<BindOperation>));
                 using (var listener = new BinderEventListener(loadsToTrack))
                 {
+                    Console.WriteLine($"[{DateTime.Now:T}] Invoking {method.Name}...");
                     BindOperation expected = func();
                     ValidateSingleBind(listener, expected.AssemblyName, expected);
                 }
@@ -182,6 +183,7 @@ namespace BinderTracingTests
                 return false;
             }
 
+            Console.WriteLine($"Test {method.Name} finished.");
             return true;
         }
 
@@ -197,6 +199,7 @@ namespace BinderTracingTests
             Console.WriteLine($"[{DateTime.Now:T}] Launching process for {method.Name}...");
             using (Process p = Process.Start(startInfo))
             {
+                Console.WriteLine($"Started subprocess {p.Id} for {method.Name}...");
                 p.OutputDataReceived += (_, args) => Console.WriteLine(args.Data);
                 p.BeginOutputReadLine();
 
@@ -210,6 +213,7 @@ namespace BinderTracingTests
 
         private static void ValidateSingleBind(BinderEventListener listener, AssemblyName assemblyName, BindOperation expected)
         {
+            Console.WriteLine($"[{DateTime.Now:T}] Validating bind operation for {assemblyName}...");
             BindOperation[] binds = listener.WaitAndGetEventsForAssembly(assemblyName);
             Assert.True(binds.Length == 1, $"Bind event count for {assemblyName} - expected: 1, actual: {binds.Length}");
             BindOperation actual = binds[0];

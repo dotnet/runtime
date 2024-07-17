@@ -1186,7 +1186,7 @@ namespace ILCompiler
             return null;
         }
 
-        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin = null)
         {
         }
     }

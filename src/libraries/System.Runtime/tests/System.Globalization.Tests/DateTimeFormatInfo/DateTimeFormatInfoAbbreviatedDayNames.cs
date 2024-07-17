@@ -28,6 +28,12 @@ namespace System.Globalization.Tests
             yield return new object[] { new string[] { "", "", "", "", "", "", "" } };
         }
 
+        public static IEnumerable<object[]> AbbreviatedDayNames_Get_TestData_ICU()
+        {
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").DateTimeFormat, new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" } };
+            yield return new object[] { CultureInfo.GetCultureInfo("fr-FR").DateTimeFormat, new string[] { "dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam." } };
+        }
+
         public static IEnumerable<object[]> AbbreviatedDayNames_Get_TestData_HybridGlobalization()
         {
             // see the comments on the right to check the non-Hybrid result, if it differs
@@ -84,6 +90,13 @@ namespace System.Globalization.Tests
             yield return new object[] { "uk-UA", new string[] { "нд", "пн", "вт", "ср", "чт", "пт", "сб" } };
             yield return new object[] { "vi-VN", new string[] { "CN", "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7" } };
             yield return new object[] { "zh-CN", new string[] { "周日", "周一", "周二", "周三", "周四", "周五", "周六" } };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(AbbreviatedDayNames_Get_TestData_ICU))]
+        public void AbbreviatedDayNames_Get_ReturnsExpected_ICU(DateTimeFormatInfo format, string[] expected)
+        {
+            Assert.Equal(expected, format.AbbreviatedDayNames);
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]

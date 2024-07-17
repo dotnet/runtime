@@ -239,9 +239,14 @@ namespace System
                 {
                     // CLR compat note: CLR only allows Array.Copy between pointee types that would be assignable
                     // to using array covariance rules (so int*[] can be copied to uint*[], but not to float*[]).
-                    // This is rather weird since e.g. we don't allow casting int*[] to uint*[] otherwise.
-                    // Instead of trying to replicate the behavior, we're choosing to be simply more permissive here.
-                    CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                    if (RuntimeImports.AreTypesAssignable(sourceElementEEType, destinationElementEEType))
+                    {
+                        CopyImplValueTypeArrayNoInnerGcRefs(sourceArray, sourceIndex, destinationArray, destinationIndex, length);
+                    }
+                    else
+                    {
+                        throw new ArrayTypeMismatchException(SR.ArrayTypeMismatch_CantAssignType);
+                    }
                 }
                 else if (IsSourceElementABaseClassOrInterfaceOfDestinationValueType(sourceElementEEType, destinationElementEEType))
                 {

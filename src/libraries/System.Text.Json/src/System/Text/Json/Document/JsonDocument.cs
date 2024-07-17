@@ -140,6 +140,17 @@ namespace System.Text.Json
             return row.SizeOrLength;
         }
 
+        internal int GetPropertyCount(int index)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.StartObject, row.TokenType);
+
+            return row.SizeOrLength;
+        }
+
         internal JsonElement GetArrayIndexElement(int currentIndex, int arrayIndex)
         {
             CheckNotDisposed();

@@ -159,8 +159,8 @@ namespace System.Text.Json
 
             TValue? value = jsonTypeInfo.Deserialize(ref reader, ref state);
 
-            // The reader should have thrown if we have remaining bytes.
-            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length));
+            // The reader should have thrown if we have remaining bytes, unless AllowMultipleValues is true.
+            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length) || reader.CurrentState.Options.AllowMultipleValues);
             return value;
         }
 
@@ -176,8 +176,8 @@ namespace System.Text.Json
 
             object? value = jsonTypeInfo.DeserializeAsObject(ref reader, ref state);
 
-            // The reader should have thrown if we have remaining bytes.
-            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length));
+            // The reader should have thrown if we have remaining bytes, unless AllowMultipleValues is true.
+            Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length) || reader.CurrentState.Options.AllowMultipleValues);
             return value;
         }
     }

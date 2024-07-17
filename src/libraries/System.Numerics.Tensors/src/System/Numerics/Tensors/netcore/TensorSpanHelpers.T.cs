@@ -4,9 +4,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System.Numerics.Tensors
 {
     internal static partial class TensorSpanHelpers // .T

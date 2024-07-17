@@ -20,7 +20,7 @@ namespace Internal.IL
         private readonly TypeDesc _delegateType;
         private readonly DelegateFeature _supportedFeatures;
 
-        private MethodSignature _signature;
+        private MethodDesc _invokeMethod;
 
         private MethodDesc _getThunkMethod;
         private DelegateThunkCollection _thunks;
@@ -71,8 +71,16 @@ namespace Internal.IL
         {
             get
             {
-                _signature ??= _delegateType.GetKnownMethod("Invoke", null).Signature;
-                return _signature;
+                return InvokeMethod.Signature;
+            }
+        }
+
+        public MethodDesc InvokeMethod
+        {
+            get
+            {
+                _invokeMethod ??= _delegateType.GetKnownMethod("Invoke", null);
+                return _invokeMethod;
             }
         }
 

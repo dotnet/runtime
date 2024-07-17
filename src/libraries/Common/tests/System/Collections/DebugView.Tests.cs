@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -47,8 +50,8 @@ namespace System.Collections.Tests
                     new ("[\"Two\"]", "2"),
                 }
             };
-            CustomKeyedCollection<string, int> collection = new ();
-            collection.GetKeyForItemHandler = value =>  (2 * value).ToString();
+            CustomKeyedCollection<string, int> collection = new();
+            collection.GetKeyForItemHandler = value => (2 * value).ToString();
             collection.InsertItem(0, 1);
             collection.InsertItem(1, 3);
             yield return new object[] { collection,
@@ -56,6 +59,53 @@ namespace System.Collections.Tests
                 {
                     new ("[\"2\"]", "1"),
                     new ("[\"6\"]", "3"),
+                }
+            };
+
+            yield return new object[] { new ConcurrentDictionary<int, string>(new KeyValuePair<int, string>[] { new(1, "One"), new(2, "Two") }),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+        }
+
+        private static IEnumerable<object[]> TestDebuggerAttributes_AdditionalGenericDictionaries()
+        {
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToFrozenDictionary(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableDictionary(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableDictionary().ToBuilder(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableSortedDictionary(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
+                }
+            };
+            yield return new object[] { new Dictionary<int, string> { { 1, "One" }, { 2, "Two" } }.ToImmutableSortedDictionary().ToBuilder(),
+                new KeyValuePair<string, string>[]
+                {
+                    new ("[1]", "\"One\""),
+                    new ("[2]", "\"Two\""),
                 }
             };
         }
@@ -162,12 +212,14 @@ namespace System.Collections.Tests
 
         public static IEnumerable<object[]> TestDebuggerAttributes_InputsPresentedAsDictionary()
         {
+            var testCases = TestDebuggerAttributes_NonGenericDictionaries()
+                .Concat(TestDebuggerAttributes_AdditionalGenericDictionaries());
 #if !NETFRAMEWORK
-            return TestDebuggerAttributes_NonGenericDictionaries()
+            return testCases
                 .Concat(TestDebuggerAttributes_GenericDictionaries());
 #else
-            // In .Net Framework only non-generic dictionaries are displayed in a dictionary format by the debugger.
-            return TestDebuggerAttributes_NonGenericDictionaries();
+            // In .Net Framework, the generic dictionaries that are part of the framework are displayed in a list format by the debugger.
+            return testCases;
 #endif
         }
 

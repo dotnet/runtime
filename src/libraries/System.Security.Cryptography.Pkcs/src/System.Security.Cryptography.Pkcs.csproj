@@ -663,6 +663,10 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>
 
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.Cryptography\src\Microsoft.Bcl.Cryptography.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />
   </ItemGroup>

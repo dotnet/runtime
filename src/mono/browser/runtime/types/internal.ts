@@ -449,7 +449,7 @@ export declare interface EmscriptenModuleInternal {
     FS: any;
     wasmModule: WebAssembly.Instance | null;
     ready: Promise<unknown>;
-    asm: any;
+    wasmExports: any;
     getWasmTableEntry(index: number): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
@@ -507,7 +507,7 @@ export type RuntimeModuleExportsInternal = {
 }
 
 export type NativeModuleExportsInternal = {
-    default: (unificator: Function) => EmscriptenModuleInternal
+    default: (unificator: Function) => Promise<EmscriptenModuleInternal>
 }
 
 export type HybridGlobalizationModuleExportsInternal = {

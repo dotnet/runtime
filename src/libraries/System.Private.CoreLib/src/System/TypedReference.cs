@@ -53,9 +53,7 @@ namespace System
             // reference to TypedReference is banned, so have to pass result as pointer
             unsafe
             {
-#pragma warning disable CS8500 // Takes a pointer to a managed type
                 InternalMakeTypedReference(&result, target, fields, targetType);
-#pragma warning restore CS8500
             }
             return result;
         }

@@ -894,7 +894,7 @@ enum CORINFO_ACCESS_FLAGS
 {
     CORINFO_ACCESS_ANY        = 0x0000, // Normal access
     CORINFO_ACCESS_THIS       = 0x0001, // Accessed via the this reference
-    // UNUSED                 = 0x0002,
+    CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
 
     CORINFO_ACCESS_NONNULL    = 0x0004, // Instance is guaranteed non-null
 

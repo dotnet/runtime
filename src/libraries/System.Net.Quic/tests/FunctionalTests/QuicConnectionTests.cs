@@ -117,6 +117,67 @@ namespace System.Net.Quic.Tests
                 });
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [InlineData(null)]
+        public async Task CloseAsync_PendingOpenStream_Throws(bool? localClose)
+        {
+            byte[] data = new byte[10];
+
+            await using QuicListener listener = await CreateQuicListener(changeServerOptions: localClose is null ? options => options.IdleTimeout = TimeSpan.FromSeconds(10) : null);
+
+            // Allow client to accept a stream, one will be accepted and another will be pending while we close the server connection.
+            QuicClientConnectionOptions clientOptions = CreateQuicClientOptions(listener.LocalEndPoint);
+            clientOptions.MaxInboundBidirectionalStreams = 1;
+            await using QuicConnection clientConnection = await CreateQuicConnection(clientOptions);
+
+            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+
+            // Put one stream into server stream queue.
+            QuicStream queuedStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+            await queuedStream.WriteAsync(data.AsMemory(), completeWrites: true);
+
+            // Open one stream to the client that is allowed.
+            QuicStream firstStream = await serverConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+            await firstStream.WriteAsync(data.AsMemory(), completeWrites: true);
+
+            // Try to open another stream which should wait on capacity.
+            ValueTask<QuicStream> secondStreamTask = serverConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+            Assert.False(secondStreamTask.IsCompleted);
+
+            // Close the connection, second stream task should complete with appropriate error.
+            if (localClose is true)
+            {
+                await serverConnection.CloseAsync(123);
+                await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await secondStreamTask);
+
+                // Try to open yet another stream which should fail because of already closed connection.
+                await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await serverConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional));
+            }
+            else if (localClose is false)
+            {
+                await clientConnection.CloseAsync(456);
+                QuicException ex1 = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await secondStreamTask);
+                Assert.Equal(456, ex1.ApplicationErrorCode);
+
+                // Try to open yet another stream which should fail because of already closed connection.
+                QuicException ex2 = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () => await serverConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional));
+                Assert.Equal(456, ex2.ApplicationErrorCode);
+            }
+            else
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15));
+
+                QuicException ex1 = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await secondStreamTask);
+                Assert.Equal(1, ex1.TransportErrorCode);
+
+                // Try to open yet another stream which should fail because of already closed connection.
+                QuicException ex2 = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional));
+                Assert.Equal(1, ex2.TransportErrorCode);
+            }
+        }
+
         [Fact]
         public async Task Dispose_WithPendingAcceptAndConnect_PendingAndSubsequentThrowOperationAbortedException()
         {
@@ -228,6 +289,9 @@ namespace System.Net.Quic.Tests
             await streamsAvailableFired.WaitAsync();
             Assert.Equal(0, bidiIncrement);
             Assert.Equal(1, unidiIncrement);
+
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
         }
 
         [Theory]
@@ -298,6 +362,9 @@ namespace System.Net.Quic.Tests
             Assert.False(streamsAvailableFired.CurrentCount > 0);
             Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams * 3, bidiTotal);
             Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams * 3 : QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiTotal);
+
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
         }
 
         [Theory]
@@ -368,6 +435,9 @@ namespace System.Net.Quic.Tests
             Assert.False(streamsAvailableFired.CurrentCount > 0);
             Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundBidirectionalStreams : QuicDefaults.DefaultServerMaxInboundBidirectionalStreams * 3, bidiTotal);
             Assert.Equal(unidirectional ? QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams * 3 : QuicDefaults.DefaultServerMaxInboundUnidirectionalStreams, unidiTotal);
+
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
         }
 
         [Fact]
@@ -434,6 +504,9 @@ namespace System.Net.Quic.Tests
 
             // by now, we opened and closed 2 * Limit, and expect a budget of 'Limit' more
             Assert.Equal(3 * Limit, maxStreamIndex);
+
+            await clientConnection.DisposeAsync();
+            await serverConnection.DisposeAsync();
         }
 
         [Fact]
@@ -634,6 +707,8 @@ namespace System.Net.Quic.Tests
 
             var accept1Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask1);
             var accept2Exception = await Assert.ThrowsAsync<ObjectDisposedException>(async () => await acceptTask2);
+
+            await clientConnection.DisposeAsync();
         }
 
         [Theory]

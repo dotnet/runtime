@@ -28,7 +28,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                { "dotnet.native.js.symbols", false },
                { "dotnet.globalization.js", false },
                { "dotnet.native.wasm", false },
-               { "dotnet.native.worker.js", false },
+               { "dotnet.native.worker.mjs", false },
                { "dotnet.runtime.js", false },
                { "dotnet.runtime.js.map", false }
             };
@@ -52,13 +52,13 @@ public class TestMainJsProjectProvider : ProjectProviderBase
             res.Add("dotnet.native.wasm");
             res.Add("dotnet.native.js");
             res.Add("dotnet.runtime.js");
-            res.Add("dotnet.native.worker.js");
+            res.Add("dotnet.native.worker.mjs");
 
             if (!assertOptions.IsPublish)
             {
                 res.Add("dotnet.js.map");
                 res.Add("dotnet.runtime.js.map");
-                res.Add("dotnet.native.worker.js.map");
+                res.Add("dotnet.native.worker.mjs.map");
             }
         }
 

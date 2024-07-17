@@ -363,17 +363,13 @@ namespace System.Text.Json
                     }
                     _tokenType = JsonTokenType.Number;
                     _consumed += numberOfBytes;
-                    return true;
                 }
                 else if (!ConsumeValueMultiSegment(first))
                 {
                     return false;
                 }
 
-                if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
-                {
-                    _isNotPrimitive = true;
-                }
+                _isNotPrimitive = _tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray;
                 // Intentionally fall out of the if-block to return true
             }
             return true;
@@ -1580,6 +1576,11 @@ namespace System.Text.Json
 
             if (_bitStack.CurrentDepth == 0)
             {
+                if (_readerOptions.AllowMultipleValues)
+                {
+                    return ReadFirstTokenMultiSegment(marker) ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                }
+
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
 
@@ -1711,6 +1712,11 @@ namespace System.Text.Json
 
             if (_bitStack.CurrentDepth == 0 && _tokenType != JsonTokenType.None)
             {
+                if (_readerOptions.AllowMultipleValues)
+                {
+                    return ReadFirstTokenMultiSegment(first) ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                }
+
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, first);
             }
 
@@ -2064,6 +2070,11 @@ namespace System.Text.Json
             }
             else if (_bitStack.CurrentDepth == 0)
             {
+                if (_readerOptions.AllowMultipleValues)
+                {
+                    return ReadFirstTokenMultiSegment(marker) ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                }
+
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
             else if (marker == JsonConstants.ListSeparator)

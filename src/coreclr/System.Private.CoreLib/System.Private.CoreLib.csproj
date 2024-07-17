@@ -197,7 +197,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CastHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastableHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\StackAllocatedBox.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)..\nativeaot\Common\src\System\Runtime\RhFailFastReason.cs" />

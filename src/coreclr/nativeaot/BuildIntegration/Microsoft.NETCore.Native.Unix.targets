@@ -24,6 +24,7 @@ The .NET Foundation licenses this file to you under the MIT license.
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
     <IlcDefaultStackSize Condition="'$(IlcDefaultStackSize)' == '' and '$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
+    <UseSystemZlib Condition="'$(UseSystemZlib)' == '' and !Exists('$(IlcFrameworkNativePath)libz.a')">true</UseSystemZlib>
   </PropertyGroup>
 
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
@@ -135,6 +136,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NetCoreAppNativeLibrary Include="System.Native" />
       <NetCoreAppNativeLibrary Include="System.Globalization.Native" Condition="'$(StaticICULinking)' != 'true' and '$(InvariantGlobalization)' != 'true'" />
       <NetCoreAppNativeLibrary Include="System.IO.Compression.Native" />
+      <NetCoreAppNativeLibrary Include="z" Condition="'$(UseSystemZlib)' != 'true'" /> <!-- zlib must be added after System.IO.Compression.Native, order matters. -->
       <NetCoreAppNativeLibrary Include="System.Net.Security.Native" Condition="!$(_targetOS.StartsWith('tvos')) and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NetCoreAppNativeLibrary Include="System.Security.Cryptography.Native.Apple" Condition="'$(_IsApplePlatform)' == 'true'" />
       <!-- Not compliant for iOS-like platforms -->
@@ -188,7 +190,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeSystemLibrary Include="objc" Condition="'$(_IsApplePlatform)' == 'true'" />
       <NativeSystemLibrary Include="swiftCore" Condition="'$(_targetOS)' == 'osx'" />
       <NativeSystemLibrary Include="swiftFoundation" Condition="'$(_targetOS)' == 'osx'" />
-      <NativeSystemLibrary Include="z" />
+      <NativeSystemLibrary Include="z" Condition="'$(UseSystemZlib)' == 'true'" />
       <NativeSystemLibrary Include="rt" Condition="'$(_IsApplePlatform)' != 'true' and '$(_linuxLibcFlavor)' != 'bionic'" />
       <NativeSystemLibrary Include="log" Condition="'$(_linuxLibcFlavor)' == 'bionic'" />
       <NativeSystemLibrary Include="icucore" Condition="'$(_IsApplePlatform)' == 'true'" />
@@ -238,6 +240,11 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="@(ExtraLinkerArg->'-Wl,%(Identity)')" />
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(_IsApplePlatform)' == 'true'" />
       <LinkerArg Include="-Wl,--eh-frame-hdr" Condition="'$(_IsApplePlatform)' != 'true'" />
+
+      <!-- Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+           This is required only for 64-bit binaries.
+      -->
+      <LinkerArg Include="-Wl,-z,max-page-size=16384" Condition=" '$(_linuxLibcFlavor)' == 'bionic' and '$(NativeLib)' == 'Shared' and ('$(_targetArchitecture)' == 'x64' or '$(_targetArchitecture)' == 'arm64')" />
     </ItemGroup>
 
     <Exec Command="clang --version" Condition="'$(_IsApplePlatform)' == 'true'" IgnoreExitCode="true" StandardOutputImportance="Low" ConsoleToMSBuild="true">

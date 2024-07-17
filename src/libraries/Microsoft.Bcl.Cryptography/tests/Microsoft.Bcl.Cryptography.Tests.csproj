@@ -34,6 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Bcl.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />

@@ -141,7 +141,7 @@ namespace System.Globalization
             return DaysToMonth[month];
         }
 
-        internal int GetDatePart(long ticks, int part)
+        private int GetDatePart(long ticks, int part)
         {
             CheckTicksRange(ticks);
 

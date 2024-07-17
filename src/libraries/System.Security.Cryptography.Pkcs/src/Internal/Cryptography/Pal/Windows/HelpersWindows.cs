@@ -131,7 +131,7 @@ namespace Internal.Cryptography.Pal.Windows
             for (int index = 0; index < numCertificates; index++)
             {
                 byte[] encodedCertificate = hCryptMsg.GetMsgParamAsByteArray(CryptMsgParamType.CMSG_CERT_PARAM, index);
-                X509Certificate2 cert = new X509Certificate2(encodedCertificate);
+                X509Certificate2 cert = X509CertificateLoader.LoadCertificate(encodedCertificate);
                 certs.Add(cert);
             }
             return certs;

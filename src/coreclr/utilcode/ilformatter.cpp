@@ -133,12 +133,12 @@ void ILFormatter::setTarget(size_t ilOffset, size_t depth) {
 /***************************************************************************/
 void ILFormatter::spillStack(OutString* out) {
 
-    for(unsigned i = 0; i < stackDepth(); i++) {
+    for(size_t i = 0; i < stackDepth(); i++) {
         // don't bother spilling something already spilled.
         if (memcmp(stackStart[i].val.val(), "@STK", 4) != 0)
-            *out << "@STK" << i << " = " << stackStart[i].val.val() << "\n";
+            *out << "@STK" << static_cast<unsigned int>(i) << " = " << stackStart[i].val.val() << "\n";
         stackStart[i].val.clear();
-        stackStart[i].val << "@STK" << i ;
+        stackStart[i].val << "@STK" << static_cast<unsigned int>(i);
     }
 }
 

@@ -224,7 +224,7 @@ NESTED_ENTRY JIT_BoxFastUP, _TEXT
         mov     [g_global_alloc_lock], -1
 
         ; Check whether the object contains pointers
-        test    dword ptr [rcx + OFFSETOF__MethodTable__m_dwFlags], MethodTable__enum_flag_ContainsPointers
+        test    dword ptr [rcx + OFFSETOF__MethodTable__m_dwFlags], MethodTable__enum_flag_ContainsGCPointers
         jnz     ContainsPointers
 
         ; We have no pointers - emit a simple inline copy loop

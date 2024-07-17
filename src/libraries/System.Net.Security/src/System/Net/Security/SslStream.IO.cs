@@ -106,7 +106,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (NetSecurityTelemetry.Log.IsEnabled())
+            if (NetSecurityTelemetry.AnyTelemetryEnabled())
             {
                 return ProcessAuthenticationWithTelemetryAsync(isAsync, cancellationToken);
             }
@@ -120,9 +120,19 @@ namespace System.Net.Security
 
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
-            long startingTimestamp = Stopwatch.GetTimestamp();
+            long startingTimestamp;
+            if (NetSecurityTelemetry.Log.IsEnabled())
+            {
+                NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions.TargetHost);
+                startingTimestamp = Stopwatch.GetTimestamp();
+            }
+            else
+            {
+                startingTimestamp = 0;
+            }
 
+            Activity? activity = NetSecurityTelemetry.StartActivity(this);
+            Exception? exception = null;
             try
             {
                 Task task = isAsync ?
@@ -131,16 +141,28 @@ namespace System.Net.Security
 
                 await task.ConfigureAwait(false);
 
-                // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
-                // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
-                bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
-
-                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), startingTimestamp, connectionOpen);
+                if (startingTimestamp is not 0)
+                {
+                    // SslStream could already have been disposed at this point, in which case _connectionOpenedStatus == 2
+                    // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
+                    bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
+                    SslProtocols protocol = GetSslProtocolInternal();
+                    NetSecurityTelemetry.Log.HandshakeCompleted(protocol, startingTimestamp, connectionOpen);
+                }
             }
             catch (Exception ex)
             {
-                NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                exception = ex;
+                if (startingTimestamp is not 0)
+                {
+                    NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
+                }
+
                 throw;
+            }
+            finally
+            {
+                NetSecurityTelemetry.StopActivity(activity, exception, this);
             }
         }
 
@@ -271,7 +293,8 @@ namespace System.Net.Security
             {
                 if (!receiveFirst)
                 {
-                    token = NextMessage(reAuthenticationData);
+                    token = NextMessage(reAuthenticationData, out int consumed);
+                    Debug.Assert(consumed == (reAuthenticationData?.Length ?? 0));
 
                     if (token.Size > 0)
                     {
@@ -462,16 +485,13 @@ namespace System.Net.Security
             int chunkSize = frameSize;
 
             ReadOnlySpan<byte> availableData = _buffer.EncryptedReadOnlySpan;
-            // DiscardEncrypted() does not touch data, it just increases start index so next
-            // EncryptedSpan will exclude the "discarded" data.
-            _buffer.DiscardEncrypted(frameSize);
 
             // Often more TLS messages fit into same packet. Get as many complete frames as we can.
-            while (_buffer.EncryptedLength > TlsFrameHelper.HeaderSize)
+            while (_buffer.EncryptedLength - chunkSize > TlsFrameHelper.HeaderSize)
             {
                 TlsFrameHeader nextHeader = default;
 
-                if (!TlsFrameHelper.TryGetFrameHeader(_buffer.EncryptedReadOnlySpan, ref nextHeader))
+                if (!TlsFrameHelper.TryGetFrameHeader(availableData.Slice(chunkSize), ref nextHeader))
                 {
                     break;
                 }
@@ -480,17 +500,18 @@ namespace System.Net.Security
 
                 // Can process more handshake frames in single step or during TLS1.3 post-handshake auth, but we should
                 // avoid processing too much so as to preserve API boundary between handshake and I/O.
-                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > _buffer.EncryptedLength)
+                if ((nextHeader.Type != TlsContentType.Handshake && nextHeader.Type != TlsContentType.ChangeCipherSpec) && !_isRenego || frameSize > availableData.Length - chunkSize)
                 {
                     // We don't have full frame left or we already have app data which needs to be processed by decrypt.
                     break;
                 }
 
                 chunkSize += frameSize;
-                _buffer.DiscardEncrypted(frameSize);
             }
 
-            return NextMessage(availableData.Slice(0, chunkSize));
+            ProtocolToken token = NextMessage(availableData.Slice(0, chunkSize), out int consumed);
+            _buffer.DiscardEncrypted(consumed);
+            return token;
         }
 
         //

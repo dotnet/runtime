@@ -247,7 +247,7 @@
   <ItemGroup>
     <UpToDateCheckInput Include="@(NativeFileReference)" />
   </ItemGroup>
-  
+
   <PropertyGroup>
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' != '0'">true</_WasmDebuggerSupport>
     <_WasmDebuggerSupport Condition="'$(WasmDebugLevel)' != '' and '$(WasmDebugLevel)' == '0'">false</_WasmDebuggerSupport>
@@ -621,6 +621,8 @@
 
     <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(PublishTrimmed)' != 'true'"
            Text="AOT is not supported without IL trimming (PublishTrimmed=true required)." />
+    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(Configuration)' == 'Debug'"
+           Text="AOT is not supported in debug configuration (Configuration=Release required)." />
     <Error Condition="'@(_WasmAssembliesInternal)' == ''" Text="Item _WasmAssembliesInternal is empty" />
     <Error Condition="'$(_IsToolchainMissing)' == 'true'"
            Text="$(_ToolchainMissingErrorMessage) SDK is required for AOT'ing assemblies." />
@@ -929,7 +931,7 @@
   <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
     <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
 
-    <Exec Command="wasm-opt$(_ExeExt) @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(WasmToolchainEnvVars)" />
   </Target>

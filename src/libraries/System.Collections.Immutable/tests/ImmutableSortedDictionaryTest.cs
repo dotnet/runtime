@@ -402,28 +402,6 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, dictionary.Remove(2).Count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public void DebuggerAttributesValid()
-        {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableSortedDictionary.Create<string, int>());
-            ImmutableSortedDictionary<int, int> dict = ImmutableSortedDictionary.Create<int, int>().Add(1, 2).Add(2, 3).Add(3, 4);
-            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
-
-            object rootNode = DebuggerAttributes.GetFieldValue(ImmutableSortedDictionary.Create<string, string>(), "_root");
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
-            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
-            KeyValuePair<int, int>[] items = itemProperty.GetValue(info.Instance) as KeyValuePair<int, int>[];
-            Assert.Equal(dict, items);
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
-        public static void TestDebuggerAttributes_Null()
-        {
-            Type proxyType = DebuggerAttributes.GetProxyType(ImmutableSortedDictionary.Create<int, int>());
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance(proxyType, (object)null));
-            Assert.IsType<ArgumentNullException>(tie.InnerException);
-        }
-
         [Fact]
         public void ValueRef()
         {

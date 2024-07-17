@@ -742,6 +742,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void LoadWithDuplicateAttributes(bool allowDuplicates)
+        {
+            Pkcs12LoaderLimits limits = Pkcs12LoaderLimits.Defaults;
+
+            if (allowDuplicates)
+            {
+                limits = Pkcs12LoaderLimits.DangerousNoLimits;
+            }
+
+            // remove the edit lock
+            limits = new Pkcs12LoaderLimits(limits)
+            {
+                PreserveCertificateAlias = false,
+                PreserveKeyName = false,
+                PreserveStorageProvider = false,
+                PreserveUnknownAttributes = false,
+            };
+
+            Func<X509Certificate2Collection> func =
+                () => LoadPfxNoFile(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw, loaderLimits: limits);
+
+            if (allowDuplicates)
+            {
+                X509Certificate2Collection coll = func();
+
+                using (new CollectionDisposer(coll))
+                {
+                    Assert.Equal(1, coll.Count);
+                    X509Certificate2 cert = coll[0];
+
+                    Assert.Equal("Certificate 1", cert.GetNameInfo(X509NameType.SimpleName, false));
+                    Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                }
+            }
+            else
+            {
+                Pkcs12LoadLimitExceededException ex = Assert.Throws<Pkcs12LoadLimitExceededException>(() => func());
+                Assert.Contains("AllowDuplicateAttributes", ex.Message);
+            }
+        }
+
         private sealed class CollectionDisposer : IDisposable
         {
             private readonly X509Certificate2Collection _coll;

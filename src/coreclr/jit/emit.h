@@ -4212,6 +4212,10 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
             return EA_16BYTE;
         }
 
+        case INS_vbroadcastf32x8:
+        case INS_vbroadcasti32x8:
+        case INS_vbroadcasti64x4:
+        case INS_vbroadcastf64x4:
         case INS_vextractf32x8:
         case INS_vextracti32x8:
         case INS_vextractf64x4:

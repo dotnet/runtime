@@ -278,7 +278,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			class DynamicallyAccessedLocalFunction
 			{
-				[UnexpectedWarning ("IL2118", "LocalFunction", Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				public static void TestCallRUCMethodInDynamicallyAccessedLocalFunction ()
 				{
@@ -426,7 +425,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			class DynamicallyAccessedLambda
 			{
-				[UnexpectedWarning ("IL2118", nameof (TestCallRUCMethodInDynamicallyAccessedLambda), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				public static void TestCallRUCMethodInDynamicallyAccessedLambda ()
 				{
@@ -440,7 +438,6 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 
 			class DynamicallyAccessedLambdaUnused
 			{
-				[UnexpectedWarning ("IL2118", nameof (TestCallRUCMethodInDynamicallyAccessedLambda), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 				[UnconditionalSuppressMessage ("Test", "IL2026")]
 				public static void TestCallRUCMethodInDynamicallyAccessedLambda ()
 				{

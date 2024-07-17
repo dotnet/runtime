@@ -10,7 +10,7 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static unsafe int WaitMultipleIgnoringSyncContextCore(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        private static unsafe int WaitMultipleIgnoringSyncContextCore(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
             fixed (IntPtr* pHandles = &MemoryMarshal.GetReference(handles))
             {

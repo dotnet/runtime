@@ -1765,6 +1765,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("UNBOX_NULLABLE");
                     break;
 
+                case ReadyToRunHelper.Unbox_TypeTest:
+                    builder.Append("UNBOX_TYPETEST");
+                    break;
+
                 case ReadyToRunHelper.NewMultiDimArr:
                     builder.Append("NEW_MULTI_DIM_ARR");
                     break;

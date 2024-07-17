@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization.Metadata;
@@ -97,6 +99,111 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.True(success, "AsyncEnumerator.MoveNextAsync() should return true.");
                 Assert.True(stream.Position < stream.Capacity / 2, "should have consumed less than half of the stream contents.");
             }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(5)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static async Task DeserializeAsyncEnumerable_Object_TopLevelValues(int count)
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            string json = GenerateJsonTopLevelValues(count);
+            using var stream = new Utf8MemoryStream(json);
+
+            IAsyncEnumerable<SimpleTestClass> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<SimpleTestClass>(stream, topLevelValues:true, options);
+
+            int i = 0;
+            await foreach (SimpleTestClass item in asyncEnumerable)
+            {
+                Assert.Equal(i++, item.MyInt32);
+                item.MyInt32 = 2; // Put correct value back for Verify()
+                item.Verify();
+            }
+
+            Assert.Equal(count, i);
+
+            static string GenerateJsonTopLevelValues(int count)
+            {
+                StringBuilder sb = new();
+                for (int i = 0; i < count; i++)
+                {
+                    var obj = new SimpleTestClass();
+                    obj.Initialize();
+                    obj.MyInt32 = i; // verify order correctness
+
+                    sb.Append(JsonSerializer.Serialize(obj));
+                    sb.Append((i % 5) switch { 0 => "", 1 => " ", 2 => "\t", 3 => "\r\n", _ => "   \n\n\n\n\n   " });
+                }
+
+                return sb.ToString();
+            }
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(5)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static async Task DeserializeAsyncEnumerable_Array_TopLevelValues(int count)
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            string json = GenerateJsonTopLevelValues(count);
+            using var stream = new Utf8MemoryStream(json);
+
+            IAsyncEnumerable<List<int>?> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<List<int>?>(stream, topLevelValues:true, options);
+
+            int i = 0;
+            await foreach (List<int>? item in asyncEnumerable)
+            {
+                switch (i++ % 4)
+                {
+                    case 0:
+                        Assert.Null(item);
+                        break;
+                    case 1:
+                        Assert.Equal([], item);
+                        break;
+                    case 2:
+                        Assert.Equal([1], item);
+                        break;
+                    case 3:
+                        Assert.Equal([1, 2, 3], item);
+                        break;
+                }
+            }
+
+            Assert.Equal(count, i);
+
+            static string GenerateJsonTopLevelValues(int count)
+            {
+                StringBuilder sb = new();
+                for (int i = 0; i < count; i++)
+                {
+                    sb.Append((i % 4) switch { 0 => " null", 1 => "[]", 2 => "[1]", _ => "[1,2,3]" });
+                    sb.Append((i % 5) switch { 0 => "", 1 => " ", 2 => "\t", 3 => "\r\n", _ => "   \n\n\n\n\n   " });
+                }
+
+                return sb.ToString();
+            }
+        }
+
+        [Fact]
+        public static async Task DeserializeAsyncEnumerable_TopLevelValues_TrailingData_ThrowsJsonException()
+        {
+            JsonSerializerOptions options = new() { DefaultBufferSize = 1 };
+            using var stream = new Utf8MemoryStream("""[] [1] [1,2,3] <NotJson/>""");
+
+            IAsyncEnumerable<List<int>> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<List<int>>(stream, topLevelValues:true, options);
+            await using var asyncEnumerator = asyncEnumerable.GetAsyncEnumerator();
+
+            await Assert.ThrowsAnyAsync<JsonException>(async () =>
+            {
+                while (await asyncEnumerator.MoveNextAsync());
+            });
         }
 
         [Theory]
@@ -228,6 +335,47 @@ namespace System.Text.Json.Serialization.Tests
             });
         }
 
+        [Theory]
+        [InlineData(5, 1024)]
+        [InlineData(5, 1024 * 1024)]
+        public static async Task DeserializeAsyncEnumerable_SlowStreamWithLargeStrings(int totalStrings, int stringLength)
+        {
+            var options = new JsonSerializerOptions
+            {
+                Converters = { new StringLengthConverter() }
+            };
+
+            using var stream = new SlowStream(GenerateJsonCharacters());
+            string expectedElement = stringLength.ToString(CultureInfo.InvariantCulture);
+            IAsyncEnumerable<string?> asyncEnumerable = JsonSerializer.DeserializeAsyncEnumerable<string>(stream, options);
+
+            await foreach (string? value in asyncEnumerable)
+            {
+                Assert.Equal(expectedElement, value);
+            }
+
+            IEnumerable<byte> GenerateJsonCharacters()
+            {
+                // ["xxx...x","xxx...x",...,"xxx...x"]
+                yield return (byte)'[';
+                for (int i = 0; i < totalStrings; i++)
+                {
+                    yield return (byte)'"';
+                    for (int j = 0; j < stringLength; j++)
+                    {
+                        yield return (byte)'x';
+                    }
+                    yield return (byte)'"';
+
+                    if (i < totalStrings - 1)
+                    {
+                        yield return (byte)',';
+                    }
+                }
+                yield return (byte)']';
+            }
+        }
+
         public static IEnumerable<object[]> GetAsyncEnumerableSources()
         {
             yield return WrapArgs(Enumerable.Empty<int>(), 1, DeserializeAsyncEnumerableOverload.JsonSerializerOptions);
@@ -275,6 +423,49 @@ namespace System.Text.Json.Serialization.Tests
                 list.Add(item);
             }
             return list;
+        }
+
+        private sealed class SlowStream(IEnumerable<byte> byteSource) : Stream, IDisposable
+        {
+            private readonly IEnumerator<byte> _enumerator = byteSource.GetEnumerator();
+            private long _position;
+
+            public override bool CanRead => true;
+            public override int Read(byte[] buffer, int offset, int count)
+            {
+                Debug.Assert(buffer != null);
+                Debug.Assert(offset >= 0 && count <= buffer.Length - offset);
+
+                if (count == 0 || !_enumerator.MoveNext())
+                {
+                    return 0;
+                }
+
+                _position++;
+                buffer[offset] = _enumerator.Current;
+                return 1;
+            }
+
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Position { get => _position; set => throw new NotSupportedException(); }
+            public override long Length => throw new NotSupportedException();
+            public override void Flush() => throw new NotSupportedException();
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            void IDisposable.Dispose() => _enumerator.Dispose();
+        }
+
+        private sealed class StringLengthConverter : JsonConverter<string>
+        {
+            public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                Debug.Assert(!reader.ValueIsEscaped && !reader.HasValueSequence);
+                return reader.ValueSpan.Length.ToString(CultureInfo.InvariantCulture);
+            }
+
+            public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options) => throw new NotImplementedException();
         }
     }
 }

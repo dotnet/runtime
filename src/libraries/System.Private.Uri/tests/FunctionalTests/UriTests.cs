@@ -18,16 +18,16 @@ namespace System.PrivateUri.Tests
                 if (PlatformDetection.IsWindows)
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1/path2/path3/path4", @"/path1/path2/path3/path4", @"file:///path1/path2/path3/path4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1/path2/path3", @"/path1/path2/path3", @"file:///path1/path2/path3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1/path2/path3/path4/", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1/path2/path3/path4/", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1/path2/path3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1/path2/path3", "randomhost" };
                 }
                 else
                 {
                     yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", @"/path1\path2/path3\path4", @"file:///path1%5Cpath2/path3%5Cpath4", "" };
-                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", ""};
-                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost"};
-                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost"};
+                    yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"/path1\path2\path3", @"file:///path1%5Cpath2%5Cpath3", "" };
+                    yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", @"\\localhost\path1\path2\path3\path4\", @"file://localhost/path1%5Cpath2/path3%5Cpath4%5C", "localhost" };
+                    yield return new object[] { @"file://randomhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", @"\\randomhost\path1\path2\path3", @"file://randomhost/path1%5Cpath2%5Cpath3", "randomhost" };
                 }
             }
         }
@@ -917,6 +917,38 @@ namespace System.PrivateUri.Tests
                 // ISpanFormattable.TryFormat
                 Assert.False(((ISpanFormattable)func()).TryFormat(formatted, out charsWritten, default, null));
                 Assert.Equal(0, charsWritten);
+            }
+        }
+
+        [Fact]
+        public static void IsLoopback()
+        {
+            string[] validLoopback =
+            [
+                "localhost", "Localhost", "LOCALHOST",
+                "127.0.0.1", "127.4.5.6",
+                "[::1]", "[0:0:0:0:0:0:0:1]", "[0:0:0:0:0:0:127.0.0.1]", "[0:0:0:0:0:FFFF:127.0.0.1]"
+            ];
+
+            string[] invalidLoopback =
+            [
+                "something", "ELSE", "dot.net",
+                "128.0.0.1",
+                "[::2]", "[0:0:0:0:0:1234:127.0.0.1]"
+            ];
+
+            foreach (bool expected in new[] { false, true })
+            {
+                foreach (string scheme in new[] { "http", "https" })
+                {
+                    foreach (string host in (expected ? validLoopback : invalidLoopback))
+                    {
+                        foreach (bool hasPort in new[] { false, true })
+                        {
+                            Assert.Equal(expected, new Uri($"{scheme}://{host}{(hasPort ? ":12345" : "")}").IsLoopback);
+                        }
+                    }
+                }
             }
         }
     }

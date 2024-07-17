@@ -227,6 +227,17 @@ namespace System.Runtime
             RhUnbox(obj, ref data, pUnboxToEEType);
         }
 
+        [RuntimeExport("RhUnboxTypeTest")]
+        public static unsafe void RhUnboxTypeTest(MethodTable* pType, MethodTable* pBoxType)
+        {
+            Debug.Assert(pType->IsValueType);
+
+            if (!UnboxAnyTypeCompare(pType, pBoxType))
+            {
+                throw pType->GetClasslibException(ExceptionIDs.InvalidCast);
+            }
+        }
+
         [RuntimeExport("RhUnbox")]
         public static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
         {

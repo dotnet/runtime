@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnablePreviewFeatures>True</EnablePreviewFeatures>
-    <NoWarn>CA2252</NoWarn>
+    <NoWarn>$(NoWarn);CA2252</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

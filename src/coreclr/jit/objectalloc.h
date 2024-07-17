@@ -164,15 +164,6 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
-#ifdef FEATURE_READYTORUN
-        if (comp->opts.IsReadyToRun())
-        {
-            // Need to fix getClassGClayout and maybe more
-            *reason = "[R2R/NAOT support NYI]";
-            return false;
-        }
-#endif
-
         classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
     }
 

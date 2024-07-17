@@ -342,7 +342,7 @@ namespace System.Net.NetworkInformation
                 // to the echo request we just sent. We need to filter such messages out, and continue reading until our timeout.
                 // For example, when pinging the local host, we need to filter out our own echo requests that the socket reads.
                 long startingTimestamp = Stopwatch.GetTimestamp();
-                while (!timeoutOrCancellationToken.IsCancellationRequested)
+                while (true)
                 {
                     SocketReceiveFromResult receiveResult = await socket.ReceiveFromAsync(
                         receiveBuffer.AsMemory(),

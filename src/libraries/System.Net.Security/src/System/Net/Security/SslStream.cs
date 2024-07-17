@@ -486,7 +486,7 @@ namespace System.Net.Security
         }
 
         // Skips the ThrowIfExceptionalOrNotHandshake() check
-        private SslProtocols GetSslProtocolInternal()
+        internal SslProtocols GetSslProtocolInternal()
         {
             if (_connectionInfo.Protocol == 0)
             {

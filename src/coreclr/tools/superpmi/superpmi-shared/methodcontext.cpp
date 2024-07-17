@@ -696,8 +696,8 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags,
     info->options    = (CorInfoOptions)value.info.options;
     info->regionKind = (CorInfoRegionKind)value.info.regionKind;
 
-    info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap);
-    info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap);
+    info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap, cr->getOrCreateMemoryTracker());
+    info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 
     *flags             = (unsigned)value.flags;
     *os                = (CORINFO_OS)value.os;
@@ -1572,7 +1572,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             pResult->methodFlags |= CORINFO_FLG_DONT_INLINE;
 
         pResult->classFlags = (unsigned)value.classFlags;
-        pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap);
+        pResult->sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo, SigInstHandleMap, cr->getOrCreateMemoryTracker());
         pResult->accessAllowed = (CorInfoIsAccessAllowedResult)value.accessAllowed;
         pResult->callsiteCalloutHelper.helperNum = (CorInfoHelpFunc)value.callsiteCalloutHelper.helperNum;
         pResult->callsiteCalloutHelper.numArgs = (unsigned)value.callsiteCalloutHelper.numArgs;
@@ -2905,7 +2905,7 @@ void MethodContext::repGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
 
     DEBUG_REP(dmpGetMethodSig(key, value));
 
-    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap);
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
 void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
@@ -3060,8 +3060,8 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
         info->options    = (CorInfoOptions)value.info.options;
         info->regionKind = (CorInfoRegionKind)value.info.regionKind;
 
-        info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap);
-        info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap);
+        info->args   = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.args, GetMethodInfo, SigInstHandleMap, cr->getOrCreateMemoryTracker());
+        info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, GetMethodInfo, SigInstHandleMap, cr->getOrCreateMemoryTracker());
     }
     bool result    = value.result;
     *exceptionCode = (DWORD)value.exceptionCode;
@@ -4320,7 +4320,7 @@ void MethodContext::repFindSig(CORINFO_MODULE_HANDLE  moduleHandle,
 
     DEBUG_REP(dmpFindSig(key, value));
 
-    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap);
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
 void MethodContext::recGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
@@ -5388,7 +5388,7 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
 
     DEBUG_REP(dmpFindCallSiteSig(key, value));
 
-    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap);
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig, SigInstHandleMap, cr->getOrCreateMemoryTracker());
 }
 
 void MethodContext::recGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection, void* result)

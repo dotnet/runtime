@@ -26,30 +26,34 @@ namespace System.Net.Http
 
 #if TARGET_BROWSER
         private IMeterFactory? _meterFactory;
-        private MetricsHandler? _metricsHandler;
+        private HttpMessageHandler? _firstHandler; // DiagnosticsHandler or MetricsHandler, depending on global configuration.
 
-        private MetricsHandler Handler
+        private HttpMessageHandler Handler
         {
             get
             {
-                if (_metricsHandler != null)
+                if (_firstHandler != null)
                 {
-                    return _metricsHandler;
+                    return _firstHandler;
                 }
 
                 HttpMessageHandler handler = _underlyingHandler;
+
+                // MetricsHandler should be descendant of DiagnosticsHandler in the handler chain to make sure the 'http.request.duration'
+                // metric is recorded before stopping the request Activity. This is needed to make sure that our telemetry supports Exemplars.
+                handler = new MetricsHandler(handler, _meterFactory, out _);
                 if (DiagnosticsHandler.IsGloballyEnabled())
                 {
                     handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
                 }
-                MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory, out _);
 
                 // Ensure a single handler is used for all requests.
-                if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
+                if (Interlocked.CompareExchange(ref _firstHandler, handler, null) != null)
                 {
-                    metricsHandler.Dispose();
+                    handler.Dispose();
                 }
-                return _metricsHandler;
+
+                return _firstHandler;
             }
         }
 #else
@@ -95,7 +99,7 @@ namespace System.Net.Http
             set
             {
                 ObjectDisposedException.ThrowIf(_disposed, this);
-                if (_metricsHandler != null)
+                if (_firstHandler != null)
                 {
                     throw new InvalidOperationException(SR.net_http_operation_started);
                 }

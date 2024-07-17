@@ -34,16 +34,11 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <kvm.h>
-#elif defined(__sun)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
+
+#if defined(__sun)
+#include <procfs.h>
 #include <fcntl.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
 #endif
 
 #include <signal.h>
@@ -72,10 +67,6 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #endif
 #if HAVE_LWP_H
 #include <lwp.h>
-#endif
-// If we don't have sys/lwp.h but do expect to use _lwp_self, declare it to silence compiler warnings
-#if HAVE__LWP_SELF && !HAVE_SYS_LWP_H && !HAVE_LWP_H
-extern "C" int _lwp_self ();
 #endif
 
 #if HAVE_CPUSET_T

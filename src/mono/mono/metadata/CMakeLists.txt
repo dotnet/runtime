@@ -200,7 +200,14 @@ set(metadata_sources "${metadata_platform_sources};${metadata_common_sources};${
 if(HOST_WIN32 AND NOT DISABLE_SHARED_LIBS)
     add_library(metadata_objects_shared OBJECT ${metadata_sources})
     target_compile_definitions(metadata_objects_shared PRIVATE ${metadata_compile_definitions})
-    target_link_libraries(metadata_objects_shared PRIVATE monoapi eglib_api utils_objects_shared)
+    
+    set(METADATAOBJECTSSHARED_LINKABLE_LIBS "")
+    list(APPEND METADATAOBJECTSSHARED_LINKABLE_LIBS monoapi eglib_api utils_objects_shared)
+    if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+        list(APPEND METADATAOBJECTSSHARED_LINKABLE_LIBS zlib)
+    endif()
+    target_link_libraries(metadata_objects_shared PRIVATE ${METADATAOBJECTSSHARED_LINKABLE_LIBS})
+    
     # note: metadata_objects is an object library, so this doesn't force linking with sgen,
     # it just adds the relevant include directories - which we need even with Boehm
     target_link_libraries(metadata_objects_shared PRIVATE sgen_objects_shared)
@@ -212,7 +219,14 @@ endif()
 
 add_library(metadata_objects OBJECT ${metadata_sources})
 target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitions})
-target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
+
+set(METADATAOBJECTS_LINKABLE_LIBS "")
+list(APPEND METADATAOBJECTS_LINKABLE_LIBS monoapi eglib_api utils_objects)
+if (NOT CLR_CMAKE_USE_SYSTEM_ZLIB)
+    list(APPEND METADATAOBJECTS_LINKABLE_LIBS zlib)
+endif()
+target_link_libraries(metadata_objects PRIVATE ${METADATAOBJECTS_LINKABLE_LIBS})
+
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
 target_link_libraries(metadata_objects PRIVATE sgen_objects)

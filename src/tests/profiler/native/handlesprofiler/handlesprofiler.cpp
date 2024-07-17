@@ -139,7 +139,7 @@ ObjectID HandlesProfiler::CheckIfAlive(const char* name, ObjectHandleID handle, 
     {
         _failures++;
         printf("HandlesProfiler::CheckIfAlive(%s): FAIL: null handle.\n", name);
-        return NULL;
+        return 0;
     }
 
     ObjectID objectId{0};
@@ -148,12 +148,12 @@ ObjectID HandlesProfiler::CheckIfAlive(const char* name, ObjectHandleID handle, 
     {
         _failures++;
         printf("HandlesProfiler::CheckIfAlive(%s): FAIL: GetObjectIDFromHandle failed.\n", name);
-        return NULL;
+        return 0;
     }
 
     if (shouldBeAlive)
     {
-        if (objectId == NULL)
+        if (objectId == 0)
         {
             _failures++;
             printf("HandlesProfiler::CheckIfAlive(%s): FAIL: the object should be alive.\n", name);
@@ -179,7 +179,7 @@ ObjectID HandlesProfiler::CheckIfAlive(const char* name, ObjectHandleID handle, 
     }
     else
     {
-        if (objectId != NULL)
+        if (objectId != 0)
         {
             _failures++;
             printf("HandlesProfiler::CheckIfAlive(%s): FAIL: the object should not be alive anymore.\n", name);
@@ -190,7 +190,7 @@ ObjectID HandlesProfiler::CheckIfAlive(const char* name, ObjectHandleID handle, 
         }
     }
 
-    return NULL;
+    return 0;
 }
 
 HRESULT HandlesProfiler::GarbageCollectionFinished()
