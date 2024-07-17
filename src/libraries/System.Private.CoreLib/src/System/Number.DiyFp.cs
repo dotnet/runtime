@@ -19,7 +19,6 @@ namespace System
         {
             public const int DoubleImplicitBitIndex = 52;
             public const int SingleImplicitBitIndex = 23;
-            public const int HalfImplicitBitIndex = 10;
 
             public const int SignificandSize = 64;
 
@@ -61,10 +60,11 @@ namespace System
             //
             // Precondition:
             //  The value encoded by value must be greater than 0.
-            public static DiyFp CreateAndGetBoundaries(Half value, out DiyFp mMinus, out DiyFp mPlus)
+            public static DiyFp CreateAndGetBoundaries<TNumber>(TNumber value, out DiyFp mMinus, out DiyFp mPlus)
+                where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             {
-                var result = new DiyFp(value);
-                result.GetBoundaries(HalfImplicitBitIndex, out mMinus, out mPlus);
+                DiyFp result = Create(value);
+                result.GetBoundaries(TNumber.DenormalMantissaBits, out mMinus, out mPlus);
                 return result;
             }
 
@@ -82,11 +82,13 @@ namespace System
                 f = ExtractFractionAndBiasedExponent(value, out e);
             }
 
-            public DiyFp(Half value)
+            public static DiyFp Create<TNumber>(TNumber value)
+                where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             {
-                Debug.Assert(Half.IsFinite(value));
-                Debug.Assert((float)value > 0.0f);
-                f = ExtractFractionAndBiasedExponent(value, out e);
+                Debug.Assert(TNumber.IsFinite(value));
+                Debug.Assert(value > TNumber.Zero);
+                ulong f = ExtractFractionAndBiasedExponent(value, out int e);
+                return new DiyFp(f, e);
             }
 
             public DiyFp(ulong f, int e)

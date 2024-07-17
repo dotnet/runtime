@@ -355,12 +355,12 @@ namespace System
                 return result;
             }
 
-            public static bool TryRunHalf(Half value, int requestedDigits, ref NumberBuffer number)
+            public static bool TryRunSingle(float value, int requestedDigits, ref NumberBuffer number)
             {
-                Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
+                float v = float.IsNegative(value) ? -value : value;
 
-                Debug.Assert((double)v > 0);
-                Debug.Assert(Half.IsFinite(v));
+                Debug.Assert(v > 0);
+                Debug.Assert(float.IsFinite(v));
 
                 int length;
                 int decimalExponent;
@@ -389,12 +389,13 @@ namespace System
                 return result;
             }
 
-            public static bool TryRunSingle(float value, int requestedDigits, ref NumberBuffer number)
+            public static bool TryRun<TNumber>(TNumber value, int requestedDigits, ref NumberBuffer number)
+                where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             {
-                float v = float.IsNegative(value) ? -value : value;
+                TNumber v = TNumber.IsNegative(value) ? -value : value;
 
-                Debug.Assert(v > 0);
-                Debug.Assert(float.IsFinite(v));
+                Debug.Assert(v > TNumber.Zero);
+                Debug.Assert(TNumber.IsFinite(v));
 
                 int length;
                 int decimalExponent;
@@ -407,7 +408,7 @@ namespace System
                 }
                 else
                 {
-                    DiyFp w = new DiyFp(v).Normalize();
+                    DiyFp w = DiyFp.Create(v).Normalize();
                     result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
                 }
 

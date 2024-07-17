@@ -2217,6 +2217,10 @@ namespace System
 
         static ulong IBinaryFloatParseAndFormatInfo<float>.FloatToBits(float value) => BitConverter.SingleToUInt32Bits(value);
 
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxRoundTripDigits => 9;
+
+        static int IBinaryFloatParseAndFormatInfo<float>.MaxPrecisionCustomFormat => 7;
+
         //
         // Helpers
         //
