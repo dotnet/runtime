@@ -37,6 +37,8 @@
     <EnableDefaultItems>false</EnableDefaultItems>
     <!-- Libraries packages use the incremental servicing infrastructure. -->
     <PackageUseIncrementalServicingVersion>true</PackageUseIncrementalServicingVersion>
+    <!-- Make libraries packages use and require a package readme file. -->
+    <EnableDefaultPackageReadmeFile Condition="'$(EnableDefaultPackageReadmeFile)' == '' and '$(IsShipping)' == 'true'">true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <!-- Language configuration -->
