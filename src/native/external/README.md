@@ -1,6 +1,6 @@
 # Native external libraries
 
-This folder contains the source code of third party native libraries that are used as dependencies for Runtime.
+This folder contains the source code of vendored third party native libraries that are used as dependencies for dotnet/runtime.
 
 ### Folder structure
 
@@ -19,7 +19,7 @@ cgmanifest.json
 - `library-version.txt` contains all the detailed release information for this library.
 - `cgmanifest.json` is the official file that describes the source code provenance for each one of the external libraries we consume.
 
-### How to add or update a new library
+### How to add or update a vendored library
 
 1. Download a copy of the source code from an official public release and extract it inside the library folder under `src/native/external/<library-name>`.
 
