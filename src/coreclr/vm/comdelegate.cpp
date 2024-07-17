@@ -1919,6 +1919,8 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
             ILStubLinker sl(pMD->GetModule(), pMD->GetSignature(), &emptyContext, pMD, (ILStubLinkerFlags)(ILSTUB_LINKER_FLAG_STUB_HAS_THIS | ILSTUB_LINKER_FLAG_TARGET_HAS_THIS));
 
             ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
+
+            // Store the function pointer into local variable to avoid unnecessary register usage by JIT
             DWORD numMethodPtr = pCode->NewLocal(ELEMENT_TYPE_I);
             
             // Load the method pointer
