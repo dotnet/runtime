@@ -7834,7 +7834,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
 
     TypeHandle th(type);
 
-    if (th.IsTypicalTypeDefinition())
+    if (th.HasInstantiation() && !th.IsGenericTypeDefinition())
     {
         th = ClassLoader::LoadTypeDefThrowing(
             th.GetModule(),
@@ -7842,7 +7842,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
             ClassLoader::ThrowIfNotFound,
             ClassLoader::PermitUninstDefOrRef);
 
-        _ASSERTE(th.IsTypicalTypeDefinition());
+        _ASSERTE(th.IsGenericTypeDefinition());
     }
 
     result = CORINFO_CLASS_HANDLE(th.AsPtr());
