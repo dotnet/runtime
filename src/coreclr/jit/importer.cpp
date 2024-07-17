@@ -10120,6 +10120,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //
                         unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
                         lvaSetStruct(resultTmp, resolvedToken.hClass, false);
+                        lvaSetVarAddrExposed(resultTmp, AddressExposedReason::ESCAPE_ADDRESS);
 
                         GenTreeLclFld* resultAddr = gtNewLclAddrNode(resultTmp, 0);
                         // NOTE: it's fine for op2 to be evaluated before op1
@@ -10163,8 +10164,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Here we need unsafe value cls check, since the address of struct is taken to be used
                         // further along and potetially be exploitable.
 
-                        GenTreeFlags indirFlags = GTF_EMPTY;
-                        op1                     = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
+                        // op1 is always a local, see code above for CORINFO_HELP_UNBOX_NULLABLE
+                        op1 = gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), TYP_I_IMPL);
                     }
                 }
                 else
