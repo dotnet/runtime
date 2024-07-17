@@ -10163,18 +10163,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Here we need unsafe value cls check, since the address of struct is taken to be used
                         // further along and potetially be exploitable.
 
-                        unsigned tmp = lvaGrabTemp(true DEBUGARG("UNBOXing a nullable"));
-                        lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
-
-                        op1 = gtNewStoreLclVarNode(tmp, op1);
-                        op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
-                        assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
-
-                        op2 = gtNewLclVarAddrNode(tmp, TYP_BYREF);
-                        op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
+                        // op1 is always a local, see code above for CORINFO_HELP_UNBOX_NULLABLE
+                        op1 = gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), TYP_I_IMPL);
                     }
-
-                    assert(op1->gtType == TYP_BYREF);
                 }
                 else
                 {
