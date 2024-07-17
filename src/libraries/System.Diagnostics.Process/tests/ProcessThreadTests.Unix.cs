@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -30,5 +31,10 @@ namespace System.Diagnostics.Tests
 
             Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel = level);
         }
+
+        private static int GetCurrentThreadId() => syscall(186); // SYS_gettid
+
+        [DllImport("libc")]
+        private static extern int syscall(int nr);
     }
 }

@@ -150,7 +150,7 @@ namespace System.Diagnostics.Tests
                 {
                     p.Refresh();
 
-                    int newThreadId = OperatingSystem.IsWindows() ? GetCurrentThreadId() : gettid();
+                    int newThreadId = GetCurrentThreadId();
 
                     ProcessThread[] processThreads = p.Threads.Cast<ProcessThread>().ToArray();
                     ProcessThread newThread = Assert.Single(processThreads, thread => thread.Id == newThreadId);
@@ -158,13 +158,6 @@ namespace System.Diagnostics.Tests
                     Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
-
-            [DllImport("libc")]
-            static extern int gettid();
-
-            [DllImport("kernel32.dll")]
-            [SuppressGCTransition]
-            static extern int GetCurrentThreadId();
         }
 
         [Fact]
