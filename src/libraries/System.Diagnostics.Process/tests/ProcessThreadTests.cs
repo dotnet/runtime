@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.Tests
 {
@@ -108,7 +109,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux|TestPlatforms.Windows)] // OSX and FreeBSD throw PNSE from StartTime
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)] // OSX and FreeBSD throw PNSE from StartTime
         public async Task TestStartTimeProperty()
         {
             TimeSpan allowedWindow = PlatformDetection.IsMonoRuntime
@@ -150,17 +151,22 @@ namespace System.Diagnostics.Tests
                 await Task.Factory.StartNew(() =>
                 {
                     p.Refresh();
-                    try
-                    {
-                        var newest = p.Threads.Cast<ProcessThread>().OrderBy(t => t.StartTime.ToUniversalTime()).Last();
-                        Assert.InRange(newest.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // A thread may have gone away between our getting its info and attempting to access its StartTime
-                    }
+
+                    int newThreadId = OperatingSystem.IsWindows() ? GetCurrentThreadId() : gettid();
+
+                    ProcessThread[] processThreads = p.Threads.Cast<ProcessThread>().ToArray();
+                    ProcessThread newThread = Assert.Single(processThreads, thread => thread.Id == newThreadId);
+
+                    Assert.InRange(newThread.StartTime.ToUniversalTime(), curTime - allowedWindow, DateTime.Now.ToUniversalTime() + allowedWindow);
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
+
+            [DllImport("libc")]
+            static extern int gettid();
+
+            [DllImport("kernel32.dll")]
+            [SuppressGCTransition]
+            static extern int GetCurrentThreadId();
         }
 
         [Fact]
