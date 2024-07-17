@@ -636,8 +636,8 @@ namespace System.Net
         private static (SslProtocols, SslProtocols) GetMinMaxProtocols(SslProtocols protocols, bool supportTls13 = false)
         {
             (int minIndex, int maxIndex) = protocols.ValidateContiguous(supportTls13 ? s_orderedSslProtocols13 : s_orderedSslProtocols);
-            SslProtocols minProtocolId = s_orderedSslProtocols[minIndex];
-            SslProtocols maxProtocolId = s_orderedSslProtocols[maxIndex];
+            SslProtocols minProtocolId = s_orderedSslProtocols13[minIndex];
+            SslProtocols maxProtocolId = s_orderedSslProtocols13[maxIndex];
 
             return (minProtocolId, maxProtocolId);
         }

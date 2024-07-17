@@ -56,12 +56,20 @@ namespace System.Net.Security
             _exception = s_disposedSentinel;
             CloseContext();
 
+            // if we have background task eat any exceptions
+            _frameTask?.ContinueWith(t => {
+                     _ = t.Exception;
+                     _buffer.ReturnBuffer();
+                    },
+                    CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+
             // Ensure a Read or Auth operation is not in progress,
             // block potential future read and auth operations since SslStream is disposing.
             // This leaves the _nestedRead = 2 and _nestedAuth = 2, but that's ok, since
             // subsequent operations check the _exception sentinel first
             if (Interlocked.Exchange(ref _nestedRead, StreamDisposed) == StreamNotInUse &&
-                Interlocked.Exchange(ref _nestedAuth, StreamDisposed) == StreamNotInUse)
+                Interlocked.Exchange(ref _nestedAuth, StreamDisposed) == StreamNotInUse &&
+                _frameTask == null)
             {
                 _buffer.ReturnBuffer();
             }
@@ -315,27 +323,37 @@ namespace System.Net.Security
                 {
                     if (handshakeTask != null)
                     {
-                        if (isSync)
+                        if (_lastFrame.Header.Type == TlsContentType.Alert)
                         {
-                            _frameTask ??= Task<int>.Run(() => {
-                                ValueTask<int> vt = ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken);
-                                Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
-                                return vt.GetAwaiter().GetResult();
-                            });
+                            // This is optimization to consume and report alters insteads of throwing IO excceoption as
+                            // the peer would typically close connection afterwards.
+                            // We don't want to thorw here, taht would be done later if needed
+                            Task.WaitAny(new Task[] { handshakeTask }, cancellationToken);
                         }
                         else
                         {
-                            _frameTask ??= ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).AsTask();
-                        }
+                            if (isSync)
+                            {
+                                _frameTask ??= Task<int>.Run(() => {
+                                    ValueTask<int> vt = ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken);
+                                    Debug.Assert(vt.IsCompleted, "Sync operation must have completed synchronously");
+                                    return vt.GetAwaiter().GetResult();
+                                });
+                            }
+                            else
+                            {
+                                _frameTask ??= ReceiveHandshakeFrameAsync<TIOAdapter>(cancellationToken).AsTask();
+                            }
 
-                        if (isSync)
-                        {
-                            Task[] tasks = new Task[] { handshakeTask, _frameTask };
-                           int index = Task.WaitAny(tasks, cancellationToken);
-                        }
-                        else
-                        {
-                            await Task.WhenAny(handshakeTask, _frameTask).ConfigureAwait(false);
+                            if (isSync)
+                            {
+                                Task[] tasks = new Task[] { handshakeTask, _frameTask };
+                                int index = Task.WaitAny(tasks, cancellationToken);
+                            }
+                            else
+                            {
+                                await Task.WhenAny(handshakeTask, _frameTask).ConfigureAwait(false);
+                            }
                         }
 
                         if (handshakeTask.IsCompleted)

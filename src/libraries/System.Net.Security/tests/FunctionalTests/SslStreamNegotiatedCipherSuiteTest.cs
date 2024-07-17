@@ -743,7 +743,6 @@ namespace System.Net.Security.Tests
                 }
                 else
                 {
-                    Console.WriteLine(failure);
                     return new NegotiatedParams(failure);
                 }
             }
