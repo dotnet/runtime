@@ -975,6 +975,9 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
                                                BasicBlock*             exiting,
                                                LoopLocalOccurrences*   loopLocals)
 {
+    // Note: keep the heuristics here in sync with
+    // `StrengthReductionContext::IsUseExpectedToBeRemoved`.
+
     assert(exiting->KindIs(BBJ_COND));
 
     Statement* jtrueStmt = exiting->lastStmt();
@@ -982,21 +985,8 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     assert(jtrue->OperIs(GT_JTRUE));
     GenTree* cond = jtrue->gtGetOp1();
 
-    if ((jtrue->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if (!optCanAndShouldChangeExitTest(cond, /* dump */ true))
     {
-        // If the IV is used as part of the side effect then we can't
-        // transform; otherwise we could. TODO-CQ: Make this determination and
-        // extract side effects from the jtrue to make this work.
-        JITDUMP("  No; exit node has side effects\n");
-        return false;
-    }
-
-    bool checkProfitability = !compStressCompile(STRESS_DOWNWARDS_COUNTED_LOOPS, 50);
-
-    if (checkProfitability && cond->OperIsCompare() &&
-        (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
-    {
-        JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
         return false;
     }
 
@@ -1014,17 +1004,18 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
 
         unsigned candidateLclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
 
-        if (!optPrimaryIVHasNonLoopUses(candidateLclNum, loop, loopLocals))
+        if (optPrimaryIVHasNonLoopUses(candidateLclNum, loop, loopLocals))
         {
             continue;
         }
 
         bool hasUseInTest      = false;
-        auto checkRemovableUse = [=, &hasUseInTest](BasicBlock* block, Statement* stmt) {
+        auto checkRemovableUse = [=, &hasUseInTest](BasicBlock* block, Statement* stmt, GenTree* tree) {
             if (stmt == jtrueStmt)
             {
                 hasUseInTest = true;
-                // Use is inside the loop test that has no side effects (as we checked above), can remove
+                // Use is inside the loop test that we know we can change (from
+                // calling optCanChangeExitTest above)
                 return true;
             }
 
@@ -1053,7 +1044,7 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
             return true;
         };
 
-        if (!loopLocals->VisitStatementsWithOccurrences(loop, candidateLclNum, checkRemovableUse))
+        if (!loopLocals->VisitOccurrences(loop, candidateLclNum, checkRemovableUse))
         {
             // Aborted means we found a non-removable use
             continue;
@@ -1069,6 +1060,7 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
         removableLocals.Push(candidateLclNum);
     }
 
+    bool checkProfitability = !compStressCompile(STRESS_DOWNWARDS_COUNTED_LOOPS, 50);
     if (checkProfitability && (removableLocals.Height() <= 0))
     {
         JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
@@ -1166,9 +1158,36 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     return true;
 }
 
+bool Compiler::optCanAndShouldChangeExitTest(GenTree* cond, bool dump)
+{
+    if ((cond->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // This would be possible if the IV use is not part of the side effect,
+        // in which case we could extract them. However, these cases turn out
+        // to be never analyzable for us even if we tried to do that, so just
+        // do the easy check here.
+        if (dump)
+            JITDUMP("  No; exit node has side effects\n");
+        return false;
+    }
+
+    bool checkProfitability = !compStressCompile(STRESS_DOWNWARDS_COUNTED_LOOPS, 50);
+
+    if (checkProfitability && cond->OperIsCompare() &&
+        (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
+    {
+        if (dump)
+            JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
+        return false;
+    }
+
+    return true;
+}
+
 //------------------------------------------------------------------------
 // optPrimaryIVIsLoopScoped:
-//   Check if a primary IV may have uses outside the specified loop.
+//   Check if a primary IV may have uses of the primary IV that we do not
+//   reason about.
 //
 // Parameters:
 //   lclNum     - The primary IV
@@ -1184,13 +1203,13 @@ bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop*
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
     if (varDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, varDsc->lvParentLcl))
     {
-        return false;
+        return true;
     }
 
     if (varDsc->lvDoNotEnregister)
     {
         // This filters out locals that may be live into exceptional exits.
-        return false;
+        return true;
     }
 
     BasicBlockVisit visitResult = loop->VisitRegularExitBlocks([=](BasicBlock* block) {
@@ -1208,10 +1227,10 @@ bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop*
         // TODO-CQ: In some cases it may be profitable to materialize the final value after the loop.
         // This requires analysis on whether the required expressions are available there
         // (and whether it doesn't extend their lifetimes too much).
-        return false;
+        return true;
     }
 
-    return true;
+    return false;
 }
 
 struct CursorInfo
@@ -1220,14 +1239,12 @@ struct CursorInfo
     Statement*  Stmt;
     GenTree*    Tree;
     ScevAddRec* IV;
-    bool        IsInsideExitTest = false;
 
-    CursorInfo(BasicBlock* block, Statement* stmt, GenTree* tree, ScevAddRec* iv, bool isInsideExitTest)
+    CursorInfo(BasicBlock* block, Statement* stmt, GenTree* tree, ScevAddRec* iv)
         : Block(block)
         , Stmt(stmt)
         , Tree(tree)
         , IV(iv)
-        , IsInsideExitTest(isInsideExitTest)
     {
     }
 };
@@ -1246,6 +1263,7 @@ class StrengthReductionContext
 
     void        InitializeSimplificationAssumptions();
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
+    bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, int derivedLevel, ScevAddRec** nextIV);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
@@ -1479,16 +1497,11 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
     m_cursors2.Reset();
 
     auto visitor = [=](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
-        if (stmt->GetRootNode()->OperIsLocalStore())
+        if (IsUseExpectedToBeRemoved(block, stmt, tree))
         {
-            GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
-            if ((lcl->GetLclNum() == primaryIVLcl->GetLclNum()) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
-            {
-                // Store to the primary IV without side effects; if we end
-                // up strength reducing, then this store is expected to be
-                // removed by making the loop downwards counted.
-                return true;
-            }
+            // If we do strength reduction we expect to be able to remove this
+            // use; do not create a cursor for it.
+            return true;
         }
 
         if (!tree->OperIs(GT_LCL_VAR))
@@ -1496,16 +1509,12 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
             return false;
         }
 
-        bool isInsideExitTest =
-            block->KindIs(BBJ_COND) && (stmt == block->lastStmt()) &&
-            (!m_loop->ContainsBlock(block->GetTrueTarget()) || !m_loop->ContainsBlock(block->GetFalseTarget()));
-
         if (tree->GetSsaNum() != primaryIVLcl->GetSsaNum())
         {
             // Most likely a post-incremented use of the primary IV; we
             // could replace these as well, but currently we only handle
             // the cases where we expect the use to be removed.
-            return isInsideExitTest;
+            return false;
         }
 
         Scev* iv = m_scevContext.Analyze(block, tree);
@@ -1522,8 +1531,8 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
         // as the primary IV.
         assert(Scev::Equals(m_scevContext.Simplify(iv, m_simplAssumptions), primaryIV));
 
-        m_cursors1.Emplace(block, stmt, tree, primaryIV, isInsideExitTest);
-        m_cursors2.Emplace(block, stmt, tree, primaryIV, isInsideExitTest);
+        m_cursors1.Emplace(block, stmt, tree, primaryIV);
+        m_cursors2.Emplace(block, stmt, tree, primaryIV);
         return true;
     };
 
@@ -1541,8 +1550,7 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
         for (int i = 0; i < m_cursors1.Height(); i++)
         {
             CursorInfo& cursor = m_cursors1.BottomRef(i);
-            printf("    [%d] [%06u]%s: ", i, Compiler::dspTreeID(cursor.Tree),
-                   cursor.IsInsideExitTest ? " (in-test)" : "");
+            printf("    [%d] [%06u]: ", i, Compiler::dspTreeID(cursor.Tree));
             cursor.IV->Dump(m_comp);
             printf("\n");
         }
@@ -1550,6 +1558,83 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 #endif
 
     return true;
+}
+
+//------------------------------------------------------------------------
+// IsUseExpectedToBeRemoved: Check if a use of a primary IV is expected to be
+// removed if we strength reduce other uses of the primary IV.
+//
+// Parameters:
+//   block - Block containing the use
+//   stmt  - Statement containing the use
+//   tree  - Actual use of the primary IV
+//
+// Returns:
+//   True if the use is expected to be removable.
+//
+bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree)
+{
+    unsigned primaryIVLclNum = tree->GetLclNum();
+    if (stmt->GetRootNode()->OperIsLocalStore())
+    {
+        GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
+        if ((lcl->GetLclNum() == primaryIVLclNum) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
+        {
+            // Store to the primary IV without side effects; if we end
+            // up strength reducing, then this store is expected to be
+            // removed by making the loop downwards counted.
+            return true;
+        }
+
+        return false;
+    }
+
+    bool isInsideExitTest =
+        block->KindIs(BBJ_COND) && (stmt == block->lastStmt()) &&
+        (!m_loop->ContainsBlock(block->GetTrueTarget()) || !m_loop->ContainsBlock(block->GetFalseTarget()));
+
+    if (isInsideExitTest)
+    {
+        // The downwards loop transformation may be able to remove this use.
+        // Here we duplicate some of the logic from
+        // optMakeExitTestDownwardsCounted to predict whether that will happen.
+        GenTree* jtrue = block->lastStmt()->GetRootNode();
+        GenTree* cond  = jtrue->gtGetOp1();
+
+        // Is the exit test changeable?
+        if (!m_comp->optCanAndShouldChangeExitTest(cond, /* dump */ false))
+        {
+            return false;
+        }
+
+        // Does the exit dominate all backedges such that we can place IV
+        // updates before it?
+        for (FlowEdge* edge : m_loop->BackEdges())
+        {
+            if (!m_comp->m_domTree->Dominates(block, edge->getSourceBlock()))
+            {
+                return false;
+            }
+        }
+
+        // Will the exit only run once per iteration?
+        if (m_loop->MayExecuteBlockMultipleTimesPerIteration(block))
+        {
+            return false;
+        }
+
+        // Can we compute the trip count from the exit test?
+        if (m_scevContext.ComputeExitNotTakenCount(block) == nullptr)
+        {
+            return false;
+        }
+
+        // If all of those things are true, we are most likely going to be able
+        // to convert the exit test to a down-counting one after we have removed the other uses of the IV.
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -1569,8 +1654,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
         CursorInfo& cursor     = cursors->BottomRef(i);
         CursorInfo& nextCursor = nextCursors->BottomRef(i);
 
-        assert((nextCursor.Block == cursor.Block) && (nextCursor.Stmt == cursor.Stmt) &&
-               (nextCursor.IsInsideExitTest == cursor.IsInsideExitTest));
+        assert((nextCursor.Block == cursor.Block) && (nextCursor.Stmt == cursor.Stmt));
 
         nextCursor.Tree = cursor.Tree;
         do
@@ -1613,8 +1697,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
         for (int i = 0; i < nextCursors->Height(); i++)
         {
             CursorInfo& nextCursor = nextCursors->BottomRef(i);
-            printf("    [%d] [%06u]%s: ", i, nextCursor.Tree == nullptr ? 0 : Compiler::dspTreeID(nextCursor.Tree),
-                   nextCursor.IsInsideExitTest ? " (in-test)" : "");
+            printf("    [%d] [%06u]%s: ", i, nextCursor.Tree == nullptr ? 0 : Compiler::dspTreeID(nextCursor.Tree));
             if (nextCursor.IV == nullptr)
             {
                 printf("<null IV>");
@@ -1658,13 +1741,6 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
     {
         CursorInfo& cursor = cursors->BottomRef(i);
 
-        // Uses inside the exit test only need to opportunistically
-        // match. We check these after.
-        if (cursor.IsInsideExitTest)
-        {
-            continue;
-        }
-
         if ((cursor.IV != nullptr) && ((*nextIV == nullptr) || Scev::Equals(cursor.IV, *nextIV)))
         {
             *nextIV = cursor.IV;
@@ -1673,50 +1749,6 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 
         JITDUMP("    [%d] does not match; will not advance\n", i);
         return false;
-    }
-
-    // Now check all exit test uses.
-    for (int i = 0; i < cursors->Height(); i++)
-    {
-        CursorInfo& cursor = cursors->BottomRef(i);
-
-        if (!cursor.IsInsideExitTest)
-        {
-            continue;
-        }
-
-        if ((cursor.IV != nullptr) && ((*nextIV == nullptr) || Scev::Equals(cursor.IV, *nextIV)))
-        {
-            *nextIV = cursor.IV;
-            continue;
-        }
-
-        // Use inside exit test does not match.
-        if (derivedLevel <= 1)
-        {
-            // We weren't able to advance the match in the exit test at all; in
-            // this situation we expect the downwards optimization to be able
-            // to remove the use of the primary IV, so this is ok. Remove the
-            // cursor pointing to the use inside the test.
-            JITDUMP("    [%d] does not match, but is inside loop test; ignoring mismatch and removing cursor\n", i);
-
-            std::swap(m_cursors1.BottomRef(i), m_cursors1.TopRef(0));
-            std::swap(m_cursors2.BottomRef(i), m_cursors2.TopRef(0));
-
-            m_cursors1.Pop();
-            m_cursors2.Pop();
-
-            i--;
-        }
-        else
-        {
-            // We already found a derived IV in the exit test that matches, so
-            // stop here and allow the replacement to replace the uses of the
-            // current derived IV, including the one in the exit test
-            // statement.
-            JITDUMP("    [%d] does not match; will not advance\n", i);
-            return false;
-        }
     }
 
     return *nextIV != nullptr;
