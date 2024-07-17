@@ -18,9 +18,18 @@ namespace System.Diagnostics.Metrics.Tests
         private static readonly string[] s_genNames = ["gen0", "gen1", "gen2", "loh", "poh"];
 
         private static readonly Action s_forceGc = () => GC.Collect(0, GCCollectionMode.Forced);
-        private static readonly Func<long, (bool, string?)> s_longGreaterThanZero = v => v > 0 ? (true, null) : (false, GreaterThanZeroMessage);
-        private static readonly Func<long, (bool, string?)> s_longGreaterThanOrEqualToZero = v => v >= 0 ? (true, null) : (false, GreaterThanOrEqualToZeroMessage);
-        private static readonly Func<double, (bool, string?)> s_doubleGreaterThanZero = v => v > 0 ? (true, null) : (false, GreaterThanZeroMessage);
+
+        private static readonly Func<long, (bool, string?)> s_longGreaterThanZero = v => v > 0
+            ? (true, null)
+            : (false, $"{GreaterThanZeroMessage} Actual value was: {v}.");
+
+        private static readonly Func<long, (bool, string?)> s_longGreaterThanOrEqualToZero = v => v >= 0
+            ? (true, null)
+            : (false, $"{GreaterThanOrEqualToZeroMessage} Actual value was: {v}.");
+
+        private static readonly Func<double, (bool, string?)> s_doubleGreaterThanZero = v => v > 0
+            ? (true, null)
+            : (false, $"{GreaterThanZeroMessage} Actual value was: {v}.");
 
         private readonly ITestOutputHelper _output = output;
 
@@ -253,8 +262,10 @@ namespace System.Diagnostics.Metrics.Tests
 
             var gcInfo = GC.GetGCMemoryInfo();
 
-            _output.WriteLine($"GenerationInfo.Length: {gcInfo.GenerationInfo.Length}");
+            _output.WriteLine($"GCMemoryInfo.GenerationInfo.Length: {gcInfo.GenerationInfo.Length}");
             _output.WriteLine($"Count of measurements: {measurements.Count}");
+            _output.WriteLine($"GenerationInfo.TotalCommittedBytes: {gcInfo.TotalCommittedBytes}");
+            _output.WriteLine($"GC.MaxGeneration: {GC.MaxGeneration}");
 
             Assert.True(measurements.Count >= GC.MaxGeneration + 1, "Expected to find at least one measurement for each generation.");
 
@@ -348,7 +359,7 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 // Wait enough time for all the measurements to be enqueued via the
                 // OnMeasurementRecorded callback. 50ms seems to be sufficient.
-                Thread.Sleep(50);
+                Thread.Sleep(100);
                 return _values.ToArray();
             }
 
