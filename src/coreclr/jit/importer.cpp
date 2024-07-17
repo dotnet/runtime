@@ -10120,7 +10120,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         //
                         unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
                         lvaSetStruct(resultTmp, resolvedToken.hClass, false);
-                        lvaSetVarAddrExposed(resultTmp DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+                        lvaGetDesc(resultTmp)->lvHasLdAddrOp = true;
 
                         GenTreeLclFld* resultAddr = gtNewLclAddrNode(resultTmp, 0);
                         // NOTE: it's fine for op2 to be evaluated before op1
