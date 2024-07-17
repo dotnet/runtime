@@ -12,6 +12,11 @@ namespace System.Net.Security
     [EventSource(Name = "System.Net.Security")]
     internal sealed class NetSecurityTelemetry : EventSource
     {
+        private const string ActivitySourceName = "Experimental.System.Net.Security";
+        private const string ActivityName = ActivitySourceName + ".TlsHandshake";
+
+        private static readonly ActivitySource s_activitySource = new ActivitySource(ActivitySourceName);
+
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
         public static readonly NetSecurityTelemetry Log = new NetSecurityTelemetry();
 
@@ -38,6 +43,8 @@ namespace System.Net.Security
         private long _sessionsOpenTls11;
         private long _sessionsOpenTls12;
         private long _sessionsOpenTls13;
+
+        public static bool AnyTelemetryEnabled() => Log.IsEnabled() || s_activitySource.HasListeners();
 
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
@@ -303,6 +310,57 @@ namespace System.Net.Security
 
                 WriteEventCore(eventId, NumEventDatas, descrs);
             }
+        }
+
+        [NonEvent]
+        public static Activity? StartActivity(SslStream stream)
+        {
+            using Activity? activity = s_activitySource.StartActivity(ActivityName);
+            if (activity is not null)
+            {
+                activity.DisplayName = stream.IsServer ? "TLS server handshake" : $"TLS client handshake {stream.TargetHostName}";
+                if (activity.IsAllDataRequested && !stream.IsServer)
+                {
+                    activity.SetTag("server.address", stream.TargetHostName);
+                }
+            }
+            return activity;
+        }
+
+        [NonEvent]
+        public static void StopActivity(Activity? activity, Exception? exception, SslStream stream)
+        {
+            if (activity?.IsAllDataRequested != true) return;
+
+            SslProtocols protocol = stream.GetSslProtocolInternal();
+            (string? protocolName, string? protocolVersion) = GetNameAndVersionString(protocol);
+
+            if (protocolName is not null)
+            {
+                Debug.Assert(protocolVersion is not null);
+                activity.SetTag("tls.protocol.name", protocolName);
+                activity.SetTag("tls.protocol.version", protocolVersion);
+            }
+
+            if (exception is not null)
+            {
+                activity.SetStatus(ActivityStatusCode.Error);
+                activity.SetTag("error.type", exception.GetType().FullName);
+            }
+
+            static (string?, string?) GetNameAndVersionString(SslProtocols protocol) => protocol switch
+            {
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
+                SslProtocols.Ssl2 => ("ssl", "2"),
+                SslProtocols.Ssl3 => ("ssl", "3"),
+#pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete.
+                SslProtocols.Tls => ("tls", "1"),
+                SslProtocols.Tls12 => ("tls", "1.2"),
+#pragma warning restore SYSLIB0039
+                SslProtocols.Tls13 => ("tls", "1.3"),
+                _ => (null, null)
+            };
         }
     }
 }
