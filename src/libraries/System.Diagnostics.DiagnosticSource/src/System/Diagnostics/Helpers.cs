@@ -30,12 +30,7 @@ namespace System.Diagnostics
                     sb.Append(',');
                 }
 
-                sb.Append(tag.Key).Append('=');
-
-                if (tag.Value is not null)
-                {
-                    sb.Append(tag.Value.ToString());
-                }
+                sb.Append(tag.Key).Append('=').Append(tag.Value);
             }
             return sb.ToString();
         }
