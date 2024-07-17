@@ -24,7 +24,7 @@ namespace System.Diagnostics.Metrics.Tests
         [Fact]
         public void GcCollectionsCount()
         {
-            using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections.count");
+            using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections");
 
             for (var gen = 0; gen <= GC.MaxGeneration; gen++)
             {
@@ -39,7 +39,11 @@ namespace System.Diagnostics.Metrics.Tests
                 foundGenerations[i] = false;
             }
 
-            foreach (Measurement<long> measurement in instrumentRecorder.GetMeasurements().Where(m => m.Value >= 1))
+            var measurements = instrumentRecorder.GetMeasurements();
+
+            Assert.True(measurements.Count >= GC.MaxGeneration + 1, "Expected to find at least one measurement for each generation.");
+
+            foreach (Measurement<long> measurement in measurements.Where(m => m.Value >= 1))
             {
                 var tags = measurement.Tags.ToArray();
                 var tag = tags.SingleOrDefault(k => k.Key == "gc.heap.generation");
@@ -82,47 +86,48 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [Fact]
-        public void CpuTime()
-        {
-            using InstrumentRecorder<double> instrumentRecorder = new("dotnet.process.cpu.time");
+        // TODO - Uncomment once an implementation for https://github.com/dotnet/runtime/issues/104844 is available.
+        //[Fact]
+        //public void CpuTime()
+        //{
+        //    using InstrumentRecorder<double> instrumentRecorder = new("dotnet.process.cpu.time");
 
-            instrumentRecorder.RecordObservableInstruments();
+        //    instrumentRecorder.RecordObservableInstruments();
 
-            bool[] foundCpuModes = [false, false];
+        //    bool[] foundCpuModes = [false, false];
 
-            foreach (Measurement<double> measurement in instrumentRecorder.GetMeasurements().Where(m => m.Value >= 0))
-            {
-                var tags = measurement.Tags.ToArray();
-                var tag = tags.SingleOrDefault(k => k.Key == "cpu.mode");
+        //    foreach (Measurement<double> measurement in instrumentRecorder.GetMeasurements().Where(m => m.Value >= 0))
+        //    {
+        //        var tags = measurement.Tags.ToArray();
+        //        var tag = tags.SingleOrDefault(k => k.Key == "cpu.mode");
 
-                if (tag.Key is not null)
-                {
-                    Assert.True(tag.Value is string, "Expected CPU mode tag to be a string.");
+        //        if (tag.Key is not null)
+        //        {
+        //            Assert.True(tag.Value is string, "Expected CPU mode tag to be a string.");
 
-                    string tagValue = (string)tag.Value;
+        //            string tagValue = (string)tag.Value;
 
-                    switch (tagValue)
-                    {
-                        case "user":
-                            foundCpuModes[0] = true;
-                            break;
-                        case "system":
-                            foundCpuModes[1] = true;
-                            break;
-                        default:
-                            Assert.Fail($"Unexpected CPU mode tag value '{tagValue}'.");
-                            break;
-                    }
-                }
-            }
+        //            switch (tagValue)
+        //            {
+        //                case "user":
+        //                    foundCpuModes[0] = true;
+        //                    break;
+        //                case "system":
+        //                    foundCpuModes[1] = true;
+        //                    break;
+        //                default:
+        //                    Assert.Fail($"Unexpected CPU mode tag value '{tagValue}'.");
+        //                    break;
+        //            }
+        //        }
+        //    }
 
-            for (int i = 0; i < foundCpuModes.Length; i++)
-            {
-                var mode = i == 0 ? "user" : "system";
-                Assert.True(foundCpuModes[i], $"Expected to find a measurement for '{mode}' CPU mode.");
-            }
-        }
+        //    for (int i = 0; i < foundCpuModes.Length; i++)
+        //    {
+        //        var mode = i == 0 ? "user" : "system";
+        //        Assert.True(foundCpuModes[i], $"Expected to find a measurement for '{mode}' CPU mode.");
+        //    }
+        //}
 
         [Fact]
         public void ExceptionsCount()
@@ -168,24 +173,21 @@ namespace System.Diagnostics.Metrics.Tests
         public static IEnumerable<object[]> LongMeasurements => new List<object[]>
         {
             new object[] { "dotnet.process.memory.working_set", s_longGreaterThanZero, null },
-            new object[] { "dotnet.assemblies.count", s_longGreaterThanZero, null },
+            new object[] { "dotnet.assembly.count", s_longGreaterThanZero, null },
             new object[] { "dotnet.process.cpu.count", s_longGreaterThanZero, null },
-#if NET
             new object[] { "dotnet.gc.heap.total_allocated", s_longGreaterThanZero, null },
             new object[] { "dotnet.gc.last_collection.memory.committed_size", s_longGreaterThanZero, s_forceGc },
             new object[] { "dotnet.gc.pause.time", s_doubleGreaterThanZero, s_forceGc },
             new object[] { "dotnet.jit.compiled_il.size", s_longGreaterThanZero, null },
-            new object[] { "dotnet.jit.compiled_method.count", s_longGreaterThanZero, null },
+            new object[] { "dotnet.jit.compiled_methods", s_longGreaterThanZero, null },
             new object[] { "dotnet.jit.compilation.time", s_doubleGreaterThanZero, null },
-            new object[] { "dotnet.monitor.lock_contention.count", s_longGreaterThanOrEqualToZero, null },
+            new object[] { "dotnet.monitor.lock_contentions", s_longGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.thread_pool.thread.count", s_longGreaterThanZero, null },
             new object[] { "dotnet.thread_pool.work_item.count", s_longGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.thread_pool.queue.length", s_longGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.timer.count", s_longGreaterThanOrEqualToZero, null },
-#endif
         };
 
-#if NET
         [Theory]
         [InlineData("dotnet.gc.last_collection.heap.size")]
         [InlineData("dotnet.gc.last_collection.heap.fragmentation.size")]
@@ -233,7 +235,6 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.True(foundGenerations[i], $"Expected to find a measurement for '{s_genNames[i]}'.");
             }
         }
-#endif
 
         private static void ValidateSingleMeasurement<T>(string metricName, Func<T, (bool, string?)>? valueAssertion = null, Action? beforeRecord = null)
             where T : struct

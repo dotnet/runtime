@@ -35,8 +35,10 @@ namespace System.Diagnostics.Metrics
 
         static MeterListener()
         {
+#if NET9_0_OR_GREATER
             // This ensures that the static Meter gets created before any listeners exist.
             _ = RuntimeMetrics.IsEnabled();
+#endif
         }
 
         /// <summary>

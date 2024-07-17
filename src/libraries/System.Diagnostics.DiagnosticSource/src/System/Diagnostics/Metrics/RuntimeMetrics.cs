@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-#if NET
 using System.Threading;
-#endif
 
 namespace System.Diagnostics.Metrics
 {
@@ -18,9 +16,8 @@ namespace System.Diagnostics.Metrics
 
         // These MUST align to the possible attribute values defined in the semantic conventions (TODO: link to the spec)
         private static readonly string[] s_genNames = ["gen0", "gen1", "gen2", "loh", "poh"];
-#if NET
+
         private static readonly int s_maxGenerations = Math.Min(GC.GetGCMemoryInfo().GenerationInfo.Length, s_genNames.Length);
-#endif
 
         static RuntimeMetrics()
         {
@@ -36,10 +33,10 @@ namespace System.Diagnostics.Metrics
         }
 
         private static readonly ObservableCounter<long> s_gcCollections = s_meter.CreateObservableCounter(
-            "dotnet.gc.collections.count",
+            "dotnet.gc.collections",
             GetGarbageCollectionCounts,
             unit: "{collection}",
-            description: "Number of garbage collections that have occurred since the process has started.");
+            description: "The number of garbage collections that have occurred since the process has started.");
 
         private static readonly ObservableUpDownCounter<long> s_processWorkingSet = s_meter.CreateObservableUpDownCounter(
             "dotnet.process.memory.working_set",
@@ -47,7 +44,6 @@ namespace System.Diagnostics.Metrics
             unit: "By",
             description: "The number of bytes of physical memory mapped to the process context.");
 
-#if NET
         private static readonly ObservableCounter<long> s_gcHeapTotalAllocated = s_meter.CreateObservableCounter(
             "dotnet.gc.heap.total_allocated",
             () => GC.GetTotalAllocatedBytes(),
@@ -92,7 +88,7 @@ namespace System.Diagnostics.Metrics
             description: "Count of bytes of intermediate language that have been compiled since the process has started.");
 
         private static readonly ObservableCounter<long> s_jitCompiledMethodCount = s_meter.CreateObservableCounter(
-            "dotnet.jit.compiled_method.count",
+            "dotnet.jit.compiled_methods",
             () => Runtime.JitInfo.GetCompiledMethodCount(),
             unit: "{method}",
             description: "The number of times the JIT compiler (re)compiled methods since the process has started.");
@@ -104,7 +100,7 @@ namespace System.Diagnostics.Metrics
             description: "The number of times the JIT compiler (re)compiled methods since the process has started.");
 
         private static readonly ObservableCounter<long> s_monitorLockContention = s_meter.CreateObservableCounter(
-            "dotnet.monitor.lock_contention.count",
+            "dotnet.monitor.lock_contentions",
             () => Monitor.LockContentionCount,
             unit: "{contention}",
             description: "The number of times there was contention when trying to acquire a monitor lock since the process has started.");
@@ -132,10 +128,9 @@ namespace System.Diagnostics.Metrics
             () => Timer.ActiveCount,
             unit: "{timer}",
             description: "The number of timer instances that are currently active. An active timer is registered to tick at some point in the future and has not yet been canceled.");
-#endif
 
         private static readonly ObservableUpDownCounter<long> s_assembliesCount = s_meter.CreateObservableUpDownCounter(
-            "dotnet.assemblies.count",
+            "dotnet.assembly.count",
             () => (long)AppDomain.CurrentDomain.GetAssemblies().Length,
             unit: "{assembly}",
             description: "The number of .NET assemblies that are currently loaded.");
@@ -151,17 +146,17 @@ namespace System.Diagnostics.Metrics
             unit: "{cpu}",
             description: "The number of processors available to the process.");
 
-        private static readonly ObservableCounter<double> s_processCpuTime = s_meter.CreateObservableCounter(
-            "dotnet.process.cpu.time",
-            GetCpuTime,
-            unit: "s",
-            description: "CPU time used by the process as reported by the CLR.");
+        // TODO - Uncomment once an implementation for https://github.com/dotnet/runtime/issues/104844 is available.
+        //private static readonly ObservableCounter<double> s_processCpuTime = s_meter.CreateObservableCounter(
+        //    "dotnet.process.cpu.time",
+        //    GetCpuTime,
+        //    unit: "s",
+        //    description: "CPU time used by the process as reported by the CLR.");
 
         public static bool IsEnabled()
         {
             return s_gcCollections.Enabled
                 || s_processWorkingSet.Enabled
-#if NET
                 || s_gcHeapTotalAllocated.Enabled
                 || s_gcLastCollectionMemoryCommitted.Enabled
                 || s_gcLastCollectionHeapSize.Enabled
@@ -175,11 +170,10 @@ namespace System.Diagnostics.Metrics
                 || s_threadPoolThreadCount.Enabled
                 || s_threadPoolCompletedWorkItems.Enabled
                 || s_threadPoolQueueLength.Enabled
-#endif
                 || s_assembliesCount.Enabled
                 || s_exceptions.Enabled
-                || s_processCpuCount.Enabled
-                || s_processCpuTime.Enabled;
+                || s_processCpuCount.Enabled;
+            //|| s_processCpuTime.Enabled;
         }
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
@@ -194,20 +188,18 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private static IEnumerable<Measurement<double>> GetCpuTime()
-        {
-#if NET
-            if (OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || OperatingSystem.IsIOS())
-                yield break;
-#endif
+        // TODO - Uncomment once an implementation for https://github.com/dotnet/runtime/issues/104844 is available.
+        //private static IEnumerable<Measurement<double>> GetCpuTime()
+        //{
+        //    if (OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || OperatingSystem.IsIOS())
+        //        yield break;
 
-            Process process = Process.GetCurrentProcess();
+        //    ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
 
-            yield return new(process.UserProcessorTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
-            yield return new(process.PrivilegedProcessorTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
-        }
+        //    yield return new(processCpuUsage.UserTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
+        //    yield return new(processCpuUsage.PrivilegedTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
+        //}
 
-#if NET
         private static IEnumerable<Measurement<long>> GetHeapSizes()
         {
             GCMemoryInfo gcInfo = GC.GetGCMemoryInfo();
@@ -233,6 +225,5 @@ namespace System.Diagnostics.Metrics
                 yield return new(gcInfo.GenerationInfo[i].FragmentationAfterBytes, new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[i]));
             }
         }
-#endif
     }
 }
