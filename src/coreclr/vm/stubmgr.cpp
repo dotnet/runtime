@@ -1415,7 +1415,7 @@ static BOOL TraceManagedThunk(
 
 #else
     PORTABILITY_ASSERT("TraceManagedThunk");
-    destAddr = NULL;
+    destAddr = (PCODE)NULL;
 #endif
 
     LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: ppbDest: %p\n", destAddr));
