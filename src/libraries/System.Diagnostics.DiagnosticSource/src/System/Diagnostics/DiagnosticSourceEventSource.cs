@@ -171,7 +171,7 @@ namespace System.Diagnostics
                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
                         "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
-    internal sealed partial class DiagnosticSourceEventSource : EventSource
+    internal sealed class DiagnosticSourceEventSource : EventSource
     {
         public static readonly DiagnosticSourceEventSource Log = new DiagnosticSourceEventSource();
 
