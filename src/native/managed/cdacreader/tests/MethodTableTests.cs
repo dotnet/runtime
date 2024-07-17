@@ -35,7 +35,6 @@ public unsafe class MethodTableTests
             { nameof (Data.EEClass.CorTypeAttr), new () { Offset = 16, Type = DataType.uint32}},
             { nameof (Data.EEClass.NumMethods), new () { Offset = 20, Type = DataType.uint16}},
             { nameof (Data.EEClass.InternalCorElementType), new () { Offset = 22, Type = DataType.uint8}},
-            { nameof (Data.EEClass.NumNonVirtualSlots), new () { Offset = 24, Type = DataType.uint16}},
         }
     };
 

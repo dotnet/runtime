@@ -181,6 +181,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, Base, cdac_offsets<Module>::Base)
 CDAC_TYPE_FIELD(Module, /*pointer*/, Flags, cdac_offsets<Module>::Flags)
 CDAC_TYPE_FIELD(Module, /*pointer*/, LoaderAllocator, cdac_offsets<Module>::LoaderAllocator)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ThunkHeap, cdac_offsets<Module>::ThunkHeap)
+CDAC_TYPE_FIELD(Module, /*pointer*/, DynamicMetadata, cdac_offsets<Module>::DynamicMetadata)
 
 CDAC_TYPE_FIELD(Module, /*pointer*/, FieldDefToDescMap, cdac_offsets<Module>::FieldDefToDescMap)
 CDAC_TYPE_FIELD(Module, /*pointer*/, ManifestModuleReferencesMap, cdac_offsets<Module>::ManifestModuleReferencesMap)
@@ -262,6 +263,11 @@ CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Size, cdac_offsets<MethodDescChunk>:
 CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_offsets<MethodDescChunk>::Count)
 CDAC_TYPE_END(MethodDescChunk)
 
+CDAC_TYPE_BEGIN(DynamicMetadata)
+CDAC_TYPE_FIELD(DynamicMetadata, /*uint32*/, Size, cdac_offsets<DynamicMetadata>::Size)
+CDAC_TYPE_FIELD(DynamicMetadata, /*inline byte array*/, Data, cdac_offsets<DynamicMetadata>::Data)
+CDAC_TYPE_END(DynamicMetadata)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -277,6 +283,8 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
+CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
+CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

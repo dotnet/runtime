@@ -90,10 +90,24 @@ A `MethodDesc` is the runtime representationn of a managed method (either from I
 
 ```csharp
 struct MethodDescHandle
-{
-    // no public properties or constructors
+A `TypeHandle` is the runtime representation of the type information about a value which is represented as a TypeHandle.
+Given a `TargetPointer` address, the `RuntimeTypeSystem` contract provides a `TypeHandle` for querying the details of the `TypeHandle`.
 
-    internal TargetPointer Address { get; }
+
+``` csharp
+struct TypeHandle
+{
+    // no public constructors
+
+    public TargetPointer Address { get; }
+    public bool IsNull => Address != 0;
+}
+
+internal enum CorElementType
+{
+    // Values defined in ECMA-335 - II.23.1.16 Element types used in signatures
+    // +
+    Internal = 0x21, // Indicates that the next pointer sized number of bytes is the address of a TypeHandle. Signatures that contain the Internal CorElementType cannot exist in metadata that is saved into a serialized format.
 }
 ```
 
@@ -106,6 +120,54 @@ partial interface IRuntimeTypeSystem : IContract
     public virtual TargetPointer GetMethodTable (MethodDescHandle methodDesc);
     #endregion MethodDesc inspection APIs
 }
+A `TypeHandle` is the runtime representation of the type information about a value.  This can be constructed from the address of a `TypeHandle` or a `MethodTable`.
+
+``` csharp
+    #region TypeHandle inspection APIs
+    public virtual TypeHandle GetTypeHandle(TargetPointer targetPointer);
+
+    public virtual TargetPointer GetModule(TypeHandle typeHandle);
+    // A canonical method table is either the MethodTable itself, or in the case of a generic instantiation, it is the
+    // MethodTable of the prototypical instance.
+    public virtual TargetPointer GetCanonicalMethodTable(TypeHandle typeHandle);
+    public virtual TargetPointer GetParentMethodTable(TypeHandle typeHandle);
+
+    public virtual uint GetBaseSize(TypeHandle typeHandle);
+    // The component size is only available for strings and arrays.  It is the size of the element type of the array, or the size of an ECMA 335 character (2 bytes)
+    public virtual uint GetComponentSize(TypeHandle typeHandle);
+
+    // True if the MethodTable is the sentinel value associated with unallocated space in the managed heap
+    public virtual bool IsFreeObjectMethodTable(TypeHandle typeHandle);
+    public virtual bool IsString(TypeHandle typeHandle);
+    // True if the MethodTable represents a type that contains managed references
+    public virtual bool ContainsGCPointers(TypeHandle typeHandle);
+    public virtual bool IsDynamicStatics(TypeHandle typeHandle);
+    public virtual ushort GetNumMethods(TypeHandle typeHandle);
+    public virtual ushort GetNumInterfaces(TypeHandle typeHandle);
+
+    // Returns an ECMA-335 TypeDef table token for this type, or for its generic type definition if it is a generic instantiation
+    public virtual uint GetTypeDefToken(TypeHandle typeHandle);
+    // Returns the ECMA 335 TypeDef table Flags value (a bitmask of TypeAttributes) for this type,
+    // or for its generic type definition if it is a generic instantiation
+    public virtual uint GetTypeDefTypeAttributes(TypeHandle typeHandle);
+    public virtual ReadOnlySpan<TypeHandle> GetInstantiation(TypeHandle typeHandle);
+    public virtual bool IsGenericTypeDefinition(TypeHandle typeHandle);
+
+    public virtual TypeHandle TypeHandleFromAddress(TargetPointer address);
+    public virtual bool HasTypeParam(TypeHandle typeHandle);
+
+    // Element type of the type. NOTE: this drops the CorElementType.GenericInst, and CorElementType.String is returned as CorElementType.Class.
+    // NOTE: If this returns CorElementType.ValueType it may be a normal valuetype or a "NATIVE" valuetype used to represent an interop view of a structure
+    // HasTypeParam will return true for cases where this is the interop view, and false for normal valuetypes.
+    public virtual CorElementType GetSignatureCorElementType(TypeHandle typeHandle);
+
+    // return true if the TypeHandle represents an array, and set the rank to either 0 (if the type is not an array), or the rank number if it is.
+    public virtual bool IsArray(TypeHandle typeHandle, out uint rank);
+    public virtual TypeHandle GetTypeParam(TypeHandle typeHandle);
+    public virtual bool IsGenericVariable(TypeHandle typeHandle, out TargetPointer module, out uint token);
+    public virtual bool IsFunctionPointer(TypeHandle typeHandle, out ReadOnlySpan<TypeHandle> retAndArgTypes, out byte callConv);
+
+    #endregion TypeHandle inspection APIs
 ```
 
 ## Version 1
