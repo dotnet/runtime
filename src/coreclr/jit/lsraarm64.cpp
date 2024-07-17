@@ -1943,18 +1943,44 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
+            const bool embHasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrinEmb.id);
+            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3) || (embHasImmediateOperand && (numArgs == 4)));
 
-            // Special handling for ShiftRightArithmeticForDivide:
+            // Special handling for embedded intrinsics with immediates:
             // We might need an additional register to hold branch targets into the switch table
             // that encodes the immediate
-            if (intrinEmb.id == NI_Sve_ShiftRightArithmeticForDivide)
+            switch (intrinEmb.id)
             {
-                assert(embOp2Node->GetOperandCount() == 2);
-                if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
-                {
-                    buildInternalIntRegisterDefForNode(embOp2Node);
-                }
+                case NI_Sve_ShiftRightArithmeticForDivide:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 2);
+                    if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
+                    {
+                        buildInternalIntRegisterDefForNode(embOp2Node);
+                    }
+                    break;
+
+                case NI_Sve_AddRotateComplex:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 3);
+                    if (!embOp2Node->Op(3)->isContainedIntOrIImmed())
+                    {
+                        buildInternalIntRegisterDefForNode(embOp2Node);
+                    }
+                    break;
+
+                case NI_Sve_MultiplyAddRotateComplex:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 4);
+                    if (!embOp2Node->Op(4)->isContainedIntOrIImmed())
+                    {
+                        buildInternalIntRegisterDefForNode(embOp2Node);
+                    }
+                    break;
+
+                default:
+                    assert(!embHasImmediateOperand);
+                    break;
             }
 
             tgtPrefUse = BuildUse(embOp2Node->Op(1));

@@ -1793,21 +1793,16 @@ ValueNumStore::Chunk* ValueNumStore::GetAllocChunk(var_types typ, ChunkExtraAttr
 template <typename T, typename NumMap>
 ValueNum ValueNumStore::VnForConst(T cnsVal, NumMap* numMap, var_types varType)
 {
-    ValueNum res;
-    if (numMap->Lookup(cnsVal, &res))
-    {
-        return res;
-    }
-    else
+    ValueNum* res = numMap->LookupPointerOrAdd(cnsVal, NoVN);
+    if (*res == NoVN)
     {
         Chunk*   chunk               = GetAllocChunk(varType, CEA_Const);
         unsigned offsetWithinChunk   = chunk->AllocVN();
-        res                          = chunk->m_baseVN + offsetWithinChunk;
+        *res                         = chunk->m_baseVN + offsetWithinChunk;
         T* chunkDefs                 = reinterpret_cast<T*>(chunk->m_defs);
         chunkDefs[offsetWithinChunk] = cnsVal;
-        numMap->Set(cnsVal, res);
-        return res;
     }
+    return *res;
 }
 
 ValueNum ValueNumStore::VNForIntCon(INT32 cnsVal)
@@ -2046,12 +2041,12 @@ ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
 {
     assert((handleFlags & ~GTF_ICON_HDL_MASK) == 0);
 
-    ValueNum res;
     VNHandle handle;
     VNHandle::Initialize(&handle, cnsVal, handleFlags);
-    if (GetHandleMap()->Lookup(handle, &res))
+    ValueNum* res = GetHandleMap()->LookupPointerOrAdd(handle, NoVN);
+    if (*res != NoVN)
     {
-        return res;
+        return *res;
     }
 
     var_types       type              = Compiler::gtGetTypeForIconFlags(handleFlags);
@@ -2060,10 +2055,9 @@ ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
     VNHandle* const chunkSlots        = reinterpret_cast<VNHandle*>(c->m_defs);
 
     chunkSlots[offsetWithinChunk] = handle;
-    res                           = c->m_baseVN + offsetWithinChunk;
+    *res                          = c->m_baseVN + offsetWithinChunk;
 
-    GetHandleMap()->Set(handle, res);
-    return res;
+    return *res;
 }
 
 ValueNum ValueNumStore::VNZeroForType(var_types typ)
@@ -2507,11 +2501,10 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func)
 {
     assert(VNFuncArity(func) == 0);
 
-    ValueNum resultVN;
-
     // Have we already assigned a ValueNum for 'func' ?
     //
-    if (!GetVNFunc0Map()->Lookup(func, &resultVN))
+    ValueNum* resultVN = GetVNFunc0Map()->LookupPointerOrAdd(func, NoVN);
+    if (*resultVN == NoVN)
     {
         // Allocate a new ValueNum for 'func'
         Chunk* const   c                 = GetAllocChunk(typ, CEA_Func0);
@@ -2519,10 +2512,9 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func)
         VNFunc* const  chunkSlots        = reinterpret_cast<VNFunc*>(c->m_defs);
 
         chunkSlots[offsetWithinChunk] = func;
-        resultVN                      = c->m_baseVN + offsetWithinChunk;
-        GetVNFunc0Map()->Set(func, resultVN);
+        *resultVN                     = c->m_baseVN + offsetWithinChunk;
     }
-    return resultVN;
+    return *resultVN;
 }
 
 //----------------------------------------------------------------------------------------
@@ -2544,16 +2536,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     assert(func != VNF_MemOpaque);
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
-    ValueNum resultVN = NoVN;
-
     // Have we already assigned a ValueNum for 'func'('arg0VN') ?
     //
     VNDefFuncApp<1> fstruct(func, arg0VN);
-    if (GetVNFunc1Map()->Lookup(fstruct, &resultVN))
-    {
-        assert(resultVN != NoVN);
-    }
-    else
+    ValueNum*       resultVN = GetVNFunc1Map()->LookupPointerOrAdd(fstruct, NoVN);
+    if (*resultVN == NoVN)
     {
         // Check if we can fold GT_ARR_LENGTH on top of a known array (immutable)
         if (func == VNFunc(GT_ARR_LENGTH))
@@ -2566,13 +2553,13 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                 int    len    = m_pComp->info.compCompHnd->getArrayOrStringLength((CORINFO_OBJECT_HANDLE)handle);
                 if (len >= 0)
                 {
-                    resultVN = VNForIntCon(len);
+                    *resultVN = VNForIntCon(len);
                 }
             }
 
             // Case 2: ARR_LENGTH(static-readonly-field)
             VNFuncApp funcApp;
-            if ((resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
+            if ((*resultVN == NoVN) && GetVNFunc(addressVN, &funcApp) && (funcApp.m_func == VNF_InvariantNonNullLoad))
             {
                 ValueNum fieldSeqVN = VNNormalValue(funcApp.m_args[0]);
                 if (IsVNHandle(fieldSeqVN, GTF_ICON_FIELD_SEQ))
@@ -2595,7 +2582,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
                                 int len = m_pComp->info.compCompHnd->getArrayOrStringLength(objHandle);
                                 if (len >= 0)
                                 {
-                                    resultVN = VNForIntCon(len);
+                                    *resultVN = VNForIntCon(len);
                                 }
                             }
                         }
@@ -2606,36 +2593,33 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
             // Case 3: ARR_LENGTH(new T[cns])
             // TODO: Add support for MD arrays
             int knownSize;
-            if ((resultVN == NoVN) && TryGetNewArrSize(addressVN, &knownSize))
+            if ((*resultVN == NoVN) && TryGetNewArrSize(addressVN, &knownSize))
             {
-                resultVN = VNForIntCon(knownSize);
+                *resultVN = VNForIntCon(knownSize);
             }
         }
 
         // Try to perform constant-folding.
         //
-        if ((resultVN == NoVN) && VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
+        if ((*resultVN == NoVN) && VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
         {
-            resultVN = EvalFuncForConstantArgs(typ, func, arg0VN);
+            *resultVN = EvalFuncForConstantArgs(typ, func, arg0VN);
         }
 
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN')
         //
-        if (resultVN == NoVN)
+        if (*resultVN == NoVN)
         {
             Chunk* const          c                 = GetAllocChunk(typ, CEA_Func1);
             unsigned const        offsetWithinChunk = c->AllocVN();
             VNDefFuncAppFlexible* fapp              = c->PointerToFuncApp(offsetWithinChunk, 1);
             fapp->m_func                            = func;
             fapp->m_args[0]                         = arg0VN;
-            resultVN                                = c->m_baseVN + offsetWithinChunk;
+            *resultVN                               = c->m_baseVN + offsetWithinChunk;
         }
-
-        // Record 'resultVN' in the Func1Map
-        //
-        GetVNFunc1Map()->Set(fstruct, resultVN);
     }
-    return resultVN;
+
+    return *resultVN;
 }
 
 //----------------------------------------------------------------------------------------
@@ -2744,8 +2728,6 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert((VNFuncArity(func) == 0) || (VNFuncArity(func) == 2));
     assert(func != VNF_MapSelect); // Precondition: use the special function VNForMapSelect defined for that.
 
-    ValueNum resultVN = NoVN;
-
     // Even if the argVNs differ, if both operands runtime types constructed from handles,
     // we can sometimes also fold.
     //
@@ -2755,7 +2737,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     const genTreeOps oper = genTreeOps(func);
     if ((arg0VN != arg1VN) && GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
     {
-        resultVN = VNEvalFoldTypeCompare(typ, func, arg0VN, arg1VN);
+        ValueNum resultVN = VNEvalFoldTypeCompare(typ, func, arg0VN, arg1VN);
         if (resultVN != NoVN)
         {
             return resultVN;
@@ -2776,15 +2758,13 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
     //
     VNDefFuncApp<2> fstruct(func, arg0VN, arg1VN);
-    if (GetVNFunc2Map()->Lookup(fstruct, &resultVN))
-    {
-        assert(resultVN != NoVN);
-    }
-    else
+
+    ValueNum* resultVN = GetVNFunc2Map()->LookupPointerOrAdd(fstruct, NoVN);
+    if (*resultVN == NoVN)
     {
         if ((func == VNF_CastClass) || (func == VNF_IsInstanceOf))
         {
-            resultVN = VNForCast(func, arg0VN, arg1VN);
+            *resultVN = VNForCast(func, arg0VN, arg1VN);
         }
         else
         {
@@ -2795,20 +2775,20 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
             bool folded = false;
             if (VNEvalCanFoldBinaryFunc(typ, func, arg0VN, arg1VN) && VNEvalShouldFold(typ, func, arg0VN, arg1VN))
             {
-                resultVN = EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
+                *resultVN = EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
             }
 
-            if (resultVN != NoVN)
+            if (*resultVN != NoVN)
             {
                 folded = true;
             }
             else
             {
-                resultVN = EvalUsingMathIdentity(typ, func, arg0VN, arg1VN);
+                *resultVN = EvalUsingMathIdentity(typ, func, arg0VN, arg1VN);
             }
 
             // Do we have a valid resultVN?
-            if ((resultVN == NoVN) || (!folded && (genActualType(TypeOfVN(resultVN)) != genActualType(typ))))
+            if ((*resultVN == NoVN) || (!folded && (genActualType(TypeOfVN(*resultVN)) != genActualType(typ))))
             {
                 // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN')
                 //
@@ -2818,14 +2798,11 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
                 fapp->m_func                            = func;
                 fapp->m_args[0]                         = arg0VN;
                 fapp->m_args[1]                         = arg1VN;
-                resultVN                                = c->m_baseVN + offsetWithinChunk;
+                *resultVN                               = c->m_baseVN + offsetWithinChunk;
             }
         }
-
-        // Record 'resultVN' in the Func2Map
-        GetVNFunc2Map()->Set(fstruct, resultVN);
     }
-    return resultVN;
+    return *resultVN;
 }
 
 //----------------------------------------------------------------------------------------
@@ -2849,12 +2826,11 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
     assert(arg1VN == VNNormalValue(arg1VN));
     assert(VNFuncArity(func) == 2);
 
-    ValueNum resultVN;
-
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN') ?
     //
     VNDefFuncApp<2> fstruct(func, arg0VN, arg1VN);
-    if (!GetVNFunc2Map()->Lookup(fstruct, &resultVN))
+    ValueNum*       resultVN = GetVNFunc2Map()->LookupPointerOrAdd(fstruct, NoVN);
+    if (*resultVN == NoVN)
     {
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN')
         //
@@ -2864,13 +2840,10 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
         fapp->m_func                            = func;
         fapp->m_args[0]                         = arg0VN;
         fapp->m_args[1]                         = arg1VN;
-        resultVN                                = c->m_baseVN + offsetWithinChunk;
-
-        // Record 'resultVN' in the Func2Map
-        GetVNFunc2Map()->Set(fstruct, resultVN);
+        *resultVN                               = c->m_baseVN + offsetWithinChunk;
     }
 
-    return resultVN;
+    return *resultVN;
 }
 
 //----------------------------------------------------------------------------------------
@@ -2913,12 +2886,12 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     assert(arg2VN == VNNormalValue(arg2VN));
 #endif
 
-    ValueNum resultVN;
-
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN','arg2VN') ?
     //
     VNDefFuncApp<3> fstruct(func, arg0VN, arg1VN, arg2VN);
-    if (!GetVNFunc3Map()->Lookup(fstruct, &resultVN))
+    ValueNum*       resultVN = GetVNFunc3Map()->LookupPointerOrAdd(fstruct, NoVN);
+
+    if (*resultVN == NoVN)
     {
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN','arg2VN')
         //
@@ -2929,12 +2902,9 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
         fapp->m_args[0]                         = arg0VN;
         fapp->m_args[1]                         = arg1VN;
         fapp->m_args[2]                         = arg2VN;
-        resultVN                                = c->m_baseVN + offsetWithinChunk;
-
-        // Record 'resultVN' in the Func3Map
-        GetVNFunc3Map()->Set(fstruct, resultVN);
+        *resultVN                               = c->m_baseVN + offsetWithinChunk;
     }
-    return resultVN;
+    return *resultVN;
 }
 
 // ----------------------------------------------------------------------------------------
@@ -2966,12 +2936,12 @@ ValueNum ValueNumStore::VNForFunc(
     assert((func == VNF_MapStore) || (arg3VN == VNNormalValue(arg3VN)));
     assert(VNFuncArity(func) == 4);
 
-    ValueNum resultVN;
-
     // Have we already assigned a ValueNum for 'func'('arg0VN','arg1VN','arg2VN','arg3VN') ?
     //
     VNDefFuncApp<4> fstruct(func, arg0VN, arg1VN, arg2VN, arg3VN);
-    if (!GetVNFunc4Map()->Lookup(fstruct, &resultVN))
+    ValueNum*       resultVN = GetVNFunc4Map()->LookupPointerOrAdd(fstruct, NoVN);
+
+    if (*resultVN == NoVN)
     {
         // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN','arg2VN','arg3VN')
         //
@@ -2983,12 +2953,9 @@ ValueNum ValueNumStore::VNForFunc(
         fapp->m_args[1]                         = arg1VN;
         fapp->m_args[2]                         = arg2VN;
         fapp->m_args[3]                         = arg3VN;
-        resultVN                                = c->m_baseVN + offsetWithinChunk;
-
-        // Record 'resultVN' in the Func4Map
-        GetVNFunc4Map()->Set(fstruct, resultVN);
+        *resultVN                               = c->m_baseVN + offsetWithinChunk;
     }
-    return resultVN;
+    return *resultVN;
 }
 
 //------------------------------------------------------------------------------
