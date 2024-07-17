@@ -8,8 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
-#pragma warning disable 8500 // taking address of managed type
-
 namespace System.Globalization
 {
     internal sealed partial class CultureData
