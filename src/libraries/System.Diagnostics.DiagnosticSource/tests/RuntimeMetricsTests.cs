@@ -137,7 +137,7 @@ namespace System.Diagnostics.Metrics.Tests
 
             try
             {
-                throw new Exception();
+                throw new RuntimeMeterException();
             }
             catch
             {
@@ -146,11 +146,11 @@ namespace System.Diagnostics.Metrics.Tests
 
             var measurements = instrumentRecorder.GetMeasurements();
 
-            Assert.Single(measurements);
+            AssertExceptions(measurements, 1);
 
             try
             {
-                throw new Exception();
+                throw new RuntimeMeterException();
             }
             catch
             {
@@ -159,7 +159,40 @@ namespace System.Diagnostics.Metrics.Tests
 
             measurements = instrumentRecorder.GetMeasurements();
 
-            Assert.Equal(2, measurements.Count);
+            AssertExceptions(measurements, 2);
+
+            static void AssertExceptions(IReadOnlyList<Measurement<long>> measurements, int expectedCount)
+            {
+                int foundExpectedExceptions = 0;
+                int foundUnexpectedExceptions = 0;
+
+                foreach (Measurement<long> measurement in measurements)
+                {
+                    var tags = measurement.Tags.ToArray();
+                    var tag = tags.Single(k => k.Key == "error.type");
+
+                    Assert.NotNull(tag.Key);
+                    Assert.NotNull(tag.Value);
+
+                    if (tag.Value is not string tagValue)
+                    {
+                        Assert.Fail("Expected error type tag to be a string.");
+                        return;
+                    }
+
+                    if (tagValue == nameof(RuntimeMeterException))
+                    {
+                        foundExpectedExceptions++;
+                    }
+                    else if (tagValue == nameof(InstrumentRecorderException))
+                    {
+                        foundUnexpectedExceptions++;
+                    }
+                }
+
+                Assert.Equal(expectedCount, foundExpectedExceptions);
+                Assert.Equal(0, foundUnexpectedExceptions);
+            }
         }
 
         [Theory]
@@ -210,7 +243,11 @@ namespace System.Diagnostics.Metrics.Tests
                 foundGenerations[i] = false;
             }
 
-            foreach (Measurement<long> measurement in instrumentRecorder.GetMeasurements())
+            var measurements = instrumentRecorder.GetMeasurements();
+
+            Assert.True(measurements.Count >= GC.MaxGeneration + 1, "Expected to find at least one measurement for each generation.");
+
+            foreach (Measurement<long> measurement in measurements)
             {
                 var tags = measurement.Tags.ToArray();
                 var tag = tags.SingleOrDefault(k => k.Key == "gc.heap.generation");
@@ -253,6 +290,10 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
+        private sealed class RuntimeMeterException() : Exception { }
+
+        private sealed class InstrumentRecorderException() : Exception { }
+
         private sealed class InstrumentRecorder<T> : IDisposable where T : struct
         {
             private readonly MeterListener _meterListener = new();
@@ -279,7 +320,7 @@ namespace System.Diagnostics.Metrics.Tests
                 {
                     try
                     {
-                        throw new Exception();
+                        throw new InstrumentRecorderException();
                     }
                     catch
                     {
