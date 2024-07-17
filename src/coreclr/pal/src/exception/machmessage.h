@@ -186,11 +186,6 @@ public:
     void ReplyToNotification(MachMessage& message, kern_return_t eResult);
 
 private:
-    // The maximum size in bytes of any Mach message we can send or receive. Calculating an exact size for
-    // this is non trivial (basically because of the security trailers that Mach appends) but the current
-    // value has proven to be more than enough so far.
-    static const size_t kcbMaxMessageSize = 0x1500;
-
     // The following are structures describing the formats of the Mach messages we understand.
 
     // Request to set the register context on a particular thread.
@@ -298,8 +293,8 @@ private:
         } data;
     } __attribute__((packed));;
 
-
-    static_assert_no_msg(sizeof(mach_message_t) <= MachMessage::kcbMaxMessageSize);
+    // The maximum size in bytes of any Mach message we can send or receive including possible trailers
+    static const size_t kcbMaxMessageSize = sizeof(mach_message_t) + MAX_TRAILER_SIZE;
 
     // Re-initializes this data structure (to the same state as default construction, containing no message).
     void ResetMessage();
