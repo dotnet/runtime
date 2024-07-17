@@ -1988,7 +1988,8 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		MonoVarianceSearchTableEntry *vst;
 		int vst_count;
 		mono_class_get_variance_search_table (klass, &vst, &vst_count);
-		int depth = vst_count ? vst[0].depth : 0, i = 0, j;
+		int depth = vst_count ? vst[0].depth : 0, j;
+		i = 0;
 
 		while (depth) {
 			// g_print ("depth==%d, i==%d, count==%d\n", depth, i, vst_count);
