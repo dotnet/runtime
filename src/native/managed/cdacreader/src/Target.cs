@@ -81,7 +81,7 @@ public sealed unsafe class Target
     internal Contracts.Registry Contracts { get; }
     internal DataCache ProcessedData { get; }
 
-    public delegate int ReadFromTargetDelegate(ulong address, byte* buffer, uint bytesToRead);
+    public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
 
     public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out Target? target)
     {
@@ -420,17 +420,14 @@ public sealed unsafe class Target
         }
     }
 
-    private struct Reader(Target.ReadFromTargetDelegate readFromTarget)
+    private readonly struct Reader(ReadFromTargetDelegate readFromTarget)
     {
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
-            fixed (byte* bufferPtr = buffer)
-            {
-                return readFromTarget(address, bufferPtr, (uint)buffer.Length);
-            }
+            return readFromTarget(address, buffer);
         }
 
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
-            => readFromTarget(address, buffer, bytesToRead);
+            => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
     }
 }
