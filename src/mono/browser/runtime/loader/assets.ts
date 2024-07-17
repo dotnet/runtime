@@ -421,7 +421,7 @@ export function prepareAssets () {
                         behavior: "icu",
                         loadRemote: true
                     });
-                } else if (name === "segmentation-rules.json") {
+                } else if (name.startsWith("segmentation-rules") && name.endsWith(".json")) {
                     assetsToLoad.push({
                         name,
                         hash: resources.icu[name],
