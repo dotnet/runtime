@@ -1179,7 +1179,10 @@ bool Compiler::optCanAndShouldChangeExitTest(GenTree* cond, bool dump)
         // to be never analyzable for us even if we tried to do that, so just
         // do the easy check here.
         if (dump)
+        {
             JITDUMP("  No; exit node has side effects\n");
+        }
+
         return false;
     }
 
@@ -1189,7 +1192,10 @@ bool Compiler::optCanAndShouldChangeExitTest(GenTree* cond, bool dump)
         (cond->gtGetOp1()->IsIntegralConst(0) || cond->gtGetOp2()->IsIntegralConst(0)))
     {
         if (dump)
+        {
             JITDUMP("  No; operand of condition [%06u] is already 0\n", dspTreeID(cond));
+        }
+
         return false;
     }
 
