@@ -247,7 +247,7 @@ namespace System.Net.Security
             ref SafeDeleteSslContext? context,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return AcceptSecurityContext(ref credentialsHandle, ref context, Span<byte>.Empty, out _, sslAuthenticationOptions);
+            return AcceptSecurityContext(ref credentialsHandle, ref context, ReadOnlySpan<byte>.Empty, out _, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions, bool newCredentialsRequested)

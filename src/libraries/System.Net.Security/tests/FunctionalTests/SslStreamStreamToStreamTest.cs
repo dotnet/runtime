@@ -22,25 +22,27 @@ namespace System.Net.Security.Tests
     {
         private readonly byte[] _sampleMsg = "Sample Test Message"u8.ToArray();
 
-        protected static async Task WithServerCertificate(X509Certificate serverCertificate, Func<X509Certificate, string, Task> func)
+        internal string Name { get; private set; }
+        internal SslProtocols SslProtocol { get; private set; }
+
+        protected async Task WithServerCertificate(X509Certificate serverCertificate, Func<X509Certificate, string, Task> func)
         {
             X509Certificate certificate = serverCertificate ?? Configuration.Certificates.GetServerCertificate();
             try
             {
-                string name;
                 if (certificate is X509Certificate2 cert2)
                 {
-                    name = cert2.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+                    Name = cert2.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
                 }
                 else
                 {
                     using (cert2 = new X509Certificate2(certificate))
                     {
-                        name = cert2.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+                        Name = cert2.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
                     }
                 }
 
-                await func(certificate, name).ConfigureAwait(false);
+                await func(certificate, Name).ConfigureAwait(false);
             }
             finally
             {
@@ -77,6 +79,7 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(stream2, false, delegate { return true; }))
             {
                 await DoHandshake(client, server, serverCert, clientCert);
+                SslProtocol = client.SslProtocol;
                 Assert.True(client.IsAuthenticated);
                 Assert.True(server.IsAuthenticated);
             }
@@ -93,7 +96,8 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(stream2))
             using (var certificate = Configuration.Certificates.GetServerCertificate())
             {
-                Task t1 = client.AuthenticateAsClientAsync("incorrectServer");
+                Name = "incorrectServer";
+                Task t1 = client.AuthenticateAsClientAsync(Name);
                 Task t2 = server.AuthenticateAsServerAsync(certificate);
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => t1.WaitAsync(TestConfiguration.PassingTestTimeout));

@@ -227,7 +227,7 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetCertificateAuthorities")]
         internal static partial int SslSetCertificateAuthorities(SafeSslHandle sslHandle, SafeCreateHandle certificateOrArray, int replaceExisting);
 
-        internal static unsafe void SslSetCertificateAuthorities(SafeSslHandle sslHandle, Span<IntPtr> certificates, bool replaceExisting)
+        internal static unsafe void SslSetCertificateAuthorities(SafeSslHandle sslHandle, ReadOnlySpan<IntPtr> certificates, bool replaceExisting)
         {
             using (SafeCreateHandle cfCertRefs = CoreFoundation.CFArrayCreate(certificates))
             {
