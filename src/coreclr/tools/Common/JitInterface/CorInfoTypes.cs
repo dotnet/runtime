@@ -1547,8 +1547,8 @@ namespace Internal.JitInterface
                 return true;
             }
 
-            return LoweredElements.Slice(0, (int)numLoweredElements).SequenceEqual(other.LoweredElements).Slice(0, (int)other.numLoweredElements)
-                && Offsets.Slice(0, (int)numLoweredElements).SequenceEqual(other.Offsets).Slice(0, (int)other.numLoweredElements);
+            return LoweredElements.Slice(0, (int)numLoweredElements).SequenceEqual(other.LoweredElements.Slice(0, (int)other.numLoweredElements))
+                && Offsets.Slice(0, (int)numLoweredElements).SequenceEqual(other.Offsets.Slice(0, (int)other.numLoweredElements));
         }
 
         public override int GetHashCode()
