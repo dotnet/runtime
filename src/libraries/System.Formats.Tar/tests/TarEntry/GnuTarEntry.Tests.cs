@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -92,6 +93,344 @@ namespace System.Formats.Tar.Tests
             GnuTarEntry fifo = new GnuTarEntry(TarEntryType.Fifo, InitialEntryName);
             SetFifo(fifo);
             VerifyFifo(fifo);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.WriteByte(5);
+                entry.DataStream.Position = 0;
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 2560.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 513 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_Async(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.WriteByte(5);
+                entry.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(actualEntry);
+
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 2560.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 513 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile_LongPath(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                string veryLongName = new string('a', 1234); // Forces using a GNU LongPath entry
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, veryLongName);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.WriteByte(5);
+                entry.DataStream.Position = 0;
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+
+            // GNU first writes the long path entry, containing:
+            // * 512 bytes of the regular tar header
+            // * 1234 bytes for the data section containing the full long path
+            // * 302 bytes of padding
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 2560.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 2561 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_LongPath_Async(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                string veryLongName = new string('a', 1234); // Forces using a GNU LongPath entry
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, veryLongName);
+                entry.DataStream = new MemoryStream();
+                entry.DataStream.WriteByte(5);
+                entry.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(actualEntry);
+
+            // GNU first writes the long path entry, containing:
+            // * 512 bytes of the regular tar header
+            // * 1234 bytes for the data section containing the full long path
+            // * 302 bytes of padding
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 2560.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 2561 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile_LongLink(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
+                entry.LinkName = new string('a', 1234); // Forces using a GNU LongLink entry
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+
+            // GNU first writes the long link entry, containing:
+            // * 512 bytes of the regular tar header
+            // * 1234 bytes for the data section containing the full long link
+            // * 302 bytes of padding
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 2560.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 2561 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_LongLink_Async(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, InitialEntryName);
+                entry.LinkName = new string('a', 1234); // Forces using a GNU LongLink entry
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(actualEntry);
+
+            // GNU first writes the long link entry, containing:
+            // * 512 bytes of the regular tar header
+            // * 1234 bytes for the data section containing the full long link
+            // * 302 bytes of padding
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 2560.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 2561 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile_LongLin_LongPath(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                string veryLongName = new string('a', 1234); // Forces using a GNU LongPath entry
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, veryLongName);
+                entry.LinkName = new string('a', 1234); // Forces using a GNU LongLink entry
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+
+            // GNU first writes the long link and long path entries, containing:
+            // * 512 bytes of the regular long link tar header
+            // * 1234 bytes for the data section containing the full long link
+            // * 302 bytes of padding
+            // * 512 bytes of the regular long path tar header
+            // * 1234 bytes for the data section containing the full long path
+            // * 302 bytes of padding
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 4608.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 4609 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_LongLin_LongPath_Async(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                string veryLongName = new string('a', 1234); // Forces using a GNU LongPath entry
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.SymbolicLink, veryLongName);
+                entry.LinkName = new string('a', 1234); // Forces using a GNU LongLink entry
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry actualEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(actualEntry);
+
+            // GNU first writes the long link and long path entries, containing:
+            // * 512 bytes of the regular long link tar header
+            // * 1234 bytes for the data section containing the full long link
+            // * 302 bytes of padding
+            // * 512 bytes of the regular long path tar header
+            // * 1234 bytes for the data section containing the full long path
+            // * 302 bytes of padding
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 4608.
+            // The regular file data section starts on the next byte.
+            long expectedDataOffset = canSeek ? 4609 : -1;
+            Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+        }
+
+        [Fact]
+        public void DataOffset_BeforeAndAfterArchive()
+        {
+            GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+            Assert.Equal(-1, entry.DataOffset);
+            entry.DataStream = new MemoryStream();
+            entry.DataStream.WriteByte(5);
+
+            using MemoryStream ms = new();
+            using TarWriter writer = new(ms);
+            writer.WriteEntry(entry);
+            Assert.Equal(513, entry.DataOffset);
+        }
+        
+        [Fact]
+        public async Task DataOffset_BeforeAndAfterArchive_Async()
+        {
+            GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+            Assert.Equal(-1, entry.DataOffset);
+
+            entry.DataStream = new MemoryStream();
+            entry.DataStream.WriteByte(5);
+
+            await using MemoryStream ms = new();
+            await using TarWriter writer = new(ms);
+            await writer.WriteEntryAsync(entry);
+            Assert.Equal(513, entry.DataOffset);
+        }
+
+        [Fact]
+        public void DataOffset_UnseekableDataStream()
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry.DataOffset);
+
+                using MemoryStream dataStream = new();
+                dataStream.WriteByte(5);
+                dataStream.Position = 0;
+                using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
+                entry.DataStream = wds;
+
+                writer.WriteEntry(entry);
+            }
+            ms.Position = 0;
+
+            using TarReader reader = new(ms);
+            TarEntry actualEntry = reader.GetNextEntry();
+            Assert.NotNull(actualEntry);
+            // Gnu header length is 512, data starts in the next position
+            Assert.Equal(513, actualEntry.DataOffset);
+        }
+
+        [Fact]
+        public async Task DataOffset_UnseekableDataStream_Async()
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry.DataOffset);
+
+                await using MemoryStream dataStream = new();
+                dataStream.WriteByte(5);
+                dataStream.Position = 0;
+                await using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
+                entry.DataStream = wds;
+
+                await writer.WriteEntryAsync(entry);
+            }
+            ms.Position = 0;
+
+            await using TarReader reader = new(ms);
+            TarEntry actualEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(actualEntry);
+            // Gnu header length is 512, data starts in the next position
+            Assert.Equal(513, actualEntry.DataOffset);
         }
     }
 }
