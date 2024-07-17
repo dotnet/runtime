@@ -3461,7 +3461,7 @@ public:
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
-    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
+    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout = nullptr);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
@@ -4504,6 +4504,10 @@ protected:
         IsByRefLike           = 1,
         MakeInlineObservation = 2,
     };
+
+    GenTree* impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls,
+        GenTree* value);
+    void impLoadNullableFields(GenTree* nullableObj, CORINFO_CLASS_HANDLE nullableCls, GenTree** hasValueFld, GenTree** valueFld);
 
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
@@ -8235,6 +8239,7 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 

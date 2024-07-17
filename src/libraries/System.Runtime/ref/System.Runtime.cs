@@ -8535,13 +8535,14 @@ namespace System.Diagnostics
         public static int IndentLevel { get { throw null; } set { } }
         public static int IndentSize { get { throw null; } set { } }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
+        [System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute(-1)]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler message) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler message, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("condition")] ref System.Diagnostics.Debug.AssertInterpolatedStringHandler detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute("condition")] string? message = null) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
         public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? message, string? detailMessage) { }
         [System.Diagnostics.ConditionalAttribute("DEBUG")]

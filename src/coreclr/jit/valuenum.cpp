@@ -11798,7 +11798,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     {
                         JITDUMP("IND(obj) is actually a class handle for %s\n", eeGetClassName(handle));
                         // Filter out all shared generic instantiations
-                        if ((info.compCompHnd->getClassAttribs(handle) & CORINFO_FLG_SHAREDINST) == 0)
+                        if (!eeIsSharedInst(handle))
                         {
                             void* pEmbedClsHnd;
                             void* embedClsHnd = (void*)info.compCompHnd->embedClassHandle(handle, &pEmbedClsHnd);
