@@ -81,7 +81,6 @@ namespace System.IO
 
         /// <summary>Gets or sets a value that indicates the maximum directory depth to recurse while enumerating, when <see cref="RecurseSubdirectories" /> is set to <see langword="true" />.</summary>
         /// <value>A number that represents the maximum directory depth to recurse while enumerating. The default value is <see cref="int.MaxValue" />.</value>
-        /// <remarks>If <see cref="MaxRecursionDepth" /> is set to a negative number, the default value <see cref="int.MaxValue" /> is used.
         /// If <see cref="MaxRecursionDepth" /> is set to zero, enumeration returns the contents of the initial directory.</remarks>
         public int MaxRecursionDepth
         {
