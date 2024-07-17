@@ -645,7 +645,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-        public static IHttpClientBuilder AsKeyed(this IHttpClientBuilder builder, ServiceLifetime lifetime)
+        public static IHttpClientBuilder AddAsKeyed(this IHttpClientBuilder builder, ServiceLifetime lifetime = ServiceLifetime.Scoped)
         {
             ThrowHelper.ThrowIfNull(builder);
 
@@ -675,7 +675,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-        public static IHttpClientBuilder DropKeyed(this IHttpClientBuilder builder)
+        public static IHttpClientBuilder RemoveAsKeyed(this IHttpClientBuilder builder)
         {
             ThrowHelper.ThrowIfNull(builder);
 
@@ -705,7 +705,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (builder.Name is null)
             {
-                throw new InvalidOperationException($"{nameof(HttpClientBuilderExtensions.AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
+                throw new InvalidOperationException($"{nameof(AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
             }
 
             HttpClientMappingRegistry registry = GetMappingRegistry(builder.Services);

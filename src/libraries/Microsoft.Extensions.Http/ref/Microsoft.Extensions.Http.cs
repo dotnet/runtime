@@ -5,8 +5,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static partial class HttpClientBuilderExtensions
     {
-        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AsKeyed(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder DropKeyed(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddAsKeyed(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddDefaultLogger(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpMessageHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.IServiceProvider, System.Net.Http.DelegatingHandler> configureHandler) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpMessageHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.Net.Http.DelegatingHandler> configureHandler) { throw null; }
@@ -29,6 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Collections.Generic.IEnumerable<string> redactedLoggedHeaderNames) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<string, bool> shouldRedactHeaderValue) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RemoveAllLoggers(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RemoveAsKeyed(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder SetHandlerLifetime(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.TimeSpan handlerLifetime) { throw null; }
 #if NET
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]

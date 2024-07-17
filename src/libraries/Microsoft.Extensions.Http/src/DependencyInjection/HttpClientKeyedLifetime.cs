@@ -3,6 +3,7 @@
 
 using System;
 using System.Net.Http;
+using Microsoft.Extensions.Http;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -71,7 +72,9 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 return null!;
             }
-            return serviceProvider.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler(name);
+            HttpMessageHandler handler = serviceProvider.GetRequiredService<IHttpMessageHandlerFactory>().CreateHandler(name);
+            // factory will return a cached instance, wrap it to be able to respect DI lifetimes
+            return new LifetimeTrackingHttpMessageHandler(handler);
         }
 
         private static bool IsKeyedLifetimeDisabled(IServiceProvider serviceProvider, string name)
