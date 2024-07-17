@@ -282,9 +282,11 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The starting position of the data stream respective to the archive stream.
-        /// If the entry does not come from an archive stream, or the archive stream is unseekable, returns -1.
+        /// Gets the starting position of the data stream respective to the archive stream.
         /// </summary>
+        /// <remarks>
+        /// If the entry does not come from an archive stream or if the archive stream is not seekable, returns -1.
+        /// </remarks>
         public long DataOffset => _header._dataOffset;
 
         /// <summary>
