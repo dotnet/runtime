@@ -1158,6 +1158,18 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     return true;
 }
 
+//------------------------------------------------------------------------
+// optCanAndShouldChangeExitTest:
+//   Check if the exit test can be rephrased to a downwards counted exit test
+//   (being compared to zero).
+//
+// Parameters:
+//   cond - The exit test
+//   dump - Whether to JITDUMP the reason for the decisions
+//
+// Returns:
+//   True if the exit test can be changed.
+//
 bool Compiler::optCanAndShouldChangeExitTest(GenTree* cond, bool dump)
 {
     if ((cond->gtFlags & GTF_SIDE_EFFECT) != 0)
@@ -1185,7 +1197,7 @@ bool Compiler::optCanAndShouldChangeExitTest(GenTree* cond, bool dump)
 }
 
 //------------------------------------------------------------------------
-// optPrimaryIVIsLoopScoped:
+// optPrimaryIVHasNonLoopUses:
 //   Check if a primary IV may have uses of the primary IV that we do not
 //   reason about.
 //
