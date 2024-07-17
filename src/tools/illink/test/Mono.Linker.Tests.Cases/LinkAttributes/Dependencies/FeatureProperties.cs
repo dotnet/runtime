@@ -14,6 +14,9 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes.Dependencies
 		[FeatureGuard (typeof (RequiresUnreferencedCodeAttribute))]
 		public static bool FeatureGuard => Removed ();
 
+		[FeatureSwitchDefinition ("StubbedFeatureSwitch")]
+		public static bool StubbedFeatureSwitch => Removed ();
+
 		static bool Removed () => true;
 	}
 }

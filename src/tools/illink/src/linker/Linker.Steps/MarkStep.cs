@@ -2951,7 +2951,16 @@ namespace Mono.Linker.Steps
 			if (method == null)
 				return null;
 
-			if (Annotations.GetAction (method) == MethodAction.Nothing)
+			var methodAction = Annotations.GetAction (method);
+			if (methodAction is MethodAction.ConvertToStub) {
+				// CodeRewriterStep runs after sweeping, and may request the stubbed value for any preserved method
+				// with the action ConvertToStub. Ensure we have precomputed any stub value that may be needed by
+				// CodeRewriterStep. This ensures sweeping doesn't change the stub value (which can be determined by
+				// FeatureGuardAttribute or FeatureSwitchDefinitionAttribute that might have been removed).
+				Annotations.TryGetMethodStubValue (method, out _);
+			}
+
+			if (methodAction == MethodAction.Nothing)
 				Annotations.SetAction (method, MethodAction.Parse);
 
 
