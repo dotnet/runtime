@@ -321,13 +321,12 @@ namespace System
                 1000000000, // 10^9
             ];
 
-            public static bool TryRun<TNumber>(TNumber value, int requestedDigits, ref NumberBuffer number)
-                where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            public static bool TryRunDouble(double value, int requestedDigits, ref NumberBuffer number)
             {
-                TNumber v = TNumber.IsNegative(value) ? -value : value;
+                double v = double.IsNegative(value) ? -value : value;
 
-                Debug.Assert(v > TNumber.Zero);
-                Debug.Assert(TNumber.IsFinite(v));
+                Debug.Assert(v > 0);
+                Debug.Assert(double.IsFinite(v));
 
                 int length;
                 int decimalExponent;
@@ -340,7 +339,75 @@ namespace System
                 }
                 else
                 {
-                    DiyFp w = DiyFp.Create(v).Normalize();
+                    DiyFp w = new DiyFp(v).Normalize();
+                    result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
+                }
+
+                if (result)
+                {
+                    Debug.Assert((requestedDigits == -1) || (length == requestedDigits));
+
+                    number.Scale = length + decimalExponent;
+                    number.Digits[length] = (byte)('\0');
+                    number.DigitsCount = length;
+                }
+
+                return result;
+            }
+
+            public static bool TryRunHalf(Half value, int requestedDigits, ref NumberBuffer number)
+            {
+                Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
+
+                Debug.Assert((double)v > 0);
+                Debug.Assert(Half.IsFinite(v));
+
+                int length;
+                int decimalExponent;
+                bool result;
+
+                if (requestedDigits == -1)
+                {
+                    DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
+                    result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
+                }
+                else
+                {
+                    DiyFp w = new DiyFp(v).Normalize();
+                    result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
+                }
+
+                if (result)
+                {
+                    Debug.Assert((requestedDigits == -1) || (length == requestedDigits));
+
+                    number.Scale = length + decimalExponent;
+                    number.Digits[length] = (byte)('\0');
+                    number.DigitsCount = length;
+                }
+
+                return result;
+            }
+
+            public static bool TryRunSingle(float value, int requestedDigits, ref NumberBuffer number)
+            {
+                float v = float.IsNegative(value) ? -value : value;
+
+                Debug.Assert(v > 0);
+                Debug.Assert(float.IsFinite(v));
+
+                int length;
+                int decimalExponent;
+                bool result;
+
+                if (requestedDigits == -1)
+                {
+                    DiyFp w = DiyFp.CreateAndGetBoundaries(v, out DiyFp boundaryMinus, out DiyFp boundaryPlus).Normalize();
+                    result = TryRunShortest(in boundaryMinus, in w, in boundaryPlus, number.Digits, out length, out decimalExponent);
+                }
+                else
+                {
+                    DiyFp w = new DiyFp(v).Normalize();
                     result = TryRunCounted(in w, requestedDigits, number.Digits, out length, out decimalExponent);
                 }
 

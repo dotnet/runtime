@@ -85,18 +85,6 @@ namespace System
         static abstract TSelf BitsToFloat(ulong bits);
 
         static abstract ulong FloatToBits(TSelf value);
-
-        // Maximum number of digits required to guarantee that any given floating point
-        // number can roundtrip. Some numbers may require less, but none will require more.
-        static abstract int MaxRoundTripDigits { get; }
-
-        // SinglePrecisionCustomFormat and DoublePrecisionCustomFormat are used to ensure that
-        // custom format strings return the same string as in previous releases when the format
-        // would return x digits or less (where x is the value of the corresponding constant).
-        // In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
-        // the format and determine exactly how many digits are being requested and whether they
-        // represent "significant digits" or "digits after the decimal point".
-        static abstract int MaxPrecisionCustomFormat { get; }
     }
 
     internal static partial class Number

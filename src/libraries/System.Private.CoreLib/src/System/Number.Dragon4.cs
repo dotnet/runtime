@@ -10,23 +10,82 @@ namespace System
     // The backing algorithm and the proofs behind it are described in more detail here:  https://www.cs.indiana.edu/~dyb/pubs/FP-Printing-PLDI96.pdf
     internal static partial class Number
     {
-        public static unsafe void Dragon4<TNumber>(TNumber value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
-            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+        public static void Dragon4Double(double value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
         {
-            TNumber v = TNumber.IsNegative(value) ? -value : value;
+            double v = double.IsNegative(value) ? -value : value;
 
-            Debug.Assert(v > TNumber.Zero);
-            Debug.Assert(TNumber.IsFinite(v));
+            Debug.Assert(v > 0);
+            Debug.Assert(double.IsFinite(v));
 
             ulong mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
 
             uint mantissaHighBitIdx;
             bool hasUnequalMargins = false;
 
-            if ((mantissa >> TNumber.DenormalMantissaBits) != 0)
+            if ((mantissa >> DiyFp.DoubleImplicitBitIndex) != 0)
             {
-                mantissaHighBitIdx = TNumber.DenormalMantissaBits;
-                hasUnequalMargins = (mantissa == (1U << TNumber.DenormalMantissaBits));
+                mantissaHighBitIdx = DiyFp.DoubleImplicitBitIndex;
+                hasUnequalMargins = (mantissa == (1UL << DiyFp.DoubleImplicitBitIndex));
+            }
+            else
+            {
+                Debug.Assert(mantissa != 0);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
+            }
+
+            int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
+
+            number.Scale = decimalExponent + 1;
+            number.Digits[length] = (byte)('\0');
+            number.DigitsCount = length;
+        }
+
+        public static unsafe void Dragon4Half(Half value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+        {
+            Half v = Half.IsNegative(value) ? Half.Negate(value) : value;
+
+            Debug.Assert((double)v > 0.0);
+            Debug.Assert(Half.IsFinite(v));
+
+            ushort mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
+
+            uint mantissaHighBitIdx;
+            bool hasUnequalMargins = false;
+
+            if ((mantissa >> DiyFp.HalfImplicitBitIndex) != 0)
+            {
+                mantissaHighBitIdx = DiyFp.HalfImplicitBitIndex;
+                hasUnequalMargins = (mantissa == (1U << DiyFp.HalfImplicitBitIndex));
+            }
+            else
+            {
+                Debug.Assert(mantissa != 0);
+                mantissaHighBitIdx = (uint)BitOperations.Log2(mantissa);
+            }
+
+            int length = (int)(Dragon4(mantissa, exponent, mantissaHighBitIdx, hasUnequalMargins, cutoffNumber, isSignificantDigits, number.Digits, out int decimalExponent));
+
+            number.Scale = decimalExponent + 1;
+            number.Digits[length] = (byte)('\0');
+            number.DigitsCount = length;
+        }
+
+        public static unsafe void Dragon4Single(float value, int cutoffNumber, bool isSignificantDigits, ref NumberBuffer number)
+        {
+            float v = float.IsNegative(value) ? -value : value;
+
+            Debug.Assert(v > 0);
+            Debug.Assert(float.IsFinite(v));
+
+            uint mantissa = ExtractFractionAndBiasedExponent(value, out int exponent);
+
+            uint mantissaHighBitIdx;
+            bool hasUnequalMargins = false;
+
+            if ((mantissa >> DiyFp.SingleImplicitBitIndex) != 0)
+            {
+                mantissaHighBitIdx = DiyFp.SingleImplicitBitIndex;
+                hasUnequalMargins = (mantissa == (1U << DiyFp.SingleImplicitBitIndex));
             }
             else
             {
