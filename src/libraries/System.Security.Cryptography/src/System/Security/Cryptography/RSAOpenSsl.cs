@@ -74,6 +74,11 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
 
+            if (pkeyHandle.GetKeyType() != Interop.Crypto.EvpAlgorithmId.RSA)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+
             SafeEvpPKeyHandle newKey = pkeyHandle.DuplicateHandle();
             SetKey(newKey);
         }

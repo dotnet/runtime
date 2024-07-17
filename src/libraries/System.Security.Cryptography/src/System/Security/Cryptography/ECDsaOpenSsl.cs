@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Win32.SafeHandles;
@@ -31,6 +30,11 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
             ThrowIfNotSupported();
+
+            if (pkeyHandle.GetKeyType() != Interop.Crypto.EvpAlgorithmId.ECC)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
 
             _key = new Lazy<SafeEvpPKeyHandle>(pkeyHandle.DuplicateHandle());
             ForceSetKeySize(pkeyHandle.GetKeySizeBits());
@@ -68,10 +72,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Obtain a SafeHandle version of an EVP_PKEY* equivalent
+        /// Obtain a SafeHandle version of an EVP_PKEY* which wraps an EC_KEY* equivalent
         /// to the current key for this instance.
         /// </summary>
-        /// <returns>A SafeHandle for the EVP_PKEY key in OpenSSL</returns>
+        /// <returns>A SafeHandle for the EC_KEY key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             ThrowIfDisposed();

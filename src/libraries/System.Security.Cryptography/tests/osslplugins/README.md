@@ -1,8 +1,3 @@
-TODO: update names of variables and review
-TODO: add section with logging https://github.com/tpm2-software/tpm2-tss/blob/master/doc/logging.md
-TODO:    export TSS2_LOG=all+NONE
-
-
 # Testing instructions for OpenSSL ENGINE
 
 Once everything is setup tests related to TPM and our engine can be run using:

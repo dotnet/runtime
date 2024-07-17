@@ -84,17 +84,19 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(hash);
             ThrowIfDisposed();
 
-            using (SafeEvpPKeyCtxHandle ctx = CreateCtx())
+            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
+            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
+            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
             {
-                ctx.ConfigureForECDSASign();
+                Interop.Crypto.EvpPKeyCtxConfigureForECDSASign(ctx);
 
-                if (!ctx.TryGetSufficientSignatureSizeInBytesCore(hash, out int sufficientDerSignatureSize))
+                if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientDerSignatureSize))
                 {
                     throw new CryptographicException();
                 }
 
                 Span<byte> derSignature = sufficientDerSignatureSize <= SignatureStackBufSize ? stackalloc byte[sufficientDerSignatureSize] : new byte[sufficientDerSignatureSize];
-                if (!ctx.TrySignHashCore(hash, derSignature, out int bytesWritten))
+                if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, derSignature, out int bytesWritten))
                 {
                     throw new CryptographicException();
                 }
@@ -121,14 +123,6 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
-        // SafeEvpPKeyCtxHandle doesn't touch ref counts of SafeEvpPKeyHandle so we need to keep it alive during it's lifetime.
-        // We only use CreateCtx from within single `using` statement so we can guarantee no lifetime issues.
-        private SafeEvpPKeyCtxHandle CreateCtx()
-        {
-            ThrowIfDisposed();
-            return SafeEvpPKeyCtxHandle.CreateFromEvpPkey(_key.Value);
-        }
-
         protected override bool TrySignHashCore(
             ReadOnlySpan<byte> hash,
             Span<byte> destination,
@@ -147,17 +141,19 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                using (SafeEvpPKeyCtxHandle ctx = CreateCtx())
+                // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
+                using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
+                using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
                 {
-                    ctx.ConfigureForECDSASign();
+                    Interop.Crypto.EvpPKeyCtxConfigureForECDSASign(ctx);
 
-                    if (!ctx.TryGetSufficientSignatureSizeInBytesCore(hash, out int sufficientSignatureSizeInBytes))
+                    if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientSignatureSizeInBytes))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
 
                     Span<byte> derSignatureDestination = sufficientSignatureSizeInBytes <= SignatureStackBufSize ? stackalloc byte[sufficientSignatureSizeInBytes] : new byte[sufficientSignatureSizeInBytes];
-                    if (!ctx.TrySignHashCore(hash, derSignatureDestination, out int derSignatureBytesWritten))
+                    if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, derSignatureDestination, out int derSignatureBytesWritten))
                     {
                         // this is unrelated to sufficient size reason
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
@@ -172,13 +168,15 @@ namespace System.Security.Cryptography
             }
             else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
             {
-                using (SafeEvpPKeyCtxHandle ctx = CreateCtx())
+                // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
+                using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
+                using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
                 {
-                    ctx.ConfigureForECDSASign();
+                    Interop.Crypto.EvpPKeyCtxConfigureForECDSASign(ctx);
 
                     // We could theoretically pass this through but we need to distinguish between "not enough space" and "failed"
                     // We could check for presence of private key but that won't work when it's an external key.
-                    if (!ctx.TryGetSufficientSignatureSizeInBytesCore(hash, out int sufficientSignatureSizeInBytes))
+                    if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientSignatureSizeInBytes))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
@@ -186,7 +184,7 @@ namespace System.Security.Cryptography
                     if (destination.Length >= sufficientSignatureSizeInBytes)
                     {
                         // The only reason this could fail won't be related to buffer size
-                        if (!ctx.TrySignHashCore(hash, destination, out bytesWritten))
+                        if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, destination, out bytesWritten))
                         {
                             throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
@@ -197,7 +195,7 @@ namespace System.Security.Cryptography
                     // Since sufficientSignatureSizeInBytes can be more than what's actually needed
                     // we need temporary buffer of sufficient size and see if operation can succeed with that
                     Span<byte> derSignatureDestination = sufficientSignatureSizeInBytes <= SignatureStackBufSize ? stackalloc byte[sufficientSignatureSizeInBytes] : new byte[sufficientSignatureSizeInBytes];
-                    if (!ctx.TrySignHashCore(hash, destination, out int bytesWrittenToTemporaryBuffer))
+                    if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, derSignatureDestination, out int bytesWrittenToTemporaryBuffer))
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
@@ -208,7 +206,7 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    derSignatureDestination.CopyTo(destination);
+                    derSignatureDestination.Slice(0, bytesWrittenToTemporaryBuffer).CopyTo(destination);
                     bytesWritten = bytesWrittenToTemporaryBuffer;
                     return true;
                 }
@@ -273,10 +271,12 @@ namespace System.Security.Cryptography
                     signatureFormat.ToString());
             }
 
-            using (SafeEvpPKeyCtxHandle ctx = CreateCtx())
+            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
+            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
+            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
             {
-                ctx.ConfigureForECDSAVerify();
-                return ctx.VerifyHashCore(hash, toVerify);
+                Interop.Crypto.EvpPKeyCtxConfigureForECDSAVerify(ctx);
+                return Interop.Crypto.EvpPKeyCtxVerifyHash(ctx, hash, toVerify);
             }
         }
 

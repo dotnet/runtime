@@ -112,11 +112,8 @@ namespace System.Security.Cryptography
 
             bool otherIsNamed = otherKey.HasCurveName;
 
-            // The only case when we will not directly use our key is when peer key is an explicit curve
-            // but we're using named in which case we'll recreate our key with explicit parameters.
-            SafeEvpPKeyHandle ourKey = _key.Value;
-            bool disposeOurKey = false;
-
+            // We need to always duplicate handle in case this operation is done by multiple threads and one of them disposes the handle
+            SafeEvpPKeyHandle? ourKey = null;
             SafeEvpPKeyHandle? theirKey = null;
             byte[]? rented = null;
             int secretLength = 0;
@@ -130,10 +127,13 @@ namespace System.Security.Cryptography
 
                 if (otherIsNamed == thisIsNamed)
                 {
+                    ourKey = _key.Value.DuplicateHandle();
                     theirKey = otherKey.DuplicateKeyHandle();
                 }
                 else if (otherIsNamed)
                 {
+                    ourKey = _key.Value.DuplicateHandle();
+
                     using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
                     {
                         theirKey = tmp.CreateKeyHandle();
@@ -146,11 +146,9 @@ namespace System.Security.Cryptography
                         // This is generally not expected to fail except:
                         // - when key can't be accessed but is available (i.e. TPM)
                         // - private key is actually missing
-
                         using (ECOpenSsl tmp = new ECOpenSsl(ExportExplicitParameters(true)))
                         {
                             ourKey = tmp.CreateKeyHandle();
-                            disposeOurKey = true;
                         }
                     }
                     catch (CryptographicException)
@@ -209,10 +207,7 @@ namespace System.Security.Cryptography
                     otherKey.Dispose();
                 }
 
-                if (disposeOurKey)
-                {
-                    ourKey.Dispose();
-                }
+                ourKey?.Dispose();
 
                 if (rented != null)
                 {

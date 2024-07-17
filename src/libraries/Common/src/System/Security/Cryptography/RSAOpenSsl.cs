@@ -115,7 +115,9 @@ namespace System.Security.Cryptography
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
 
-            // For RSA decryption buffer is equal to key size in bytes
+            // OpenSSL requires that the decryption buffer be at least as large as key size in bytes.
+            // So if the destination is too small, use a temporary buffer so we can match
+            // Windows behavior of succeeding as long as the buffer can hold the final output.
             int keySizeBytes = key.GetKeySizeBytes();
 
             if (destination.Length < keySizeBytes)
@@ -730,17 +732,19 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(padding);
             ThrowIfDisposed();
 
-            using (SafeEvpPKeyCtxHandle ctx = CreateCtx())
+            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
+            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
+            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
             {
-                ctx.ConfigureForRSASign(hashAlgorithm, padding.Mode);
+                Interop.Crypto.CryptoNative_ConfigureForRsaSign(ctx, padding.Mode, hashAlgorithm);
 
-                if (!ctx.TryGetSufficientSignatureSizeInBytesCore(hash, out int sufficientDerSignatureSize))
+                if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientDerSignatureSize))
                 {
                     throw new CryptographicException();
                 }
 
                 byte[] signature = new byte[sufficientDerSignatureSize];
-                if (!ctx.TrySignHashCore(hash, signature, out int bytesWritten))
+                if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, signature, out int bytesWritten))
                 {
                     throw new CryptographicException();
                 }
@@ -782,14 +786,6 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
-        // SafeEvpPKeyCtxHandle doesn't touch ref counts of SafeEvpPKeyHandle so we need to keep it alive during it's lifetime.
-        // We only use CreateCtx from within single `using` statement so we can guarantee no lifetime issues.
-        private SafeEvpPKeyCtxHandle CreateCtx()
-        {
-            ThrowIfDisposed();
-            return SafeEvpPKeyCtxHandle.CreateFromEvpPkey(GetKey());
-        }
-
         private bool TrySignHashCore(
             ReadOnlySpan<byte> hash,
             Span<byte> destination,
@@ -802,20 +798,22 @@ namespace System.Security.Cryptography
             ValidatePadding(padding);
             ThrowIfDisposed();
 
-            using (SafeEvpPKeyCtxHandle ctx = CreateCtx())
+            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
+            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
+            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
             {
-                ctx.ConfigureForRSASign(hashAlgorithm, padding.Mode);
+                Interop.Crypto.CryptoNative_ConfigureForRsaSign(ctx, padding.Mode, hashAlgorithm);
 
                 // We could theoretically pass this through but we need to distinguish between "not enough space" and "failed"
                 // We could check for presence of private key but that won't work when it's an external key.
-                if (!ctx.TryGetSufficientSignatureSizeInBytesCore(hash, out int sufficientSignatureSizeInBytes))
+                if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientSignatureSizeInBytes))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
 
                 if (destination.Length >= sufficientSignatureSizeInBytes)
                 {
-                    if (!ctx.TrySignHashCore(hash, destination, out bytesWritten))
+                    if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, destination, out bytesWritten))
                     {
                         // The only reason this could fail won't be related to buffer size so we throw rather returning false
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
@@ -827,7 +825,7 @@ namespace System.Security.Cryptography
                 // Since sufficientSignatureSizeInBytes can be more than what's actually needed
                 // we use temporary buffer of sufficient size and see if operation can succeed with that
                 byte[] signatureDestination = new byte[sufficientSignatureSizeInBytes];
-                if (!ctx.TrySignHashCore(hash, signatureDestination, out int bytesWrittenToTemporaryBuffer))
+                if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, signatureDestination, out int bytesWrittenToTemporaryBuffer))
                 {
                     // There is really no reason for this to fail since we already allocated enough
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
@@ -861,11 +859,14 @@ namespace System.Security.Cryptography
         {
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ValidatePadding(padding);
+            ThrowIfDisposed();
 
-            using (SafeEvpPKeyCtxHandle ctx = CreateCtx())
+            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
+            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
+            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
             {
-                ctx.ConfigureForRSAVerify(hashAlgorithm, padding.Mode);
-                return ctx.VerifyHashCore(hash, signature);
+                Interop.Crypto.CryptoNative_ConfigureForRsaVerify(ctx, padding.Mode, hashAlgorithm);
+                return Interop.Crypto.EvpPKeyCtxVerifyHash(ctx, hash, signature);
             }
         }
 

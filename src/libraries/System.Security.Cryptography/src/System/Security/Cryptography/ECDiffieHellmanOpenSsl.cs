@@ -31,6 +31,11 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
 
+            if (pkeyHandle.GetKeyType() != Interop.Crypto.EvpAlgorithmId.ECC)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+
             _key = new Lazy<SafeEvpPKeyHandle>(pkeyHandle.DuplicateHandle());
             KeySizeValue = _key.Value.GetKeySizeBits();
         }

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "pal_evp_pkey.h"
 #include "pal_utilities.h"
+#include "pal_atomic.h"
 
 #ifdef NEED_OPENSSL_3_0
 c_static_assert(OSSL_STORE_INFO_PKEY == 4);
@@ -11,28 +12,33 @@ c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
 
 struct EvpPKeyExtraHandle_st
 {
-    int references;
+    atomic_int refCount;
     OSSL_LIB_CTX* libCtx;
     OSSL_PROVIDER* prov;
 };
 
 typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
 
+#pragma clang diagnostic push
+// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
+#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
 static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
 {
-    assert(handle->references >= 1);
-    assert(handle->prov != NULL);
-    assert(handle->libCtx != NULL);
+    int count = --handle->refCount;
+    assert(count >= 0);
 
-    handle->references--;
-
-    if (handle->references == 0)
+    if (count == 0)
     {
+        assert(handle->prov != NULL);
+        assert(handle->libCtx != NULL);
+
         OSSL_PROVIDER_unload(handle->prov);
         OSSL_LIB_CTX_free(handle->libCtx);
         free(handle);
     }
 }
+#pragma clang diagnostic pop
+
 #endif
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
@@ -70,6 +76,9 @@ int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
     return EVP_PKEY_get_bits(pkey);
 }
 
+#pragma clang diagnostic push
+// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
+#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
 int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
 {
     if (!pkey)
@@ -82,7 +91,7 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
 
     if (extra != NULL)
     {
-        extra->references++;
+        extra->refCount++;
     }
 #else
     (void)extraHandle;
@@ -92,6 +101,7 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
     // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
 }
+#pragma clang diagnostic pop
 
 int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
 {
@@ -712,7 +722,7 @@ end:
         EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
         extra->prov = prov;
         extra->libCtx = libCtx;
-        extra->references = 1;
+        atomic_init(&extra->refCount, 1);
         *extraHandle = extra;
     }
 

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
         internal static readonly SafeEvpPKeyHandle InvalidHandle = new SafeEvpPKeyHandle();
 
         /// <summary>
-        /// In some cases like when a key is loaded from a provided, the key may have an associated data
+        /// In some cases like when a key is loaded from a provider, the key may have an associated data
         /// we need to keep alive for the lifetime of the key. This field is used to track that data.
         /// </summary>
         internal IntPtr ExtraHandle { get; private set; } = IntPtr.Zero;
