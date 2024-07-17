@@ -1176,11 +1176,6 @@ void InitThreadManager()
     // to update the contracts if you remove this flag.
     g_DeadlockAwareCrst.Init(CrstDeadlockDetection, CRST_UNSAFE_ANYMODE);
 
-#ifdef _DEBUG
-    // Randomize OBJREF_HASH to handle hash collision.
-    Thread::OBJREF_HASH = OBJREF_TABSIZE - (DbgGetEXETimeStamp()%10);
-#endif // _DEBUG
-
     ThreadSuspend::Initialize();
 }
 
