@@ -23,7 +23,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "jit.h"
 #include "sideeffects.h"
-#include "lower.h"
+#include "lower.h" 
 
 //------------------------------------------------------------------------
 // getNextConsecutiveRefPosition: Get the next subsequent RefPosition.
