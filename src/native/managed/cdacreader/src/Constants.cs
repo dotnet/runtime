@@ -17,5 +17,8 @@ internal static class Constants
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 
         internal const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
+
+        internal const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
+        internal const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
     }
 }
