@@ -1535,6 +1535,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         break;
 
                     case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                        // This API has two immediates, one of which is used to index pairs of floats in a vector.
+                        // For a vector width of 128 bits, this means the index's range is [0, 1],
+                        // which means we will skip the above jump table register check,
+                        // even though we might need a jump table for the second immediate.
+                        // Thus, this API is special-cased, and does not use the HW_Category_SIMDByIndexedElement path.
+                        // Also, only one internal register is needed for the jump table;
+                        // we will combine the two immediates into one jump table.
+
                         // Can only avoid generating a table if both immediates are constant.
                         assert(intrin.op4->isContainedIntOrIImmed() == intrin.op5->isContainedIntOrIImmed());
                         needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
