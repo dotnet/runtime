@@ -217,6 +217,6 @@ namespace Microsoft.Extensions.Logging.Abstractions
     }
     public interface IBufferedLogger
     {
-        void LogRecords(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.BufferedLogRecord> records);
+        void LogRecords(System.Collections.Generic.IEnumerable<Microsoft.Extensions.Logging.Abstractions.BufferedLogRecord> records);
     }
 }

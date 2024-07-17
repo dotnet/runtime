@@ -8,11 +8,12 @@ using System.Diagnostics;
 namespace Microsoft.Extensions.Logging.Abstractions
 {
     /// <summary>
-    /// State representing a buffered log record.
+    /// Represents a buffered log record to be written in batch to an <see cref="IBufferedLogger" />.
     /// </summary>
     /// <remarks>
-    /// Objects of this type are reused over time to reduce
-    /// allocations.
+    /// Instances of this type may be pooled and reused. Implementations of <see cref="IBufferedLogger" /> must
+    /// not hold onto instance of <see cref="BufferedLogRecord" /> passed to its <see cref="IBufferedLogger.LogRecords" /> method
+    /// beyond the invocation of that method.
     /// </remarks>
     public abstract class BufferedLogRecord
     {
@@ -22,48 +23,48 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public abstract DateTimeOffset Timestamp { get; }
 
         /// <summary>
-        /// Gets the record's log level, indicating it rough importance
+        /// Gets the record's logging severity level.
         /// </summary>
         public abstract LogLevel LogLevel { get; }
 
         /// <summary>
-        /// Gets the records event id.
+        /// Gets the record's event id.
         /// </summary>
         public abstract EventId EventId { get; }
 
         /// <summary>
-        /// Gets an optional exception string for this record.
+        /// Gets an exception string for this record.
         /// </summary>
-        public virtual string? Exception { get => null; }
+        public virtual string? Exception => null;
 
         /// <summary>
-        /// Gets an activity span id for this record, representing the state of the thread that created the record.
+        /// Gets an activity span ID for this record, representing the state of the thread that created the record.
         /// </summary>
-        public virtual ActivitySpanId? ActivitySpanId { get => null; }
+        public virtual ActivitySpanId? ActivitySpanId => null;
 
         /// <summary>
-        /// Gets an activity trace id for this record, representing the state of the thread that created the record.
+        /// Gets an activity trace ID for this record, representing the state of the thread that created the record.
         /// </summary>
-        public virtual ActivityTraceId? ActivityTraceId { get => null; }
+        public virtual ActivityTraceId? ActivityTraceId => null;
 
         /// <summary>
         /// Gets the ID of the thread that created the log record.
         /// </summary>
-        public virtual int? ManagedThreadId { get => null; }
+        public virtual int? ManagedThreadId => null;
 
         /// <summary>
         /// Gets the formatted log message.
         /// </summary>
-        public virtual string? FormattedMessage { get => null; }
+        public virtual string? FormattedMessage => null;
 
         /// <summary>
         /// Gets the original log message template.
         /// </summary>
-        public virtual string? MessageTemplate { get => null; }
+        public virtual string? MessageTemplate => null;
 
         /// <summary>
         /// Gets the variable set of name/value pairs associated with the record.
         /// </summary>
-        public virtual IReadOnlyList<KeyValuePair<string, object?>> Attributes { get => Array.Empty<KeyValuePair<string, object?>>(); }
+        public virtual IReadOnlyList<KeyValuePair<string, object?>> Attributes => [];
     }
 }

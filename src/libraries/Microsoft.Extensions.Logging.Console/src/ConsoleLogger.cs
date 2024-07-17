@@ -75,24 +75,26 @@ namespace Microsoft.Extensions.Logging.Console
         {
             ThrowHelper.ThrowIfNull(records);
 
-            t_stringWriter ??= new StringWriter();
+            StringWriter writer = t_stringWriter ??= new StringWriter();
 
             foreach (var rec in records)
             {
-                var logEntry = new LogEntry<BufferedLogRecord>(rec.LogLevel, _name, rec.EventId, rec, null, (s, e) => s.FormattedMessage ?? string.Empty);
-                Formatter.Write(in logEntry, null, t_stringWriter);
+                var logEntry = new LogEntry<BufferedLogRecord>(rec.LogLevel, _name, rec.EventId, rec, null, static (s, _) => s.FormattedMessage ?? string.Empty);
+                Formatter.Write(in logEntry, null, writer);
 
-                var sb = t_stringWriter.GetStringBuilder();
+                var sb = writer.GetStringBuilder();
                 if (sb.Length == 0)
                 {
                     continue;
                 }
+
                 string computedAnsiString = sb.ToString();
                 sb.Clear();
                 if (sb.Capacity > 1024)
                 {
                     sb.Capacity = 1024;
                 }
+
                 _queueProcessor.EnqueueMessage(new LogMessageEntry(computedAnsiString, logAsError: rec.LogLevel >= Options.LogToStandardErrorThreshold));
             }
         }

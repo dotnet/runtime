@@ -552,7 +552,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             }
         }
 
-        class BufferedLogRecordImpl : BufferedLogRecord
+        private sealed class BufferedLogRecordImpl : BufferedLogRecord
         {
             private readonly DateTimeOffset _timestamp;
             private readonly LogLevel _level;
