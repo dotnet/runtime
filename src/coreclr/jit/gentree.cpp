@@ -30439,10 +30439,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        if (op->OperIsHWIntrinsic() && op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll) && op2->OperIsHWIntrinsic())
+        if (op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
         {
             op        = op2;
-            tryHandle = true;
+            tryHandle = op->OperIsHWIntrinsic();
         }
 #endif // TARGET_ARM64
 
