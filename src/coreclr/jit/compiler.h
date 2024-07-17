@@ -3055,6 +3055,8 @@ public:
 
     GenTreeVecCon* gtNewVconNode(var_types type, void* data);
 
+    GenTreeMskCon* gtNewMskConNode(var_types type);
+
     GenTree* gtNewAllBitsSetConNode(var_types type);
 
     GenTree* gtNewZeroConNode(var_types type);
@@ -3232,7 +3234,9 @@ public:
                                  CorInfoType simdBaseJitType,
                                  unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtMaskToVectorNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCvtNode(var_types   type,
                               GenTree*    op1,
@@ -3246,7 +3250,9 @@ public:
                                     CorInfoType simdSourceBaseJitType,
                                     unsigned    simdSize);
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTree* gtNewSimdCvtVectorToMaskNode(var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewSimdCreateBroadcastNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize);
@@ -3455,7 +3461,7 @@ public:
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
-    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
+    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout = nullptr);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
@@ -4498,6 +4504,10 @@ protected:
         IsByRefLike           = 1,
         MakeInlineObservation = 2,
     };
+
+    GenTree* impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls,
+        GenTree* value);
+    void impLoadNullableFields(GenTree* nullableObj, CORINFO_CLASS_HANDLE nullableCls, GenTree** hasValueFld, GenTree** valueFld);
 
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
@@ -8229,6 +8239,7 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsByrefLike(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsSharedInst(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsIntrinsic(CORINFO_METHOD_HANDLE ftn);
     bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
 
@@ -11675,6 +11686,7 @@ public:
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
+            case GT_CNS_MSK:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:
