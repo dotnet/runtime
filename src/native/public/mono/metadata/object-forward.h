@@ -19,4 +19,9 @@ typedef struct _MonoException MONO_RT_MANAGED_ATTR MonoException;
 typedef struct _MonoReflectionAssembly MONO_RT_MANAGED_ATTR MonoReflectionAssembly;
 typedef struct _MonoReflectionTypeBuilder MONO_RT_MANAGED_ATTR MonoReflectionTypeBuilder;
 
+typedef struct _MonoVarianceSearchTableEntry {
+    int depth, offset;
+    MonoClass *klass;
+} MonoVarianceSearchTableEntry;
+
 #endif /* __MONO_OBJECT_FORWARD_H__ */

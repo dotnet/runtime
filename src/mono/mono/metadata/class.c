@@ -1985,39 +1985,57 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 
 		return m_class_get_interface_offsets_packed (klass) [found];
 	} else if (has_variance) {
-		MonoClass **vst;
+		MonoVarianceSearchTableEntry *vst;
 		int vst_count;
-		MonoClass *current = klass;
+		mono_class_get_variance_search_table (klass, &vst, &vst_count);
+		int depth = vst_count ? vst[0].depth : 0, i = 0, j;
 
-		// Perform two passes per class, then check the base class
-		while (current) {
-			mono_class_get_variance_search_table (current, &vst, &vst_count);
+		while (depth) {
+			// g_print ("depth==%d, i==%d, count==%d\n", depth, i, vst_count);
 
 			// Exact match pass: Is there an exact match at this level of the type hierarchy?
 			// If so, we can use the interface_offset we computed earlier, since we're walking from most derived to least.
-			for (i = 0; i < vst_count; i++) {
-				if (itf != vst [i])
+			for (j = i; j < vst_count; j++) {
+				if (vst [j].depth != depth)
+					break;
+
+				/*
+				char * cname = mono_type_get_full_name (vst [j].klass);
+				g_print ("  #%d: depth==%d %s\n", j, vst [j].depth, cname);
+				g_free (cname);
+				*/
+				if (itf != vst [j].klass)
 					continue;
 
 				*non_exact_match = FALSE;
+				g_assert (vst [j].offset == exact_match);
 				return exact_match;
 			}
 
 			// Inexact match (variance) pass:
 			// Is any interface at this level of the type hierarchy variantly compatible with the desired interface?
 			// If so, select the first compatible one we find.
-			for (i = 0; i < vst_count; i++) {
-				if (!mono_class_is_variant_compatible (itf, vst [i], FALSE))
+			for (j = i; j < vst_count; j++) {
+				if (vst [j].depth < depth) {
+					i = j;
+					break;
+				}
+
+				/*
+				char * cname = mono_type_get_full_name (vst [j].klass);
+				g_print ("  #%d: depth==%d %s\n", j, vst [j].depth, cname);
+				g_free (cname);
+				*/
+				if (!mono_class_is_variant_compatible (itf, vst [j].klass, FALSE))
 					continue;
 
-				int inexact_match = mono_class_interface_offset (klass, vst[i]);
+				int inexact_match = vst [j].offset;
 				g_assert (inexact_match != exact_match);
 				*non_exact_match = TRUE;
 				return inexact_match;
 			}
 
-			// Now check base class if present
-			current = m_class_get_parent (current);
+			depth--;
 		}
 
 		// If the variance search failed to find a match, return the exact match search result (probably -1).

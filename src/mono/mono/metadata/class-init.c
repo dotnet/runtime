@@ -4197,24 +4197,25 @@ mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
 }
 
 static int
-index_of_class (MonoClass *needle, MonoClass **haystack, int haystack_size) {
+index_of_class (MonoClass *needle, MonoVarianceSearchTableEntry *haystack, int haystack_size) {
 	for (int i = 0; i < haystack_size; i++)
-		if (haystack[i] == needle)
+		if (haystack[i].klass == needle)
 			return i;
 
 	return -1;
 }
 
 static void
-build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_size, int *buf_count) {
-	if (!m_class_is_interfaces_inited (klass)) {
+build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchTableEntry *buf, int buf_size, int *buf_count, MonoClass *current) {
+	if (!m_class_is_interfaces_inited (current)) {
 		ERROR_DECL (error);
-		mono_class_setup_interfaces (klass, error);
+		mono_class_setup_interfaces (current, error);
 		return_if_nok (error);
 	}
-	guint c = m_class_get_interface_count (klass);
+
+	guint c = m_class_get_interface_count (current);
 	if (c) {
-		MonoClass **ifaces = m_class_get_interfaces (klass);
+		MonoClass **ifaces = m_class_get_interfaces (current);
 		for (guint i = 0; i < c; i++) {
 			MonoClass *iface = ifaces [i];
 			// Avoid adding duplicates or recursing into them.
@@ -4222,36 +4223,41 @@ build_variance_search_table_inner (MonoClass *klass, MonoClass **buf, int buf_si
 				continue;
 
 			if (mono_class_has_variant_generic_params (iface)) {
-				g_assert (*buf_count < buf_size);
-				buf[*buf_count] = iface;
+				int index = *buf_count;
 				(*buf_count) += 1;
+				g_assert (index < buf_size);
+				buf[index].klass = iface;
+				buf[index].depth = current->idepth;
+				buf[index].offset = mono_class_interface_offset (klass, iface);
 			}
 
-			build_variance_search_table_inner (iface, buf, buf_size, buf_count);
+			build_variance_search_table_inner (klass, buf, buf_size, buf_count, iface);
 		}
 	}
+
+	if (current->parent)
+		build_variance_search_table_inner (klass, buf, buf_size, buf_count, current->parent);
 }
 
 typedef struct VarianceSearchTable {
 	int count;
-	MonoClass *klasses[1]; // a total of count items, at least 1
+	MonoVarianceSearchTableEntry entries[1]; // a total of count items, at least 1
 } VarianceSearchTable;
 
 // Only call this with the loader lock held
 static void
 build_variance_search_table (MonoClass *klass) {
-	// FIXME: Is there a way to deterministically compute the right capacity?
 	int buf_size = m_class_get_interface_offsets_count (klass), buf_count = 0;
-	MonoClass **buf = g_alloca (buf_size * sizeof(MonoClass *));
+	MonoVarianceSearchTableEntry *buf = g_alloca (buf_size * sizeof(MonoVarianceSearchTableEntry));
 	VarianceSearchTable *result = NULL;
 	memset (buf, 0, buf_size * sizeof(MonoClass *));
-	build_variance_search_table_inner (klass, buf, buf_size, &buf_count);
+	build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass);
 
 	if (buf_count) {
-		guint bytes = (buf_count * sizeof(MonoClass *)) + sizeof(VarianceSearchTable);
+		guint bytes = ((buf_count - 1) * sizeof(MonoVarianceSearchTableEntry)) + sizeof(VarianceSearchTable);
 		result = (VarianceSearchTable *)mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes);
 		result->count = buf_count;
-		memcpy (result->klasses, buf, bytes);
+		memcpy (result->entries, buf, bytes);
 	}
 	klass->variant_search_table = result;
 	// Ensure we do not set the inited flag until we've stored the result pointer
@@ -4260,7 +4266,7 @@ build_variance_search_table (MonoClass *klass) {
 }
 
 void
-mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int *table_size) {
+mono_class_get_variance_search_table (MonoClass *klass, MonoVarianceSearchTableEntry **table, int *table_size) {
 	g_assert (klass);
 	g_assert (table);
 	g_assert (table_size);
@@ -4282,7 +4288,7 @@ mono_class_get_variance_search_table (MonoClass *klass, MonoClass ***table, int 
 
 	VarianceSearchTable *vst = klass->variant_search_table;
 	if (vst) {
-		*table = vst->klasses;
+		*table = vst->entries;
 		*table_size = vst->count;
 	} else {
 		*table = NULL;
