@@ -12,6 +12,7 @@ internal sealed class DsesActivitySourceListener : IDisposable
     private DsesFilterAndTransform? _wildcardSpec;
     private Dictionary<SpecLookupKey, DsesFilterAndTransform>? _specsBySourceNameAndActivityName;
     private HashSet<string>? _listenToActivitySourceNames;
+    private bool _hasActivityNameSpecDefined;
     private ActivityListener? _activityListener;
 
     public static DsesActivitySourceListener Create(
@@ -86,6 +87,10 @@ internal sealed class DsesActivitySourceListener : IDisposable
                 }
 #endif
                 allSources.Add(key.activitySourceName);
+                if (key.activityName != null)
+                {
+                    _hasActivityNameSpecDefined = true;
+                }
             }
         }
 
@@ -139,7 +144,8 @@ internal sealed class DsesActivitySourceListener : IDisposable
     {
         if (_specsBySourceNameAndActivityName != null)
         {
-            if (_specsBySourceNameAndActivityName.TryGetValue(new(activitySourceName, activityName), out spec))
+            if (_hasActivityNameSpecDefined &&
+                _specsBySourceNameAndActivityName.TryGetValue(new(activitySourceName, activityName), out spec))
             {
                 return true;
             }
