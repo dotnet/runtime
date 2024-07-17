@@ -159,11 +159,10 @@ internal unsafe static class MockMemorySpace
 
     public static bool TryCreateTarget(ReadContext* context, out Target? target)
     {
-        return Target.TryCreate(ContractDescriptorAddr, &ReadFromTarget, context, out target);
+        return Target.TryCreate(ContractDescriptorAddr, (address, buffer, length) => ReadFromTarget(address, buffer, length, context), out target);
     }
 
-    [UnmanagedCallersOnly]
-    private static int ReadFromTarget(ulong address, byte* buffer, uint length, void* context)
+    private static int ReadFromTarget(ulong address, byte* buffer, uint length, ReadContext* context)
     {
         ReadContext* readContext = (ReadContext*)context;
         var span = new Span<byte>(buffer, (int)length);
