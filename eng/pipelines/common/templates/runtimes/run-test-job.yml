@@ -190,7 +190,7 @@ jobs:
       timeoutInMinutes: 390
     ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo', 'pgostress', 'jit-experimental') }}:
       timeoutInMinutes: 510
-    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512') }}:
+    ${{ if in(parameters.testGroup, 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstress-isas-sve') }}:
       timeoutInMinutes: 960
 
     steps:
@@ -428,6 +428,16 @@ jobs:
           - jitstress_isas_x86_evex
           - jitstress_isas_x86_noavx512
           - jitstressregs0x2000
+        ${{ if in(parameters.testGroup, 'jitstress-isas-sve') }}:
+          scenarios:
+          - default_arm64_sve
+          - jitstress1_arm64_sve
+          - jitstress2_arm64_sve
+          - jitstressregs1_arm64_sve
+          - jitstressregs2_arm64_sve
+          - jitstressregs3_arm64_sve
+          - jitstressregs4_arm64_sve
+          - jitstressregs8_arm64_sve
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
