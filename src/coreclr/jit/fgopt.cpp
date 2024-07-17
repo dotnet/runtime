@@ -5167,16 +5167,17 @@ void Compiler::ehUpdateTryLasts(GetTryLast getTryLast, SetTryLast setTryLast)
 
 //-------------------------------------------------------------
 // fgUpdateFlowGraphPhase: run flow graph optimization as a
-//   phase, with no tail duplication
+//   phase, with no tail duplication or aggressive compaction
 //
 // Returns:
 //    Suitable phase status
 //
 PhaseStatus Compiler::fgUpdateFlowGraphPhase()
 {
-    constexpr bool doTailDup   = false;
-    constexpr bool isPhase     = true;
-    const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
+    constexpr bool doTailDup              = false;
+    constexpr bool isPhase                = true;
+    constexpr bool doAggressiveCompaction = false;
+    const bool     madeChanges            = fgUpdateFlowGraph(doTailDup, isPhase, doAggressiveCompaction);
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
