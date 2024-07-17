@@ -2027,7 +2027,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         {
             switch (intrin.id)
             {
+                case NI_Sve_LoadVectorByteZeroExtendFirstFaulting:
+                case NI_Sve_LoadVectorInt16SignExtendFirstFaulting:
+                case NI_Sve_LoadVectorInt32SignExtendFirstFaulting:
                 case NI_Sve_LoadVectorNonTemporal:
+                case NI_Sve_LoadVectorSByteSignExtendFirstFaulting:
+                case NI_Sve_LoadVectorUInt16ZeroExtendFirstFaulting:
+                case NI_Sve_LoadVectorUInt32ZeroExtendFirstFaulting:
                 case NI_Sve_LoadVector128AndReplicateToVector:
                 case NI_Sve_StoreAndZip:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
