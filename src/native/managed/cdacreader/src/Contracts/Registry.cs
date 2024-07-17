@@ -22,6 +22,7 @@ internal sealed class Registry
     public ILoader Loader => GetContract<ILoader>();
     public IThread Thread => GetContract<IThread>();
     public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
+    public IDacStreams DacStreams => GetContract<IDacStreams>();
     public IStressLog StressLog => GetContract<IStressLog>();
 
     private T GetContract<T>() where T : IContract

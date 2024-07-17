@@ -37,6 +37,18 @@ public readonly struct TargetNUInt
     public TargetNUInt(ulong value) => Value = value;
 }
 
+public readonly struct TargetSpan
+{
+    public TargetSpan(TargetPointer address, ulong size)
+    {
+        Address = address;
+        Size = size;
+    }
+
+    public TargetPointer Address { get; }
+    public ulong Size { get; }
+}
+
 /// <summary>
 /// Representation of the target under inspection
 /// </summary>
@@ -81,6 +93,7 @@ public sealed unsafe class Target
 
     internal Contracts.Registry Contracts { get; }
     internal DataCache ProcessedData { get; }
+    internal Helpers.Metadata Metadata { get; }
 
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.
@@ -122,6 +135,7 @@ public sealed unsafe class Target
     {
         Contracts = new Contracts.Registry(this);
         ProcessedData = new DataCache(this);
+        Metadata = new Helpers.Metadata(this);
         _config = config;
         _reader = reader;
 
@@ -273,6 +287,8 @@ public sealed unsafe class Target
         return DataType.Unknown;
     }
 
+    public int PointerSize => _config.PointerSize;
+
     public T Read<T>(ulong address) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         if (!TryRead(address, _config.IsLittleEndian, _reader, out T value))
@@ -293,6 +309,17 @@ public sealed unsafe class Target
             : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
     }
 
+    public void ReadBuffer(ulong address, Span<byte> buffer)
+    {
+        if (!TryReadBuffer(address, buffer))
+            throw new InvalidOperationException($"Failed to read {buffer.Length} bytes at 0x{address:x8}.");
+    }
+
+    private bool TryReadBuffer(ulong address, Span<byte> buffer)
+    {
+        return _reader.ReadFromTarget(address, buffer) >= 0;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsSigned<T>() where T : struct, INumberBase<T>, IMinMaxValue<T>
     {
@@ -305,6 +332,19 @@ public sealed unsafe class Target
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
+    }
+
+    public void ReadPointers(ulong address, Span<TargetPointer> buffer)
+    {
+        // TODO(cdac) - This could do a single read, and then swizzle in place if it is useful for performance
+        for (int i = 0; i < buffer.Length; i++)
+        {
+            buffer[i] = ReadPointer(address);
+            checked
+            {
+                address += (ulong)_config.PointerSize;
+            }
+        }
     }
 
     public TargetNUInt ReadNUInt(ulong address)

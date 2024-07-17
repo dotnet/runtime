@@ -18,6 +18,9 @@ internal static class Constants
 
         internal const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
 
+        internal const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
+        internal const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
+
         internal const string StressLogEnabled = nameof(StressLogEnabled);
         internal const string StressLog = nameof(StressLog);
         internal const string StressLogModuleTable = nameof(StressLogModuleTable);
