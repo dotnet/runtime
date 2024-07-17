@@ -3876,53 +3876,6 @@ HCIMPL1(void, IL_VerificationError,  int ilOffset)
 }
 HCIMPLEND
 
-/*********************************************************************/
-static RuntimeExceptionKind MapCorInfoExceptionToRuntimeExceptionKind(unsigned exceptNum)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    static const RuntimeExceptionKind map[CORINFO_Exception_Count] =
-    {
-        kNullReferenceException,
-        kDivideByZeroException,
-        kInvalidCastException,
-        kIndexOutOfRangeException,
-        kOverflowException,
-        kSynchronizationLockException,
-        kArrayTypeMismatchException,
-        kRankException,
-        kArgumentNullException,
-        kArgumentException,
-    };
-
-        // spot check of the array above
-    _ASSERTE(map[CORINFO_NullReferenceException] == kNullReferenceException);
-    _ASSERTE(map[CORINFO_DivideByZeroException] == kDivideByZeroException);
-    _ASSERTE(map[CORINFO_IndexOutOfRangeException] == kIndexOutOfRangeException);
-    _ASSERTE(map[CORINFO_OverflowException] == kOverflowException);
-    _ASSERTE(map[CORINFO_SynchronizationLockException] == kSynchronizationLockException);
-    _ASSERTE(map[CORINFO_ArrayTypeMismatchException] == kArrayTypeMismatchException);
-    _ASSERTE(map[CORINFO_RankException] == kRankException);
-    _ASSERTE(map[CORINFO_ArgumentNullException] == kArgumentNullException);
-    _ASSERTE(map[CORINFO_ArgumentException] == kArgumentException);
-
-    PREFIX_ASSUME(exceptNum < CORINFO_Exception_Count);
-    return map[exceptNum];
-}
-
-/*********************************************************************/
-HCIMPL1(void, JIT_InternalThrow, unsigned exceptNum)
-{
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();    // throws always open up for GC
-
-    HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXACT_DEPTH);
-    COMPlusThrow(MapCorInfoExceptionToRuntimeExceptionKind(exceptNum));
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
 #ifndef STATUS_STACK_BUFFER_OVERRUN  // Not defined yet in CESDK includes
 # define STATUS_STACK_BUFFER_OVERRUN      ((NTSTATUS)0xC0000409L)
 #endif

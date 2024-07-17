@@ -920,22 +920,6 @@ enum CORINFO_EH_CLAUSE_FLAGS
     CORINFO_EH_CLAUSE_SAMETRY   = 0x0010, // This clause covers same try block as the previous one
 };
 
-// This enumeration is passed to InternalThrow
-enum CorInfoException
-{
-    CORINFO_NullReferenceException,
-    CORINFO_DivideByZeroException,
-    CORINFO_InvalidCastException,
-    CORINFO_IndexOutOfRangeException,
-    CORINFO_OverflowException,
-    CORINFO_SynchronizationLockException,
-    CORINFO_ArrayTypeMismatchException,
-    CORINFO_RankException,
-    CORINFO_ArgumentNullException,
-    CORINFO_ArgumentException,
-    CORINFO_Exception_Count,
-};
-
 // These are used to detect array methods as NamedIntrinsic in JIT importer,
 // which otherwise don't have a name.
 enum class CorInfoArrayIntrinsic

@@ -153,19 +153,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF_TailCallFrame == sizeof(TailCallFrame))
 #define SHADOW_SP_IN_FILTER_ASM 0x1
 ASMCONSTANTS_C_ASSERT(SHADOW_SP_IN_FILTER_ASM == ICodeManager::SHADOW_SP_IN_FILTER)
 
-// from clr/src/inc/corinfo.h
-#define CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(CORINFO_NullReferenceException_ASM == CORINFO_NullReferenceException)
-
-#define CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(CORINFO_IndexOutOfRangeException_ASM == CORINFO_IndexOutOfRangeException)
-
-#define CORINFO_OverflowException_ASM 4
-ASMCONSTANTS_C_ASSERT(CORINFO_OverflowException_ASM == CORINFO_OverflowException)
-
-#define CORINFO_ArgumentException_ASM 9
-ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException)
-
 
 
 #define Thread_m_State      0x00

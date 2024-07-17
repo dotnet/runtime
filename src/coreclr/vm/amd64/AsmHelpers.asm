@@ -4,7 +4,6 @@
 include AsmMacros.inc
 include asmconstants.inc
 
-extern JIT_InternalThrow:proc
 extern NDirectImportWorker:proc
 extern ThePreStub:proc
 extern  ProfileEnter:proc

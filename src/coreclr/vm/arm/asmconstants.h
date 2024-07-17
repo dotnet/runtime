@@ -35,14 +35,6 @@
 
 #define REDIRECTSTUB_SP_OFFSET_CONTEXT 0
 
-#define                  CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
-                      == CORINFO_NullReferenceException);
-
-#define                  CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
-                      == CORINFO_IndexOutOfRangeException);
-
 
 // Offset of the array containing the address of captured registers in MachState
 #define MachState__captureR4_R11 0x0

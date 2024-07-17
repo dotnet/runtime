@@ -9,7 +9,6 @@
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
     IMPORT VSD_ResolveWorker
-    IMPORT JIT_InternalThrow
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
     IMPORT CallDescrWorkerUnwindFrameChainHandler

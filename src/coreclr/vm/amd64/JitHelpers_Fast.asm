@@ -47,8 +47,6 @@ ifdef _DEBUG
 extern JIT_WriteBarrier_Debug:proc
 endif
 
-extern JIT_InternalThrow:proc
-
 
 ; JIT_ByRefWriteBarrier has weird semantics, see usage in StubLinkerX86.cpp
 ;

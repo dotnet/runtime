@@ -192,18 +192,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DynamicStaticsInfo__m_pGCStatics
                     == offsetof(DynamicStaticsInfo, m_pGCStatics));
 
-#define                  CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
-                      == CORINFO_NullReferenceException);
-
-#define                  CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
-                      == CORINFO_IndexOutOfRangeException);
-
-#define                  CORINFO_ArgumentException_ASM 9
-ASMCONSTANTS_C_ASSERT(   CORINFO_ArgumentException_ASM
-                      == CORINFO_ArgumentException);
-
 
 // MachState offsets (AMD64\gmscpu.h)
 

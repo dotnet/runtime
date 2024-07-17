@@ -101,15 +101,6 @@ ASMCONSTANTS_C_ASSERT(CallDescrData__flagFloatDouble      == (int)(STRUCT_FLOAT_
 ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleFloat      == (int)(STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FIRST_FIELD_SIZE_IS8))
 ASMCONSTANTS_C_ASSERT(CallDescrData__flagDoubleDouble     == (int)(CallDescrData__flagDoubleFloat | STRUCT_SECOND_FIELD_SIZE_IS8))
 
-#define                  CORINFO_NullReferenceException_ASM 0
-ASMCONSTANTS_C_ASSERT(   CORINFO_NullReferenceException_ASM
-                      == CORINFO_NullReferenceException);
-
-
-#define                  CORINFO_IndexOutOfRangeException_ASM 3
-ASMCONSTANTS_C_ASSERT(   CORINFO_IndexOutOfRangeException_ASM
-                      == CORINFO_IndexOutOfRangeException);
-
 
 // Offset of the array containing the address of captured registers in MachState
 #define MachState__captureCalleeSavedRegisters 0x0
