@@ -202,6 +202,7 @@ public:
         return dac_cast<PTR_VOID>(dac_cast<TADDR>(m_base) + argOfs);
     }
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+
 #if defined(UNIX_AMD64_ABI)
 
     // Returns true if the ArgDestination represents a struct passed in registers.
