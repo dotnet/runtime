@@ -14,15 +14,6 @@ using System.Threading;
 
 namespace System.Diagnostics;
 
-[Flags]
-internal enum DsesActivityEvents
-{
-    None = 0x00,
-    ActivityStart = 0x01,
-    ActivityStop = 0x02,
-    All = ActivityStart | ActivityStop,
-}
-
 /// <summary>
 /// FilterAndTransform represents on transformation specification from a DiagnosticsSource
 /// to EventSource's 'Event' method. (e.g. MySource/MyEvent:out=prop1.prop2.prop3).
