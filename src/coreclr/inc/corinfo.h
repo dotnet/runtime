@@ -2216,10 +2216,6 @@ public:
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
-    virtual CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
-
     // Returns the global cookie for the /GS unsafe buffer checks
     // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
     virtual void getGSCookie(

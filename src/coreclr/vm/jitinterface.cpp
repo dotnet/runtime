@@ -3977,28 +3977,6 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
 }
 
 /*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc *pMD = GetMethod(methHnd);
-    pMD = MethodTable::MapMethodDeclToMethodImpl(pMD);
-    result = (CORINFO_METHOD_HANDLE) pMD;
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
-/*********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
 {
     CONTRACTL {

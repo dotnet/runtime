@@ -126,9 +126,6 @@ bool satisfiesMethodConstraints(
 void methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method) override;
 
-CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method) override;
-
 void getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal) override;
