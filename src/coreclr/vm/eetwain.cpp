@@ -1436,37 +1436,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     }
 #endif
 
-    /* If we are not in the active method, we are currently pointing
-         * to the return address; at the return address stack variables
-         * can become dead if the call is the last instruction of a try block
-         * and the return address is the jump around the catch block. Therefore
-         * we simply assume an offset inside of call instruction.
-         * NOTE: The GcInfoDecoder depends on this; if you change it, you must
-         * revisit the GcInfoEncoder/Decoder
-         */
-
-    if (!(flags & ExecutionAborted))
-    {
-        if (!(flags & ActiveStackFrame))
-        {
-            curOffs--;
-            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags !ExecutionAborted && !ActiveStackFrame. Now reporting GC refs for %s at offset %04x.\n",
-                methodName, curOffs));
-        }
-    }
-    else
-    {
-        // Since we are aborting execution, we are either in a frame that actually faulted or in a throwing call.
-        // * We do not need to adjust in a leaf
-        // * A throwing call will have unreachable <brk> after it, thus GC info is the same as before the call.
-        // 
-        // Either way we do not need to adjust.
-
-        // NOTE: only fully interruptible methods may need to report anything here as without
-        //       exception handling all current local variables are already unreachable.
-        //       EnumerateLiveSlots will shortcircuit the partially interruptible case just a bit later.
-    }
-
     // Check if we have been given an override value for relOffset
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
     {
@@ -1510,7 +1479,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     // A frame is non-leaf if we are executing a call, or a fault occurred in the function.
     // The only case in which we need to report scratch slots for a non-leaf frame
     //   is when execution has to be resumed at the point of interruption (via ResumableFrame)
-    //<TODO>Implement ResumableFrame</TODO>
     _ASSERTE( sizeof( BOOL ) >= sizeof( ActiveStackFrame ) );
     reportScratchSlots = (flags & ActiveStackFrame) != 0;
 
@@ -1520,24 +1488,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                         GcInfoDecoderFlags (DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
                         curOffs
                         );
-
-    if ((flags & ActiveStackFrame) != 0)
-    {
-        // CONSIDER: We can optimize this by remembering the need to adjust in IsSafePoint and propagating into here.
-        //           Or, better yet, maybe we should change the decoder to not require this adjustment.
-        //           The scenario that adjustment tries to handle (fallthrough into BB with random liveness)
-        //           does not seem possible.
-        if (!gcInfoDecoder.HasInterruptibleRanges())
-        {
-            gcInfoDecoder = GcInfoDecoder(
-                gcInfoToken,
-                GcInfoDecoderFlags(DECODE_GC_LIFETIMES | DECODE_SECURITY_OBJECT | DECODE_VARARG),
-                curOffs - 1
-            );
-
-            _ASSERTE((InterruptibleSafePointsEnabled() && gcInfoDecoder.CouldBeInterruptibleSafePoint()));
-        }
-    }
 
     if (!gcInfoDecoder.EnumerateLiveSlots(
                         pRD,

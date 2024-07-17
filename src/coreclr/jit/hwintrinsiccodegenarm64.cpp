@@ -670,6 +670,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
                     bool            hasShift = false;
 
+                    insOpts embOpt = opt;
                     switch (intrinEmbMask.id)
                     {
                         case NI_Sve_ShiftLeftLogical:
@@ -689,6 +690,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             hasShift = true;
                             break;
 
+                        case NI_Sve_CreateBreakPropagateMask:
+                            embOpt = INS_OPTS_SCALABLE_B;
+                            break;
+
                         default:
                             break;
                     }
@@ -699,13 +704,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             HWIntrinsicImmOpHelper helper(this, intrinEmbMask.op2, op2->AsHWIntrinsic());
                             for (helper.EmitBegin(); !helper.Done(); helper.EmitCaseEnd())
                             {
-                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2, helper.ImmValue(), opt,
-                                                               sopt);
+                                GetEmitter()->emitInsSve_R_R_I(insEmbMask, emitSize, reg1, reg2, helper.ImmValue(),
+                                                               embOpt, sopt);
                             }
                         }
                         else
                         {
-                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, reg1, reg2, reg3, opt, sopt);
+                            GetEmitter()->emitIns_R_R_R(insEmbMask, emitSize, reg1, reg2, reg3, embOpt, sopt);
                         }
                     };
 
@@ -714,12 +719,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                         // destination using /Z.
 
-                        assert(targetReg != embMaskOp2Reg);
-                        GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
+                        switch (intrinEmbMask.id)
+                        {
+                            case NI_Sve_CreateBreakPropagateMask:
+                                assert(targetReg != embMaskOp1Reg);
+                                GetEmitter()->emitIns_Mov(INS_sve_mov, emitSize, targetReg, embMaskOp2Reg,
+                                                          /* canSkip */ true);
+                                emitInsHelper(targetReg, maskReg, embMaskOp1Reg);
+                                break;
 
-                        // Finally, perform the actual "predicated" operation so that `targetReg` is the first operand
-                        // and `embMaskOp2Reg` is the second operand.
-                        emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                            default:
+                                assert(targetReg != embMaskOp2Reg);
+                                GetEmitter()->emitIns_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg,
+                                                            embMaskOp1Reg, opt);
+
+                                // Finally, perform the actual "predicated" operation so that `targetReg` is the first
+                                // operand and `embMaskOp2Reg` is the second operand.
+                                emitInsHelper(targetReg, maskReg, embMaskOp2Reg);
+                                break;
+                        }
                     }
                     else if (targetReg != falseReg)
                     {

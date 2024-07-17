@@ -234,23 +234,41 @@ internal unsafe static class MockMemorySpace
 
         public int ReadFragment(ulong address, Span<byte> buffer)
         {
-            foreach (var fragment in _fragments)
+            bool partialReadOcurred = false;
+            HeapFragment lastHeapFragment = default;
+            int availableLength = 0;
+            while (true)
             {
-                if (address >= fragment.Address && address < fragment.Address + (ulong)fragment.Data.Length)
+                bool tryAgain = false;
+                foreach (var fragment in _fragments)
                 {
-                    int offset = (int)(address - fragment.Address);
-                    int availableLength = fragment.Data.Length - offset;
-                    if (availableLength >= buffer.Length)
+                    if (address >= fragment.Address && address < fragment.Address + (ulong)fragment.Data.Length)
                     {
-                        fragment.Data.AsSpan(offset, buffer.Length).CopyTo(buffer);
-                        return 0;
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Not enough data in fragment at {fragment.Address:X} ('{fragment.Name}') to read {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
+                        int offset = (int)(address - fragment.Address);
+                        availableLength = fragment.Data.Length - offset;
+                        if (availableLength >= buffer.Length)
+                        {
+                            fragment.Data.AsSpan(offset, buffer.Length).CopyTo(buffer);
+                            return 0;
+                        }
+                        else
+                        {
+                            lastHeapFragment = fragment;
+                            partialReadOcurred = true;
+                            tryAgain = true;
+                            fragment.Data.AsSpan(offset, availableLength).CopyTo(buffer);
+                            buffer = buffer.Slice(availableLength);
+                            address = fragment.Address + (ulong)fragment.Data.Length;
+                            break;
+                        }
                     }
                 }
+                if (!tryAgain)
+                    break;
             }
+
+            if (partialReadOcurred)
+                throw new InvalidOperationException($"Not enough data in fragment at {lastHeapFragment.Address:X} ('{lastHeapFragment.Name}') to read {buffer.Length} bytes at {address:X} (only {availableLength} bytes available)");
             return -1;
         }
     }

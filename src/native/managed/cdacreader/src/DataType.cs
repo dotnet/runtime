@@ -29,5 +29,12 @@ public enum DataType
     Module,
     MethodTable,
     EEClass,
+    ArrayClass,
     MethodTableAuxiliaryData,
+    GenericsDictInfo,
+    TypeDesc,
+    ParamTypeDesc,
+    TypeVarTypeDesc,
+    FnPtrTypeDesc,
+    DynamicMetadata,
 }
