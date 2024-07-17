@@ -38,7 +38,7 @@ namespace Internal.IL.Stubs
                     {
                         ceArgType = method.Context.GetWellKnownType(WellKnownType.Object);
                     }
-                    else if (tType.IsPrimitive || tType.IsEnum)
+                    else if ((tType.IsPrimitive || tType.IsEnum) && (tType.UnderlyingType.Category is not (TypeFlags.Single or TypeFlags.Double)))
                     {
                         int size = tType.GetElementSize().AsInt;
                         Debug.Assert(size is 1 or 2 or 4 or 8);
@@ -46,8 +46,8 @@ namespace Internal.IL.Stubs
                         {
                             1 => method.Context.GetWellKnownType(WellKnownType.Byte),
                             2 => method.Context.GetWellKnownType(WellKnownType.UInt16),
-                            4 => method.Context.GetWellKnownType(WellKnownType.UInt32),
-                            _ => method.Context.GetWellKnownType(WellKnownType.UInt64),
+                            4 => method.Context.GetWellKnownType(WellKnownType.Int32),
+                            _ => method.Context.GetWellKnownType(WellKnownType.Int64),
                         };
                     }
 

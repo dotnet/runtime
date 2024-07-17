@@ -274,17 +274,17 @@ namespace System.Threading
 
             if (sizeof(T) == 4)
             {
-                return Unsafe.BitCast<uint, T>(
+                return Unsafe.BitCast<int, T>(
                     Exchange(
-                        ref Unsafe.As<T, uint>(ref location1),
-                        Unsafe.BitCast<T, uint>(value)));
+                        ref Unsafe.As<T, int>(ref location1),
+                        Unsafe.BitCast<T, int>(value)));
             }
 
             Debug.Assert(sizeof(T) == 8);
-            return Unsafe.BitCast<ulong, T>(
+            return Unsafe.BitCast<long, T>(
                 Exchange(
-                    ref Unsafe.As<T, ulong>(ref location1),
-                    Unsafe.BitCast<T, ulong>(value)));
+                    ref Unsafe.As<T, long>(ref location1),
+                    Unsafe.BitCast<T, long>(value)));
         }
         #endregion
 
@@ -528,19 +528,19 @@ namespace System.Threading
 
             if (sizeof(T) == 4)
             {
-                return Unsafe.BitCast<uint, T>(
+                return Unsafe.BitCast<int, T>(
                     CompareExchange(
-                        ref Unsafe.As<T, uint>(ref location1),
-                        Unsafe.BitCast<T, uint>(value),
-                        Unsafe.BitCast<T, uint>(comparand)));
+                        ref Unsafe.As<T, int>(ref location1),
+                        Unsafe.BitCast<T, int>(value),
+                        Unsafe.BitCast<T, int>(comparand)));
             }
 
             Debug.Assert(sizeof(T) == 8);
-            return Unsafe.BitCast<ulong, T>(
+            return Unsafe.BitCast<long, T>(
                 CompareExchange(
-                    ref Unsafe.As<T, ulong>(ref location1),
-                    Unsafe.BitCast<T, ulong>(value),
-                    Unsafe.BitCast<T, ulong>(comparand)));
+                    ref Unsafe.As<T, long>(ref location1),
+                    Unsafe.BitCast<T, long>(value),
+                    Unsafe.BitCast<T, long>(comparand)));
         }
         #endregion
 
