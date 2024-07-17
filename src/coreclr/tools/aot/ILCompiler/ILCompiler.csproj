@@ -8,8 +8,8 @@
     <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
   </PropertyGroup>
 
-  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseLocalTargetingRuntimePack)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" Condition="'$(UseLocalTargetingRuntimePack)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" Condition="'$(UseLocalTargetingRuntimePack)' == 'true'" />
 
   <Import Project="ILCompiler.props" />
 
