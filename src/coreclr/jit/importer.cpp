@@ -10163,8 +10163,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Here we need unsafe value cls check, since the address of struct is taken to be used
                         // further along and potetially be exploitable.
 
-                        // op1 is always a local, see code above for CORINFO_HELP_UNBOX_NULLABLE
-                        op1 = gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), TYP_I_IMPL);
+                        GenTreeFlags indirFlags = GTF_EMPTY;
+                        op1                     = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
                     }
                 }
                 else
