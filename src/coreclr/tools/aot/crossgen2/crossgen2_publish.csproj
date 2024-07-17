@@ -8,7 +8,7 @@
 
   <PropertyGroup>
     <PublishTrimmed>true</PublishTrimmed>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <UseLocalAppHostPack>true</UseLocalAppHostPack>

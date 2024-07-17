@@ -359,7 +359,6 @@
                              $(CoreClrProjectRoot)tools\AssemblyChecker\AssemblyChecker.csproj" Category="clr" Condition="'$(DotNetBuildSourceOnly)' != 'true'"/>
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2.csproj" Category="clr" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler.Build.Tasks\ILCompiler.Build.Tasks.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
 
     <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(EnableNativeSanitizers)' != '')" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" />
@@ -523,13 +522,17 @@
 
   <!-- Packs sets -->
 
+  <ItemGroup>
+    <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" Category="packs" Condition="$(_subset.Contains('+packs.product+')) and '$(BuildNativeAOTRuntimePack)' != 'true' and '$(BuildOnlyPgoInstrumentedAssets)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true' and $(_subset.Contains('+clr.tools+'))" />
+  </ItemGroup>
+
   <Choose>
     <When Condition="$(_subset.Contains('+packs.product+'))">
       <ItemGroup Condition="'$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
         <SharedFrameworkProjectToBuild Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Ref.sfxproj" />
       </ItemGroup>
       <ItemGroup Condition="'$(BuildNativeAOTRuntimePack)' != 'true' and '$(BuildOnlyPgoInstrumentedAssets)' != 'true'">
-        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' != 'Mono'" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />

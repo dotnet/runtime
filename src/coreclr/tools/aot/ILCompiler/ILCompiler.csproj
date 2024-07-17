@@ -1,18 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
-    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(OutputRID)</RuntimeIdentifier>
+
+    <!-- Mobile platforms don't have apphost and we don't need it. However, restore requires
+         "some" apphost. Use PackageRID of host machine to satisfy that bogus requirement. -->
+    <RuntimeIdentifier Condition="'$(TargetsMobile)' == 'true'">$(PackageRID)</RuntimeIdentifier>
   </PropertyGroup>
 
-  <Import Project="ILCompiler.props" />
+  <PropertyGroup Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetsMobile)' != 'true'">
+    <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
+  </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetsMobile)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" Condition="'$(UseNativeAotForComponents)' != 'true' and '$(CrossBuild)' == 'true' and '$(TargetsMobile)' != 'true'" />
+
+  <Import Project="ILCompiler.props" />
 
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
     <PublishAot Condition="'$(UseNativeAotForComponents)' == 'true'">true</PublishAot>
     <SysRoot Condition="'$(UseNativeAotForComponents)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
-    <PublishReadyToRun Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishReadyToRun>
+    <PublishReadyToRun Condition="'$(UseNativeAotForComponents)' != 'true' and '$(UseLocalTargetingRuntimePack)' != 'true'">true</PublishReadyToRun>
     <PublishSingleFile Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishSingleFile>
     <PublishTrimmed Condition="'$(UseNativeAotForComponents)' != 'true'">true</PublishTrimmed>
     <SuppressGenerateILCompilerExplicitPackageReferenceWarning>true</SuppressGenerateILCompilerExplicitPackageReferenceWarning>
@@ -88,15 +98,6 @@
   <Target Name="PublishCompiler"
           Condition="'$(BuildingInsideVisualStudio)' != 'true'"
           AfterTargets="Build"
-          DependsOnTargets="Publish;StompSingleFileHostPath" />
+          DependsOnTargets="Publish" />
 
-  <!--  HACK: liveBuilds stomps over SingleFileHostSourcePath, setting it to the host that we just built.
-        That's unfortunate because it's not the host we're supposed to use here. -->
-  <Target Name="StompSingleFileHostPath"
-          BeforeTargets="ResolveFrameworkReferences">
-    <PropertyGroup>
-      <SingleFileHostSourcePath></SingleFileHostSourcePath>
-    </PropertyGroup>
-  </Target>
-  <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
 </Project>
