@@ -14,7 +14,6 @@ namespace System.Diagnostics.Metrics
         internal static KeyValuePair<string, object?>[] EmptyTags => Array.Empty<KeyValuePair<string, object?>>();
 
         private string? _formattedTags;
-        private string? _formattedHash;
 
         // The SyncObject is used to synchronize the following operations:
         //  - Instrument.Publish()
@@ -147,7 +146,6 @@ namespace System.Diagnostics.Metrics
         public virtual bool IsObservable => false;
 
         internal string FormattedTags => _formattedTags ??= Helpers.FormatTags(Tags);
-        internal string FormattedHash => _formattedHash ??= Helpers.FormatObjectHash(this);
 
         // NotifyForUnpublishedInstrument is called from Meter.Dispose()
         internal void NotifyForUnpublishedInstrument()

@@ -20,7 +20,6 @@ namespace System.Diagnostics.Metrics
 
         private string? _formattedTags;
         private string? _formattedScopeHash;
-        private string? _formattedHash;
 
         internal bool Disposed { get; private set; }
 
@@ -28,7 +27,6 @@ namespace System.Diagnostics.Metrics
 
         internal string FormattedTags => _formattedTags ??= Helpers.FormatTags(Tags);
         internal string FormattedScopeHash => _formattedScopeHash ??= Helpers.FormatObjectHash(Scope);
-        internal string FormattedHash => _formattedHash ??= Helpers.FormatObjectHash(this);
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;

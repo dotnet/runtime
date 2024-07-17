@@ -121,7 +121,7 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value,
-                                    string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
+                                    string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
         {
             WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
@@ -132,7 +132,7 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void GaugeValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string lastValue,
-                                    string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
+                                    string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
         {
             WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
@@ -143,7 +143,7 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void HistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string quantiles, int count, double sum,
-                                        string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
+                                        string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
         {
             WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles, count, sum, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
@@ -167,8 +167,8 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        string instrumentHash,
-                        string meterHash)
+                        int instrumentHash,
+                        int meterHash)
         {
             WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
                     instrumentTags, meterTags, meterScopeHash, instrumentHash, meterHash);
@@ -192,8 +192,8 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        string instrumentHash,
-                        string meterHash)
+                        int instrumentHash,
+                        int meterHash)
         {
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
                     instrumentTags, meterTags, meterScopeHash, instrumentHash, meterHash);
@@ -227,8 +227,8 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        string instrumentHash,
-                        string meterHash)
+                        int instrumentHash,
+                        int meterHash)
         {
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
                     instrumentTags, meterTags, meterScopeHash, instrumentHash, meterHash);
@@ -264,7 +264,7 @@ namespace System.Diagnostics.Metrics
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
         public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value,
-                                    string instrumentTags, string instrumentHash, string meterTags, string meterHash, string scopeHash)
+                                    string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
         {
             WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
         }
@@ -448,11 +448,11 @@ namespace System.Diagnostics.Metrics
                             (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
                             (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
                             i => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, i.FormattedHash, i.Meter.FormattedHash),
+                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, RuntimeHelpers.GetHashCode(i), RuntimeHelpers.GetHashCode(i.Meter)),
                             i => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, i.FormattedHash, i.Meter.FormattedHash),
+                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, RuntimeHelpers.GetHashCode(i), RuntimeHelpers.GetHashCode(i.Meter)),
                             i => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, i.FormattedHash, i.Meter.FormattedHash),
+                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, RuntimeHelpers.GetHashCode(i), RuntimeHelpers.GetHashCode(i.Meter)),
                             () => Parent.InitialInstrumentEnumerationComplete(sessionId),
                             e => Parent.Error(sessionId, e.ToString()),
                             () => Parent.TimeSeriesLimitReached(sessionId),
@@ -675,25 +675,25 @@ namespace System.Diagnostics.Metrics
                     {
                         Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                             rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "", rateStats.Value.ToString(CultureInfo.InvariantCulture),
-                            instrument.FormattedTags, instrument.FormattedHash, instrument.Meter.FormattedTags, instrument.Meter.FormattedHash, instrument.Meter.FormattedScopeHash);
+                            instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
                     }
                     else
                     {
                         Log.UpDownCounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                             rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "", rateStats.Value.ToString(CultureInfo.InvariantCulture),
-                            instrument.FormattedTags, instrument.FormattedHash, instrument.Meter.FormattedTags, instrument.Meter.FormattedHash, instrument.Meter.FormattedScopeHash);
+                            instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
                     }
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
                         lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "",
-                        instrument.FormattedTags, instrument.FormattedHash, instrument.Meter.FormattedTags, instrument.Meter.FormattedHash, instrument.Meter.FormattedScopeHash);
+                        instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {
                     Log.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles),
-                        histogramStats.Count, histogramStats.Sum, instrument.FormattedTags, instrument.FormattedHash, instrument.Meter.FormattedTags, instrument.Meter.FormattedHash, instrument.Meter.FormattedScopeHash);
+                        histogramStats.Count, histogramStats.Sum, instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
                 }
             }
 

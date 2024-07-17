@@ -1645,14 +1645,14 @@ namespace System.Diagnostics.Metrics.Tests
                     Rate = e.Payload[6].ToString(),
                     Value = e.Payload[7].ToString(),
                     InstrumentFormattedTags = e.Payload[8].ToString(),
-                    InstrumentFormattedHash = e.Payload[9].ToString(),
+                    InstrumentHash = (int)(e.Payload[9]),
                     MeterFormattedTags = e.Payload[10].ToString(),
-                    MeterFormattedHash = e.Payload[11].ToString(),
+                    MeterHash = (int)(e.Payload[11]),
                     MeterScopeHash = e.Payload[12].ToString()
                 }).ToArray();
 
-            var counter1Events = counterEvents.Where(e => e.InstrumentFormattedHash == Helpers.FormatObjectHash(data.Counter1)).ToArray();
-            var counter2Events = counterEvents.Where(e => e.InstrumentFormattedHash == Helpers.FormatObjectHash(data.Counter2)).ToArray();
+            var counter1Events = counterEvents.Where(e => e.InstrumentHash == RuntimeHelpers.GetHashCode(data.Counter1)).ToArray();
+            var counter2Events = counterEvents.Where(e => e.InstrumentHash == RuntimeHelpers.GetHashCode(data.Counter2)).ToArray();
 
             var instrument1Event = counter1Events[0];
             var instrument2Event = counter2Events[0];
@@ -1660,17 +1660,17 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(counter1Events.Length, counter2Events.Length);
             Assert.Equal(1, counter1Events.Length);
             Assert.Equal(1, counter2Events.Length);
-            Assert.Equal(counter1Events[0].InstrumentFormattedHash, Helpers.FormatObjectHash(data.Counter1));
+            Assert.Equal(counter1Events[0].InstrumentHash, RuntimeHelpers.GetHashCode(data.Counter1));
 
             if (data.SameInstrumentInstances || (data.SameMeterInstances && data.SameInstrumentNames && data.SameInstrumentTags))
             {
-                Assert.Equal(counter1Events[0].InstrumentFormattedHash, counter2Events[0].InstrumentFormattedHash);
-                Assert.Equal(counter1Events[0].InstrumentFormattedHash, Helpers.FormatObjectHash(data.Counter2));
+                Assert.Equal(counter1Events[0].InstrumentHash, counter2Events[0].InstrumentHash);
+                Assert.Equal(counter1Events[0].InstrumentHash, RuntimeHelpers.GetHashCode(data.Counter2));
                 Assert.Equal("2", instrument1Event.Value);
             }
             else
             {
-                Assert.Equal(counter2Events[0].InstrumentFormattedHash, Helpers.FormatObjectHash(data.Counter2));
+                Assert.Equal(counter2Events[0].InstrumentHash, RuntimeHelpers.GetHashCode(data.Counter2));
                 Assert.Equal("1", instrument1Event.Value);
                 Assert.Equal("1", instrument2Event.Value);
             }
@@ -1680,7 +1680,7 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.Equal(data.SameMeterVersion, instrument1Event.MeterVersion == instrument2Event.MeterVersion);
             Assert.Equal(data.SameMeterTags, instrument1Event.MeterFormattedTags == instrument2Event.MeterFormattedTags);
             Assert.Equal(data.SameScopeInstances, instrument1Event.MeterScopeHash == instrument2Event.MeterScopeHash);
-            Assert.Equal(data.SameMeterInstances, instrument1Event.MeterFormattedHash == instrument2Event.MeterFormattedHash);
+            Assert.Equal(data.SameMeterInstances, instrument1Event.MeterHash == instrument2Event.MeterHash);
             Assert.Equal(data.SameInstrumentNames, instrument1Event.InstrumentName == instrument2Event.InstrumentName);
         }
 
@@ -1832,17 +1832,17 @@ namespace System.Diagnostics.Metrics.Tests
                     Rate = e.Payload[6].ToString(),
                     Value = e.Payload[7].ToString(),
                     InstrumentFormattedTags = e.Payload[8].ToString(),
-                    InstrumentFormattedHash = e.Payload[9].ToString(),
+                    InstrumentHash = (int)(e.Payload[9]),
                     MeterFormattedTags = e.Payload[10].ToString(),
-                    MeterFormattedHash = e.Payload[11].ToString(),
+                    MeterHash = (int)(e.Payload[11]),
                     MeterScopeHash = e.Payload[12].ToString()
                 }).ToArray();
-            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags && e.InstrumentFormattedHash == Helpers.FormatObjectHash(instrument)).ToArray();
+            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags && e.InstrumentHash == RuntimeHelpers.GetHashCode(instrument)).ToArray();
             Assert.True(filteredEvents.Length >= expected.Length);
 
             string formattedInstrumentTags = Helpers.FormatTags(instrument.Tags);
             string formattedMeterTags = Helpers.FormatTags(instrument.Meter.Tags);
-            string formattedMeterHash = Helpers.FormatObjectHash(instrument.Meter);
+            int meterHash = RuntimeHelpers.GetHashCode(instrument.Meter);
             string formattedMeterScopeHash = Helpers.FormatObjectHash(instrument.Meter.Scope);
 
             for (int i = 0; i < expected.Length; i++)
@@ -1853,7 +1853,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 Assert.Equal(formattedInstrumentTags, filteredEvents[i].InstrumentFormattedTags);
                 Assert.Equal(formattedMeterTags, filteredEvents[i].MeterFormattedTags);
-                Assert.Equal(formattedMeterHash, filteredEvents[i].MeterFormattedHash);
+                Assert.Equal(meterHash, filteredEvents[i].MeterHash);
                 Assert.Equal(formattedMeterScopeHash, filteredEvents[i].MeterScopeHash);
             }
         }
@@ -1885,17 +1885,17 @@ namespace System.Diagnostics.Metrics.Tests
                     Tags = e.Payload[5].ToString(),
                     Value = e.Payload[6].ToString(),
                     InstrumentFormattedTags = e.Payload[7].ToString(),
-                    InstrumentFormattedHash = e.Payload[8].ToString(),
+                    InstrumentHash = (int)(e.Payload[8]),
                     MeterFormattedTags = e.Payload[9].ToString(),
-                    MeterFormattedHash = e.Payload[10].ToString(),
+                    MeterHash = (int)(e.Payload[10]),
                     MeterScopeHash = e.Payload[11].ToString(),
                 }).ToArray();
-            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags && e.InstrumentFormattedHash == Helpers.FormatObjectHash(instrument)).ToArray();
+            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags && e.InstrumentHash == RuntimeHelpers.GetHashCode(instrument)).ToArray();
             Assert.True(filteredEvents.Length >= expectedValues.Length);
 
             string formattedInstrumentTags = Helpers.FormatTags(instrument.Tags);
             string formattedMeterTags = Helpers.FormatTags(instrument.Meter.Tags);
-            string formattedMeterHash = Helpers.FormatObjectHash(instrument.Meter);
+            int meterHash = RuntimeHelpers.GetHashCode(instrument.Meter);
             string formattedMeterScopeHash = Helpers.FormatObjectHash(instrument.Meter.Scope);
 
             for (int i = 0; i < expectedValues.Length; i++)
@@ -1905,7 +1905,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 Assert.Equal(formattedInstrumentTags, filteredEvents[i].InstrumentFormattedTags);
                 Assert.Equal(formattedMeterTags, filteredEvents[i].MeterFormattedTags);
-                Assert.Equal(formattedMeterHash, filteredEvents[i].MeterFormattedHash);
+                Assert.Equal(meterHash, filteredEvents[i].MeterHash);
                 Assert.Equal(formattedMeterScopeHash, filteredEvents[i].MeterScopeHash);
             }
         }
@@ -1925,17 +1925,17 @@ namespace System.Diagnostics.Metrics.Tests
                     Count = e.Payload[7].ToString(),
                     Sum = e.Payload[8].ToString(),
                     InstrumentFormattedTags = e.Payload[9].ToString(),
-                    InstrumentFormattedHash = e.Payload[10].ToString(),
+                    InstrumentHash = (int)(e.Payload[10]),
                     MeterFormattedTags = e.Payload[11].ToString(),
-                    MeterFormattedHash = e.Payload[12].ToString(),
+                    MeterHash = (int)(e.Payload[12]),
                     MeterScopeHash = e.Payload[13].ToString()
                 }).ToArray();
-            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags && e.InstrumentFormattedHash == Helpers.FormatObjectHash(instrument)).ToArray();
+            var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags && e.InstrumentHash == RuntimeHelpers.GetHashCode(instrument)).ToArray();
             Assert.True(filteredEvents.Length >= expected.Length);
 
             string formattedInstrumentTags = Helpers.FormatTags(instrument.Tags);
             string formattedMeterTags = Helpers.FormatTags(instrument.Meter.Tags);
-            string formattedMeterHash = Helpers.FormatObjectHash(instrument.Meter);
+            int meterHash = RuntimeHelpers.GetHashCode(instrument.Meter);
             string formattedMeterScopeHash = Helpers.FormatObjectHash(instrument.Meter.Scope);
 
             for (int i = 0; i < expected.Length; i++)
@@ -1947,7 +1947,7 @@ namespace System.Diagnostics.Metrics.Tests
 
                 Assert.Equal(formattedInstrumentTags, filteredEvents[i].InstrumentFormattedTags);
                 Assert.Equal(formattedMeterTags, filteredEvents[i].MeterFormattedTags);
-                Assert.Equal(formattedMeterHash, filteredEvents[i].MeterFormattedHash);
+                Assert.Equal(meterHash, filteredEvents[i].MeterHash);
                 Assert.Equal(formattedMeterScopeHash, filteredEvents[i].MeterScopeHash);
             }
         }
