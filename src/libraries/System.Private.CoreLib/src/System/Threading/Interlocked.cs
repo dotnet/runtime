@@ -488,6 +488,7 @@ namespace System.Threading
         /// The type to be used for <paramref name="location1"/>, <paramref name="value"/>, and <paramref name="comparand"/>.
         /// This type must be a reference type, an enum type (i.e. typeof(T).IsEnum is true), or a primitive type (i.e. typeof(T).IsPrimitive is true).
         /// </typeparam>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [return: NotNullIfNotNull(nameof(location1))]
         public static unsafe T CompareExchange<T>(ref T location1, T value, T comparand)
