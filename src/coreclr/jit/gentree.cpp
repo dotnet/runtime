@@ -17139,7 +17139,15 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
         // It should be possible to be smarter here and allow such cases by extracting the side effects
         // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
-        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+        if (sideEffectsSource->OperIs(GT_COMMA) && sideEffectsSource->AsOp()->gtOp1 == sideEffects)
+        {
+            sideEffectsSource->AsOp()->gtOp2 = tree;
+            return sideEffectsSource;
+        }
+        else
+        {
+            tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+        }
     }
     return tree;
 }
