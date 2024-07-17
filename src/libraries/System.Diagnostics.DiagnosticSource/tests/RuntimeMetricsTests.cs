@@ -6,10 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Diagnostics.Metrics.Tests
 {
-    public class RuntimeMetricsTests
+    public class RuntimeMetricsTests(ITestOutputHelper output)
     {
         private const string GreaterThanZeroMessage = "Expected value to be greater than zero.";
         private const string GreaterThanOrEqualToZeroMessage = "Expected value to be greater than or equal to zero.";
@@ -21,9 +22,14 @@ namespace System.Diagnostics.Metrics.Tests
         private static readonly Func<long, (bool, string?)> s_longGreaterThanOrEqualToZero = v => v >= 0 ? (true, null) : (false, GreaterThanOrEqualToZeroMessage);
         private static readonly Func<double, (bool, string?)> s_doubleGreaterThanZero = v => v > 0 ? (true, null) : (false, GreaterThanZeroMessage);
 
+        private readonly ITestOutputHelper _output = output;
+
         [Fact]
         public void GcCollectionsCount()
         {
+            var pause = GC.GetTotalPauseDuration();
+            _output.WriteLine($"GC pause time: {pause.TotalSeconds} [{pause.Ticks}]");
+
             using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections");
 
             for (var gen = 0; gen <= GC.MaxGeneration; gen++)
@@ -245,6 +251,11 @@ namespace System.Diagnostics.Metrics.Tests
 
             var measurements = instrumentRecorder.GetMeasurements();
 
+            var gcInfo = GC.GetGCMemoryInfo();
+
+            _output.WriteLine($"GenerationInfo.Length: {gcInfo.GenerationInfo.Length}");
+            _output.WriteLine($"Count of measurements: {measurements.Count}");
+
             Assert.True(measurements.Count >= GC.MaxGeneration + 1, "Expected to find at least one measurement for each generation.");
 
             foreach (Measurement<long> measurement in measurements)
@@ -257,6 +268,8 @@ namespace System.Diagnostics.Metrics.Tests
                     Assert.True(tag.Value is string, "Expected generation tag to be a string.");
 
                     string tagValue = (string)tag.Value;
+
+                    _output.WriteLine($"Found tag value: {tagValue}");
 
                     var index = Array.FindIndex(s_genNames, x => x == tagValue);
 
