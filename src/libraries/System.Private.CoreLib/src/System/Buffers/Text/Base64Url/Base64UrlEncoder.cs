@@ -154,14 +154,12 @@ namespace System.Buffers.Text
 #if NET
             int encodedLength = GetEncodedLength(source.Length);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             return string.Create(encodedLength, (IntPtr)(&source), static (buffer, spanPtr) =>
             {
                 ReadOnlySpan<byte> source = *(ReadOnlySpan<byte>*)spanPtr;
                 EncodeToChars(source, buffer, out _, out int charsWritten);
                 Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
             });
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
 #else
             char[] destination = new char[GetEncodedLength(source.Length)];
             EncodeToChars(source, destination, out _, out int charsWritten);

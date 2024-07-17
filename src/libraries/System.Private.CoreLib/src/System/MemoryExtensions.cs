@@ -11,8 +11,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System
 {
     /// <summary>
@@ -3986,32 +3984,32 @@ namespace System
         /// <param name="value">The value for which to search.</param>
         /// <returns>The number of times <paramref name="value"/> was found in the <paramref name="span"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Count<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
+        public static unsafe int Count<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>?
         {
             if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                if (sizeof(T) == sizeof(byte))
                 {
                     return SpanHelpers.CountValueType(
                         ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, byte>(value),
                         span.Length);
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                else if (sizeof(T) == sizeof(short))
                 {
                     return SpanHelpers.CountValueType(
                         ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, short>(value),
                         span.Length);
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                else if (sizeof(T) == sizeof(int))
                 {
                     return SpanHelpers.CountValueType(
                         ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.BitCast<T, int>(value),
                         span.Length);
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                else if (sizeof(T) == sizeof(long))
                 {
                     return SpanHelpers.CountValueType(
                         ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
