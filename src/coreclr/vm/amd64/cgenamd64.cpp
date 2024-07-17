@@ -108,13 +108,20 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloats
     if (updateFloats)
     {
         UpdateFloatingPointRegisters(pRD);
+        // The float updating unwinds the stack so the pRD->pCurrentContext->Rip contains correct unwound Rip
+        // This is used for exception handling and the Rip extracted from m_pCallerReturnAddress is slightly
+        // off, which causes problem with searching for the return address on shadow stack on x64, so
+        // we keep the value from the unwind.
     }
+    else
 #endif // DACCESS_COMPILE
+    {
+        pRD->pCurrentContext->Rip = *(DWORD64 *)&m_pCallerReturnAddress;
+    }
 
     pRD->IsCallerContextValid = FALSE;
     pRD->IsCallerSPValid      = FALSE;        // Don't add usage of this field.  This is only temporary.
 
-    pRD->pCurrentContext->Rip = *(DWORD64 *)&m_pCallerReturnAddress;
     pRD->pCurrentContext->Rsp = *(DWORD64 *)&m_pCallSiteSP;
     pRD->pCurrentContext->Rbp = *(DWORD64 *)&m_pCalleeSavedFP;
 
