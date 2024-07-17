@@ -1325,8 +1325,21 @@ void MachExceptionInfo::RestoreState(mach_port_t thread)
     kern_return_t machret = thread_set_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, x86_THREAD_STATE_COUNT);
     CHECK_MACH("thread_set_state(thread)", machret);
 
-    machret = thread_set_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, x86_FLOAT_STATE_COUNT);
-    CHECK_MACH("thread_set_state(float)", machret);
+    switch (FloatState.ash.flavor)
+    {
+        case x86_FLOAT_STATE:
+            machret = thread_set_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, x86_FLOAT_STATE_COUNT);
+            CHECK_MACH("thread_set_state(float)", machret);
+            break;
+        case x86_AVX_STATE:
+            machret = thread_set_state(thread, x86_AVX_STATE, (thread_state_t)&FloatState, x86_AVX_STATE_COUNT);
+            CHECK_MACH("thread_set_state(avx)", machret);
+            break;
+        case x86_AVX512_STATE:
+            machret = thread_set_state(thread, x86_AVX512_STATE, (thread_state_t)&FloatState, x86_AVX512_STATE_COUNT);
+            CHECK_MACH("thread_set_state(avx512)", machret);
+            break;
+    }
 
     machret = thread_set_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, x86_DEBUG_STATE_COUNT);
     CHECK_MACH("thread_set_state(debug)", machret);
