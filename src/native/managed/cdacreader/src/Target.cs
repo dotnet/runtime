@@ -81,9 +81,11 @@ public sealed unsafe class Target
     internal Contracts.Registry Contracts { get; }
     internal DataCache ProcessedData { get; }
 
-    public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
+    public delegate int ReadFromTargetDelegate(ulong address, byte* buffer, uint bytesToRead);
+
+    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out Target? target)
     {
-        Reader reader = new Reader(readFromTarget, readContext);
+        Reader reader = new Reader(readFromTarget);
         if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
         {
             target = new Target(config, descriptor!, pointerData, reader);
@@ -418,26 +420,17 @@ public sealed unsafe class Target
         }
     }
 
-    private sealed class Reader
+    private struct Reader(Target.ReadFromTargetDelegate readFromTarget)
     {
-        private readonly delegate* unmanaged<ulong, byte*, uint, void*, int> _readFromTarget;
-        private readonly void* _context;
-
-        public Reader(delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* context)
-        {
-            _readFromTarget = readFromTarget;
-            _context = context;
-        }
-
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
             fixed (byte* bufferPtr = buffer)
             {
-                return _readFromTarget(address, bufferPtr, (uint)buffer.Length, _context);
+                return readFromTarget(address, bufferPtr, (uint)buffer.Length);
             }
         }
 
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
-            => _readFromTarget(address, buffer, bytesToRead, _context);
+            => readFromTarget(address, buffer, bytesToRead);
     }
 }
