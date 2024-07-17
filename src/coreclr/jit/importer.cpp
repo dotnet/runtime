@@ -10106,7 +10106,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (helper == CORINFO_HELP_UNBOX)
                     {
-                        op1 = gtNewHelperCallNode(helper,TYP_BYREF, op2, op1);
+                        op1 = gtNewHelperCallNode(helper, TYP_BYREF, op2, op1);
                     }
                     else
                     {
@@ -10129,9 +10129,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-                assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) ||   // Unbox helper returns a byref.
-                       (helper == CORINFO_HELP_UNBOX_NULLABLE && op1->TypeIs(TYP_STRUCT)) // UnboxNullable helper returns a
-                                                                                       // struct.
+                assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) || // Unbox helper returns a byref.
+                       (helper == CORINFO_HELP_UNBOX_NULLABLE && op1->TypeIs(TYP_STRUCT)) // UnboxNullable helper
+                                                                                          // returns a struct.
                 );
 
                 /*
