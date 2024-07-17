@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,7 +21,7 @@ namespace System.Net.Sockets.Tests
         }
 
         private const int SmallTimeoutMicroseconds = 10 * 1000;
-        private const int FailTimeoutMicroseconds  = 30 * 1000 * 1000;
+        internal const int FailTimeoutMicroseconds  = 30 * 1000 * 1000;
 
         [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
         [Theory]
@@ -144,6 +144,7 @@ namespace System.Net.Sockets.Tests
             using Socket receiver = listener.Accept();
 
             sender.Send(new byte[] { 1 });
+            receiver.Poll(FailTimeoutMicroseconds, SelectMode.SelectRead);
             var readList = new List<Socket> { receiver };
             var writeList = new List<Socket> { receiver };
             var errorList = new List<Socket> { receiver };
@@ -184,7 +185,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_ReadError_NoneReady_ManySockets()
@@ -320,7 +320,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static KeyValuePair<Socket, Socket> CreateConnectedSockets()
+        internal static KeyValuePair<Socket, Socket> CreateConnectedSockets()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
@@ -416,6 +416,30 @@ namespace System.Net.Sockets.Tests
                     }
                 }
             }
+        }
+
+        [ConditionalFact]
+        public void Slect_LargeNumber_Succcess()
+        {
+            const int MaxSockets = 1025;
+            KeyValuePair<Socket, Socket>[] socketPairs;
+            try
+            {
+                // we try to shoot for more socket than FD_SETSIZE (that is typically 1024
+                socketPairs = Enumerable.Range(0, MaxSockets).Select(_ => SelectTest.CreateConnectedSockets()).ToArray();
+            }
+            catch
+            {
+                throw new SkipTestException("Unable to open large count number of socket");
+            }
+
+            var readList = new List<Socket>(socketPairs.Select(p => p.Key).ToArray());
+
+            // Try to write and read on last sockets
+            (Socket reader, Socket writer) =  socketPairs[MaxSockets - 1];
+            writer.Send(new byte[1]);
+            Socket.Select(readList, null, null, SelectTest.FailTimeoutMicroseconds);
+            Assert.Equal(1, readList.Count);
         }
     }
 }

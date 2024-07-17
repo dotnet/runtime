@@ -267,6 +267,8 @@
              Link="Common\Interop\Unix\System.Native\Interop.ReceiveMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Send.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Send.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Select.cs"
+             Link="Common\Interop\Unix\System.Native\Interop.Select.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SendMessage.cs"
              Link="Common\Interop\Unix\System.Native\Interop.SendMessage.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SetSockOpt.cs"

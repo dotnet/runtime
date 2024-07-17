@@ -19,7 +19,7 @@ namespace System.Net.Sockets
         public static readonly int MaximumAddressSize = Interop.Sys.GetMaximumAddressSize();
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
-        private static readonly bool PollNeedsErrorListFixup = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() ||  OperatingSystem.IsTvOS();
+        private static readonly bool SelectOverPollIsBroken = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() ||  OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
 
         // IovStackThreshold matches Linux's UIO_FASTIOV, which is the number of 'struct iovec'
         // that get stackalloced in the Linux kernel.
@@ -1784,6 +1784,10 @@ namespace System.Net.Sockets
             // by the system.  Since poll then expects an array of entries, we try to allocate the array on the stack,
             // only falling back to allocating it on the heap if it's deemed too big.
 
+            if (SelectOverPollIsBroken)
+            {
+                return SelectViaSelect(checkRead, checkWrite, checkError, microseconds);
+            }
             const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
             if (count < StackThreshold)
             {
@@ -1808,6 +1812,115 @@ namespace System.Net.Sockets
             }
         }
 
+        private static SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
+        {
+            Span<int> readFDs = checkRead?.Count > 20 ? new int[checkRead.Count] : checkRead?.Count > 0 ? stackalloc int[checkRead.Count] : Span<int>.Empty;
+            Span<int> writeFDs = checkWrite?.Count > 20 ? new int[checkWrite.Count] : checkWrite?.Count > 0 ? stackalloc int[checkWrite.Count] : Span<int>.Empty;;
+            Span<int> errorFDs =  checkError?.Count > 20 ? new int[checkError.Count] : checkError?.Count > 0 ? stackalloc int[checkError.Count] : Span<int>.Empty;
+
+            int refsAdded = 0;
+            int maxFd = 0;
+            try
+            {
+                AddDesriptors(ref readFDs, checkRead, ref refsAdded, ref maxFd);
+                AddDesriptors(ref writeFDs, checkWrite, ref refsAdded, ref maxFd);
+                AddDesriptors(ref errorFDs, checkError, ref refsAdded, ref maxFd);
+
+                int triggered = 0;
+                Interop.Error err = Interop.Sys.Select(readFDs, readFDs.Length, writeFDs, writeFDs.Length, errorFDs, errorFDs.Length, microseconds, maxFd, out triggered);
+                if (err != Interop.Error.SUCCESS)
+                {
+                    return GetSocketErrorForErrorCode(err);
+                }
+
+                if (triggered == 0)
+                {
+                    Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
+                    Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
+                    Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
+
+                    checkRead?.Clear();
+                    checkWrite?.Clear();
+                    checkError?.Clear();
+                }
+                else
+                {
+                    Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
+                    Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
+                    Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
+
+                    FilterSelectList(checkRead, readFDs);
+                    FilterSelectList(checkWrite, writeFDs);
+                    FilterSelectList(checkError, errorFDs);
+                }
+            }
+            finally
+            {
+                // This order matches with the AddToPollArray calls
+                // to release only the handles that were ref'd.
+                Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
+                Debug.Assert(refsAdded == 0);
+            }
+
+            return (SocketError)0;
+        }
+
+        private static void AddDesriptors(ref Span<int> buffer, IList? socketList, ref int refsAdded, ref int maxFd)
+        {
+            if (socketList == null || socketList.Count == 0 )
+            {
+                return;
+            }
+
+            Debug.Assert(buffer.Length == socketList.Count);
+            for (int i = 0; i < socketList.Count; i++)
+            {
+                Socket? socket = socketList[i] as Socket;
+                if (socket == null)
+                {
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socket?.GetType().FullName ?? "null", typeof(Socket).FullName), nameof(socketList));
+                }
+
+                if (socket.Handle > maxFd)
+                {
+                    maxFd = (int)socket.Handle;
+                }
+
+                bool success = false;
+                socket.InternalSafeHandle.DangerousAddRef(ref success);
+                buffer[i] = (int)socket.InternalSafeHandle.DangerousGetHandle();
+
+                refsAdded++;
+            }
+        }
+
+        private static void FilterSelectList(IList? socketList, Span<int> results)
+        {
+            if (socketList == null)
+                return;
+
+            // The Select API requires leaving in the input lists only those sockets that were ready.  As such, we need to loop
+            // through each poll event, and for each that wasn't ready, remove the corresponding Socket from its list.  Technically
+            // this is O(n^2), due to removing from the list requiring shifting down all elements after it.  However, this doesn't
+            // happen with the most common cases.  If very few sockets were ready, then as we iterate from the end of the list, each
+            // removal will typically be O(1) rather than O(n).  If most sockets were ready, then we only need to remove a few, in
+            // which case we're only doing a small number of O(n) shifts.  It's only for the intermediate case, where a non-trivial
+            // number of sockets are ready and a non-trivial number of sockets are not ready that we end up paying the most.  We could
+            // avoid these costs by, for example, allocating a side list that we fill with the sockets that should remain, clearing
+            // the original list, and then populating the original list with the contents of the side list.  That of course has its
+            // own costs, and so for now we do the "simple" thing.  This can be changed in the future as needed.
+
+            for (int i = socketList.Count - 1; i >= 0; --i)
+            {
+                if (results[i] == 0)
+                {
+                    socketList.RemoveAt(i);
+                }
+            }
+        }
+
         private static unsafe SocketError SelectViaPoll(
             IList? checkRead, int checkReadInitialCount,
             IList? checkWrite, int checkWriteInitialCount,
@@ -1819,15 +1932,15 @@ namespace System.Net.Sockets
             Debug.Assert(eventsLength == checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount, "Invalid eventsLength");
             int offset = 0;
             int refsAdded = 0;
-            int readRefs;
             try
             {
                 // In case we can't increase the reference count for each Socket,
                 // we'll unref refAdded Sockets in the finally block ordered: [checkRead, checkWrite, checkError].
                 AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.PollEvents.POLLIN | Interop.PollEvents.POLLHUP, ref refsAdded);
-                readRefs = refsAdded;
                 AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.PollEvents.POLLOUT, ref refsAdded);
-                AddToPollArray(events, eventsLength, checkError, ref offset, Interop.PollEvents.POLLPRI, ref refsAdded, PollNeedsErrorListFixup ? readRefs : 0);
+                AddToPollArray(events, eventsLength, checkError, ref offset, Interop.PollEvents.POLLPRI, ref refsAdded);
+
+               // Console.WriteLine("Fixup ??? {0}", PollNeedsErrorListFixup);
                 Debug.Assert(offset <= eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
                 Debug.Assert(refsAdded <= eventsLength, $"Invalid ref adds. refsAdded={refsAdded}, eventsLength={eventsLength}.");
 
