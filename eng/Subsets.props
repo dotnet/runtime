@@ -524,7 +524,7 @@
 
   <ItemGroup>
     <ProjectToBuild Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Host.sfxproj" Category="packs" Condition="$(_subset.Contains('+packs.product+')) and '$(BuildNativeAOTRuntimePack)' != 'true' and '$(BuildOnlyPgoInstrumentedAssets)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true' and $(_subset.Contains('+clr.tools+'))" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true' and '$(TargetsMobile)' != 'true' and $(_subset.Contains('+clr.tools+'))" />
   </ItemGroup>
 
   <Choose>
