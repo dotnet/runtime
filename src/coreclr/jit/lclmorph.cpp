@@ -1118,7 +1118,8 @@ public:
                                      node->gtGetOp2()->AsIntCon()->IconValue() * node->AsIndexAddr()->gtElemSize;
 
                     if (!node->AsIndexAddr()->IsBoundsChecked() ||
-                        offset < static_cast<ssize_t>(m_compiler->lvaLclExactSize(TopValue(1).LclNum())))
+                        (static_cast<ssize_t>(node->AsIndexAddr()->gtElemOffset) <= offset &&
+                         offset < static_cast<ssize_t>(m_compiler->lvaLclExactSize(TopValue(1).LclNum()))))
                     {
                         if (FitsIn<unsigned>(offset) &&
                             TopValue(2).AddOffset(TopValue(1), static_cast<unsigned>(offset)))
