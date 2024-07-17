@@ -2436,7 +2436,6 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg() const
         // ignoring the ABI, but where we want to handle them during import as
         // if they have return buffers:
         //   - CORINFO_HELP_GETFIELDSTRUCT
-        //   - CORINFO_HELP_UNBOX_NULLABLE
         //
         // Other TYP_STRUCT returning helpers follow the ABI normally and
         // should return true for `ShouldHaveRetBufArg` if they need a retbuf
@@ -2447,7 +2446,7 @@ bool GenTreeCall::TreatAsShouldHaveRetBufArg() const
         //
         CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(gtCallMethHnd);
 
-        return (helpFunc == CORINFO_HELP_GETFIELDSTRUCT) || (helpFunc == CORINFO_HELP_UNBOX_NULLABLE);
+        return helpFunc == CORINFO_HELP_GETFIELDSTRUCT;
     }
     return false;
 }
