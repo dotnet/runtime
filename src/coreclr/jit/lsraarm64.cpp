@@ -1994,7 +1994,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     break;
             }
 
-            int prefUseOpNum = 1;
+            size_t prefUseOpNum = 1;
             if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
             {
                 prefUseOpNum = 2;
