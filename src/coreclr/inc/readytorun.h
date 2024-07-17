@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 10
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 10
 
@@ -38,6 +38,7 @@
 //                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
 // R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis
 // R2R Version 10.1 adds Unbox_TypeTest helper
+// R2R Version 10.2 removes unused flags (GETFIELDS/SETFIELD)
 
 struct READYTORUN_CORE_HEADER
 {
