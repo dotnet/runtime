@@ -3652,13 +3652,6 @@ function emit_simd_2 (builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrin
     }
 
     switch (index) {
-        case SimdIntrinsic2.V128_BITCAST: {
-            // BitCast is a no-op and so we just load the value and return it "as is"
-            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
-            append_simd_store(builder, ip);
-            return true;
-        }
-
         case SimdIntrinsic2.V128_I1_CREATE_SCALAR:
         case SimdIntrinsic2.V128_I2_CREATE_SCALAR:
         case SimdIntrinsic2.V128_I4_CREATE_SCALAR:

@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
@@ -20,6 +21,8 @@ System.Composition.CompositionContextExtensions</PackageDescription>
     <!-- TODO https://github.com/dotnet/runtime/issues/90400: Annotate for nullable reference types -->
     <Nullable>disable</Nullable>
     <NoWarn>$(NoWarn);nullable</NoWarn>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,4 +39,5 @@ System.Composition.CompositionContextExtensions</PackageDescription>
     <None Include="$(PlaceholderFile)" PackagePath="lib/net461" Pack="true" />
     <None Include="$(PlaceholderFile)" PackagePath="lib/netcoreapp2.0" Pack="true" />
   </ItemGroup>
+
 </Project>

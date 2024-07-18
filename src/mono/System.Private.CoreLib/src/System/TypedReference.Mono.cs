@@ -18,9 +18,7 @@ namespace System
 
         public static unsafe object? ToObject(TypedReference value)
         {
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
             return InternalToObject(&value);
-#pragma warning restore CS8500
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]

@@ -1163,6 +1163,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public class HttpMetricsTest_Http30 : HttpMetricsTest
@@ -1173,6 +1174,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [Collection(nameof(DisableParallelization))]
     public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
     {
         protected override bool TestHttpMessageInvoker => true;
