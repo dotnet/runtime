@@ -2834,7 +2834,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 
 //------------------------------------------------------------------------
 // impInlineUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
-//     We're going to emit the following IR:
+//     We either inline the unbox operation (if profitable) or call the helper.
+//     The inline expansion is as follows:
 //
 //     Nullable<T> result;
 //     if (obj == null)
@@ -2852,22 +2853,42 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 //     }
 //
 // Arguments:
-//     nullableCls - class handle representing the Nullable<T> type
-//     obj         - object to unbox
+//     nullableCls     - class handle representing the Nullable<T> type
+//     nullableClsNode - tree node representing the Nullable<T> type (can be a runtime lookup tree)
+//     obj             - object to unbox
 //
 // Return Value:
 //     A local node representing the unboxed value (Nullable<T>)
 //
-GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* obj)
+GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* nullableClsNode, GenTree* obj)
 {
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
     unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
     lvaSetStruct(resultTmp, nullableCls, false);
     lvaGetDesc(resultTmp)->lvHasLdAddrOp = true;
+    GenTreeLclFld* resultAddr            = gtNewLclAddrNode(resultTmp, 0);
 
-    // The underlying type of the nullable:
-    CORINFO_CLASS_HANDLE unboxType = info.compCompHnd->getTypeForBox(nullableCls);
+    // Check profitability of inlining the unbox operation
+    bool shouldExpandInline = compCurBB->isRunRarely() && opts.OptimizationEnabled() && !eeIsSharedInst(nullableCls);
+
+    // It's less profitable to inline the unbox operation if the underlying type is too large
+    CORINFO_CLASS_HANDLE unboxType = NO_CLASS_HANDLE;
+    if (shouldExpandInline)
+    {
+        // The underlying type of the nullable:
+        unboxType          = info.compCompHnd->getTypeForBox(nullableCls);
+        shouldExpandInline = info.compCompHnd->getClassSize(unboxType) <= getUnrollThreshold(Memcpy);
+    }
+
+    if (!shouldExpandInline)
+    {
+        // No expansion needed, just call the helper
+        GenTreeCall* call =
+            gtNewHelperCallNode(CORINFO_HELP_UNBOX_NULLABLE, TYP_VOID, resultAddr, nullableClsNode, obj);
+        impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+        return gtNewLclvNode(resultTmp, TYP_STRUCT);
+    }
 
     // Clone the object (and spill side effects)
     GenTree* objClone;
@@ -2897,11 +2918,11 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
 
     // Fallback helper call
     // TODO: Mark as no-return when appropriate
-    GenTreeLclFld* resultAddr = gtNewLclAddrNode(resultTmp, 0);
-    GenTreeCall*   helperCall = gtNewHelperCallNode(CORINFO_HELP_UNBOX_NULLABLE, TYP_VOID, resultAddr,
-                                                    gtNewIconEmbClsHndNode(nullableCls), gtCloneExpr(objClone));
+    GenTreeCall* helperCall =
+        gtNewHelperCallNode(CORINFO_HELP_UNBOX_NULLABLE, TYP_VOID, resultAddr, nullableClsNode, gtCloneExpr(objClone));
 
     // Nested QMARK - "obj->pMT == <boxed-type> ? unboxTree : helperCall"
+    assert(unboxType != NO_CLASS_HANDLE);
     GenTree*      unboxTypeNode = gtNewIconEmbClsHndNode(unboxType);
     GenTree*      objMT         = gtNewMethodTableLookup(objClone);
     GenTree*      mtLookupCond  = gtNewOperNode(GT_NE, TYP_INT, objMT, unboxTypeNode);
@@ -10188,11 +10209,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, op2);
                 }
-                else if (shouldExpandInline && (helper == CORINFO_HELP_UNBOX_NULLABLE) &&
-                         !eeIsSharedInst(resolvedToken.hClass))
+                else if (helper == CORINFO_HELP_UNBOX_NULLABLE)
                 {
-                    // TODO: consider enabling this for Nullable<ValueType<_Canon>> as well.
-                    op1 = impInlineUnboxNullable(resolvedToken.hClass, op1);
+                    // op1 is the object being unboxed
+                    // op2 is either a class handle node or a runtime lookup node (it's fine to reorder)
+                    op1 = impInlineUnboxNullable(resolvedToken.hClass, op2, op1);
                 }
                 else
                 {
@@ -10200,30 +10221,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     JITDUMP("\n Importing %s as helper call because %s\n", opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY",
                             canExpandInline ? "want smaller code or faster jitting" : "inline expansion not legal");
 
-                    if (helper == CORINFO_HELP_UNBOX)
-                    {
-                        op1 = gtNewHelperCallNode(helper, TYP_BYREF, op2, op1);
-                    }
-                    else
-                    {
-                        assert(helper == CORINFO_HELP_UNBOX_NULLABLE);
-
-                        // We're going to emit the following sequence of IR:
-                        //
-                        //  Nullable<T> result;
-                        //  void CORINFO_HELP_UNBOX_NULLABLE(&result, unboxCls, obj);
-                        //  push result;
-                        //
-                        unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
-                        lvaSetStruct(resultTmp, resolvedToken.hClass, false);
-                        lvaGetDesc(resultTmp)->lvHasLdAddrOp = true;
-
-                        GenTreeLclFld* resultAddr = gtNewLclAddrNode(resultTmp, 0);
-                        // NOTE: it's fine for op2 to be evaluated before op1
-                        GenTreeCall* helperCall = gtNewHelperCallNode(helper, TYP_VOID, resultAddr, op2, op1);
-                        impAppendTree(helperCall, CHECK_SPILL_ALL, impCurStmtDI);
-                        op1 = gtNewLclvNode(resultTmp, TYP_STRUCT);
-                    }
+                    assert(helper == CORINFO_HELP_UNBOX);
+                    op1 = gtNewHelperCallNode(helper, TYP_BYREF, op2, op1);
                 }
 
                 assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) || // Unbox helper returns a byref.
