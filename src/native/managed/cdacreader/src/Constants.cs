@@ -16,7 +16,11 @@ internal static class Constants
         internal const string FeatureEHFunclets = nameof(FeatureEHFunclets);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 
+        internal const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         internal const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
+        internal const string ObjectMethodTable = nameof(ObjectMethodTable);
+        internal const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
+        internal const string StringMethodTable = nameof(StringMethodTable);
 
         internal const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
         internal const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
