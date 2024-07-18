@@ -1819,17 +1819,18 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     Scev*   baseScev = addRec->Start->PeelAdditions(&offset);
     offset           = static_cast<target_ssize_t>(offset);
 
-    // We only support arrays here. To strength reduce Span<T> accesses we need
-    // additional properies on the range designated by a Span<T> that we
-    // currently do not specify, or we need to prove that the byref we may form
-    // in the IV update would have been formed anyway by the loop.
+    // We only support arrays and strings here. To strength reduce Span<T>
+    // accesses we need additional properies on the range designated by a
+    // Span<T> that we currently do not specify, or we need to prove that the
+    // byref we may form in the IV update would have been formed anyway by the
+    // loop.
     if (!baseScev->OperIs(ScevOper::Local) || !baseScev->TypeIs(TYP_REF))
     {
         return false;
     }
 
-    // Now use the fact that we keep ARR_ADDRs in the IR when we have array
-    // accesses.
+    // Now use the fact that we keep ARR_ADDRs in the IR when we have
+    // array/string accesses.
     GenTreeArrAddr* arrAddr = nullptr;
     for (int i = 0; i < cursors->Height(); i++)
     {
@@ -1860,7 +1861,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     ScevLocal* local = (ScevLocal*)baseScev;
 
     ValueNumPair vnp = m_scevContext.MaterializeVN(baseScev);
-    if (vnp.GetConservative() == ValueNumStore::NoVN)
+    if (!vnp.BothDefined())
     {
         return false;
     }
@@ -1871,32 +1872,49 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
         return false;
     }
 
-    // We have a non-null array. Check that the 'start' offset looks fine.
-    // TODO: We could also use assertions on the length of the array. E.g. if
-    // we know the length of the array is > 3, then we can allow the add rec to
-    // have a later start. Maybe range check can be used?
-    if ((offset < 0) || (offset > (int64_t)OFFSETOF__CORINFO_Array__data))
+    // We have a non-null array/string. Check that the 'start' offset looks
+    // fine. TODO: We could also use assertions on the length of the
+    // array/string. E.g. if we know the length of the array is > 3, then we
+    // can allow the add rec to have a later start. Maybe range check can be
+    // used?
+    if ((offset < 0) || (offset > arrAddr->GetFirstElemOffset()))
     {
         return false;
     }
 
-    // Now see if we have a bound that guarantees that we iterate less than the
-    // array length's times.
+    // Now see if we have a bound that guarantees that we iterate fewer times
+    // than the array/string's length.
+    ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, vnp.GetLiberal());
+
     for (int i = 0; i < m_backEdgeBounds.Height(); i++)
     {
-        // TODO: EvaluateRelop ought to be powerful enough to prove something
-        // like bound < ARR_LENGTH(vn), but it is not able to prove that
-        // currently, even for bound = ARR_LENGTH(vn) - 1 (common case).
         Scev* bound = m_backEdgeBounds.Bottom(i);
+        if (!bound->TypeIs(TYP_INT))
+        {
+            // Currently cannot handle bounds that aren't 32 bit.
+            continue;
+        }
 
+        // In some cases VN is powerful enough to evaluate bound <
+        // ARR_LENGTH(vn) directly.
+        ValueNumPair boundVN = m_scevContext.MaterializeVN(bound);
+        if (boundVN.GetLiberal() != ValueNumStore::NoVN)
+        {
+            ValueNum relop = m_comp->vnStore->VNForFunc(TYP_INT, VNF_LT_UN, boundVN.GetLiberal(), arrLengthVN);
+            if (m_scevContext.EvaluateRelop(relop) == RelopEvaluationResult::True)
+            {
+                return true;
+            }
+        }
+
+        // In common cases VN cannot prove the above, so try a little bit
+        // harder. In this case we know the bound doesn't overflow
+        // (conceptually the bound is an arbitrary precision integer and a
+        // negative bound does not make sense).
         int64_t boundOffset;
         Scev*   boundBase = bound->PeelAdditions(&boundOffset);
 
-        if (bound->TypeIs(TYP_INT))
-        {
-            boundOffset = static_cast<int32_t>(boundOffset);
-        }
-
+        boundOffset = static_cast<int32_t>(boundOffset);
         if (boundOffset >= 0)
         {
             // If we take the backedge >= the array length times, then we would
@@ -1904,20 +1922,18 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
             continue;
         }
 
+        // Now try to prove that boundBase <= ARR_LENGTH(vn). Commonly
+        // boundBase == ARR_LENGTH(vn) exactly, but it may also have a
+        // dominating subsuming compare before the loop due to loop cloning.
         ValueNumPair boundBaseVN = m_scevContext.MaterializeVN(boundBase);
-
-        VNFuncApp vnf;
-        if (!m_comp->vnStore->GetVNFunc(boundBaseVN.GetConservative(), &vnf))
+        if (boundBaseVN.GetLiberal() != ValueNumStore::NoVN)
         {
-            continue;
+            ValueNum relop = m_comp->vnStore->VNForFunc(TYP_INT, VNF_LE, boundBaseVN.GetLiberal(), arrLengthVN);
+            if (m_scevContext.EvaluateRelop(relop) == RelopEvaluationResult::True)
+            {
+                return true;
+            }
         }
-
-        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vnp.GetConservative()))
-        {
-            continue;
-        }
-
-        return true;
     }
 
     return false;
