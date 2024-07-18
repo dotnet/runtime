@@ -3756,7 +3756,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 //      gtFlags - DEBUG only gtFlags.
 //
 void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
-                                        regNumber targetReg,
+                                        regNumber   targetReg,
                                         regNumber   reg,
                                         ssize_t imm DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
