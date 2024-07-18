@@ -5074,8 +5074,43 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         uint32_t newScale;
         int32_t  newOffset;
 
-        GenTreeIndir* indir = op1->AsIndir();
-        GenTree*      addr  = indir->Addr();
+        // Normally we'd evaluate op1 (indir), then op2 (element index).
+        // We like to be able to reorder these to fold op2 into the indir.
+
+        GenTreeIndir* indir                = op1->AsIndir();
+        GenTree*      addr                 = indir->Addr();
+        bool const    canMoveTheIndirLater = IsInvariantInRange(indir, node);
+
+        // If we can't move the indir, force evaluation of its side effects.
+        //
+        if (!canMoveTheIndirLater)
+        {
+            // Force evaluation of the address, if it is complex
+            //
+            if (!(addr->IsInvariant() || addr->OperIsLocal()))
+            {
+                addr->ClearContained();
+                LIR::Use addrUse(BlockRange(), &indir->Addr(), indir);
+                addrUse.ReplaceWithLclVar(comp);
+                addr = indir->Addr();
+            }
+
+            // If the indir can fault, do a null check.
+            //
+            if (indir->OperMayThrow(comp))
+            {
+                GenTree* addrClone = comp->gtCloneExpr(addr);
+                GenTree* nullcheck = comp->gtNewNullCheck(addrClone, comp->compCurBB);
+                BlockRange().InsertBefore(indir, addrClone, nullcheck);
+                LowerNode(nullcheck);
+
+                indir->gtFlags |= GTF_IND_NONFAULTING;
+            }
+
+            // We should now be able to move the indir
+            //
+            indir->gtFlags &= ~GTF_EXCEPT;
+        }
 
         if (addr->OperIsAddrMode())
         {

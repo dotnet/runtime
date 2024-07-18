@@ -29,7 +29,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <ItemGroup>
     <Compile Include="System\Diagnostics\Activity.cs" />
-    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
     <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
@@ -126,6 +125,11 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Diagnostics\Metrics\RuntimeMetrics.cs" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
