@@ -14385,15 +14385,10 @@ DONE_FOLD:
 
     if (fgGlobalMorph)
     {
-#ifdef DEBUG
         // We can sometimes produce a comma over the constant if the original op
         // had a side effect, so just ensure we set the flag (which will be already
         // set for the operands otherwise).
-        if (op->OperIs(GT_COMMA) && (op->AsOp()->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0)
-        {
-            op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-        }
-#endif
+        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
     }
     return op;
 }
@@ -14617,15 +14612,10 @@ DONE_FOLD:
 
     if (fgGlobalMorph)
     {
-#ifdef DEBUG
         // We can sometimes produce a comma over the constant if the original op
         // had a side effect, so just ensure we set the flag (which will be already
         // set for the operands otherwise).
-        if (op->OperIs(GT_COMMA) && (op->AsOp()->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0)
-        {
-            op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-        }
-#endif
+        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
     }
     return op;
 }
@@ -17061,7 +17051,7 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
         // It should be possible to be smarter here and allow such cases by extracting the side effects
         // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
-        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), gtCloneExpr(sideEffects), tree);
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
     }
     return tree;
 }
