@@ -2767,7 +2767,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         emitAttr attr = emitActualTypeSize(targetType);
         attr          = EA_SET_FLG(attr, EA_CNS_RELOC_FLG | EA_CNS_SEC_RELOC);
 
-        emit->emitIns_Add_Add_Tls_Reloc(attr, targetReg, op2->AsIntCon()->IconValue());
+        emit->emitIns_Add_Add_Tls_Reloc(attr, targetReg, op1->GetRegNum(), op2->AsIntCon()->IconValue());
         return;
     }
 
