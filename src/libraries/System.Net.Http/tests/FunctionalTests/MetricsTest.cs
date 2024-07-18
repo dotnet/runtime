@@ -688,7 +688,11 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
-            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            TestEventListener? listener = null;
+            if (UseVersion == HttpVersion20.Value)
+            {
+                listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
+            }
             TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource clientDisposedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -760,6 +764,7 @@ namespace System.Net.Http.Functional.Tests
                     await clientDisposedTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
                 });
             });
+            listener?.Dispose();
         }
 
         [Fact]
