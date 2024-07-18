@@ -8759,7 +8759,7 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			ArgInfo *ainfo = &cinfo->ret;
 			MonoInst *ins = cfg->ret;
 
-			for (int i = 0; i < ainfo->nregs; i ++) {
+			for (int i = 0; i < ainfo->nregs; i++) {
 				switch (ainfo->pair_storage [i]) {
 				case ArgInIReg:
 					amd64_mov_reg_membase (code, ainfo->pair_regs [i], ins->inst_basereg, ins->inst_offset + ainfo->offsets [i], sizeof (target_mgreg_t));
