@@ -50,7 +50,10 @@ grammar = GetRegexDcolon().Replace(grammar, "'::'");
 grammar = GetRegexRemoveTodoComments().Replace(grammar, "\n");
 
 // Print the output header
-Console.Write(@"Lexical tokens
+Console.Write(@"// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+Lexical tokens
     ID - C style alphaNumeric identifier (e.g. Hello_There2)
     DOTTEDNAME - Sequence of dot-separated IDs (e.g. System.Object)
     QSTRING  - C style quoted string (e.g.  ""hi\n"")
