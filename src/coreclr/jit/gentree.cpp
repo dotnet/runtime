@@ -17052,9 +17052,11 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
         // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
 #ifdef DEBUG
-        // The side effects may be a throw created by local morph,
+        // The side effects may be range check fail created by local morph,
         // just remove the morphed flag to avoid unnecessary assertions.
-        if (fgIsThrow(sideEffects) && sideEffects->AsCall()->gtArgs.GetUserArgByIndex(0)->GetLateNode()->IsCnsIntOrI())
+        if (sideEffects->IsHelperCall(this, CORINFO_HELP_RNGCHKFAIL) &&
+            sideEffects->AsCall()->gtArgs.CountUserArgs() == 1 &&
+            sideEffects->AsCall()->gtArgs.GetUserArgByIndex(0)->GetLateNode()->IsCnsIntOrI())
         {
             sideEffects->AsCall()->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
             sideEffects->AsCall()->gtArgs.GetUserArgByIndex(0)->GetLateNode()->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
