@@ -110,6 +110,20 @@ namespace System.Security.Cryptography.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
+        public static void EmptyNameThroughNullCharacter()
+        {
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine("\0", "foo"));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine("\0", "foo"));
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("\0", "foo"));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
+        public static void EmptyUriThroughNullCharacter()
+        {
+            Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenKeyFromProvider("default", "\0"));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void Engine_NonExisting()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(NonExistingEngineOrProviderKeyName, TestEngineKeyId));

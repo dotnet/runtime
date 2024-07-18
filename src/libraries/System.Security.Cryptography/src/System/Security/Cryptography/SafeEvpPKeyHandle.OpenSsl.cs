@@ -195,6 +195,40 @@ namespace System.Security.Cryptography
             return Interop.Crypto.LoadPublicKeyFromEngine(engineName, keyId);
         }
 
+        /// <summary>
+        ///   Open a named public key using a named OpenSSL <code>provider</code>.
+        /// </summary>
+        /// <param name="providerName">
+        ///   The name of the <code>provider</code> to process the key open request.
+        /// </param>
+        /// <param name="keyUri">
+        ///   The URI of the key to open.
+        /// </param>
+        /// <returns>
+        ///   The opened key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="providerName"/> or <paramref name="keyUri"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="providerName"/> or <paramref name="keyUri"/> is the empty string.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   the key could not be opened via the specified provider.
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     Both provider name and key URI must be trusted inputs.
+        ///   </para>
+        ///   <para>
+        ///     This operation will fail if OpenSSL cannot successfully load the named <code>provider</code>,
+        ///     or if the named <code>provider</code> cannot load the named key.
+        ///   </para>
+        ///   <para>
+        ///     The syntax for <paramref name="keyUri"/> is determined by each individual
+        ///     <code>provider</code>.
+        ///   </para>
+        /// </remarks>
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
