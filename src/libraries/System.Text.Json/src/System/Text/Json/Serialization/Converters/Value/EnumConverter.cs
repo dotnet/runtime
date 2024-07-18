@@ -340,17 +340,7 @@ namespace System.Text.Json.Serialization.Converters
                 goto End;
             }
 
-#if NET9_0_OR_GREATER
-            success = nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(source, out value) ||
-                TryParseCommaSeparatedEnumValues(source, out value);
-#elif NET
-            string enumString = source.ToString();
-            success = nameCacheForReading.TryGetValue(enumString, out value) ||
-                TryParseCommaSeparatedEnumValues(enumString, out value);
-#else
-            success = nameCacheForReading.TryGetValue(source, out value) ||
-                TryParseCommaSeparatedEnumValues(source, out value);
-#endif
+            success = TryParseCommaSeparatedEnumValues(source, out value);
 
         End:
 #if NET
@@ -389,10 +379,10 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         private bool TryParseCommaSeparatedEnumValues(
-#if NET9_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> source,
 #else
-            string source,
+            string sourceString,
 #endif
             out T value)
         {
@@ -400,9 +390,27 @@ namespace System.Text.Json.Serialization.Converters
             ConcurrentDictionary<string, T> nameCacheForReading = _nameCacheForReading;
 #if NET9_0_OR_GREATER
             ConcurrentDictionary<string, T>.AlternateLookup<ReadOnlySpan<char>> alternateLookup = nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
+            if (alternateLookup.TryGetValue(source, out value))
+            {
+                return true;
+            }
+
+            ReadOnlySpan<char> rest = source;
+#elif NET
+            string sourceString = source.ToString();
+            if (nameCacheForReading.TryGetValue(sourceString, out value))
+            {
+                return true;
+            }
+
             ReadOnlySpan<char> rest = source;
 #else
-            ReadOnlySpan<char> rest = source.AsSpan();
+            if (nameCacheForReading.TryGetValue(sourceString, out value))
+            {
+                return true;
+            }
+
+            ReadOnlySpan<char> rest = sourceString.AsSpan();
 #endif
             ulong result = 0;
 
@@ -443,7 +451,7 @@ namespace System.Text.Json.Serialization.Converters
 #if NET9_0_OR_GREATER
                 alternateLookup[source] = value;
 #else
-                nameCacheForReading[source] = value;
+                nameCacheForReading[sourceString] = value;
 #endif
             }
 
