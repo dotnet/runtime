@@ -321,14 +321,12 @@ namespace System.Numerics
         public static bool LessThanOrEqualAny<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> LessThanOrEqual<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
         public static System.Numerics.Vector<T> LessThan<T>(System.Numerics.Vector<T> left, System.Numerics.Vector<T> right) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Numerics.Vector<T> Load<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Numerics.Vector<T> LoadAligned<T>(T* source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe System.Numerics.Vector<T> LoadAlignedNonTemporal<T>(T* source) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<T> LoadUnsafe<T>(ref readonly T source, nuint elementOffset) { throw null; }
@@ -407,14 +405,12 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static System.Numerics.Vector<System.UInt64> ShiftRightLogical(System.Numerics.Vector<System.UInt64> value, int shiftCount) { throw null; }
         public static System.Numerics.Vector<T> SquareRoot<T>(System.Numerics.Vector<T> value) { throw null; }
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAligned<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this System.Numerics.Vector<T> source, T* destination) { throw null; }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static void StoreUnsafe<T>(this System.Numerics.Vector<T> source, ref T destination, nuint elementOffset) { throw null; }

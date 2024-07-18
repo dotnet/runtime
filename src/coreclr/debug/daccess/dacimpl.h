@@ -818,7 +818,8 @@ class ClrDataAccess
       public ISOSDacInterface11,
       public ISOSDacInterface12,
       public ISOSDacInterface13,
-      public ISOSDacInterface14
+      public ISOSDacInterface14,
+      public ISOSDacInterface15
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1223,6 +1224,9 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetThreadStaticBaseAddress(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS thread, CLRDATA_ADDRESS *nonGCStaticsAddress, CLRDATA_ADDRESS *GCStaticsAddress);
     virtual HRESULT STDMETHODCALLTYPE GetMethodTableInitializationFlags(CLRDATA_ADDRESS methodTable, MethodTableInitializationFlags *initializationStatus);
 
+    // ISOSDacInterface15
+    virtual HRESULT STDMETHODCALLTYPE GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator);
+
     //
     // ClrDataAccess.
     //
@@ -1235,6 +1239,7 @@ public:
     HRESULT GetNestedExceptionDataImpl(CLRDATA_ADDRESS exception, CLRDATA_ADDRESS *exceptionObject, CLRDATA_ADDRESS *nextNestedException);
     HRESULT GetMethodTableDataImpl(CLRDATA_ADDRESS mt, struct DacpMethodTableData *data);
     HRESULT GetMethodTableForEEClassImpl (CLRDATA_ADDRESS eeClassReallyMT, CLRDATA_ADDRESS *value);
+    HRESULT GetMethodTableNameImpl(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded);
     HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
@@ -1988,6 +1993,29 @@ public:
 
 protected:
     DacReferenceList<SOSMemoryRegion> mRegions;
+
+private:
+    unsigned int mIteratorIndex;
+};
+
+class DacMethodTableSlotEnumerator : public DefaultCOMImpl<ISOSMethodEnum, IID_ISOSMethodEnum>
+{
+public:
+    DacMethodTableSlotEnumerator() : mIteratorIndex(0)
+    {
+    }
+    
+    virtual ~DacMethodTableSlotEnumerator() {}
+
+    HRESULT Init(PTR_MethodTable mTable);
+
+    HRESULT STDMETHODCALLTYPE Skip(unsigned int count);
+    HRESULT STDMETHODCALLTYPE Reset();
+    HRESULT STDMETHODCALLTYPE GetCount(unsigned int *pCount);
+    HRESULT STDMETHODCALLTYPE Next(unsigned int count, SOSMethodData methods[], unsigned int *pFetched);
+
+protected:
+    DacReferenceList<SOSMethodData> mMethods;
 
 private:
     unsigned int mIteratorIndex;

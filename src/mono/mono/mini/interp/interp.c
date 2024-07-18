@@ -7476,6 +7476,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			MonoMethod *local_cmethod = LOCAL_VAR (ip [2], MonoMethod*);
 
+			if (local_cmethod->is_generic || mono_class_is_gtd (local_cmethod->klass)) {
+				MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidOperationException", "");
+				THROW_EX (ex, ip);
+			}			
+
 			// FIXME push/pop LMF
 			if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (local_cmethod))) {
 				local_cmethod = mono_marshal_get_managed_wrapper  (local_cmethod, NULL, (MonoGCHandle)0, error);

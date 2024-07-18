@@ -182,11 +182,12 @@ namespace ILLink.Shared
 		DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers = 2115,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
 		MethodsAreAssociatedWithUserMethod = 2117,
-		CompilerGeneratedMemberAccessedViaReflection = 2118,
-		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
-		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
+		_unused_CompilerGeneratedMemberAccessedViaReflection = 2118,
+		_unused_DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
+		_unused_DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
 		RedundantSuppression = 2121,
 		TypeNameIsNotAssemblyQualified = 2122,
+		_EndTrimAnalysisWarningsSentinel = 2123,
 
 		// Single-file diagnostic ids.
 		AvoidAssemblyLocationInSingleFile = 3000,
@@ -203,6 +204,7 @@ namespace ILLink.Shared
 		GenericRecursionCycle = 3054,
 		CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
 		RequiresDynamicCodeOnStaticConstructor = 3056,
+		_EndAotAnalysisWarningsSentinel = 3057,
 
 		// Feature guard diagnostic ids.
 		ReturnValueDoesNotMatchFeatureGuards = 4000,
@@ -227,9 +229,9 @@ namespace ILLink.Shared
 				2103 => MessageSubCategory.TrimAnalysis,
 				2106 => MessageSubCategory.TrimAnalysis,
 				2107 => MessageSubCategory.TrimAnalysis,
-				>= 2109 and <= 2121 => MessageSubCategory.TrimAnalysis,
+				>= 2109 and <= (int) DiagnosticId._EndTrimAnalysisWarningsSentinel => MessageSubCategory.TrimAnalysis,
 				>= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
-				>= 3054 and <= 3055 => MessageSubCategory.AotAnalysis,
+				>= 3054 and <= (int) DiagnosticId._EndAotAnalysisWarningsSentinel => MessageSubCategory.AotAnalysis,
 				_ => MessageSubCategory.None,
 			};
 

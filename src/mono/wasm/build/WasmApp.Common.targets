@@ -931,7 +931,7 @@
   <Target Name="_RunWasmOptPostLink" Condition="'$(WasmRunWasmOpt)' == 'true'">
     <Error Condition="'$(_WasmOutputFileName)' == ''" Text="Could not determine %24(_WasmOutputFileName)" />
 
-    <Exec Command="wasm-opt$(_ExeExt) @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
+    <Exec Command="wasm-opt$(_ExeExt) --enable-simd --enable-exception-handling --enable-bulk-memory @(WasmOptConfigurationFlags, ' ') &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot; -o &quot;$(_WasmIntermediateOutputPath)$(_WasmOutputFileName)&quot;"
           IgnoreStandardErrorWarningFormat="true"
           EnvironmentVariables="@(WasmToolchainEnvVars)" />
   </Target>
