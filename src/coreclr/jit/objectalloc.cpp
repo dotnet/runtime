@@ -203,7 +203,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
             {
                 lclEscapes = false;
             }
-            else if (tree->OperIs(GT_LCL_VAR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL))
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_ADDR) && tree->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT))
             {
                 assert(tree == m_ancestors.Top());
 
@@ -230,7 +230,7 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
     {
         var_types type = comp->lvaTable[lclNum].TypeGet();
 
-        if (type == TYP_REF || genActualType(type) == TYP_I_IMPL || type == TYP_BYREF)
+        if (type == TYP_REF || genActualType(type) == TYP_I_IMPL || type == TYP_BYREF || type == TYP_STRUCT)
         {
             m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
@@ -926,6 +926,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_BOX:
             case GT_FIELD_ADDR:
             case GT_INDEX_ADDR:
+            case GT_LCL_ADDR:
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;
@@ -936,7 +937,58 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
                 {
-                    // TODO-ObjectStackAllocation: track stores to fields.
+                    switch (parent->AsIndir()->Addr()->OperGet())
+                    {
+                        case GT_FIELD_ADDR:
+                        {
+                            GenTree* fieldObj = parent->AsIndir()->Addr()->AsFieldAddr()->GetFldObj();
+                            if (fieldObj != nullptr && fieldObj->IsAnyLocal())
+                            {
+                                // Add an edge to the connection graph.
+                                const unsigned int dstLclNum = fieldObj->AsLclVarCommon()->GetLclNum();
+                                const unsigned int srcLclNum = lclNum;
+                                if (dstLclNum == 0 && !comp->info.compIsStatic)
+                                {
+                                    break;
+                                }
+
+                                if (fieldObj->IsLocal())
+                                {
+                                    if (comp->lvaGetDesc(dstLclNum)->TypeGet() != TYP_REF)
+                                    {
+                                        break;
+                                    }
+                                }
+                                else if (comp->lvaGetDesc(dstLclNum)->TypeGet() != TYP_STRUCT)
+                                {
+                                    break;
+                                }
+
+                                AddConnGraphEdge(dstLclNum, srcLclNum);
+                                ++parentIndex;
+                                keepChecking = true;
+                                break;
+                            }
+                            break;
+                        }
+                        default:
+                        {
+                            if (parent->AsIndir()->Addr()->IsAnyLocal())
+                            {
+                                // Add an edge to the connection graph.
+                                const unsigned int dstLclNum = parent->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum();
+                                const unsigned int srcLclNum = lclNum;
+
+                                if (comp->lvaGetDesc(dstLclNum)->TypeGet() != TYP_REF)
+                                {
+                                    break;
+                                }
+
+                                AddConnGraphEdge(dstLclNum, srcLclNum);
+                                canLclVarEscapeViaParentStack = false;
+                            }
+                        }
+                    }
                     break;
                 }
                 FALLTHROUGH;
@@ -1025,6 +1077,7 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_SUB:
             case GT_FIELD_ADDR:
             case GT_INDEX_ADDR:
+            case GT_LCL_ADDR:
                 if (parent->TypeGet() == TYP_REF)
                 {
                     parent->ChangeType(newType);
@@ -1062,17 +1115,25 @@ void ObjectAllocator::UpdateAncestorTypes(GenTree* tree, ArrayStack<GenTree*>* p
             case GT_STOREIND:
             case GT_STORE_BLK:
             case GT_BLK:
-                assert(tree == parent->AsIndir()->Addr());
-
-                // The new target could be *not* on the heap.
-                parent->gtFlags &= ~GTF_IND_TGT_HEAP;
-
-                if (newType != TYP_BYREF)
+                if (tree == parent->AsIndir()->Addr())
                 {
-                    // This indicates that a write barrier is not needed when writing
-                    // to this field/indirection since the address is not pointing to the heap.
-                    // It's either null or points to inside a stack-allocated object.
-                    parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                    // The new target could be *not* on the heap.
+                    parent->gtFlags &= ~GTF_IND_TGT_HEAP;
+
+                    if (newType != TYP_BYREF)
+                    {
+                        // This indicates that a write barrier is not needed when writing
+                        // to this field/indirection since the address is not pointing to the heap.
+                        // It's either null or points to inside a stack-allocated object.
+                        parent->gtFlags |= GTF_IND_TGT_NOT_HEAP;
+                    }
+                }
+                else
+                {
+                    parent->ChangeType(newType);
+
+                    ++parentIndex;
+                    keepChecking = true;
                 }
                 break;
 
