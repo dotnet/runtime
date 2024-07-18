@@ -184,7 +184,7 @@ namespace System.Net.Sockets
 
         public IPEndPoint LocalEP
         {
-            get; set;
+            get; private set;
         }
 
         [SupportedOSPlatform("windows")]
