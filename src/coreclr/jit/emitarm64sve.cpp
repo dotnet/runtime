@@ -5825,14 +5825,13 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 
         case INS_sve_fcmla:
             assert(opt == INS_OPTS_SCALABLE_S);
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidUimm<1>(imm1));      // i
-            assert(isValidRot(imm2));          // rr
+            assert(isVectorRegister(reg1));                      // ddddd
+            assert(isVectorRegister(reg2));                      // nnnnn
+            assert(isLowVectorRegister(reg3));                   // mmmm
+            assert(isValidUimm<1>(imm1));                        // i
+            assert(emitIsValidEncodedRotationImm0_to_270(imm2)); // rr
 
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            imm = (imm1 << 2) | imm2;
             fmt = IF_SVE_GV_3A;
             break;
 

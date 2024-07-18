@@ -14,6 +14,7 @@ internal partial struct RuntimeTypeSystem_1
     {
         GenericsMask = 0x00000030,
         GenericsMask_NonGeneric = 0x00000000,   // no instantiation
+        GenericsMask_TypicalInstantiation = 0x00000030,   // the type instantiated at its formal parameters, e.g. List<T>
 
         StringArrayValues =
             GenericsMask_NonGeneric |
@@ -26,7 +27,13 @@ internal partial struct RuntimeTypeSystem_1
     {
         Category_Mask = 0x000F0000,
         Category_Array = 0x00080000,
+        Category_IfArrayThenSzArray = 0x00020000,
         Category_Array_Mask = 0x000C0000,
+        Category_ElementType_Mask = 0x000E0000,
+        Category_ValueType = 0x00040000,
+        Category_Nullable = 0x00050000,
+        Category_PrimitiveValueType = 0x00060000,
+        Category_TruePrimitive = 0x00070000,
         Category_Interface = 0x000C0000,
         ContainsGCPointers = 0x01000000,
         HasComponentSize = 0x80000000, // This is set if lower 16 bits is used for the component size,
@@ -83,5 +90,6 @@ internal partial struct RuntimeTypeSystem_1
         public bool HasInstantiation => !TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_NonGeneric);
         public bool ContainsGCPointers => GetFlag(WFLAGS_HIGH.ContainsGCPointers) != 0;
         public bool IsDynamicStatics => GetFlag(WFLAGS2_ENUM.DynamicStatics) != 0;
+        public bool IsGenericTypeDefinition => TestFlagWithMask(WFLAGS_LOW.GenericsMask, WFLAGS_LOW.GenericsMask_TypicalInstantiation);
     }
 }
