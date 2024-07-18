@@ -8679,9 +8679,17 @@ DONE_MORPHING_CHILDREN:
 
         case GT_IND:
         {
-            if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
+            if (op1->IsIconHandle())
             {
-                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+                // All indirections with (handle) constant addresses are
+                // nonfaulting.
+                tree->gtFlags |= GTF_IND_NONFAULTING;
+
+                // We know some handle types always point to invariant data.
+                if (GenTree::HandleKindDataIsInvariant(op1->GetIconHandleFlag()))
+                {
+                    tree->gtFlags |= GTF_IND_INVARIANT;
+                }
             }
 
             GenTree* optimizedTree = fgMorphFinalizeIndir(tree->AsIndir());
@@ -9917,6 +9925,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
         default:
         {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
             bool       isScalar   = false;
             genTreeOps actualOper = node->GetOperForHWIntrinsicId(&isScalar);
             genTreeOps oper       = actualOper;
@@ -10062,6 +10071,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 INDEBUG(node->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return node;
             }
+#endif // FEATURE_MASKED_HW_INTRINSICS
             break;
         }
     }
@@ -11391,7 +11401,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
             {
                 operand->SetDoNotCSE();
             }
-            else if (canBenefitFromConstantProp && operand->IsVectorConst())
+            else if (canBenefitFromConstantProp && operand->IsCnsVec())
             {
                 if (tree->ShouldConstantProp(operand, operand->AsVecCon()))
                 {
@@ -11436,10 +11446,38 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
             assert(tree->GetOperandCount() == 2);
             GenTree*& op1 = tree->Op(1);
 
-            if (op1->IsVectorConst())
+            if (op1->IsCnsVec())
             {
                 // Move constant vectors from op1 to op2 for commutative operations
                 std::swap(op1, tree->Op(2));
+            }
+        }
+        else if (!optValnumCSE_phase)
+        {
+            bool       isScalar = false;
+            genTreeOps oper     = tree->GetOperForHWIntrinsicId(&isScalar);
+
+            // We can't handle scalar operations since they can copy upper bits from op1
+            if (GenTree::OperIsCompare(oper) && !isScalar)
+            {
+                assert(tree->GetOperandCount() == 2);
+
+                GenTree* op1 = tree->Op(1);
+                GenTree* op2 = tree->Op(2);
+
+                if (op1->IsCnsVec())
+                {
+                    // Move constant vectors from op1 to op2 for comparison operations
+
+                    var_types simdBaseType = tree->GetSimdBaseType();
+                    unsigned  simdSize     = tree->GetSimdSize();
+
+                    genTreeOps     newOper = GenTree::SwapRelop(oper);
+                    NamedIntrinsic newId   = GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(this, newOper, op2, op1,
+                                                                                          simdBaseType, simdSize, false);
+
+                    tree->ResetHWIntrinsicId(newId, op2, op1);
+                }
             }
         }
 

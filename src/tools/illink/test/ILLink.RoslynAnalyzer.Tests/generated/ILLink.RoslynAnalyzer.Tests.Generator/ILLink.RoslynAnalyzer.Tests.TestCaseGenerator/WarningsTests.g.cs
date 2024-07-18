@@ -7,8 +7,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 	public sealed partial class WarningsTests : LinkerTestBase
 	{
 
-		protected override string TestSuiteName => "Warnings";
-
 		[Fact]
 		public Task CanDisableWarnAsError ()
 		{

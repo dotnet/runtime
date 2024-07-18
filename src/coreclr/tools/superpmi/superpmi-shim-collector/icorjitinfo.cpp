@@ -316,12 +316,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE m
     mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE method)
-{
-    mc->cr->AddCall("mapMethodDeclToMethodImpl");
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
-}
-
 // Returns the global cookie for the /GS unsafe buffer checks
 // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
 void interceptor_ICJI::getGSCookie(GSCookie*  pCookieVal, // OUT

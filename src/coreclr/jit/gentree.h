@@ -513,18 +513,18 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
     GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
-    GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
-    GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
-    GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
-    GTF_ICON_PINVKI_HDL         = 0x0A000000, // GT_CNS_INT -- constant is a pinvoke calli handle
-    GTF_ICON_TOKEN_HDL          = 0x0B000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
-    GTF_ICON_TLS_HDL            = 0x0C000000, // GT_CNS_INT -- constant is a TLS ref with offset
-    GTF_ICON_FTN_ADDR           = 0x0D000000, // GT_CNS_INT -- constant is a function address
-    GTF_ICON_CIDMID_HDL         = 0x0E000000, // GT_CNS_INT -- constant is a class ID or a module ID
-    GTF_ICON_BBC_PTR            = 0x0F000000, // GT_CNS_INT -- constant is a basic block count pointer
-    GTF_ICON_STATIC_BOX_PTR     = 0x10000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
-    GTF_ICON_FIELD_SEQ          = 0x11000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
+    GTF_ICON_OBJ_HDL            = 0x07000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
+    GTF_ICON_CONST_PTR          = 0x08000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
+    GTF_ICON_GLOBAL_PTR         = 0x09000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
+    GTF_ICON_VARG_HDL           = 0x0A000000, // GT_CNS_INT -- constant is a var arg cookie handle
+    GTF_ICON_PINVKI_HDL         = 0x0B000000, // GT_CNS_INT -- constant is a pinvoke calli handle
+    GTF_ICON_TOKEN_HDL          = 0x0C000000, // GT_CNS_INT -- constant is a token handle (other than class, method or field)
+    GTF_ICON_TLS_HDL            = 0x0D000000, // GT_CNS_INT -- constant is a TLS ref with offset
+    GTF_ICON_FTN_ADDR           = 0x0E000000, // GT_CNS_INT -- constant is a function address
+    GTF_ICON_CIDMID_HDL         = 0x0F000000, // GT_CNS_INT -- constant is a class ID or a module ID
+    GTF_ICON_BBC_PTR            = 0x10000000, // GT_CNS_INT -- constant is a basic block count pointer
+    GTF_ICON_STATIC_BOX_PTR     = 0x11000000, // GT_CNS_INT -- constant is an address of the box for a STATIC_IN_HEAP field
+    GTF_ICON_FIELD_SEQ          = 0x12000000, // <--------> -- constant is a FieldSeq* (used only as VNHandle)
     GTF_ICON_STATIC_ADDR_PTR    = 0x13000000, // GT_CNS_INT -- constant is a pointer to a static base address
     GTF_ICON_SECREL_OFFSET      = 0x14000000, // GT_CNS_INT -- constant is an offset in a certain section.
     GTF_ICON_TLSGD_OFFSET       = 0x15000000, // GT_CNS_INT -- constant is an argument to tls_get_addr.
@@ -895,7 +895,7 @@ public:
 
     bool isUsedFromMemory() const
     {
-        return ((isContained() && (isMemoryOp() || OperIs(GT_LCL_VAR, GT_CNS_DBL, GT_CNS_VEC))) ||
+        return ((isContained() && (isMemoryOp() || OperIs(GT_LCL_VAR, GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK))) ||
                 isUsedFromSpillTemp());
     }
 
@@ -1027,7 +1027,7 @@ public:
         {
             // These are the only operators which can produce either VOID or non-VOID results.
             assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsHWIntrinsic() ||
-                   IsCnsVec());
+                   IsCnsVec() || IsCnsMsk());
             return false;
         }
 
@@ -1089,8 +1089,8 @@ public:
 
     static bool OperIsConst(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC));
-        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_VEC);
+        static_assert_no_msg(AreContiguous(GT_CNS_INT, GT_CNS_LNG, GT_CNS_DBL, GT_CNS_STR, GT_CNS_VEC, GT_CNS_MSK));
+        return (GT_CNS_INT <= gtOper) && (gtOper <= GT_CNS_MSK);
     }
 
     bool OperIsConst() const
@@ -1777,7 +1777,6 @@ public:
     inline bool IsVectorBroadcast(var_types simdBaseType) const;
     inline bool IsMaskAllBitsSet() const;
     inline bool IsMaskZero() const;
-    inline bool IsVectorConst();
 
     inline uint64_t GetIntegralVectorConstElement(size_t index, var_types simdBaseType);
 
@@ -2189,6 +2188,8 @@ public:
     inline bool IsCnsNonZeroFltOrDbl() const;
 
     inline bool IsCnsVec() const;
+
+    inline bool IsCnsMsk() const;
 
     bool IsIconHandle() const
     {
@@ -5304,8 +5305,6 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG) != 0;
     }
 
-    bool TreatAsShouldHaveRetBufArg() const;
-
     //-----------------------------------------------------------------------------------------
     // HasMultiRegRetVal: whether the call node returns its value in multiple return registers.
     //
@@ -5329,7 +5328,7 @@ struct GenTreeCall final : public GenTree
         }
 #endif
 
-        if (!varTypeIsStruct(gtType) || TreatAsShouldHaveRetBufArg())
+        if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())
         {
             return false;
         }
@@ -6640,7 +6639,7 @@ private:
 };
 #endif // FEATURE_HW_INTRINSICS
 
-// GenTreeVecCon -- vector  constant (GT_CNS_VEC)
+// GenTreeVecCon -- vector constant (GT_CNS_VEC)
 //
 struct GenTreeVecCon : public GenTree
 {
@@ -6654,10 +6653,6 @@ struct GenTreeVecCon : public GenTree
         simd32_t gtSimd32Val;
         simd64_t gtSimd64Val;
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-        simdmask_t gtSimdMaskVal;
-#endif // FEATURE_MASKED_HW_INTRINSICS
 
         simd_t gtSimdVal;
     };
@@ -7082,13 +7077,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return gtSimdMaskVal.IsAllBitsSet();
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7139,13 +7127,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return left->gtSimdMaskVal == right->gtSimdMaskVal;
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7191,13 +7172,6 @@ struct GenTreeVecCon : public GenTree
             }
 
 #endif // TARGET_XARCH
-
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-            case TYP_MASK:
-            {
-                return gtSimdMaskVal.IsZero();
-            }
-#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
             default:
@@ -7363,6 +7337,67 @@ struct GenTreeVecCon : public GenTree
 
 #if DEBUGGABLE_GENTREE
     GenTreeVecCon()
+        : GenTree()
+    {
+    }
+#endif
+};
+
+// GenTreeMskCon -- mask constant (GT_CNS_MSK)
+//
+struct GenTreeMskCon : public GenTree
+{
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    simdmask_t gtSimdMaskVal;
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
+    void EvaluateUnaryInPlace(genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize);
+    void EvaluateBinaryInPlace(
+        genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, GenTreeMskCon* other);
+
+    bool IsAllBitsSet() const
+    {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        return gtSimdMaskVal.IsAllBitsSet();
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    static bool Equals(const GenTreeMskCon* left, const GenTreeMskCon* right)
+    {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        return left->gtSimdMaskVal == right->gtSimdMaskVal;
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    bool IsZero() const
+    {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        return gtSimdMaskVal.IsZero();
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+    GenTreeMskCon(var_types type)
+        : GenTree(GT_CNS_MSK, type)
+    {
+        assert(varTypeIsMask(type));
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+        // Some uses of GenTreeMskCon do not specify all bits in the mask they are using but failing to zero out the
+        // buffer will cause determinism issues with the compiler.
+        memset(&gtSimdMaskVal, 0, sizeof(gtSimdMaskVal));
+#else
+        unreached();
+#endif // FEATURE_MASKED_HW_INTRINSICS
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeMskCon()
         : GenTree()
     {
     }
@@ -9713,24 +9748,6 @@ inline bool GenTree::IsMaskZero() const
 }
 
 //-------------------------------------------------------------------
-// IsVectorConst: returns true if this node is a HWIntrinsic that represents a constant.
-//
-// Returns:
-//     True if this represents a HWIntrinsic node that represents a constant.
-//
-inline bool GenTree::IsVectorConst()
-{
-#ifdef FEATURE_SIMD
-    if (IsCnsVec())
-    {
-        return true;
-    }
-#endif // FEATURE_SIMD
-
-    return false;
-}
-
-//-------------------------------------------------------------------
 // GetIntegralVectorConstElement: Gets the value of a given element in an integral vector constant
 //
 // Returns:
@@ -10488,6 +10505,11 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
 inline bool GenTree::IsCnsVec() const
 {
     return OperIs(GT_CNS_VEC);
+}
+
+inline bool GenTree::IsCnsMsk() const
+{
+    return OperIs(GT_CNS_MSK);
 }
 
 inline bool GenTree::IsHelperCall()

@@ -1466,9 +1466,24 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             assertion.op1.vn         = optConservativeNormalVN(op1);
             assertion.op1.lcl.ssaNum = op1->AsLclVarCommon()->GetSsaNum();
 
-            assert((assertion.op1.lcl.ssaNum == SsaConfig::RESERVED_SSA_NUM) ||
-                   (assertion.op1.vn == vnStore->VNConservativeNormalValue(
-                                            lvaGetDesc(lclNum)->GetPerSsaData(assertion.op1.lcl.ssaNum)->m_vnPair)));
+#ifdef DEBUG
+
+            // If we're ssa based, check that the VN is reasonable.
+            //
+            if (assertion.op1.lcl.ssaNum != SsaConfig::RESERVED_SSA_NUM)
+            {
+                LclSsaVarDsc* const ssaDsc = lvaGetDesc(lclNum)->GetPerSsaData(assertion.op1.lcl.ssaNum);
+
+                bool doesVNMatch = (assertion.op1.vn == vnStore->VNConservativeNormalValue(ssaDsc->m_vnPair));
+
+                if (!doesVNMatch && ssaDsc->m_updated)
+                {
+                    doesVNMatch = (assertion.op1.vn == vnStore->VNConservativeNormalValue(ssaDsc->m_origVNPair));
+                }
+
+                assert(doesVNMatch);
+            }
+#endif
 
             ssize_t      cnsValue  = 0;
             GenTreeFlags iconFlags = GTF_EMPTY;
@@ -3004,10 +3019,10 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
         {
             simdmask_t value = vnStore->ConstantValue<simdmask_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, &value, sizeof(simdmask_t));
+            GenTreeMskCon* mskCon = gtNewMskConNode(tree->TypeGet());
+            memcpy(&mskCon->gtSimdMaskVal, &value, sizeof(simdmask_t));
 
-            conValTree = vecCon;
+            conValTree = mskCon;
             break;
         }
         break;
@@ -3136,7 +3151,7 @@ bool Compiler::optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock,
         }
 #endif // FEATURE_HW_INTRINSICS
     }
-    else if (!value->IsCnsFltOrDbl())
+    else if (!value->IsCnsFltOrDbl() && !value->IsCnsMsk())
     {
         return true;
     }

@@ -1591,7 +1591,6 @@ namespace System.Text.RegularExpressions
             }
 
             // Get the pointer/length of the span to be able to pass it into string.Create.
-#pragma warning disable CS8500 // takes address of managed type
             ReadOnlySpan<char> tmpChars = chars; // avoid address exposing the span and impacting the other code in the method that uses it
             return
 #if NET
@@ -1616,7 +1615,6 @@ namespace System.Text.RegularExpressions
                 }
                 Debug.Assert(i == span.Length);
             });
-#pragma warning restore CS8500
         }
 
         /// <summary>
