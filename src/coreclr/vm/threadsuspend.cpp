@@ -1978,7 +1978,17 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
 #endif
 
     // Determine if the processor supports extended features so we could retrieve those registers
-    DWORD64 FeatureMask = GetEnabledXStateFeatures();
+    DWORD64 FeatureMask = 0;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    FeatureMask = GetEnabledXStateFeatures();
+#elif defined(TARGET_ARM64)
+    if (g_pfnGetEnabledXStateFeatures != NULL)
+    {
+        FeatureMask = g_pfnGetEnabledXStateFeatures();
+    }
+#endif
+
     if ((FeatureMask & xStateFeatureMask) != 0)
     {
         context = context | CONTEXT_XSTATE;
@@ -2920,7 +2930,10 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512);
 #elif defined(TARGET_ARM64)
-    SetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE);
+    if (pfnSetXStateFeaturesMask != NULL)
+    {
+        g_pfnSetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE);
+    }
 #endif
 
     // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
@@ -3063,7 +3076,14 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
         const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
 #endif
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
         success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & xStateFeatureMask);
+#elif defined(TARGET_ARM64)
+        if (g_pfnSetXStateFeaturesMask != NULL)
+        {
+            success = g_pfnSetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & xStateFeatureMask);
+        }
+#endif
 
         _ASSERTE(success);
         if (!success)
