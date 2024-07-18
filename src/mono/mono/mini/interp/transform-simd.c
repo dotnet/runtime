@@ -461,13 +461,7 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 		case SN_AsSingle:
 		case SN_AsUInt16:
 		case SN_AsUInt32:
-		case SN_AsUInt64: {
-			if (!is_element_type_primitive (csignature->ret) || !is_element_type_primitive (csignature->params [0]))
-				return FALSE;
-			simd_opcode = MINT_SIMD_INTRINS_P_P;
-			simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITCAST;
-			break;
-		}
+		case SN_AsUInt64:
 		case SN_AsVector:
 		case SN_AsVector128:
 		case SN_AsVector4: {
@@ -480,10 +474,18 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			MonoClass *arg_class = mono_class_from_mono_type_internal (csignature->params [0]);
 			int arg_size = mono_class_value_size (arg_class, NULL);
 
+			vector_klass = ret_class;
+			vector_size = ret_size;
+
 			if (arg_size == ret_size) {
-				simd_opcode = MINT_SIMD_INTRINS_P_P;
-				simd_intrins = INTERP_SIMD_INTRINSIC_V128_BITCAST;
-				break;
+				td->sp--;
+				interp_add_ins (td, MINT_MOV_VT);
+				interp_ins_set_sreg (td->last_ins, td->sp [0].var);
+				push_type_vt (td, vector_klass, vector_size);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
+				td->last_ins->data [0] = GINT32_TO_UINT16 (vector_size);
+				td->ip += 5;
+				return TRUE;
 			}
 			return FALSE;
 		}
