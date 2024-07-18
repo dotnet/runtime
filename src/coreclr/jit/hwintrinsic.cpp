@@ -963,9 +963,7 @@ static void ValidateHWIntrinsicInfo(CORINFO_InstructionSet isa, NamedIntrinsic n
     if (info.numArgs != -1)
     {
         // We should only have an expected number of arguments
-#if defined(TARGET_ARM64)
-        assert((info.numArgs >= 0) && (info.numArgs <= 4));
-#elif defined(TARGET_XARCH)
+#if defined(TARGET_ARM64) || defined(TARGET_XARCH)
         assert((info.numArgs >= 0) && (info.numArgs <= 5));
 #else
         unreached();
