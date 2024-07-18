@@ -108,7 +108,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)] // OSX and FreeBSD throw PNSE from StartTime
         public async Task TestStartTimeProperty()
         {
