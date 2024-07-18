@@ -647,28 +647,17 @@ namespace System
 
         public static void Beep()
         {
-            const char BellCharacter = '\u0007'; // Windows doesn't use terminfo, so the codepoint is hardcoded.
-
             if (!Console.IsOutputRedirected)
             {
-                Console.Out.Write(BellCharacter);
-                return;
+                ReadOnlySpan<byte> bell = "\u0007"u8; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+                int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
+                if (errorCode == Interop.Errors.ERROR_SUCCESS)
+                {
+                    return;
+                }
             }
 
-            if (!Console.IsErrorRedirected)
-            {
-                Console.Error.Write(BellCharacter);
-                return;
-            }
-
-            BeepFallback();
-        }
-
-        private static void BeepFallback()
-        {
-            const int BeepFrequencyInHz = 800;
-            const int BeepDurationInMs = 200;
-            Interop.Kernel32.Beep(BeepFrequencyInHz, BeepDurationInMs);
+            Interop.Kernel32.Beep(frequency: 800, duration: 200);
         }
 
         public static void Beep(int frequency, int duration)
@@ -1196,7 +1185,7 @@ namespace System
                 return errorCode;
             }
 
-            private static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
+            internal static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
             {
                 if (bytes.IsEmpty)
                     return Interop.Errors.ERROR_SUCCESS;

@@ -24,6 +24,7 @@ public unsafe class MethodTableTests
             { nameof(Data.MethodTable.ParentMethodTable), new () { Offset = 40, Type = DataType.pointer}},
             { nameof(Data.MethodTable.NumInterfaces), new () { Offset = 48, Type = DataType.uint16}},
             { nameof(Data.MethodTable.NumVirtuals), new () { Offset = 50, Type = DataType.uint16}},
+            { nameof(Data.MethodTable.PerInstInfo), new () { Offset = 56, Type = DataType.pointer}},
         }
     };
 
@@ -33,6 +34,7 @@ public unsafe class MethodTableTests
             { nameof (Data.EEClass.MethodTable), new () { Offset = 8, Type = DataType.pointer}},
             { nameof (Data.EEClass.CorTypeAttr), new () { Offset = 16, Type = DataType.uint32}},
             { nameof (Data.EEClass.NumMethods), new () { Offset = 20, Type = DataType.uint16}},
+            { nameof (Data.EEClass.InternalCorElementType), new () { Offset = 22, Type = DataType.uint8}},
         }
     };
 
@@ -150,7 +152,7 @@ public unsafe class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Contracts.MethodTableHandle handle = metadataContract.GetMethodTableHandle(TestFreeObjectMethodTableAddress);
+            Contracts.TypeHandle handle = metadataContract.GetTypeHandle(TestFreeObjectMethodTableAddress);
             Assert.NotEqual(TargetPointer.Null, handle.Address);
             Assert.True(metadataContract.IsFreeObjectMethodTable(handle));
         });
@@ -187,9 +189,9 @@ public unsafe class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Contracts.MethodTableHandle systemObjectMethodTableHandle = metadataContract.GetMethodTableHandle(systemObjectMethodTablePtr);
-            Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectMethodTableHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(systemObjectMethodTableHandle));
+            Contracts.TypeHandle systemObjectTypeHandle = metadataContract.GetTypeHandle(systemObjectMethodTablePtr);
+            Assert.Equal(systemObjectMethodTablePtr.Value, systemObjectTypeHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(systemObjectTypeHandle));
         });
     }
 
@@ -226,10 +228,10 @@ public unsafe class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Contracts.MethodTableHandle systemStringMethodTableHandle = metadataContract.GetMethodTableHandle(systemStringMethodTablePtr);
-            Assert.Equal(systemStringMethodTablePtr.Value, systemStringMethodTableHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(systemStringMethodTableHandle));
-            Assert.True(metadataContract.IsString(systemStringMethodTableHandle));
+            Contracts.TypeHandle systemStringTypeHandle = metadataContract.GetTypeHandle(systemStringMethodTablePtr);
+            Assert.Equal(systemStringMethodTablePtr.Value, systemStringTypeHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(systemStringTypeHandle));
+            Assert.True(metadataContract.IsString(systemStringTypeHandle));
         });
     }
 
@@ -258,7 +260,7 @@ public unsafe class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Assert.Throws<InvalidOperationException>(() => metadataContract.GetMethodTableHandle(badMethodTablePtr));
+            Assert.Throws<InvalidOperationException>(() => metadataContract.GetTypeHandle(badMethodTablePtr));
         });
     }
 
@@ -308,11 +310,11 @@ public unsafe class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Contracts.MethodTableHandle genericInstanceMethodTableHandle = metadataContract.GetMethodTableHandle(genericInstanceMethodTablePtr);
-            Assert.Equal(genericInstanceMethodTablePtr.Value, genericInstanceMethodTableHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(genericInstanceMethodTableHandle));
-            Assert.False(metadataContract.IsString(genericInstanceMethodTableHandle));
-            Assert.Equal(numMethods, metadataContract.GetNumMethods(genericInstanceMethodTableHandle));
+            Contracts.TypeHandle genericInstanceTypeHandle = metadataContract.GetTypeHandle(genericInstanceMethodTablePtr);
+            Assert.Equal(genericInstanceMethodTablePtr.Value, genericInstanceTypeHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(genericInstanceTypeHandle));
+            Assert.False(metadataContract.IsString(genericInstanceTypeHandle));
+            Assert.Equal(numMethods, metadataContract.GetNumMethods(genericInstanceTypeHandle));
         });
     }
 
@@ -365,11 +367,11 @@ public unsafe class MethodTableTests
         {
             Contracts.IRuntimeTypeSystem metadataContract = target.Contracts.RuntimeTypeSystem;
             Assert.NotNull(metadataContract);
-            Contracts.MethodTableHandle arrayInstanceMethodTableHandle = metadataContract.GetMethodTableHandle(arrayInstanceMethodTablePtr);
-            Assert.Equal(arrayInstanceMethodTablePtr.Value, arrayInstanceMethodTableHandle.Address.Value);
-            Assert.False(metadataContract.IsFreeObjectMethodTable(arrayInstanceMethodTableHandle));
-            Assert.False(metadataContract.IsString(arrayInstanceMethodTableHandle));
-            Assert.Equal(arrayInstanceComponentSize, metadataContract.GetComponentSize(arrayInstanceMethodTableHandle));
+            Contracts.TypeHandle arrayInstanceTypeHandle = metadataContract.GetTypeHandle(arrayInstanceMethodTablePtr);
+            Assert.Equal(arrayInstanceMethodTablePtr.Value, arrayInstanceTypeHandle.Address.Value);
+            Assert.False(metadataContract.IsFreeObjectMethodTable(arrayInstanceTypeHandle));
+            Assert.False(metadataContract.IsString(arrayInstanceTypeHandle));
+            Assert.Equal(arrayInstanceComponentSize, metadataContract.GetComponentSize(arrayInstanceTypeHandle));
         });
 
     }

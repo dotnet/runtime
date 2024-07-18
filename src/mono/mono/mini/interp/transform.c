@@ -2253,56 +2253,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 #endif
 		} else if (!strcmp (tm, "InitBlockUnaligned") || !strcmp (tm, "InitBlock")) {
 			*op = MINT_INITBLK;
-		} else if (!strcmp (tm, "IsNullRef")) {
-#if SIZEOF_VOID_P == 4
-			*op = MINT_CEQ0_I4;
-#else
-			// FIXME: No CEQ0_I8
-#endif
-		} else if (!strcmp (tm, "NullRef")) {
-#if SIZEOF_VOID_P == 4
-			*op = MINT_LDC_I4_0;
-#else
-			*op = MINT_LDC_I8_0;
-#endif
-		} else if (!strcmp (tm, "Add")) {
-			MonoGenericContext *ctx = mono_method_get_context (target_method);
-			g_assert (ctx);
-			g_assert (ctx->method_inst);
-			g_assert (ctx->method_inst->type_argc == 1);
-			MonoType *t = ctx->method_inst->type_argv [0];
-
-			int base_var = td->sp [-2].var,
-				offset_var = td->sp [-1].var,
-				align, esize;
-
-#if SIZEOF_VOID_P == 8
-			if (td->sp [-1].type == STACK_TYPE_I4) {
-				interp_add_ins (td, MINT_CONV_I8_I4);
-				interp_ins_set_sreg (td->last_ins, offset_var);
-				interp_ins_set_dreg (td->last_ins, offset_var);
-			}
-#endif
-
-			td->sp -= 2;
-
-			esize = mono_type_size (t, &align);
-			if (esize != 1) {
-				g_assert (esize <= 32767);
-				interp_add_ins (td, MINT_MUL_P_IMM);
-				td->last_ins->data [0] = (gint16)esize;
-				interp_ins_set_sreg (td->last_ins, offset_var);
-				interp_ins_set_dreg (td->last_ins, offset_var);
-			}
-
-			interp_add_ins (td, MINT_ADD_P);
-			interp_ins_set_sregs2 (td->last_ins, base_var, offset_var);
-			push_simple_type (td, STACK_TYPE_MP);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
-
-			td->ip += 5;
-
-			return TRUE;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
 		if (!strcmp (tm, "get_OffsetToStringData")) {

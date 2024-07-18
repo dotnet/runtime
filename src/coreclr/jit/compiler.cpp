@@ -2002,7 +2002,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // check that HelperCallProperties are initialized
 
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
-    assert(!s_helperCallProperties.IsPure(CORINFO_HELP_GETFIELDOBJ)); // quick sanity check
 
     // We start with the flow graph in tree-order
     fgOrder = FGOrderTree;

@@ -12,6 +12,8 @@
     <NoWarn>$(NoWarn);NU5128;NU5131;PKV004</NoWarn>
     <!-- Place assemblies in the nuget ref folder -->
     <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -12,8 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System
 {
     [Serializable]
