@@ -1766,8 +1766,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //   This function may remove cursors from m_cursors1 and m_cursors2 if it
 //   decides to no longer consider some cursors for strength reduction.
 //
-bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors,
-                                                    ScevAddRec**            nextIV)
+bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV)
 {
     *nextIV = nullptr;
 
