@@ -7516,8 +7516,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
     if (isInvariant)
     {
-        assert(GenTree::HandleKindDataIsInvariant(iconFlags));
-
         // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
 
@@ -10576,8 +10574,7 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
 
 //------------------------------------------------------------------------------
 // HandleKindDataIsInvariant: Returns true if the data referred to by a handle
-// address is guaranteed to be invariant. Note that GTF_ICON_FTN_ADDR handles may
-// or may not point to invariant data.
+// address is guaranteed to be invariant.
 //
 // Arguments:
 //    flags - GenTree flags for handle.
@@ -10588,11 +10585,32 @@ bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
     GenTreeFlags handleKind = flags & GTF_ICON_HDL_MASK;
     assert(handleKind != GTF_EMPTY);
 
-    // All handle types are assumed invariant except those specifically listed here.
-
-    return (handleKind != GTF_ICON_STATIC_HDL) && // Pointer to a mutable class Static variable
-           (handleKind != GTF_ICON_BBC_PTR) &&    // Pointer to a mutable basic block count value
-           (handleKind != GTF_ICON_GLOBAL_PTR);   // Pointer to mutable data from the VM state
+    switch (handleKind)
+    {
+        case GTF_ICON_SCOPE_HDL:
+        case GTF_ICON_CLASS_HDL:
+        case GTF_ICON_METHOD_HDL:
+        case GTF_ICON_FIELD_HDL:
+        case GTF_ICON_STR_HDL:
+        case GTF_ICON_CONST_PTR:
+        case GTF_ICON_VARG_HDL:
+        case GTF_ICON_PINVKI_HDL:
+        case GTF_ICON_TOKEN_HDL:
+        case GTF_ICON_TLS_HDL:
+        case GTF_ICON_CIDMID_HDL:
+        case GTF_ICON_FIELD_SEQ:
+        case GTF_ICON_STATIC_ADDR_PTR:
+        case GTF_ICON_SECREL_OFFSET:
+        case GTF_ICON_TLSGD_OFFSET:
+            return true;
+        case GTF_ICON_FTN_ADDR:
+        case GTF_ICON_GLOBAL_PTR:
+        case GTF_ICON_STATIC_HDL:
+        case GTF_ICON_BBC_PTR:
+        case GTF_ICON_STATIC_BOX_PTR:
+        default:
+            return false;
+    }
 }
 
 #ifdef DEBUG
