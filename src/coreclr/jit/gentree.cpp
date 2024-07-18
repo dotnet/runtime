@@ -1485,11 +1485,6 @@ CallArg* CallArgs::GetThisArg()
 //   convention it is passed in x8 (see `CallArgs::GetCustomRegister` for the
 //   exact conditions).
 //
-//   Some jit helpers may have "out buffers" that are _not_ classified as the
-//   ret buffer. These are normal arguments that function similarly to ret
-//   buffers, but they do not have the special ABI treatment of ret buffers.
-//   See `GenTreeCall::TreatAsShouldHaveRetBufArg` for more details.
-//
 CallArg* CallArgs::GetRetBufferArg()
 {
     if (!HasRetBuffer())
@@ -2400,56 +2395,6 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
         return 2;
     }
     return 0;
-}
-
-//-------------------------------------------------------------------------
-// TreatAsShouldHaveRetBufArg:
-//
-// Return Value:
-//     Returns true if we treat the call as if it has a retBuf argument
-//     This method may actually have a retBuf argument
-//     or it could be a JIT helper that we are still transforming during
-//     the importer phase.
-//
-// Notes:
-//     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
-//     will make HasRetBufArg() return true, but will also force the
-//     use of register x8 to pass the RetBuf argument.
-//
-//     These two Jit Helpers that we handle here by returning true
-//     aren't actually defined to return a struct, so they don't expect
-//     their RetBuf to be passed in x8, instead they  expect it in x0.
-//
-bool GenTreeCall::TreatAsShouldHaveRetBufArg() const
-{
-    if (ShouldHaveRetBufArg())
-    {
-        return true;
-    }
-
-    // If we see a Jit helper call that returns a TYP_STRUCT we may
-    // transform it as if it has a Return Buffer Argument
-    //
-    if (IsHelperCall() && (gtReturnType == TYP_STRUCT))
-    {
-        // There are two helpers that return structs through an argument,
-        // ignoring the ABI, but where we want to handle them during import as
-        // if they have return buffers:
-        //   - CORINFO_HELP_GETFIELDSTRUCT
-        //   - CORINFO_HELP_UNBOX_NULLABLE
-        //
-        // Other TYP_STRUCT returning helpers follow the ABI normally and
-        // should return true for `ShouldHaveRetBufArg` if they need a retbuf
-        // arg, so when we get here, those cases never need retbufs. They
-        // include:
-        //   - CORINFO_HELP_PINVOKE_CALLI
-        //   - CORINFO_HELP_DISPATCH_INDIRECT_CALL
-        //
-        CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(gtCallMethHnd);
-
-        return (helpFunc == CORINFO_HELP_GETFIELDSTRUCT) || (helpFunc == CORINFO_HELP_UNBOX_NULLABLE);
-    }
-    return false;
 }
 
 //-------------------------------------------------------------------------
@@ -16566,14 +16511,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         if (access & CORINFO_ACCESS_SET)
         {
             assert(value != nullptr);
-            // helper needs pointer to struct, not struct itself
-            if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
-            {
-                // TODO-Bug?: verify if flags matter here
-                GenTreeFlags indirFlags = GTF_EMPTY;
-                value                   = impGetNodeAddr(value, CHECK_SPILL_ALL, &indirFlags);
-            }
-            else if (lclTyp == TYP_DOUBLE && value->TypeGet() == TYP_FLOAT)
+            if ((lclTyp == TYP_DOUBLE) && (value->TypeGet() == TYP_FLOAT))
             {
                 value = gtNewCastNode(TYP_DOUBLE, value, false, TYP_DOUBLE);
             }
@@ -16588,20 +16526,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         else if (access & CORINFO_ACCESS_GET)
         {
             helperType = lclTyp;
-
-            // The calling convention for the helper does not take into
-            // account optimization of primitive structs.
-            if ((pFieldInfo->helper == CORINFO_HELP_GETFIELDSTRUCT) && !varTypeIsStruct(lclTyp))
-            {
-                helperType = TYP_STRUCT;
-            }
         }
-    }
-
-    if (pFieldInfo->helper == CORINFO_HELP_GETFIELDSTRUCT || pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
-    {
-        assert(pFieldInfo->structType != nullptr);
-        args[nArgs++] = gtNewIconEmbClsHndNode(pFieldInfo->structType);
     }
 
     GenTree* fieldHnd = impTokenToHandle(pResolvedToken);
@@ -16640,23 +16565,10 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 
     if (pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
     {
-        if (access & CORINFO_ACCESS_GET)
+        if (((access & CORINFO_ACCESS_GET) != 0) && varTypeIsSmall(lclTyp))
         {
-            if (pFieldInfo->helper == CORINFO_HELP_GETFIELDSTRUCT)
-            {
-                if (!varTypeIsStruct(lclTyp))
-                {
-                    // get the result as primitive type
-                    GenTreeFlags indirFlags = GTF_EMPTY;
-                    result                  = impGetNodeAddr(result, CHECK_SPILL_ALL, &indirFlags);
-                    result                  = gtNewIndir(lclTyp, result, indirFlags);
-                }
-            }
-            else if (varTypeIsSmall(lclTyp))
-            {
-                // The helper does not extend the small return types.
-                result = gtNewCastNode(genActualType(lclTyp), result, false, lclTyp);
-            }
+            // The helper does not extend the small return types.
+            result = gtNewCastNode(genActualType(lclTyp), result, false, lclTyp);
         }
     }
     else if ((access & CORINFO_ACCESS_ADDRESS) == 0) // OK, now do the indirection
@@ -30465,10 +30377,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        if (op->OperIsHWIntrinsic() && op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
+        if (op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
         {
             op        = op2;
-            tryHandle = true;
+            tryHandle = op->OperIsHWIntrinsic();
         }
 #endif // TARGET_ARM64
 

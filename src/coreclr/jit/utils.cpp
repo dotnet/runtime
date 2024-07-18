@@ -1761,12 +1761,6 @@ void HelperCallProperties::init()
                 break;
 
             // Accessing fields (write)
-            case CORINFO_HELP_SETFIELD32:
-            case CORINFO_HELP_SETFIELD64:
-            case CORINFO_HELP_SETFIELDOBJ:
-            case CORINFO_HELP_SETFIELDSTRUCT:
-            case CORINFO_HELP_SETFIELDFLOAT:
-            case CORINFO_HELP_SETFIELDDOUBLE:
             case CORINFO_HELP_ARRADDR_ST:
 
                 mutatesHeap = true;

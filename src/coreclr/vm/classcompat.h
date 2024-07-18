@@ -350,6 +350,7 @@ private:
 
         DispatchMapBuilder *pDispatchMapBuilder;
 
+#ifndef DACCESS_COMPILE
         MethodDesc* GetMethodDescForSlot(WORD slot)
         {
             CONTRACTL
@@ -365,6 +366,7 @@ private:
                 (MethodTable::GetMethodDescForSlotAddress(pVtable[slot]) == pVtableMD[slot]));
             return pVtableMD[slot];
         }
+#endif // DACCESS_COMPILE
 
         void SetMethodDescForSlot(WORD slot, MethodDesc* pMD)
         {
