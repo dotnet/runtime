@@ -5551,7 +5551,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
 
-#if defined(TARGET_XARCH)
+#if !defined(TARGET_XARCH)
     // Keep delegate alive if the target can't do an indirect call with an immediate operand
     // and only in fully interruptible code.
     if (comp->GetInterruptible())
