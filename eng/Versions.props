@@ -81,7 +81,7 @@
   <PropertyGroup>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies (also used in wasm build tests -->
-    <MicrosoftDotNetApiCompatTaskVersion>9.0.100-preview.7.24365.8</MicrosoftDotNetApiCompatTaskVersion>
+    <MicrosoftDotNetApiCompatTaskVersion>9.0.100-preview.7.24368.3</MicrosoftDotNetApiCompatTaskVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetBuildTasksFeedVersion>9.0.0-beta.24360.4</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetCodeAnalysisVersion>9.0.0-beta.24360.4</MicrosoftDotNetCodeAnalysisVersion>
