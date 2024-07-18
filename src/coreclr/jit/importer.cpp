@@ -2833,7 +2833,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
-// impUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
+// impInlineUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
 //     We're going to emit the following IR:
 //
 //     Nullable<T> result;
@@ -2858,7 +2858,7 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 // Return Value:
 //     A local node representing the unboxed value (Nullable<T>)
 //
-GenTree* Compiler::impUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* obj)
+GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* obj)
 {
     assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
 
@@ -10188,10 +10188,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, op2);
                 }
-                else if (helper == CORINFO_HELP_UNBOX_NULLABLE && !eeIsSharedInst(resolvedToken.hClass))
+                else if (shouldExpandInline && (helper == CORINFO_HELP_UNBOX_NULLABLE) &&
+                         !eeIsSharedInst(resolvedToken.hClass))
                 {
                     // TODO: consider enabling this for Nullable<ValueType<_Canon>> as well.
-                    op1 = impUnboxNullable(resolvedToken.hClass, op1);
+                    op1 = impInlineUnboxNullable(resolvedToken.hClass, op1);
                 }
                 else
                 {
