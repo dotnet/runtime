@@ -61,21 +61,18 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "UDP"), nameof(family));
             }
 
-            IPEndPoint localEP;
             _family = family;
 
             if (_family == AddressFamily.InterNetwork)
             {
-                localEP = new IPEndPoint(IPAddress.Any, port);
+                LocalEP = new IPEndPoint(IPAddress.Any, port);
             }
             else
             {
-                localEP = new IPEndPoint(IPAddress.IPv6Any, port);
+                LocalEP = new IPEndPoint(IPAddress.IPv6Any, port);
             }
 
             CreateClientSocket();
-
-            _clientSocket.Bind(localEP);
         }
 
         // Creates a new instance of the UdpClient class that communicates on the
@@ -87,10 +84,9 @@ namespace System.Net.Sockets
             // IPv6 Changes: Set the AddressFamily of this object before
             //               creating the client socket.
             _family = localEP.AddressFamily;
-
+            LocalEP = localEP;
+            
             CreateClientSocket();
-
-            _clientSocket.Bind(localEP);
         }
 
         // Used by the class to indicate that a connection to a remote host has been made.
@@ -186,6 +182,11 @@ namespace System.Net.Sockets
             }
         }
 
+        public IPEndPoint LocalEP
+        {
+            get; set;
+        }
+
         [SupportedOSPlatform("windows")]
         public void AllowNatTraversal(bool allowed)
         {
@@ -208,6 +209,25 @@ namespace System.Net.Sockets
             }
 
             return false;
+        }
+
+        public void Bind()
+        {
+            ThrowIfDisposed();
+            
+            ArgumentNullException.ThrowIfNull(LocalEP);
+            
+            _clientSocket.Bind(LocalEP);
+        }
+
+        public void Bind(IPEndPoint localEP)
+        {
+            ArgumentNullException.ThrowIfNull(localEP);
+
+            _family = localEP.AddressFamily;
+            LocalEP = localEP;
+            
+            Bind();
         }
 
         public void Dispose()
