@@ -13548,7 +13548,7 @@ void emitter::emitDispInsHelp(
                 {
                     printf("[LOW RELOC ");
                 }
-                
+
                 emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                 printf("]");
             }

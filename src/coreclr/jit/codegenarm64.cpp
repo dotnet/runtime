@@ -2758,12 +2758,13 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         genProduceReg(tree);
         return;
     }
-    else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && op2->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+    else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows &&
+             op2->IsIconHandle(GTF_ICON_SECREL_OFFSET))
     {
         // This emits pair of `add` instructions for TLS reloc on windows/arm64/nativeaot
         assert(op2->AsIntCon()->ImmedValNeedsReloc(compiler));
 
-        emitAttr attr = emitActualTypeSize(targetType);        
+        emitAttr attr = emitActualTypeSize(targetType);
         attr          = EA_SET_FLG(attr, EA_CNS_RELOC_FLG | EA_CNS_SEC_RELOC);
 
         emit->emitIns_Add_Add_Tls_Reloc(attr, targetReg, op2->AsIntCon()->IconValue());
