@@ -173,7 +173,7 @@ CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
 CDAC_TYPE_BEGIN(Object)
-CDAC_TYPE_INDETERMINATE(String)
+CDAC_TYPE_INDETERMINATE(Object)
 CDAC_TYPE_FIELD(Object, /*pointer*/, m_pMethTab, cdac_offsets<Object>::m_pMethTab)
 CDAC_TYPE_END(Object)
 
