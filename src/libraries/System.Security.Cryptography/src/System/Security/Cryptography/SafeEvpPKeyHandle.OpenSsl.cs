@@ -53,38 +53,6 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        internal static SafeEvpPKeyHandle GenerateRSAKey(int keySize)
-        {
-            return Interop.Crypto.RsaGenerateKey(keySize);
-        }
-
-        internal static SafeEvpPKeyHandle GenerateECKey(int keySize)
-        {
-            SafeEvpPKeyHandle ret = GenerateECKeyCore(new ECOpenSsl(keySize), out int createdKeySize);
-            Debug.Assert(keySize == createdKeySize);
-            return ret;
-        }
-
-        internal static SafeEvpPKeyHandle GenerateECKey(ECCurve curve, out int keySize)
-        {
-            return  GenerateECKeyCore(new ECOpenSsl(curve), out keySize);
-        }
-
-        internal static SafeEvpPKeyHandle GenerateECKey(ECParameters parameters, out int keySize)
-        {
-            return GenerateECKeyCore(new ECOpenSsl(parameters), out keySize);
-        }
-
-        private static SafeEvpPKeyHandle GenerateECKeyCore(ECOpenSsl ecOpenSsl, out int keySize)
-        {
-            using (ECOpenSsl ec = ecOpenSsl)
-            {
-                SafeEvpPKeyHandle handle = Interop.Crypto.CreateEvpPkeyFromEcKey(ec.Value);
-                keySize = ec.KeySize;
-                return handle;
-            }
-        }
-
         public override bool IsInvalid
         {
             get { return handle == IntPtr.Zero; }

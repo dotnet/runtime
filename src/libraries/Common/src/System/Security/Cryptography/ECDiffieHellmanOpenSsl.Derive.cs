@@ -113,10 +113,14 @@ namespace System.Security.Cryptography
             bool otherIsNamed = otherKey.HasCurveName;
 
             // We need to always duplicate handle in case this operation is done by multiple threads and one of them disposes the handle
-            SafeEvpPKeyHandle? ourKey = null;
+            SafeEvpPKeyHandle? ourKey = _key.Value;
+            bool disposeOurKey = false;
+
             SafeEvpPKeyHandle? theirKey = null;
-            byte[]? rented = null;
-            int secretLength = 0;
+
+            // secp521r1 which is the biggest common case maxes out at 66 bytes so 128 should always be enough.
+            const int StackAllocMax = 128;
+            Span<byte> secret = stackalloc byte[StackAllocMax];
 
             try
             {
@@ -127,13 +131,10 @@ namespace System.Security.Cryptography
 
                 if (otherIsNamed == thisIsNamed)
                 {
-                    ourKey = _key.Value.DuplicateHandle();
                     theirKey = otherKey.DuplicateKeyHandle();
                 }
                 else if (otherIsNamed)
                 {
-                    ourKey = _key.Value.DuplicateHandle();
-
                     using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
                     {
                         theirKey = tmp.CreateKeyHandle();
@@ -149,6 +150,7 @@ namespace System.Security.Cryptography
                         using (ECOpenSsl tmp = new ECOpenSsl(ExportExplicitParameters(true)))
                         {
                             ourKey = tmp.CreateKeyHandle();
+                            disposeOurKey = true;
                         }
                     }
                     catch (CryptographicException)
@@ -160,46 +162,23 @@ namespace System.Security.Cryptography
                     theirKey = otherKey.DuplicateKeyHandle();
                 }
 
-                using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(ourKey, theirKey, out uint secretLengthU))
+                int written = Interop.Crypto.EvpPKeyDeriveSecretAgreement(ourKey, theirKey, secret);
+                secret = secret.Slice(0, written);
+
+                if (hasher == null)
                 {
-                    if (ctx == null || ctx.IsInvalid || secretLengthU == 0 || secretLengthU > int.MaxValue)
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    secretLength = (int)secretLengthU;
-
-                    // Indicate that secret can hold stackallocs from nested scopes
-                    scoped Span<byte> secret;
-
-                    // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
-                    const int StackAllocMax = 66;
-
-                    if (secretLength > StackAllocMax)
-                    {
-                        rented = CryptoPool.Rent(secretLength);
-                        secret = new Span<byte>(rented, 0, secretLength);
-                    }
-                    else
-                    {
-                        secret = stackalloc byte[secretLength];
-                    }
-
-                    Interop.Crypto.EvpPKeyDeriveSecretAgreement(ctx, secret);
-
-                    if (hasher == null)
-                    {
-                        return secret.ToArray();
-                    }
-                    else
-                    {
-                        hasher.AppendData(secret);
-                        return null;
-                    }
+                    return secret.ToArray();
+                }
+                else
+                {
+                    hasher.AppendData(secret);
+                    return null;
                 }
             }
             finally
             {
+                CryptographicOperations.ZeroMemory(secret);
+
                 theirKey?.Dispose();
 
                 if (disposeOtherKey)
@@ -207,11 +186,9 @@ namespace System.Security.Cryptography
                     otherKey.Dispose();
                 }
 
-                ourKey?.Dispose();
-
-                if (rented != null)
+                if (disposeOurKey)
                 {
-                    CryptoPool.Return(rented, secretLength);
+                    ourKey.Dispose();
                 }
             }
         }

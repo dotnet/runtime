@@ -118,7 +118,7 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
 
     ERR_clear_error();
 
-    EVP_PKEY_CTX* ctx = CryptoNative_EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     int ret = -1;
 
@@ -164,7 +164,7 @@ int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
 
     ERR_clear_error();
 
-    EVP_PKEY_CTX* ctx = CryptoNative_EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     int ret = -1;
 
@@ -194,7 +194,7 @@ done:
     return ret;
 }
 
-static bool EvpPKeyCtxConfigureForRsaSignVerify(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
+static bool ConfigureSignature(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
 {
     if (padding == RsaPaddingPkcs1)
     {
@@ -225,32 +225,97 @@ static bool EvpPKeyCtxConfigureForRsaSignVerify(EVP_PKEY_CTX* ctx, RsaPaddingMod
     return true;
 }
 
-int32_t CryptoNative_EvpPKeyCtxConfigureForRsaSign(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
+int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                 void* extraHandle,
+                                 RsaPaddingMode padding,
+                                 const EVP_MD* digest,
+                                 const uint8_t* hash,
+                                 int32_t hashLen,
+                                 uint8_t* destination,
+                                 int32_t destinationLen)
 {
-    if (EVP_PKEY_sign_init(ctx) <= 0)
+    assert(pkey != NULL);
+    assert(destination != NULL);
+    assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
+    assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    ERR_clear_error();
+
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+
+    int ret = -1;
+
+    if (ctx == NULL || EVP_PKEY_sign_init(ctx) <= 0)
     {
-        return 0;
+        goto done;
     }
 
-    if (!EvpPKeyCtxConfigureForRsaSignVerify(ctx, padding, digest))
+    if (!ConfigureSignature(ctx, padding, digest))
     {
-        return 0;
+        goto done;
     }
 
-    return 1;
+    size_t written = Int32ToSizeT(destinationLen);
+
+    if (EVP_PKEY_sign(ctx, destination, &written, hash, Int32ToSizeT(hashLen)) > 0)
+    {
+        ret = SizeTToInt32(written);
+    }
+
+done:
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    return ret;
 }
 
-int32_t CryptoNative_EvpPKeyCtxConfigureForRsaVerify(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest)
+int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                   void* extraHandle,
+                                   RsaPaddingMode padding,
+                                   const EVP_MD* digest,
+                                   const uint8_t* hash,
+                                   int32_t hashLen,
+                                   const uint8_t* signature,
+                                   int32_t signatureLen)
 {
-    if (EVP_PKEY_verify_init(ctx) <= 0)
+    assert(pkey != NULL);
+    assert(signature != NULL);
+    assert(padding >= RsaPaddingPkcs1 && padding <= RsaPaddingOaepOrPss);
+    assert(digest != NULL || padding == RsaPaddingPkcs1);
+
+    ERR_clear_error();
+
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+
+    int ret = -1;
+
+    if (ctx == NULL || EVP_PKEY_verify_init(ctx) <= 0)
     {
-        return 0;
+        goto done;
     }
 
-    if (!EvpPKeyCtxConfigureForRsaSignVerify(ctx, padding, digest))
+    if (!ConfigureSignature(ctx, padding, digest))
     {
-        return 0;
+        goto done;
     }
 
-    return 1;
+    // EVP_PKEY_verify is not consistent on whether a missized hash is an error or just a mismatch.
+    // Normalize to mismatch.
+    if (hashLen != EVP_MD_get_size(digest))
+    {
+        ret = 0;
+        goto done;
+    }
+
+    ret = EVP_PKEY_verify(ctx, signature, Int32ToSizeT(signatureLen), hash, Int32ToSizeT(hashLen));
+
+done:
+    if (ctx != NULL)
+    {
+        EVP_PKEY_CTX_free(ctx);
+    }
+
+    return ret;
 }

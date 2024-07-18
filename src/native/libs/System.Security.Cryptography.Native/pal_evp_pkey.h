@@ -121,37 +121,4 @@ PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, c
 It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
 which handles extraHandle.
 */
-PALEXPORT EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
-
-
-/*
-Configures the EVP_PKEY_CTX for use in an ECDSA sign operation.
-Returns 1 on success, 0 on failure.
-*/
-PALEXPORT int32_t CryptoNative_EvpPKeyCtxConfigureForECDSASign(EVP_PKEY_CTX* ctx);
-
-/*
-Configures the EVP_PKEY_CTX for use in an ECDSA verify operation.
-Returns 1 on success, 0 on failure.
-*/
-PALEXPORT int32_t CryptoNative_EvpPKeyCtxConfigureForECDSAVerify(EVP_PKEY_CTX* ctx);
-
-/*
-Signs hash using EVP_PKEY_CTX.
-Returns 1 on success, 0 on failure.
-*/
-PALEXPORT int32_t CryptoNative_EvpPKeyCtxSignHash(EVP_PKEY_CTX* ctx,
-                                 const uint8_t* hash,
-                                 int32_t hashLen,
-                                 uint8_t* destination,
-                                 int32_t* destinationLen);
-
-/*
-Verifies hash using EVP_PKEY_CTX.
-Returns 1 on success, 0 on failure.
-*/
-PALEXPORT int32_t CryptoNative_EvpPKeyCtxVerifyHash(EVP_PKEY_CTX* ctx,
-                                 const uint8_t* hash,
-                                 int32_t hashLen,
-                                 uint8_t* signature,
-                                 int32_t signatureLen);
+EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);

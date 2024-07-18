@@ -18,6 +18,7 @@
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_dsa.h"
 #include "pal_evp_pkey_ecdh.h"
+#include "pal_evp_pkey_ecdsa.h"
 #include "pal_evp_pkey_eckey.h"
 #include "pal_evp_pkey_rsa.h"
 #include "pal_hmac.h"
@@ -69,6 +70,8 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_DsaSizeSignature)
     DllImportEntry(CryptoNative_DsaUpRef)
     DllImportEntry(CryptoNative_DsaVerify)
+    DllImportEntry(CryptoNative_EcDsaSignHash)
+    DllImportEntry(CryptoNative_EcDsaVerifyHash)
     DllImportEntry(CryptoNative_EcKeyCreateByExplicitParameters)
     DllImportEntry(CryptoNative_EcKeyCreateByKeyParameters)
     DllImportEntry(CryptoNative_EcKeyCreateByOid)
@@ -159,13 +162,6 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_EvpMdSize)
     DllImportEntry(CryptoNative_EvpPkeyCreate)
     DllImportEntry(CryptoNative_EvpPKeyCreateRsa)
-    DllImportEntry(CryptoNative_EvpPKeyCtxCreate)
-    DllImportEntry(CryptoNative_EvpPKeyCtxCreateFromPKey)
-    DllImportEntry(CryptoNative_EvpPKeyCtxConfigureForECDSASign)
-    DllImportEntry(CryptoNative_EvpPKeyCtxConfigureForECDSAVerify)
-    DllImportEntry(CryptoNative_EvpPKeyCtxSignHash)
-    DllImportEntry(CryptoNative_EvpPKeyCtxVerifyHash)
-    DllImportEntry(CryptoNative_EvpPKeyCtxDestroy)
     DllImportEntry(CryptoNative_EvpPKeyDeriveSecretAgreement)
     DllImportEntry(CryptoNative_EvpPkeyDestroy)
     DllImportEntry(CryptoNative_EvpPkeyGetDsa)
@@ -257,8 +253,8 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_RsaDecrypt)
     DllImportEntry(CryptoNative_RsaEncrypt)
     DllImportEntry(CryptoNative_RsaGenerateKey)
-    DllImportEntry(CryptoNative_EvpPKeyCtxConfigureForRsaSign)
-    DllImportEntry(CryptoNative_EvpPKeyCtxConfigureForRsaVerify)
+    DllImportEntry(CryptoNative_RsaSignHash)
+    DllImportEntry(CryptoNative_RsaVerifyHash)
     DllImportEntry(CryptoNative_UpRefEvpPkey)
     DllImportEntry(CryptoNative_EvpPKeyType)
     DllImportEntry(CryptoNative_X509BuildOcspRequest)

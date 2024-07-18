@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
         public ECDsaOpenSsl(ECCurve curve)
         {
             ThrowIfNotSupported();
-            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(curve, out int keySize));
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(curve, out int keySize));
             ForceSetKeySize(keySize);
         }
 
@@ -84,34 +84,14 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(hash);
             ThrowIfDisposed();
 
-            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
-            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
-            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
-            {
-                Interop.Crypto.EvpPKeyCtxConfigureForECDSASign(ctx);
+            SafeEvpPKeyHandle key = GetKey();
 
-                if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientDerSignatureSize))
-                {
-                    throw new CryptographicException();
-                }
+            Span<byte> derSignature = stackalloc byte[SignatureStackBufSize];
+            int written = Interop.Crypto.EcDsaSignHash(key, hash, derSignature);
+            derSignature = derSignature.Slice(0, written);
 
-                Span<byte> derSignature = sufficientDerSignatureSize <= SignatureStackBufSize ? stackalloc byte[sufficientDerSignatureSize] : new byte[sufficientDerSignatureSize];
-                if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, derSignature, out int bytesWritten))
-                {
-                    throw new CryptographicException();
-                }
-
-                if (bytesWritten > derSignature.Length)
-                {
-                    Debug.Fail("TrySignHashCore wrote more bytes than it claimed it would write");
-                    throw new CryptographicException();
-                }
-
-                derSignature = derSignature.Slice(0, bytesWritten);
-
-                byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize);
-                return converted;
-            }
+            byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize);
+            return converted;
         }
 
         public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
@@ -133,83 +113,38 @@ namespace System.Security.Cryptography
 
             if (signatureFormat == DSASignatureFormat.IeeeP1363FixedFieldConcatenation)
             {
-                int encodedSize = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
+                int encodedSize = GetMaxSignatureSize(DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
 
+                // IeeeP1363FixedFieldConcatenation has a constant signature size therefore we can shortcut here
                 if (destination.Length < encodedSize)
                 {
                     bytesWritten = 0;
                     return false;
                 }
 
-                // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
-                using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
-                using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
-                {
-                    Interop.Crypto.EvpPKeyCtxConfigureForECDSASign(ctx);
+                SafeEvpPKeyHandle key = GetKey();
 
-                    if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientSignatureSizeInBytes))
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
+                Span<byte> derSignature = stackalloc byte[SignatureStackBufSize];
+                int written = Interop.Crypto.EcDsaSignHash(key, hash, derSignature);
+                derSignature = derSignature.Slice(0, written);
 
-                    Span<byte> derSignatureDestination = sufficientSignatureSizeInBytes <= SignatureStackBufSize ? stackalloc byte[sufficientSignatureSizeInBytes] : new byte[sufficientSignatureSizeInBytes];
-                    if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, derSignatureDestination, out int derSignatureBytesWritten))
-                    {
-                        // this is unrelated to sufficient size reason
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    derSignatureDestination = derSignatureDestination.Slice(0, derSignatureBytesWritten);
-                    bytesWritten = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignatureDestination, KeySize, destination);
-                    Debug.Assert(bytesWritten == encodedSize);
-                }
+                bytesWritten = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(derSignature, KeySize, destination);
+                Debug.Assert(bytesWritten == encodedSize);
 
                 return true;
             }
             else if (signatureFormat == DSASignatureFormat.Rfc3279DerSequence)
             {
-                // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
-                using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
-                using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
-                {
-                    Interop.Crypto.EvpPKeyCtxConfigureForECDSASign(ctx);
+                SafeEvpPKeyHandle key = GetKey();
 
-                    // We could theoretically pass this through but we need to distinguish between "not enough space" and "failed"
-                    // We could check for presence of private key but that won't work when it's an external key.
-                    if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientSignatureSizeInBytes))
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
+                // We need to distinguish between the case where the destination buffer is too small and the case where something else went wrong
+                // Since Rfc3279DerSequence signature size is not constant (DER is not constant size) we will use temporary buffer with max size.
+                // If that succeeds we can copy to destination buffer if it's large enough.
+                Span<byte> tmpDerSignature = stackalloc byte[SignatureStackBufSize];
+                bytesWritten = Interop.Crypto.EcDsaSignHash(key, hash, tmpDerSignature);
+                tmpDerSignature = tmpDerSignature.Slice(0, bytesWritten);
 
-                    if (destination.Length >= sufficientSignatureSizeInBytes)
-                    {
-                        // The only reason this could fail won't be related to buffer size
-                        if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, destination, out bytesWritten))
-                        {
-                            throw Interop.Crypto.CreateOpenSslCryptographicException();
-                        }
-
-                        return true;
-                    }
-
-                    // Since sufficientSignatureSizeInBytes can be more than what's actually needed
-                    // we need temporary buffer of sufficient size and see if operation can succeed with that
-                    Span<byte> derSignatureDestination = sufficientSignatureSizeInBytes <= SignatureStackBufSize ? stackalloc byte[sufficientSignatureSizeInBytes] : new byte[sufficientSignatureSizeInBytes];
-                    if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, derSignatureDestination, out int bytesWrittenToTemporaryBuffer))
-                    {
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    if (bytesWrittenToTemporaryBuffer > destination.Length)
-                    {
-                        bytesWritten = 0;
-                        return false;
-                    }
-
-                    derSignatureDestination.Slice(0, bytesWrittenToTemporaryBuffer).CopyTo(destination);
-                    bytesWritten = bytesWrittenToTemporaryBuffer;
-                    return true;
-                }
+                return Helpers.TryCopyToDestination(tmpDerSignature, destination, out bytesWritten);
             }
             else
             {
@@ -271,13 +206,12 @@ namespace System.Security.Cryptography
                     signatureFormat.ToString());
             }
 
-            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
-            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
-            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
-            {
-                Interop.Crypto.EvpPKeyCtxConfigureForECDSAVerify(ctx);
-                return Interop.Crypto.EvpPKeyCtxVerifyHash(ctx, hash, toVerify);
-            }
+            SafeEvpPKeyHandle key = GetKey();
+
+            return Interop.Crypto.EcDsaVerifyHash(
+                key,
+                hash,
+                toVerify);
         }
 
         protected override void Dispose(bool disposing)
@@ -317,7 +251,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(curve, out int keySize));
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(curve, out int keySize));
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
@@ -329,16 +263,30 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(parameters, out int keySize));
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(parameters, out int keySize));
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
             ForceSetKeySize(keySize);
         }
 
+        private SafeEvpPKeyHandle GetKey()
+        {
+            ThrowIfDisposed();
+
+            SafeEvpPKeyHandle key = _key.Value;
+
+            if (key == null || key.IsInvalid)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+
+            return key;
+        }
+
         private SafeEvpPKeyHandle GenerateKeyFromSize()
         {
-            return SafeEvpPKeyHandle.GenerateECKey(KeySize);
+            return ECOpenSsl.GenerateECKey(KeySize);
         }
 
         public override ECParameters ExportExplicitParameters(bool includePrivateParameters)

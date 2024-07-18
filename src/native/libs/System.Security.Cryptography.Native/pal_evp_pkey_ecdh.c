@@ -3,21 +3,18 @@
 
 #include "pal_evp_pkey_ecdh.h"
 #include "pal_evp_pkey.h"
+#include "pal_utilities.h"
+#include <assert.h>
 
-EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, void* extraHandle, EVP_PKEY* peerkey, uint32_t* secretLength)
+static EVP_PKEY_CTX* EvpPKeyCtxCreate(EVP_PKEY* pkey, void* extraHandle, EVP_PKEY* peerkey)
 {
-    if (secretLength != NULL)
-        *secretLength = 0;
-
-    ERR_clear_error();
-
-    if (pkey == NULL || peerkey == NULL || secretLength == NULL)
+    if (pkey == NULL || peerkey == NULL)
     {
         return NULL;
     }
 
     /* Create the context for the shared secret derivation */
-    EVP_PKEY_CTX* ctx = CryptoNative_EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreateFromPKey(pkey, extraHandle);
 
     if (ctx == NULL)
     {
@@ -26,43 +23,42 @@ EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreate(EVP_PKEY* pkey, void* extraHandle, E
 
     size_t tmpLength = 0;
 
-    /* Initialize, provide the peer public key, and determine the buffer size */
-    if (1 != EVP_PKEY_derive_init(ctx) || 1 != EVP_PKEY_derive_set_peer(ctx, peerkey) ||
-        1 != EVP_PKEY_derive(ctx, NULL, &tmpLength))
+    /* Initialize, provide the peer public key */
+    if (1 != EVP_PKEY_derive_init(ctx) || 1 != EVP_PKEY_derive_set_peer(ctx, peerkey))
     {
         EVP_PKEY_CTX_free(ctx);
         return NULL;
     }
 
-    *secretLength = (uint32_t)tmpLength;
     return ctx;
 }
 
-int32_t CryptoNative_EvpPKeyDeriveSecretAgreement(uint8_t* secret, uint32_t secretLength, EVP_PKEY_CTX* ctx)
+int32_t CryptoNative_EvpPKeyDeriveSecretAgreement(EVP_PKEY* pkey, void* extraHandle, EVP_PKEY* peerKey, uint8_t* secret, uint32_t secretLength)
 {
-    size_t tmpSize = (size_t)secretLength;
-    int ret = 0;
+    if (pkey == NULL || peerKey == NULL || secretLength == 0 || secret == NULL)
+    {
+        return 0;
+    }
 
     ERR_clear_error();
 
-    if (secret != NULL && ctx != NULL)
-    {
-        ret = EVP_PKEY_derive(ctx, secret, &tmpSize);
+    size_t tmpSize = (size_t)secretLength;
+    EVP_PKEY_CTX* ctx = EvpPKeyCtxCreate(pkey, extraHandle, peerKey);
 
-        if (ret == 1 && tmpSize != (size_t)secretLength)
-        {
-            OPENSSL_cleanse(secret, secretLength);
-            ret = 0;
-        }
+    if (ctx == NULL)
+    {
+        return 0;
     }
 
-    return ret;
-}
+    int ret = EVP_PKEY_derive(ctx, secret, &tmpSize);
 
-void CryptoNative_EvpPKeyCtxDestroy(EVP_PKEY_CTX* ctx)
-{
-    if (ctx != NULL)
+    EVP_PKEY_CTX_free(ctx);
+
+    if (ret != 1)
     {
-        EVP_PKEY_CTX_free(ctx);
+        return 0;
     }
+
+    assert(tmpSize > 0 && tmpSize <= secretLength);
+    return SizeTToInt32(tmpSize);
 }

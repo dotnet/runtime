@@ -54,13 +54,31 @@ PALEXPORT int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
                                           int32_t destinationLen);
 
 /*
-Configures the EVP_PKEY_CTX for use in an RSA sign operation.
-Returns 1 on success, 0 on failure.
+Complete the RSA signature generation for the specified hash using the provided RSA key
+(wrapped in an EVP_PKEY) and padding/digest options.
+
+Returns the number of bytes written to destination, -1 on error.
 */
-PALEXPORT int32_t CryptoNative_EvpPKeyCtxConfigureForRsaSign(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest);
+PALEXPORT int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                           void* extraHandle,
+                                           RsaPaddingMode padding,
+                                           const EVP_MD* digest,
+                                           const uint8_t* hash,
+                                           int32_t hashLen,
+                                           uint8_t* destination,
+                                           int32_t destinationLen);
 
 /*
-Configures the EVP_PKEY_CTX for use in an RSA verify operation.
-Returns 1 on success, 0 on failure.
+Verify an RSA signature for the specified hash using the provided RSA key (wrapped in an EVP_PKEY)
+and padding/digest options.
+
+Returns 1 on a verified signature, 0 on a mismatched signature, -1 on error.
 */
-PALEXPORT int32_t CryptoNative_EvpPKeyCtxConfigureForRsaVerify(EVP_PKEY_CTX* ctx, RsaPaddingMode padding, const EVP_MD* digest);
+PALEXPORT int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                             void* extraHandle,
+                                             RsaPaddingMode padding,
+                                             const EVP_MD* digest,
+                                             const uint8_t* hash,
+                                             int32_t hashLen,
+                                             const uint8_t* signature,
+                                             int32_t signatureLen);

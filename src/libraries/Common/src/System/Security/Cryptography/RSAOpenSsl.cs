@@ -231,9 +231,9 @@ namespace System.Security.Cryptography
         public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
             ArgumentNullException.ThrowIfNull(padding);
-
             ValidatePadding(padding);
-            SafeEvpPKeyHandle? key = GetKey();
+
+            SafeEvpPKeyHandle key = GetKey();
 
             return TryEncrypt(key, data, destination, padding, out bytesWritten);
         }
@@ -722,7 +722,7 @@ namespace System.Security.Cryptography
 
         private SafeEvpPKeyHandle GenerateKey()
         {
-            return SafeEvpPKeyHandle.GenerateRSAKey(KeySize);
+            return Interop.Crypto.RsaGenerateKey(KeySize);
         }
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
@@ -732,40 +732,19 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(padding);
             ThrowIfDisposed();
 
-            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
-            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
-            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
+            SafeEvpPKeyHandle key = GetKey();
+            int bytesRequired = key.GetKeySizeBytes();
+            byte[] signature = new byte[bytesRequired];
+
+            int written = Interop.Crypto.RsaSignHash(key, padding.Mode, hashAlgorithm, hash, signature);
+
+            if (written != signature.Length)
             {
-                Interop.Crypto.CryptoNative_ConfigureForRsaSign(ctx, padding.Mode, hashAlgorithm);
-
-                if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientDerSignatureSize))
-                {
-                    throw new CryptographicException();
-                }
-
-                byte[] signature = new byte[sufficientDerSignatureSize];
-                if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, signature, out int bytesWritten))
-                {
-                    throw new CryptographicException();
-                }
-
-                if (bytesWritten > signature.Length)
-                {
-                    Debug.Fail("TrySignHashCore wrote more bytes than it claimed it would write");
-                    throw new CryptographicException();
-                }
-
-                if (bytesWritten == signature.Length)
-                {
-                    return signature;
-                }
-                else
-                {
-                    byte[] ret = new byte[bytesWritten];
-                    new ReadOnlySpan<byte>(signature).Slice(0, bytesWritten).CopyTo(ret);
-                    return ret;
-                }
+                Debug.Fail($"RsaSignHash behaved unexpectedly: {nameof(written)}=={written}, {nameof(signature.Length)}=={signature.Length}");
+                throw new CryptographicException();
             }
+
+            return signature;
         }
 
         public override bool TrySignHash(
@@ -777,70 +756,20 @@ namespace System.Security.Cryptography
         {
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(padding);
-
-            return TrySignHashCore(
-                hash,
-                destination,
-                hashAlgorithm,
-                padding,
-                out bytesWritten);
-        }
-
-        private bool TrySignHashCore(
-            ReadOnlySpan<byte> hash,
-            Span<byte> destination,
-            HashAlgorithmName hashAlgorithm,
-            RSASignaturePadding padding,
-            out int bytesWritten)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-            Debug.Assert(padding != null);
-            ValidatePadding(padding);
             ThrowIfDisposed();
 
-            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
-            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
-            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
+            SafeEvpPKeyHandle key = GetKey();
+            int bytesRequired = key.GetKeySizeBytes();
+
+            if (destination.Length < bytesRequired)
             {
-                Interop.Crypto.CryptoNative_ConfigureForRsaSign(ctx, padding.Mode, hashAlgorithm);
-
-                // We could theoretically pass this through but we need to distinguish between "not enough space" and "failed"
-                // We could check for presence of private key but that won't work when it's an external key.
-                if (!Interop.Crypto.TryEvpPKeyCtxSignatureSize(ctx, hash, out int sufficientSignatureSizeInBytes))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                if (destination.Length >= sufficientSignatureSizeInBytes)
-                {
-                    if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, destination, out bytesWritten))
-                    {
-                        // The only reason this could fail won't be related to buffer size so we throw rather returning false
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-
-                    return true;
-                }
-
-                // Since sufficientSignatureSizeInBytes can be more than what's actually needed
-                // we use temporary buffer of sufficient size and see if operation can succeed with that
-                byte[] signatureDestination = new byte[sufficientSignatureSizeInBytes];
-                if (!Interop.Crypto.TryEvpPKeyCtxSignHash(ctx, hash, signatureDestination, out int bytesWrittenToTemporaryBuffer))
-                {
-                    // There is really no reason for this to fail since we already allocated enough
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                if (bytesWrittenToTemporaryBuffer > destination.Length)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                signatureDestination.CopyTo(destination);
-                bytesWritten = bytesWrittenToTemporaryBuffer;
-                return true;
+                bytesWritten = 0;
+                return false;
             }
+
+            bytesWritten = Interop.Crypto.RsaSignHash(key, padding.Mode, hashAlgorithm, hash, destination);
+            Debug.Assert(bytesWritten == bytesRequired);
+            return true;
         }
 
         public override bool VerifyHash(
@@ -861,13 +790,14 @@ namespace System.Security.Cryptography
             ValidatePadding(padding);
             ThrowIfDisposed();
 
-            // We need to duplicate key handle in case it's being used by multiple threads and one of them disposes it
-            using (SafeEvpPKeyHandle key = _key.Value.DuplicateHandle())
-            using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(key))
-            {
-                Interop.Crypto.CryptoNative_ConfigureForRsaVerify(ctx, padding.Mode, hashAlgorithm);
-                return Interop.Crypto.EvpPKeyCtxVerifyHash(ctx, hash, signature);
-            }
+            SafeEvpPKeyHandle key = GetKey();
+
+            return Interop.Crypto.RsaVerifyHash(
+                key,
+                padding.Mode,
+                hashAlgorithm,
+                hash,
+                signature);
         }
 
         private static ReadOnlyMemory<byte> VerifyPkcs8(ReadOnlyMemory<byte> pkcs8)

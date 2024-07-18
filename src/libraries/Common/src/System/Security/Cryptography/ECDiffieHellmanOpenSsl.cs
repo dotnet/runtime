@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
         public ECDiffieHellmanOpenSsl(ECCurve curve)
         {
             ThrowIfNotSupported();
-            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(curve, out int keySize));
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(curve, out int keySize));
             KeySizeValue = keySize;
         }
 
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfNotSupported();
             base.KeySize = keySize;
-            _key = new Lazy<SafeEvpPKeyHandle>(() => SafeEvpPKeyHandle.GenerateECKey(keySize));
+            _key = new Lazy<SafeEvpPKeyHandle>(() => ECOpenSsl.GenerateECKey(keySize));
         }
 
         public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
                 FreeKey();
-                _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(value));
+                _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(value));
             }
         }
 
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(curve, out int keySizeValue));
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(curve, out int keySizeValue));
             KeySizeValue = keySizeValue;
         }
 
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(SafeEvpPKeyHandle.GenerateECKey(parameters, out int keySize));
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(parameters, out int keySize));
             KeySizeValue = keySize;
         }
 

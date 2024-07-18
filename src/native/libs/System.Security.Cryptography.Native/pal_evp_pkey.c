@@ -736,7 +736,7 @@ end:
 #endif
 }
 
-EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
+EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
 {
     assert(pkey != NULL);
 
@@ -755,68 +755,4 @@ EVP_PKEY_CTX* CryptoNative_EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraH
 #endif
         return EVP_PKEY_CTX_new(pkey, NULL);
     }
-}
-
-int32_t CryptoNative_EvpPKeyCtxConfigureForECDSASign(EVP_PKEY_CTX* ctx)
-{
-    if (ctx == NULL)
-    {
-        return 0;
-    }
-
-    if (EVP_PKEY_sign_init(ctx) <= 0)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
-int32_t CryptoNative_EvpPKeyCtxConfigureForECDSAVerify(EVP_PKEY_CTX* ctx)
-{
-    if (ctx == NULL)
-    {
-        return 0;
-    }
-
-    if (EVP_PKEY_verify_init(ctx) <= 0)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
-int32_t CryptoNative_EvpPKeyCtxSignHash(EVP_PKEY_CTX* ctx,
-                                 const uint8_t* hash,
-                                 int32_t hashLen,
-                                 uint8_t* destination,
-                                 int32_t* destinationLen)
-{
-    assert(ctx != NULL);
-    assert(hash != NULL);
-    assert(hashLen > 0);
-    assert(destinationLen != NULL);
-    assert(destination != NULL || *destinationLen == 0);
-
-    ERR_clear_error();
-    size_t written = Int32ToSizeT(*destinationLen);
-
-    if (EVP_PKEY_sign(ctx, destination, &written, hash, Int32ToSizeT(hashLen)) > 0)
-    {
-        *destinationLen = SizeTToInt32(written);
-        return 1;
-    }
-
-    return 0;
-}
-
-int32_t CryptoNative_EvpPKeyCtxVerifyHash(EVP_PKEY_CTX* ctx,
-                                 const uint8_t* hash,
-                                 int32_t hashLen,
-                                 uint8_t* signature,
-                                 int32_t signatureLen)
-{
-    ERR_clear_error();
-    return EVP_PKEY_verify(ctx, signature, Int32ToSizeT(signatureLen), hash, Int32ToSizeT(hashLen)) > 0;
 }
