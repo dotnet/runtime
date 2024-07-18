@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -687,6 +688,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
+            using TestEventListener listener = new TestEventListener(_output, TestEventListener.NetworkingEvents);
             TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource clientDisposedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
