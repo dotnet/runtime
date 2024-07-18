@@ -55,6 +55,7 @@ protected:
 private:
     bool         CanAllocateLclVarOnStack(unsigned int         lclNum,
                                           CORINFO_CLASS_HANDLE clsHnd,
+                                          ObjectAllocationType allocType,
                                           unsigned int         length,
                                           unsigned int*        blockSize,
                                           const char**         reason);
@@ -126,15 +127,22 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 //                           allocated on the stack.
 //
 // Arguments:
-//    lclNum   - Local variable number
-//    clsHnd   - Class/struct handle of the variable class
-//    reason  - [out, required] if result is false, reason why
+//    lclNum    - Local variable number
+//    clsHnd    - Class/struct handle of the variable class
+//    allocType - Type of allocation (newobj or newarr)
+//    length    - Length of the array (for newarr)
+//    blockSize - [out, optional] exact size of the object
+//    reason    - [out, required] if result is false, reason why
 //
 // Return Value:
 //    Returns true iff local variable can be allocated on the stack.
 //
-inline bool ObjectAllocator::CanAllocateLclVarOnStack(
-    unsigned int lclNum, CORINFO_CLASS_HANDLE clsHnd, unsigned int length, unsigned int* blockSize, const char** reason)
+inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
+                                                      CORINFO_CLASS_HANDLE clsHnd,
+                                                      ObjectAllocationType allocType,
+                                                      unsigned int         length,
+                                                      unsigned int*        blockSize,
+                                                      const char**         reason)
 {
     assert(m_AnalysisDone);
 
@@ -151,23 +159,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(
 
     unsigned int classSize = 0;
 
-    if (comp->info.compCompHnd->isValueClass(clsHnd))
-    {
-        if (!enableBoxedValueClasses)
-        {
-            *reason = "[disabled by config]";
-            return false;
-        }
-
-        if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
-        {
-            *reason = "[no boxed type available]";
-            return false;
-        }
-
-        classSize = comp->info.compCompHnd->getClassSize(clsHnd);
-    }
-    else if (comp->info.compCompHnd->isSDArray(clsHnd))
+    if (allocType == OAT_NEWARR)
     {
         if (!enableArrays)
         {
@@ -188,21 +180,45 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(
         unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
         classSize         = (unsigned int)OFFSETOF__CORINFO_Array__data + elemSize * length;
     }
+    else if (allocType == OAT_NEWOBJ)
+    {
+        if (comp->info.compCompHnd->isValueClass(clsHnd))
+        {
+            if (!enableBoxedValueClasses)
+            {
+                *reason = "[disabled by config]";
+                return false;
+            }
+
+            if (comp->info.compCompHnd->getTypeForBoxOnStack(clsHnd) == NO_CLASS_HANDLE)
+            {
+                *reason = "[no boxed type available]";
+                return false;
+            }
+
+            classSize = comp->info.compCompHnd->getClassSize(clsHnd);
+        }
+        else
+        {
+            if (!enableRefClasses)
+            {
+                *reason = "[disabled by config]";
+                return false;
+            }
+
+            if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
+            {
+                *reason = "[runtime disallows]";
+                return false;
+            }
+
+            classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
+        }
+    }
     else
     {
-        if (!enableRefClasses)
-        {
-            *reason = "[disabled by config]";
-            return false;
-        }
-
-        if (!comp->info.compCompHnd->canAllocateOnStack(clsHnd))
-        {
-            *reason = "[runtime disallows]";
-            return false;
-        }
-
-        classSize = comp->info.compCompHnd->getHeapClassSize(clsHnd);
+        assert(!"Unexpected allocation type");
+        return false;
     }
 
     if (classSize > s_StackAllocMaxSize)
