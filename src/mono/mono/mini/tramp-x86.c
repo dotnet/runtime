@@ -569,7 +569,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 }
 
 guint8*
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	if (code [-5] == 0xe8) {
 		gint32 disp = *(gint32*)(code - 4);

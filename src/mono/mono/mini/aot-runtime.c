@@ -1748,10 +1748,10 @@ get_call_table_entry (void *table, int index, int entry_size)
 		return (char*)ins_addr + (offset * 4) + 8;
 	}
 #elif defined(TARGET_ARM64)
-	return mono_arch_get_call_target ((guint8*)table + (index * 4) + 4);
+	return mono_arch_get_call_target ((guint8*)table + (index * 4) + 4, FALSE);
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
 	/* The callee expects an ip which points after the call */
-	return mono_arch_get_call_target ((guint8*)table + (index * 5) + 5);
+	return mono_arch_get_call_target ((guint8*)table + (index * 5) + 5, FALSE);
 #else
 	g_assert_not_reached ();
 	return NULL;
@@ -1879,7 +1879,7 @@ method_address_resolve (guint8 *code_addr)
 	for (;;) {
 		// `mono_arch_get_call_target` takes the IP after the branch
 		// instruction, not before. Add 4 bytes to compensate.
-		guint8 *next = mono_arch_get_call_target (code_addr + 4);
+		guint8 *next = mono_arch_get_call_target (code_addr + 4, FALSE);
 		if (next == NULL) return code_addr;
 		code_addr = next;
 	}
@@ -5326,7 +5326,7 @@ mono_aot_plt_resolve (gpointer aot_module, host_mgreg_t *regs, guint8 *code, Mon
 
 	error_init (error);
 
-	plt_entry = mono_aot_get_plt_entry (regs, code);
+	plt_entry = mono_aot_get_plt_entry (regs, code, TRUE);
 	g_assert (plt_entry);
 
 	plt_info_offset = mono_aot_get_plt_info_offset (aot_module, plt_entry, regs, code);
@@ -5462,13 +5462,15 @@ init_plt (MonoAotModule *amodule)
  *   Return the address of the PLT entry called by the code at CODE if exists.
  */
 guint8*
-mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
+mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code, gboolean nofail)
 {
 	MonoAotModule *amodule = find_aot_module (code);
 	guint8 *target = NULL;
 
-	if (!amodule)
+	if (!amodule) {
+		g_assert (!nofail);
 		return NULL;
+	}
 
 #ifdef TARGET_ARM
 	if (is_thumb_code (amodule, code - 4))
@@ -5479,7 +5481,7 @@ mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
 #ifdef MONO_ARCH_CODE_EXEC_ONLY
 	target = mono_aot_arch_get_plt_entry_exec_only (&amodule->info, regs, code, amodule->plt);
 #else
-	target = mono_arch_get_call_target (code);
+	target = mono_arch_get_call_target (code, nofail);
 #endif
 #else
 	g_assert_not_reached ();
@@ -5492,15 +5494,17 @@ mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
 
 		// Add 4 since mono_arch_get_call_target assumes we're passing
 		// the instruction after the actual branch instruction.
-		target = mono_arch_get_call_target (target + 4);
+		target = mono_arch_get_call_target (target + 4, FALSE);
 	}
 
 	return NULL;
 #else
 	if ((target >= (guint8*)(amodule->plt)) && (target < (guint8*)(amodule->plt_end)))
 		return target;
-	else
+	else {
+		g_assertf (!nofail, "Target %p not in bounds [%p - %p] for aot module %s", target, (guint8*)(amodule->plt), (guint8*)(amodule->plt_end), amodule->aot_name);
 		return NULL;
+	}
 #endif
 }
 
@@ -5513,7 +5517,7 @@ guint32
 mono_aot_get_plt_info_offset (gpointer aot_module, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code)
 {
 	if (!plt_entry) {
-		plt_entry = mono_aot_get_plt_entry (regs, code);
+		plt_entry = mono_aot_get_plt_entry (regs, code, TRUE);
 		g_assert (plt_entry);
 	}
 
@@ -6605,7 +6609,7 @@ mono_aot_get_method_from_token (MonoImage *image, guint32 token, MonoError *erro
 }
 
 guint8*
-mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code)
+mono_aot_get_plt_entry (host_mgreg_t *regs, guint8 *code, gboolean no_fail)
 {
 	return NULL;
 }

@@ -659,7 +659,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 }
 
 guint8*
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	/* Should be a bl */
 	guint32 ins = ((guint32*)code) [-1];

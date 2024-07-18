@@ -7367,7 +7367,7 @@ update_thunk (MonoCompile *cfg, guint8 *code, gpointer target)
 	 * but mono_arch_get_call_target expects we're pointing
 	 * after the branch so we adjust
 	 */
-	orig_target = mono_arch_get_call_target (code + 6);
+	orig_target = mono_arch_get_call_target (code + 6, FALSE);
 
 	target_thunk = NULL;
 	if (orig_target >= thunks && orig_target < thunks + thunks_size) {

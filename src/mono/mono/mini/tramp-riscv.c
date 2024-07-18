@@ -31,7 +31,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
  *   Return the address called by the code before CODE if exists.
  */
 guint8 *
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	gint32 disp;
 	code -= 4;
