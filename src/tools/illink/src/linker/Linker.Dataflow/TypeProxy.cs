@@ -9,9 +9,9 @@ namespace ILLink.Shared.TypeSystemProxy
 {
 	internal readonly partial struct TypeProxy
 	{
-		public TypeProxy (TypeDefinition type) => Type = type;
+		public TypeProxy (TypeReference type) => Type = type;
 
-		public static implicit operator TypeProxy (TypeDefinition type) => new (type);
+		public static implicit operator TypeProxy (TypeReference type) => new (type);
 
 		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ()
 		{
@@ -26,7 +26,7 @@ namespace ILLink.Shared.TypeSystemProxy
 			return builder.ToImmutableArray ();
 		}
 
-		public TypeDefinition Type { get; }
+		public TypeReference Type { get; }
 
 		public string Name { get => Type.Name; }
 

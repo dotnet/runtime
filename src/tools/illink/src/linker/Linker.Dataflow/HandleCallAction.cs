@@ -120,11 +120,11 @@ namespace ILLink.Shared.TrimAnalysis
 						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
 						// currently it won't do.
 
-						TypeDefinition? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
-						if (staticType is null) {
+						TypeReference? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
+						if (staticType is null || staticType is not TypeDefinition staticTypeDef) {
 							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
 							AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj));
-						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
+						} else if (staticTypeDef.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
 							// We can treat this one the same as if it was a typeof() expression
 
 							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
@@ -147,7 +147,7 @@ namespace ILLink.Shared.TrimAnalysis
 							_reflectionMarker.MarkType (_diagnosticContext.Origin, staticType);
 
 							var annotation = _markStep.DynamicallyAccessedMembersTypeHierarchy
-								.ApplyDynamicallyAccessedMembersToTypeHierarchy (staticType);
+								.ApplyDynamicallyAccessedMembersToTypeHierarchy (staticTypeDef);
 
 							// Return a value which is "unknown type" with annotation. For now we'll use the return value node
 							// for the method, which means we're loosing the information about which staticType this
@@ -200,13 +200,13 @@ namespace ILLink.Shared.TrimAnalysis
 
 		private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType (TypeProxy type, string name, BindingFlags? bindingFlags)
 		{
-			foreach (var nestedType in type.Type.GetNestedTypesOnType (t => t.Name == name, bindingFlags))
+			foreach (var nestedType in type.Type.GetNestedTypesOnType (_context, t => t.Name == name, bindingFlags))
 				yield return new SystemTypeValue (new TypeProxy (nestedType));
 		}
 
 		private partial bool TryGetBaseType (TypeProxy type, out TypeProxy? baseType)
 		{
-			if (type.Type.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition) {
+			if (type.Type.ResolveToTypeDefinition (_context)?.BaseType is TypeReference baseTypeRef && _context.TryResolve (baseTypeRef) is TypeDefinition baseTypeDefinition) {
 				baseType = new TypeProxy (baseTypeDefinition);
 				return true;
 			}
