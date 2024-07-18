@@ -49,9 +49,9 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Throws<InvalidOperationException>(() => services.GetRequiredKeyedService<HttpClient>(KeyedDefaults));
             Assert.Throws<InvalidOperationException>(() => services.GetRequiredKeyedService<HttpClient>(Absent)); // no such name
 
- //!           //Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithDisabledClient>);
-            //Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithKeyedDefaultsClient>);
-            //Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithAbsentClient>);
+            Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithDisabledClient>);
+            Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithKeyedDefaultsClient>);
+            Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithAbsentClient>);
 
             var factory = services.GetRequiredService<IHttpClientFactory>();
 
@@ -100,9 +100,9 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Throws<InvalidOperationException>(() => services.GetRequiredKeyedService<HttpMessageHandler>(KeyedDefaults));
             Assert.Throws<InvalidOperationException>(() => services.GetRequiredKeyedService<HttpMessageHandler>(Absent)); // no such name
 
- //!           //Assert.Throws<InvalidOperationException>(services.GetRequiredService<KeyedClientDisabledService>);
-            //Assert.Throws<InvalidOperationException>(services.GetRequiredService<KeyedClientKeyedDefaultsService>);
-            //Assert.Throws<InvalidOperationException>(services.GetRequiredService<KeyedClientAbsentService>);
+            Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithDisabledHandler>);
+            Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithKeyedDefaultsHandler>);
+            Assert.Throws<InvalidOperationException>(services.GetRequiredService<ServiceWithAbsentHandler>);
 
             var factory = services.GetRequiredService<IHttpMessageHandlerFactory>();
 
