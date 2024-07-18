@@ -673,13 +673,6 @@
             <Issue>https://github.com/dotnet/runtime/issues/85663</Issue>
         </ExcludeList>
     </ItemGroup>
-    
-    <!-- Crossgen2 win-arm64 specific excludes -->
-    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TestBuildMode)' == 'crossgen2' or '$(TestBuildMode)' == 'crossgen') and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'windows'">
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Devirtualization/Comparer_get_Default/*">
-            <Issue>https://github.com/dotnet/runtime/issues/104927</Issue>
-        </ExcludeList>
-    </ItemGroup>
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
