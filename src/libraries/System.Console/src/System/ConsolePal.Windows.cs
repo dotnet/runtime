@@ -202,27 +202,65 @@ namespace System
         // only KeyUp until the key is released.
         private static bool IsReadKeyEvent(ref Interop.INPUT_RECORD ir)
         {
-            if (ir.EventType != Interop.KEY_EVENT) return false;
+            if (ir.EventType != Interop.KEY_EVENT)
+            {
+                // Skip non key events.
+                return false;
+            }
+
             if (ir.keyEvent.bKeyDown == Interop.BOOL.FALSE)
             {
+                // The only keyup event we don't skip is Alt keyup with a synthesized unicode char,
+                // which is either the result of an Alt+Numpad key sequence, an IME-generated char,
+                // or a pasted char without a matching key.
                 return ir.keyEvent.wVirtualKeyCode == AltVKCode && ir.keyEvent.uChar != 0;
             }
             else
             {
+                // Keydown event. Some of these we need to skip as well.
                 ushort keyCode = ir.keyEvent.wVirtualKeyCode;
-                if (keyCode is >= 0x10 and <= 0x12) return false; // Shift, Control, Alt
-                if (keyCode is 0x14 or 0x90 or 0x91) return false; // CapsLock, NumLock, ScrollLock
+                if (keyCode is >= 0x10 and <= 0x12)
+                {
+                    // Skip modifier keys Shift, Control, Alt.
+                    return false;
+                }
+
+                if (keyCode is 0x14 or 0x90 or 0x91)
+                {
+                     // Skip CapsLock, NumLock, and ScrollLock keys,
+                    return false;
+                }
+
                 ControlKeyState keyState = (ControlKeyState)ir.keyEvent.dwControlKeyState;
                 if ((keyState & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0)
                 {
                         // Possible Alt+NumPad unicode key sequence which surfaces by a subsequent
                         // Alt keyup event with uChar (see above).
                         ConsoleKey key = (ConsoleKey)keyCode;
-                        if (key is >= ConsoleKey.NumPad0 and <= ConsoleKey.NumPad9) return false;
+                        if (key is >= ConsoleKey.NumPad0 and <= ConsoleKey.NumPad9)
+                        {
+                            // Alt+Numpad keys (as received if NumLock is on).
+                            return false;
+                        }
+
+                        // If Numlock is off, the physical Numpad keys are received as navigation or
+                        // function keys. The EnhancedKey flag tells us whether these virtual keys
+                        // really originate from the numpad, or from the arrow pad / control pad.
                         if ((keyState & ControlKeyState.EnhancedKey) == 0)
                         {
-                            if (key is ConsoleKey.Clear or ConsoleKey.Insert) return false;
-                            if (key is >= ConsoleKey.PageUp and <= ConsoleKey.DownArrow) return false;
+                            // If the EnhancedKey flag is not set, the following virtual keys originate
+                            // from the numpad.
+                            if (key is ConsoleKey.Clear or ConsoleKey.Insert)
+                            {
+                                // Skip Clear and Insert (usually mapped to Numpad 5 and 0).
+                                return false;
+                            }
+
+                            if (key is >= ConsoleKey.PageUp and <= ConsoleKey.DownArrow)
+                            {
+                                // Skip PageUp/Down, End/Home, and arrow keys.
+                                return false;
+                            }
                         }
                 }
                 return true;
