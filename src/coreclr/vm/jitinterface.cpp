@@ -1277,69 +1277,6 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
     return helper;
 }
 
-static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS_FLAGS flags)
-{
-    STANDARD_VM_CONTRACT;
-
-    int helper;
-
-    CorElementType type = pField->GetFieldType();
-
-    if (CorTypeInfo::IsObjRef(type))
-        helper = CORINFO_HELP_GETFIELDOBJ;
-    else
-    switch (type)
-    {
-    case ELEMENT_TYPE_VALUETYPE:
-        helper = CORINFO_HELP_GETFIELDSTRUCT;
-        break;
-    case ELEMENT_TYPE_I1:
-    case ELEMENT_TYPE_BOOLEAN:
-    case ELEMENT_TYPE_U1:
-        helper = CORINFO_HELP_GETFIELD8;
-        break;
-    case ELEMENT_TYPE_I2:
-    case ELEMENT_TYPE_CHAR:
-    case ELEMENT_TYPE_U2:
-        helper = CORINFO_HELP_GETFIELD16;
-        break;
-    case ELEMENT_TYPE_I4:
-    case ELEMENT_TYPE_U4:
-    IN_TARGET_32BIT(default:)
-        helper = CORINFO_HELP_GETFIELD32;
-        break;
-    case ELEMENT_TYPE_I8:
-    case ELEMENT_TYPE_U8:
-    IN_TARGET_64BIT(default:)
-        helper = CORINFO_HELP_GETFIELD64;
-        break;
-    case ELEMENT_TYPE_R4:
-        helper = CORINFO_HELP_GETFIELDFLOAT;
-        break;
-    case ELEMENT_TYPE_R8:
-        helper = CORINFO_HELP_GETFIELDDOUBLE;
-        break;
-    }
-
-    if (flags & CORINFO_ACCESS_SET)
-    {
-        const int delta = CORINFO_HELP_SETFIELDOBJ - CORINFO_HELP_GETFIELDOBJ;
-
-        static_assert_no_msg(CORINFO_HELP_SETFIELD8 == CORINFO_HELP_GETFIELD8 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELD16 == CORINFO_HELP_GETFIELD16 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELD32 == CORINFO_HELP_GETFIELD32 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELD64 == CORINFO_HELP_GETFIELD64 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELDSTRUCT == CORINFO_HELP_GETFIELDSTRUCT + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELDFLOAT == CORINFO_HELP_GETFIELDFLOAT + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELDDOUBLE == CORINFO_HELP_GETFIELDDOUBLE + delta);
-
-        helper += delta;
-    }
-
-    return (CorInfoHelpFunc)helper;
-}
-
-
 
 /*********************************************************************/
 
@@ -4037,28 +3974,6 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
     _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
-}
-
-/*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc *pMD = GetMethod(methHnd);
-    pMD = MethodTable::MapMethodDeclToMethodImpl(pMD);
-    result = (CORINFO_METHOD_HANDLE) pMD;
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 /*********************************************************************/

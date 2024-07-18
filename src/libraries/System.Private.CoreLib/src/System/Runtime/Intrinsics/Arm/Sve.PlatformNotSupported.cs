@@ -2288,6 +2288,55 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> CreateBreakBeforePropagateMask(Vector<ulong> mask, Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
 
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<sbyte> CreateBreakPropagateMask(Vector<sbyte> totalMask, Vector<sbyte> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<short> CreateBreakPropagateMask(Vector<short> totalMask, Vector<short> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<int> CreateBreakPropagateMask(Vector<int> totalMask, Vector<int> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<long> CreateBreakPropagateMask(Vector<long> totalMask, Vector<long> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<byte> CreateBreakPropagateMask(Vector<byte> totalMask, Vector<byte> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<ushort> CreateBreakPropagateMask(Vector<ushort> totalMask, Vector<ushort> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<uint> CreateBreakPropagateMask(Vector<uint> totalMask, Vector<uint> fromMask) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svbool_t svbrkn[_b]_z(svbool_t pg, svbool_t op1, svbool_t op2)
+        ///   BRKN Ptied2.B, Pg/Z, Pop1.B, Ptied2.B
+        /// </summary>
+        public static unsafe Vector<ulong> CreateBreakPropagateMask(Vector<ulong> totalMask, Vector<ulong> fromMask) { throw new PlatformNotSupportedException(); }
+
+
         /// Set all predicate elements to false
 
         /// <summary>
@@ -5853,6 +5902,14 @@ namespace System.Runtime.Intrinsics.Arm
         /// svfloat32_t svcmla[_f32]_z(svbool_t pg, svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_rotation)
         /// </summary>
         public static unsafe Vector<float> MultiplyAddRotateComplex(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
+
+        ///  Complex multiply-add with rotate
+
+        /// <summary>
+        /// svfloat32_t svcmla_lane[_f32](svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.S, Zop2.S, Zop3.S[imm_index], #imm_rotation
+        /// </summary>
+        public static unsafe Vector<float> MultiplyAddRotateComplexBySelectedScalar(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) { throw new PlatformNotSupportedException(); }
 
         ///  MultiplyBySelectedScalar : Multiply
 

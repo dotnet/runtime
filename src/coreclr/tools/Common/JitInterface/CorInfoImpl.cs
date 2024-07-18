@@ -350,11 +350,9 @@ namespace Internal.JitInterface
             IntPtr exception;
             IntPtr nativeEntry;
             uint codeSize;
-#pragma warning disable CS8500 // takes address of managed type
             var result = JitCompileMethod(out exception,
                     _jit, (IntPtr)(&_this), _unmanagedCallbacks,
                     ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
-#pragma warning restore CS8500
             if (exception != IntPtr.Zero)
             {
                 if (_lastException != null)
@@ -1625,9 +1623,6 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
         }
-
-        private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
         private static object ResolveTokenWithSubstitution(MethodILScope methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {

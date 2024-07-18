@@ -290,7 +290,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debugger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerBrowsableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerDisableUserUnhandledExceptionsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerDisplayAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerHiddenAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerNonUserCodeAttribute.cs" />
