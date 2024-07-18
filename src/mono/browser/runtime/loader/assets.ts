@@ -318,7 +318,7 @@ export function prepareAssets () {
         }
 
         const addAsset = (asset: AssetEntryInternal, isCore: boolean) => {
-            if (resources.fingerprinting && asset.behavior == "assembly") {
+            if (resources.fingerprinting && (asset.behavior == "assembly" || asset.behavior == "pdb" || asset.behavior == "resource")) {
                 asset.virtualPath = getNonFingerprintedAssetName(asset.name);
             }
             if (isCore) {
