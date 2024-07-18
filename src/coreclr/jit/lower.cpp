@@ -5551,10 +5551,16 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
 
-    // Keep delegate alive
-    GenTree* baseClone     = comp->gtCloneExpr(base);
-    GenTree* keepBaseAlive = comp->gtNewKeepAliveNode(baseClone);
-    BlockRange().InsertAfter(call, baseClone, keepBaseAlive);
+#if defined(TARGET_XARCH)
+    // Keep delegate alive if the target can't do an indirect call with an immediate operand
+    // and only in fully interruptible code.
+    if (comp->GetInterruptible())
+    {
+        GenTree* baseClone     = comp->gtCloneExpr(base);
+        GenTree* keepBaseAlive = comp->gtNewKeepAliveNode(baseClone);
+        BlockRange().InsertBefore(call, baseClone, keepBaseAlive);
+    }
+#endif
 
     ContainCheckIndir(newThis->AsIndir());
 
