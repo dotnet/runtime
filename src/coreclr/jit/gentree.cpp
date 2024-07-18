@@ -14385,10 +14385,15 @@ DONE_FOLD:
 
     if (fgGlobalMorph)
     {
+#ifdef DEBUG
         // We can sometimes produce a comma over the constant if the original op
         // had a side effect, so just ensure we set the flag (which will be already
         // set for the operands otherwise).
-        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        if (op->OperIs(GT_COMMA) && (op->AsOp()->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0)
+        {
+            op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+        }
+#endif
     }
     return op;
 }
@@ -14612,10 +14617,15 @@ DONE_FOLD:
 
     if (fgGlobalMorph)
     {
+#ifdef DEBUG
         // We can sometimes produce a comma over the constant if the original op
         // had a side effect, so just ensure we set the flag (which will be already
         // set for the operands otherwise).
-        INDEBUG(op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        if (op->OperIs(GT_COMMA) && (op->AsOp()->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0)
+        {
+            op->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+        }
+#endif
     }
     return op;
 }
@@ -17051,19 +17061,7 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
         // It should be possible to be smarter here and allow such cases by extracting the side effects
         // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
-#ifdef DEBUG
-        // The side effects may be range check fail created by local morph,
-        // just remove the morphed flag to avoid unnecessary assertions.
-        if (sideEffects->IsHelperCall(this, CORINFO_HELP_RNGCHKFAIL) &&
-            sideEffects->AsCall()->gtArgs.CountUserArgs() == 1 &&
-            sideEffects->AsCall()->gtArgs.GetUserArgByIndex(0)->GetLateNode()->IsCnsIntOrI())
-        {
-            sideEffects->AsCall()->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-            sideEffects->AsCall()->gtArgs.GetUserArgByIndex(0)->GetLateNode()->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-        }
-#endif
-
-        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), gtCloneExpr(sideEffects), tree);
     }
     return tree;
 }
