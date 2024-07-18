@@ -22,12 +22,13 @@ public class MemoryTests : AppTestBase
     [Fact]
     public async Task AllocateLargeHeapThenRepeatedlyInterop()
     {
+        string config = "Release";
         CopyTestAsset("WasmBasicTestApp", "MemoryTests", "App");
         string extraArgs = $"-p:EmccMaximumHeapSize=4294901760";
         BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
 
         int expectedCode = BuildTestBase.IsUsingWorkloads ? 0 : 1;
-        var result = await RunSdkStyleAppForBuild(new (Configuration: "Release", TestScenario: "AllocateLargeHeapThenInterop", ExpectedExitCode: expectedCode));
+        var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop", ExpectedExitCode: expectedCode));
         if(!BuildTestBase.IsUsingWorkloads)
         {
             Assert.Contains(result.TestOutput, item => item.Contains("To build this project, the following workloads must be installed: wasm-tools"));
