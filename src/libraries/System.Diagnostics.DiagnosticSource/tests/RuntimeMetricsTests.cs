@@ -45,7 +45,7 @@ namespace System.Diagnostics.Metrics.Tests
 
         private readonly ITestOutputHelper _output = output;
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void GcCollectionsCount()
         {
             using InstrumentRecorder<long> instrumentRecorder = new("dotnet.gc.collections");
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Metrics.Tests
         //    }
         //}
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void ExceptionsCount()
         {
             // We inject an exception into the MeterListener callback here, so we can test that we don't recursively record exceptions.
@@ -239,7 +239,7 @@ namespace System.Diagnostics.Metrics.Tests
             new object[] { "dotnet.timer.count", s_longGreaterThanOrEqualToZero, null },
         };
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [MemberData(nameof(LongMeasurements))]
         public void ValidateMeasurements<T>(string metricName, Func<T, (bool, string?)>? valueAssertion, Func<bool>? beforeRecord)
             where T : struct
@@ -268,7 +268,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [InlineData("dotnet.gc.last_collection.heap.size")]
         [InlineData("dotnet.gc.last_collection.heap.fragmentation.size")]
         public void HeapTags(string metricName) => EnsureAllHeapTags(metricName);
