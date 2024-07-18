@@ -14,6 +14,9 @@ public class BasicObjectTests : Common.BasicObjectTests<FormattedObjectSerialize
     [MemberData(nameof(SerializableObjects))]
     public void BasicObjectsRoundTripAndMatch(object value, TypeSerializableValue[] _)
     {
+        // Keep the target of WeakReference alive, otherwise the produced output may be different.
+        object keepAlive = value is WeakReference weakReference ? weakReference.Target : null;
+
         // We need to round trip through the BinaryFormatter as a few objects in tests remove
         // serialized data on deserialization.
         BinaryFormatter formatter = new();
@@ -38,5 +41,7 @@ public class BasicObjectTests : Common.BasicObjectTests<FormattedObjectSerialize
 
         // Now compare the two streams to ensure they are identical
         Assert.Equal(serialized.Length, deserializedSerialized.Length);
+
+        GC.KeepAlive(keepAlive);
     }
 }
