@@ -3,8 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using ILLink.Shared.TypeSystemProxy;
-using Mono.Linker.Dataflow;
-using TypeDefinition = Mono.Cecil.TypeDefinition;
+using TypeReference = Mono.Cecil.TypeReference;
 
 
 namespace ILLink.Shared.TrimAnalysis
@@ -15,7 +14,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal partial record MethodParameterValue
 	{
-		public MethodParameterValue (TypeDefinition? staticType, ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
+		public MethodParameterValue (TypeReference? staticType, ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
 		{
 			StaticType = staticType == null ? null : new (staticType);
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;

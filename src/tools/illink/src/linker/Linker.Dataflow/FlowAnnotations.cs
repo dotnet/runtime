@@ -687,8 +687,10 @@ namespace ILLink.Shared.TrimAnalysis
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
 			=> RequiresDataFlowAnalysis (method.Method);
 
+#pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> MethodReturnValue.Create (method.Method, isNewObj, dynamicallyAccessedMemberTypes, _context);
+			=> MethodReturnValue.Create (method.Method, isNewObj, dynamicallyAccessedMemberTypes);
+#pragma warning restore CA1822 // Mark members as static
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)
 			=> GetMethodReturnValue (method, isNewObj, GetReturnParameterAnnotation (method.Method));
@@ -696,8 +698,10 @@ namespace ILLink.Shared.TrimAnalysis
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
 			=> new GenericParameterValue (genericParameter.GenericParameter, GetGenericParameterAnnotation (genericParameter.GenericParameter));
 
+#pragma warning disable CA1822 // Mark members as static - Should be an instance method for consistency
 		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
-			=> new (param.ParameterType.ResolveToTypeDefinition (_context), param, dynamicallyAccessedMemberTypes);
+			=> new (param.ParameterType, param, dynamicallyAccessedMemberTypes);
+#pragma warning restore CA1822 // Mark members as static
 
 		internal partial MethodParameterValue GetMethodParameterValue (ParameterProxy param)
 			=> GetMethodParameterValue (param, GetParameterAnnotation (param));
@@ -729,7 +733,7 @@ namespace ILLink.Shared.TrimAnalysis
 			=> field.Name switch {
 				"EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type) => ArrayValue.Create (0, field.DeclaringType),
 				"Empty" when field.DeclaringType.IsTypeOf (WellKnownType.System_String) => new KnownStringValue (string.Empty),
-				_ => new FieldValue (field.FieldType.ResolveToTypeDefinition (_context), field, GetFieldAnnotation (field))
+				_ => new FieldValue (field.FieldType, field, GetFieldAnnotation (field))
 			};
 
 		internal SingleValue GetTypeValueFromGenericArgument (TypeReference genericArgument)
