@@ -415,7 +415,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack array, QCall::ObjectHandleOnStack retMethodInfo)
+extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack stacktrace, QCall::ObjectHandleOnStack retMethodInfo)
 {
     QCALL_CONTRACT;
 
@@ -424,15 +424,29 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
     GCX_COOP();
 
     MethodDesc* pMD = NULL;
+    // See ExceptionObject::GetStackTrace() and ExceptionObject::SetStackTrace()
+    // for details on the stacktrace array.
     {
-        I1ARRAYREF arrayRef = (I1ARRAYREF)array.Get();
-        _ASSERTE(arrayRef != NULL);
+        ARRAYBASEREF arrayBaseRef = (ARRAYBASEREF)stacktrace.Get();
+        _ASSERTE(arrayBaseRef != NULL);
+
+        // The stacktrace can be either sbyte[] or Object[]. In the latter case,
+        // the first entry is the actual stack trace sbyte[], the rest are pointers
+        // to the method info objects. We only care about the first entry here.
+        if (arrayBaseRef->GetArrayElementType() != ELEMENT_TYPE_I1)
+        {
+            _ASSERTE(arrayBaseRef->GetArrayElementType() == ELEMENT_TYPE_OBJECT);
+            PTRARRAYREF ptrArrayRef = (PTRARRAYREF)arrayBaseRef;
+            arrayBaseRef = (ARRAYBASEREF)OBJECTREFToObject(ptrArrayRef->GetAt(0));
+        }
+
+        I1ARRAYREF arrayRef = (I1ARRAYREF)arrayBaseRef;
         StackTraceArray stackArray(arrayRef);
         _ASSERTE(stackArray.Size() > 0);
         pMD = stackArray[0].pFunc;
     }
 
-    // The managed stack trace classes always returns typical method definition,
+    // The managed stack trace classes always return typical method definition,
     // so we don't need to bother providing exact instantiation.
     MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
     retMethodInfo.Set(pMDTypical->GetStubMethodInfo());

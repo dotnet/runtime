@@ -60,33 +60,26 @@ namespace System
 
         private MethodBase? GetExceptionMethodFromStackTrace()
         {
-            Debug.Assert(_stackTrace != null, "_stackTrace shouldn't be null when this method is called");
-
-            // The _stackTrace can be either sbyte[] or Object[]. In the latter case,
-            // the first entry is the actual stack trace sbyte[], the rest are pointers
-            // to the method info objects. We only care about the first entry here.
-            sbyte[] stacktrace;
-            if (_stackTrace is object[] objArray)
+            if (_stackTrace == null)
             {
-                stacktrace = (sbyte[])objArray[0];
-            }
-            else
-            {
-                Debug.Assert(_stackTrace is sbyte[], "_stackTrace should be sbyte[]");
-                stacktrace = (sbyte[])_stackTrace!;
-            }
-
-            if (stacktrace.Length == 0)
                 return null;
+            }
 
-            IRuntimeMethodInfo? method = null;
-            GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stacktrace), ObjectHandleOnStack.Create(ref method));
+            object stackTraceLocal = _stackTrace;
+            IRuntimeMethodInfo? methodInfo = null;
+            GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stackTraceLocal), ObjectHandleOnStack.Create(ref methodInfo));
+
+            // Ensure the stack trace lives beyond the current above call.
+            // See implementation for details on stacktrace data.
+            GC.KeepAlive(stackTraceLocal);
 
             // Under certain race conditions when exceptions are re-used, this can be null
-            if (method == null)
+            if (methodInfo == null)
+            {
                 return null;
+            }
 
-            return RuntimeType.GetMethodBase(method);
+            return RuntimeType.GetMethodBase(methodInfo);
         }
 
         public MethodBase? TargetSite
@@ -94,16 +87,7 @@ namespace System
             [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
             get
             {
-                if (_exceptionMethod != null)
-                {
-                    return _exceptionMethod;
-                }
-                if (_stackTrace == null)
-                {
-                    return null;
-                }
-
-                _exceptionMethod = GetExceptionMethodFromStackTrace();
+                _exceptionMethod ??= GetExceptionMethodFromStackTrace();
                 return _exceptionMethod;
             }
         }
