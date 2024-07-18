@@ -706,7 +706,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			*vtable_slot_to_patch = mono_get_addr_from_ftnptr (addr);
 		}
 	} else {
-		guint8 *plt_entry = mono_aot_get_plt_entry (regs, code);
+		guint8 *plt_entry = mono_aot_get_plt_entry (regs, code, FALSE);
 		gboolean no_patch = FALSE;
 		MonoJitInfo *target_ji;
 
@@ -911,7 +911,7 @@ mono_aot_trampoline (host_mgreg_t *regs, guint8 *code, guint8 *token_info,
 	addr = mono_create_ftnptr (addr);
 
 	/* This is a normal call through a PLT entry */
-	plt_entry = mono_aot_get_plt_entry (regs, code);
+	plt_entry = mono_aot_get_plt_entry (regs, code, TRUE);
 	g_assert (plt_entry);
 
 	mono_aot_patch_plt_entry (NULL, code, plt_entry, NULL, regs, (guint8 *)addr);

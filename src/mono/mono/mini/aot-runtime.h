@@ -252,7 +252,7 @@ void      mono_aot_init                     (void);
 gpointer  mono_aot_get_method               (MonoMethod *method, MonoError *error);
 gpointer  mono_aot_get_method_from_token    (MonoImage *image, guint32 token, MonoError *error);
 gboolean  mono_aot_is_got_entry             (guint8 *code, guint8 *addr);
-guint8*   mono_aot_get_plt_entry            (host_mgreg_t *regs, guint8 *code);
+guint8*   mono_aot_get_plt_entry            (host_mgreg_t *regs, guint8 *code, gboolean no_fail);
 guint32   mono_aot_get_plt_info_offset      (gpointer aot_module, guint8 *plt_entry, host_mgreg_t *regs, guint8 *code);
 gboolean  mono_aot_get_cached_class_info    (MonoClass *klass, MonoCachedClassInfo *res);
 gboolean  mono_aot_get_class_from_name      (MonoImage *image, const char *name_space, const char *name, MonoClass **klass);

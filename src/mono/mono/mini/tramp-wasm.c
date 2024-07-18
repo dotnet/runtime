@@ -89,7 +89,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 }
 
 guint8*
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	g_error ("mono_arch_get_call_target");
 }

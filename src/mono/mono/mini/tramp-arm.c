@@ -1083,7 +1083,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 #endif /* DISABLE_JIT */
 
 guint8*
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	guint32 ins = ((guint32*)code) [-1];
 

@@ -83,13 +83,17 @@ mono_arch_patch_jump_trampoline (guint8 *jump_tramp, guint8 *addr)
 }
 
 guint8*
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	code -= 4;
 	guint32 ins = *(guint32 *)code;
 	/* Should be a b/bl */
-	if (((ins >> 26) & 0x1f) != 0x5)
+	if (((ins >> 26) & 0x1f) != 0x5) {
+		if (nofail) {
+			g_warning ("expected arm64 b/bl instruction, got 0x%08x", ins);
+		}
 		return NULL;
+	}
 	gint32 disp = ((gint32)((ins & 0x3ffffff) << 6)) >> 6;
 	return code + (disp * 4);
 }

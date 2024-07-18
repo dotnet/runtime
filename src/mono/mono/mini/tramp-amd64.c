@@ -843,7 +843,7 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
  *   Return the address called by the code before CODE if exists.
  */
 guint8*
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	if (code [-5] == 0xe8) {
 		gint32 disp = *(gint32*)(code - 4);
@@ -851,6 +851,9 @@ mono_arch_get_call_target (guint8 *code)
 
 		return target;
 	} else {
+		if (nofail) {
+			g_warning ("expected amd64 CALL instruction, got 0x%02x", (unsigned int)code[-5]);
+		}
 		return NULL;
 	}
 }

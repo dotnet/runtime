@@ -262,7 +262,7 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
  */
 
 guint8 *
-mono_arch_get_call_target (guint8 *code)
+mono_arch_get_call_target (guint8 *code, gboolean nofail)
 {
 	guint8 *thunk;
 	guint32 rel;
@@ -296,7 +296,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 {
 	guint64 *thunk;
 
-	thunk = (guint64 *) mono_arch_get_call_target(orig_code - 2);
+	thunk = (guint64 *) mono_arch_get_call_target(orig_code - 2, FALSE);
 	*thunk = (guint64) addr;
 }
 

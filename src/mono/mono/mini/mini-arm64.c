@@ -1326,7 +1326,7 @@ create_thunk (MonoCompile *cfg, guchar *code, const guchar *target, int relocati
 		thunks = (guint8*)ji->code_start + info->thunks_offset;
 		thunks_size = info->thunks_size;
 
-		orig_target = mono_arch_get_call_target (code + 4);
+		orig_target = mono_arch_get_call_target (code + 4, FALSE);
 
 		/* Arbitrary lock */
 		jit_mm = get_default_jit_mm ();
