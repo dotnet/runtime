@@ -136,7 +136,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     unsigned tmpNum = BAD_VAR_NUM;
 
-    if (call->TreatAsShouldHaveRetBufArg())
+    if (call->ShouldHaveRetBufArg())
     {
         assert(call->ShouldHaveRetBufArg());
 
