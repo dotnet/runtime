@@ -52,7 +52,9 @@ namespace System.Collections
         public static void ThrowIfNegative(int value, [CallerArgumentExpression(nameof(value))] string? paramName = null)
         {
             if (value < 0)
+            {
                 ThrowNegative(value, paramName);
+            }
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is greater than <paramref name="other"/>.</summary>
@@ -63,7 +65,9 @@ namespace System.Collections
             where T : IComparable<T>
         {
             if (value.CompareTo(other) > 0)
+            {
                 ThrowGreater(value, other, paramName);
+            }
         }
 
         /// <summary>Throws an <see cref="ArgumentOutOfRangeException"/> if <paramref name="value"/> is less than <paramref name="other"/>.</summary>
@@ -74,7 +78,9 @@ namespace System.Collections
             where T : IComparable<T>
         {
             if (value.CompareTo(other) < 0)
+            {
                 ThrowLess(value, other, paramName);
+            }
         }
 
         [DoesNotReturn]
