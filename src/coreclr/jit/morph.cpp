@@ -8272,6 +8272,7 @@ DONE_MORPHING_CHILDREN:
         if (fgIsCommaThrow(tree))
         {
             tree->AsOp()->gtOp1 = fgMorphTree(tree->AsOp()->gtOp1);
+            INDEBUG(tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
             fgMorphTreeDone(tree);
             return tree;
         }

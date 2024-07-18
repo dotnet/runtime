@@ -17139,15 +17139,17 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
         // It should be possible to be smarter here and allow such cases by extracting the side effects
         // properly for this particular case. For now, caller is responsible for avoiding such cases.
 
-        if (sideEffectsSource->OperIs(GT_COMMA) && sideEffectsSource->AsOp()->gtOp1 == sideEffects)
+#ifdef DEBUG
+        // The side effects may be a throw created by local morph,
+        // just remove the morphed flag to avoid unnecessary assertions.
+        if (fgIsThrow(sideEffects) && sideEffects->AsCall()->gtArgs.GetUserArgByIndex(0)->GetLateNode()->IsCnsIntOrI())
         {
-            sideEffectsSource->AsOp()->gtOp2 = tree;
-            return sideEffectsSource;
+            sideEffects->AsCall()->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+            sideEffects->AsCall()->gtArgs.GetUserArgByIndex(0)->GetLateNode()->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
         }
-        else
-        {
-            tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
-        }
+#endif
+
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), sideEffects, tree);
     }
     return tree;
 }
