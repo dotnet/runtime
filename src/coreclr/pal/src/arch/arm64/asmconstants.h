@@ -21,10 +21,8 @@
 #define CONTEXT_XSTATE_BIT (6)
 #define CONTEXT_XSTATE (1 << CONTEXT_XSTATE_BIT)
 
-#define XSTATE_SVE_BIT (0)
-
-#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
-
+#define XSTATE_ARM64_SVE_BIT (2)
+#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE_BIT))
 
 #define CONTEXT_ContextFlags 0
 #define CONTEXT_Cpsr         CONTEXT_ContextFlags+4
