@@ -11,12 +11,16 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public class GenericCompositionNode : ObjectNode, ISymbolDefinitionNode
     {
-        private Instantiation _details;
+        private readonly Instantiation _details;
+        private readonly bool _constructed;
 
-        internal GenericCompositionNode(Instantiation details)
+        internal GenericCompositionNode(Instantiation details, bool constructed)
         {
             _details = details;
+            _constructed = constructed;
         }
+
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => !_constructed && factory.ConstructedGenericComposition(_details).Marked;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -62,10 +66,12 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var typeArg in _details)
             {
+                IEETypeNode node = _constructed ? factory.MaximallyConstructableType(typeArg) : factory.NecessaryTypeSymbol(typeArg);
+
                 if (useRelativePointers)
-                    builder.EmitReloc(factory.NecessaryTypeSymbol(typeArg), RelocType.IMAGE_REL_BASED_RELPTR32);
+                    builder.EmitReloc(node, RelocType.IMAGE_REL_BASED_RELPTR32);
                 else
-                    builder.EmitPointerReloc(factory.NecessaryTypeSymbol(typeArg));
+                    builder.EmitPointerReloc(node);
             }
 
             return builder.ToObjectData();
@@ -78,6 +84,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             var otherComposition = (GenericCompositionNode)other;
             var compare = _details.Length.CompareTo(otherComposition._details.Length);
+            if (compare != 0)
+                return compare;
+
+            compare = _constructed.CompareTo(otherComposition._constructed);
             if (compare != 0)
                 return compare;
 
