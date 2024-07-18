@@ -1,4 +1,4 @@
-# Contract DacStreams
+# Contract Object
 
 This contract is for getting information about well-known managed objects
 
