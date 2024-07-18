@@ -400,6 +400,9 @@ PINITIALIZECONTEXT2 g_pfnInitializeContext2 = NULL;
 typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
 PGETENABLEDXSTATEFEATURES g_pfnGetEnabledXStateFeatures = NULL;
 
+typedef BOOL(WINAPI* PGETXSTATEFEATURESMASK)(PCONTEXT Context, PDWORD64 FeatureMask);
+PGETXSTATEFEATURESMASK g_pfnGetXStateFeaturesMask = NULL;
+
 typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMask);
 PSETXSTATEFEATURESMASK g_pfnSetXStateFeaturesMask = NULL;
 #endif // TARGET_ARM64
@@ -422,6 +425,7 @@ void InitializeOptionalWindowsAPIPointers()
 
 #ifdef TARGET_ARM64
     g_pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hm, "GetEnabledXStateFeatures");
+    g_pfnGetXStateFeaturesMask = (PGETXSTATEFEATURESMASK)GetProcAddress(hm, "GetXStateFeaturesMask");
     g_pfnSetXStateFeaturesMask = (PSETXSTATEFEATURESMASK)GetProcAddress(hm, "SetXStateFeaturesMask");
 #endif // TARGET_ARM64
 

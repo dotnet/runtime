@@ -28,6 +28,7 @@ ThreadSuspend::SUSPEND_REASON ThreadSuspend::m_suspendReason;
 void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
 #endif // TARGET_WINDOWS
 
+#if defined(TARGET_ARM64)
 // Mirror the XSTATE_ARM64_SVE flags from winnt.h
 
 #ifndef XSTATE_ARM64_SVE
@@ -37,6 +38,15 @@ void* ThreadSuspend::g_returnAddressHijackTarget = NULL;
 #ifndef XSTATE_MASK_ARM64_SVE
 #define XSTATE_MASK_ARM64_SVE (1ui64 << (XSTATE_ARM64_SVE))
 #endif // XSTATE_MASK_ARM64_SVE
+
+#ifndef CONTEXT_ARM64_XSTATE
+#define CONTEXT_ARM64_XSTATE (CONTEXT_ARM64 | 0x20L)
+#endif // CONTEXT_ARM64_XSTATE
+
+#ifndef CONTEXT_XSTATE
+#define CONTEXT_XSTATE CONTEXT_ARM64_XSTATE
+#endif // CONTEXT_XSTATE
+#endif // TARGET_ARM64
 
 // If you add any thread redirection function, make sure the debugger can 1) recognize the redirection
 // function, and 2) retrieve the original CONTEXT.  See code:Debugger.InitializeHijackFunctionAddress and
@@ -2930,7 +2940,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512);
 #elif defined(TARGET_ARM64)
-    if (pfnSetXStateFeaturesMask != NULL)
+    if (g_pfnSetXStateFeaturesMask != NULL)
     {
         g_pfnSetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE);
     }
@@ -3061,7 +3071,15 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     // Besides pCtx may not have space to store other features.
     // So we will mask out everything but those we are known to use.
     DWORD64 srcFeatures = 0;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     success = GetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
+#elif defined(TARGET_ARM64)
+    if (g_pfnGetXStateFeaturesMask != NULL)
+    {
+        success = g_pfnGetXStateFeaturesMask(pCurrentThreadCtx, &srcFeatures);
+    }
+#endif
 
     _ASSERTE(success);
     if (!success)
