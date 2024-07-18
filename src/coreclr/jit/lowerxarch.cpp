@@ -1487,55 +1487,24 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         BlockRange().Remove(node);
                         op3 = userIntrin->Op(2);
 
-                        // Tracks which two operands get used first
-                        TernaryLogicUseFlags firstOpUseFlags = TernaryLogicUseFlags::AB;
-
                         if (op3 == node)
                         {
-                            if (userOper == GT_AND_NOT)
-                            {
-                                op3 = op2;
-                                op2 = op1;
-                                op1 = userIntrin->Op(1);
-
-                                // AND_NOT isn't commutative so we need to shift parameters down
-                                firstOpUseFlags = TernaryLogicUseFlags::BC;
-                            }
-                            else
-                            {
-                                op3 = userIntrin->Op(1);
-                            }
+                            op3 = userIntrin->Op(1);
                         }
 
                         uint8_t controlByte = 0x00;
 
                         if ((userOper == GT_XOR) && op3->IsVectorAllBitsSet())
                         {
-                            // We have XOR(OP(A, B), AllBitsSet)
-                            //   A: op1
-                            //   B: op2
-                            //   C: op3 (AllBitsSet)
-                            //
-                            // We want A to be the unused parameter so swap it around
-                            //   A: op3 (AllBitsSet)
-                            //   B: op1
-                            //   C: op2
-                            //
-                            // This gives us NOT(OP(B, C))
-
-                            assert(firstOpUseFlags == TernaryLogicUseFlags::AB);
+                            // We're being used by what is actually GT_NOT, so we
+                            // need to shift parameters down so that A is unused
 
                             std::swap(op2, op3);
                             std::swap(op1, op2);
 
                             if (isOperNot)
                             {
-                                // We have NOT(XOR(B, AllBitsSet))
-                                //   A: op3 (AllBitsSet)
-                                //   B: op1
-                                //   C: op2 (AllBitsSet)
-                                //
-                                // This represents a double not, so so just return op2
+                                // We have what is actually a double not, so just return op2
                                 // which is the only actual value now that the parameters
                                 // were shifted around
 
@@ -1569,63 +1538,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                         else if (isOperNot)
                         {
-                            if (firstOpUseFlags == TernaryLogicUseFlags::AB)
-                            {
-                                // We have OP(XOR(A, AllBitsSet), C)
-                                //   A: op1
-                                //   B: op2 (AllBitsSet)
-                                //   C: op3
-                                //
-                                // We want A to be the unused parameter so swap it around
-                                //   A: op2 (AllBitsSet)
-                                //   B: op1
-                                //   C: op3
-                                //
-                                // This gives us OP(NOT(B), C)
+                            // A is unused, so we just want OP(NOT(B), C)
 
-                                assert(op2->IsVectorAllBitsSet());
-                                std::swap(op1, op2);
+                            assert(op2->IsVectorAllBitsSet());
+                            std::swap(op1, op2);
 
-                                controlByte = static_cast<uint8_t>(~B);
-                                controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
-                            }
-                            else
-                            {
-                                // We have OP(A, XOR(B, AllBitsSet))
-                                //   A: op1
-                                //   B: op2
-                                //   C: op3 (AllBitsSet)
-                                //
-                                // We want A to be the unused parameter so swap it around
-                                //   A: op3 (AllBitsSet)
-                                //   B: op1
-                                //   C: op2
-                                //
-                                // This gives us OP(B, NOT(C))
-
-                                assert(firstOpUseFlags == TernaryLogicUseFlags::BC);
-
-                                assert(op3->IsVectorAllBitsSet());
-                                std::swap(op2, op3);
-                                std::swap(op1, op2);
-
-                                controlByte = static_cast<uint8_t>(~C);
-                                controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, B, controlByte);
-                            }
-                        }
-                        else if (firstOpUseFlags == TernaryLogicUseFlags::AB)
-                        {
-                            // We have OP2(OP1(A, B), C)
-                            controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, A, B);
+                            controlByte = static_cast<uint8_t>(~B);
                             controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
                         }
                         else
                         {
-                            // We have OP2(A, OP1(B, C))
-                            assert(firstOpUseFlags == TernaryLogicUseFlags::BC);
-
-                            controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, B, C);
-                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, A, controlByte);
+                            // We have OP2(OP1(A, B), C)
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, A, B);
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
                         }
 
                         NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
