@@ -281,6 +281,7 @@ The contract additionally depends on these data descriptors
 | `EEClass` | `InternalCorElementType` | An InternalCorElementType uses the enum values of a CorElementType to indicate some of the information about the type of the type which uses the EEClass In particular, all reference types are CorElementType.Class, Enums are the element type of their underlying type and ValueTypes which can exactly be represented as an element type are represented as such, all other values types are represented as CorElementType.ValueType. |
 | `EEClass` | `MethodTable` | Pointer to the canonical MethodTable of this type |
 | `EEClass` | `NumMethods` | Count of methods attached to the EEClass |
+| `EEClass` | `NumNonVirtualSlots` | Count of non-virtual slots for the EEClass |
 | `EEClass` | `CorTypeAttr` | Various flags |
 | `ArrayClass` | `Rank` | Rank of the associated array MethodTable |
 | `TypeDesc` | `TypeAndFlags` | The lower 8 bits are the CorElementType of the `TypeDesc`, the upper 24 bits are reserved for flags |
@@ -560,5 +561,16 @@ The version 1 `MethodDesc` APIs depend on the `MethodDescAlignment` global and t
 
 In the runtime a `MethodDesc` implicitly belongs to a single `MethodDescChunk` and some common data is shared between method descriptors that belong to the same chunk.  A single method table
 will typically have multiple chunks.  There are subkinds of MethodDescs at runtime of varying sizes (but the sizes must be mutliples of `MethodDescAlignment`) and each chunk contains method descriptors of the same size.
+
+We depend on the following data descriptors:
+| Data Descriptor Name | Field | Meaning |
+| --- | --- | --- |
+| `MethodDesc` | `ChunkIndex` | Offset of this `MethodDesc` relative to the end of its containing `MethodDescChunk` - in multiples of `MethodDescAlignment`
+| `MethodDesc` | `Slot` | The method's slot
+| `MethodDesc` | `Flags` | The method's flags
+| `MethodDescChunk` | `MethodTable` | The method table set of methods belongs to
+| `MethodDescChunk` | `Next` | The next chunk of methods
+| `MethodDescChunk` | `Size` | The size - 1 of this `MethodDescChunk`  following this `MethodDescChunk` header. In multiples of `MethodDescAlignment`
+| `MethodDescChunk` | `Count` | The number of `MethodDesc` entries in this chunk, minus 1.
 
 **TODO(cdac)**
