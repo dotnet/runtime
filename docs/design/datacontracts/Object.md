@@ -18,8 +18,8 @@ Data descriptors used:
 | Data Descriptor Name | Field | Meaning |
 | --- | --- | --- |
 | `Object` | `m_pMethTab` | Method table for the object |
-| `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string |
-| `String` | `m_StringLength` | Length of the string in characters |
+| `String` | `m_FirstChar` | First character of the string - `m_StringLength` can be used to read the full string (encoded in UTF-16) |
+| `String` | `m_StringLength` | Length of the string in characters (encoded in UTF-16) |
 
 Global variables used:
 | Global Name | Type | Purpose |
