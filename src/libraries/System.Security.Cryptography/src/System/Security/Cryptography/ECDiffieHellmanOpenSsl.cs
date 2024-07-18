@@ -72,10 +72,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Obtain a SafeHandle version of an EVP_PKEY*
+        /// Obtain a SafeHandle version of an EVP_PKEY* which wraps an EC_KEY* equivalent
         /// to the current key for this instance.
         /// </summary>
-        /// <returns>A SafeHandle for the EVP_PKEY key in OpenSSL</returns>
+        /// <returns>A SafeHandle for the EC_KEY key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             ThrowIfDisposed();

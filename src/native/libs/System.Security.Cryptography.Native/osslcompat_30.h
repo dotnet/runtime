@@ -92,8 +92,6 @@ void OSSL_STORE_INFO_free(OSSL_STORE_INFO* info);
 int OSSL_STORE_INFO_get_type(const OSSL_STORE_INFO* info);
 EVP_PKEY* OSSL_STORE_INFO_get1_PKEY(const OSSL_STORE_INFO* info);
 EVP_PKEY* OSSL_STORE_INFO_get1_PUBKEY(const OSSL_STORE_INFO* info);
-OSSL_STORE_CTX* OSSL_STORE_open(
-    const char*, const UI_METHOD*, void*, OSSL_STORE_post_process_info_fn post_process, void*);
 OSSL_STORE_CTX* OSSL_STORE_open_ex(
     const char*, OSSL_LIB_CTX*, const char*, const UI_METHOD*, void*, const OSSL_PARAM*, OSSL_STORE_post_process_info_fn post_process, void*);
 

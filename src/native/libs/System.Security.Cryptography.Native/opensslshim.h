@@ -539,7 +539,6 @@ extern bool g_libSslUses32BitTime;
     LIGHTUP_FUNCTION(OSSL_STORE_INFO_get1_PKEY) \
     LIGHTUP_FUNCTION(OSSL_STORE_INFO_get1_PUBKEY) \
     LIGHTUP_FUNCTION(OSSL_STORE_load) \
-    LIGHTUP_FUNCTION(OSSL_STORE_open) \
     LIGHTUP_FUNCTION(OSSL_STORE_open_ex) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_octet_string) \
     LIGHTUP_FUNCTION(OSSL_PARAM_construct_int32) \
@@ -1086,7 +1085,6 @@ extern TYPEOF(OPENSSL_gmtime)* OPENSSL_gmtime_ptr;
 #define OSSL_STORE_INFO_get1_PKEY OSSL_STORE_INFO_get1_PKEY_ptr
 #define OSSL_STORE_INFO_get1_PUBKEY OSSL_STORE_INFO_get1_PUBKEY_ptr
 #define OSSL_STORE_load OSSL_STORE_load_ptr
-#define OSSL_STORE_open OSSL_STORE_open_ptr
 #define OSSL_STORE_open_ex OSSL_STORE_open_ex_ptr
 #define OSSL_PARAM_construct_octet_string OSSL_PARAM_construct_octet_string_ptr
 #define OSSL_PARAM_construct_int32 OSSL_PARAM_construct_int32_ptr

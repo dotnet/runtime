@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
