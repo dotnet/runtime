@@ -478,7 +478,7 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
 {
     CONTEXT* pOSContext = NULL;
 
-#if (defined(TARGET_X86) || defined(TARGET_AMD64))
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     DWORD context = CONTEXT_COMPLETE;
 
     if (pfnInitializeContext2 == NULL)
@@ -503,10 +503,17 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
     }
 #endif //TARGET_X86
 
-    // Determine if the processor supports AVX or AVX512 so we could
-    // retrieve extended registers
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_AVX | XSTATE_MASK_AVX512;
+    const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_MPX | xStateFeatureMask;
+#elif defined(TARGET_ARM64)
+    const DWORD64 xStateFeatureMask = XSTATE_MASK_ARM64_SVE;
+    const ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | xStateFeatureMask;
+#endif
+
+    // Determine if the processor supports extended features so we could retrieve those registers
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
-    if ((FeatureMask & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512)) != 0)
+    if ((FeatureMask & xStateFeatureMask) != 0)
     {
         context = context | CONTEXT_XSTATE;
     }
@@ -517,7 +524,6 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
 
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
-    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX | XSTATE_MASK_MPX | XSTATE_MASK_AVX512;
     // The initialize call should fail but return contextSize
     BOOL success = pfnInitializeContext2 ?
         pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
@@ -565,15 +571,21 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadCont
 {
     _ASSERTE((pCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-    // Make sure that AVX feature mask is set, if supported. This should not normally fail.
+    // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask which is not enabled on the processor.
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX | XSTATE_MASK_AVX512))
     {
         _ASSERTE(!"Could not apply XSTATE_MASK_AVX | XSTATE_MASK_AVX512");
         return FALSE;
     }
-#endif //defined(TARGET_X86) || defined(TARGET_AMD64)
+#elif defined(TARGET_ARM64)
+    if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE))
+    {
+        _ASSERTE(!"Could not apply XSTATE_MASK_ARM64_SVE");
+        return FALSE;
+    }
+#endif
 
     return GetThreadContext(hThread, pCtx);
 }
@@ -902,7 +914,7 @@ REDHAWK_PALEXPORT HANDLE PalLoadLibrary(const char* moduleName)
         return 0;
     }
     moduleNameWide[len] = '\0';
-    
+
     HANDLE result = LoadLibraryExW(moduleNameWide, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
     delete[] moduleNameWide;
     return result;

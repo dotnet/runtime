@@ -1846,9 +1846,8 @@ typedef struct _IMAGE_ARM_RUNTIME_FUNCTION_ENTRY {
 
 #define CONTEXT_XSTATE (CONTEXT_ARM64 | 0x40L)
 
-#define XSTATE_SVE (0)
-
-#define XSTATE_MASK_SVE (UI64(1) << (XSTATE_SVE))
+#define XSTATE_ARM64_SVE (2)
+#define XSTATE_MASK_ARM64_SVE (UI64(1) << (XSTATE_ARM64_SVE))
 
 //
 // This flag is set by the unwinder if it has unwound to a call
