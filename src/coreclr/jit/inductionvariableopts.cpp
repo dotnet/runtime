@@ -1452,10 +1452,25 @@ bool StrengthReductionContext::TryStrengthReduce()
         DBEXEC(VERBOSE, currentIV->Dump(m_comp));
         JITDUMP("\n");
 
-        if (Scev::Equals(currentIV->Step, primaryIV->Step) && !StressProfitability())
+        if (!StressProfitability())
         {
-            JITDUMP("    Skipping: candidate has same step as primary IV\n");
-            continue;
+            if (Scev::Equals(currentIV->Step, primaryIV->Step))
+            {
+                JITDUMP("    Skipping: Candidate has same step as primary IV\n");
+                continue;
+            }
+
+            // Leave widening up to widening.
+            int64_t newIVStep;
+            int64_t primaryIVStep;
+            if (currentIV->Step->TypeIs(TYP_LONG) && primaryIV->Step->TypeIs(TYP_INT) &&
+                currentIV->Step->GetConstantValue(m_comp, &newIVStep) &&
+                primaryIV->Step->GetConstantValue(m_comp, &primaryIVStep) &&
+                (int32_t)newIVStep == (int32_t)primaryIVStep)
+            {
+                JITDUMP("    Skipping: Candidate has same widened step as primary IV\n");
+                continue;
+            }
         }
 
         if (TryReplaceUsesWithNewPrimaryIV(cursors, currentIV))
