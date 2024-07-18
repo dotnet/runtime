@@ -1788,6 +1788,7 @@ namespace System.Net.Sockets
             {
                 return SelectViaSelect(checkRead, checkWrite, checkError, microseconds);
             }
+
             const int StackThreshold = 80; // arbitrary limit to avoid too much space on stack
             if (count < StackThreshold)
             {
@@ -1940,7 +1941,6 @@ namespace System.Net.Sockets
                 AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.PollEvents.POLLOUT, ref refsAdded);
                 AddToPollArray(events, eventsLength, checkError, ref offset, Interop.PollEvents.POLLPRI, ref refsAdded);
 
-               // Console.WriteLine("Fixup ??? {0}", PollNeedsErrorListFixup);
                 Debug.Assert(offset <= eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
                 Debug.Assert(refsAdded <= eventsLength, $"Invalid ref adds. refsAdded={refsAdded}, eventsLength={eventsLength}.");
 

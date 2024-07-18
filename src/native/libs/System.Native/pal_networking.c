@@ -2789,7 +2789,7 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     {
        readSetPtr = readFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
        writeSetPtr = writeFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       errorSetPtr = errorFdsCount == 0 ? NULL :calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
+       errorSetPtr = errorFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
     }
 
 
@@ -2846,7 +2846,7 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 
     return Error_SUCCESS;
 #else
-    // avoild unused parameters warnings
+    // avoid unused parameters warnings
     (void*)readFds;
     (void*)writeFds;
     (void*)errorFds;
