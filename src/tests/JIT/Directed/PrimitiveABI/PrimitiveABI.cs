@@ -9,7 +9,7 @@ using Xunit;
 public static class Program
 {
 #region ExtendedUint_RiscVTests
-	[DllImport("PrimitiveABI")]
+	[DllImport("PrimitiveABINative")]
 	public static extern long Echo_ExtendedUint_RiscV(int a0, uint a1);
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -41,7 +41,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
-	[DllImport("PrimitiveABI")]
+	[DllImport("PrimitiveABINative")]
 	public static extern long Echo_ExtendedUint_OnStack_RiscV(
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, uint stack0);
 
@@ -77,7 +77,7 @@ public static class Program
 #endregion
 
 #region Float_RiscVTests
-	[DllImport("PrimitiveABI")]
+	[DllImport("PrimitiveABINative")]
 	public static extern double Echo_Float_RiscV(float fa0, float fa1);
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
@@ -109,7 +109,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
-	[DllImport("PrimitiveABI")]
+	[DllImport("PrimitiveABINative")]
 	public static extern double Echo_Float_InIntegerReg_RiscV(
 		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7, float a0);
 
@@ -143,7 +143,7 @@ public static class Program
 		Assert.Equal(ret, native);
 	}
 
-	[DllImport("PrimitiveABI")]
+	[DllImport("PrimitiveABINative")]
 	public static extern double Echo_Float_OnStack_RiscV(
 		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
 		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7, float stack0);

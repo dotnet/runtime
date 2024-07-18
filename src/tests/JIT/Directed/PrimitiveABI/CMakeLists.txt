@@ -1,4 +1,4 @@
-project (PrimitiveABI)
+project (PrimitiveABINative)
 include_directories(${INC_PLATFORM_DIR})
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -7,6 +7,6 @@ else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden -Oz")
 endif()
 
-add_library (PrimitiveABI SHARED PrimitiveABI.c)
+add_library (PrimitiveABINative SHARED PrimitiveABI.c)
 
-install (TARGETS PrimitiveABI DESTINATION bin)
+install (TARGETS PrimitiveABINative DESTINATION bin)
