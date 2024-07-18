@@ -267,14 +267,6 @@ void MyICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
     jitInstance->mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE method)
-{
-    jitInstance->mc->cr->AddCall("mapMethodDeclToMethodImpl");
-    LogError("Hit unimplemented mapMethodDeclToMethodImpl");
-    DebugBreakorAV(17);
-    return 0;
-}
-
 // Returns the global cookie for the /GS unsafe buffer checks
 // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
 void MyICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
