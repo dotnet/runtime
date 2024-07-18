@@ -77,6 +77,8 @@ namespace System.Net.Sockets.Tests
             {
                 using (var udpClient = new UdpClient(UnusedPort))
                 {
+                    udpClient.Bind();
+                    
                     Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Loopback, UnusedPort)));
                 }
             }
@@ -94,6 +96,8 @@ namespace System.Net.Sockets.Tests
             {
                 using (var udpClient = new UdpClient(UnusedPort, AddressFamily.InterNetwork))
                 {
+                    udpClient.Bind();
+                    
                     Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.Loopback, UnusedPort)));
                 }
             }
@@ -111,6 +115,8 @@ namespace System.Net.Sockets.Tests
             {
                 using (var udpClient = new UdpClient(UnusedPort, AddressFamily.InterNetworkV6))
                 {
+                    udpClient.Bind();
+                    
                     Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)));
                 }
             }
@@ -128,6 +134,8 @@ namespace System.Net.Sockets.Tests
             {
                 using (var udpClient = new UdpClient(new IPEndPoint(IPAddress.IPv6Any, UnusedPort)))
                 {
+                    udpClient.Bind();
+                    
                     Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)));
                 }
             }
@@ -517,7 +525,10 @@ namespace System.Net.Sockets.Tests
 
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
-            {
+            {  
+                receiver.Bind();
+                sender.Bind();
+                
                 byte[] data = [1, 2, 3];
                 sender.Send(data, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
                 AssertReceive(receiver, [1, 2]);
@@ -538,6 +549,9 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                sender.Bind();
+                
                 byte[] data = [1, 2, 3];
                 sender.Send(data, 2, "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
                 AssertReceive(receiver, [1, 2]);
@@ -582,6 +596,9 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                sender.Bind();
+                
                 sender.Send(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
 
                 Assert.True(SpinWait.SpinUntil(() => receiver.Available > 0, 30000), "Expected data to be available for receive within time limit");
@@ -599,6 +616,9 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                sender.Bind();
+                
                 sender.EndSend(sender.BeginSend(data, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), null, null));
 
                 IPEndPoint remoteEP = null;
@@ -637,6 +657,9 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                sender.Bind();
+                
                 await sender.SendAsync(data, 2, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
                 await AssertReceiveAsync(receiver, [1, 2]);
 
@@ -657,6 +680,9 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                sender.Bind();
+                
                 await sender.SendAsync(data, "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
                 await AssertReceiveAsync(receiver, data);
 
@@ -674,6 +700,8 @@ namespace System.Net.Sockets.Tests
             
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                
                 using (var timeoutCts = new CancellationTokenSource(1))
                 {
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receiver.ReceiveAsync(timeoutCts.Token).AsTask());
@@ -733,6 +761,9 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                sender.Bind();
+                
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), "localhost", ((IPEndPoint)receiver.Client.LocalEndPoint).Port, new CancellationToken(true)).AsTask());
             }
         }
@@ -747,6 +778,9 @@ namespace System.Net.Sockets.Tests
             using (var receiver = new UdpClient(new IPEndPoint(address, 0)))
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
+                receiver.Bind();
+                sender.Bind();
+                
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port), new CancellationToken(true)).AsTask());
             }
         }
@@ -810,6 +844,19 @@ namespace System.Net.Sockets.Tests
                 {
                     sender.Send(new byte[1], 1, "127.0.0.1", ((IPEndPoint)receiver.Client.LocalEndPoint).Port);
                 }
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105056")]
+        public void Attribute_Settings_When_Create()
+        {
+            using (var udpClient = new UdpClient(new IPEndPoint(IPAddress.Any, 0))
+                   {
+                       ExclusiveAddressUse = true,
+                   })
+            {
+                Assert.True(udpClient.ExclusiveAddressUse);
             }
         }
 
