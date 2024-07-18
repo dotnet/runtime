@@ -43,7 +43,7 @@ namespace Wasm.Build.Tests
             Assert.Contains("AOT is not supported in debug configuration", buildOutput);
         }
 
-        [Theory, TestCategory("no-fingerprinting")]
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Release")]
         [BuildAndRun(host: RunHost.Chrome, aot: false, config: "Debug")]
         public void BuildThenPublishNoAOT(BuildArgs buildArgs, RunHost host, string id)
@@ -91,7 +91,7 @@ namespace Wasm.Build.Tests
                                 host: host, id: id);
         }
 
-        [Theory, TestCategory("no-fingerprinting")]
+        [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: true, config: "Release")]
         public void BuildThenPublishWithAOT(BuildArgs buildArgs, RunHost host, string id)
         {

@@ -295,7 +295,7 @@ namespace Wasm.Build.Tests
             return data;
         }
 
-        [Theory]
+        [Theory, TestCategory("no-fingerprinting")]
         [MemberData(nameof(TestDataForAppBundleDir))]
         public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
             => await (forConsole
