@@ -20,8 +20,6 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
         private static readonly bool s_isFlagsEnum = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
 
-        private const string ValueSeparator = ", ";
-
         private readonly EnumConverterOptions _converterOptions;
 
         private readonly JsonNamingPolicy? _namingPolicy;
@@ -344,7 +342,7 @@ namespace System.Text.Json.Serialization.Converters
 
 #if NET9_0_OR_GREATER
             success = nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(source, out value) ||
-                (source.Contains(',') && TryParseCommaSeparatedEnumValues(source.ToString(), out value));
+                TryParseCommaSeparatedEnumValues(source, out value);
 #elif NET
             string enumString = source.ToString();
             success = nameCacheForReading.TryGetValue(enumString, out value) ||
@@ -390,34 +388,63 @@ namespace System.Text.Json.Serialization.Converters
             return new() { Type = JsonSchemaType.Integer };
         }
 
-        private bool TryParseCommaSeparatedEnumValues(string enumString, out T value)
+        private bool TryParseCommaSeparatedEnumValues(
+#if NET9_0_OR_GREATER
+            ReadOnlySpan<char> source,
+#else
+            string source,
+#endif
+            out T value)
         {
             Debug.Assert(_nameCacheForReading != null);
-
-            if (!enumString.Contains(ValueSeparator))
-            {
-                value = default;
-                return false;
-            }
-
             ConcurrentDictionary<string, T> nameCacheForReading = _nameCacheForReading;
+#if NET9_0_OR_GREATER
+            ConcurrentDictionary<string, T>.AlternateLookup<ReadOnlySpan<char>> alternateLookup = nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
+            ReadOnlySpan<char> rest = source;
+#else
+            ReadOnlySpan<char> rest = source.AsSpan();
+#endif
             ulong result = 0;
 
-            foreach (string component in SplitFlagsEnum(enumString))
+            do
             {
-                if (!nameCacheForReading.TryGetValue(component, out value))
+                ReadOnlySpan<char> next;
+                int i = rest.IndexOf(',');
+                if (i == -1)
+                {
+                    next = rest;
+                    rest = default;
+                }
+                else
+                {
+                    next = rest.Slice(0, i);
+                    rest = rest.Slice(i + 1);
+                }
+
+                next = next.Trim(' ');
+
+#if NET9_0_OR_GREATER
+                if (!alternateLookup.TryGetValue(next, out value))
+#else
+                if (!nameCacheForReading.TryGetValue(next.ToString(), out value))
+#endif
                 {
                     return false;
                 }
 
                 result |= ConvertToUInt64(value);
-            }
+
+            } while (!rest.IsEmpty);
 
             value = ConvertFromUInt64(result);
 
             if (nameCacheForReading.Count < NameCacheSizeSoftLimit)
             {
-                nameCacheForReading[enumString] = value;
+#if NET9_0_OR_GREATER
+                alternateLookup[source] = value;
+#else
+                nameCacheForReading[source] = value;
+#endif
             }
 
             return true;
@@ -459,18 +486,6 @@ namespace System.Text.Json.Serialization.Converters
             };
         }
 
-        private static string[] SplitFlagsEnum(string value)
-        {
-            // todo: optimize implementation here by leveraging https://github.com/dotnet/runtime/issues/934.
-            return value.Split(
-#if NET
-                ValueSeparator
-#else
-                new string[] { ValueSeparator }, StringSplitOptions.None
-#endif
-                );
-        }
-
         /// <summary>
         /// Attempt to format the enum value as a comma-separated string of flag values, or returns false if not a valid flag combination.
         /// </summary>
@@ -494,7 +509,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (sb.Length > 0)
                         {
-                            sb.Append(ValueSeparator);
+                            sb.Append(", ");
                         }
 
                         sb.Append(name);
