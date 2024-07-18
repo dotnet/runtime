@@ -258,15 +258,6 @@ void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
     API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(mapMethodDeclToMethodImpl);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->mapMethodDeclToMethodImpl(method);
-    API_LEAVE(mapMethodDeclToMethodImpl);
-    return temp;
-}
-
 void WrapICorJitInfo::getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal)

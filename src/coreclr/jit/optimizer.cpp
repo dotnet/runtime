@@ -6104,7 +6104,7 @@ void Compiler::optRemoveRedundantZeroInits()
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
                             // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
-                            assert(emitter::emitNoGChelper(CORINFO_HELP_INIT_PINVOKE_FRAME));
+                            assert(s_helperCallProperties.IsNoGC(CORINFO_HELP_INIT_PINVOKE_FRAME));
 
                             if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
                             {

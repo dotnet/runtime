@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable CS8500 // takes address of managed type
-
 namespace System.Text.RegularExpressions
 {
     /// <summary>

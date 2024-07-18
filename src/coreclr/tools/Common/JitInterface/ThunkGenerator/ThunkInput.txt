@@ -188,7 +188,6 @@ FUNCTIONS
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
     bool satisfiesMethodConstraints(        CORINFO_CLASS_HANDLE        parent,        CORINFO_METHOD_HANDLE       method        );
     void methodMustBeLoadedBeforeCodeIsRun(        CORINFO_METHOD_HANDLE       method        );
-    CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(        CORINFO_METHOD_HANDLE       method        );
     void getGSCookie(        GSCookie * pCookieVal,        GSCookie ** ppCookieVal        );
     void setPatchpointInfo(PatchpointInfo* patchpointInfo);
     PatchpointInfo* getOSRInfo(unsigned * ilOffset);

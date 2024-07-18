@@ -504,6 +504,37 @@ void HWIntrinsicInfo::lookupImmBounds(
                 immUpperBound = (int)SVE_PRFOP_CONST15;
                 break;
 
+            case NI_Sve_AddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 1;
+                break;
+
+            case NI_Sve_MultiplyAddRotateComplex:
+                immLowerBound = 0;
+                immUpperBound = 3;
+                break;
+
+            case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                // rotation comes after index in the intrinsic's signature,
+                // but flip the order here so we check the larger range first.
+                // This conforms to the existing logic in LinearScan::BuildHWIntrinsic
+                // when determining if we need an internal register for the jump table.
+                // This flipped ordering is reflected in HWIntrinsicInfo::GetImmOpsPositions.
+                if (immNumber == 1)
+                {
+                    // Bounds for rotation
+                    immLowerBound = 0;
+                    immUpperBound = 3;
+                }
+                else
+                {
+                    // Bounds for index
+                    assert(immNumber == 2);
+                    immLowerBound = 0;
+                    immUpperBound = 1;
+                }
+                break;
+
             case NI_Sve_TrigonometricMultiplyAddCoefficient:
                 immLowerBound = 0;
                 immUpperBound = 7;
@@ -2991,6 +3022,51 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode->AsHWIntrinsic()->SetSimdBaseJitType(simdBaseJitType);
             retNode->AsHWIntrinsic()->SetAuxiliaryJitType(op2BaseJitType);
+            break;
+        }
+
+        case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+        {
+            assert(sig->numArgs == 5);
+            assert(!isScalar);
+
+            CORINFO_ARG_LIST_HANDLE arg1     = sig->args;
+            CORINFO_ARG_LIST_HANDLE arg2     = info.compCompHnd->getArgNext(arg1);
+            CORINFO_ARG_LIST_HANDLE arg3     = info.compCompHnd->getArgNext(arg2);
+            CORINFO_ARG_LIST_HANDLE arg4     = info.compCompHnd->getArgNext(arg3);
+            CORINFO_ARG_LIST_HANDLE arg5     = info.compCompHnd->getArgNext(arg4);
+            var_types               argType  = TYP_UNKNOWN;
+            CORINFO_CLASS_HANDLE    argClass = NO_CLASS_HANDLE;
+
+            int imm1LowerBound, imm1UpperBound; // Range for rotation
+            int imm2LowerBound, imm2UpperBound; // Range for index
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 1, &imm1LowerBound, &imm1UpperBound);
+            HWIntrinsicInfo::lookupImmBounds(intrinsic, simdSize, simdBaseType, 2, &imm2LowerBound, &imm2UpperBound);
+
+            argType      = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg5, &argClass)));
+            GenTree* op5 = getArgForHWIntrinsic(argType, argClass);
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op5));
+            op5 = addRangeCheckIfNeeded(intrinsic, op5, mustExpand, imm1LowerBound, imm1UpperBound);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg4, &argClass)));
+            op4     = getArgForHWIntrinsic(argType, argClass);
+            assert(HWIntrinsicInfo::isImmOp(intrinsic, op4));
+            op4 = addRangeCheckIfNeeded(intrinsic, op4, mustExpand, imm2LowerBound, imm2UpperBound);
+
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg3, &argClass)));
+            op3     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+            op2     = getArgForHWIntrinsic(argType, argClass);
+            argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg1, &argClass)));
+            op1     = getArgForHWIntrinsic(argType, argClass);
+
+            SetOpLclRelatedToSIMDIntrinsic(op1);
+            SetOpLclRelatedToSIMDIntrinsic(op2);
+            SetOpLclRelatedToSIMDIntrinsic(op3);
+            SetOpLclRelatedToSIMDIntrinsic(op4);
+            SetOpLclRelatedToSIMDIntrinsic(op5);
+            retNode = new (this, GT_HWINTRINSIC) GenTreeHWIntrinsic(retType, getAllocator(CMK_ASTNode), intrinsic,
+                                                                    simdBaseJitType, simdSize, op1, op2, op3, op4, op5);
             break;
         }
 

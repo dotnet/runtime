@@ -920,7 +920,6 @@ public:
     }
 
     CompileResult* cr;
-    CompileResult* originalCR;
     int            index;
     bool           ignoreStoredConfig;
 
