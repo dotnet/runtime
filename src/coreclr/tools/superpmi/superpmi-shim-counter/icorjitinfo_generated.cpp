@@ -217,13 +217,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
     original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    mcs->AddCall("mapMethodDeclToMethodImpl");
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
-}
-
 void interceptor_ICJI::getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal)

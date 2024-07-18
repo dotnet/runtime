@@ -19,6 +19,8 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);ENABLE_HTTP_HANDLER</DefineConstants>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);W3C_DEFAULT_ID_FORMAT;MEMORYMARSHAL_SUPPORT;OS_ISBROWSER_SUPPORT</DefineConstants>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -124,6 +126,11 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Diagnostics\Metrics\RuntimeMetrics.cs" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

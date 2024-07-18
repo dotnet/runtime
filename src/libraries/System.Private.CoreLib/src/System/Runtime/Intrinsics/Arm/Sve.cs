@@ -5958,6 +5958,14 @@ namespace System.Runtime.Intrinsics.Arm
         /// </summary>
         public static unsafe Vector<float> MultiplyAddRotateComplex(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRotateComplex(addend, left, right, rotation);
 
+        ///  Complex multiply-add with rotate
+
+        /// <summary>
+        /// svfloat32_t svcmla_lane[_f32](svfloat32_t op1, svfloat32_t op2, svfloat32_t op3, uint64_t imm_index, uint64_t imm_rotation)
+        ///   FCMLA Ztied1.S, Zop2.S, Zop3.S[imm_index], #imm_rotation
+        /// </summary>
+        public static unsafe Vector<float> MultiplyAddRotateComplexBySelectedScalar(Vector<float> addend, Vector<float> left, Vector<float> right, [ConstantExpected(Min = 0, Max = (byte)(1))] byte rightIndex, [ConstantExpected(Min = 0, Max = (byte)(3))] byte rotation) => MultiplyAddRotateComplexBySelectedScalar(addend, left, right, rightIndex, rotation);
+
         ///  MultiplyBySelectedScalar : Multiply
 
         /// <summary>

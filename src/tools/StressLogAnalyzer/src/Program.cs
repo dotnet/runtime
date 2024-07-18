@@ -21,23 +21,19 @@ namespace StressLogAnalyzer;
 
 public static class Program
 {
-    [UnmanagedCallersOnly]
-    private static unsafe int ReadFromMemoryMappedLog(ulong address, byte* buffer, uint bytesToRead, void* state)
+    private static unsafe int ReadFromMemoryMappedLog(ulong address, Span<byte> buffer, StressLogHeader* header)
     {
-        StressLogHeader* header = (StressLogHeader*)state;
-
         // First look at module data. This will translate all addresses that point to static data (like string literals).
         ulong cumulativeSize = 0;
         Span<byte> moduleImageData = header->moduleImageData;
         foreach (StressLogHeader.ModuleDesc module in header->moduleTable)
         {
-            if (address >= module.baseAddr && address + bytesToRead < module.baseAddr + module.size)
+            if (address >= module.baseAddr && address + (uint)buffer.Length < module.baseAddr + module.size)
             {
                 ulong moduleOffset = address - module.baseAddr;
                 Debug.Assert(cumulativeSize + moduleOffset < (ulong)moduleImageData.Length, "Address is out of bounds");
-                ref byte moduleData = ref moduleImageData[(int)(cumulativeSize + moduleOffset)];
-                ulong bytesToCopy = ulong.Min(bytesToRead, module.size - moduleOffset);
-                Unsafe.CopyBlock(ref *buffer, ref moduleData, (uint)bytesToCopy);
+                ulong bytesToCopy = ulong.Min((uint)buffer.Length, module.size - moduleOffset);
+                moduleImageData.Slice((int)(cumulativeSize + moduleOffset), (int)bytesToCopy).CopyTo(buffer);
                 return (int)bytesToCopy;
             }
             else
@@ -47,11 +43,11 @@ public static class Program
         }
 
         // Otherwise, translate the signature for dynamically-allocated data based on the memory-mapped base address.
-        if (address >= header->memoryBase && address + bytesToRead < header->memoryLimit)
+        if (address >= header->memoryBase && address + (uint)buffer.Length < header->memoryLimit)
         {
             ulong offset = address - header->memoryBase;
-            Unsafe.CopyBlock(ref *buffer, ref *((byte*)header + offset), bytesToRead);
-            return (int)bytesToRead;
+            new Span<byte>((byte*)header + offset, buffer.Length).CopyTo(buffer);
+            return (int)buffer.Length;
         }
 
         return -1;
@@ -457,8 +453,7 @@ public static class Program
         Target target = Target.Create(
             GetDescriptor((int)(header->version & 0xFFFF)),
             [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
-            &ReadFromMemoryMappedLog,
-            header,
+            (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
             true,
             nuint.Size);
 

@@ -532,21 +532,6 @@ extends:
           # - windows_x86
           # - windows_arm64
           jobTemplates:
-          # LLVMJIT
-          - jobTemplate: /eng/pipelines/common/global-build-job.yml
-            buildConfig: release
-            runtimeFlavor: mono
-            jobParameters:
-              templatePath: 'templates-official'
-              buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                        /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-              nameSuffix: Mono_LLVMJIT
-              runtimeVariant: LLVMJIT
-              isOfficialBuild: ${{ variables.isOfficialBuild }}
-              postBuildSteps:
-                - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-                  parameters:
-                    name: MonoRuntimePacks
           #LLVMAOT
           - jobTemplate: /eng/pipelines/common/global-build-job.yml
             buildConfig: release

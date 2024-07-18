@@ -92,9 +92,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/*">
             <Issue>https://github.com/dotnet/runtime/issues/46175</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
-            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
             <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
         </ExcludeList>
@@ -409,6 +406,9 @@
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(AltJitArch)' == 'arm') and '$(TargetsWindows)' != 'true' and '$(RuntimeFlavor)' == 'coreclr'">
         <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
             <Issue>https://github.com/dotnet/runtime/issues/68690</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>

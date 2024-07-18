@@ -95,17 +95,18 @@ public sealed unsafe class Target
     internal DataCache ProcessedData { get; }
     internal Helpers.Metadata Metadata { get; }
 
+    public delegate int ReadFromTargetDelegate(ulong address, Span<byte> bufferToFill);
+
     /// <summary>
     /// Create a new target instance from a contract descriptor embedded in the target memory.
     /// </summary>
     /// <param name="contractDescriptor">The offset of the contract descriptor in the target memory</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
-    /// <param name="readContext">A context parameter for <paramref name="readFromTarget"/></param>
     /// <param name="target">The target object.</param>
     /// <returns>If a target instance could be created, <c>true</c>; otherwise, <c>false</c>.</returns>
-    public static bool TryCreate(ulong contractDescriptor, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, out Target? target)
+    public static bool TryCreate(ulong contractDescriptor, ReadFromTargetDelegate readFromTarget, out Target? target)
     {
-        Reader reader = new Reader(readFromTarget, readContext);
+        Reader reader = new Reader(readFromTarget);
         if (TryReadContractDescriptor(contractDescriptor, reader, out Configuration config, out ContractDescriptorParser.ContractDescriptor? descriptor, out TargetPointer[] pointerData))
         {
             target = new Target(config, descriptor!, pointerData, reader);
@@ -122,13 +123,12 @@ public sealed unsafe class Target
     /// <param name="contractDescriptor">The contract descriptor to use for this target</param>
     /// <param name="globalPointerValues">The values for any global pointers specified in the contract descriptor.</param>
     /// <param name="readFromTarget">A callback to read memory blocks at a given address from the target</param>
-    /// <param name="readContext">A context parameter for <paramref name="readFromTarget"/></param>
     /// <param name="isLittleEndian">Whether the target is little-endian</param>
     /// <param name="pointerSize">The size of a pointer in bytes in the target process.</param>
     /// <returns>The target object.</returns>
-    public static Target Create(ContractDescriptorParser.ContractDescriptor contractDescriptor, TargetPointer[] globalPointerValues, delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* readContext, bool isLittleEndian, int pointerSize)
+    public static Target Create(ContractDescriptorParser.ContractDescriptor contractDescriptor, TargetPointer[] globalPointerValues, ReadFromTargetDelegate readFromTarget, bool isLittleEndian, int pointerSize)
     {
-        return new Target(new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize }, contractDescriptor, globalPointerValues, new Reader(readFromTarget, readContext));
+        return new Target(new Configuration { IsLittleEndian = isLittleEndian, PointerSize = pointerSize }, contractDescriptor, globalPointerValues, new Reader(readFromTarget));
     }
 
     private Target(Configuration config, ContractDescriptorParser.ContractDescriptor descriptor, TargetPointer[] pointerData, Reader reader)
@@ -485,26 +485,14 @@ public sealed unsafe class Target
         }
     }
 
-    private sealed class Reader
+    private readonly struct Reader(ReadFromTargetDelegate readFromTarget)
     {
-        private readonly delegate* unmanaged<ulong, byte*, uint, void*, int> _readFromTarget;
-        private readonly void* _context;
-
-        public Reader(delegate* unmanaged<ulong, byte*, uint, void*, int> readFromTarget, void* context)
-        {
-            _readFromTarget = readFromTarget;
-            _context = context;
-        }
-
         public int ReadFromTarget(ulong address, Span<byte> buffer)
         {
-            fixed (byte* bufferPtr = buffer)
-            {
-                return _readFromTarget(address, bufferPtr, (uint)buffer.Length, _context);
-            }
+            return readFromTarget(address, buffer);
         }
 
         public int ReadFromTarget(ulong address, byte* buffer, uint bytesToRead)
-            => _readFromTarget(address, buffer, bytesToRead, _context);
+            => readFromTarget(address, new Span<byte>(buffer, checked((int)bytesToRead)));
     }
 }
