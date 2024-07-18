@@ -16,7 +16,6 @@ function testOutput(msg) {
 
 function countChars(str) {
     const length = str.length;
-    testOutput(`JS received str of ${length} length`);
     return length;
 }
 
