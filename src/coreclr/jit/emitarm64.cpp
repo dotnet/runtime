@@ -13539,13 +13539,32 @@ void emitter::emitDispInsHelp(
             if (id->idIsReloc())
             {
                 assert(ins == INS_add);
-                printf("[LOW RELOC ");
+
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && id->idIsTlsGD())
+                {
+                    printf("[HIGH RELOC ");
+                }
+                else
+                {
+                    printf("[LOW RELOC ");
+                }
+                
                 emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                 printf("]");
             }
             else
             {
-                emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && id->idIsTlsGD())
+                {
+                    assert(ins == INS_add);
+                    printf("[LOW RELOC ");
+                    emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+                    printf("]");
+                }
+                else
+                {
+                    emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+                }
             }
             break;
 

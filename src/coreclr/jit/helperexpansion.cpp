@@ -613,6 +613,11 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject, TYP_INT);
         tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
 
+        if (TargetArchitecture::IsArm64)
+        {
+            tlsRootOffset->SetContained();
+        }
+
         // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
         tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);
     }
