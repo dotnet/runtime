@@ -182,12 +182,6 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        internal static unsafe bool IsReference<T>()
-        {
-            return !MethodTable.Of<T>()->IsValueType;
-        }
-
-        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsBitwiseEquatable<T>()
         {
