@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using ILLink.Shared;
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -185,6 +186,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 							Options.WarningsAsErrors[warning] = false;
 					}
 				}
+			}
+			else if (flag == "--notrimwarn") {
+				Options.SuppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+			}
+			else if (flag == "--noaotwarn") {
+				Options.SuppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
 			}
 		}
 
