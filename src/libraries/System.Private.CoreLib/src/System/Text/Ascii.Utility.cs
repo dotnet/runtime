@@ -76,24 +76,25 @@ namespace System.Text
             nuint index = 0;
             if (bufferLength < 8)
             {
-                uint found4;
                 const uint mask = 0x80808080;
+
+                uint found;
                 if ((bufferLength & 4) != 0)
                 {
-                    uint test4 = Unsafe.ReadUnaligned<uint>(ref pBuffer) & mask;
-                    if (test4 != 0)
+                    uint test = Unsafe.ReadUnaligned<uint>(ref pBuffer) & mask;
+                    if (test != 0)
                     {
-                        found4 = test4;
+                        found = test;
                         goto Found1to7;
                     }
                     index = 4;
                 }
                 if ((bufferLength & 2) != 0)
                 {
-                    uint test2 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref pBuffer, index)) & mask;
-                    if (test2 != 0)
+                    uint test = Unsafe.ReadUnaligned<ushort>(ref Unsafe.Add(ref pBuffer, index)) & mask;
+                    if (test != 0)
                     {
-                        found4 = test2;
+                        found = test;
                         goto Found1to7;
                     }
                     index += 2;
@@ -110,20 +111,22 @@ namespace System.Text
 
             Found1to7:
                 index += BitConverter.IsLittleEndian
-                    ? uint.TrailingZeroCount(found4) / 8
-                    : uint.LeadingZeroCount(found4) / 8;
+                    ? uint.TrailingZeroCount(found) / 8
+                    : uint.LeadingZeroCount(found) / 8;
                 goto Done;
             }
 
-            ulong found8;
             if (bufferLength <= 16)
             {
+                const ulong mask = 0x8080808080808080;
+
                 ulong first = Unsafe.ReadUnaligned<ulong>(ref pBuffer);
                 ulong last = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref pBuffer, bufferLength - 8));
 
-                first &= 0x8080808080808080;
-                last &= 0x8080808080808080;
+                first &= mask;
+                last &= mask;
 
+                ulong found8;
                 if (first != 0)
                 {
                     found8 = first;
@@ -139,7 +142,9 @@ namespace System.Text
                     goto Done;
                 }
 
-                return index + (nuint)(ulong.TrailingZeroCount(found8) / 8);
+                return index + (nuint)(BitConverter.IsLittleEndian
+                    ? ulong.TrailingZeroCount(found8) / 8
+                    : ulong.LeadingZeroCount(found8) / 8);
             }
 
             if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian)
