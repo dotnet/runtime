@@ -911,8 +911,7 @@ void InitJITHelpers1()
 
 #ifdef WRITE_BARRIER_CHECK
         // Don't do the fancy optimization just jump to the old one
-        // Use the slow one from time to time in a debug build because
-        // there are some good asserts in the unoptimized one
+        // Use the slow one for write barrier checks build because it has some good asserts
         if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK)) {
             pfunc = &pBufRW[0];
             *pfunc++ = 0xE9;                // JMP c_rgDebugWriteBarriers[iBarrier]
