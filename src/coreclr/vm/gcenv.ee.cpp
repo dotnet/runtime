@@ -471,7 +471,7 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
                 // combined_limit up-to-date. Note that the GC has multiple threads running this enumeration concurrently
                 // with no synchronization. If you need to change this code think carefully about how that concurrency
                 // may affect the results.
-                if (ac->alloc_limit == 0)
+                if (ac->alloc_limit == 0 && palloc_context->combined_limit != 0)
                 {
                     palloc_context->combined_limit = 0;
                 }
@@ -481,7 +481,7 @@ void GCToEEInterface::GcEnumAllocContexts(enum_alloc_context_func* fn, void* par
     else
     {
         fn(&g_global_alloc_context.gc_allocation_context, param);
-        if (g_global_alloc_context.gc_allocation_context.alloc_limit == 0)
+        if (g_global_alloc_context.gc_allocation_context.alloc_limit == 0 && g_global_alloc_context.combined_limit != 0)
         {
             g_global_alloc_context.combined_limit = 0;
         }
