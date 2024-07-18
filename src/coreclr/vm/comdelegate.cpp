@@ -1944,6 +1944,15 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
             pCode->EmitLDLOC(numMethodPtr);
             pCode->EmitCALLI(pCode->GetSigToken(pSig, cbSig), sig.NumFixedArgs() + 1, fReturnVal); // NumFixedArgs doesn't include "this"
 
+            // Keep the delegate object alive.
+            // If the delegate points to collectible code (dynamic method or collectible assembly),
+            // the underlying code may be collected before the function pointer is invoked. See https://github.com/dotnet/runtime/issues/105082
+
+            // TODO: remove the explicit KeepAlive once we get a solution to track the underlying code with GC.
+            // It impacts code quality significantly.
+            pCode->EmitLoadThis();
+            pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__GC__KEEP_ALIVE)), 1, 0);
+
             // return
             pCode->EmitRET();
 
