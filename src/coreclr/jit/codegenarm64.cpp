@@ -2236,18 +2236,12 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
-    emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
         size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
     }
 
-    if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && EA_IS_CNS_SEC_RELOC(origAttr))
-    {
-        // This emits pair of `add` instructions for TLS reloc
-        GetEmitter()->emitIns_Add_Add_Tls_Reloc(size, reg, imm DEBUGARG(gtFlags));
-    }
-    else if (EA_IS_RELOC(size))
+    if (EA_IS_RELOC(size))
     {
         // This emits a pair of adrp/add (two instructions) with fix-ups.
         GetEmitter()->emitIns_R_AI(INS_adrp, size, reg, imm DEBUGARG(targetHandle) DEBUGARG(gtFlags));
@@ -2766,7 +2760,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     }
     else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && op2->IsIconHandle(GTF_ICON_SECREL_OFFSET))
     {
-        // This is the Add needed for TLS/windows/arm64
+        // This emits pair of `add` instructions for TLS reloc on windows/arm64/nativeaot
         assert(op2->AsIntCon()->ImmedValNeedsReloc(compiler));
 
         emitAttr attr = emitActualTypeSize(targetType);        

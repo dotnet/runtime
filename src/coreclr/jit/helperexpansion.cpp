@@ -615,6 +615,9 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         if (TargetArchitecture::IsArm64)
         {
+            // for windows/arm64, the immediate constant should be contained because it gets
+            // generated as part of ADD instruction that consumes this constant. See
+            // emitIns_Add_Add_Tls_Reloc().
             tlsRootOffset->SetContained();
         }
 
