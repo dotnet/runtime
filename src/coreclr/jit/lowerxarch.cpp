@@ -5089,6 +5089,7 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
             //
             if (!(addr->IsInvariant() || addr->OperIsLocal()))
             {
+                addr->ClearContained();
                 LIR::Use addrUse(BlockRange(), &indir->Addr(), indir);
                 addrUse.ReplaceWithLclVar(comp);
                 addr = indir->Addr();
