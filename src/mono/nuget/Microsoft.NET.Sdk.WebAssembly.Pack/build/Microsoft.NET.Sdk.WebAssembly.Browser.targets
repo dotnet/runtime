@@ -195,6 +195,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">true</_WasmFingerprintAssets>
+      <_WasmFingerprintDotnetJs>$(WasmFingerprintDotnetJs)</_WasmFingerprintDotnetJs>
+      <_WasmFingerprintDotnetJs Condition="'$(_WasmFingerprintDotnetJs)' == ''">false</_WasmFingerprintDotnetJs>
 
       <!-- Workaround for https://github.com/dotnet/sdk/issues/12114-->
       <PublishDir Condition="'$(AppendRuntimeIdentifierToOutputPath)' != 'true' AND '$(PublishDir)' == '$(OutputPath)$(RuntimeIdentifier)\$(PublishDirName)\'">$(OutputPath)$(PublishDirName)\</PublishDir>
@@ -243,7 +245,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       OutputPath="$(OutputPath)"
       EnableThreads="$(_WasmEnableThreads)"
       EmitSourceMap="$(_WasmEmitSourceMapBuild)"
-      IsFingerprintingEnabled="$(_WasmFingerprintAssets)"
+      FingerprintAssets="$(_WasmFingerprintAssets)"
+      FingerprintDotnetJs="$(_WasmFingerprintDotnetJs)"
     >
       <Output TaskParameter="AssetCandidates" ItemName="_BuildAssetsCandidates" />
       <Output TaskParameter="FilesToRemove" ItemName="_WasmBuildFilesToRemove" />
@@ -380,7 +383,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="false"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      IsFingerprintingEnabled="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -482,7 +485,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       EnableThreads="$(_WasmEnableThreads)"
       EmitSourceMap="$(_WasmEmitSourceMapPublish)"
       IsWebCilEnabled="$(_WasmEnableWebcil)"
-      IsFingerprintingEnabled="$(_WasmFingerprintAssets)"
+      FingerprintAssets="$(_WasmFingerprintAssets)"
     >
       <Output TaskParameter="NewCandidates" ItemName="_NewWasmPublishStaticWebAssets" />
       <Output TaskParameter="PromotedAssets" ItemName="_PromotedWasmPublishStaticWebAssets" />
@@ -671,7 +674,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       IsPublish="true"
       IsAot="$(RunAOTCompilation)"
       IsMultiThreaded="$(WasmEnableThreads)"
-      IsFingerprintingEnabled="$(_WasmFingerprintAssets)" />
+      FingerprintAssets="$(_WasmFingerprintAssets)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />

@@ -53,7 +53,9 @@ public class ComputeWasmBuildAssets : Task
 
     public bool EmitSourceMap { get; set; }
 
-    public bool IsFingerprintingEnabled { get; set; }
+    public bool FingerprintAssets { get; set; }
+
+    public bool FingerprintDotNetJs { get; set; }
 
     [Output]
     public ITaskItem[] AssetCandidates { get; set; }
@@ -114,7 +116,7 @@ public class ComputeWasmBuildAssets : Task
                     continue;
                 }
 
-                string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate, IsFingerprintingEnabled);
+                string relativePath = AssetsComputingHelper.GetCandidateRelativePath(candidate, FingerprintAssets, FingerprintDotNetJs);
                 candidate.SetMetadata("RelativePath", relativePath);
 
                 // Workaround for https://github.com/dotnet/aspnetcore/issues/37574.

@@ -84,7 +84,7 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
-    public bool IsFingerprintingEnabled { get; set; }
+    public bool FingerprintAssets { get; set; }
 
     public override bool Execute()
     {
@@ -179,7 +179,7 @@ public class GenerateWasmBootJson : Task
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
             var resourceData = result.resources;
 
-            if (IsFingerprintingEnabled)
+            if (FingerprintAssets)
                 resourceData.fingerprinting = new();
 
             foreach (var resource in Resources)
@@ -430,7 +430,7 @@ public class GenerateWasmBootJson : Task
 
     private void MapFingerprintedAsset(ResourcesData resources, string resourceRoute, string resourceName)
     {
-        if (!IsFingerprintingEnabled || !IsTargeting90OrLater())
+        if (!FingerprintAssets || !IsTargeting90OrLater())
             return;
 
         resources.fingerprinting[resourceRoute] = resourceName;

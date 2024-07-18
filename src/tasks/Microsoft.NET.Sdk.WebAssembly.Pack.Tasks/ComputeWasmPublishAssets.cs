@@ -61,7 +61,7 @@ public class ComputeWasmPublishAssets : Task
 
     public bool IsWebCilEnabled { get; set; }
 
-    public bool IsFingerprintingEnabled { get; set; }
+    public bool FingerprintAssets { get; set; }
 
     [Output]
     public ITaskItem[] NewCandidates { get; set; }
@@ -334,7 +334,7 @@ public class ComputeWasmPublishAssets : Task
         string newAssetItemSpec = asset.ItemSpec;
         string newAssetRelativePath = asset.GetMetadata("RelativePath");
 
-        if (IsFingerprintingEnabled)
+        if (FingerprintAssets)
         {
             string assetDirectory = Path.GetDirectoryName(asset.ItemSpec);
             string assetFileNameToFingerprint = Path.GetFileName(newAssetRelativePath);
@@ -656,7 +656,7 @@ public class ComputeWasmPublishAssets : Task
         var resolvedFilesToPublish = ResolvedFilesToPublish.ToList();
         if (AssetsComputingHelper.TryGetAssetFilename(CustomIcuCandidate, out string customIcuCandidateFilename))
         {
-            var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate, IsFingerprintingEnabled);
+            var customIcuCandidate = AssetsComputingHelper.GetCustomIcuAsset(CustomIcuCandidate, FingerprintAssets);
             resolvedFilesToPublish.Add(customIcuCandidate);
         }
 

@@ -93,7 +93,7 @@ public class AssetsComputingHelper
         return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
-    public static string GetCandidateRelativePath(ITaskItem candidate, bool isFingerprintingEnabled)
+    public static string GetCandidateRelativePath(ITaskItem candidate, bool fingerprintAssets, bool fingerprintDotNetJs)
     {
         const string optionalFingerprint = "#[.{fingerprint}]?";
         const string requiredFingerprint = "#[.{fingerprint}]!";
@@ -111,11 +111,11 @@ public class AssetsComputingHelper
         }
 
         string relativePath;
-        if (isFingerprintingEnabled)
+        if (fingerprintAssets)
         {
             relativePath = (fileName, extension) switch
             {
-                ("dotnet", ".js") => string.Concat(fileName, optionalFingerprint, extension),
+                ("dotnet", ".js") => string.Concat(fileName, fingerprintDotNetJs ? requiredFingerprint : optionalFingerprint, extension),
                 ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.worker", ".mjs") => string.Concat(fileName, requiredFingerprint, extension),
@@ -132,10 +132,10 @@ public class AssetsComputingHelper
         return $"_framework/{subPath}{relativePath}";
     }
 
-    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate, bool isFingerprintingEnabled)
+    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate, bool fingerprintAssets)
     {
         var customIcuCandidate = new TaskItem(candidate);
-        var relativePath = GetCandidateRelativePath(customIcuCandidate, isFingerprintingEnabled);
+        var relativePath = GetCandidateRelativePath(customIcuCandidate, fingerprintAssets, false);
         customIcuCandidate.SetMetadata("RelativePath", relativePath);
         customIcuCandidate.SetMetadata("AssetTraitName", "BlazorWebAssemblyResource");
         customIcuCandidate.SetMetadata("AssetTraitValue", "native");
