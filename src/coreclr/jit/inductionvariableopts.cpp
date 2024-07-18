@@ -1844,14 +1844,14 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 
     ScevLocal* local = (ScevLocal*)baseScev;
 
-    ValueNum vn = m_scevContext.MaterializeVN(baseScev);
-    if (vn == ValueNumStore::NoVN)
+    ValueNumPair vnp = m_scevContext.MaterializeVN(baseScev);
+    if (vnp.GetConservative() == ValueNumStore::NoVN)
     {
         return false;
     }
 
     BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
-    if (!m_comp->optAssertionVNIsNonNull(vn, preheader->bbAssertionOut))
+    if (!m_comp->optAssertionVNIsNonNull(vnp.GetConservative(), preheader->bbAssertionOut))
     {
         return false;
     }
@@ -1889,15 +1889,15 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
             continue;
         }
 
-        ValueNum boundBaseVN = m_scevContext.MaterializeVN(boundBase);
+        ValueNumPair boundBaseVN = m_scevContext.MaterializeVN(boundBase);
 
         VNFuncApp vnf;
-        if (!m_comp->vnStore->GetVNFunc(boundBaseVN, &vnf))
+        if (!m_comp->vnStore->GetVNFunc(boundBaseVN.GetConservative(), &vnf))
         {
             continue;
         }
 
-        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vn))
+        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vnp.GetConservative()))
         {
             continue;
         }
