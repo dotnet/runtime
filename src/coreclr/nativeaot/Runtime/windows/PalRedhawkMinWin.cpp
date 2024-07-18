@@ -463,6 +463,14 @@ EXTERN_C VOID __cdecl RtlRestoreContextFallback(PCONTEXT ContextRecord, struct _
 typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
 PINITIALIZECONTEXT2 pfnInitializeContext2 = NULL;
 
+#ifdef TARGET_ARM64
+typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+
+typedef BOOL(WINAPI* PSETXSTATEFEATURESMASK)(PCONTEXT Context, DWORD64 FeatureMask);
+PSETXSTATEFEATURESMASK pfnSetXStateFeaturesMask = NULL;
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
 EXTERN_C VOID __cdecl RtlRestoreContextFallback(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
 typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
@@ -490,6 +498,17 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
         }
     }
 
+#if defined(TARGET_ARM64)
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+        if (hm != NULL)
+        {
+            pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hm, "GetEnabledXStateFeatures");
+        }
+    }
+#endif // TARGET_ARM64
+
 #ifdef TARGET_X86
     if (pfnRtlRestoreContext == NULL)
     {
@@ -512,7 +531,17 @@ REDHAWK_PALEXPORT CONTEXT* PalAllocateCompleteOSContext(_Out_ uint8_t** contextB
 #endif
 
     // Determine if the processor supports extended features so we could retrieve those registers
-    DWORD64 FeatureMask = GetEnabledXStateFeatures();
+    DWORD64 FeatureMask = 0;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    FeatureMask = GetEnabledXStateFeatures();
+#elif defined(TARGET_ARM64)
+    if (pfnGetEnabledXStateFeatures != NULL)
+    {
+        FeatureMask = pfnGetEnabledXStateFeatures();
+    }
+#endif
+
     if ((FeatureMask & xStateFeatureMask) != 0)
     {
         context = context | CONTEXT_XSTATE;
@@ -571,6 +600,17 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadCont
 {
     _ASSERTE((pCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
 
+#if defined(TARGET_ARM64)
+    if (pfnSetXStateFeaturesMask == NULL)
+    {
+        HMODULE hm = GetModuleHandleW(_T("kernel32.dll"));
+        if (hm != NULL)
+        {
+            pfnSetXStateFeaturesMask = (PSETXSTATEFEATURESMASK)GetProcAddress(hm, "SetXStateFeaturesMask");
+        }
+    }
+#endif // TARGET_ARM64
+
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask which is not enabled on the processor.
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -580,7 +620,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetCompleteThreadCont
         return FALSE;
     }
 #elif defined(TARGET_ARM64)
-    if (!SetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE))
+    if ((pfnSetXStateFeaturesMask != NULL) && !pfnSetXStateFeaturesMask(pCtx, XSTATE_MASK_ARM64_SVE))
     {
         _ASSERTE(!"Could not apply XSTATE_MASK_ARM64_SVE");
         return FALSE;
