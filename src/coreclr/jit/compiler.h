@@ -4514,6 +4514,7 @@ protected:
 
     GenTree* impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls,
         GenTree* value);
+    GenTree* impUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* obj);
     void impLoadNullableFields(GenTree* nullableObj, CORINFO_CLASS_HANDLE nullableCls, GenTree** hasValueFld, GenTree** valueFld);
 
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
