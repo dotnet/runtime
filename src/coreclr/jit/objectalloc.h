@@ -56,7 +56,7 @@ private:
     bool         CanAllocateLclVarOnStack(unsigned int         lclNum,
                                           CORINFO_CLASS_HANDLE clsHnd,
                                           ObjectAllocationType allocType,
-                                          unsigned int         length,
+                                          ssize_t              length,
                                           unsigned int*        blockSize,
                                           const char**         reason);
     bool         CanLclVarEscape(unsigned int lclNum);
@@ -140,7 +140,7 @@ inline void ObjectAllocator::EnableObjectStackAllocation()
 inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNum,
                                                       CORINFO_CLASS_HANDLE clsHnd,
                                                       ObjectAllocationType allocType,
-                                                      unsigned int         length,
+                                                      ssize_t              length,
                                                       unsigned int*        blockSize,
                                                       const char**         reason)
 {
@@ -167,6 +167,12 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
             return false;
         }
 
+        if (length < 0 || !FitsIn<int>(length))
+        {
+            *reason = "[invalid array length]";
+            return false;
+        }
+
         CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
         CorInfoType          corType    = comp->info.compCompHnd->getChildType(clsHnd, &elemClsHnd);
         var_types            type       = JITtype2varType(corType);
@@ -178,7 +184,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
         }
 
         unsigned elemSize = elemLayout != nullptr ? elemLayout->GetSize() : genTypeSize(type);
-        classSize         = (unsigned int)OFFSETOF__CORINFO_Array__data + elemSize * length;
+        classSize         = (unsigned int)OFFSETOF__CORINFO_Array__data + elemSize * static_cast<unsigned int>(length);
     }
     else if (allocType == OAT_NEWOBJ)
     {

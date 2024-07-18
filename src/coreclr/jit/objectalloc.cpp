@@ -468,9 +468,8 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             onHeapReason = "[non-constant size]";
                             canStack     = false;
                         }
-                        else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType,
-                                                           (unsigned int)len->AsIntCon()->IconValue(), &blockSize,
-                                                           &onHeapReason))
+                        else if (!CanAllocateLclVarOnStack(lclNum, clsHnd, allocType, len->AsIntCon()->IconValue(),
+                                                           &blockSize, &onHeapReason))
                         {
                             // reason set by the call
                             canStack = false;
