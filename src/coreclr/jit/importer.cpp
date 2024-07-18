@@ -2904,17 +2904,18 @@ GenTree* Compiler::impUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* o
     // Nested QMARK - "obj->pMT == <boxed-type> ? unboxTree : helperCall"
     GenTree*      unboxTypeNode = gtNewIconEmbClsHndNode(unboxType);
     GenTree*      objMT         = gtNewMethodTableLookup(objClone);
-    GenTree*      mtLookupCond  = gtNewOperNode(GT_EQ, TYP_INT, objMT, unboxTypeNode);
-    GenTreeColon* mtCheckColon  = gtNewColonNode(TYP_VOID, unboxTree, helperCall);
-    GenTree*      mtCheckQmark  = gtNewQmarkNode(TYP_VOID, mtLookupCond, mtCheckColon);
+    GenTree*      mtLookupCond  = gtNewOperNode(GT_NE, TYP_INT, objMT, unboxTypeNode);
+    GenTreeColon* mtCheckColon  = gtNewColonNode(TYP_VOID, helperCall, unboxTree);
+    GenTreeQmark* mtCheckQmark  = gtNewQmarkNode(TYP_VOID, mtLookupCond, mtCheckColon);
+    mtCheckQmark->SetThenNodeLikelihood(0);
 
     // Zero initialize the result in case of "obj == null"
     GenTreeLclVar* zeroInitResultNode = gtNewStoreLclVarNode(resultTmp, gtNewIconNode(0));
 
     // Root condition - "obj == null ? zeroInitResultNode : mtCheckQmark"
-    GenTree*      nullcheck      = gtNewOperNode(GT_EQ, TYP_INT, obj, gtNewNull());
-    GenTreeColon* nullCheckColon = gtNewColonNode(TYP_VOID, zeroInitResultNode, mtCheckQmark);
-    GenTree*      nullCheckQmark = gtNewQmarkNode(TYP_VOID, nullcheck, nullCheckColon);
+    GenTree*      nullcheck      = gtNewOperNode(GT_NE, TYP_INT, obj, gtNewNull());
+    GenTreeColon* nullCheckColon = gtNewColonNode(TYP_VOID, mtCheckQmark, zeroInitResultNode);
+    GenTreeQmark* nullCheckQmark = gtNewQmarkNode(TYP_VOID, nullcheck, nullCheckColon);
 
     // Spill the root QMARK and return the result local
     impAppendTree(nullCheckQmark, CHECK_SPILL_ALL, impCurStmtDI);
