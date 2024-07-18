@@ -43,6 +43,7 @@ elseif(TARGETS_APPLE_MOBILE)
     set(MOBILE_SYSTEM_LIBS
         "-framework Foundation"
         "-framework Security"
+        "-framework Network"
         "-framework UIKit"
         "-lz"
         "-lc++"
