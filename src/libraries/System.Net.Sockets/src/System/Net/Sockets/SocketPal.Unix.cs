@@ -1823,9 +1823,9 @@ namespace System.Net.Sockets
             int maxFd = 0;
             try
             {
-                AddDesriptors(ref readFDs, checkRead, ref refsAdded, ref maxFd);
-                AddDesriptors(ref writeFDs, checkWrite, ref refsAdded, ref maxFd);
-                AddDesriptors(ref errorFDs, checkError, ref refsAdded, ref maxFd);
+                AddDesriptors(readFDs, checkRead, ref refsAdded, ref maxFd);
+                AddDesriptors(writeFDs, checkWrite, ref refsAdded, ref maxFd);
+                AddDesriptors(errorFDs, checkError, ref refsAdded, ref maxFd);
 
                 int triggered = 0;
                 Interop.Error err = Interop.Sys.Select(readFDs, readFDs.Length, writeFDs, writeFDs.Length, errorFDs, errorFDs.Length, microseconds, maxFd, out triggered);
@@ -1868,7 +1868,7 @@ namespace System.Net.Sockets
             return (SocketError)0;
         }
 
-        private static void AddDesriptors(ref Span<int> buffer, IList? socketList, ref int refsAdded, ref int maxFd)
+        private static void AddDesriptors(Span<int> buffer, IList? socketList, ref int refsAdded, ref int maxFd)
         {
             if (socketList == null || socketList.Count == 0 )
             {
@@ -1902,16 +1902,7 @@ namespace System.Net.Sockets
             if (socketList == null)
                 return;
 
-            // The Select API requires leaving in the input lists only those sockets that were ready.  As such, we need to loop
-            // through each poll event, and for each that wasn't ready, remove the corresponding Socket from its list.  Technically
-            // this is O(n^2), due to removing from the list requiring shifting down all elements after it.  However, this doesn't
-            // happen with the most common cases.  If very few sockets were ready, then as we iterate from the end of the list, each
-            // removal will typically be O(1) rather than O(n).  If most sockets were ready, then we only need to remove a few, in
-            // which case we're only doing a small number of O(n) shifts.  It's only for the intermediate case, where a non-trivial
-            // number of sockets are ready and a non-trivial number of sockets are not ready that we end up paying the most.  We could
-            // avoid these costs by, for example, allocating a side list that we fill with the sockets that should remain, clearing
-            // the original list, and then populating the original list with the contents of the side list.  That of course has its
-            // own costs, and so for now we do the "simple" thing.  This can be changed in the future as needed.
+            // Removing list can be O(n^2), some more tgoughs are written in FilterPollList that does exactly same opeation.
 
             for (int i = socketList.Count - 1; i >= 0; --i)
             {
@@ -1940,14 +1931,13 @@ namespace System.Net.Sockets
                 AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.PollEvents.POLLIN | Interop.PollEvents.POLLHUP, ref refsAdded);
                 AddToPollArray(events, eventsLength, checkWrite, ref offset, Interop.PollEvents.POLLOUT, ref refsAdded);
                 AddToPollArray(events, eventsLength, checkError, ref offset, Interop.PollEvents.POLLPRI, ref refsAdded);
-
-                Debug.Assert(offset <= eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
-                Debug.Assert(refsAdded <= eventsLength, $"Invalid ref adds. refsAdded={refsAdded}, eventsLength={eventsLength}.");
+                Debug.Assert(offset == eventsLength, $"Invalid adds. offset={offset}, eventsLength={eventsLength}.");
+                Debug.Assert(refsAdded == eventsLength, $"Invalid ref adds. refsAdded={refsAdded}, eventsLength={eventsLength}.");
 
                 // Do the poll
                 uint triggered = 0;
                 int milliseconds = microseconds == -1 ? -1 : microseconds / 1000;
-                Interop.Error err = Interop.Sys.Poll(events, (uint)refsAdded, milliseconds, &triggered);
+                Interop.Error err = Interop.Sys.Poll(events, (uint)eventsLength, milliseconds, &triggered);
                 if (err != Interop.Error.SUCCESS)
                 {
                     return GetSocketErrorForErrorCode(err);
@@ -1984,7 +1974,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private static unsafe void AddToPollArray(Interop.PollEvent* arr, int arrLength, IList? socketList, ref int arrOffset, Interop.PollEvents events, ref int refsAdded, int readCount = 0)
+        private static unsafe void AddToPollArray(Interop.PollEvent* arr, int arrLength, IList? socketList, ref int arrOffset, Interop.PollEvents events, ref int refsAdded)
         {
             if (socketList == null)
                 return;
@@ -2004,28 +1994,6 @@ namespace System.Net.Sockets
                 bool success = false;
                 socket.InternalSafeHandle.DangerousAddRef(ref success);
                 int fd = (int)socket.InternalSafeHandle.DangerousGetHandle();
-
-                if (readCount > 0)
-                {
-                    // some platfoms like macOS do not like if there is duplication between real and error list.
-                    // To fix that we will search read list and if macthing descriptor exiost we will add events flags
-                    // instead of adding new entry to error list.
-                    int readIndex = 0;
-                    while (readIndex < readCount)
-                    {
-                        if (arr[readIndex].FileDescriptor == fd)
-                        {
-                            arr[i].Events |= events;
-                            socket.InternalSafeHandle.DangerousRelease();
-                            break;
-                        }
-                        readIndex++;
-                    }
-                    if (readIndex != readCount)
-                    {
-                        continue;
-                    }
-                }
 
                 arr[arrOffset++] = new Interop.PollEvent { Events = events, FileDescriptor = fd };
                 refsAdded++;
