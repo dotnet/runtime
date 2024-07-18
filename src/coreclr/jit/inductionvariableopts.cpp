@@ -1300,7 +1300,7 @@ class StrengthReductionContext
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
-    bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, int derivedLevel, ScevAddRec** nextIV);
+    bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
     bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
     BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors);
@@ -1423,7 +1423,7 @@ bool StrengthReductionContext::TryStrengthReduce()
 
             // Verify that all cursors still represent the same IV
             ScevAddRec* nextIV = nullptr;
-            if (!CheckAdvancedCursors(nextCursors, derivedLevel + 1, &nextIV))
+            if (!CheckAdvancedCursors(nextCursors, &nextIV))
             {
                 break;
             }
@@ -1734,7 +1734,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
         for (int i = 0; i < nextCursors->Height(); i++)
         {
             CursorInfo& nextCursor = nextCursors->BottomRef(i);
-            printf("    [%d] [%06u]%s: ", i, nextCursor.Tree == nullptr ? 0 : Compiler::dspTreeID(nextCursor.Tree));
+            printf("    [%d] [%06u]: ", i, nextCursor.Tree == nullptr ? 0 : Compiler::dspTreeID(nextCursor.Tree));
             if (nextCursor.IV == nullptr)
             {
                 printf("<null IV>");
@@ -1755,8 +1755,6 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //
 // Parameters:
 //   cursors      - List of cursors that were advanced.
-//   derivedLevel - The derived level of the advanced IVs. That is, the number
-//                  of times they are derived from the primary IV.
 //   nextIV       - [out] The next derived IV from the subset of advanced
 //                  cursors to now consider strength reducing.
 //
@@ -1769,7 +1767,6 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //   decides to no longer consider some cursors for strength reduction.
 //
 bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors,
-                                                    int                     derivedLevel,
                                                     ScevAddRec**            nextIV)
 {
     *nextIV = nullptr;
