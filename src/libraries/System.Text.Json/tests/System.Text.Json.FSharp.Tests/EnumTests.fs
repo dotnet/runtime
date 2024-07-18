@@ -34,16 +34,14 @@ optionsDisableNumeric.Converters.Add(new JsonStringEnumConverter(null, false))
 
 [<Fact>]
 let ``Deserialize With Exception If Enum Contains Special Char`` () =
-    let ex = Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumJsonStr, options) |> ignore)
-    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
+    let ex = Assert.Throws<InvalidOperationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumJsonStr, options) |> ignore)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 
 [<Fact>]
 let ``Serialize With Exception If Enum Contains Special Char`` () =
-    let ex = Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnum, options) |> ignore)
-    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
+    let ex = Assert.Throws<InvalidOperationException>(fun () ->  JsonSerializer.Serialize(badEnum, options) |> ignore)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 [<Fact>]
 let ``Successful Deserialize Normal Enum`` () =
@@ -52,15 +50,13 @@ let ``Successful Deserialize Normal Enum`` () =
 
 [<Fact>]
 let ``Fail Deserialize Good Value Of Bad Enum Type`` () =
-    let ex = Assert.Throws<TargetInvocationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumWithGoodValueJsonStr, options) |> ignore)
-    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
+    let ex = Assert.Throws<InvalidOperationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumWithGoodValueJsonStr, options) |> ignore)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 [<Fact>]
 let ``Fail Serialize Good Value Of Bad Enum Type`` () =
-    let ex = Assert.Throws<TargetInvocationException>(fun () ->  JsonSerializer.Serialize(badEnumWithGoodValue, options) |> ignore)
-    Assert.Equal(typeof<InvalidOperationException>, ex.InnerException.GetType())
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifer name 'There's a comma, in my name'.", ex.InnerException.Message)
+    let ex = Assert.Throws<InvalidOperationException>(fun () ->  JsonSerializer.Serialize(badEnumWithGoodValue, options) |> ignore)
+    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 type NumericLabelEnum =
   | ``1`` = 1

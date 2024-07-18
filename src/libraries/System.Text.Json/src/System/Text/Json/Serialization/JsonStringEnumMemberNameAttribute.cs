@@ -15,11 +15,6 @@ namespace System.Text.Json.Serialization
         /// <param name="name">The name to apply to the current enum member.</param>
         public JsonStringEnumMemberNameAttribute(string name)
         {
-            if (name is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(name));
-            }
-
             Name = name;
         }
 

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -53,25 +52,27 @@ namespace System.Text.Json.Serialization.Converters
         // Since multiple threads can add to the cache, a few more values might be added.
         private const int NameCacheSizeSoftLimit = 64;
 
-        public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions serializerOptions)
+        public EnumConverter(EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)
         {
-            Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Int16 or TypeCode.Int32 or TypeCode.Int64
-                                        or TypeCode.Byte or TypeCode.UInt16 or TypeCode.UInt32 or TypeCode.UInt64);
+            Debug.Assert(EnumConverterFactory.IsSupportedTypeCode(s_enumTypeCode));
 
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
             _enumFieldInfo = ResolveEnumFields(namingPolicy, out _containsNameAttributes);
+
             _nameCacheForWriting = new();
             if (namingPolicy != null || _containsNameAttributes)
             {
+                // We can't rely on the built-in enum parser since custom names are used.
                 _nameCacheForReading = new(StringComparer.Ordinal);
             }
 
-            JavaScriptEncoder? encoder = serializerOptions.Encoder;
+            JavaScriptEncoder? encoder = options.Encoder;
             foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
             {
-                _nameCacheForWriting.TryAdd(fieldInfo.Key, JsonEncodedText.Encode(fieldInfo.Name, encoder));
-                _nameCacheForReading?.TryAdd(fieldInfo.Name, fieldInfo.Value);
+                JsonEncodedText encodedName = JsonEncodedText.Encode(fieldInfo.JsonName, encoder);
+                _nameCacheForWriting.TryAdd(fieldInfo.Key, encodedName);
+                _nameCacheForReading?.TryAdd(fieldInfo.JsonName, fieldInfo.Value);
             }
         }
 
@@ -79,15 +80,11 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTokenType token = reader.TokenType;
 
-            if (token == JsonTokenType.String)
+            if (token is JsonTokenType.String &&
+                (_converterOptions & EnumConverterOptions.AllowStrings) != 0 &&
+                TryParseEnumFromString(ref reader, out T value))
             {
-                if ((_converterOptions & EnumConverterOptions.AllowStrings) != 0 &&
-                    TryParseEnumFromString(ref reader, out T value))
-                {
-                    return value;
-                }
-
-                ThrowHelper.ThrowJsonException();
+                return value;
             }
 
             if (token != JsonTokenType.Number || (_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
@@ -168,10 +165,8 @@ namespace System.Text.Json.Serialization.Converters
                     return;
                 }
 
-                if (TryFormatEnumAsString(value, dictionaryKeyPolicy: null, out string? stringValue, out bool _))
+                if (TryFormatEnumAsString(key, value, dictionaryKeyPolicy: null, out string? stringValue))
                 {
-                    Debug.Assert(s_isFlagsEnum, "path should only be entered by flag enums.");
-
                     if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                     {
                         formatted = JsonEncodedText.Encode(stringValue, options.Encoder);
@@ -223,13 +218,16 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WriteNumberValue(Unsafe.As<T, sbyte>(ref value));
                     break;
                 default:
-                    ThrowHelper.ThrowJsonException();
+                    Debug.Fail("Should not be reached");
                     break;
             }
         }
 
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            // NB JsonSerializerOptions.DictionaryKeyPolicy is ignored on deserialization.
+            // This is true for all converters that implement dictionary key serialization.
+
             if (!TryParseEnumFromString(ref reader, out T value))
             {
                 ThrowHelper.ThrowJsonException();
@@ -240,18 +238,20 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            JsonNamingPolicy? dictionaryKeyPolicy = options.DictionaryKeyPolicy is { } dkp && dkp != _namingPolicy ? dkp : null;
             ulong key = ConvertToUInt64(value);
 
-            if (options.DictionaryKeyPolicy is null && _nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
+            if (dictionaryKeyPolicy is null && _nameCacheForWriting.TryGetValue(key, out JsonEncodedText formatted))
             {
                 writer.WritePropertyName(formatted);
                 return;
             }
 
-            if (TryFormatEnumAsString(value, options.DictionaryKeyPolicy, out string? stringEnum, out bool isDictionaryKeyPolicyApplied))
+            if (TryFormatEnumAsString(key, value, dictionaryKeyPolicy, out string? stringEnum))
             {
-                if (!isDictionaryKeyPolicyApplied && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
+                if (dictionaryKeyPolicy is null && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                 {
+                    // Only attempt to cache if there is no dictionary key policy.
                     formatted = JsonEncodedText.Encode(stringEnum, options.Encoder);
                     writer.WritePropertyName(formatted);
                     _nameCacheForWriting.TryAdd(key, formatted);
@@ -296,7 +296,7 @@ namespace System.Text.Json.Serialization.Converters
                     writer.WritePropertyName(Unsafe.As<T, sbyte>(ref value));
                     break;
                 default:
-                    ThrowHelper.ThrowJsonException();
+                    Debug.Fail("Should not be reached");
                     break;
             }
         }
@@ -344,14 +344,14 @@ namespace System.Text.Json.Serialization.Converters
 
 #if NET9_0_OR_GREATER
             success = nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(source, out value) ||
-                (source.Contains(',') && TryParseFromCommaSeparatedString(source.ToString(), out value));
+                (source.Contains(',') && TryParseCommaSeparatedEnumValues(source.ToString(), out value));
 #elif NET
             string enumString = source.ToString();
             success = nameCacheForReading.TryGetValue(enumString, out value) ||
-                TryParseFromCommaSeparatedString(enumString, out value);
+                TryParseCommaSeparatedEnumValues(enumString, out value);
 #else
             success = nameCacheForReading.TryGetValue(source, out value) ||
-                TryParseFromCommaSeparatedString(source, out value);
+                TryParseCommaSeparatedEnumValues(source, out value);
 #endif
 
         End:
@@ -381,7 +381,7 @@ namespace System.Text.Json.Serialization.Converters
                 JsonArray enumValues = [];
                 foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
                 {
-                    enumValues.Add((JsonNode)fieldInfo.Name);
+                    enumValues.Add((JsonNode)fieldInfo.JsonName);
                 }
 
                 return new() { Enum = enumValues };
@@ -390,7 +390,7 @@ namespace System.Text.Json.Serialization.Converters
             return new() { Type = JsonSchemaType.Integer };
         }
 
-        private bool TryParseFromCommaSeparatedString(string enumString, out T value)
+        private bool TryParseCommaSeparatedEnumValues(string enumString, out T value)
         {
             Debug.Assert(_nameCacheForReading != null);
 
@@ -413,7 +413,7 @@ namespace System.Text.Json.Serialization.Converters
                 result |= ConvertToUInt64(value);
             }
 
-            value = (T)Enum.ToObject(typeof(T), result);
+            value = ConvertFromUInt64(result);
 
             if (nameCacheForReading.Count < NameCacheSizeSoftLimit)
             {
@@ -423,34 +423,40 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        // This method is adapted from Enum.ToUInt64 (an internal method):
-        // https://github.com/dotnet/runtime/blob/bd6cbe3642f51d70839912a6a666e5de747ad581/src/libraries/System.Private.CoreLib/src/System/Enum.cs#L240-L260
         private static ulong ConvertToUInt64(T value)
         {
-            return s_enumTypeCode switch
+            switch (s_enumTypeCode)
             {
-                TypeCode.Int32 or TypeCode.UInt32 => Unsafe.As<T, uint>(ref value),
-                TypeCode.Int64 or TypeCode.UInt64 => Unsafe.As<T, ulong>(ref value),
-                TypeCode.Int16 or TypeCode.UInt16 => Unsafe.As<T, ushort>(ref value),
-                TypeCode.Byte or TypeCode.SByte => Unsafe.As<T, byte>(ref value),
-                _ => Throw(),
+                case TypeCode.Int32 or TypeCode.UInt32: return Unsafe.As<T, uint>(ref value);
+                case TypeCode.Int64 or TypeCode.UInt64: return Unsafe.As<T, ulong>(ref value);
+                case TypeCode.Int16 or TypeCode.UInt16: return Unsafe.As<T, ushort>(ref value);
+                default:
+                    Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Byte);
+                    return Unsafe.As<T, byte>(ref value);
             };
-
-            static ulong Throw() => throw new InvalidOperationException();
         }
 
-        private static string ApplyNamingPolicy(string value, JsonNamingPolicy? namingPolicy)
+        private static T ConvertFromUInt64(ulong value)
         {
-            if (namingPolicy is not null)
+            switch (s_enumTypeCode)
             {
-                value = namingPolicy.ConvertName(value);
-                if (value is null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(namingPolicy);
-                }
-            }
+                case TypeCode.Int32 or TypeCode.UInt32:
+                    uint uintValue = (uint)value;
+                    return Unsafe.As<uint, T>(ref uintValue);
 
-            return value;
+                case TypeCode.Int64 or TypeCode.UInt64:
+                    ulong ulongValue = value;
+                    return Unsafe.As<ulong, T>(ref ulongValue);
+
+                case TypeCode.Int16 or TypeCode.UInt16:
+                    ushort ushortValue = (ushort)value;
+                    return Unsafe.As<ushort, T>(ref ushortValue);
+
+                default:
+                    Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Byte);
+                    byte byteValue = (byte)value;
+                    return Unsafe.As<byte, T>(ref byteValue);
+            };
         }
 
         private static string[] SplitFlagsEnum(string value)
@@ -468,36 +474,23 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// Attempt to format the enum value as a comma-separated string of flag values, or returns false if not a valid flag combination.
         /// </summary>
-        private bool TryFormatEnumAsString(
-            T value,
-            JsonNamingPolicy? dictionaryKeyPolicy,
-            [NotNullWhen(true)] out string? stringValue,
-            out bool isDictionaryKeyPolicyApplied)
+        private bool TryFormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy, [NotNullWhen(true)] out string? stringValue)
         {
-            Debug.Assert(!Enum.IsDefined(typeof(T), value) || dictionaryKeyPolicy is not null, "Defined values must have already been handled.");
-            isDictionaryKeyPolicyApplied = false;
+            Debug.Assert(!Enum.IsDefined(typeof(T), value) || dictionaryKeyPolicy != null, "Must either be used on undefined values or with a key policy.");
 
-            if (s_isFlagsEnum || dictionaryKeyPolicy is not null)
+            if (s_isFlagsEnum)
             {
-                ulong key = ConvertToUInt64(value);
-                ulong remainingBits = key;
                 using ValueStringBuilder sb = new(stackalloc char[JsonConstants.StackallocCharThreshold]);
+                ulong remainingBits = key;
 
                 foreach (EnumFieldInfo enumField in _enumFieldInfo)
                 {
                     ulong fieldKey = enumField.Key;
                     if (fieldKey == 0 ? key == 0 : (remainingBits & fieldKey) == fieldKey)
                     {
-                        string name;
-                        if (dictionaryKeyPolicy != null && !enumField.IsAttributeOverriddenName)
-                        {
-                            name = ApplyNamingPolicy(enumField.OriginalName, dictionaryKeyPolicy);
-                            isDictionaryKeyPolicyApplied = true;
-                        }
-                        else
-                        {
-                            name = enumField.Name;
-                        }
+                        string name = dictionaryKeyPolicy is not null
+                            ? ResolveAndValidateJsonName(enumField.Name, dictionaryKeyPolicy, enumField.IsNameFromAttribute)
+                            : enumField.JsonName;
 
                         if (sb.Length > 0)
                         {
@@ -518,9 +511,21 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (remainingBits == 0 && sb.Length > 0)
                 {
-                    // The value is representable as a combination of flags.
+                    // The value is a valid combination of flags.
                     stringValue = sb.ToString();
                     return true;
+                }
+            }
+            else if (dictionaryKeyPolicy != null)
+            {
+                foreach (EnumFieldInfo enumField in _enumFieldInfo)
+                {
+                    // Search for an exact match and apply the key policy.
+                    if (enumField.Key == key)
+                    {
+                        stringValue = ResolveAndValidateJsonName(enumField.Name, dictionaryKeyPolicy, enumField.IsNameFromAttribute);
+                        return true;
+                    }
                 }
             }
 
@@ -546,7 +551,6 @@ namespace System.Text.Json.Serialization.Converters
                 if (field.GetCustomAttribute<JsonStringEnumMemberNameAttribute>() is { } attribute)
                 {
                     (enumMemberAttributes ??= new(StringComparer.Ordinal)).Add(field.Name, attribute.Name);
-                    containsNameAttributes = true;
                 }
             }
 
@@ -556,43 +560,46 @@ namespace System.Text.Json.Serialization.Converters
                 string name = names[i];
                 T value = values[i];
                 ulong key = ConvertToUInt64(value);
-                bool isAttributeOverriddenName = false;
+                bool isNameFromAttribute = false;
 
                 if (enumMemberAttributes != null && enumMemberAttributes.TryGetValue(name, out string? attributeName))
                 {
                     name = attributeName;
-                    isAttributeOverriddenName = true;
-                }
-                else
-                {
-                    // Only apply naming policy if there is no JsonStringEnumMemberNameAttribute.
-                    name = ApplyNamingPolicy(name, namingPolicy);
+                    containsNameAttributes = isNameFromAttribute = true;
                 }
 
-                // If enum contains special char, make it failed to serialize or deserialize.
-                if (name.AsSpan().IndexOfAny(',', ' ') >= 0)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_InvalidEnumTypeWithSpecialChar(typeof(T), name);
-                }
-
-                enumFields[i] = new EnumFieldInfo(
-                    name,
-                    originalName: names[i],
-                    value,
-                    key,
-                    isAttributeOverriddenName);
+                string jsonName = ResolveAndValidateJsonName(name, namingPolicy, isNameFromAttribute);
+                enumFields[i] = new EnumFieldInfo(key, value, name, jsonName, isNameFromAttribute);
             }
 
             return enumFields;
         }
 
-        private sealed class EnumFieldInfo(string name, string originalName, T value, ulong key, bool isAttributeOverriddenName)
+        private static string ResolveAndValidateJsonName(string name, JsonNamingPolicy? namingPolicy, bool isNameFromAttribute)
         {
-            public string Name { get; } = name;
-            public string OriginalName { get; } = originalName;
-            public T Value { get; } = value;
+            if (!isNameFromAttribute && namingPolicy is not null)
+            {
+                // Do not apply a naming policy to names that are explicitly set via attributes.
+                // This is consistent with JsonPropertyNameAttribute semantics.
+                name = namingPolicy.ConvertName(name);
+            }
+
+            if (name is null || (s_isFlagsEnum && (name is "" || name.AsSpan().IndexOfAny(' ', ',') >= 0)))
+            {
+                // Reject null strings and in the case of flags additionally reject empty strings or names containing spaces or commas.
+                ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
+            }
+
+            return name;
+        }
+
+        private sealed class EnumFieldInfo(ulong key, T value, string name, string jsonName, bool isNameFromAttribute)
+        {
             public ulong Key { get; } = key;
-            public bool IsAttributeOverriddenName { get; } = isAttributeOverriddenName;
+            public T Value { get; } = value;
+            public string Name { get; } = name;
+            public string JsonName { get; } = jsonName;
+            public bool IsNameFromAttribute { get; } = isNameFromAttribute;
         }
     }
 }
