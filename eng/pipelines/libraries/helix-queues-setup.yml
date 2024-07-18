@@ -54,7 +54,7 @@ jobs:
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
       - ${{ if and(eq(parameters.jobParameters.interpreter, ''), ne(parameters.jobParameters.isSingleFile, true)) }}:
         - ${{ if and(eq(parameters.jobParameters.testScope, 'outerloop'), eq(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
-          - RedHat.7.Amd64.Open
+          - RedHat.8.Amd64.Open
           - SLES.15.Amd64.Open
           - (Fedora.39.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-39-helix
           - ubuntu.2204.amd64.open.svc
@@ -62,7 +62,7 @@ jobs:
         - ${{ if or(ne(parameters.jobParameters.testScope, 'outerloop'), ne(parameters.jobParameters.runtimeFlavor, 'mono')) }}:
           - ${{ if eq(parameters.jobParameters.isFullMatrix, true) }}:
             - (Centos.7.Amd64.Open)Ubuntu.2204.Amd64.Open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-mlnet-helix
-            - RedHat.7.Amd64.Open
+            - RedHat.8.Amd64.Open
             - Ubuntu.2004.Amd64.Open
             - SLES.12.Amd64.Open
             - SLES.15.Amd64.Open
@@ -72,7 +72,7 @@ jobs:
             - (Mariner.2.0.Amd64.Open)ubuntu.2204.amd64.open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-helix
           - ${{ if eq(parameters.jobParameters.isFullMatrix, false) }}:
             - (Centos.7.Amd64.Open)Ubuntu.2204.Amd64.Open.svc@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream9-helix
-            - RedHat.7.Amd64.Open
+            - RedHat.8.Amd64.Open
             - (Debian.11.Amd64.Open)Ubuntu.2204.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64
             - Ubuntu.2004.Amd64.Open
       - ${{ if or(eq(parameters.jobParameters.interpreter, 'true'), eq(parameters.jobParameters.isSingleFile, true)) }}:
