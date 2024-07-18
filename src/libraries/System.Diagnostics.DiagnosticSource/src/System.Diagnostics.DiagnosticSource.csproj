@@ -27,7 +27,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <ItemGroup>
     <Compile Include="System\Diagnostics\Activity.cs" />
-    <Compile Include="System\Diagnostics\Activity.Current.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
     <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
