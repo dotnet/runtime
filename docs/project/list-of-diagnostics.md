@@ -263,11 +263,21 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
 |  __`SYSLIB1223`__ | Attributes deriving from JsonConverterAttribute are not supported by the source generator. |
 |  __`SYSLIB1224`__ | Types annotated with JsonSerializableAttribute must be classes deriving from JsonSerializerContext. |
-|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
-|  __`SYSLIB1229`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1229`__ | *`SYSLIB1220`-`SYSLIB1229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1230`__ | Deriving from a `GeneratedComInterface`-attributed interface defined in another assembly is not supported. |
+|  __`SYSLIB1231`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1232`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1233`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1234`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1235`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1236`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1237`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1238`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
+|  __`SYSLIB1239`__ | *`SYSLIB1230`-`SYSLIB1239` reserved for Microsoft.Interop.ComInterfaceGenerator.* |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 

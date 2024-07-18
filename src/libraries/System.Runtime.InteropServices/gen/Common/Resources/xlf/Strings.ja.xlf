@@ -67,6 +67,16 @@
         <target state="translated">ベース COM インターフェイスはソースを生成できませんでした。このインターフェイスのコードは生成されません。</target>
         <note />
       </trans-unit>
+      <trans-unit id="BaseInterfaceDefinedInOtherAssemblyMessage">
+        <source>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</source>
+        <target state="new">The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BaseInterfaceDefinedInOtherAssemblyTitle">
+        <source>Defining an interface with 'GeneratedComInterfaceAttribute' who's base interface is defined in another assembly is not supported</source>
+        <target state="new">Defining an interface with 'GeneratedComInterfaceAttribute' who's base interface is defined in another assembly is not supported</target>
+        <note />
+      </trans-unit>
       <trans-unit id="BaseInterfaceMustGenerateAtLeastSameWrappers">
         <source>A 'GeneratedComInterface' cannot specify 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' unless the base interface type did not specify options or specified at least the same options.</source>
         <target state="translated">基底インターフェイスの型でオプションが指定されていないか、少なくとも同じオプションが指定されていない限り、'GeneratedComInterface' では 'ComInterfaceOptions.ManagedObjectWrapper' または 'ComInterfaceOptions.ComObjectWrapper' を指定できません。</target>

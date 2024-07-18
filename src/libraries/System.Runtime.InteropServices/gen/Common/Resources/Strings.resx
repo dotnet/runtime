@@ -910,4 +910,10 @@
   <data name="InVariantShouldBeRef" xml:space="preserve">
     <value>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</value>
   </data>
+  <data name="BaseInterfaceDefinedInOtherAssemblyMessage" xml:space="preserve">
+    <value>The type '{0}' has a base interface '{1}' defined in a different assembly. This can cause a variety of difficult to diagnose issues in some scenarios</value>
+  </data>
+  <data name="BaseInterfaceDefinedInOtherAssemblyTitle" xml:space="preserve">
+    <value>Defining an interface with 'GeneratedComInterfaceAttribute' who's base interface is defined in another assembly is not supported</value>
+  </data>
 </root>

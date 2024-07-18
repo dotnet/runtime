@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
@@ -296,9 +297,85 @@ namespace ComInterfaceGenerator.Unit.Tests
             });
         }
 
+        [Fact]
+        public async Task ComInterfaceInheritingAcrossCompilationsCalculatesCorrectVTableIndex()
+        {
+            string baseSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E98179")]
+                public partial interface IComInterface
+                {
+                    void Method();
+                }
+                """;
+
+            string derivedSource = $$"""
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                
+                [GeneratedComInterface]
+                [Guid("0A617667-4961-4F90-B74F-6DC368E9817A")]
+                partial interface {|#1:IComInterface2|} : IComInterface
+                {
+                    void DerivedMethod();
+                }
+                """;
+
+            TargetFunctionPointerInvocationTest test = new(
+                "IComInterface2",
+                "DerivedMethod",
+                (newComp, invocation) =>
+                {
+                    Assert.Equal(4, Assert.IsAssignableFrom<ILiteralOperation>(Assert.IsAssignableFrom<IConversionOperation>(invocation.Target).Operand.ChildOperations.Last()).ConstantValue.Value);
+                },
+                new ComInterfaceImplementationLocator(),
+                [typeof(Microsoft.Interop.ComInterfaceGenerator)]
+            )
+            {
+                TestState =
+                {
+                    Sources = { derivedSource },
+                    AdditionalProjects =
+                    {
+                        ["Base"] =
+                        {
+                            Sources = { baseSource }
+                        }
+                    },
+                    AdditionalProjectReferences = { "Base" },
+                },
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+                ExpectedDiagnostics =
+                {
+                    VerifyCS.DiagnosticWithArguments(GeneratorDiagnostics.BaseInterfaceDefinedInOtherAssembly, "IComInterface2", "IComInterface").WithLocation(1).WithSeverity(DiagnosticSeverity.Warning)
+                }
+            };
+
+            test.TestState.AdditionalProjects["Base"].AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
+
+            // The Roslyn SDK doesn't apply the compilation options from CreateCompilationOptions to AdditionalProjects-based projects.
+            test.SolutionTransforms.Add((sln, _) =>
+            {
+                var additionalProject = sln.Projects.First(proj => proj.Name == "Base");
+                return additionalProject.WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true)).Solution;
+            });
+
+            await test.RunAsync();
+        }
+
         private static async Task VerifyVirtualMethodIndexGeneratorAsync(string source, string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
         {
-            VirtualMethodIndexTargetSignatureTest test = new(interfaceName, methodName, signatureValidator)
+            TargetFunctionPointerInvocationTest test = new(
+                interfaceName,
+                methodName,
+                (newComp, invocation) => signatureValidator(newComp, invocation.GetFunctionPointerSignature()),
+                new VirtualMethodIndexImplementationLocator(),
+                [typeof(VtableIndexStubGenerator)])
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -306,9 +383,15 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             await test.RunAsync();
         }
+
         private static async Task VerifyComInterfaceGeneratorAsync(string source, string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
         {
-            ComInterfaceTargetSignatureTest test = new(interfaceName, methodName, signatureValidator)
+            TargetFunctionPointerInvocationTest test = new(
+                interfaceName,
+                methodName,
+                (newComp, invocation) => signatureValidator(newComp, invocation.GetFunctionPointerSignature()),
+                new ComInterfaceImplementationLocator(),
+                [typeof(Microsoft.Interop.ComInterfaceGenerator)])
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
@@ -317,34 +400,34 @@ namespace ComInterfaceGenerator.Unit.Tests
             await test.RunAsync();
         }
 
-        private abstract class TargetSignatureTestBase : VerifyCS.Test
+        private interface IImplementationLocator
         {
-            private readonly Action<Compilation, IMethodSymbol> _signatureValidator;
-            private readonly string _interfaceName;
-            private readonly string _methodName;
+            INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface);
+        }
 
-            protected TargetSignatureTestBase(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
-                : base(referenceAncillaryInterop: true)
-            {
-                _signatureValidator = signatureValidator;
-                _interfaceName = interfaceName;
-                _methodName = methodName;
-            }
-
+        private sealed class TargetFunctionPointerInvocationTest(
+            string interfaceName,
+            string methodName,
+            Action<Compilation, IFunctionPointerInvocationOperation> signatureValidator,
+            IImplementationLocator implementationTypeLocator,
+            IEnumerable<Type> sourceGenerators)
+            : VerifyCS.Test(referenceAncillaryInterop: true)
+        {
             protected override void VerifyFinalCompilation(Compilation compilation)
             {
-                _signatureValidator(compilation, FindFunctionPointerInvocationSignature(compilation));
+                signatureValidator(compilation, FindFunctionPointerInvocation(compilation));
             }
 
-            protected abstract INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface);
-            private IMethodSymbol FindFunctionPointerInvocationSignature(Compilation compilation)
+            protected sealed override IEnumerable<Type> GetSourceGenerators() => sourceGenerators;
+
+            private IFunctionPointerInvocationOperation FindFunctionPointerInvocation(Compilation compilation)
             {
-                INamedTypeSymbol? userDefinedInterface = compilation.Assembly.GetTypeByMetadataName(_interfaceName);
+                INamedTypeSymbol? userDefinedInterface = compilation.Assembly.GetTypeByMetadataName(interfaceName);
                 Assert.NotNull(userDefinedInterface);
 
-                INamedTypeSymbol generatedInterfaceImplementation = FindImplementationInterface(compilation, userDefinedInterface);
+                INamedTypeSymbol generatedInterfaceImplementation = implementationTypeLocator.FindImplementationInterface(compilation, userDefinedInterface);
 
-                IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{_interfaceName}.{_methodName}").OfType<IMethodSymbol>());
+                IMethodSymbol methodImplementation = Assert.Single(generatedInterfaceImplementation.GetMembers($"global::{interfaceName}.{methodName}").OfType<IMethodSymbol>());
 
                 SyntaxNode emittedImplementationSyntax = methodImplementation.DeclaringSyntaxReferences[0].GetSyntax();
 
@@ -352,30 +435,18 @@ namespace ComInterfaceGenerator.Unit.Tests
 
                 IOperation body = model.GetOperation(emittedImplementationSyntax)!;
 
-                return Assert.Single(body.Descendants().OfType<IFunctionPointerInvocationOperation>()).GetFunctionPointerSignature();
+                return Assert.Single(body.Descendants().OfType<IFunctionPointerInvocationOperation>());
             }
         }
 
-        private sealed class VirtualMethodIndexTargetSignatureTest : TargetSignatureTestBase
+        private sealed class VirtualMethodIndexImplementationLocator : IImplementationLocator
         {
-            public VirtualMethodIndexTargetSignatureTest(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator)
-                : base(interfaceName, methodName, signatureValidator)
-            {
-            }
-
-            protected override IEnumerable<Type> GetSourceGenerators() => new[] { typeof(VtableIndexStubGenerator) };
-
-            protected override INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface) => Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
+            public INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface) => Assert.Single(userDefinedInterface.GetTypeMembers("Native"));
         }
 
-        private sealed class ComInterfaceTargetSignatureTest : TargetSignatureTestBase
+        private sealed class ComInterfaceImplementationLocator : IImplementationLocator
         {
-            public ComInterfaceTargetSignatureTest(string interfaceName, string methodName, Action<Compilation, IMethodSymbol> signatureValidator) : base(interfaceName, methodName, signatureValidator)
-            {
-            }
-            protected override IEnumerable<Type> GetSourceGenerators() => new[] { typeof(Microsoft.Interop.ComInterfaceGenerator) };
-
-            protected override INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface)
+            public INamedTypeSymbol FindImplementationInterface(Compilation compilation, INamedTypeSymbol userDefinedInterface)
             {
                 INamedTypeSymbol? iUnknownDerivedAttributeType = compilation.GetTypeByMetadataName("System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute`2");
 

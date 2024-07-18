@@ -48,7 +48,14 @@ namespace Microsoft.Interop
             {
                 return ComInterfaceInfo.From(data.Left.Symbol, data.Left.Syntax, data.Right, ct);
             });
-            var interfaceSymbolsWithoutDiagnostics = context.FilterAndReportDiagnostics(interfaceSymbolOrDiagnostics);
+            var interfaceSymbolsToGenerateWithoutDiagnostics = context.FilterAndReportDiagnostics(interfaceSymbolOrDiagnostics);
+
+            var externalInterfaceSymbols = attributedInterfaces.SelectMany(static (data, ct) =>
+            {
+                return ComInterfaceInfo.CreateInterfaceInfoForBaseInterfacesInOtherCompilations(data.Symbol);
+            });
+
+            var interfaceSymbolsWithoutDiagnostics = interfaceSymbolsToGenerateWithoutDiagnostics.Concat(externalInterfaceSymbols);
 
             var interfaceContextsOrDiagnostics = interfaceSymbolsWithoutDiagnostics
                 .Select((data, ct) => data.InterfaceInfo!)
@@ -76,7 +83,12 @@ namespace Microsoft.Interop
                 .SelectMany(static (data, ct) =>
                 {
                     return ComMethodContext.CalculateAllMethods(data, ct);
-                });
+                })
+                // Now that we've determined method offsets, we can remove all externally defined methods.
+                .Where(context => !context.OwningInterface.IsExternallyDefined);
+
+            // Now that we've determined method offsets, we can remove all externally defined interfaces.
+            var interfaceContextsToGenerate = interfaceContexts.Where(context => !context.IsExternallyDefined);
 
             // A dictionary isn't incremental, but it will have symbols, so it will never be incremental anyway.
             var methodInfoToSymbolMap = methodInfoAndSymbolGroupedByInterface
@@ -97,7 +109,7 @@ namespace Microsoft.Interop
 
             var interfaceAndMethodsContexts = comMethodContexts
                 .Collect()
-                .Combine(interfaceContexts.Collect())
+                .Combine(interfaceContextsToGenerate.Collect())
                 .SelectMany((data, ct) => GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
 
             // Generate the code for the managed-to-unmanaged stubs.
@@ -120,7 +132,7 @@ namespace Microsoft.Interop
                     .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics).Union(data.DeclaredMethods.SelectMany(m => m.UnmanagedToManagedStub.Diagnostics))));
 
             // Generate the native interface metadata for each [GeneratedComInterface]-attributed interface.
-            var nativeInterfaceInformation = interfaceContexts
+            var nativeInterfaceInformation = interfaceContextsToGenerate
                 .Select(static (data, ct) => data.Info)
                 .Select(GenerateInterfaceInformation)
                 .WithTrackingName(StepNames.GenerateInterfaceInformation)
@@ -150,14 +162,14 @@ namespace Microsoft.Interop
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
-            var iUnknownDerivedAttributeApplication = interfaceContexts
+            var iUnknownDerivedAttributeApplication = interfaceContextsToGenerate
                 .Select(static (data, ct) => data.Info)
                 .Select(GenerateIUnknownDerivedAttributeApplication)
                 .WithTrackingName(StepNames.GenerateIUnknownDerivedAttribute)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
-            var filesToGenerate = interfaceContexts
+            var filesToGenerate = interfaceContextsToGenerate
                 .Zip(nativeInterfaceInformation)
                 .Zip(managedToNativeInterfaceImplementations)
                 .Zip(nativeToManagedVtableMethods)

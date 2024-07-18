@@ -194,7 +194,14 @@ namespace Microsoft.Interop
                     {
                         baseMethods = pair;
                     }
-                    methods.AddRange(baseMethods);
+                    if (!iface.Base.IsExternallyDefined)
+                    {
+                        // If the base interface is not externally defined,
+                        // we can provide a better UX if we include base methods in our derived method processing.
+                        // For externally-defined types, we won't do this as it's very expensive
+                        // (and externally-defined type support is an unsupported best-effort feature anyway).
+                        methods.AddRange(baseMethods);
+                    }
                     startingIndex += baseMethods.Length;
                 }
                 // Then we append the declared methods in vtable order
