@@ -187,7 +187,7 @@ public:
         else
         {
             // When a single float is passed according to integer calling convention
-            // (in integer register or on stack), the upper bits are not speciifed.
+            // (in integer register or on stack), the upper bits are not specified.
             *(UINT32*)dest = value;
         }
     }
