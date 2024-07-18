@@ -114,7 +114,7 @@ FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObject
     {
         gc.result = gc.stackTrace.Get();
     }
-    
+
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.result);
@@ -411,6 +411,32 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
     else {
         retMesg.Set(buffer);
     }
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack array, QCall::ObjectHandleOnStack retMethodInfo)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    MethodDesc* pMD = NULL;
+    {
+        I1ARRAYREF arrayRef = (I1ARRAYREF)array.Get();
+        _ASSERTE(arrayRef != NULL);
+        StackTraceArray stackArray(arrayRef);
+        _ASSERTE(stackArray.Size() > 0);
+        pMD = stackArray[0].pFunc;
+    }
+
+    // The managed stack trace classes always returns typical method definition,
+    // so we don't need to bother providing exact instantiation.
+    MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
+    retMethodInfo.Set(pMDTypical->GetStubMethodInfo());
+    _ASSERTE(pMDTypical->IsRuntimeMethodHandle());
 
     END_QCALL;
 }
@@ -1784,7 +1810,7 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
 
     TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
     TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
-    
+
     if (fromTH.IsTypeDesc())
     {
         ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);

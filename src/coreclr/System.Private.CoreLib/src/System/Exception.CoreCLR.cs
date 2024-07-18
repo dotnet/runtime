@@ -55,13 +55,32 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern bool IsImmutableAgileException(Exception e);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMethodFromStackTrace")]
+        private static partial void GetMethodFromStackTrace(ObjectHandleOnStack stackTrace, ObjectHandleOnStack method);
 
         private MethodBase? GetExceptionMethodFromStackTrace()
         {
             Debug.Assert(_stackTrace != null, "_stackTrace shouldn't be null when this method is called");
-            IRuntimeMethodInfo method = GetMethodFromStackTrace(_stackTrace!);
+
+            // The _stackTrace can be either sbyte[] or Object[]. In the latter case,
+            // the first entry is the actual stack trace sbyte[], the rest are pointers
+            // to the method info objects. We only care about the first entry here.
+            sbyte[] stacktrace;
+            if (_stackTrace is object[] objArray)
+            {
+                stacktrace = (sbyte[])objArray[0];
+            }
+            else
+            {
+                Debug.Assert(_stackTrace is sbyte[], "_stackTrace should be sbyte[]");
+                stacktrace = (sbyte[])_stackTrace!;
+            }
+
+            if (stacktrace.Length == 0)
+                return null;
+
+            IRuntimeMethodInfo? method = null;
+            GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stacktrace), ObjectHandleOnStack.Create(ref method));
 
             // Under certain race conditions when exceptions are re-used, this can be null
             if (method == null)
