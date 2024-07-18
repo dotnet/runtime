@@ -5551,10 +5551,10 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     BlockRange().Remove(thisArgNode);
     BlockRange().InsertBefore(call, newThisAddr, newThis, thisArgNode);
 
-    // Keep 'this' alive
-    GenTree* thisClone = comp->gtCloneExpr(base);
-    GenTree* keepAlive = comp->gtNewKeepAliveNode(thisClone);
-    BlockRange().InsertAfter(call, thisClone, keepAlive);
+    // Keep delegate alive
+    GenTree* baseClone     = comp->gtCloneExpr(base);
+    GenTree* keepBaseAlive = comp->gtNewKeepAliveNode(baseClone);
+    BlockRange().InsertAfter(call, baseClone, keepBaseAlive);
 
     ContainCheckIndir(newThis->AsIndir());
 
