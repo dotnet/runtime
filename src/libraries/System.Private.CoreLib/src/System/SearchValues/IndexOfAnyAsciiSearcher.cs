@@ -9,8 +9,6 @@ using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System.Buffers
 {
     internal static class IndexOfAnyAsciiSearcher
