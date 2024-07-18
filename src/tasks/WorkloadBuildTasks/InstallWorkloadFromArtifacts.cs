@@ -287,6 +287,10 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
+            string[] outputSubEntries = Directory.GetFileSystemEntries(outputDir);
+            if (outputSubEntries.Length == 1)
+                outputDir = outputSubEntries[0];
+
             var bandVersion = VersionBandForManifestPackages;
             // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
             string packagePreleaseVersion = bandVersionRegex().Match(version).Groups[1].Value;
