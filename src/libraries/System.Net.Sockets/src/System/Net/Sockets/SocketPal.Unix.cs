@@ -1815,9 +1815,9 @@ namespace System.Net.Sockets
 
         private static SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
-            Span<int> readFDs = checkRead?.Count > 20 ? new int[checkRead.Count] : checkRead?.Count > 0 ? stackalloc int[checkRead.Count] : Span<int>.Empty;
-            Span<int> writeFDs = checkWrite?.Count > 20 ? new int[checkWrite.Count] : checkWrite?.Count > 0 ? stackalloc int[checkWrite.Count] : Span<int>.Empty;;
-            Span<int> errorFDs =  checkError?.Count > 20 ? new int[checkError.Count] : checkError?.Count > 0 ? stackalloc int[checkError.Count] : Span<int>.Empty;
+            Span<int> readFDs = checkRead?.Count > 20 ? new int[checkRead.Count] : stackalloc int[checkRead?.Count ?? 0];
+            Span<int> writeFDs = checkWrite?.Count > 20 ? new int[checkWrite.Count] : stackalloc int[checkWrite?.Count ?? 0];
+            Span<int> errorFDs =  checkError?.Count > 20 ? new int[checkError.Count] : stackalloc int[checkError?.Count ?? 0];
 
             int refsAdded = 0;
             int maxFd = 0;
@@ -1834,22 +1834,18 @@ namespace System.Net.Sockets
                     return GetSocketErrorForErrorCode(err);
                 }
 
+                Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
+                Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
+
                 if (triggered == 0)
                 {
-                    Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
-                    Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
-                    Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
-
                     checkRead?.Clear();
                     checkWrite?.Clear();
                     checkError?.Clear();
                 }
                 else
                 {
-                    Socket.SocketListDangerousReleaseRefs(checkRead, ref refsAdded);
-                    Socket.SocketListDangerousReleaseRefs(checkWrite, ref refsAdded);
-                    Socket.SocketListDangerousReleaseRefs(checkError, ref refsAdded);
-
                     FilterSelectList(checkRead, readFDs);
                     FilterSelectList(checkWrite, writeFDs);
                     FilterSelectList(checkError, errorFDs);
@@ -1994,7 +1990,6 @@ namespace System.Net.Sockets
                 bool success = false;
                 socket.InternalSafeHandle.DangerousAddRef(ref success);
                 int fd = (int)socket.InternalSafeHandle.DangerousGetHandle();
-
                 arr[arrOffset++] = new Interop.PollEvent { Events = events, FileDescriptor = fd };
                 refsAdded++;
             }
