@@ -224,7 +224,11 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(localEP);
 
-            _family = localEP.AddressFamily;
+            if (!IsAddressFamilyCompatible(localEP.AddressFamily))
+            {
+                throw new ArgumentException(SR.Format(SR.net_protocol_invalid_family, "LocalEP"), nameof(family));
+            }
+            
             LocalEP = localEP;
             
             Bind();
