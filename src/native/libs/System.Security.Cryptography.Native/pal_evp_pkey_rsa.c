@@ -4,7 +4,10 @@
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
 #include "pal_utilities.h"
+#include "openssl.h"
 #include <assert.h>
+
+static int HasNoPrivateKey(const RSA* rsa);
 
 EVP_PKEY* CryptoNative_EvpPKeyCreateRsa(RSA* currentKey)
 {
@@ -130,6 +133,22 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
     if (!ConfigureEncryption(ctx, padding, digest))
     {
         goto done;
+    }
+
+    // This check will not work with hardware keys coming from OpenSSL providers
+    // because providers don't seem to set RSA_FLAG_EXT_PKEY (the tpm2 most notably)
+    // ENGINE-s may or may not set it.
+    // This is needed only on OpenSSL < 3.0,
+    // see: https://github.com/dotnet/runtime/issues/53345
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
+    {
+        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            goto done;
+        }
     }
 
     size_t written = Int32ToSizeT(destinationLen);
@@ -301,6 +320,22 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
         goto done;
     }
 
+    // This check will not work with hardware keys coming from OpenSSL providers
+    // because providers don't seem to set RSA_FLAG_EXT_PKEY (the tpm2 most notably)
+    // ENGINE-s may or may not set it.
+    // This is needed only on OpenSSL < 3.0,
+    // see: https://github.com/dotnet/runtime/issues/53345
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
+    {
+        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            goto done;
+        }
+    }
+
     // EVP_PKEY_verify is not consistent on whether a missized hash is an error or just a mismatch.
     // Normalize to mismatch.
     if (hashLen != EVP_MD_get_size(digest))
@@ -318,4 +353,58 @@ done:
     }
 
     return ret;
+}
+
+static int HasNoPrivateKey(const RSA* rsa)
+{
+    if (rsa == NULL)
+        return 1;
+
+    // Shared pointer, don't free.
+    const RSA_METHOD* meth = RSA_get_method(rsa);
+
+    // The method has described itself as having the private key external to the structure.
+    // That doesn't mean it's actually present, but we can't tell.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (RSA_test_flags(rsa, RSA_FLAG_EXT_PKEY) || RSA_meth_get_flags((RSA_METHOD*)meth) & RSA_FLAG_EXT_PKEY)
+#pragma clang diagnostic pop
+    {
+        return 0;
+    }
+
+    // In the event that there's a middle-ground where we report failure when success is expected,
+    // one could do something like check if the RSA_METHOD intercepts all private key operations:
+    //
+    // * meth->rsa_priv_enc
+    // * meth->rsa_priv_dec
+    // * meth->rsa_sign (in 1.0.x this is only respected if the RSA_FLAG_SIGN_VER flag is asserted)
+    //
+    // But, for now, leave it at the EXT_PKEY flag test.
+
+    // The module is documented as accepting either d or the full set of CRT parameters (p, q, dp, dq, qInv)
+    // So if we see d, we're good. Otherwise, if any of the rest are missing, we're public-only.
+    const BIGNUM* d;
+    RSA_get0_key(rsa, NULL, NULL, &d);
+
+    if (d != NULL)
+    {
+        return 0;
+    }
+
+    const BIGNUM* p;
+    const BIGNUM* q;
+    const BIGNUM* dmp1;
+    const BIGNUM* dmq1;
+    const BIGNUM* iqmp;
+
+    RSA_get0_factors(rsa, &p, &q);
+    RSA_get0_crt_params(rsa, &dmp1, &dmq1, &iqmp);
+
+    if (p == NULL || q == NULL || dmp1 == NULL || dmq1 == NULL || iqmp == NULL)
+    {
+        return 1;
+    }
+
+    return 0;
 }
