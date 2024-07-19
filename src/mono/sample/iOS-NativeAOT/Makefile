@@ -9,6 +9,7 @@ DEPLOY_AND_RUN?=false
 STRIP_DEBUG_SYMBOLS?=false
 USE_RUNTIME_PACKS?=false
 STATS?=false
+HYBRID_GLOBALIZATION?=true
 
 REPO_DIR=$(realpath $(TOP))
 TASKS_DIR=$(REPO_DIR)/src/tasks
@@ -60,6 +61,7 @@ hello-app: clean
 	-p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	-p:PublishAotUsingRuntimePack=$(USE_RUNTIME_PACKS) \
 	-p:GenerateStats=$(STATS) \
+	-p:HybridGlobalization=$(HYBRID_GLOBALIZATION) \
 	-bl
 
 clean:
