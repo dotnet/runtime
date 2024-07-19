@@ -175,13 +175,8 @@ namespace System.Reflection
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
                 [typeof(string)],
-                null);
-
-            if (getAssemblyNameMethod == null)
-            {
+                null) ??
                 throw new MissingMethodException(readerType.FullName, "GetAssemblyName");
-            }
-
             return s_getAssemblyName = getAssemblyNameMethod.CreateDelegate<Func<string, AssemblyName>>();
         }
 

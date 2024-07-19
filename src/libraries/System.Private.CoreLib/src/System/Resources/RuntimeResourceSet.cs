@@ -235,10 +235,7 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            ResourceReader? reader = _defaultReader;
-            if (reader is null)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
-
+            ResourceReader reader = _defaultReader ?? throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
             return reader.GetEnumerator();
         }
 

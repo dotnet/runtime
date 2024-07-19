@@ -130,9 +130,7 @@ namespace System.Reflection.Emit
             for (i = 0; i < namedProperties.Length; i++)
             {
                 // Validate the property.
-                PropertyInfo property = namedProperties[i];
-                if (property == null)
-                    throw new ArgumentNullException("namedProperties[" + i + "]");
+                PropertyInfo property = namedProperties[i] ?? throw new ArgumentNullException($"namedProperties[{i}]");
 
                 // Allow null for non-primitive types only.
                 Type propType = property.PropertyType;
@@ -188,9 +186,7 @@ namespace System.Reflection.Emit
             for (i = 0; i < namedFields.Length; i++)
             {
                 // Validate the field.
-                FieldInfo namedField = namedFields[i];
-                if (namedField == null)
-                    throw new ArgumentNullException("namedFields[" + i + "]");
+                FieldInfo namedField = namedFields[i] ?? throw new ArgumentNullException($"namedFields[{i}]");
 
                 // Allow null for non-primitive types only.
                 Type fldType = namedField.FieldType;
@@ -429,8 +425,7 @@ namespace System.Reflection.Emit
                     writer.Write((byte)0xff);
                 else
                 {
-                    string? typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName);
-                    if (typeName == null)
+                    string typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName) ??
                         throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeForCA, value.GetType()));
                     EmitString(writer, typeName);
                 }

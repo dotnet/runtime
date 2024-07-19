@@ -191,12 +191,7 @@ namespace System.Collections.ObjectModel
                 }
                 else
                 {
-                    object[]? objects = array as object[];
-                    if (objects == null)
-                    {
-                        throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
-                    }
-
+                    object[] objects = array as object[] ?? throw new ArgumentException(SR.Argument_IncompatibleArrayType, nameof(array));
                     try
                     {
                         foreach (var item in m_dictionary)
