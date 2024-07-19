@@ -1914,9 +1914,9 @@ public:
 
 template<> struct cdac_offsets<MethodDesc>
 {
-    static const size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
-    static const size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
-    static const size_t Flags = offsetof(MethodDesc, m_wFlags);
+    static constexpr size_t ChunkIndex = offsetof(MethodDesc, m_chunkIndex);
+    static constexpr size_t Slot = offsetof(MethodDesc, m_wSlotNumber);
+    static constexpr size_t Flags = offsetof(MethodDesc, m_wFlags);
 };
 
 #ifndef DACCESS_COMPILE
