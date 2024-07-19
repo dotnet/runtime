@@ -192,9 +192,14 @@ void Compiler::fgLocalVarLivenessInit()
 //   Set fgCurMemoryUse and fgCurMemoryDef when memory is read or updated
 //   Call fgMarkUseDef for any Local variables encountered
 //
+// Template arguments:
+//    lowered - Whether or not this is liveness on lowered IR, where LCL_ADDRs
+//    on tracked locals may appear.
+//
 // Arguments:
 //    tree       - The current node.
 //
+template <bool lowered>
 void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 {
     assert(tree != nullptr);
@@ -209,10 +214,23 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_ADDR:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             fgMarkUseDef(tree->AsLclVarCommon());
+            break;
+
+        case GT_LCL_ADDR:
+            if (lowered)
+            {
+                // If this is a definition of a retbuf then we process it as
+                // part of the GT_CALL node.
+                if (fgIsTrackedRetBufferAddress(LIR::AsRange(compCurBB), tree))
+                {
+                    break;
+                }
+
+                fgMarkUseDef(tree->AsLclVarCommon());
+            }
             break;
 
         case GT_IND:
@@ -303,6 +321,12 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
                     }
                 }
             }
+
+            GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
+            if (definedLcl != nullptr)
+            {
+                fgMarkUseDef(definedLcl);
+            }
             break;
         }
 
@@ -367,7 +391,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
         {
             for (GenTree* node : LIR::AsRange(block))
             {
-                fgPerNodeLocalVarLiveness(node);
+                fgPerNodeLocalVarLiveness<true>(node);
             }
         }
         else if (fgNodeThreading == NodeThreading::AllTrees)
@@ -377,7 +401,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                 compCurStmt = stmt;
                 for (GenTree* const node : stmt->TreeList())
                 {
-                    fgPerNodeLocalVarLiveness(node);
+                    fgPerNodeLocalVarLiveness<false>(node);
                 }
             }
         }
@@ -744,10 +768,11 @@ void Compiler::fgLiveVarAnalysis()
 //                              due to a GT_CALL node.
 //
 // Arguments:
-//    life - The live set that is being computed.
-//    call - The call node in question.
+//    life          - The live set that is being computed.
+//    keepAliveVars - Tracked locals that must be kept alive everywhere in the block
+//    call          - The call node in question.
 //
-void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
+void Compiler::fgComputeLifeCall(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTreeCall* call)
 {
     assert(call != nullptr);
 
@@ -807,6 +832,12 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
                 }
             }
         }
+    }
+
+    GenTreeLclVarCommon* definedLcl = gtCallGetDefinedRetBufLclAddr(call);
+    if (definedLcl != nullptr)
+    {
+        fgComputeLifeLocal(life, keepAliveVars, definedLcl);
     }
 }
 
@@ -1024,7 +1055,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
     {
         // Do not consider this store dead if the parent local variable is an address exposed local or
         // if the struct has any significant padding we must retain the value of.
-        return !varDsc.IsAddressExposed() && !varDsc.lvAnySignificantPadding;
+        return !varDsc.IsAddressExposed();
     }
 
     return false;
@@ -1140,11 +1171,11 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     AGAIN:
         assert(tree->OperGet() != GT_QMARK);
 
-        if (tree->gtOper == GT_CALL)
+        if (tree->IsCall())
         {
-            fgComputeLifeCall(life, tree->AsCall());
+            fgComputeLifeCall(life, keepAliveVars, tree->AsCall());
         }
-        else if (tree->OperIsNonPhiLocal() || tree->OperIs(GT_LCL_ADDR))
+        else if (tree->OperIsNonPhiLocal())
         {
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
@@ -1191,6 +1222,15 @@ void Compiler::fgComputeLife(VARSET_TP&           life,
     }
 }
 
+//---------------------------------------------------------------------
+// fgComputeLifeLIR - fill out liveness flags in the IR nodes of the block
+// provided the live-out set.
+//
+// Arguments
+//    life          - the set of live-out variables from the block
+//    block         - the block
+//    keepAliveVars - variables that are globally live (usually due to being live into an EH successor)
+//
 void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars)
 {
     noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
@@ -1247,7 +1287,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 }
                 else
                 {
-                    fgComputeLifeCall(life, call);
+                    fgComputeLifeCall(life, keepAliveVars, call);
                 }
                 break;
             }
@@ -1295,11 +1335,21 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 }
                 else
                 {
+                    // For LCL_ADDRs that are defined by being passed as a
+                    // retbuf we will handle them when we get to the call. We
+                    // cannot consider them to be defined at the point of the
+                    // LCL_ADDR since there may be uses between the LCL_ADDR
+                    // and call.
+                    if (fgIsTrackedRetBufferAddress(blockRange, node))
+                    {
+                        break;
+                    }
+
                     isDeadStore = fgComputeLifeLocal(life, keepAliveVars, node);
                     if (isDeadStore)
                     {
                         LIR::Use addrUse;
-                        if (blockRange.TryGetUse(node, &addrUse) && (addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK)))
+                        if (blockRange.TryGetUse(node, &addrUse) && addrUse.User()->OperIs(GT_STOREIND, GT_STORE_BLK))
                         {
                             GenTreeIndir* const store = addrUse.User()->AsIndir();
 
@@ -1357,6 +1407,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_DBL:
             case GT_CNS_STR:
             case GT_CNS_VEC:
+            case GT_CNS_MSK:
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
                 if (node->IsUnusedValue())
@@ -1463,6 +1514,48 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
         }
     }
+}
+
+//---------------------------------------------------------------------
+// fgIsTrackedRetBufferAddress - given a LCL_ADDR node, check if it is the
+// return buffer definition of a call.
+//
+// Arguments
+//    range - the block range containing the LCL_ADDR
+//    node  - the LCL_ADDR
+//
+bool Compiler::fgIsTrackedRetBufferAddress(LIR::Range& range, GenTree* node)
+{
+    assert(node->OperIs(GT_LCL_ADDR));
+    if ((node->gtFlags & GTF_VAR_DEF) == 0)
+    {
+        return false;
+    }
+
+    LclVarDsc* dsc = lvaGetDesc(node->AsLclVarCommon());
+    if (!dsc->lvTracked)
+    {
+        return false;
+    }
+
+    GenTree* curNode = node;
+    do
+    {
+        LIR::Use use;
+        if (!range.TryGetUse(curNode, &use))
+        {
+            return false;
+        }
+
+        curNode = use.User();
+
+        if (curNode->IsCall())
+        {
+            return gtCallGetDefinedRetBufLclAddr(curNode->AsCall()) == node;
+        }
+    } while (curNode->OperIs(GT_FIELD_LIST) || curNode->OperIsPutArg());
+
+    return false;
 }
 
 //---------------------------------------------------------------------

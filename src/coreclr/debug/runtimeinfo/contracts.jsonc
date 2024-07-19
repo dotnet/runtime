@@ -9,7 +9,9 @@
 // cdac-build-tool can take multiple "-c contract_file" arguments
 // so to conditionally include contracts, put additional contracts in a separate file
 {
+  "DacStreams": 1,
   "Exception": 1,
-  "Thread": 1,
-  "SOSBreakingChangeVersion": 1 // example contract: "runtime exports an SOS breaking change version global"
+  "Loader": 1,
+  "RuntimeTypeSystem": 1,
+  "Thread": 1
 }

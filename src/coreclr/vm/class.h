@@ -1798,6 +1798,15 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
+    template<typename T> friend struct ::cdac_offsets;
+};
+
+template<> struct cdac_offsets<EEClass>
+{
+    static constexpr size_t InternalCorElementType = offsetof(EEClass, m_NormType);
+    static constexpr size_t MethodTable = offsetof(EEClass, m_pMethodTable);
+    static constexpr size_t NumMethods = offsetof(EEClass, m_NumMethods);
+    static constexpr size_t CorTypeAttr = offsetof(EEClass, m_dwAttrClass);
 };
 
 // --------------------------------------------------------------------------------------------
@@ -1975,7 +1984,6 @@ public:
         PCCOR_SIGNATURE pShortSig,
         DWORD   cShortSig,
         DWORD   dwVtableSlot,
-        LoaderAllocator *pLoaderAllocator,
         AllocMemTracker *pamTracker);
 
     // Generate a short sig for an array accessor
@@ -1988,7 +1996,12 @@ public:
                                       BOOL fForStubAsIL
     );
 
+    template<typename T> friend struct ::cdac_offsets;
+};
 
+template<> struct cdac_offsets<ArrayClass>
+{
+    static constexpr size_t Rank = offsetof(ArrayClass, m_rank);
 };
 
 inline EEClassLayoutInfo *EEClass::GetLayoutInfo()
@@ -2055,17 +2068,6 @@ inline PCODE GetPreStubEntryPoint()
 {
     return GetEEFuncEntryPoint(ThePreStub);
 }
-
-#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
-
-EXTERN_C void STDCALL ThePreStubCompactARM();
-
-inline PCODE GetPreStubCompactARMEntryPoint()
-{
-    return GetEEFuncEntryPoint(ThePreStubCompactARM);
-}
-
-#endif // defined(HAS_COMPACT_ENTRYPOINTS) && defined(TARGET_ARM)
 
 PCODE TheUMThunkPreStub();
 

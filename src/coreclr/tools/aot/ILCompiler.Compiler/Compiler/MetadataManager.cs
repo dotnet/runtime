@@ -77,6 +77,7 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MethodDesc> _exactMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly HashSet<TypeDesc> _usedInterfaces = new HashSet<TypeDesc>();
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
@@ -328,6 +329,11 @@ namespace ILCompiler
             if (obj is GenericMethodsHashtableEntryNode genericMethodsHashtableEntryNode)
             {
                 _genericMethodHashtableEntries.Add(genericMethodsHashtableEntryNode.Method);
+            }
+
+            if (obj is ExactMethodInstantiationsEntryNode exactMethodsHashtableEntryNode)
+            {
+                _exactMethodHashtableEntries.Add(exactMethodsHashtableEntryNode.Method);
             }
 
             if (obj is InterfaceUseNode interfaceUse)
@@ -605,11 +611,6 @@ namespace ILCompiler
         /// </summary>
         public void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
-            if (method.HasInstantiation)
-            {
-                ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
-            }
-
             InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(ref dependencies, factory, method);
 
             GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
@@ -1012,6 +1013,11 @@ namespace ILCompiler
             return _genericMethodHashtableEntries;
         }
 
+        public IEnumerable<MethodDesc> GetExactMethodHashtableEntries()
+        {
+            return _exactMethodHashtableEntries;
+        }
+
         public bool IsInterfaceUsed(TypeDesc type)
         {
             Debug.Assert(type.IsTypeDefinition);
@@ -1186,7 +1192,7 @@ namespace ILCompiler
             return null;
         }
 
-        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin = null)
         {
         }
     }

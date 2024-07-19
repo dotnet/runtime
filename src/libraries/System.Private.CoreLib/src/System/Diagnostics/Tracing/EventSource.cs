@@ -1121,12 +1121,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Returns the object as a IntPtr - safe when only used for logging
-        internal static unsafe nint ObjectIDForEvents(object? o)
-        {
-#pragma warning disable CS8500 // takes address of managed type
-            return *(nint*)&o;
-#pragma warning restore CS8500
-        }
+        internal static unsafe nint ObjectIDForEvents(object? o) => *(nint*)&o;
 
 #pragma warning restore 1591
 
@@ -2160,9 +2155,6 @@ namespace System.Diagnostics.Tracing
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                     Justification = "The call to TraceLoggingEventTypes with the below parameter values are trim safe")]
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
-                    Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
-                                    "constructor that requires unreferenced code. EventSource will not access this local function.")]
                 static TraceLoggingEventTypes GetTrimSafeTraceLoggingEventTypes() =>
                     new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { typeof(string) });
 
@@ -5579,7 +5571,7 @@ namespace System.Diagnostics.Tracing
                                 continue;
 
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
+                            ReadOnlySpan<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
 
                             sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
@@ -5626,7 +5618,7 @@ namespace System.Diagnostics.Tracing
                     sb?.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
                     keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
+                    ReadOnlySpan<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
                     sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb?.AppendLine(" </keywords>");
