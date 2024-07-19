@@ -650,7 +650,7 @@ namespace System
                     return finalist.Invoke(target, bindingFlags, binder, providedArgs, culture);
                 }
 
-                finalists ??= new MethodInfo[] { finalist };
+                finalists ??= [finalist];
                 providedArgs ??= Array.Empty<object>();
                 object? state = null;
                 MethodBase? invokeMethod = null;

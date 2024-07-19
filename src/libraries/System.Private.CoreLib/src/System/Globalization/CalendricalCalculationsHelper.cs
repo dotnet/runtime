@@ -88,8 +88,8 @@ namespace System.Globalization
             internal readonly CorrectionAlgorithm _algorithm;
         }
 
-        private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable = new EphemerisCorrectionAlgorithmMap[]
-        {
+        private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable =
+        [
             // lowest year that starts algorithm, algorithm to use
             new EphemerisCorrectionAlgorithmMap(2020, CorrectionAlgorithm.Default),
             new EphemerisCorrectionAlgorithmMap(1988, CorrectionAlgorithm.Year1988to2019),
@@ -98,7 +98,7 @@ namespace System.Globalization
             new EphemerisCorrectionAlgorithmMap(1700, CorrectionAlgorithm.Year1700to1799),
             new EphemerisCorrectionAlgorithmMap(1620, CorrectionAlgorithm.Year1620to1699),
             new EphemerisCorrectionAlgorithmMap(int.MinValue, CorrectionAlgorithm.Default) // default must be last
-        };
+        ];
 
         private static double Reminder(double divisor, double dividend)
         {
