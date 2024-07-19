@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
@@ -17,6 +18,7 @@ namespace System.IO.Packaging.Tests
         private record class PartConstructionParameters (string FullPath, bool CreateAsAtomic, bool CreateAsValidPieceSequence, bool UppercaseFileName, bool ShufflePieces, int[] PieceLengths, FileContentsGenerator PieceGenerator)
         { }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
         private static Type s_ZipPackagePartPieceType = Type.GetType("System.IO.Packaging.ZipPackagePartPiece, System.IO.Packaging");
         private static MethodInfo s_TryParseZipPackagePartPiece = Type.GetType("System.IO.Packaging.ZipPackagePartPiece, System.IO.Packaging").GetMethod("TryParse", BindingFlags.Static | BindingFlags.NonPublic);
 
