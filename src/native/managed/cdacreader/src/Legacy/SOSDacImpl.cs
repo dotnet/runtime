@@ -338,7 +338,21 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         return HResults.S_OK;
     }
 
-    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
+    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.IObject contract = _target.Contracts.Object;
+            string str = contract.GetStringValue(obj);
+            CopyStringToTargetBuffer(stringData, count, pNeeded, str);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
@@ -419,7 +433,30 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     }
 
     public unsafe int GetTLSIndex(uint* pIndex) => HResults.E_NOTIMPL;
-    public unsafe int GetUsefulGlobals(void* data) => HResults.E_NOTIMPL;
+
+    public unsafe int GetUsefulGlobals(DacpUsefulGlobalsData* data)
+    {
+        try
+        {
+            data->ArrayMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ObjectArrayMethodTable));
+            data->StringMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.StringMethodTable));
+            data->ObjectMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
+            data->ExceptionMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.ExceptionMethodTable));
+            data->FreeMethodTable = _target.ReadPointer(
+                _target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
+
     public unsafe int GetWorkRequestData(ulong addrWorkRequest, void* data) => HResults.E_NOTIMPL;
     public unsafe int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy) => HResults.E_NOTIMPL;
     public unsafe int TraverseEHInfo(ulong ip, void* pCallback, void* token) => HResults.E_NOTIMPL;

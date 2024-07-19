@@ -91,6 +91,15 @@ internal struct DacpMethodTableData
     public int bIsDynamic;
     public int bContainsGCPointers;
 }
+
+internal struct DacpUsefulGlobalsData
+{
+    public ulong ArrayMethodTable;
+    public ulong StringMethodTable;
+    public ulong ObjectMethodTable;
+    public ulong ExceptionMethodTable;
+    public ulong FreeMethodTable;
+}
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
 internal struct DacpReJitData
@@ -329,7 +338,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Other
     [PreserveSig]
-    int GetUsefulGlobals(/*struct DacpUsefulGlobalsData */ void* data);
+    int GetUsefulGlobals(DacpUsefulGlobalsData* data);
     [PreserveSig]
     int GetClrWatsonBuckets(ulong thread, void* pGenericModeBlock);
     [PreserveSig]

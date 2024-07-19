@@ -28,9 +28,9 @@ public class InterpPgoTests : AppTestBase
     [InlineData("Release")]
     public async Task FirstRunGeneratesTableAndSecondRunLoadsIt(string config)
     {
-        // We need to invoke Random enough times to cause BCL code to tier so we can exercise interpreter PGO
+        // We need to invoke Greeting enough times to cause BCL code to tier so we can exercise interpreter PGO
         // Invoking it too many times makes the test meaningfully slower.
-        const int iterationCount = 50;
+        const int iterationCount = 70;
 
         _testOutput.WriteLine("/// Creating project");
         CopyTestAsset("WasmBasicTestApp", "InterpPgoTest", "App");
@@ -61,13 +61,13 @@ public class InterpPgoTests : AppTestBase
             lock (runner.OutputLines)
                 output = string.Join(Environment.NewLine, runner.OutputLines);
 
-            Assert.Contains("I filled a buffer with random items", output);
+            Assert.Contains("Hello, World!", output);
             // Verify that no PGO table was located in cache
             Assert.Contains("Failed to load interp_pgo table", output);
             // Verify that the table was saved after the app ran
             Assert.Contains("Saved interp_pgo table", output);
             // Verify that a specific method was tiered by the Greeting calls and recorded by PGO
-            Assert.Contains(" System.Random:Next () to table", output);
+            Assert.Contains("added System.Runtime.CompilerServices.Unsafe:Add<byte> (byte&,int) to table", output);
         }
 
         {
@@ -81,7 +81,7 @@ public class InterpPgoTests : AppTestBase
             lock (runner.OutputLines)
                 output = string.Join(Environment.NewLine, runner.OutputLines);
 
-            Assert.Contains("I filled a buffer with random items", output);
+            Assert.Contains("Hello, World!", output);
             // Verify that table data was loaded from cache
             // if this breaks, it could be caused by change in config which affects the config hash and the cache storage hash key
             Assert.Contains(" bytes of interp_pgo data (table size == ", output);
@@ -90,7 +90,7 @@ public class InterpPgoTests : AppTestBase
             // Verify that method(s) were found in the table and eagerly tiered
             Assert.Contains("because it was in the interp_pgo table", output);
             // Verify that a specific method was tiered by the Greeting calls and recorded by PGO
-            Assert.Contains(" System.Random:Next () to table", output);
+            Assert.Contains("added System.Runtime.CompilerServices.Unsafe:Add<byte> (byte&,int) to table", output);
         }
 
         _testOutput.WriteLine("/// Done");
