@@ -109,7 +109,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return regex.IsMatch(sourceFile.Url.ToString()) || regex.IsMatch(sourceFile.FilePath);
             }
 
-            url = Uri.UnescapeDataString(url);
             return sourceFile.Url.ToString() == url || sourceFile.DotNetUrlEscaped == url;
         }
 
