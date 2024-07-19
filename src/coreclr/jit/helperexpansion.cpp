@@ -595,10 +595,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
-        // We want tls_index to get relocated and hence create IconHandle node,
-        // but it does not have GC ref, so reset the type to TYP_I_IMPL instead of TYP_REF
-        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
-        dllRef->gtType  = TYP_I_IMPL;
+        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_CONST_PTR);
         dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
         dllRef          = gtNewCastNode(TYP_I_IMPL, dllRef, true, TYP_I_IMPL);
         dllRef          = gtNewOperNode(GT_LSH, TYP_I_IMPL, dllRef, gtNewIconNode(3, TYP_I_IMPL));
@@ -612,14 +609,6 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
         // This resolves to an offset which is TYP_INT
         GenTree* tlsRootOffset = gtNewIconNode((size_t)tlsRootObject, TYP_INT);
         tlsRootOffset->gtFlags |= GTF_ICON_SECREL_OFFSET;
-
-        if (TargetArchitecture::IsArm64)
-        {
-            // for windows/arm64, the immediate constant should be contained because it gets
-            // generated as part of ADD instruction that consumes this constant. See
-            // emitIns_Add_Add_Tls_Reloc().
-            tlsRootOffset->SetContained();
-        }
 
         // Add the tlsValue and tlsRootOffset to produce tlsRootAddr.
         tlsRootAddr = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, tlsRootOffset);

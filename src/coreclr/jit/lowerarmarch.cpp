@@ -68,7 +68,21 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         if (!childNode->IsCnsIntOrI())
             return false;
         if (childNode->AsIntCon()->ImmedValNeedsReloc(comp))
-            return false;
+        {
+            if (comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows &&
+                childNode->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+            {
+                // for windows/arm64, the immediate constant should be contained because it gets
+                // generated as part of ADD instruction that consumes this constant. See
+                // emitIns_Add_Add_Tls_Reloc().
+                return true;
+            }
+            else
+            {
+                return false;
+            }            
+        }
+            
 
         // TODO-CrossBitness: we wouldn't need the cast below if GenTreeIntCon::gtIconVal had target_ssize_t type.
         target_ssize_t immVal = (target_ssize_t)childNode->AsIntCon()->gtIconVal;
