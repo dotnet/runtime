@@ -14,6 +14,7 @@
     <Compile Include="TestNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\src\System\Diagnostics\DsesSamplerBuilder.cs" Link="DsesSamplerBuilder.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\Aggregator.cs" Link="Aggregator.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\AggregatorStore.cs" Link="AggregatorStore.cs" />
     <Compile Include="..\src\System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" Link="ExponentialHistogramAggregator.cs" />
