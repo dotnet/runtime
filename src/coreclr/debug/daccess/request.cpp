@@ -3460,13 +3460,47 @@ ClrDataAccess::GetHeapAnalyzeStaticData(struct DacpGcHeapAnalyzeData *analyzeDat
 }
 
 HRESULT
-ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
+ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData* globalsData)
 {
     if (globalsData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetUsefulGlobals(globalsData);
+        if (FAILED(hr))
+        {
+            hr = GetUsefulGlobals(globalsData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpUsefulGlobalsData globalsDataLocal;
+            HRESULT hrLocal = GetUsefulGlobalsImpl(&globalsDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(globalsData->ArrayMethodTable == globalsDataLocal.ArrayMethodTable);
+            _ASSERTE(globalsData->StringMethodTable == globalsDataLocal.StringMethodTable);
+            _ASSERTE(globalsData->ObjectMethodTable == globalsDataLocal.ObjectMethodTable);
+            _ASSERTE(globalsData->ExceptionMethodTable == globalsDataLocal.ExceptionMethodTable);
+            _ASSERTE(globalsData->FreeMethodTable == globalsDataLocal.FreeMethodTable);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetUsefulGlobals(globalsData);;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData)
+{
     TypeHandle objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
     if (objArray != NULL)
         globalsData->ArrayMethodTable = HOST_CDADDR(objArray.AsMethodTable());
@@ -3478,8 +3512,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
     globalsData->ExceptionMethodTable = HOST_CDADDR(g_pExceptionClass);
     globalsData->FreeMethodTable = HOST_CDADDR(g_pFreeObjectMethodTable);
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT
