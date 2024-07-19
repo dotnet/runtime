@@ -396,13 +396,13 @@ namespace System.Xml
             {
                 byte[] buffer = GetBuffer(ValueHandleLength.Decimal, out int offset);
                 ReadOnlySpan<byte> bytes = buffer.AsSpan(offset, sizeof(decimal));
-                ReadOnlySpan<int> span =
-                [
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
-                ];
+                };
 
                 Advance(ValueHandleLength.Decimal);
                 return new decimal(span);
@@ -975,13 +975,13 @@ namespace System.Xml
             else
             {
                 ReadOnlySpan<byte> bytes = _buffer.AsSpan(offset, sizeof(decimal));
-                ReadOnlySpan<int> span =
-                [
+                ReadOnlySpan<int> span = stackalloc int[4]
+                {
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(12, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4)),
                     BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(0, 4))
-                ];
+                };
 
                 return new decimal(span);
             }

@@ -1541,7 +1541,7 @@ namespace System.Text.RegularExpressions
         /// <param name="c">The character for which to create the set.</param>
         /// <returns>The create set string.</returns>
         public static string OneToStringClass(char c)
-            => CharsToStringClass([c]);
+            => CharsToStringClass(stackalloc char[1] { c });
 
         internal static unsafe string CharsToStringClass(ReadOnlySpan<char> chars)
         {
