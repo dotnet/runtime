@@ -797,7 +797,7 @@ public:
         return pContext->Lr;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetReturnAddress");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -833,7 +833,7 @@ public:
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetTailCallTarget");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -849,7 +849,7 @@ public:
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetHiddenArg");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -879,7 +879,7 @@ public:
         return *((PCODE *)pContext->Fp + 1);
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetRetAddrFromMulticastILStubFrame");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -899,7 +899,7 @@ public:
         return pContext->X1;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetSecondArg");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
