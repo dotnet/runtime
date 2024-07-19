@@ -2870,7 +2870,7 @@ GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenT
     GenTreeLclFld* resultAddr            = gtNewLclAddrNode(resultTmp, 0);
 
     // Check profitability of inlining the unbox operation
-    bool shouldExpandInline = compCurBB->isRunRarely() && opts.OptimizationEnabled() && !eeIsSharedInst(nullableCls);
+    bool shouldExpandInline = !compCurBB->isRunRarely() && opts.OptimizationEnabled() && !eeIsSharedInst(nullableCls);
 
     // It's less profitable to inline the unbox operation if the underlying type is too large
     CORINFO_CLASS_HANDLE unboxType = NO_CLASS_HANDLE;
