@@ -284,6 +284,13 @@ mono_ios_runtime_init (void)
     char pinvoke_override[1024];
     snprintf(pinvoke_override, sizeof(pinvoke_override) - 1, "%p", &handle_pinvoke_override);
 
+    char icu_dat_path [1024];
+    int res;
+#if !defined(HYBRID_GLOBALIZATION)
+    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
+    assert (res > 0);
+#endif
+
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
     const char *appctx_keys [] = {
         "RUNTIME_IDENTIFIER",
@@ -297,6 +304,9 @@ mono_ios_runtime_init (void)
         APPLE_RUNTIME_IDENTIFIER,
         bundle,
         pinvoke_override,
+#if !defined(INVARIANT_GLOBALIZATION) && !defined(HYBRID_GLOBALIZATION)
+        icu_dat_path
+#endif
     };
 
     char *file_name = RUNTIMECONFIG_BIN_FILE;
@@ -376,7 +386,7 @@ mono_ios_runtime_init (void)
     assert (assembly);
     os_log_info (OS_LOG_DEFAULT, "Executable: %{public}s", executable);
 
-    int res = mono_jit_exec (mono_domain_get (), assembly, (int)argi, managed_argv);
+    res = mono_jit_exec (mono_domain_get (), assembly, (int)argi, managed_argv);
     // Print this so apps parsing logs can detect when we exited
     os_log_info (OS_LOG_DEFAULT, EXIT_CODE_TAG ": %d", res);
 
