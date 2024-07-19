@@ -388,10 +388,10 @@ namespace System
 
         private static SafeProcessHandle GetProcessHandle()
         {
-            SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false, GetProcessId());
-            int result = Marshal.GetLastWin32Error();
+            SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false, ProcessId);
             if (processHandle.IsInvalid)
             {
+                int result = Marshal.GetLastWin32Error();
                 processHandle.Dispose();
                 throw new Win32Exception(result);
             }

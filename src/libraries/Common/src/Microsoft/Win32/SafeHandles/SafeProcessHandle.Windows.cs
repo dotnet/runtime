@@ -16,11 +16,11 @@ using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
-#if SYSTEM_PRIVATE_CORELIB
-    internal
-#else
+#if SYSTEM_DIAGNOSTICS_PROCESS
     public
-#endif // SYSTEM_PRIVATE_CORELIB
+#else
+    internal
+#endif // SYSTEM_DIAGNOSTICS_PROCESS
     sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         protected override bool ReleaseHandle()

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-freebsd;$(NetCoreAppCurrent)-linux;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-maccatalyst;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)</TargetFrameworks>
-    <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
+    <DefineConstants>$(DefineConstants);FEATURE_REGISTRY;SYSTEM_DIAGNOSTICS_PROCESS</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
   </PropertyGroup>
