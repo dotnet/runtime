@@ -333,7 +333,7 @@ namespace System.Text.Json.Serialization.Converters
             Debug.Assert(_nameCacheForReading is null == (_namingPolicy is null && !_containsNameAttributes),
                          "A read cache should only be populated if we have a naming policy or name attributes.");
 
-            if (_nameCacheForReading is not { } nameCacheForReading)
+            if (_nameCacheForReading is null)
             {
                 value = default;
                 success = false;
