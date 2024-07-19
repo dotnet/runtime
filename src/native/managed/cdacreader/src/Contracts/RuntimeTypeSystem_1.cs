@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Reflection.Metadata.Ecma335;
 using Microsoft.Diagnostics.DataContractReader.Data;
 using Microsoft.Diagnostics.DataContractReader.Contracts.RuntimeTypeSystem_1_NS;
-using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
