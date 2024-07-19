@@ -679,16 +679,18 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
-                bool isUnicode = Console.OutputEncoding.CodePage == UnicodeCodePage;
-
-                // Windows doesn't use terminfo, so the codepoint is hardcoded.
-                ReadOnlySpan<byte> bell = isUnicode ? stackalloc byte[2] { 7, 0 } : stackalloc byte[1] { 7 };
-                Debug.Assert(!isUnicode || bell.SequenceEqual(Encoding.Unicode.GetBytes("\u0007")));
-
-                int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, useFileAPIs: !isUnicode);
-                if (errorCode == Interop.Errors.ERROR_SUCCESS)
+                Span<byte> bell = stackalloc byte[10];
+                if (Console.OutputEncoding.TryGetBytes("\u0007", bell, out int bytesWritten))
                 {
-                    return;
+                    int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell.Slice(0, bytesWritten), useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
+                    if (errorCode == Interop.Errors.ERROR_SUCCESS)
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    Debug.Fail("The input buffer was too small.");
                 }
             }
 
