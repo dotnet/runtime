@@ -413,6 +413,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_NO_OP:
         case GT_START_NONGC:
+        case GT_STOP_NONGC:
         case GT_PROF_HOOK:
             srcCount = 0;
             assert(dstCount == 0);

@@ -160,6 +160,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             GetEmitter()->emitDisableGC();
             break;
 
+        case GT_STOP_NONGC:
+            GetEmitter()->emitEnableGC();
+            break;
+
         case GT_START_PREEMPTGC:
             // Kill callee saves GC registers, and create a label
             // so that information gets propagated to the emitter.

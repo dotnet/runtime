@@ -2691,6 +2691,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // note that everything generated from this point might run AFTER the outgoing args are placed
     GenTree* controlExpr          = nullptr;
     bool     callWasExpandedEarly = false;
+    bool     endNogcBeforeCall    = false;
 
     // for x86, this is where we record ESP for checking later to make sure stack is balanced
 
@@ -2699,7 +2700,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // an indirect call.
     if (call->IsDelegateInvoke())
     {
-        controlExpr = LowerDelegateInvoke(call);
+        controlExpr = LowerDelegateInvoke(call, &endNogcBeforeCall);
     }
     else
     {
@@ -2807,6 +2808,13 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
     ContainCheckCallOperands(call);
+
+    if (endNogcBeforeCall)
+    {
+        GenTree* stopNonGCNode = new (comp, GT_STOP_NONGC) GenTree(GT_STOP_NONGC, TYP_VOID);
+        BlockRange().InsertBefore(call, stopNonGCNode);
+    }
+
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
@@ -5491,8 +5499,10 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     return result;
 }
 
-GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
+GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call, bool* shouldEndNogcBeforeCall)
 {
+    assert(shouldEndNogcBeforeCall != nullptr);
+    *shouldEndNogcBeforeCall = false;
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
     assert((comp->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) &
@@ -5557,10 +5567,11 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
         // If the target's backend doesn't support indirect calls with immediate operands (contained)
         // and the method is marked as interruptible, we need to insert a GT_START_NONGC before the call.
         // to keep the delegate object alive while we're obtaining the function pointer.
-        // Since the actual call is effectively a safe point, we don't need to insert any additional
-        // NOPs to prevent the GC starvation in single-block methods.
         GenTree* startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
         BlockRange().InsertBefore(newThisAddr, startNonGCNode);
+
+        // We should try to end the non-GC region just before the actual call.
+        *shouldEndNogcBeforeCall = true;
     }
 #endif
 
