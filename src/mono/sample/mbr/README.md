@@ -18,7 +18,7 @@ build.sh -s Mono+Libs
 
 For WebAssembly:
 
-Make sure `EMSDK_PATH` is set (see [workflow](../../../../docs/workflow/building/libraries/webassembly-instructions.md))
+Make sure `EMSDK_PATH` is set (see [workflow](/docs/workflow/building/libraries/webassembly-instructions.md))
 ```console
 build.sh --os browser
 ```

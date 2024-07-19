@@ -6,8 +6,8 @@ Non-generic collections that are used by lower-level parts of the framework, suc
 Documentation can be found at https://learn.microsoft.com/dotnet/csharp/programming-guide/concepts/collections.
 
 ## Contribution Bar
-- [x] [We only consider fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] [We only consider fixes to maintain or improve quality](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](/src/libraries/README.md#secondary-bars)
 
 ## Deployment
 `System.Collections.NonGeneric` is included in the shared framework and also provided as a [NuGet package](https://www.nuget.org/packages/System.Collections.NonGeneric).

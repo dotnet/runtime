@@ -4,7 +4,7 @@ Contains types used to create and convey register states in various sizes and fo
 Documentation can be found here: https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs and performance changes](/src/libraries/README.md#primary-bar)
 
 See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.Runtime.Intrinsics+label%3A%22help+wanted%22+) issues.
 
@@ -16,7 +16,7 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 
 ## Tests
 * `Vector64/128/256/512`: [./tests/Vectors](./tests/Vectors)
-* JIT integration: [../../tests/JIT/HardwareIntrinsics](../../tests/JIT/HardwareIntrinsics)
+* JIT integration: [/src/tests/JIT/HardwareIntrinsics](/src/tests/JIT/HardwareIntrinsics)
 * Everything else: [./tests](./tests)
 
 ## Deployment

@@ -2,13 +2,13 @@
 
 ## Prerequisites
 
-If you haven't already done so, please read [this document](../../README.md#Build_Requirements) to understand the build requirements for your operating system.
+If you haven't already done so, please read [this document](/docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system.
 
 ## Building
 
-At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](../../../../src/mono/wasm/README.md#building).
+At this time no other build dependencies are necessary to start building for WebAssembly. Emscripten will be downloaded and installed automatically in the build process. To read how to build on specific platforms, see [Building](/src/mono/wasm/README.md#building).
 
-This document explains how to work on the runtime or libraries. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+This document explains how to work on the runtime or libraries. If you haven't already done so, please read [this document](/docs/workflow/README.md#Configurations) to understand configurations.
 
 When rebuilding with `build.sh` after a code change, you need to ensure that the `mono.wasmruntime` and `libs.pretest` subsets are included even for a Mono-only change or this directory will not be updated (details below).
 
@@ -23,7 +23,7 @@ This is tracked in https://github.com/dotnet/runtime/issues/42553
 
 ## Building Mono's System.Private.CoreLib or runtime
 
-If you are working on core parts of Mono you will probably need to build the Mono runtime and [System.Private.CoreLib](../../../design/coreclr/botr/corelib.md) which can be built with the following:
+If you are working on core parts of Mono you will probably need to build the Mono runtime and [System.Private.CoreLib](/docs/design/coreclr/botr/corelib.md) which can be built with the following:
 
 ```bash
 ./build.sh mono -os browser -c Debug|Release
@@ -158,4 +158,4 @@ Open a PR request with the new image.
 
 # Test libraries
 
-You can read about running library tests in [Libraries tests](../../../../src/mono/wasm/README.md#libraries-tests).
+You can read about running library tests in [Libraries tests](/src/mono/wasm/README.md#libraries-tests).

@@ -153,4 +153,4 @@ The emulator can be launched with a variety of options. Run `emulator -help` to 
 
 ### Debugging the native runtime code using Android Studio
 
-See [Debugging Android](../../debugging/mono/android-debugging.md)
+See [Debugging Android](/docs/workflow/debugging/mono/android-debugging.md)

@@ -3,7 +3,7 @@ Debugging CoreFX on Windows
 
 You can Debug .NET via Visual Studio or WinDBG.
 
-For Visual Studio debugging, follow the instructions at [Debugging tests in Visual Studio](../../testing/visualstudio.md) to run and debug tests.
+For Visual Studio debugging, follow the instructions at [Debugging tests in Visual Studio](/docs/workflow/testing/visualstudio.md) to run and debug tests.
 For bugs that cannot be reproduced within Visual Studio (certain low-probability race conditions, SafeHandle life-time problems, etc) you will need to use WinDBG.
 
 ## Required Software

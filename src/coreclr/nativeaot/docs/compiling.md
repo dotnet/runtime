@@ -43,7 +43,7 @@ The target architecture can be specified using `-r` or `--arch` options of the `
 > dotnet publish -r win-arm64
 ```
 
-The cross-architecture compilation requires native build tools for the target platform to be installed and configured correctly. On Linux, you may need to follow [cross-building instructions](../../../../docs/workflow/building/coreclr/cross-building.md) to create your own sysroot directory and specify path to it using the `SysRoot` property.
+The cross-architecture compilation requires native build tools for the target platform to be installed and configured correctly. On Linux, you may need to follow [cross-building instructions](/docs/workflow/building/coreclr/cross-building.md) to create your own sysroot directory and specify path to it using the `SysRoot` property.
 
 See [Building native AOT apps in containers](containers.md) for a streamlined path to establishing a Linux cross-compilation environments.
 

@@ -9,8 +9,8 @@ To learn about our .NET 5 feature on how to control the format of console logs c
 To learn about our .NET 6 feature on how to use a source generator to create log messages check out [this documentation](https://learn.microsoft.com/dotnet/core/extensions/logger-message-generator).
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for improvements to the logging source generator](../../libraries/README.md#secondary-bars)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for improvements to the logging source generator](/src/libraries/README.md#secondary-bars)
 
 The APIs and functionality are mature, but do get extended occasionally.
 

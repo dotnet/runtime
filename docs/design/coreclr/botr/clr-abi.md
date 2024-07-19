@@ -809,7 +809,7 @@ However, note that the use of `r11` in the dispatcher makes it incompatible with
 
 # Notes on Memset/Memcpy
 
-Generally, `memset` and `memcpy` do not provide any guarantees of atomicity. This implies that they should only be used when the memory being modified by `memset`/`memcpy` is not observable by any other thread (including GC), or when there are no atomicity requirements according to our [Memory Model](../../specs/Memory-model.md). It's especially important when we modify heap containing managed pointers - those must be updated atomically, e.g. using pointer-sized `mov` instruction (managed pointers are always aligned) - see [Atomic Memory Access](../../specs/Memory-model.md#Atomic-memory-accesses). It's worth noting that by "update" it's implied "set to zero", otherwise, we need a write barrier.
+Generally, `memset` and `memcpy` do not provide any guarantees of atomicity. This implies that they should only be used when the memory being modified by `memset`/`memcpy` is not observable by any other thread (including GC), or when there are no atomicity requirements according to our [Memory Model](/docs/design/specs/Memory-model.md). It's especially important when we modify heap containing managed pointers - those must be updated atomically, e.g. using pointer-sized `mov` instruction (managed pointers are always aligned) - see [Atomic Memory Access](/docs/design/specs/Memory-model.md#Atomic-memory-accesses). It's worth noting that by "update" it's implied "set to zero", otherwise, we need a write barrier.
 
 Examples:
 

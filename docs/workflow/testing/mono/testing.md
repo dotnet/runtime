@@ -1,6 +1,6 @@
 # Running test suites using Mono
 
-Before running tests, [build Mono](../../building/mono/README.md) using the desired configuration.
+Before running tests, [build Mono](/docs/workflow/building/mono/README.md) using the desired configuration.
 
 ## Runtime Tests
 ### Desktop Mono:
@@ -91,7 +91,7 @@ make run-tests-corefx-System.Runtime
 
 ### Debugging libraries tests on Desktop Mono
 
-See [debugging with VS Code](../../debugging/libraries/debugging-vscode.md#Debugging-Libraries-with-Visual-Studio-Code-running-on-Mono)
+See [debugging with VS Code](/docs/workflow/debugging/libraries/debugging-vscode.md#Debugging-Libraries-with-Visual-Studio-Code-running-on-Mono)
 
 ### Mobile targets and WebAssembly
 Build and run library tests against WebAssembly, Android or iOS. See instructions located in [Library testing document folder](../libraries/)

@@ -6,7 +6,7 @@ It provides core implementations of [`XDocument`](https://learn.microsoft.com/do
 Documentation can be found at https://learn.microsoft.com/dotnet/standard/linq/linq-xml-overview.
 
 ## Contribution Bar
-- [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](../../libraries/README.md#primary-bar)
+- [x] [We only consider lower-risk or high-impact fixes to maintain or improve quality](/src/libraries/README.md#primary-bar)
 
 ## Source
 * XDocument: [../System.Xml.XDocument](../System.Xml.XDocument)

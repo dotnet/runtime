@@ -7,8 +7,8 @@ stress mode test configuration failures, such as failures in a JIT stress test r
 ## Area ownership
 
 One goal of failure investigation is to quickly route failures to the correct area owner. The ownership of various product areas
-is detailed [here](../../area-owners.md). The GitHub auto-tagging bot uses the ownership information
-in the file [Policy Service configuration](../../../.github/policies).
+is detailed [here](/docs/area-owners.md). The GitHub auto-tagging bot uses the ownership information
+in the file [Policy Service configuration](/.github/policies).
 
 ## Platform configuration
 
@@ -16,8 +16,8 @@ First, identify the platform the test was run on:
 1. The processor architecture (x86, x64, arm32, arm64)
 2. The operating system (Windows, Linux, macOS). In some cases, you might need to reproduce a failure under a specific operating system
 version, such as a "musl" version of Linux (e.g., Alpine). You might need to reproduce using the same environment used by the CI system.
-For Docker environments, the Docker container mapping for coreclr runs is defined [here](../../../eng/pipelines/coreclr/templates/helix-queues-setup.yml)
-and for libraries runs is defined [here](../../../eng/pipelines/libraries/helix-queues-setup.yml).
+For Docker environments, the Docker container mapping for coreclr runs is defined [here](/eng/pipelines/coreclr/templates/helix-queues-setup.yml)
+and for libraries runs is defined [here](/eng/pipelines/libraries/helix-queues-setup.yml).
 
 ## Test configuration
 
@@ -95,7 +95,7 @@ Then use the `runfo get-helix-payload` command with the job name and workitem na
 Note that if a test fails and produces a core (crash) dump, the Azure DevOps "Artifacts" page will include a link to
 the crash dump. It will also include a `how-to-debug-dump.md` file that describes using `runfo` to download the assets and other
 tools to do the debugging (but currently only for libraries test runs).
-This file is built from the template [here](../../../eng/testing/debug-dump-template.md), which has some useful information.
+This file is built from the template [here](/eng/testing/debug-dump-template.md), which has some useful information.
 
 ## Determining the most general case of a failure
 
@@ -152,9 +152,9 @@ Note that all you really need to know is the set of environment variables set, a
 
 However, here are some useful links if you need to dig deeper into what configuration settings are used, and how.
 The mapping from Azure DevOps pipeline to configuration settings is set by the `scenarios` tags for coreclr
-tests [here](../../../eng/pipelines/common/templates/runtimes/run-test-job.yml) and for libraries tests
-[here](../../../eng/pipelines/libraries/run-test-job.yml).
-These tags are converted to configuration variables [here](../../../src/tests/Common/testenvironment.proj).
+tests [here](/eng/pipelines/common/templates/runtimes/run-test-job.yml) and for libraries tests
+[here](/eng/pipelines/libraries/run-test-job.yml).
+These tags are converted to configuration variables [here](/src/tests/Common/testenvironment.proj).
 
 ### Asserts
 

@@ -4,8 +4,8 @@ This assembly provides support for creating files into the Random-Access Memory 
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.io.memorymappedfiles.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] [We consider new features, new APIs and performance changes](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](/src/libraries/README.md#secondary-bars)
 
 ## Deployment
 The System.IO.MemoryMappedFiles assembly is part of the shared framework, and ships with every new release of .NET.

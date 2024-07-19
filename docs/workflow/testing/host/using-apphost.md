@@ -1,6 +1,6 @@
 # Using a local build of `apphost`
 
-When building a .NET application, [`apphost`](../../../design/features/host-components.md#entry-point-hosts) is used as the executable for the application. It is renamed to match the application and updated to be associated with the application's managed `.dll`. The .NET SDK looks for the `apphost` to use by looking for `Microsoft.NETCore.App.Host` packages installed alongside under `<dotnet_root>/packs` with a matching OS, architecture, and version. If no match is found, it downloads the matching NuGet package.
+When building a .NET application, [`apphost`](/docs/design/features/host-components.md#entry-point-hosts) is used as the executable for the application. It is renamed to match the application and updated to be associated with the application's managed `.dll`. The .NET SDK looks for the `apphost` to use by looking for `Microsoft.NETCore.App.Host` packages installed alongside under `<dotnet_root>/packs` with a matching OS, architecture, and version. If no match is found, it downloads the matching NuGet package.
 
 To make the SDK use a specific `apphost` when building a project, set the [`AppHostSourcePath` property](https://github.com/dotnet/sdk/blob/f106bca2c28aeb4de8cafa8ff818bd8613908964/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.FrameworkReferenceResolution.targets#L295) to the full path to your local `apphost` binary - for example, `<repo_root>/artifacts/bin/<os>-<arch>.<configuration>/corehost/apphost[.exe]`.
 

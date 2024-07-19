@@ -78,7 +78,7 @@ This property requires the [wasm-tools workload](#wasm-tools-workload) to be ins
 ### JITerpreter
 The JITerpreter is a browser-specific compiler which will optimize frequently executed code when running in interpreted (non-AOT) mode. While this significantly improves application performance, it will cause increased memory usage. You can disable it via `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`, and configure it in more detail via the use of runtime options.
 
-For more information including a list of relevant runtime options, see [jiterpreter.md](../../../docs/design/mono/jiterpreter.md).
+For more information including a list of relevant runtime options, see [jiterpreter.md](/docs/design/mono/jiterpreter.md).
 
 ### AOT
 AOT compilation greatly improves application performance but will increase the size of the application, resulting in longer downloads and slower startup, so it is currently disabled by default. To enable it, use `<RunAOTCompilation>true</RunAOTCompilation>`. This is effective only when publishing the project. The resulting ahead-of-time compiled code will be included in your application's `dotnet.native.wasm` file.
@@ -252,11 +252,11 @@ See also [wasm-unsafe-eval](https://github.com/WebAssembly/content-security-poli
 ### Globalization, ICU
 Browsers do not offer full support for the globalization APIs available in .NET, so by default we provide our own version of the [ICU library](https://icu.unicode.org/) and databases. To reduce download sizes, by default the runtime will detect the end user's locale at startup, and load an appropriate slice of the ICU database only containing information for that locale.
 
-For some use cases, you may wish to override this behavior or create a custom ICU database. For more information on doing this, see [globalization-icu-wasm.md](../../../docs/design/features/globalization-icu-wasm.md).
+For some use cases, you may wish to override this behavior or create a custom ICU database. For more information on doing this, see [globalization-icu-wasm.md](/docs/design/features/globalization-icu-wasm.md).
 
-There are also rare use cases where your application does not rely on the contents of the ICU databases. In those scenarios, you can make your application smaller by enabling Invariant Globalization via the `<InvariantGlobalization>true</InvariantGlobalization>` msbuild property. For more details see [globalization-invariant-mode.md](../../../docs/design/features/globalization-invariant-mode.md).
+There are also rare use cases where your application does not rely on the contents of the ICU databases. In those scenarios, you can make your application smaller by enabling Invariant Globalization via the `<InvariantGlobalization>true</InvariantGlobalization>` msbuild property. For more details see [globalization-invariant-mode.md](/docs/design/features/globalization-invariant-mode.md).
 
-We are currently developing a third approach for locales where we offer a more limited feature set by relying on browser APIs, called "Hybrid Globalization". This provides more functionality than Invariant Culture mode without the need to ship the ICU library or its databases, which improves startup time. You can use the msbuild property `<HybridGlobalization>true</HybridGlobalization>` to test this in-development feature, but be aware that it is currently incomplete and may have performance issues. For more details see [globalization-hybrid-mode.md](../../../docs/design/features/globalization-hybrid-mode.md).
+We are currently developing a third approach for locales where we offer a more limited feature set by relying on browser APIs, called "Hybrid Globalization". This provides more functionality than Invariant Culture mode without the need to ship the ICU library or its databases, which improves startup time. You can use the msbuild property `<HybridGlobalization>true</HybridGlobalization>` to test this in-development feature, but be aware that it is currently incomplete and may have performance issues. For more details see [globalization-hybrid-mode.md](/docs/design/features/globalization-hybrid-mode.md).
 
 Customized globalization settings require [wasm-tools workload](#wasm-tools-workload) to be installed.
 
@@ -369,7 +369,7 @@ You can add following elements in your .csproj
 ```
 
 See also DWARF [WASM debugging](https://developer.chrome.com/blog/wasm-debugging-2020/) in Chrome.
-For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](../../../docs/workflow/debugging/mono/wasm-debugging.md)
+For more details see also [debugger.md](../browser/debugger/debugger.md) and [wasm-debugging.md](/docs/workflow/debugging/mono/wasm-debugging.md)
 
 ### Runtime logging and tracing
 

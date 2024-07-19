@@ -1,4 +1,4 @@
-[see also](../../../wasm/runtime/diagnostics/README.md)
+[see also](/src/mono/browser/runtime/diagnostics/README.md)
 
 To be able to run this sample you need to build the runtime with `/p:WasmEnableThreads=true` and use Chrome browser
 

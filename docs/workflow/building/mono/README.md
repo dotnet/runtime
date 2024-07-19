@@ -4,7 +4,7 @@
 
 | Windows  | Linux    | macOS    | FreeBSD  |
 | :------: | :------: | :------: | :------: |
-| [Requirements](../../requirements/windows-requirements.md) | [Requirements](../../requirements/linux-requirements.md) | [Requirements](../../requirements/macos-requirements.md) |
+| [Requirements](/docs/workflow/requirements/windows-requirements.md) | [Requirements](/docs/workflow/requirements/linux-requirements.md) | [Requirements](/docs/workflow/requirements/macos-requirements.md) |
 
 Before proceeding further, please click on the link above that matches your machine and ensure you have installed all the prerequisites for the build to work.
 
@@ -72,15 +72,15 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-See the instructions for [Building WebAssembly](../../../../src/mono/browser/README.md).
+See the instructions for [Building WebAssembly](/src/mono/browser/README.md).
 
 ### Android
 
-See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
+See the instructions for [Testing Android](/docs/workflow/testing/libraries/testing-android.md)
 
 ### iOS
 
-See the instructions for [Testing iOS](../../testing/libraries/testing-apple.md)
+See the instructions for [Testing iOS](/docs/workflow/testing/libraries/testing-apple.md)
 
 ## Packages
 

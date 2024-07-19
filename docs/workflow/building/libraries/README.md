@@ -52,7 +52,7 @@ The steps above may be all you need to know to make a change. Want more details 
 
 ## Building everything
 
-This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. You should normally build CoreCLR runtime in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](../../README.md#Configurations) to understand configurations.
+This document explains how to work on libraries. In order to work on library projects or run library tests it is necessary to have built the runtime to give the libraries something to run on. You should normally build CoreCLR runtime in release configuration and libraries in debug configuration. If you haven't already done so, please read [this document](/docs/workflow/README.md#Configurations) to understand configurations.
 
 These example commands will build a release CoreCLR (and CoreLib), debug libraries, and debug installer:
 
@@ -81,7 +81,7 @@ The build settings (BuildTargetFramework, TargetOS, Configuration, Architecture)
 - `-configuration|-c Debug|Release` controls the optimization level the compilers use for the build. It defaults to `Debug`. (msbuild property `Configuration`)
 - `-arch` identifies the architecture for the build. It defaults to `x64` but possible values include `x64`, `x86`, `arm`, or `arm64`. (msbuild property `TargetArchitecture`)
 
-For more details on the build settings see [project-guidelines](../../../coding-guidelines/project-guidelines.md#build-pivots).
+For more details on the build settings see [project-guidelines](/docs/coding-guidelines/project-guidelines.md#build-pivots).
 
 If you invoke the `build` script without any actions, the default action chain `-restore -build` is executed.
 
@@ -162,7 +162,7 @@ Similar to building the entire repo with `build.cmd` or `build.sh` in the root y
 
 As `dotnet build` works on both Unix and Windows and calls the restore target implicitly, we will use it throughout this guide.
 
-Under the `src` directory is a set of directories, each of which represents a particular assembly in Libraries. See Library Project Guidelines section under [project-guidelines](../../../coding-guidelines/project-guidelines.md) for more details about the structure.
+Under the `src` directory is a set of directories, each of which represents a particular assembly in Libraries. See Library Project Guidelines section under [project-guidelines](/docs/coding-guidelines/project-guidelines.md) for more details about the structure.
 
 For example the `src\libraries\System.Diagnostics.DiagnosticSource` directory holds the source code for the System.Diagnostics.DiagnosticSource.dll assembly.
 
@@ -173,7 +173,7 @@ You can build the tests for System.Diagnostics.DiagnosticSource.dll by going to
 
 Some libraries might also have a `ref` and/or a `pkg` directory and you can build them in a similar way by typing `dotnet build` in that directory.
 
-For libraries that have multiple target frameworks the target frameworks will be listed in the `<TargetFrameworks>` property group. When building the csproj for a BuildTargetFramework the most compatible target framework in the list will be chosen and set for the build. For more information about `TargetFrameworks` see [project-guidelines](../../../coding-guidelines/project-guidelines.md).
+For libraries that have multiple target frameworks the target frameworks will be listed in the `<TargetFrameworks>` property group. When building the csproj for a BuildTargetFramework the most compatible target framework in the list will be chosen and set for the build. For more information about `TargetFrameworks` see [project-guidelines](/docs/coding-guidelines/project-guidelines.md).
 
 **Examples**
 
@@ -239,9 +239,9 @@ Starting with Visual Studio 2022 version 17.5, Visual Studio will validate that 
 
 ## Running tests
 
-For more details about running tests inside Visual Studio, [go here](../../testing/visualstudio.md).
+For more details about running tests inside Visual Studio, [go here](/docs/workflow/testing/visualstudio.md).
 
-For more about running tests, read the [running tests](../../testing/libraries/testing.md) document.
+For more about running tests, read the [running tests](/docs/workflow/testing/libraries/testing.md) document.
 
 ## Build packages
 To build a library's package, simply invoke `dotnet pack` on the src project after you successfully built the .NETCoreApp vertical from root:

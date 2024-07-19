@@ -40,9 +40,9 @@ The code is split into three projects:
 
 ## Tests
 
-To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/tests/ilverify/ILTests](../../../tests/ilverify/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method.
+To test the ILVerification library we have small methods checked in as .il files testing specific verification scenarios. These tests live under [src/tests/ilverify/ILTests](/src/tests/ilverify/ILTests). Tests are grouped into .il files based on functionalities they test. There is no strict policy here, the goal is to have a few dozen .il files instead of thousands containing each only a single method.
 
-The test project itself is under [src/tests/ilverify](../../../tests/ilverify)
+The test project itself is under [src/tests/ilverify](/src/tests/ilverify)
 
 ### Building and Running Tests
 

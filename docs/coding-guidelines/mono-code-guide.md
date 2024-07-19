@@ -1,14 +1,14 @@
 # Mono code guidelines
 
 This document is meant to capture guidelines for contributing code to
-the [src/mono/mono/](../../src/mono/mono),
-[src/native/public/mono](../../src/native/public/mono) areas of the
+the [src/mono/mono/](/src/mono/mono),
+[src/native/public/mono](/src/native/public/mono) areas of the
 dotnet/runtime repo.
 
 In general this guide does not apply to:
 
-1. Shared native code in [src/native](../../src/native)
-2. The Mono-specific C# code in [src/mono](../../src/mono) in System.Private.CoreLib or elsewhere
+1. Shared native code in [src/native](/src/native)
+2. The Mono-specific C# code in [src/mono](/src/mono) in System.Private.CoreLib or elsewhere
 
 ## Code style
 
@@ -22,7 +22,7 @@ We follow the [Mono Coding guidelines](https://www.mono-project.com/community/co
 
 ## Naming
 
-Mono reserves the following prefixes for symbols: `mono_`, `monovm_`, `m_`, `monoeg_` (used to remap [`eglib`](../../src/mono/mono/eglib)
+Mono reserves the following prefixes for symbols: `mono_`, `monovm_`, `m_`, `monoeg_` (used to remap [`eglib`](/src/mono/mono/eglib)
 functions which in source code have a `g_` prefix).
 
 All non-`static` symbols should use one of these prefixes.  We generally use `mono_` for most
@@ -131,7 +131,7 @@ For the code in `src/mono/mono`:
 * `mini/interp` depends on all of the above
 
 * `components` can use functions from all of the above provided they're marked with
-  `MONO_COMPONENT_API`, see [../design/mono/components.md](../design/mono/components.md)
+  `MONO_COMPONENT_API`, see [/docs/design/mono/components.md](/docs/design/mono/components.md)
 
 The main distinction between `metadata` and `utils` is that utils code should not assume that it is
 part of an executing .NET runtime - anything that loads types, creates objects, etc does not belong
@@ -148,7 +148,7 @@ API to install hooks and `mini` provides the implementations.
 New code should prefer to use the `MonoError` functions.
 
 * A non-public-API function should take a `MonoError *` argument.
-* In case of an error the function should call one of the `mono_error_set_` functions from [../../src/mono/mono/utils/mono-error-internals.h](../../src/mono/mono/utils/mono-error-internals.h)
+* In case of an error the function should call one of the `mono_error_set_` functions from [/src/mono/mono/utils/mono-error-internals.h](/src/mono/mono/utils/mono-error-internals.h)
 * Inside the runtime check whether there was an error by calling `is_ok (error)`, `mono_error_assert_ok (error)`, `goto_if_nok` or `return_if_nok`/`return_val_if_nok`
 * If there is an error and you're handling it, call `mono_error_cleanup (error)` to dispose of the resources.
 * `MonoError*` is generally one-shot: after it's been cleaned up it needs to be re-inited with `mono_error_init_reuse`, but this is discouraged.
@@ -178,7 +178,7 @@ outside the runtime.
 
 Internal calls generally have at least one argument that is a managed object, or may throw a managed exception.
 
-Internal calls are declared in [`icall-def.h`](../../src/mono/mono/metadata/icall-def.h) See the comment in the header for details.
+Internal calls are declared in [`icall-def.h`](/src/mono/mono/metadata/icall-def.h) See the comment in the header for details.
 
 There are two styles of internal calls: `NOHANDLES` and `HANDLES`.  (This is a simplification as there
 are also JIT internal calls added by the execution engines)
@@ -264,7 +264,7 @@ to execute .NET code in the context of another application or framework.  The cu
 `mono-2.0`.  We strive to maintain binary ABI and API stability for our embedders.
 
 The public API headers are defined in
-[`../../src/native/public/mono`](../../src/native/public/mono).  Great care should be taken when
+[`/src/native/public/mono`](/src/native/public/mono).  Great care should be taken when
 modifying any of the functions declared in these headers.  In particular breaking the ABI by
 removing these functions or changing their arguments is not allowed.  Semantic changes should be
 avoided, or implemented in a way that is least disruptive to embedders (for example the runtime does
@@ -285,7 +285,7 @@ As a matter of courtesy, notify the .NET macios and .NET Android teams if changi
 
 ### WASM
 
-The WASM and WASI runtimes in [`src/mono/wasm/runtime`](../../src/mono/wasm/runtime) and
+The WASM and WASI runtimes in [`src/mono/wasm/runtime`](/src/mono/wasm/runtime) and
 `src/mono/wasi` are effectively external API clients.  When possible they should use existing `MONO_API` functions.
 
 As a matter of expedience, the wasm project has sometimes taken advantage of static linking by

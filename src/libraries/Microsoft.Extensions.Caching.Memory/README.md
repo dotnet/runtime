@@ -39,7 +39,7 @@ The stats can be viewed using the above event counter like below with `dotnet-co
 To learn more about using memory cache and getting statistics check out issue dotnet/runtime#67770.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](/src/libraries/README.md#primary-bar)
 
 The APIs and functionality need more investment in the upcoming .NET releases.
 

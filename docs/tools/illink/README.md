@@ -13,4 +13,4 @@ View the official trimming docs at [learn.microsoft.com](https://learn.microsoft
 - [Authoring Custom Steps](custom-steps.md)
 
 ## Design Docs
-- [Reflection Handling](../../design/tools/illink/reflection-flow.md)
+- [Reflection Handling](/docs/design/tools/illink/reflection-flow.md)

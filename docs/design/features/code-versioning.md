@@ -158,7 +158,7 @@ Implementation
 
 ### Code Versions ###
 
-The implementation can be located in [codeversion.h](../../../src/coreclr/vm/codeversion.h) and [codeversion.cpp](../../../src/coreclr/vm/codeversion.cpp)
+The implementation can be located in [codeversion.h](/src/coreclr/vm/codeversion.h) and [codeversion.cpp](/src/coreclr/vm/codeversion.cpp)
 
 Code versions are embodied by the configuration in NativeCodeVersion structure as well as the configuration in the transitively reachable ILCodeVersion. NativeCodeVersion::GetILCodeVersion() allows trivial access from one part of the configuration to the other. These structures have various accessors to retrieve all the code and configuration data such as:
 

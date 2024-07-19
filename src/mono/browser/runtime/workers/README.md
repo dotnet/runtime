@@ -33,10 +33,10 @@ the size of the overall bundle.
 There are additional changes that are needed beyond just adding a new `dotnet-*-worker.[tj]s` file in this directory.
 
 Some other places that may need to be modified include:
-* [`../../browser.proj`](../../browser.proj)
+* [`/src/mono/browser.proj`](/src/mono/browser/browser.proj)
 * `eng/liveBuilds.targets`
 * `src/installer/pkg/sfx/Microsoft.NETCore.App/Directory.Build.prop`
-* [`../../build/BrowserWasmApp.targets`](../../build/BrowserWasmApp.targets)
+* [`/src/mono/browser/build/BrowserWasmApp.targets`](/src/mono/browser/build/BrowserWasmApp.targets)
 * `src/mono/wasm//Wasm.Build.Tests/BuildTestBase.cs`
 * etc
 

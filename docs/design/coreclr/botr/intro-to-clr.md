@@ -254,6 +254,6 @@ Phew!  The runtime does a lot! It has taken many pages just to describe _some_ o
 - [CoreCLR Repo Documentation](README.md)
 
 [clr]: http://msdn.microsoft.com/library/8bs2ecf4.aspx
-[ecma-spec]: ../../../project/dotnet-standards.md
+[ecma-spec]: /docs/project/dotnet-standards.md
 [cil-spec]: http://download.microsoft.com/download/7/3/3/733AD403-90B2-4064-A81E-01035A7FE13C/MS%20Partition%20III.pdf
 [fx-design-guidelines]: http://msdn.microsoft.com/en-us/library/ms229042.aspx

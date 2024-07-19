@@ -30,7 +30,7 @@ public class MyOptions
 upon startup we will get an error stating that the Name field is required.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](/src/libraries/README.md#primary-bar)
 
 Although the types are mature, the code base continues to evolve for better performance.
 

@@ -4,8 +4,8 @@ This assembly provides regular expression functionality. The main type contained
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.text.regularexpressions.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] [We consider new features, new APIs and performance changes](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](/src/libraries/README.md#secondary-bars)
 
 Recent improvements to the library are detailed at:
 - [Regex Performance Improvements in .NET 5](https://devblogs.microsoft.com/dotnet/regex-performance-improvements-in-net-5/)

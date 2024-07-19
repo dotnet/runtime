@@ -13,4 +13,4 @@ sweep operations on all the code that it is referenced, to only keep what is
 necessary for the source program to run.
 
 For more details about how the IL Linker tool works and other documentation please
-check [docs/](../../../../../docs/tools/illink/README.md) folder.
+check [docs/](/docs/tools/illink/README.md) folder.

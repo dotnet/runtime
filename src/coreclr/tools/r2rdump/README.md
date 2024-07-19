@@ -67,7 +67,7 @@ Eg. "CoreCLR 4.5.30319.0 __BUILDMACHINE__"
 
 ### READYTORUN_SECTION_IMPORT_SECTIONS
 
-A struct described in [READYTORUN_IMPORT_SECTION](../../inc/readytorun.h). Currently not parsed correctly
+A struct described in [READYTORUN_IMPORT_SECTION](/src/coreclr/inc/readytorun.h). Currently not parsed correctly
 
 ### READYTORUN_SECTION_RUNTIME_FUNCTIONS
 
@@ -79,11 +79,11 @@ A [NativeArray](../aot/ILCompiler.Reflection.ReadyToRun/NativeArray.cs) used for
 
 ### READYTORUN_SECTION_AVAILABLE_TYPES
 
-A [NativeHashtable](../aot/ILCompiler.Reflection.ReadyToRun/NativeHashtable.cs) mapping type hashcodes of types defined in the program to the rowIds. The hashcode is calculated with [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace) ^ [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(name)
+A [NativeHashtable](../aot/ILCompiler.Reflection.ReadyToRun/NativeHashtable.cs) mapping type hashcodes of types defined in the program to the rowIds. The hashcode is calculated with [ComputeNameHashCode](/src/coreclr/vm/typehashingalgorithms.h)(namespace) ^ [ComputeNameHashCode](/src/coreclr/vm/typehashingalgorithms.h)(name)
 
 ### READYTORUN_SECTION_ATTRIBUTEPRESENCE
 
-A [NativeCuckooFilter](../aot/ILCompiler.Reflection.ReadyToRun/NativeHashtable.cs) to discover which tokens have which "System.Runtime." prefixed attributes. The System.Runtime.CompilerServices.NullableAttribute is not used in this calculation. The filter is composed of a name hash of the type name using [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace + name) hash combined with a hash of each token that produced it. In addition the upper 16 bits is used as the fingerprint in the filter.
+A [NativeCuckooFilter](../aot/ILCompiler.Reflection.ReadyToRun/NativeHashtable.cs) to discover which tokens have which "System.Runtime." prefixed attributes. The System.Runtime.CompilerServices.NullableAttribute is not used in this calculation. The filter is composed of a name hash of the type name using [ComputeNameHashCode](/src/coreclr/vm/typehashingalgorithms.h)(namespace + name) hash combined with a hash of each token that produced it. In addition the upper 16 bits is used as the fingerprint in the filter.
 
 ### READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS
 
@@ -95,11 +95,11 @@ Eg. GenericMethod&lt;S, T&gt;(T arg1, S arg2) instantiated for &lt;int, UserDefi
 
 ### UnwindInfo
 
-A struct described in [_UNWIND_INFO](../../inc/win64unwind.h). Each RuntimeFunction has its own UnwindInfo.
+A struct described in [_UNWIND_INFO](/src/coreclr/inc/win64unwind.h). Each RuntimeFunction has its own UnwindInfo.
 
 For x86, it contains only an encoded function length
 
-For x64, Arm and Arm64, it contains a bit field followed by an array of unwind codes ([_UNWIND_CODE](../../inc/win64unwind.h)) and finally padding to make it byte aligned
+For x64, Arm and Arm64, it contains a bit field followed by an array of unwind codes ([_UNWIND_CODE](/src/coreclr/inc/win64unwind.h)) and finally padding to make it byte aligned
 
 The unwind data info structure is used to record the effects a function has on the stack pointer and where the nonvolatile registers are saved on the stack (see https://msdn.microsoft.com/en-us/library/0kd71y96.aspx)
 
@@ -107,7 +107,7 @@ The unwind data info structure is used to record the effects a function has on t
 
 Written into the ReadyToRun image right after UnwindInfo. Contains a header, GcSlots and GcTransitions (register liveness).
 
-The x64/Arm/Arm64 GcInfo is written in crossgen by [GcInfoEncoder::Build](../../gcinfo/gcinfoencoder.cpp) and decoded similar to [GcInfoDecoder::EnumerateLiveSlots](../../vm/gcinfodecoder.cpp). The x86 gcInfo is written by [GCInfo::gcMakeRegPtrTable](../../jit/gcencode.cpp) and decoded similar to [GCDump::DumpGCTable](../../gcdump/i386/gcdumpx86.cpp)
+The x64/Arm/Arm64 GcInfo is written in crossgen by [GcInfoEncoder::Build](/src/coreclr/gcinfo/gcinfoencoder.cpp) and decoded similar to [GcInfoDecoder::EnumerateLiveSlots](/src/coreclr/vm/gcinfodecoder.cpp). The x86 gcInfo is written by [GCInfo::gcMakeRegPtrTable](/src/coreclr/jit/gcencode.cpp) and decoded similar to [GCDump::DumpGCTable](/src/coreclr/gcdump/i386/gcdumpx86.cpp)
 
 Contains the code length followed by the header, GcSlots, and finally GcTransitions
 

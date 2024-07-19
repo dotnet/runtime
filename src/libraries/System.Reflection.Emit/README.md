@@ -6,7 +6,7 @@ Not all platforms and runtimes support IL.Emit.
 Documentation can be found at https://learn.microsoft.com/dotnet/api/system.reflection.emit. The primary class is [`AssemblyBuilder`](https://learn.microsoft.com/dotnet/api/system.reflection.emit.AssemblyBuilder).
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
+- [x] [We consider new features, new APIs and performance changes](/src/libraries/README.md#primary-bar)
 
 See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Aarea-System.Reflection.Emit+label%3A%22help+wanted%22) issues.
 
@@ -17,9 +17,9 @@ The primary new feature under consideration is [AssemblyBuilder.Save()](https://
 
 ## Source
 
-* CoreClr-specific: [../../coreclr/System.Private.CoreLib/src/System/Reflection/Emit](../../coreclr/System.Private.CoreLib/src/System/Reflection/Emit)
-* Mono-specific: [../../mono/System.Private.CoreLib/src/System/Reflection/Emit](../../mono/System.Private.CoreLib/src/System/Reflection/Emit)
-* Shared between CoreClr and Mono: [../System.Private.CoreLib/src/System/Reflection/Emit](../System.Private.CoreLib/src/System/Reflection/Emit)
+* CoreClr-specific: [/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit](/src/coreclr/System.Private.CoreLib/src/System/Reflection/Emit)
+* Mono-specific: [/src/mono/System.Private.CoreLib/src/System/Reflection/Emit](/src/mono/System.Private.CoreLib/src/System/Reflection/Emit)
+* Shared between CoreClr and Mono: [../System.Private.CoreLib/src/System/Reflection/Emit](/src/libraries/System.Private.CoreLib/src/System/Reflection/Emit)
 
 ## See also
 - [`System.Reflection.Emit.Lightweight`](../System.Reflection.Emit.Lightweight/README.md)

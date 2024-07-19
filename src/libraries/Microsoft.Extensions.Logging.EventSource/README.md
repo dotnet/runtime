@@ -5,8 +5,8 @@
 Documentation can be found at https://learn.microsoft.com/dotnet/core/extensions/logging.
 
 ## Contribution Bar
-- [x] [We consider new features, new APIs, bug fixes, and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for improvements to the logging source generator](../../libraries/README.md#secondary-bars)
+- [x] [We consider new features, new APIs, bug fixes, and performance changes](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for improvements to the logging source generator](/src/libraries/README.md#secondary-bars)
 
 The APIs and functionality are mature, but do get extended occasionally.
 

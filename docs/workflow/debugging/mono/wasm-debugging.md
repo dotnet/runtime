@@ -269,7 +269,7 @@ The name of the script and the location of the `<script>` tag depends on whether
 Blazor WebAssembly project (template `blazorwasm`) or a Blazor project (template `blazor`).
 
 See the runtime `DotnetHostBuilder` interface in
-[dotnet.d.ts](../../../../src/mono/wasm/runtime/dotnet.d.ts) for additional configuration functions.
+[dotnet.d.ts](/src/mono/wasm/runtime/dotnet.d.ts) for additional configuration functions.
 
 ## Blazor WebAssembly
 

@@ -65,7 +65,7 @@ Finally, there is a Python script that harnesses SuperPMI collection,
 playback, and other functions, such as download of existing SuperPMI
 collections from well-known locations. This tool is `superpmi.py`,
 found in `src/corclr/scripts` in the dotnet/runtime repository. See
-[superpmi.md](../../../scripts/superpmi.md) for more details.
+[superpmi.md](/src/coreclr/scripts/superpmi.md) for more details.
 
 
 # Collection

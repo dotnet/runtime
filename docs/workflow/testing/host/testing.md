@@ -10,8 +10,8 @@ To build the host tests, first build the product:
     ```
     build.cmd/sh -subset clr+libs -c Release
     ```
-    * [CoreCLR](../../building/coreclr/README.md) build instructions
-    * [Libraries](../../building/libraries/README.md) build instructions
+    * [CoreCLR](/docs/workflow/building/coreclr/README.md) build instructions
+    * [Libraries](/docs/workflow/building/libraries/README.md) build instructions
 
 2.  Build the host:
     ```

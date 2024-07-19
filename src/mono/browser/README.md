@@ -1,16 +1,16 @@
 # Build WebAssembly
 
-If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\browser\emsdk` directory.
+If you haven't already done so, please read [this document](/docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](/docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\browser\emsdk` directory.
 
 ### Windows
 
-Windows build [requirements](../../../docs/workflow/requirements/windows-requirements.md)
+Windows build [requirements](/docs/workflow/requirements/windows-requirements.md)
 
 **Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/browser/emsdk` directory should be manually deleted and then a rebuild attempted.
 
 ## Building
 
-At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
+At this time no other build dependencies are necessary to start building for WebAssembly. If you haven't already done so, please read [this document](/docs/workflow/README.md#Configurations) to understand configurations. Artifacts will be placed in `artifacts/bin/microsoft.netcore.app.runtime.browser-wasm/Release/`.
 
 ## macOS
 
@@ -88,7 +88,7 @@ For example, for `System.Collections.Concurrent`: `make run-tests-v8-System.Coll
 
 ### Windows
 
-Library tests on windows can be run as described in [testing-libraries](../../../docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
+Library tests on windows can be run as described in [testing-libraries](/docs/workflow/testing/libraries/testing.md#testing-libraries) documentation. Without setting additional properties, it will run tests for all libraries on `v8` engine:
 
 `.\build.cmd libs.tests -test -os browser`
 

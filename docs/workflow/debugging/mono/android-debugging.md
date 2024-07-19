@@ -57,7 +57,7 @@ Since you're debugging an optimized release build, it is likely the debugger wil
 
 ## Native debugging using a local debug build of Mono
 
-Ensure the prerequisites are met for [Testing Android](../../testing/libraries/testing-android.md#prerequisites).
+Ensure the prerequisites are met for [Testing Android](/docs/workflow/testing/libraries/testing-android.md#prerequisites).
 
 Build the runtime for your android architecture `<ANDROID_ARCH>` and keep debug symbols in the binary:
 

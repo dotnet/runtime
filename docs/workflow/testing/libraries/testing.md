@@ -24,7 +24,7 @@ build.cmd/sh -subset mono+libs+libs.tests -test -arch x86
 
 ## Partial Build and Test Runs
 
-Doing full build and test runs takes a long time and is very inefficient if you need to iterate on a change. For greater control and efficiency individual parts of the build + testing workflow can be run in isolation. See the [Building instructions](../../building/libraries/README.md) for more info on build options.
+Doing full build and test runs takes a long time and is very inefficient if you need to iterate on a change. For greater control and efficiency individual parts of the build + testing workflow can be run in isolation. See the [Building instructions](/docs/workflow/building/libraries/README.md) for more info on build options.
 
 ### Test Run Pre-requisites
 

@@ -12,8 +12,8 @@ Documentation can be found at https://learn.microsoft.com/dotnet/api/system.secu
 
 ## Contribution Bar
 
-- [x] [We consider new features, new APIs and performance changes](../../libraries/README.md#primary-bar)
-- [x] [We consider PRs that target this library for new source code analyzers](../../libraries/README.md#secondary-bars)
+- [x] [We consider new features, new APIs and performance changes](/src/libraries/README.md#primary-bar)
+- [x] [We consider PRs that target this library for new source code analyzers](/src/libraries/README.md#secondary-bars)
 
 When contributing to this area, please consider:
 
@@ -29,10 +29,10 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3
 ## Source
 
 * The managed code for core cryptographic support is in the [src](src/) subdirectory.
-* Core cryptography involves a shim layer for performing [interop](../../docs/coding-guidelines/interop-guidelines.md) on most of our operating systems.
-  * Apple (macOS, iOS, et cetera): [System.Security.Cryptography.Native.Apple](../../native/libs/System.Security.Cryptography.Native.Apple/)
-  * Android: [System.Security.Cryptography.Native.Android](../../native/libs/System.Security.Cryptography.Native.Android/)
-  * Linux and "other UNIX" (via OpenSSL): [System.Security.Cryptography.Native](../../native/libs/System.Security.Cryptography.Native/)
+* Core cryptography involves a shim layer for performing [interop](/docs/coding-guidelines/interop-guidelines.md) on most of our operating systems.
+  * Apple (macOS, iOS, et cetera): [System.Security.Cryptography.Native.Apple](/src/native/libs/System.Security.Cryptography.Native.Apple/)
+  * Android: [System.Security.Cryptography.Native.Android](/src/native/libs/System.Security.Cryptography.Native.Android/)
+  * Linux and "other UNIX" (via OpenSSL): [System.Security.Cryptography.Native](/src/native/libs/System.Security.Cryptography.Native/)
 * Higher level cryptographic components may be in other assemblies, such as
   * [System.Security.Cryptography.Pkcs](../System.Security.Cryptography.Pkcs/)
   * [System.Security.Cryptography.Cose](../System.Security.Cryptography.Cose/)

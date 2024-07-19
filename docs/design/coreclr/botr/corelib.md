@@ -172,7 +172,7 @@ FCalls require a lot of boilerplate code, too much to describe here. Refer to [f
 
 ### <a name="gcholes"></a> GC holes, FCall, and QCall
 
-A more complete discussion on GC holes can be found in the [CLR Code Guide](../../../coding-guidelines/clr-code-guide.md). Look for ["Is your code GC-safe?"](../../../coding-guidelines/clr-code-guide.md#2.1). This tailored discussion motivates some of the reasons why FCall and QCall have some of their strange conventions.
+A more complete discussion on GC holes can be found in the [CLR Code Guide](/docs/coding-guidelines/clr-code-guide.md). Look for ["Is your code GC-safe?"](/docs/coding-guidelines/clr-code-guide.md#2.1). This tailored discussion motivates some of the reasons why FCall and QCall have some of their strange conventions.
 
 Object references passed as parameters to FCall methods are not GC-protected, meaning that if a GC occurs, those references will point to the old location in memory of an object, not the new location. For this reason, FCalls usually follow the discipline of accepting something like `StringObject*` as their parameter type, then explicitly converting that to a `STRINGREF` before doing operations that may trigger a GC. If you expect to use an object reference later, you must GC protect object references before triggering a GC.
 

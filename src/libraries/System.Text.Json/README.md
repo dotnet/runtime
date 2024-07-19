@@ -18,7 +18,7 @@ See the [Help Wanted](https://github.com/dotnet/runtime/issues?q=is:issue+is:ope
 
 ## Building & Testing
 
-Building and testing System.Text.Json follows the same workflow as other libraries. Instructions can be found in the relevant section in the [workflow guide](../../../docs/workflow/README.md).
+Building and testing System.Text.Json follows the same workflow as other libraries. Instructions can be found in the relevant section in the [workflow guide](/docs/workflow/README.md).
 
 ### Debugging the Source Generator
 
@@ -33,4 +33,4 @@ Subsequent runs of the source generator will attempt to attach themselves to a d
 
 ## Deployment
 
-The library is shipped as part of the .NET shared framework and as a [NuGet package](https://www.nuget.org/packages/System.Text.Json). Daily builds of the NuGet package can be obtained following [these instructions](../../../docs/project/dogfooding.md#obtaining-daily-builds-of-nuget-packages).
+The library is shipped as part of the .NET shared framework and as a [NuGet package](https://www.nuget.org/packages/System.Text.Json). Daily builds of the NuGet package can be obtained following [these instructions](/docs/project/dogfooding.md#obtaining-daily-builds-of-nuget-packages).

@@ -27,7 +27,7 @@ Every managed thread has an associated Thread object, defined in [threads.h][thr
 
 All Thread objects are stored in the ThreadStore (also defined in [threads.h][threads.h]), which is a simple list of all known Thread objects. To enumerate all managed threads, one must first acquire the ThreadStoreLock, then use ThreadStore::GetAllThreadList to enumerate all Thread objects. This list may include managed threads which are not currently assigned to native threads (for example, they may not yet be started, or the native thread may already have exited).
 
-[threads.h]: ../../../../src/coreclr/vm/threads.h
+[threads.h]: /src/coreclr/vm/threads.h
 
 Each managed thread that is currently assigned to a native thread is reachable via a native thread-local storage (TLS) slot on that native thread. This allows code that is executing on that native thread to get the corresponding Thread object, via GetThread().
 
@@ -135,8 +135,8 @@ Sync blocks are stored in the Sync Block Table, and are addressed by sync block 
 
 The details of object headers and sync blocks are defined in [syncblk.h][syncblk.h]/[.cpp][syncblk.cpp].
 
-[syncblk.h]: ../../../../src/coreclr/vm/syncblk.h
-[syncblk.cpp]: ../../../../src/coreclr/vm/syncblk.cpp
+[syncblk.h]: /src/coreclr/vm/syncblk.h
+[syncblk.cpp]: /src/coreclr/vm/syncblk.cpp
 
 If there is room on the object header, Monitor stores the managed thread ID of the thread that currently holds the lock on the object (or zero (0) if no thread holds the lock). Acquiring the lock in this case is a simple matter of spin-waiting until the object header's thread ID is zero, and then atomically setting it to the current thread's managed thread ID.
 
@@ -168,12 +168,12 @@ Thus entering cooperative mode in native code is discouraged. In cases where coo
 
 Similarly, GCX\_PREEMP potentially _releases_ a lock that had been held by the thread. Great care must be taken to ensure that all GC references are properly protected before entering preemptive mode.
 
-The [Rules of the Code](../../../coding-guidelines/clr-code-guide.md) document describes the disciplines needed to ensure safety around GC mode switches.
+The [Rules of the Code](/docs/coding-guidelines/clr-code-guide.md) document describes the disciplines needed to ensure safety around GC mode switches.
 
 Crst
 ----
 
-Just as Monitor is the preferred locking mechanism for managed code, Crst is the preferred mechanism for VM code. Like Monitor, Crst is a hybrid lock that is aware of hosts and GC modes. Crst also implements deadlock avoidance via "lock leveling," described in the [Crst Leveling chapter of the BotR](../../../coding-guidelines/clr-code-guide.md#2.6.4).
+Just as Monitor is the preferred locking mechanism for managed code, Crst is the preferred mechanism for VM code. Like Monitor, Crst is a hybrid lock that is aware of hosts and GC modes. Crst also implements deadlock avoidance via "lock leveling," described in the [Crst Leveling chapter of the BotR](/docs/coding-guidelines/clr-code-guide.md#2.6.4).
 
 It is generally illegal to acquire a Crst while in cooperative mode, though exceptions are made where absolutely necessary.
 

@@ -1,6 +1,6 @@
 # Breaking Changes
 
-We take compatibility in .NET Framework and .NET Core extremely seriously. We use the [breaking change process](../project/breaking-change-process.md) to manage and consider potential breaking changes.
+We take compatibility in .NET Framework and .NET Core extremely seriously. We use the [breaking change process](/docs/project/breaking-change-process.md) to manage and consider potential breaking changes.
 
 Although .NET Core can be deployed app local, we are engineering it such that
 portable libraries can target it and still run on .NET Framework as well. This
