@@ -704,10 +704,10 @@ MONO_RESTORE_WARNING
 
 		if (tfrom_is_primitive_or_enum && tto_is_primitive_or_enum) {
 			if (size == 1) {
-				opcode = OP_MOVE;
+				opcode = (tto_type == MONO_TYPE_I1) ? OP_ICONV_TO_I1 : OP_ICONV_TO_U1;
 				tto_stack = STACK_I4;
 			} else if (size == 2) {
-				opcode = OP_MOVE;
+				opcode = (tto_type == MONO_TYPE_I2) ? OP_ICONV_TO_I2 : OP_ICONV_TO_U2;
 				tto_stack = STACK_I4;
 			} else if (size == 4) {
 				if ((tfrom_type == MONO_TYPE_R4) && ((tto_type == MONO_TYPE_I4) || (tto_type == MONO_TYPE_U4))) {
