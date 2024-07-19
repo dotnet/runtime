@@ -16136,7 +16136,9 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     {
         assert(!useSigned);
         code = insCodeACC(ins);
-        code = AddX86PrefixIfNeeded(id, code, size);
+        // TODO-xarch-apx:
+        // There is a case that instructions with 0xA* opcode cannot be prefixed by REX2.
+        code = (ins == INS_test)? code : AddX86PrefixIfNeeded(id, code, size);
     }
     else
     {
