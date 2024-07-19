@@ -31,6 +31,9 @@ switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
+    case "LazyLoadingTest":
+        dotnet.withDiagnosticTracing(true);
+        break;
     case "DownloadResourceProgressTest":
         if (params.get("failAssemblyDownload") === "true") {
             let assemblyCounter = 0;

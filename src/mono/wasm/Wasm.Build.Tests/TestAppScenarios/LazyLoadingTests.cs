@@ -24,7 +24,7 @@ public class LazyLoadingTests : AppTestBase
     public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");
-        BuildProject("Debug", extraArgs: $"-p:WasmDebugLevel=1");
+        BuildProject("Debug");
 
         var result = await RunSdkStyleAppForBuild(new(Configuration: "Debug", TestScenario: "LazyLoadingTest"));
 
