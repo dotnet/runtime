@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -25,6 +26,8 @@ namespace System
                 return new ProcessCpuUsage { UserTime = MapTime(info.ri_user_time), PrivilegedTime = MapTime(info.ri_system_time) };
             }
         }
+
+        private const int NanosecondsTo100NanosecondsFactor = 100;
 
         private static volatile uint s_timeBase_numer, s_timeBase_denom;
         private static TimeSpan MapTime(ulong sysTime)

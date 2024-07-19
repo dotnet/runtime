@@ -25,7 +25,7 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static ProcessCpuUsage CpuUsage
         {
-            get { throw new PlatformNotSupportedException(); }
+            get => new ProcessCpuUsage { UserTime = TimeSpan.Zero, PrivilegedTime = TimeSpan.Zero };
         }
 #endif
 
