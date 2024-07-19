@@ -2377,7 +2377,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     {
         for (CallArg& arg : call->gtArgs.LateArgs())
         {
-            INDEBUG(arg.GetLateNode()->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
             arg.SetLateNode(fgMorphTree(arg.GetLateNode()));
             flagsSummary |= arg.GetLateNode()->gtFlags;
         }
@@ -8269,11 +8268,20 @@ DONE_MORPHING_CHILDREN:
             return tree;
         }
 
+#ifdef DEBUG
+        if ((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) != 0)
+        {
+            return tree;
+        }
+#endif
+
         /* If we created a comma-throw tree then we need to morph op1 */
         if (fgIsCommaThrow(tree))
         {
-            tree->AsOp()->gtOp1 = fgMorphTree(tree->AsOp()->gtOp1);
-            INDEBUG(tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
+            INDEBUG(if ((tree->AsOp()->gtOp1->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0))
+            {
+                tree->AsOp()->gtOp1 = fgMorphTree(tree->AsOp()->gtOp1);
+            }
             fgMorphTreeDone(tree);
             return tree;
         }
@@ -12149,15 +12157,8 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     if (fgGlobalMorph)
     {
-#ifdef DEBUG
-        /* A RNGCHKFAIL may created by local morph for stack allocated arrays and causes remorph */
-        if (tree->IsHelperCall(this, CORINFO_HELP_OVERFLOW))
-        {
-            tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
-        }
         /* Ensure that we haven't morphed this node already */
         assert(((tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED) == 0) && "ERROR: Already morphed this node!");
-#endif
 
         /* Before morphing the tree, we try to propagate any active assertions */
         if (optLocalAssertionProp)
