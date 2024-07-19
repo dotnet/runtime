@@ -4365,7 +4365,8 @@ private:
         {
             int adjustment_idx = (current_adjustment_index + recorded_adjustment_size + distance_to_current) % recorded_adjustment_size;
             adjustment* adj = &adjustment_history[adjustment_idx];
-            dprintf (6666, ("adj->metric %d, metric %d, adj#%d: hc_change > 0 = %d, change_int > 0 = %d",
+            dprintf (6666, ("adj->metric %s, metric %s, adj#%d: hc_change > 0 = %d, change_int > 0 = %d",
+                str_adjust_metrics[adj->metric], str_adjust_metrics[metric],
                 adjustment_idx, (adj->hc_change > 0), (change_int > 0)));
             if ((adj->metric == metric) && ((change_int > 0) == (adj->hc_change > 0)))
             {
@@ -5081,6 +5082,15 @@ private:
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t gc_index_full_gc_end;
+
+#ifdef BACKGROUND_GC
+    // This is set when change_heap_count wants the next GC to be a BGC for rethreading gen2 FL
+    // and reset during that BGC.
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED bool trigger_bgc_for_rethreading_p;
+#endif //BACKGROUND_GC
+
+
+
 #endif //DYNAMIC_HEAP_COUNT
 
     /****************************************************/
