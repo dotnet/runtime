@@ -87,7 +87,7 @@ namespace System.Text.Encodings.Web
             {
                 this = default; // clear all existing data
 
-                Span<char> tempBuffer = ['\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'];
+                Span<char> tempBuffer = stackalloc char[8] { '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' };
                 for (int i = 0; i < 128; i++)
                 {
                     ulong thisPreescapedData;

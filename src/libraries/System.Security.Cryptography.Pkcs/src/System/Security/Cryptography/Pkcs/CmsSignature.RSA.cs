@@ -186,7 +186,9 @@ namespace System.Security.Cryptography.Pkcs
                     return RSASignaturePadding.Pkcs1;
                 }
 
-                ReadOnlySpan<byte> expectedParameters = [0x05, 0x00];
+                Span<byte> expectedParameters = stackalloc byte[2];
+                expectedParameters[0] = 0x05;
+                expectedParameters[1] = 0x00;
 
                 if (expectedParameters.SequenceEqual(signatureParameters.Value.Span))
                 {
