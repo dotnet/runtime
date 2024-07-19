@@ -19,6 +19,7 @@ namespace Internal.IL.Stubs
             MethodDesc method)
         {
             Debug.Assert(((MetadataType)method.OwningType).Name == "Interlocked");
+            Debug.Assert(!method.IsGenericMethodDefinition);
 
             if (method.HasInstantiation && method.Name == "CompareExchange")
             {
