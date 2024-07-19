@@ -175,7 +175,7 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD, bool updateFloat
         // This allocation throws on OOM.
         MachState* pUnwoundState = (MachState*)DacAllocHostOnlyInstance(sizeof(*pUnwoundState), true);
 
-        InsureInit(false, pUnwoundState);
+        InsureInit(pUnwoundState);
 
         pRD->pCurrentContext->Rip = pRD->ControlPC = pUnwoundState->m_Rip;
         pRD->pCurrentContext->Rsp = pRD->SP        = pUnwoundState->m_Rsp;
