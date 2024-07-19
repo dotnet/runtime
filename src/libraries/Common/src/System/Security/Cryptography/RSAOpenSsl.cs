@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
 
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
-            int rsaSize = key.GetKeySizeBytes();
+            int rsaSize = Interop.Crypto.GetEvpPKeySizeBytes(key);
             Span<byte> destination = default;
             byte[] buf = CryptoPool.Rent(rsaSize);
 
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography
             // OpenSSL requires that the decryption buffer be at least as large as key size in bytes.
             // So if the destination is too small, use a temporary buffer so we can match
             // Windows behavior of succeeding as long as the buffer can hold the final output.
-            int keySizeBytes = key.GetKeySizeBytes();
+            int keySizeBytes = Interop.Crypto.GetEvpPKeySizeBytes(key);
 
             if (destination.Length < keySizeBytes)
             {
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography
             // Caller should have already checked this.
             Debug.Assert(!key.IsInvalid);
 
-            int rsaSize = key.GetKeySizeBytes();
+            int rsaSize = Interop.Crypto.GetEvpPKeySizeBytes(key);
 
             if (data.Length != rsaSize)
             {
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography
 
             if (destination.Length < rsaSize)
             {
-                Debug.Fail($"Caller is responsible for temporary decryption buffer creation destination. {nameof(destination)}.{nameof(destination.Length)} == {destination.Length}, {nameof(rsaSize)} = {rsaSize}");
+                Debug.Fail($"Caller is responsible for temporary decryption buffer creation destination. destination.Length: {destination.Length}, needed: {rsaSize}");
                 throw new CryptographicException();
             }
 
@@ -210,7 +210,7 @@ namespace System.Security.Cryptography
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
 
-            byte[] buf = new byte[key.GetKeySizeBytes()];
+            byte[] buf = new byte[Interop.Crypto.GetEvpPKeySizeBytes(key)];
 
             bool encrypted = TryEncrypt(
                 key,
@@ -245,7 +245,7 @@ namespace System.Security.Cryptography
             RSAEncryptionPadding padding,
             out int bytesWritten)
         {
-            int rsaSize = key.GetKeySizeBytes();
+            int rsaSize = Interop.Crypto.GetEvpPKeySizeBytes(key);
 
             if (destination.Length < rsaSize)
             {
@@ -660,7 +660,7 @@ namespace System.Security.Cryptography
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
-            ForceSetKeySize(newKey.GetKeySizeBits());
+            ForceSetKeySize(Interop.Crypto.EvpPKeyBits(newKey));
         }
 
         private static void ValidateParameters(ref RSAParameters parameters)
@@ -733,7 +733,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             SafeEvpPKeyHandle key = GetKey();
-            int bytesRequired = key.GetKeySizeBytes();
+            int bytesRequired = Interop.Crypto.GetEvpPKeySizeBytes(key);
             byte[] signature = new byte[bytesRequired];
 
             int written = Interop.Crypto.RsaSignHash(key, padding.Mode, hashAlgorithm, hash, signature);
@@ -759,7 +759,7 @@ namespace System.Security.Cryptography
             ThrowIfDisposed();
 
             SafeEvpPKeyHandle key = GetKey();
-            int bytesRequired = key.GetKeySizeBytes();
+            int bytesRequired = Interop.Crypto.GetEvpPKeySizeBytes(key);
 
             if (destination.Length < bytesRequired)
             {

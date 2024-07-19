@@ -137,7 +137,7 @@ namespace System.Security.Cryptography
                 {
                     using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
                     {
-                        theirKey = tmp.CreateKeyHandle();
+                        theirKey = tmp.CreateEvpPKeyHandle();
                     }
                 }
                 else
@@ -149,7 +149,7 @@ namespace System.Security.Cryptography
                         // - private key is actually missing
                         using (ECOpenSsl tmp = new ECOpenSsl(ExportExplicitParameters(true)))
                         {
-                            ourKey = tmp.CreateKeyHandle();
+                            ourKey = tmp.CreateEvpPKeyHandle();
                             disposeOurKey = true;
                         }
                     }

@@ -106,18 +106,16 @@ int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
 int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
 {
     int32_t base_id = EVP_PKEY_get_base_id(key);
-    switch (base_id) {
-    case EVP_PKEY_RSA:
-    case EVP_PKEY_EC:
-    case EVP_PKEY_DSA:
-        return base_id;
-    case EVP_PKEY_RSA_PSS:
-        return EVP_PKEY_RSA;
-    case EVP_PKEY_ED448:
-    case EVP_PKEY_ED25519:
-        return EVP_PKEY_EC;
-    default:
-        return 0;
+    switch (base_id)
+    {
+        case EVP_PKEY_RSA:
+        case EVP_PKEY_EC:
+        case EVP_PKEY_DSA:
+            return base_id;
+        case EVP_PKEY_RSA_PSS:
+            return EVP_PKEY_RSA;
+        default:
+            return 0;
     }
 }
 

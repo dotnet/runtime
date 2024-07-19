@@ -19,6 +19,23 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
         internal static partial int EvpPKeyBits(SafeEvpPKeyHandle pkey);
 
+        internal static int GetEvpPKeySizeBytes(SafeEvpPKeyHandle pkey)
+        {
+            // EVP_PKEY_size returns the maximum suitable size for the output buffers for almost all operations that can be done with the key.
+            // For most of the OpenSSL 'default' provider keys it will return the same size as this method,
+            // but other providers such as 'tpm2' it may return larger size.
+            // Instead we will round up EVP_PKEY_bits result.
+            int keySizeBits = Interop.Crypto.EvpPKeyBits(pkey);
+
+            if (keySizeBits <= 0)
+            {
+                Debug.Fail($"EVP_PKEY_bits returned non-positive value: {keySizeBits}");
+                throw new CryptographicException();
+            }
+
+            return (keySizeBits + 7) / 8;
+        }
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         private static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle, IntPtr extraHandle);
 
@@ -271,15 +288,29 @@ internal static partial class Interop
             string keyUri)
         {
             IntPtr extraHandle = IntPtr.Zero;
-            IntPtr evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle);
+            IntPtr evpPKeyHandle = IntPtr.Zero;
 
-            if (IntPtr.Zero == evpPKeyHandle)
+            try
             {
-                throw CreateOpenSslCryptographicException();
-            }
+                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle);
 
-            Debug.Assert(extraHandle != IntPtr.Zero);
-            return new SafeEvpPKeyHandle(evpPKeyHandle, extraHandle: extraHandle);
+                if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
+                {
+                    Debug.Assert(evpPKeyHandle == IntPtr.Zero, "extraHandle should not be null if evpPKeyHandle is not null");
+                    throw CreateOpenSslCryptographicException();
+                }
+
+                return new SafeEvpPKeyHandle(evpPKeyHandle, extraHandle: extraHandle);
+            }
+            catch
+            {
+                if (evpPKeyHandle != IntPtr.Zero || extraHandle != IntPtr.Zero)
+                {
+                    EvpPkeyDestroy(evpPKeyHandle, extraHandle);
+                }
+
+                throw;
+            }
         }
 
         internal enum EvpAlgorithmId

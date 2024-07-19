@@ -67,15 +67,6 @@ if [ -z "$DOTNET_CRYPTOGRAPHY_TESTS_TPM_RSA_DECRYPT_KEY_HANDLE" ]; then
   echo
 fi
 
-if [ "$1" == "--self-check" ]; then
-  export DOTNET_CRYPTOGRAPHY_TESTS_ENSURE_FAILING=true
-else
-  echo "INFO: To run self-check use:"
-  echo "INFO: ./test.sh --self-check"
-  echo "INFO: Expect test failures one per each category of tests (custom ENGINE, ECDSA, ECDH, RSA sign, RSA decrypt)."
-  echo
-fi
-
 set -e
 
 cd "$nativelibs_path"

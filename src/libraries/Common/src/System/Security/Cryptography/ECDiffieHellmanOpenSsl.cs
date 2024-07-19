@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.GenerateECKey(parameters, out int keySize));
+            _key = new Lazy<SafeEvpPKeyHandle>(ECOpenSsl.ImportECKey(parameters, out int keySize));
             KeySizeValue = keySize;
         }
 

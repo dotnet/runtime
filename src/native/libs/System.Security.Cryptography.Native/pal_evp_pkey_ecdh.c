@@ -50,6 +50,11 @@ int32_t CryptoNative_EvpPKeyDeriveSecretAgreement(EVP_PKEY* pkey, void* extraHan
         return 0;
     }
 
+    // When secret is non-null (which is always the case here)
+    // tmpSize is both in and out.
+    // As input it must contain the size of the secret buffer.
+    // If buffer is too small, the function will fail by returning 0.
+    // When succeeds it will store number of bytes written.
     int ret = EVP_PKEY_derive(ctx, secret, &tmpSize);
 
     EVP_PKEY_CTX_free(ctx);

@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         /// In some cases like when a key is loaded from a provider, the key may have an associated data
         /// we need to keep alive for the lifetime of the key. This field is used to track that data.
         /// </summary>
-        internal IntPtr ExtraHandle { get; private set; } = IntPtr.Zero;
+        internal IntPtr ExtraHandle { get; private set; }
 
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
@@ -195,13 +195,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Open a named public key using a named OpenSSL <code>provider</code>.
+        ///   Open a named public key using a named <c>OSSL_PROVIDER</c>.
         /// </summary>
         /// <param name="providerName">
         ///   The name of the <code>provider</code> to process the key open request.
         /// </param>
         /// <param name="keyUri">
-        ///   The URI of the key to open.
+        ///   The provider-assigned URI of the key to open.
         /// </param>
         /// <returns>
         ///   The opened key.
@@ -217,7 +217,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///     Both provider name and key URI must be trusted inputs.
+        ///     Both <paramref name="providerName" /> and <paramref name="keyUri" /> must be trusted inputs.
         ///   </para>
         ///   <para>
         ///     This operation will fail if OpenSSL cannot successfully load the named <code>provider</code>,
@@ -244,33 +244,6 @@ namespace System.Security.Cryptography
             }
 
             return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri);
-        }
-
-        internal int GetKeySizeBits()
-        {
-            return Interop.Crypto.EvpPKeyBits(this);
-        }
-
-        internal int GetKeySizeBytes()
-        {
-            // EVP_PKEY_size returns the maximum suitable size for the output buffers for almost all operations that can be done with the key.
-            // For most of the OpenSSL 'default' provider keys it will return the same size as this method,
-            // but other providers such as 'tpm2' it may return larger size.
-            // Instead we will round up EVP_PKEY_bits result.
-            int keySizeBits = GetKeySizeBits();
-
-            if (keySizeBits <= 0)
-            {
-                Debug.Fail($"EVP_PKEY_bits returned non-positive value: {keySizeBits}");
-                throw new CryptographicException();
-            }
-
-            return (GetKeySizeBits() + 7) / 8;
-        }
-
-        internal Interop.Crypto.EvpAlgorithmId GetKeyType()
-        {
-            return Interop.Crypto.EvpPKeyType(this);
         }
     }
 }

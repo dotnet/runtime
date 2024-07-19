@@ -31,13 +31,13 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
 
-            if (pkeyHandle.GetKeyType() != Interop.Crypto.EvpAlgorithmId.ECC)
+            if (Interop.Crypto.EvpPKeyType(pkeyHandle) != Interop.Crypto.EvpAlgorithmId.ECC)
             {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
 
             _key = new Lazy<SafeEvpPKeyHandle>(pkeyHandle.DuplicateHandle());
-            KeySizeValue = _key.Value.GetKeySizeBits();
+            KeySizeValue = Interop.Crypto.EvpPKeyBits(_key.Value);
         }
 
         /// <summary>
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
                 _key = new Lazy<SafeEvpPKeyHandle>(Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle));
             }
 
-            KeySizeValue = _key.Value.GetKeySizeBits();
+            KeySizeValue = Interop.Crypto.EvpPKeyBits(_key.Value);
         }
 
         /// <summary>

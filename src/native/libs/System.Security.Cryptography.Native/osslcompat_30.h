@@ -24,14 +24,6 @@
 #define EVP_PKEY_RSA_PSS 912
 #endif
 
-#ifndef EVP_PKEY_ED448
-#define EVP_PKEY_ED448 1088
-#endif
-
-#ifndef EVP_PKEY_ED25519
-#define EVP_PKEY_ED25519 1087
-#endif
-
 typedef struct ossl_lib_ctx_st OSSL_LIB_CTX;
 typedef struct ossl_param_st OSSL_PARAM;
 typedef struct ossl_provider_st OSSL_PROVIDER;
@@ -79,7 +71,6 @@ OSSL_PARAM OSSL_PARAM_construct_end(void);
 OSSL_PARAM OSSL_PARAM_construct_int32(const char *key, int32_t *buf);
 OSSL_PARAM OSSL_PARAM_construct_octet_string(const char *key, void *buf, size_t bsize);
 
-OSSL_PROVIDER* OSSL_PROVIDER_try_load(OSSL_LIB_CTX* , const char* name, int retain_fallbacks);
 void OSSL_LIB_CTX_free(OSSL_LIB_CTX*);
 OSSL_LIB_CTX* OSSL_LIB_CTX_new(void);
 OSSL_PROVIDER* OSSL_PROVIDER_load(OSSL_LIB_CTX*, const char* name);

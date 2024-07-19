@@ -25,7 +25,14 @@ namespace System.Security.Cryptography.X509Certificates
             AsymmetricAlgorithm alg;
             SafeEvpPKeyHandle? privateKey = ((OpenSslX509CertificateReader)certificatePal).PrivateKeyHandle;
 
-            switch (privateKey?.GetKeyType())
+            if (privateKey == null)
+            {
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
+            }
+
+            Interop.Crypto.EvpAlgorithmId evpAlgId = Interop.Crypto.EvpPKeyType(privateKey);
+
+            switch (evpAlgId)
             {
                 case Interop.Crypto.EvpAlgorithmId.RSA:
                     alg = new RSAOpenSsl(privateKey);

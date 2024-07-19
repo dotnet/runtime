@@ -12,8 +12,6 @@ namespace System.Security.Cryptography.Tests
     {
         private const string EnvVarPrefix = "DOTNET_CRYPTOGRAPHY_TESTS_";
 
-        private const string TestEnsureFailingEnvVarName = EnvVarPrefix + "ENSURE_FAILING";
-
         private const string EngineEnvVarPrefix = EnvVarPrefix + "ENGINE_";
         private const string TestEngineEnabledEnvVarName = EngineEnvVarPrefix + "ENABLE";
 
@@ -51,7 +49,6 @@ namespace System.Security.Cryptography.Tests
         public static bool ShouldRunProviderRsaDecryptTests { get; } = PlatformDetection.OpenSslPresentOnSystem && !string.IsNullOrEmpty(TpmRsaDecryptKeyHandleUri);
         public static bool ShouldRunAnyProviderTests => ShouldRunProviderEcDsaTests || ShouldRunProviderEcDhTests || ShouldRunProviderRsaSignTests || ShouldRunProviderRsaDecryptTests;
 
-        public static bool ShouldFailTests { get; } = StringToBool(Environment.GetEnvironmentVariable(TestEnsureFailingEnvVarName));
         public static bool ShouldRunTpmTssTests => ShouldRunEngineTests && !string.IsNullOrEmpty(TpmEcDsaKeyHandle);
 
         private static readonly string AnyProviderKeyUri = TpmEcDsaKeyHandleUri ?? TpmEcDhKeyHandleUri ?? TpmRsaSignKeyHandleUri ?? TpmRsaDecryptKeyHandleUri ?? "test";
@@ -277,24 +274,52 @@ namespace System.Security.Cryptography.Tests
             Assert.ThrowsAny<CryptographicException>(() => ecdsaPri.ExportParameters(includePrivateParameters: true));
         }
 
+        [ConditionalFact(nameof(ShouldRunProviderEcDsaTests))]
+        public static void Provider_TPM2ECDSA_ExportParameters()
+        {
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDsaKeyHandleUri);
+            using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
+
+            ECDsa ecdsaPub = ECDsa.Create();
+            ecdsaPub.ImportParameters(ecdsaPri.ExportParameters(false));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsaPri.ExportParameters(true));
+
+            byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
+            byte[] signature = ecdsaPri.SignData(data, HashAlgorithmName.SHA256);
+            Assert.True(ecdsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256));
+        }
+
+        [ConditionalFact(nameof(ShouldRunProviderEcDsaTests))]
+        public static void Provider_TPM2ECDSA_ExportExplicitParameters()
+        {
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDsaKeyHandleUri);
+            using ECDsa ecdsaPri = new ECDsaOpenSsl(priKeyHandle);
+
+            ECDsa ecdsaPub = ECDsa.Create();
+            ecdsaPub.ImportParameters(ecdsaPri.ExportExplicitParameters(false));
+            Assert.ThrowsAny<CryptographicException>(() => ecdsaPri.ExportExplicitParameters(true));
+
+            byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
+            byte[] signature = ecdsaPri.SignData(data, HashAlgorithmName.SHA256);
+            Assert.True(ecdsaPub.VerifyData(data, signature, HashAlgorithmName.SHA256));
+        }
+
         [ConditionalFact(nameof(ShouldRunProviderEcDhTests))]
         public static void Provider_TPM2ECDH()
         {
             using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmEcDhKeyHandleUri);
             using ECDiffieHellman alicePri = new ECDiffieHellmanOpenSsl(priKeyHandle);
             using ECDiffieHellman alicePub = ECDiffieHellman.Create();
-            alicePub.ImportParameters(alicePri.ExportParameters(includePrivateParameters: false));
 
-            using ECDiffieHellman bobPri = ECDiffieHellman.Create();
-            bobPri.KeySize = alicePri.KeySize;
+            ECParameters aliceECParams = alicePri.ExportParameters(includePrivateParameters: false);
+            alicePub.ImportParameters(aliceECParams);
 
-            using ECDiffieHellman bobPub = ECDiffieHellman.Create();
-            bobPub.ImportParameters(bobPri.ExportParameters(includePrivateParameters: false));
+            using ECDiffieHellman bobPri = ECDiffieHellman.Create(aliceECParams.Curve);
 
             byte[] sharedKeyFromAlice;
-            using (ECDiffieHellmanPublicKey bobPublic = bobPub.PublicKey)
+            using (ECDiffieHellmanPublicKey bobPublic = bobPri.PublicKey)
             {
-                sharedKeyFromAlice = alicePri.DeriveKeyMaterial(bobPublic);
+                sharedKeyFromAlice = alicePri.DeriveRawSecretAgreement(bobPublic);
 
                 Assert.NotEmpty(sharedKeyFromAlice);
 
@@ -305,8 +330,14 @@ namespace System.Security.Cryptography.Tests
 
             using (ECDiffieHellmanPublicKey alicePublic = alicePub.PublicKey)
             {
-                byte[] sharedKeyFromBob = bobPri.DeriveKeyMaterial(alicePublic);
+                byte[] sharedKeyFromBob = bobPri.DeriveRawSecretAgreement(alicePublic);
                 Assert.Equal(sharedKeyFromAlice, sharedKeyFromBob);
+            }
+
+            // Now we derive it again but using directly PublicKey on the instance directly wrapping our TPM handle
+            using (ECDiffieHellmanPublicKey alicePublic = alicePri.PublicKey)
+            {
+                Assert.Equal(sharedKeyFromAlice, bobPri.DeriveRawSecretAgreement(alicePublic));
             }
         }
 
@@ -346,12 +377,25 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [ConditionalFact(nameof(ShouldRunProviderRsaDecryptTests))]
-        public static void Provider_TPM2DecryptRsa()
+        [ConditionalTheory(nameof(ShouldRunProviderRsaDecryptTests))]
+        [InlineData(RSAEncryptionPaddingMode.Pkcs1)]
+        [InlineData(RSAEncryptionPaddingMode.Oaep)]
+        public static void Provider_TPM2DecryptRsa(RSAEncryptionPaddingMode mode)
         {
-            // TPM2 OAEP support was added in the second half of 2023 therefore we only test Pkcs1 padding
-            // See: https://github.com/tpm2-software/tpm2-openssl/issues/89
-            RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
+            RSAEncryptionPadding padding;
+
+            switch (mode)
+            {
+                case RSAEncryptionPaddingMode.Pkcs1:
+                    padding = RSAEncryptionPadding.Pkcs1;
+                    break;
+                case RSAEncryptionPaddingMode.Oaep:
+                    padding = RSAEncryptionPadding.OaepSHA256;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode));
+            }
+
             using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaDecryptKeyHandleUri);
             using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
             byte[] rsaPubBytes = rsaPri.ExportSubjectPublicKeyInfo();
@@ -376,51 +420,36 @@ namespace System.Security.Cryptography.Tests
                 byte[] encrypted = rsaPub.Encrypt(data, padding);
                 Assert.NotEqual(encrypted, data);
 
-                Assert.Equal(data, rsaPri.Decrypt(encrypted, padding));
+                try
+                {
+                    Assert.Equal(data, rsaPri.Decrypt(encrypted, padding));
+                }
+                catch (CryptographicException) when (mode == RSAEncryptionPaddingMode.Oaep)
+                {
+                    // TPM2 OAEP support was added in the second half of 2023 therefore we allow for OAEP to throw for the time being
+                    // See: https://github.com/tpm2-software/tpm2-openssl/issues/89
+                }
             }
         }
 
-        // Sanity tests for flags
-        [ConditionalFact(nameof(ShouldRunEngineTests))]
-        public static void SanityTest_EngineAny()
-        {
-            Assert.False(ShouldFailTests, "This test is supposed to fail");
-        }
-
-        [ConditionalFact(nameof(ShouldRunTpmTssTests))]
-        public static void SanityTest_EngineTpmTss()
-        {
-            Assert.False(ShouldFailTests, "This test is supposed to fail");
-        }
-
-        [ConditionalFact(nameof(ShouldRunAnyProviderTests))]
-        public static void SanityTest_AnyTpm2Provider()
-        {
-            Assert.False(ShouldFailTests, "This test is supposed to fail");
-        }
-
-        [ConditionalFact(nameof(ShouldRunProviderEcDsaTests))]
-        public static void SanityTest_Tpm2ProviderEcDsa()
-        {
-            Assert.False(ShouldFailTests, "This test is supposed to fail");
-        }
-
-        [ConditionalFact(nameof(ShouldRunProviderEcDhTests))]
-        public static void SanityTest_Tpm2ProviderEcDh()
-        {
-            Assert.False(ShouldFailTests, "This test is supposed to fail");
-        }
-
-        [ConditionalFact(nameof(ShouldRunProviderRsaSignTests))]
-        public static void SanityTest_Tpm2ProviderRsaSign()
-        {
-            Assert.False(ShouldFailTests, "This test is supposed to fail");
-        }
-
         [ConditionalFact(nameof(ShouldRunProviderRsaDecryptTests))]
-        public static void SanityTest_Tpm2ProviderRsaDecrypt()
+        public static void Provider_TPM2DecryptRsa_ExportParameters()
         {
-            Assert.False(ShouldFailTests, "This test is supposed to fail");
+            // TPM2 OAEP support was added in the second half of 2023 therefore we only test Pkcs1 padding
+            // See: https://github.com/tpm2-software/tpm2-openssl/issues/89
+            RSAEncryptionPadding padding = RSAEncryptionPadding.Pkcs1;
+            using SafeEvpPKeyHandle priKeyHandle = SafeEvpPKeyHandle.OpenKeyFromProvider(Tpm2ProviderName, TpmRsaDecryptKeyHandleUri);
+            using RSA rsaPri = new RSAOpenSsl(priKeyHandle);
+
+            RSA rsaPub = RSA.Create();
+            rsaPub.ImportParameters(rsaPri.ExportParameters(false));
+
+            Assert.ThrowsAny<CryptographicException>(() => rsaPri.ExportParameters(true));
+
+            byte[] data = new byte[] { 1, 2, 3, 1, 1, 2, 3 };
+            byte[] encrypted = rsaPub.Encrypt(data, padding);
+            Assert.NotEqual(encrypted, data);
+            Assert.Equal(data, rsaPri.Decrypt(encrypted, padding));
         }
     }
 }

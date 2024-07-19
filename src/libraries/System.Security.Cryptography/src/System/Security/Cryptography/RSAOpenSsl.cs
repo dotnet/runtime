@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
 
             ThrowIfNotSupported();
 
-            if (pkeyHandle.GetKeyType() != Interop.Crypto.EvpAlgorithmId.RSA)
+            if (Interop.Crypto.EvpPKeyType(pkeyHandle) != Interop.Crypto.EvpAlgorithmId.RSA)
             {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }

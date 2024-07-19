@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
 
         internal int KeySize => Interop.Crypto.EcKeyGetSize(_key.Value);
 
-        internal SafeEvpPKeyHandle CreateKeyHandle()
+        internal SafeEvpPKeyHandle CreateEvpPKeyHandle()
         {
             SafeEcKeyHandle currentKey = _key.Value;
             Debug.Assert(currentKey != null, "key is null");
@@ -117,22 +117,23 @@ namespace System.Security.Cryptography
 
         internal static SafeEvpPKeyHandle GenerateECKey(int keySize)
         {
-            SafeEvpPKeyHandle ret = GenerateECKeyCore(new ECOpenSsl(keySize), out int createdKeySize);
+            SafeEvpPKeyHandle ret = ImportECKeyCore(new ECOpenSsl(keySize), out int createdKeySize);
             Debug.Assert(keySize == createdKeySize);
             return ret;
         }
 
         internal static SafeEvpPKeyHandle GenerateECKey(ECCurve curve, out int keySize)
         {
-            return  GenerateECKeyCore(new ECOpenSsl(curve), out keySize);
+            return  ImportECKeyCore(new ECOpenSsl(curve), out keySize);
         }
 
-        internal static SafeEvpPKeyHandle GenerateECKey(ECParameters parameters, out int keySize)
+        internal static SafeEvpPKeyHandle ImportECKey(ECParameters parameters, out int keySize)
         {
-            return GenerateECKeyCore(new ECOpenSsl(parameters), out keySize);
+            return ImportECKeyCore(new ECOpenSsl(parameters), out keySize);
         }
 
-        private static SafeEvpPKeyHandle GenerateECKeyCore(ECOpenSsl ecOpenSsl, out int keySize)
+        // Note: This method takes ownership of ecOpenSsl and disposes it
+        private static SafeEvpPKeyHandle ImportECKeyCore(ECOpenSsl ecOpenSsl, out int keySize)
         {
             using (ECOpenSsl ec = ecOpenSsl)
             {
