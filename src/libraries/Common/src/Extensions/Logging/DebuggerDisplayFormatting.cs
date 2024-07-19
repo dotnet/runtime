@@ -31,15 +31,15 @@ namespace Microsoft.Extensions.Logging
 
         internal static LogLevel? CalculateEnabledLogLevel(ILogger logger)
         {
-            ReadOnlySpan<LogLevel> logLevels =
-            [
+            ReadOnlySpan<LogLevel> logLevels = stackalloc LogLevel[]
+            {
                 LogLevel.Critical,
                 LogLevel.Error,
                 LogLevel.Warning,
                 LogLevel.Information,
                 LogLevel.Debug,
                 LogLevel.Trace,
-            ];
+            };
 
             LogLevel? minimumLevel = null;
 

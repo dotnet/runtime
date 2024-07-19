@@ -60,7 +60,8 @@ namespace System.Security.Cryptography
             if (password.IsEmpty)
             {
                 // CNG won't accept a null pointer for the password.
-                symmetricKeyMaterial = [0];
+                symmetricKeyMaterial = stackalloc byte[1];
+                symmetricKeyMaterialLength = 0;
                 clearSpan = default;
             }
             else if (password.Length <= hashBlockSizeBytes)
