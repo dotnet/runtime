@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
@@ -163,8 +162,10 @@ namespace System.Text.Json.Serialization.Converters
                     return;
                 }
 
-                if (TryFormatEnumAsString(key, value, dictionaryKeyPolicy: null, out string? stringValue))
+                if (IsDefinedValueOrCombinationOfValues(key))
                 {
+                    Debug.Assert(s_isFlagsEnum, "Should only be entered by flags enums.");
+                    string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy: null);
                     if (_nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                     {
                         formatted = JsonEncodedText.Encode(stringValue, options.Encoder);
@@ -245,12 +246,13 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-            if (TryFormatEnumAsString(key, value, dictionaryKeyPolicy, out string? stringEnum))
+            if (IsDefinedValueOrCombinationOfValues(key))
             {
+                string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy);
                 if (dictionaryKeyPolicy is null && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                 {
                     // Only attempt to cache if there is no dictionary key policy.
-                    formatted = JsonEncodedText.Encode(stringEnum, options.Encoder);
+                    formatted = JsonEncodedText.Encode(stringValue, options.Encoder);
                     writer.WritePropertyName(formatted);
                     _nameCacheForWriting.TryAdd(key, formatted);
                 }
@@ -258,7 +260,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     // We also do not create a JsonEncodedText instance here because passing the string
                     // directly to the writer is cheaper than creating one and not caching it for reuse.
-                    writer.WritePropertyName(stringEnum);
+                    writer.WritePropertyName(stringValue);
                 }
 
                 return;
@@ -497,9 +499,12 @@ namespace System.Text.Json.Serialization.Converters
         /// <summary>
         /// Attempt to format the enum value as a comma-separated string of flag values, or returns false if not a valid flag combination.
         /// </summary>
-        private bool TryFormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy, [NotNullWhen(true)] out string? stringValue)
+        private string FormatEnumAsString(ulong key, T value, JsonNamingPolicy? dictionaryKeyPolicy)
         {
-            Debug.Assert(!Enum.IsDefined(typeof(T), value) || dictionaryKeyPolicy != null, "Must either be used on undefined values or with a key policy.");
+            Debug.Assert(IsDefinedValueOrCombinationOfValues(key), "must only be invoked against valid enum values.");
+            Debug.Assert(
+                s_isFlagsEnum || (dictionaryKeyPolicy is not null && Enum.IsDefined(typeof(T), value)),
+                "must either be a flag type or computing a dictionary key policy.");
 
             if (s_isFlagsEnum)
             {
@@ -511,6 +516,7 @@ namespace System.Text.Json.Serialization.Converters
                     ulong fieldKey = enumField.Key;
                     if (fieldKey == 0 ? key == 0 : (remainingBits & fieldKey) == fieldKey)
                     {
+                        remainingBits &= ~fieldKey;
                         string name = dictionaryKeyPolicy is not null
                             ? ResolveAndValidateJsonName(enumField.Name, dictionaryKeyPolicy, enumField.IsNameFromAttribute)
                             : enumField.JsonName;
@@ -521,38 +527,53 @@ namespace System.Text.Json.Serialization.Converters
                         }
 
                         sb.Append(name);
-                        remainingBits &= ~fieldKey;
 
-                        if (fieldKey == 0)
+                        if (remainingBits == 0)
                         {
-                            // Do not process further fields if the value equals zero.
-                            Debug.Assert(key == 0);
                             break;
                         }
                     }
                 }
 
-                if (remainingBits == 0 && sb.Length > 0)
-                {
-                    // The value is a valid combination of flags.
-                    stringValue = sb.ToString();
-                    return true;
-                }
+                Debug.Assert(remainingBits == 0 && sb.Length > 0, "unexpected remaining bits or empty string.");
+                return sb.ToString();
             }
-            else if (dictionaryKeyPolicy != null)
+            else
             {
+                Debug.Assert(dictionaryKeyPolicy != null);
+
                 foreach (EnumFieldInfo enumField in _enumFieldInfo)
                 {
                     // Search for an exact match and apply the key policy.
                     if (enumField.Key == key)
                     {
-                        stringValue = ResolveAndValidateJsonName(enumField.Name, dictionaryKeyPolicy, enumField.IsNameFromAttribute);
+                        return ResolveAndValidateJsonName(enumField.Name, dictionaryKeyPolicy, enumField.IsNameFromAttribute);
+                    }
+                }
+
+                Debug.Fail("should not have been reached.");
+                return null;
+            }
+        }
+
+        private bool IsDefinedValueOrCombinationOfValues(ulong key)
+        {
+            ulong remainingBits = key;
+
+            foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+            {
+                ulong fieldKey = fieldInfo.Key;
+                if (fieldKey == 0 ? key == 0 : (remainingBits & fieldKey) == fieldKey)
+                {
+                    remainingBits &= ~fieldKey;
+
+                    if (remainingBits == 0)
+                    {
                         return true;
                     }
                 }
             }
 
-            stringValue = null;
             return false;
         }
 
