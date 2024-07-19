@@ -26,8 +26,8 @@ namespace System
         // Maps to Jan 1st year 1
         private const int MinDayNumber = 0;
 
-        // Maps to December 31 year 9999. The value calculated from "new DateTime(9999, 12, 31).Ticks / TimeSpan.TicksPerDay"
-        private const int MaxDayNumber = 3_652_058;
+        // Maps to December 31 year 9999.
+        private const int MaxDayNumber = DateTime.DaysTo10000 - 1;
 
         private static int DayNumberFromDateTime(DateTime dt) => (int)((ulong)dt.Ticks / TimeSpan.TicksPerDay);
 
