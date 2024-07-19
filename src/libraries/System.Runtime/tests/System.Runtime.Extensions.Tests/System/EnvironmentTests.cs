@@ -577,7 +577,7 @@ namespace System.Tests
         [Fact]
         public void TestCpuUsage()
         {
-            if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS && PlatformDetection.IstvOS)
+            if (PlatformDetection.IsiOS && PlatformDetection.IstvOS)
             {
                 Assert.Throws<PlatformNotSupportedException>(() => Environment.CpuUsage);
             }
