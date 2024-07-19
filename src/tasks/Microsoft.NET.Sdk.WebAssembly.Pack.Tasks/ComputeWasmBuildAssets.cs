@@ -228,6 +228,7 @@ public class ComputeWasmBuildAssets : Task
             case ".wasm":
             case ".blat":
             case ".js" when filename.StartsWith("dotnet"):
+            case ".mjs" when filename.StartsWith("dotnet"):
             case ".dat" when filename.StartsWith("icudt"):
             case ".json" when filename.StartsWith("segmentation-rules"):
                 candidate.SetMetadata("AssetTraitName", "WasmResource");

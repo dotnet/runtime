@@ -118,7 +118,7 @@ public class AssetsComputingHelper
                 ("dotnet", ".js") => string.Concat(fileName, fingerprintDotNetJs ? requiredFingerprint : optionalFingerprint, extension),
                 ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
-                ("dotnet.worker", ".mjs") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.native.worker", ".mjs") => string.Concat(fileName, requiredFingerprint, extension),
                 ("dotnet.globalization", ".js") => string.Concat(fileName, requiredFingerprint, extension),
                 ("segmentation-rules", ".json") => string.Concat(fileName, requiredFingerprint, extension),
                 _ => string.Concat(fileName, extension)
