@@ -256,7 +256,7 @@ CDAC_TYPE_END(DynamicMetadata)
 CDAC_TYPE_BEGIN(MethodDesc)
 CDAC_TYPE_INDETERMINATE(MethodDesc)
 CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_offsets<MethodDesc>::ChunkIndex)
-CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, Slot, cdac_offsets<MethodDesc>::Slot)
+CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Slot, cdac_offsets<MethodDesc>::Slot)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_offsets<MethodDesc>::Flags)
 CDAC_TYPE_END(MethodDesc)
 

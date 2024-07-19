@@ -95,11 +95,9 @@ struct MethodDescHandle
 ```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
-    #region MethodDesc inspection APIs
     public virtual MethodDescHandle GetMethodDescHandle (TargetPointer methodDescPointer);
 
     public virtual TargetPointer GetMethodTable (MethodDescHandle methodDesc);
-    #endregion MethodDesc inspection APIs
 }
 ```
 
@@ -570,7 +568,7 @@ We depend on the following data descriptors:
 | `MethodDesc` | `Flags` | The method's flags
 | `MethodDescChunk` | `MethodTable` | The method table set of methods belongs to
 | `MethodDescChunk` | `Next` | The next chunk of methods
-| `MethodDescChunk` | `Size` | The size - 1 of this `MethodDescChunk`  following this `MethodDescChunk` header. In multiples of `MethodDescAlignment`
+| `MethodDescChunk` | `Size` | The size of this `MethodDescChunk`  following this `MethodDescChunk` header, minus 1. In multiples of `MethodDescAlignment`
 | `MethodDescChunk` | `Count` | The number of `MethodDesc` entries in this chunk, minus 1.
 
 **TODO(cdac)**

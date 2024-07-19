@@ -483,16 +483,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             throw new InvalidOperationException("Invalid method desc pointer");
         }
-        else
-        {
-            // ok, we validated it, cache the data and add the MethodTable_1 struct to the dictionary
-            Data.MethodDescChunk validatedMethodDescChunkData = _target.ProcessedData.GetOrAdd<Data.MethodDescChunk>(methodDescChunkPointer);
-            Data.MethodDesc validatedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
 
-            MethodDesc trustedMethodDescF = new MethodDesc(methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
-            _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
-            return new MethodDescHandle(methodDescPointer);
-        }
+        // ok, we validated it, cache the data and add the MethodDesc struct to the dictionary
+        Data.MethodDescChunk validatedMethodDescChunkData = _target.ProcessedData.GetOrAdd<Data.MethodDescChunk>(methodDescChunkPointer);
+        Data.MethodDesc validatedMethodDescData = _target.ProcessedData.GetOrAdd<Data.MethodDesc>(methodDescPointer);
+
+        MethodDesc trustedMethodDescF = new MethodDesc(methodDescPointer, validatedMethodDescData, validatedMethodDescChunkData);
+        _ = _methodDescs.TryAdd(methodDescPointer, trustedMethodDescF);
+        return new MethodDescHandle(methodDescPointer);
     }
 
     public TargetPointer GetMethodTable(MethodDescHandle methodDescHandle) => _methodDescs[methodDescHandle.Address].MethodTable;
