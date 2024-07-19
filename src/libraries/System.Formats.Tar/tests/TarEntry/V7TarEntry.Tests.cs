@@ -76,13 +76,14 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void DataOffset_RegularFile(bool canSeek)
         {
+            byte expectedData = 5;
             using MemoryStream ms = new();
             using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry.DataOffset);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(expectedData);
                 entry.DataStream.Position = 0;
                 writer.WriteEntry(entry);
             }
@@ -93,8 +94,15 @@ namespace System.Formats.Tar.Tests
             TarEntry actualEntry = reader.GetNextEntry();
             Assert.NotNull(actualEntry);
             // V7 header length is 512, data starts in the next position
-            long expectedDataOffset = canSeek ? 513 : -1;
+            long expectedDataOffset = canSeek ? 512 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+
+            if (canSeek)
+            {
+                ms.Position = actualEntry.DataOffset;
+                byte actualData = (byte)ms.ReadByte();
+                Assert.Equal(expectedData, actualData);
+            }
         }
 
         [Theory]
@@ -102,13 +110,14 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public async Task DataOffset_RegularFile_Async(bool canSeek)
         {
+            byte expectedData = 5;
             await using MemoryStream ms = new();
             await using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry.DataOffset);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(expectedData);
                 entry.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry);
             }
@@ -119,8 +128,15 @@ namespace System.Formats.Tar.Tests
             TarEntry actualEntry = await reader.GetNextEntryAsync();
             Assert.NotNull(actualEntry);
             // V7 header length is 512, data starts in the next position
-            long expectedDataOffset = canSeek ? 513 : -1;
+            long expectedDataOffset = canSeek ? 512 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+
+            if (canSeek)
+            {
+                ms.Position = actualEntry.DataOffset;
+                byte actualData = (byte)ms.ReadByte();
+                Assert.Equal(expectedData, actualData);
+            }
         }
 
         [Fact]
@@ -134,7 +150,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream ms = new();
             using TarWriter writer = new(ms);
             writer.WriteEntry(entry);
-            Assert.Equal(513, entry.DataOffset);
+            Assert.Equal(512, entry.DataOffset);
         }
         
         [Fact]
@@ -148,7 +164,7 @@ namespace System.Formats.Tar.Tests
             await using MemoryStream ms = new();
             await using TarWriter writer = new(ms);
             await writer.WriteEntryAsync(entry);
-            Assert.Equal(513, entry.DataOffset);
+            Assert.Equal(512, entry.DataOffset);
         }
 
         [Fact]
@@ -198,9 +214,9 @@ namespace System.Formats.Tar.Tests
             TarEntry actualEntry = await reader.GetNextEntryAsync();
             Assert.NotNull(actualEntry);
             // V7 header length is 512, data starts in the next position
-            Assert.Equal(513, actualEntry.DataOffset);
+            Assert.Equal(512, actualEntry.DataOffset);
         }
-        
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -230,14 +246,14 @@ namespace System.Formats.Tar.Tests
             TarEntry firstEntry = reader.GetNextEntry();
             Assert.NotNull(firstEntry);
             // V7 header length is 512, data starts in the next position
-            long firstExpectedDataOffset = canSeek ? 513 : -1;
+            long firstExpectedDataOffset = canSeek ? 512 : -1;
             Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
             
             TarEntry secondEntry = reader.GetNextEntry();
             Assert.NotNull(secondEntry);
-            // First entry ends at 512 (header) + 5 (data) + 507 (padding) = 1024
-            // Second entry also has 512 header, so data starts at 1536 + 1
-            long secondExpectedDataOffset = canSeek ? 1537 : -1;
+            // First entry ends at 512 (header) + 1 (data) + 511 (padding) = 1024
+            // Second entry also has 512 header, so data starts one byte after 1536
+            long secondExpectedDataOffset = canSeek ? 1536 : -1;
             Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
         }
         
@@ -270,14 +286,14 @@ namespace System.Formats.Tar.Tests
             TarEntry firstEntry = await reader.GetNextEntryAsync();
             Assert.NotNull(firstEntry);
             // V7 header length is 512, data starts in the next position
-            long firstExpectedDataOffset = canSeek ? 513 : -1;
+            long firstExpectedDataOffset = canSeek ? 512 : -1;
             Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
             
             TarEntry secondEntry = await reader.GetNextEntryAsync();
             Assert.NotNull(secondEntry);
-            // First entry ends at 512 (header) + 5 (data) + 507 (padding) = 1024
-            // Second entry also has 512 header, so data starts at 1536 + 1
-            long secondExpectedDataOffset = canSeek ? 1537 : -1;
+            // First entry ends at 512 (header) + 1 (data) + 511 (padding) = 1024
+            // Second entry also has 512 header, so data starts one byte after 1536
+            long secondExpectedDataOffset = canSeek ? 1536 : -1;
             Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
         }
     }

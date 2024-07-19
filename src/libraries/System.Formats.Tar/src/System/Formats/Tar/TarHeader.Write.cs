@@ -84,7 +84,7 @@ namespace System.Formats.Tar
             long dataStartPosition = headerStartPosition + dataLocation;
 
             // Before writing, update the offset field now that the entry belongs to an archive
-            _dataOffset = dataStartPosition + 1;
+            _dataOffset = dataStartPosition;
 
             // Move to the data start location and write the data
             destinationStream.Seek(dataLocation, SeekOrigin.Current);
@@ -136,7 +136,7 @@ namespace System.Formats.Tar
             long dataStartPosition = headerStartPosition + dataLocation;
 
             // Before writing, update the offset field now that the entry belongs to an archive
-            _dataOffset = dataStartPosition + 1;
+            _dataOffset = dataStartPosition;
 
             // Move to the data start location and write the data
             destinationStream.Seek(dataLocation, SeekOrigin.Current);

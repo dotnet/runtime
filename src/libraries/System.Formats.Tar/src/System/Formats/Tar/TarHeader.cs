@@ -157,7 +157,7 @@ namespace System.Formats.Tar
         private static void SetDataOffset(TarHeader header, Stream archiveStream) => header._dataOffset =
             archiveStream.CanSeek
             // Add one because the last byte read is still part of the header
-            ? archiveStream.Position + 1
+            ? archiveStream.Position
             : -1;
     }
 }

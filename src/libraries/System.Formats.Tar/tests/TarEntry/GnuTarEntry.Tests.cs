@@ -100,6 +100,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void DataOffset_RegularFile(bool canSeek)
         {
+            byte expectedData = 5;
             using MemoryStream ms = new();
             using (TarWriter writer = new(ms, leaveOpen: true))
             {
@@ -120,8 +121,15 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 2560.
             // The regular file data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 513 : -1;
+            long expectedDataOffset = canSeek ? 512 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+
+            if (canSeek)
+            {
+                ms.Position = actualEntry.DataOffset;
+                byte actualData = (byte)ms.ReadByte();
+                Assert.Equal(expectedData, actualData);
+            }
         }
 
         [Theory]
@@ -129,6 +137,7 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public async Task DataOffset_RegularFile_Async(bool canSeek)
         {
+            byte expectedData = 5;
             await using MemoryStream ms = new();
             await using (TarWriter writer = new(ms, leaveOpen: true))
             {
@@ -149,8 +158,15 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 2560.
             // The regular file data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 513 : -1;
+            long expectedDataOffset = canSeek ? 512 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
+
+            if (canSeek)
+            {
+                ms.Position = actualEntry.DataOffset;
+                byte actualData = (byte)ms.ReadByte();
+                Assert.Equal(expectedData, actualData);
+            }
         }
 
         [Theory]
@@ -183,7 +199,7 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 2560.
             // The regular file data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 2561 : -1;
+            long expectedDataOffset = canSeek ? 2560 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
         }
 
@@ -217,7 +233,7 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 2560.
             // The regular file data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 2561 : -1;
+            long expectedDataOffset = canSeek ? 2560 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
         }
 
@@ -248,7 +264,7 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 2560.
             // The regular file data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 2561 : -1;
+            long expectedDataOffset = canSeek ? 2560 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
         }
         [Theory]
@@ -278,7 +294,7 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 2560.
             // The regular file data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 2561 : -1;
+            long expectedDataOffset = canSeek ? 2560 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
         }
 
@@ -313,7 +329,7 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 4608.
             // The data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 4609 : -1;
+            long expectedDataOffset = canSeek ? 4608 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
         }
         
@@ -348,7 +364,7 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 4608.
             // The data section starts on the next byte.
-            long expectedDataOffset = canSeek ? 4609 : -1;
+            long expectedDataOffset = canSeek ? 4608 : -1;
             Assert.Equal(expectedDataOffset, actualEntry.DataOffset);
         }
 
@@ -363,7 +379,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream ms = new();
             using TarWriter writer = new(ms);
             writer.WriteEntry(entry);
-            Assert.Equal(513, entry.DataOffset);
+            Assert.Equal(512, entry.DataOffset);
         }
         
         [Fact]
@@ -378,7 +394,7 @@ namespace System.Formats.Tar.Tests
             await using MemoryStream ms = new();
             await using TarWriter writer = new(ms);
             await writer.WriteEntryAsync(entry);
-            Assert.Equal(513, entry.DataOffset);
+            Assert.Equal(512, entry.DataOffset);
         }
 
         [Fact]
@@ -404,7 +420,7 @@ namespace System.Formats.Tar.Tests
             TarEntry actualEntry = reader.GetNextEntry();
             Assert.NotNull(actualEntry);
             // Gnu header length is 512, data starts in the next position
-            Assert.Equal(513, actualEntry.DataOffset);
+            Assert.Equal(512, actualEntry.DataOffset);
         }
 
         [Fact]
@@ -430,7 +446,7 @@ namespace System.Formats.Tar.Tests
             TarEntry actualEntry = await reader.GetNextEntryAsync();
             Assert.NotNull(actualEntry);
             // Gnu header length is 512, data starts in the next position
-            Assert.Equal(513, actualEntry.DataOffset);
+            Assert.Equal(512, actualEntry.DataOffset);
         }
         
         [Theory]
@@ -469,14 +485,14 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 4608.
             // The regular file data section starts on the next byte.
-            long firstExpectedDataOffset = canSeek ? 4609 : -1;
+            long firstExpectedDataOffset = canSeek ? 4608 : -1;
             Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
             
             TarEntry secondEntry = reader.GetNextEntry();
             Assert.NotNull(secondEntry);
             // First entry (including its long link and long path entries) end at 4608 (no padding, empty, as symlink has no data)
-            // Second entry (including its long link and long path entries) data section starts at 4608 + 4608 = 9216 + 1
-            long secondExpectedDataOffset = canSeek ? 9217 : -1;
+            // Second entry (including its long link and long path entries) data section starts one byte after 4608 + 4608 = 9216
+            long secondExpectedDataOffset = canSeek ? 9216 : -1;
             Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
         }
         
@@ -516,14 +532,14 @@ namespace System.Formats.Tar.Tests
             // * 512 bytes of the regular tar header
             // Totalling 4608.
             // The regular file data section starts on the next byte.
-            long firstExpectedDataOffset = canSeek ? 4609 : -1;
+            long firstExpectedDataOffset = canSeek ? 4608 : -1;
             Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
             
             TarEntry secondEntry = await reader.GetNextEntryAsync();
             Assert.NotNull(secondEntry);
             // First entry (including its long link and long path entries) end at 4608 (no padding, empty, as symlink has no data)
-            // Second entry (including its long link and long path entries) data section starts at 4608 + 4608 = 9216 + 1
-            long secondExpectedDataOffset = canSeek ? 9217 : -1;
+            // Second entry (including its long link and long path entries) data section starts one byte after 4608 + 4608 = 9216
+            long secondExpectedDataOffset = canSeek ? 9216 : -1;
             Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
         }
     }
