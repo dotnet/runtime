@@ -22,7 +22,6 @@ namespace System.Security.Cryptography.X509Certificates
             ICertificatePalCore certificatePal,
             ReadOnlySpan<char> password)
         {
-            AsymmetricAlgorithm alg;
             SafeEvpPKeyHandle? privateKey = ((OpenSslX509CertificateReader)certificatePal).PrivateKeyHandle;
 
             if (privateKey == null)
@@ -32,20 +31,13 @@ namespace System.Security.Cryptography.X509Certificates
 
             Interop.Crypto.EvpAlgorithmId evpAlgId = Interop.Crypto.EvpPKeyType(privateKey);
 
-            switch (evpAlgId)
+            AsymmetricAlgorithm alg = evpAlgId switch
             {
-                case Interop.Crypto.EvpAlgorithmId.RSA:
-                    alg = new RSAOpenSsl(privateKey);
-                    break;
-                case Interop.Crypto.EvpAlgorithmId.ECC:
-                    alg = new ECDsaOpenSsl(privateKey);
-                    break;
-                case Interop.Crypto.EvpAlgorithmId.DSA:
-                    alg = new DSAOpenSsl(privateKey);
-                    break;
-                default:
-                    throw new CryptographicException(SR.Cryptography_InvalidHandle);
-            }
+                Interop.Crypto.EvpAlgorithmId.RSA => new RSAOpenSsl(privateKey),
+                Interop.Crypto.EvpAlgorithmId.ECC => new ECDsaOpenSsl(privateKey),
+                Interop.Crypto.EvpAlgorithmId.DSA => new DSAOpenSsl(privateKey),
+                _ => throw new CryptographicException(SR.Cryptography_InvalidHandle),
+            };
 
             return alg.ExportEncryptedPkcs8PrivateKey(password, s_windowsPbe);
         }

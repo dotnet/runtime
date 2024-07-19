@@ -137,10 +137,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> hash,
             Span<byte> destination)
         {
-            if (digestAlgorithm.Name == null)
-            {
-                throw new ArgumentNullException(nameof(digestAlgorithm));
-            }
+            ArgumentNullException.ThrowIfNull(digestAlgorithm.Name, nameof(digestAlgorithm));
 
             IntPtr digestAlgorithmPtr = Interop.Crypto.HashAlgorithmToEvp(digestAlgorithm.Name);
 
@@ -181,10 +178,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature)
         {
-            if (digestAlgorithm.Name == null)
-            {
-                throw new ArgumentNullException(nameof(digestAlgorithm));
-            }
+            ArgumentNullException.ThrowIfNull(digestAlgorithm.Name, nameof(digestAlgorithm));
 
             IntPtr digestAlgorithmPtr = Interop.Crypto.HashAlgorithmToEvp(digestAlgorithm.Name);
 
