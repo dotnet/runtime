@@ -1054,8 +1054,8 @@ HRESULT ClrDataAccess::GetMethodDescData(
         {
             // Assert that the data is the same as what we get from the DAC.
             DacpMethodDescData mdDataLocal;
-            DacpReJitData *rgRevertedRejitDataLocal = NULL;
-            if (rgRevertedRejitData != NULL)
+            NewArrayHolder<DacpReJitData> rgRevertedRejitDataLocal{};
+            if (rgRevertedRejitData != nullptr)
             {
                 rgRevertedRejitDataLocal = new DacpReJitData[cRevertedRejitVersions];
             }
