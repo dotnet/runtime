@@ -468,7 +468,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (_target.ProcessedData.TryGet(methodDescPointer, out Data.MethodDesc? methodDescData))
         {
             // we already cached the data, we must have validated the address, create the representation struct for our use
-            TargetPointer mdescChunkPtr = GetMethodDescChunkPointerMayThrow(methodDescPointer, methodDescData);
+            TargetPointer mdescChunkPtr = GetMethodDescChunkPointerThrowing(methodDescPointer, methodDescData);
             // FIXME[cdac]: this isn't threadsafe
             if (!_target.ProcessedData.TryGet(mdescChunkPtr, out Data.MethodDescChunk? methodDescChunkData))
             {

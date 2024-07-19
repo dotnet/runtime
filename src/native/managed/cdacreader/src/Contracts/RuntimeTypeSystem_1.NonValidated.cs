@@ -218,7 +218,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    private TargetPointer GetMethodDescChunkPointerMayThrow(TargetPointer methodDescPointer, Data.MethodDesc umd)
+    private TargetPointer GetMethodDescChunkPointerThrowing(TargetPointer methodDescPointer, Data.MethodDesc umd)
     {
         ulong? methodDescChunkSize = _target.GetTypeInfo(DataType.MethodDescChunk).Size;
         if (!methodDescChunkSize.HasValue)
@@ -229,18 +229,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return new TargetPointer(chunkAddress);
     }
 
-    private Data.MethodDescChunk GetMethodDescChunkMayThrow(TargetPointer methodDescPointer, Data.MethodDesc md, out TargetPointer methodDescChunkPointer)
+    private Data.MethodDescChunk GetMethodDescChunkThrowing(TargetPointer methodDescPointer, Data.MethodDesc md, out TargetPointer methodDescChunkPointer)
     {
-        methodDescChunkPointer = GetMethodDescChunkPointerMayThrow(methodDescPointer, md);
+        methodDescChunkPointer = GetMethodDescChunkPointerThrowing(methodDescPointer, md);
         return new Data.MethodDescChunk(_target, methodDescChunkPointer);
     }
 
-    private NonValidated.MethodDesc GetMethodDescMayThrow(TargetPointer methodDescPointer, out TargetPointer methodDescChunkPointer)
+    private NonValidated.MethodDesc GetMethodDescThrowing(TargetPointer methodDescPointer, out TargetPointer methodDescChunkPointer)
     {
         // may throw if the method desc at methodDescPointer is corrupted
         // we bypass the target data cache here because we don't want to cache non-validated data
         Data.MethodDesc desc = new Data.MethodDesc(_target, methodDescPointer);
-        Data.MethodDescChunk chunk = GetMethodDescChunkMayThrow(methodDescPointer, desc, out methodDescChunkPointer);
+        Data.MethodDescChunk chunk = GetMethodDescChunkThrowing(methodDescPointer, desc, out methodDescChunkPointer);
         return new NonValidated.MethodDesc(_target, methodDescPointer, desc, chunk);
     }
 
@@ -249,7 +249,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         methodDescChunkPointer = TargetPointer.Null;
         try
         {
-            NonValidated.MethodDesc umd = GetMethodDescMayThrow(methodDescPointer, out methodDescChunkPointer);
+            NonValidated.MethodDesc umd = GetMethodDescThrowing(methodDescPointer, out methodDescChunkPointer);
             TargetPointer methodTablePointer = umd.MethodTable;
             if (methodTablePointer == TargetPointer.Null
                 || methodTablePointer == new TargetPointer(0xffffffff_fffffffful)
