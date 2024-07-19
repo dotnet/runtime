@@ -85,13 +85,13 @@ namespace System
 
         private static void ParseStartupHook(ref StartupHookNameOrPath startupHook, string startupHookPart)
         {
-            ReadOnlySpan<char> disallowedSimpleAssemblyNameChars =
-            [
+            ReadOnlySpan<char> disallowedSimpleAssemblyNameChars = stackalloc char[4]
+            {
                 Path.DirectorySeparatorChar,
                 Path.AltDirectorySeparatorChar,
                 ' ',
                 ','
-            ];
+            };
 
             if (string.IsNullOrEmpty(startupHookPart))
             {

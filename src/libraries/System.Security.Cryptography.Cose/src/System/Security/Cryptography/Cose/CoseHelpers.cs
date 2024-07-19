@@ -47,12 +47,12 @@ namespace System.Security.Cryptography.Cose
             if (value < (byte)CborAdditionalInfo.Additional8BitData)
             {
                 initialByte = new CborInitialByte(MajorType, (CborAdditionalInfo)value);
-                hasher.AppendData([initialByte.InitialByte]);
+                hasher.AppendData(stackalloc byte[] { initialByte.InitialByte });
             }
             else if (value <= byte.MaxValue)
             {
                 initialByte = new CborInitialByte(MajorType, CborAdditionalInfo.Additional8BitData);
-                hasher.AppendData([initialByte.InitialByte, (byte)value]);
+                hasher.AppendData(stackalloc byte[] { initialByte.InitialByte, (byte)value });
             }
             else if (value <= ushort.MaxValue)
             {
