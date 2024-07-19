@@ -492,6 +492,11 @@
         <target state="translated">Atributos [In] y [Out]</target>
         <note />
       </trans-unit>
+      <trans-unit id="InVariantShouldBeRef">
+        <source>Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</source>
+        <target state="new">Objects marshalled from VARIANTs as 'in' parameters in unmanaged-to-managed calls will not propagate back the updated result, even if the VARIANT is a VT_BYREF variant. Use a 'ref' parameter instead of an 'in' parameter to propagate the updated value back to the caller.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InstanceEventDeclaredInInterfaceDescription">
         <source>Events are not a concept in COM, so no interop code will be source generated for instance events on source-generated COM interfaces.</source>
         <target state="translated">Los eventos no representan un concepto en COM, de modo que no se generará código de interoperabilidad para eventos de instancia en interfaces COM generadas en origen.</target>
@@ -1020,11 +1025,6 @@
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
         <target state="translated">La serialización en tiempo de ejecución debe deshabilitarse en este proyecto aplicando \"System.Runtime.CompilerServices.DisableRuntimeMars contosoingAttribute\" al ensamblado para habilitar la serialización de este tipo.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="SafeHandleByRefMustBeConcrete">
-        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
-        <target state="translated">Un tipo abstracto derivado de “SafeHandle” no se puede serializar por referencia. El tipo proporcionado debe ser concreto.</target>
         <note />
       </trans-unit>
       <trans-unit id="SizeOfCollectionMustBeKnownAtMarshalTimeMessageOutParam">
