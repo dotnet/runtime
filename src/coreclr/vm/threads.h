@@ -963,14 +963,14 @@ public:
         return &m_pRuntimeThreadLocals->alloc_context;
     }
 
-    inline PTR_gc_alloc_context GetAllocContext()
+    inline gc_alloc_context* GetAllocContext()
     {
         LIMITED_METHOD_CONTRACT;
         if (m_pRuntimeThreadLocals == nullptr)
         {
             return nullptr;
         }
-        return PTR_gc_alloc_context(&m_pRuntimeThreadLocals->alloc_context.gc_allocation_context);
+        return &m_pRuntimeThreadLocals->alloc_context.gc_allocation_context;
     }
 
     // This is the type handle of the first object in the alloc context at the time
