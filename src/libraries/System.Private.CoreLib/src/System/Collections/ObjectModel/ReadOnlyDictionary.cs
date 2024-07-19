@@ -211,7 +211,7 @@ namespace System.Collections.ObjectModel
 
         object ICollection.SyncRoot => (m_dictionary is ICollection coll) ? coll.SyncRoot : this;
 
-        private struct DictionaryEnumerator : IDictionaryEnumerator
+        private readonly struct DictionaryEnumerator : IDictionaryEnumerator
         {
             private readonly IDictionary<TKey, TValue> _dictionary;
             private readonly IEnumerator<KeyValuePair<TKey, TValue>> _enumerator;
