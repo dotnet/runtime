@@ -342,5 +342,99 @@ namespace System.Formats.Tar.Tests
             // The regular file data section starts on the next byte.
             Assert.Equal(1537, actualEntry.DataOffset);
         }
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile_SecondEntry(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                PaxTarEntry entry1 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry1.DataOffset);
+                entry1.DataStream = new MemoryStream();
+                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.Position = 0;
+                writer.WriteEntry(entry1);
+                
+                PaxTarEntry entry2 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry2.DataOffset);
+                entry2.DataStream = new MemoryStream();
+                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.Position = 0;
+                writer.WriteEntry(entry2);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry firstEntry = reader.GetNextEntry();
+            Assert.NotNull(firstEntry);
+            // PAX first writes the extended attributes entry, containing:
+            // * 512 bytes of the regular tar header
+            // * 113 bytes of the default extended attributes in the data section (mdata)
+            // * 399 bytes of padding after the data
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 1536.
+            // The regular file data section starts on the next byte.
+            long firstExpectedDataOffset = canSeek ? 1537 : -1;
+            Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
+            
+            TarEntry secondEntry = reader.GetNextEntry();
+            Assert.NotNull(secondEntry);
+            // The first entry (including its extended attribute entry) end at 1536 + 5 (data) + 507 (padding) = 2048
+            // Second entry's data also starts 1536 bytes after the beginning of its header, so 2048 + 1536 = 3584 + 1
+            long secondExpectedDataOffset = canSeek ? 3585 : -1;
+            Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_SecondEntry_Async(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                PaxTarEntry entry1 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry1.DataOffset);
+                entry1.DataStream = new MemoryStream();
+                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry1);
+                
+                PaxTarEntry entry2 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry2.DataOffset);
+                entry2.DataStream = new MemoryStream();
+                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry2);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry firstEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(firstEntry);
+            // PAX first writes the extended attributes entry, containing:
+            // * 512 bytes of the regular tar header
+            // * 113 bytes of the default extended attributes in the data section (mdata)
+            // * 399 bytes of padding after the data
+            // Then it writes the actual regular file entry, containing:
+            // * 512 bytes of the regular tar header
+            // Totalling 1536.
+            // The regular file data section starts on the next byte.
+            long firstExpectedDataOffset = canSeek ? 1537 : -1;
+            Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
+            
+            TarEntry secondEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(secondEntry);
+            // The first entry (including its extended attribute entry) end at 1536 + 5 (data) + 507 (padding) = 2048
+            // Second entry's data also starts 1536 bytes after the beginning of its header, so 2048 + 1536 = 3584 + 1
+            long secondExpectedDataOffset = canSeek ? 3585 : -1;
+            Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
+        }
     }
 }

@@ -200,5 +200,85 @@ namespace System.Formats.Tar.Tests
             // V7 header length is 512, data starts in the next position
             Assert.Equal(513, actualEntry.DataOffset);
         }
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void DataOffset_RegularFile_SecondEntry(bool canSeek)
+        {
+            using MemoryStream ms = new();
+            using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry1 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry1.DataOffset);
+                entry1.DataStream = new MemoryStream();
+                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.Position = 0;
+                writer.WriteEntry(entry1);
+                
+                V7TarEntry entry2 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry2.DataOffset);
+                entry2.DataStream = new MemoryStream();
+                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.Position = 0;
+                writer.WriteEntry(entry2);
+            }
+            ms.Position = 0;
+
+            using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            using TarReader reader = new(streamToRead);
+            TarEntry firstEntry = reader.GetNextEntry();
+            Assert.NotNull(firstEntry);
+            // V7 header length is 512, data starts in the next position
+            long firstExpectedDataOffset = canSeek ? 513 : -1;
+            Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
+            
+            TarEntry secondEntry = reader.GetNextEntry();
+            Assert.NotNull(secondEntry);
+            // First entry ends at 512 (header) + 5 (data) + 507 (padding) = 1024
+            // Second entry also has 512 header, so data starts at 1536 + 1
+            long secondExpectedDataOffset = canSeek ? 1537 : -1;
+            Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
+        }
+        
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DataOffset_RegularFile_SecondEntryAsync(bool canSeek)
+        {
+            await using MemoryStream ms = new();
+            await using (TarWriter writer = new(ms, leaveOpen: true))
+            {
+                V7TarEntry entry1 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry1.DataOffset);
+                entry1.DataStream = new MemoryStream();
+                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry1);
+                
+                V7TarEntry entry2 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
+                Assert.Equal(-1, entry2.DataOffset);
+                entry2.DataStream = new MemoryStream();
+                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.Position = 0;
+                await writer.WriteEntryAsync(entry2);
+            }
+            ms.Position = 0;
+
+            await using Stream streamToRead = new WrappedStream(ms, canWrite: true, canRead: true, canSeek: canSeek);
+            await using TarReader reader = new(streamToRead);
+            TarEntry firstEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(firstEntry);
+            // V7 header length is 512, data starts in the next position
+            long firstExpectedDataOffset = canSeek ? 513 : -1;
+            Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
+            
+            TarEntry secondEntry = await reader.GetNextEntryAsync();
+            Assert.NotNull(secondEntry);
+            // First entry ends at 512 (header) + 5 (data) + 507 (padding) = 1024
+            // Second entry also has 512 header, so data starts at 1536 + 1
+            long secondExpectedDataOffset = canSeek ? 1537 : -1;
+            Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
+        }
     }
 }
