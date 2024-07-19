@@ -91,6 +91,10 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 #define RSA_PSS_SALTLEN_DIGEST -1
 #endif
 
+#ifndef EVP_PKEY_RSA_PSS
+#define EVP_PKEY_RSA_PSS 912
+#endif
+
 // ERR_R_UNSUPPORTED was introduced in OpenSSL 3. We need it for building with older OpenSSLs.
 // Add a static assert so we know if OpenSSL changes the value.
 #ifndef ERR_R_UNSUPPORTED

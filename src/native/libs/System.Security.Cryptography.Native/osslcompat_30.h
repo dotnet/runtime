@@ -20,10 +20,6 @@
 #define OSSL_STORE_INFO_PKEY 4
 #define OSSL_STORE_INFO_PUBKEY 3
 
-#ifndef EVP_PKEY_RSA_PSS
-#define EVP_PKEY_RSA_PSS 912
-#endif
-
 typedef struct ossl_lib_ctx_st OSSL_LIB_CTX;
 typedef struct ossl_param_st OSSL_PARAM;
 typedef struct ossl_provider_st OSSL_PROVIDER;
