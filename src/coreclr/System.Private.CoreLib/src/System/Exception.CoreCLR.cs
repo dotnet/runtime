@@ -60,24 +60,15 @@ namespace System
 
         private MethodBase? GetExceptionMethodFromStackTrace()
         {
-            if (_stackTrace == null)
+            object? stackTraceLocal = _stackTrace;
+            if (stackTraceLocal == null)
             {
                 return null;
             }
 
-            object stackTraceLocal = _stackTrace;
             IRuntimeMethodInfo? methodInfo = null;
             GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stackTraceLocal), ObjectHandleOnStack.Create(ref methodInfo));
-
-            // Ensure the stack trace lives beyond the current above call.
-            // See implementation for details on stacktrace data.
-            GC.KeepAlive(stackTraceLocal);
-
-            // Under certain race conditions when exceptions are re-used, this can be null
-            if (methodInfo == null)
-            {
-                return null;
-            }
+            Debug.Assert(methodInfo != null);
 
             return RuntimeType.GetMethodBase(methodInfo);
         }
@@ -85,11 +76,7 @@ namespace System
         public MethodBase? TargetSite
         {
             [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
-            get
-            {
-                _exceptionMethod ??= GetExceptionMethodFromStackTrace();
-                return _exceptionMethod;
-            }
+            get => _exceptionMethod ??= GetExceptionMethodFromStackTrace();
         }
 
         // This method will clear the _stackTrace of the exception object upon deserialization
