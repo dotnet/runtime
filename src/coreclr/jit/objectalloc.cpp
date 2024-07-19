@@ -416,16 +416,25 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         case CORINFO_HELP_NEWARR_1_OBJ:
                         case CORINFO_HELP_NEWARR_1_DIRECT:
                         case CORINFO_HELP_NEWARR_1_ALIGN8:
-#ifdef FEATURE_READYTORUN
-                        case CORINFO_HELP_READYTORUN_NEWARR_1:
-#endif
                         {
-                            if (data->AsCall()->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                            if (data->AsCall()->gtArgs.CountArgs() == 2 &&
+                                data->AsCall()->gtArgs.GetArgByIndex(1)->GetNode()->IsCnsIntOrI())
                             {
                                 allocType = OAT_NEWARR;
                             }
                             break;
                         }
+#ifdef FEATURE_READYTORUN
+                        case CORINFO_HELP_READYTORUN_NEWARR_1:
+                        {
+                            if (data->AsCall()->gtArgs.CountArgs() == 1 &&
+                                data->AsCall()->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                            {
+                                allocType = OAT_NEWARR;
+                            }
+                            break;
+                        }
+#endif
                         default:
                         {
                             break;
@@ -472,7 +481,6 @@ bool ObjectAllocator::MorphAllocObjNodes()
                         //       \--*  CNS_INT long
                         //------------------------------------------------------------------------
 
-                        CallArg*             arg       = data->AsCall()->gtArgs.GetArgByIndex(0);
                         bool                 isExact   = false;
                         bool                 isNonNull = false;
                         CORINFO_CLASS_HANDLE clsHnd =
@@ -481,12 +489,12 @@ bool ObjectAllocator::MorphAllocObjNodes()
 #ifdef FEATURE_READYTORUN
                         if (comp->opts.IsReadyToRun() && data->IsHelperCall(comp, CORINFO_HELP_READYTORUN_NEWARR_1))
                         {
-                            len = arg->GetNode();
+                            len = data->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
                         }
                         else
 #endif
                         {
-                            len = arg->GetNext()->GetNode();
+                            len = data->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
                         }
 
                         assert(len != nullptr);
