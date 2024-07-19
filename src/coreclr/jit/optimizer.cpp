@@ -3518,6 +3518,13 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
             case GT_IND:
 
+                if (opts.OptimizationEnabled())
+                {
+                    // Don't narrow casts of indirections when optimizations are enabled
+                    // to enable more CSEs.
+                    return false;
+                }
+
             NARROW_IND:
 
                 if ((dstSize > genTypeSize(tree->gtType)) &&
