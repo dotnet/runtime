@@ -156,7 +156,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if ((_methodBase == null) || _methodBase is not MethodInfo)
+            if (_methodBase is null or not MethodInfo)
             {
                 IRuntimeMethodInfo method = FindMethodHandle();
                 RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);

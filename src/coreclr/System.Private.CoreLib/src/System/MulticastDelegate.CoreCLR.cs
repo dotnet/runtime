@@ -515,7 +515,7 @@ namespace System
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                if ((_methodBase == null) || _methodBase is not MethodInfo)
+                if (_methodBase is null or not MethodInfo)
                 {
                     IRuntimeMethodInfo method = FindMethodHandle();
                     RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
