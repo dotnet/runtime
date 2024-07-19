@@ -193,6 +193,8 @@ namespace Server.Contract
 
         // Test API for marshalling an arbitrary type via VARIANT
         object Marshal_Instance_Variant([MarshalAs(UnmanagedType.LPWStr)] string init);
+
+        void Marshal_ByRefVariant(ref object result, object value);
     }
 
     public struct HResult

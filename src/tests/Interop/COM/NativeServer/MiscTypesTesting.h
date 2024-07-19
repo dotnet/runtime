@@ -19,6 +19,11 @@ public: // IMiscTypesTesting
         return E_NOTIMPL;
     }
 
+    DEF_FUNC(Marshal_ByRefVariant)(_Inout_ VARIANT* result, _In_ VARIANT value)
+    {
+        return E_NOTIMPL;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
