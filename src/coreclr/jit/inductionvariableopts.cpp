@@ -752,6 +752,77 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
 }
 
 //------------------------------------------------------------------------
+// optWidenIVs: Widen IVs of the specified loop.
+//
+// Parameters:
+//   scevContext - Context for scalar evolution
+//   loop        - The loop
+//   loopLocals  - Data structure for locals occurrences
+//
+// Returns:
+//   True if any primary IV was widened.
+//
+bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
+                           FlowGraphNaturalLoop*   loop,
+                           LoopLocalOccurrences*   loopLocals)
+{
+    JITDUMP("Considering primary IVs of " FMT_LP " for widening\n", loop->GetIndex());
+
+    unsigned numWidened = 0;
+    for (Statement* stmt : loop->GetHeader()->Statements())
+    {
+        if (!stmt->IsPhiDefnStmt())
+        {
+            break;
+        }
+
+        JITDUMP("\n");
+        DISPSTMT(stmt);
+
+        Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
+        if (scev == nullptr)
+        {
+            JITDUMP("  Could not analyze header PHI\n");
+            continue;
+        }
+
+        JITDUMP("  => ");
+        DBEXEC(verbose, scev->Dump(this));
+        JITDUMP("\n");
+        if (!scev->OperIs(ScevOper::AddRec))
+        {
+            JITDUMP("  Not an addrec\n");
+            continue;
+        }
+
+        ScevAddRec* addRec = (ScevAddRec*)scev;
+
+        unsigned   lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* lclDsc = lvaGetDesc(lclNum);
+        JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lclNum, loop->GetIndex());
+
+        assert(!lclDsc->lvPromoted);
+
+        // For a struct field with occurrences of the parent local we won't
+        // be able to do much.
+        if (lclDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, lclDsc->lvParentLcl))
+        {
+            JITDUMP("  V%02u is a struct field whose parent local V%02u has occurrences inside the loop\n", lclNum,
+                    lclDsc->lvParentLcl);
+            continue;
+        }
+
+        if (optWidenPrimaryIV(loop, lclNum, addRec, loopLocals))
+        {
+            numWidened++;
+        }
+    }
+
+    Metrics.WidenedIVs += numWidened;
+    return numWidened > 0;
+}
+
+//------------------------------------------------------------------------
 // optWidenPrimaryIV: Attempt to widen a primary IV.
 //
 // Parameters:
@@ -903,6 +974,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
     loopLocals->VisitStatementsWithOccurrences(loop, lclNum, replace);
 
     optSinkWidenedIV(lclNum, newLclNum, loop);
+    loopLocals->Invalidate(loop);
     return true;
 }
 
@@ -1036,29 +1108,12 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
                 return true;
             }
 
-            GenTree* rootNode = stmt->GetRootNode();
-            if (!rootNode->OperIsLocalStore())
+            if (optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), candidateLclNum))
             {
-                // Cannot reason about this use of the local, cannot remove
-                // TODO-CQ: In some cases it may be profitable to compute the
-                // value in terms of the down-counting IV.
-                return false;
+                return true;
             }
 
-            if (rootNode->AsLclVarCommon()->GetLclNum() != candidateLclNum)
-            {
-                // Used to compute a value stored to some other local, cannot remove
-                return false;
-            }
-
-            if ((rootNode->AsLclVarCommon()->Data()->gtFlags & GTF_SIDE_EFFECT) != 0)
-            {
-                // May be used inside the data node for something that has side effects, cannot remove
-                return false;
-            }
-
-            // Can remove this store
-            return true;
+            return false;
         };
 
         if (!loopLocals->VisitStatementsWithOccurrences(loop, candidateLclNum, checkRemovableUse))
@@ -1152,26 +1207,9 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
 
     JITDUMP("\n  Updated exit test:\n");
     DISPSTMT(jtrueStmt);
-
-    JITDUMP("\n  Now removing uses of old IVs\n");
-
-    for (int i = 0; i < removableLocals.Height(); i++)
-    {
-        unsigned removableLcl = removableLocals.Bottom(i);
-        JITDUMP("  Removing uses of V%02u\n", removableLcl);
-        auto deleteStatement = [=](BasicBlock* block, Statement* stmt) {
-            if (stmt != jtrueStmt)
-            {
-                fgRemoveStmt(block, stmt);
-            }
-
-            return true;
-        };
-
-        loopLocals->VisitStatementsWithOccurrences(loop, removableLcl, deleteStatement);
-    }
-
     JITDUMP("\n");
+
+    loopLocals->Invalidate(loop);
     return true;
 }
 
@@ -1627,18 +1665,10 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree)
 {
     unsigned primaryIVLclNum = tree->GetLclNum();
-    if (stmt->GetRootNode()->OperIsLocalStore())
+    if (m_comp->optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), tree->GetLclNum()))
     {
-        GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
-        if ((lcl->GetLclNum() == primaryIVLclNum) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
-        {
-            // Store to the primary IV without side effects; if we end
-            // up strength reducing, then this store is expected to be
-            // removed by making the loop downwards counted.
-            return true;
-        }
-
-        return false;
+        // Removal of unused IVs will get rid of this.
+        return true;
     }
 
     bool isInsideExitTest =
@@ -2093,6 +2123,92 @@ BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<Cursor
 }
 
 //------------------------------------------------------------------------
+// optRemoveUnusedIVs: Remove IVs that are only used for self-updates.
+//
+// Parameters:
+//   loop       - The loop
+//   loopLocals - Locals of the loop
+//
+// Returns:
+//   True if any primary IV was removed.
+//
+bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals)
+{
+    JITDUMP("  Now looking for unnecessary primary IVs\n");
+
+    unsigned numRemoved = 0;
+    for (Statement* stmt : loop->GetHeader()->Statements())
+    {
+        if (!stmt->IsPhiDefnStmt())
+        {
+            break;
+        }
+
+        unsigned lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
+        JITDUMP("  V%02u", lclNum);
+        if (optPrimaryIVHasNonLoopUses(lclNum, loop, loopLocals))
+        {
+            JITDUMP(" has non-loop uses, cannot remove\n");
+            continue;
+        }
+
+        auto visit = [=](BasicBlock* block, Statement* stmt) {
+            return optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), lclNum);
+        };
+
+        if (!loopLocals->VisitStatementsWithOccurrences(loop, lclNum, visit))
+        {
+            JITDUMP(" has essential uses, cannot remove\n");
+            continue;
+        }
+
+        JITDUMP(" has no essential uses and will be removed\n", lclNum);
+        auto remove = [=](BasicBlock* block, Statement* stmt) {
+            JITDUMP("  Removing " FMT_STMT "\n", stmt->GetID());
+            fgRemoveStmt(block, stmt);
+            return true;
+        };
+
+        loopLocals->VisitStatementsWithOccurrences(loop, lclNum, remove);
+        numRemoved++;
+        loopLocals->Invalidate(loop);
+    }
+
+    Metrics.UnusedIVsRemoved += numRemoved;
+    return numRemoved > 0;
+}
+
+//------------------------------------------------------------------------
+// optIsUpdateOfIVWithoutSideEffects: Check if a tree is an update of a
+// specific local with no other side effects.
+//
+// Returns:
+//   True if so.
+//
+bool Compiler::optIsUpdateOfIVWithoutSideEffects(GenTree* tree, unsigned lclNum)
+{
+    if (!tree->OperIsLocalStore())
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* store = tree->AsLclVarCommon();
+    if (store->GetLclNum() != lclNum)
+    {
+        // Store that uses the local as a source; this primary IV is used
+        return false;
+    }
+
+    if ((store->Data()->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // Primary IV may be used inside a side effect
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
 //
 // Returns:
@@ -2162,66 +2278,17 @@ PhaseStatus Compiler::optInductionVariables()
         // addressing modes can include the zero/sign-extension of the index
         // for free.
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
-        int numWidened = 0;
-
-        JITDUMP("Considering primary IVs of " FMT_LP " for widening\n", loop->GetIndex());
-
-        for (Statement* stmt : loop->GetHeader()->Statements())
-        {
-            if (!stmt->IsPhiDefnStmt())
-            {
-                break;
-            }
-
-            JITDUMP("\n");
-            DISPSTMT(stmt);
-
-            Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
-            if (scev == nullptr)
-            {
-                JITDUMP("  Could not analyze header PHI\n");
-                continue;
-            }
-
-            JITDUMP("  => ");
-            DBEXEC(verbose, scev->Dump(this));
-            JITDUMP("\n");
-            if (!scev->OperIs(ScevOper::AddRec))
-            {
-                JITDUMP("  Not an addrec\n");
-                continue;
-            }
-
-            ScevAddRec* addRec = (ScevAddRec*)scev;
-
-            unsigned   lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* lclDsc = lvaGetDesc(lclNum);
-            JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lclNum, loop->GetIndex());
-
-            assert(!lclDsc->lvPromoted);
-
-            // For a struct field with occurrences of the parent local we won't
-            // be able to do much.
-            if (lclDsc->lvIsStructField && loopLocals.HasAnyOccurrences(loop, lclDsc->lvParentLcl))
-            {
-                JITDUMP("  V%02u is a struct field whose parent local V%02u has occurrences inside the loop\n", lclNum,
-                        lclDsc->lvParentLcl);
-                continue;
-            }
-
-            if (optWidenPrimaryIV(loop, lclNum, addRec, &loopLocals))
-            {
-                numWidened++;
-                changed = true;
-            }
-        }
-
-        Metrics.WidenedIVs += numWidened;
-        if (numWidened > 0)
+        if (optWidenIVs(scevContext, loop, &loopLocals))
         {
             Metrics.LoopsIVWidened++;
+            changed = true;
         }
 #endif
+
+        if (optRemoveUnusedIVs(loop, &loopLocals))
+        {
+            changed = true;
+        }
     }
 
     fgInvalidateDfsTree();
