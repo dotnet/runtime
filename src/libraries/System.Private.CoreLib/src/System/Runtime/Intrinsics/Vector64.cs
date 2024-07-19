@@ -607,6 +607,59 @@ namespace System.Runtime.Intrinsics
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
         }
 
+        internal static Vector64<T> Cos<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Cos(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the cos of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Cos computed.</param>
+        /// <returns>A vector whose elements are the cos of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Cos(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosDouble<Vector64<double>, Vector64<long>>(vector);
+            }
+            else
+            {
+                return Cos<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the cos of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Cos computed.</param>
+        /// <returns>A vector whose elements are the cos of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Cos(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.CosSingle<Vector64<float>, Vector64<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.CosSingle<Vector64<float>, Vector64<int>, Vector64<double>, Vector64<long>>(vector);
+                }
+            }
+            else
+            {
+                return Cos<float>(vector);
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector64{T}" /> instance with all elements initialized to the specified value.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="value">The value that all elements will be initialized to.</param>
@@ -1248,7 +1301,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpDouble<Vector64<double>, Vector64<long>, Vector64<ulong>>(vector);
+                return VectorMath.ExpDouble<Vector64<double>, Vector64<ulong>>(vector);
             }
             else
             {
@@ -1264,7 +1317,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpSingle<Vector64<float>, Vector64<uint>, Vector64<double>, Vector64<ulong>>(vector);
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.ExpSingle<Vector64<float>, Vector64<uint>, Vector128<double>, Vector128<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.ExpSingle<Vector64<float>, Vector64<uint>, Vector64<double>, Vector64<ulong>>(vector);
+                }
             }
             else
             {
@@ -1574,7 +1634,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.HypotSingle<Vector64<float>, Vector64<double>>(x, y);
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.HypotSingle<Vector64<float>, Vector128<double>>(x, y);
+                }
+                else
+                {
+                    return VectorMath.HypotSingle<Vector64<float>, Vector64<double>>(x, y);
+                }
             }
             else
             {
@@ -3000,6 +3067,114 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        internal static Vector64<T> Sin<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                T value = T.Sin(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <summary>Computes the sin of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Sin computed.</param>
+        /// <returns>A vector whose elements are the sin of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<double> Sin(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinDouble<Vector64<double>, Vector64<long>>(vector);
+            }
+            else
+            {
+                return Sin<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the sin of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its Sin computed.</param>
+        /// <returns>A vector whose elements are the sin of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector64<float> Sin(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.SinSingle<Vector64<float>, Vector64<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.SinSingle<Vector64<float>, Vector64<int>, Vector64<double>, Vector64<long>>(vector);
+                }
+            }
+            else
+            {
+                return Sin<float>(vector);
+            }
+        }
+
+        internal static (Vector64<T> Sin, Vector64<T> Cos) SinCos<T>(Vector64<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector64<T> sinResult);
+            Unsafe.SkipInit(out Vector64<T> cosResult);
+
+            for (int index = 0; index < Vector64<T>.Count; index++)
+            {
+                (T sinValue, T cosValue) = T.SinCos(vector.GetElementUnsafe(index));
+                sinResult.SetElementUnsafe(index, sinValue);
+                cosResult.SetElementUnsafe(index, cosValue);
+            }
+
+            return (sinResult, cosResult);
+        }
+
+        /// <summary>Computes the sincos of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its SinCos computed.</param>
+        /// <returns>A vector whose elements are the sincos of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector64<double> Sin, Vector64<double> Cos) SinCos(Vector64<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinCosDouble<Vector64<double>, Vector64<long>>(vector);
+            }
+            else
+            {
+                return SinCos<double>(vector);
+            }
+        }
+
+        /// <summary>Computes the sincos of each element in a vector.</summary>
+        /// <param name="vector">The vector that will have its SinCos computed.</param>
+        /// <returns>A vector whose elements are the sincos of the elements in <paramref name="vector" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector64<float> Sin, Vector64<float> Cos) SinCos(Vector64<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.SinCosSingle<Vector64<float>, Vector64<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.SinCosSingle<Vector64<float>, Vector64<int>, Vector64<double>, Vector64<long>>(vector);
+                }
+            }
+            else
+            {
+                return SinCos<float>(vector);
+            }
         }
 
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>

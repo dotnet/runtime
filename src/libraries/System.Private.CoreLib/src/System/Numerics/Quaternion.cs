@@ -281,11 +281,11 @@ namespace System.Numerics
         /// <returns>The resulting quaternion.</returns>
         public static Quaternion CreateFromYawPitchRoll(float yaw, float pitch, float roll)
         {
-            //  Roll first, about axis the object is facing, then
-            //  pitch upward, then yaw to face into the new heading
-            (float sr, float cr) = float.SinCos(roll * 0.5f);
-            (float sp, float cp) = float.SinCos(pitch * 0.5f);
-            (float sy, float cy) = float.SinCos(yaw * 0.5f);
+            (Vector3 sin, Vector3 cos) = Vector3.SinCos(Vector3.Create(roll, pitch, yaw) * 0.5f);
+
+            (float sr, float cr) = (sin.X, cos.X);
+            (float sp, float cp) = (sin.Y, cos.Y);
+            (float sy, float cy) = (sin.Z, cos.Z);
 
             Quaternion result;
 

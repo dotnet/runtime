@@ -67,7 +67,7 @@ namespace System.Net.Sockets
         private bool _receivingPacketInformation;
 
         private int _closeTimeout = Socket.DefaultCloseTimeout;
-        private int _disposed; // 0 == false, anything else == true
+        private bool _disposed;
 
         public Socket(SocketType socketType, ProtocolType protocolType)
             : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
@@ -3148,7 +3148,7 @@ namespace System.Net.Sockets
         // Internal and private properties
         //
 
-        internal bool Disposed => _disposed != 0;
+        internal bool Disposed => _disposed;
 
         //
         // Internal and private methods
@@ -3240,7 +3240,7 @@ namespace System.Net.Sockets
             }
 
             // Make sure we're the first call to Dispose
-            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 1)
+            if (Interlocked.Exchange(ref _disposed, true))
             {
                 return;
             }

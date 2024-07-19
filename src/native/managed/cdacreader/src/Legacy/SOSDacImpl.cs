@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -89,7 +93,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodTableHandle methodTable = contract.GetMethodTableHandle(mt);
+            Contracts.TypeHandle methodTable = contract.GetTypeHandle(mt);
 
             DacpMethodTableData result = default;
             result.baseSize = contract.GetBaseSize(methodTable);
@@ -123,7 +127,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             *data = result;
             return HResults.S_OK;
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             return ex.HResult;
         }
@@ -137,16 +141,78 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         try
         {
             Contracts.IRuntimeTypeSystem contract = _target.Contracts.RuntimeTypeSystem;
-            Contracts.MethodTableHandle methodTableHandle = contract.GetMethodTableHandle(eeClassReallyCanonMT);
+            Contracts.TypeHandle methodTableHandle = contract.GetTypeHandle(eeClassReallyCanonMT);
             *value = methodTableHandle.Address;
             return HResults.S_OK;
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }
     }
-    public unsafe int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded) => HResults.E_NOTIMPL;
+
+    private unsafe void CopyStringToTargetBuffer(char* stringBuf, uint bufferSize, uint* neededBufferSize, string str)
+    {
+        ReadOnlySpan<char> strSpan = str.AsSpan();
+        if (neededBufferSize != null)
+            *neededBufferSize = checked((uint)(strSpan.Length + 1));
+
+        if (stringBuf != null && bufferSize > 0)
+        {
+            Span<char> target = new Span<char>(stringBuf, checked((int)bufferSize));
+            int nullTerminatorLocation = strSpan.Length > bufferSize - 1 ? checked((int)(bufferSize - 1)) : strSpan.Length;
+            strSpan = strSpan.Slice(0, nullTerminatorLocation);
+            strSpan.CopyTo(target);
+            target[nullTerminatorLocation] = '\0';
+        }
+    }
+
+    public unsafe int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded)
+    {
+        if (mt == 0)
+            return HResults.E_INVALIDARG;
+
+        try
+        {
+            Contracts.IRuntimeTypeSystem typeSystemContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.TypeHandle methodTableHandle = typeSystemContract.GetTypeHandle(mt);
+            if (typeSystemContract.IsFreeObjectMethodTable(methodTableHandle))
+            {
+                CopyStringToTargetBuffer(mtName, count, pNeeded, "Free");
+                return HResults.S_OK;
+            }
+
+            // TODO(cdac) - The original code handles the case of the module being in the process of being unloaded. This is not yet handled
+
+            System.Text.StringBuilder methodTableName = new();
+            try
+            {
+                TargetPointer modulePointer = typeSystemContract.GetModule(methodTableHandle);
+                TypeNameBuilder.AppendType(_target, methodTableName, methodTableHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+            }
+            catch
+            {
+                try
+                {
+                    string? fallbackName = _target.Contracts.DacStreams.StringFromEEAddress(mt);
+                    if (fallbackName != null)
+                    {
+                        methodTableName.Clear();
+                        methodTableName.Append(fallbackName);
+                    }
+                }
+                catch
+                { }
+            }
+            CopyStringToTargetBuffer(mtName, count, pNeeded, methodTableName.ToString());
+            return HResults.S_OK;
+        }
+        catch (global::System.Exception ex)
+        {
+            return ex.HResult;
+        }
+    }
+
     public unsafe int GetMethodTableSlot(ulong mt, uint slot, ulong* value) => HResults.E_NOTIMPL;
     public unsafe int GetMethodTableTransparencyData(ulong mt, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetModule(ulong addr, void** mod) => HResults.E_NOTIMPL;
@@ -191,7 +257,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->dwBaseClassIndex = 0;
             data->dwModuleIndex = 0;
         }
-        catch (Exception e)
+        catch (global::System.Exception e)
         {
             return e.HResult;
         }
@@ -208,7 +274,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             *exceptionObject = exceptionObjectLocal;
             *nextNestedException = nextNestedExceptionLocal;
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }
@@ -234,7 +300,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->HResult = exceptionData.HResult;
             data->XCode = exceptionData.XCode;
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             return ex.HResult;
         }
@@ -242,7 +308,21 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         return HResults.S_OK;
     }
 
-    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
+    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.IObject contract = _target.Contracts.Object;
+            string str = contract.GetStringValue(obj);
+            CopyStringToTargetBuffer(stringData, count, pNeeded, str);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
@@ -284,7 +364,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             data->lastThrownObjectHandle = threadData.LastThrownObjectHandle;
             data->nextThread = threadData.NextThread;
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }
@@ -314,7 +394,7 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
 
             data->fHostConfig = 0; // Always 0 for non-Framework
         }
-        catch (Exception ex)
+        catch (global::System.Exception ex)
         {
             return ex.HResult;
         }

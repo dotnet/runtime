@@ -4130,11 +4130,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
             {
-                assert(callType != TYP_STRUCT);
-                assert(sig->numArgs == 2);
-
                 var_types retType = JITtype2varType(sig->retType);
-                assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
 
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
@@ -4158,6 +4154,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
+
+                assert(callType != TYP_STRUCT);
+                assert(sig->numArgs == 2);
+                assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
 
                 GenTree* op2 = impPopStack().val;
                 GenTree* op1 = impPopStack().val;
