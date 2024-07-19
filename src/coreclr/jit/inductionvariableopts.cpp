@@ -1845,16 +1845,32 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 //
 bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec)
 {
-    int64_t offset;
-    Scev*   baseScev = addRec->Start->PeelAdditions(&offset);
-    offset           = static_cast<target_ssize_t>(offset);
+    ValueNumPair addRecStartVNP = m_scevContext.MaterializeVN(addRec->Start);
+    if (!addRecStartVNP.BothDefined())
+    {
+        return false;
+    }
 
-    // We only support arrays and strings here. To strength reduce Span<T>
-    // accesses we need additional properies on the range designated by a
-    // Span<T> that we currently do not specify, or we need to prove that the
-    // byref we may form in the IV update would have been formed anyway by the
-    // loop.
-    if (!baseScev->OperIs(ScevOper::Local) || !baseScev->TypeIs(TYP_REF))
+    ValueNumPair   addRecStartBase    = addRecStartVNP;
+    target_ssize_t offsetLiberal      = 0;
+    target_ssize_t offsetConservative = 0;
+    m_comp->vnStore->PeelOffsets(addRecStartBase.GetLiberalAddr(), &offsetLiberal);
+    m_comp->vnStore->PeelOffsets(addRecStartBase.GetConservativeAddr(), &offsetConservative);
+
+    if (offsetLiberal != offsetConservative)
+    {
+        return false;
+    }
+
+    target_ssize_t offset = offsetLiberal;
+
+    // We only support objects here (targeting array/strings). To strength
+    // reduce Span<T> accesses we need additional properties on the range
+    // designated by a Span<T> that we currently do not specify, or we need to
+    // prove that the byref we may form in the IV update would have been formed
+    // anyway by the loop.
+    if ((m_comp->vnStore->TypeOfVN(addRecStartBase.GetConservative()) != TYP_REF) ||
+        (m_comp->vnStore->TypeOfVN(addRecStartBase.GetLiberal()) != TYP_REF))
     {
         return false;
     }
@@ -1888,22 +1904,14 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
         return false;
     }
 
-    ScevLocal* local = (ScevLocal*)baseScev;
-
-    ValueNumPair vnp = m_scevContext.MaterializeVN(baseScev);
-    if (!vnp.BothDefined())
-    {
-        return false;
-    }
-
     BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
-    if (!m_comp->optAssertionVNIsNonNull(vnp.GetConservative(), preheader->bbAssertionOut))
+    if (!m_comp->optAssertionVNIsNonNull(addRecStartBase.GetConservative(), preheader->bbAssertionOut))
     {
         return false;
     }
 
-    // We have a non-null array/string. Check that the 'start' offset looks
-    // fine. TODO: We could also use assertions on the length of the
+    // We have a non-null object as the base. Check that the 'start' offset
+    // looks fine. TODO: We could also use assertions on the length of the
     // array/string. E.g. if we know the length of the array is > 3, then we
     // can allow the add rec to have a later start. Maybe range check can be
     // used?
@@ -1914,7 +1922,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 
     // Now see if we have a bound that guarantees that we iterate fewer times
     // than the array/string's length.
-    ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, vnp.GetLiberal());
+    ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
 
     for (int i = 0; i < m_backEdgeBounds.Height(); i++)
     {
