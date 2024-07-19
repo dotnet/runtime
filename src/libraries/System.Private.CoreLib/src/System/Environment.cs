@@ -20,12 +20,12 @@ namespace System
             /// <summary>
             /// the amount of time the associated process has spent running code inside the application portion of the process (not the operating system core).
             /// </summary>
-            public TimeSpan UserTime { get; internal set; }
+            public TimeSpan UserTime { get; internal init; }
 
             /// <summary>
             /// The amount of time the process has spent running code inside the operating system code.
             /// </summary>
-            public TimeSpan PrivilegedTime { get; internal set; }
+            public TimeSpan PrivilegedTime { get; internal init; }
 
             /// <summary>
             /// The amount of time the process has spent utilizing the CPU including the process time spent in the application code and the process time spent in the operating system code.
