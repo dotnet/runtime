@@ -286,6 +286,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <remarks>
         /// If the entry does not come from an archive stream or if the archive stream is not seekable, returns -1.
+        /// The position value returned by this property is relative to the absolute start of the archive stream, independently of where the tar archive beging.
         /// </remarks>
         public long DataOffset => _header._dataOffset;
 
