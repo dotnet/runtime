@@ -952,11 +952,6 @@ public:
     // in the object header to store it.
     DWORD                m_ThreadId;
 
-
-    // RWLock state
-    LockEntry           *m_pHead;
-    LockEntry            m_embeddedEntry;
-
 #ifndef DACCESS_COMPILE
     Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP);
 #endif // DACCESS_COMPILE
