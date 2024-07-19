@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -34,5 +35,17 @@ namespace System
         /// </summary>
         /// <returns>Path of the executable that started the currently executing process</returns>
         private static string? GetProcessPath() => null;
+
+        /// <summary>
+        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
+        /// and the total time spent running both the application and operating system code.
+        /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static ProcessCpuUsage CpuUsage
+        {
+            get { throw new PlatformNotSupportedException(); }
+        }
     }
 }

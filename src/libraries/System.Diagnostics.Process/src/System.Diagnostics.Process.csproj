@@ -15,7 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
@@ -35,6 +34,8 @@
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
     <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeProcessHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeProcessHandle.cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Runtime\Serialization\SerializationGuard.cs"
@@ -218,7 +219,8 @@
              Link="Common\System\HResults.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeThreadHandle.cs"
              Link="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
     <Compile Include="System\Diagnostics\Process.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />

@@ -574,6 +574,44 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public void TestCpuUsage()
+        {
+            if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS && PlatformDetection.IstvOS)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Environment.CpuUsage);
+            }
+            else
+            {
+                TimeSpan delta = TimeSpan.FromMinutes(1);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    Process currentProcess = Process.GetCurrentProcess();
+
+                    TimeSpan userTime = currentProcess.UserProcessorTime;
+                    TimeSpan privilegedTime = currentProcess.PrivilegedProcessorTime;
+                    TimeSpan totalTime = currentProcess.TotalProcessorTime;
+
+                    Environment.ProcessCpuUsage usage = Environment.CpuUsage;
+                    Assert.True(usage.UserTime.TotalMilliseconds >= 0);
+                    Assert.True(usage.PrivilegedTime.TotalMilliseconds >= 0);
+                    Assert.True(usage.TotalTime.TotalMilliseconds >= 0);
+                    Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
+
+                    Assert.True(usage.UserTime >= userTime);
+                    Assert.True(usage.PrivilegedTime >= privilegedTime);
+                    Assert.True(usage.TotalTime >= totalTime);
+
+                    Assert.True(usage.UserTime - userTime < delta);
+                    Assert.True(usage.PrivilegedTime - privilegedTime < delta);
+                    Assert.True(usage.TotalTime - totalTime < delta);
+
+                    Thread.Sleep(100);
+                }
+            }
+        }
+
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern int GetLogicalDrives();
 

@@ -41,5 +41,29 @@ namespace System
             // Consider to use /proc/self/cmdline to get command line
             return Array.Empty<string>();
         }
+
+        private static long s_ticksPerSecond;
+
+        /// <summary>Convert a number of "jiffies", or ticks, to a TimeSpan.</summary>
+        /// <param name="ticks">The number of ticks.</param>
+        /// <returns>The equivalent TimeSpan.</returns>
+        internal static TimeSpan TicksToTimeSpan(double ticks)
+        {
+            long ticksPerSecond = Volatile.Read(ref s_ticksPerSecond);
+            if (ticksPerSecond == 0)
+            {
+                // Look up the number of ticks per second in the system's configuration,
+                // then use that to convert to a TimeSpan
+                ticksPerSecond = Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_CLK_TCK);
+                if (ticksPerSecond <= 0)
+                {
+                    throw new Win32Exception();
+                }
+
+                Volatile.Write(ref s_ticksPerSecond, ticksPerSecond);
+            }
+
+            return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
+        }
     }
 }

@@ -4,12 +4,35 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System
 {
     public static partial class Environment
     {
+        /// <summary>
+        /// Represents the CPU usage statistics of a process. It includes information about the time spent by the process in both the application code (user mode)
+        /// and the operating system code (kernel mode). In addition to the total time spent by the process in both user mode and kernel mode.
+        /// </summary>
+        public readonly struct ProcessCpuUsage
+        {
+            /// <summary>
+            /// the amount of time the associated process has spent running code inside the application portion of the process (not the operating system core).
+            /// </summary>
+            public TimeSpan UserTime { get; internal init; }
+
+            /// <summary>
+            /// The amount of time the process has spent running code inside the operating system code.
+            /// </summary>
+            public TimeSpan PrivilegedTime { get; internal init; }
+
+            /// <summary>
+            /// The amount of time the process has spent utilizing the CPU including the process time spent in the application code and the process time spent in the operating system code.
+            /// </summary>
+            public TimeSpan TotalTime => UserTime + PrivilegedTime;
+        }
+
         public static int ProcessorCount { get; } = GetProcessorCount();
 
         /// <summary>

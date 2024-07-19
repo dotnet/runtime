@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -357,6 +359,44 @@ namespace System
             }
 
             return arrayBuilder.ToArray();
+        }
+
+        /// <summary>
+        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
+        /// and the total time spent running both the application and operating system code.
+        /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static ProcessCpuUsage CpuUsage
+        {
+            get
+            {
+                using (SafeProcessHandle handle = GetProcessHandle())
+                {
+                    Debug.Assert(!handle.IsInvalid);
+
+                    if (!Interop.Kernel32.GetProcessTimes(handle.DangerousGetHandle(), out long create, out long exit, out long kernel, out long user))
+                    {
+                        throw new Win32Exception();
+                    }
+
+                    return new ProcessCpuUsage { UserTime = new TimeSpan(user), PrivilegedTime = new TimeSpan(kernel) };
+                }
+            }
+        }
+
+        private static SafeProcessHandle GetProcessHandle()
+        {
+            SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false, GetProcessId());
+            int result = Marshal.GetLastWin32Error();
+            if (processHandle.IsInvalid)
+            {
+                processHandle.Dispose();
+                throw new Win32Exception(result);
+            }
+
+            return processHandle;
         }
     }
 }

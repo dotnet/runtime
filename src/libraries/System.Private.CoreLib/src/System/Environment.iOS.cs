@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using NSSearchPathDirectory = Interop.Sys.NSSearchPathDirectory;
 
@@ -14,6 +15,18 @@ namespace System
 #if !TARGET_MACCATALYST
         // iOS/tvOS aren't allowed to call libproc APIs so return 0 here, this also matches what we returned in earlier releases
         public static long WorkingSet => 0;
+
+        /// <summary>
+        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
+        /// and the total time spent running both the application and operating system code.
+        /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static ProcessCpuUsage CpuUsage
+        {
+            get { throw new PlatformNotSupportedException(); }
+        }
 #endif
 
         private static Dictionary<SpecialFolder, string>? s_specialFolders;
