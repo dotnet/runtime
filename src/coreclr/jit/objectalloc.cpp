@@ -741,6 +741,10 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
         comp->compSuppressedZeroInit = true;
     }
 
+#ifndef TARGET_64BIT
+    lclDsc->lvStructDoubleAlign = alignTo8;
+#endif
+
     // Initialize the vtable slot.
     //
     //------------------------------------------------------------------------
