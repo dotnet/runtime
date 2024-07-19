@@ -37,7 +37,7 @@ namespace System.Reflection
                 typeArg = typeArg.UnderlyingSystemType;
                 if (typeArg == null)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                if (!(typeArg is RuntimeType))
+                if (typeArg is not System.RuntimeType)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
                 typeHandleArgs[i] = typeArg.TypeHandle;
             }

@@ -264,7 +264,7 @@ namespace System.Reflection.Emit
             stackchange -= methodInfo.GetParameterTypes().Length;
             // Pop the this parameter if the method is non-static and the
             // instruction is not newobj.
-            if (!(methodInfo is SymbolMethod) && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
+            if (methodInfo is not SymbolMethod && !methodInfo.IsStatic && !opcode.Equals(OpCodes.Newobj))
                 stackchange--;
             // Pop the optional parameters off the stack.
             if (optionalParameterTypes != null)
@@ -990,7 +990,7 @@ namespace System.Reflection.Emit
             if (fromMethod == 0)
                 return (byte[]?)this[token];
 
-            if (!(this[token] is VarArgMethod vaMethod))
+            if (this[token] is not VarArgMethod vaMethod)
                 return null;
 
             return vaMethod.m_signature.GetSignature(true);

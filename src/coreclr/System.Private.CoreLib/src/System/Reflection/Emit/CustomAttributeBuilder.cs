@@ -148,7 +148,7 @@ namespace System.Reflection.Emit
 
                 // Property has to be from the same class or base class as ConstructorInfo.
                 if (property.DeclaringType != con.DeclaringType
-                    && (!(con.DeclaringType is TypeBuilderInstantiation))
+                    && (con.DeclaringType is not TypeBuilderInstantiation)
                     && !con.DeclaringType!.IsSubclassOf(property.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder
@@ -160,7 +160,7 @@ namespace System.Reflection.Emit
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the property's declaring
                         // type is one.
-                        if (!(property.DeclaringType is TypeBuilder) ||
+                        if (property.DeclaringType is not TypeBuilder ||
                             !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)property.DeclaringType).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadPropertyForConstructorBuilder);
                     }
@@ -200,7 +200,7 @@ namespace System.Reflection.Emit
 
                 // Field has to be from the same class or base class as ConstructorInfo.
                 if (namedField.DeclaringType != con.DeclaringType
-                    && (!(con.DeclaringType is TypeBuilderInstantiation))
+                    && (con.DeclaringType is not TypeBuilderInstantiation)
                     && !con.DeclaringType!.IsSubclassOf(namedField.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder
@@ -212,7 +212,7 @@ namespace System.Reflection.Emit
                         // the constructor is a TypeBuilder, but we still need
                         // to deal with the case where the field's declaring
                         // type is one.
-                        if (!(namedField.DeclaringType is TypeBuilder) ||
+                        if (namedField.DeclaringType is not TypeBuilder ||
                             !con.DeclaringType.IsSubclassOf(((RuntimeTypeBuilder)namedFields[i].DeclaringType!).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadFieldForConstructorBuilder);
                     }

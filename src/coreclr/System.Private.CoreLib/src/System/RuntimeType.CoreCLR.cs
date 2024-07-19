@@ -3308,7 +3308,7 @@ namespace System
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
-            if (!(other is RuntimeType otherRtType))
+            if (other is not RuntimeType otherRtType)
             {
                 return false;
             }
@@ -4320,7 +4320,7 @@ namespace System.Reflection
         private static int GetHashCodeHelper(K key)
         {
             // For strings we don't want the key to differ across domains as CerHashtable might be shared.
-            if (!(key is string sKey))
+            if (key is not string sKey)
             {
                 return key.GetHashCode();
             }

@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
             ArgumentNullException.ThrowIfNull(t);
 
             FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) ?? throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.FullName), nameof(fieldName));
-            if (!(f is RtFieldInfo rtField))
+            if (f is not RtFieldInfo rtField)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
             }
@@ -207,7 +207,7 @@ namespace System.Runtime.InteropServices
 
         private static void PrelinkCore(MethodInfo m)
         {
-            if (!(m is RuntimeMethodInfo rmi))
+            if (m is not RuntimeMethodInfo rmi)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(m));
             }
@@ -596,7 +596,7 @@ namespace System.Runtime.InteropServices
                 // Match .NET Framework behaviour.
                 throw new NullReferenceException();
             }
-            if (!(o is __ComObject co))
+            if (o is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
@@ -620,7 +620,7 @@ namespace System.Runtime.InteropServices
             }
 
             ArgumentNullException.ThrowIfNull(o);
-            if (!(o is __ComObject co))
+            if (o is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
@@ -642,7 +642,7 @@ namespace System.Runtime.InteropServices
 
             ArgumentNullException.ThrowIfNull(obj);
             ArgumentNullException.ThrowIfNull(key);
-            if (!(obj is __ComObject co))
+            if (obj is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }
@@ -667,7 +667,7 @@ namespace System.Runtime.InteropServices
 
             ArgumentNullException.ThrowIfNull(obj);
             ArgumentNullException.ThrowIfNull(key);
-            if (!(obj is __ComObject co))
+            if (obj is not __ComObject co)
             {
                 throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(obj));
             }

@@ -430,7 +430,7 @@ namespace System.Reflection
                 // allocating or reallocating array by ensuring enough space based on maxCharsToAdd.
                 char[] newresult = new char[destPos + (currentInputPos - prevInputPos) + minReallocateChars];
 
-                if (!(dest is null) && destPos != 0)
+                if (dest is not null && destPos != 0)
                     Buffer.BlockCopy(dest, 0, newresult, 0, destPos << 1);
                 dest = newresult;
             }

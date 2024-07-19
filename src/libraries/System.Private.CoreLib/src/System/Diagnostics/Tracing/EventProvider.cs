@@ -513,7 +513,7 @@ namespace System.Diagnostics.Tracing
                         {
                             // EncodeObject advanced userDataPtr to the next empty slot
                             int idx = (int)(userDataPtr - userData - 1);
-                            if (!(supportedRefObj is string))
+                            if (supportedRefObj is not string)
                             {
                                 if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
                                 {

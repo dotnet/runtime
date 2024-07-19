@@ -772,7 +772,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is RuntimeMethodHandle))
+            if (obj is not RuntimeMethodHandle)
                 return false;
 
             RuntimeMethodHandle handle = (RuntimeMethodHandle)obj;
@@ -1109,7 +1109,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is RuntimeFieldHandle))
+            if (obj is not RuntimeFieldHandle)
                 return false;
 
             RuntimeFieldHandle handle = (RuntimeFieldHandle)obj;
@@ -1241,7 +1241,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is ModuleHandle))
+            if (obj is not ModuleHandle)
                 return false;
 
             ModuleHandle handle = (ModuleHandle)obj;

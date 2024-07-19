@@ -61,7 +61,7 @@ namespace System
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (!(target is RuntimeType rtTarget))
+            if (target is not RuntimeType rtTarget)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
             // This API existed in v1/v1.1 and only expected to create open
@@ -130,7 +130,7 @@ namespace System
 
             // method ptrs don't match, go down long path
             //
-            if (_methodBase == null || d._methodBase == null || !(_methodBase is MethodInfo) || !(d._methodBase is MethodInfo))
+            if (_methodBase == null || d._methodBase == null || _methodBase is not MethodInfo || d._methodBase is not MethodInfo)
                 return InternalEqualMethodHandles(this, d);
             else
                 return _methodBase.Equals(d._methodBase);
@@ -156,7 +156,7 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if ((_methodBase == null) || !(_methodBase is MethodInfo))
+            if ((_methodBase == null) || _methodBase is not MethodInfo)
             {
                 IRuntimeMethodInfo method = FindMethodHandle();
                 RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
@@ -219,7 +219,7 @@ namespace System
             ArgumentNullException.ThrowIfNull(target);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(type));
@@ -256,9 +256,9 @@ namespace System
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
-            if (!(target is RuntimeType rtTarget))
+            if (target is not RuntimeType rtTarget)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(target));
 
             if (!rtType.IsDelegate())
@@ -289,10 +289,10 @@ namespace System
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!(method is RuntimeMethodInfo rmi))
+            if (method is not RuntimeMethodInfo rmi)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
             if (!rtType.IsDelegate())
@@ -324,10 +324,10 @@ namespace System
             ArgumentNullException.ThrowIfNull(type);
             ArgumentNullException.ThrowIfNull(method);
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
-            if (!(method is RuntimeMethodInfo rmi))
+            if (method is not RuntimeMethodInfo rmi)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(method));
 
             if (!rtType.IsDelegate())
@@ -362,7 +362,7 @@ namespace System
             if (method.IsNullHandle())
                 throw new ArgumentNullException(nameof(method));
 
-            if (!(type is RuntimeType rtType))
+            if (type is not RuntimeType rtType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
 
             if (!rtType.IsDelegate())
