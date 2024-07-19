@@ -1640,7 +1640,7 @@ ClrDataAccess::GetDomainFromContext(CLRDATA_ADDRESS contextAddr, CLRDATA_ADDRESS
 
 
 HRESULT
-ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded)
+ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR* stringData, unsigned int* pNeeded)
 {
     if (obj == 0)
         return E_INVALIDARG;
@@ -1650,44 +1650,73 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetObjectStringData(obj, count, stringData, pNeeded);
+        if (FAILED(hr))
+        {
+            hr = GetObjectStringDataImpl(obj, count, stringData, pNeeded);
+        }
+#ifdef _DEBUG
+        else
+        {
+            unsigned int neededLocal;
+            SString stringDataLocal;
+            HRESULT hrLocal = GetObjectStringDataImpl(obj, count, stringDataLocal.OpenUnicodeBuffer(count), &neededLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(pNeeded == NULL || *pNeeded == neededLocal);
+            _ASSERTE(u16_strncmp(stringData, stringDataLocal, count) == 0);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetObjectStringDataImpl(obj, count, stringData, pNeeded);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded)
+{
     TADDR mtTADDR = DACGetMethodTableFromObjectPointer(TO_TADDR(obj), m_pTarget);
     PTR_MethodTable mt = PTR_MethodTable(mtTADDR);
 
     // Object must be a string
     BOOL bFree = FALSE;
     if (!DacValidateMethodTable(mt, bFree))
-        hr = E_INVALIDARG;
-    else if (HOST_CDADDR(mt) != HOST_CDADDR(g_pStringClass))
-        hr = E_INVALIDARG;
+        return E_INVALIDARG;
 
-    if (SUCCEEDED(hr))
+    if (HOST_CDADDR(mt) != HOST_CDADDR(g_pStringClass))
+        return E_INVALIDARG;
+
+    PTR_StringObject str(TO_TADDR(obj));
+    ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
+
+    HRESULT hr;
+    if (stringData && count > 0)
     {
-        PTR_StringObject str(TO_TADDR(obj));
-        ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
+        if (count > needed)
+            count = needed;
 
-        if (stringData && count > 0)
-        {
-            if (count > needed)
-                count = needed;
+        TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
+        hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &needed);
 
-            TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
-            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &needed);
-
-            if (SUCCEEDED(hr))
-                stringData[count - 1] = W('\0');
-            else
-                stringData[0] = W('\0');
-        }
+        if (SUCCEEDED(hr))
+            stringData[count - 1] = W('\0');
         else
-        {
-            hr = E_INVALIDARG;
-        }
-
-        if (pNeeded)
-            *pNeeded = needed;
+            stringData[0] = W('\0');
+    }
+    else
+    {
+        hr = E_INVALIDARG;
     }
 
-    SOSDacLeave();
+    if (pNeeded)
+        *pNeeded = needed;
+
     return hr;
 }
 

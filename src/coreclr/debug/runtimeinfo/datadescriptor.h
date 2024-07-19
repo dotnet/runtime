@@ -172,6 +172,17 @@ CDAC_TYPE_BEGIN(GCHandle)
 CDAC_TYPE_SIZE(sizeof(OBJECTHANDLE))
 CDAC_TYPE_END(GCHandle)
 
+CDAC_TYPE_BEGIN(Object)
+CDAC_TYPE_INDETERMINATE(Object)
+CDAC_TYPE_FIELD(Object, /*pointer*/, m_pMethTab, cdac_offsets<Object>::m_pMethTab)
+CDAC_TYPE_END(Object)
+
+CDAC_TYPE_BEGIN(String)
+CDAC_TYPE_INDETERMINATE(String)
+CDAC_TYPE_FIELD(String, /*pointer*/, m_FirstChar, cdac_offsets<StringObject>::m_FirstChar)
+CDAC_TYPE_FIELD(String, /*uint32*/, m_StringLength, cdac_offsets<StringObject>::m_StringLength)
+CDAC_TYPE_END(String)
+
 // Loader
 
 CDAC_TYPE_BEGIN(Module)
@@ -316,8 +327,15 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 #endif
+// See Object::GetGCSafeMethodTable
+#ifdef TARGET_64BIT
+CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
+#else
+CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
+#endif //TARGET_64BIT
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
+CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 #ifdef STRESS_LOG

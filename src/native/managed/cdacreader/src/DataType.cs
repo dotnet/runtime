@@ -44,4 +44,6 @@ public enum DataType
     StressLogChunk,
     StressMsg,
     StressMsgHeader,
+    Object,
+    String,
 }
