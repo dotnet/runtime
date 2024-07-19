@@ -39,7 +39,7 @@ To use a portable build (check the note above though), first extract somewhere t
 After setting up dotnet you can verify you are using the newer version by issuing the `dotnet --version` command on it. At the time of writing, the version must be equal or greater than `9.0.100-*`.
 
 <!-- TODO: It feels like this link may or may not be more appropriate elsewhere. Need to dig deeper into the documentation, so leaving it here for the time being. -->
-For another small walkthrough see [Dogfooding .NET SDK](https://github.com/dotnet/runtime/blob/main/docs/project/dogfooding.md).
+For another small walkthrough see [Dogfooding .NET SDK](/docs/project/dogfooding.md).
 
 ## Create a sample self-contained application
 

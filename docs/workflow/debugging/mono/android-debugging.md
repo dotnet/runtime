@@ -95,7 +95,7 @@ $ adb shell setprop debug.mono.extra "debug=10.0.2.2:5000,loglevel=10"
 
 (`loglevel=10` will produce debugger protocol messages in the `adb` log.  If
 you're not debugging the debugger it can be omitted.  For other debugger
-options see [`print_usage()`](https://github.com/dotnet/runtime/blob/main/src/mono/mono/component/debugger-agent.c#L573) in `src/mono/mono/component/debugger-agent.c`)
+options see [`print_usage()`](/src/mono/mono/component/debugger-agent.c#L573) in `src/mono/mono/component/debugger-agent.c`)
 
 Now launch the app from Android Studio. It should run and connect to the debugger.
 

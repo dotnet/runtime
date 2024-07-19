@@ -25,7 +25,7 @@ If you do find an existing issue, please include your own feedback in the discus
 
 ### Writing a Good API Proposal
 
-Please review our [API review process](https://github.com/dotnet/runtime/blob/main/docs/project/api-review-process.md) documents for guidelines on how to submit an API review. When ready to submit a proposal, please use the [API Suggestion issue template](https://github.com/dotnet/runtime/issues/new?assignees=&labels=api-suggestion&template=02_api_proposal.yml&title=%5BAPI+Proposal%5D%3A+).
+Please review our [API review process](/docs/project/api-review-process.md) documents for guidelines on how to submit an API review. When ready to submit a proposal, please use the [API Suggestion issue template](https://github.com/dotnet/runtime/issues/new?assignees=&labels=api-suggestion&template=02_api_proposal.yml&title=%5BAPI+Proposal%5D%3A+).
 
 ### Writing a Good Bug Report
 
@@ -63,13 +63,13 @@ The best way to create a minimal reproduction is gradually removing code and dep
 
 Project maintainers will merge changes that improve the product significantly.
 
-The [Pull Request Guide](docs/workflow/ci/pr-guide.md) and [Copyright](docs/project/copyright.md) docs define additional guidance.
+The [Pull Request Guide](/docs/workflow/ci/pr-guide.md) and [Copyright](/docs/project/copyright.md) docs define additional guidance.
 
 ### DOs and DON'Ts
 
 Please do:
 
-* **DO** follow our [coding style](docs/coding-guidelines/coding-style.md) (C# code-specific).
+* **DO** follow our [coding style](/docs/coding-guidelines/coding-style.md) (C# code-specific).
 * **DO** give priority to the current style of the project or file you're changing even if it diverges from the general guidelines.
 * **DO** include tests when adding new features. When fixing bugs, start with
   adding a test that highlights how the current behavior is broken.
@@ -86,11 +86,11 @@ Please do not:
   of time.
 * **DON'T** commit code that you didn't write. If you find code that you think is a good fit to add to the .NET runtime, file an issue and start a discussion before proceeding.
 * **DON'T** submit PRs that alter licensing related files or headers. If you believe there's a problem with them, file an issue and we'll be happy to discuss it.
-* **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](docs/project/api-review-process.md).
+* **DON'T** add API additions without filing an issue and discussing with us first. See [API Review Process](/docs/project/api-review-process.md).
 
 ### Breaking Changes
 
-Contributions must maintain [API signature](docs/coding-guidelines/breaking-changes.md#bucket-1-public-contract) and behavioral compatibility. Contributions that include [breaking changes](docs/coding-guidelines/breaking-changes.md) will be rejected. Please file an issue to discuss your idea or change if you believe that it may affect managed code compatibility.
+Contributions must maintain [API signature](/docs/coding-guidelines/breaking-changes.md#bucket-1-public-contract) and behavioral compatibility. Contributions that include [breaking changes](/docs/coding-guidelines/breaking-changes.md) will be rejected. Please file an issue to discuss your idea or change if you believe that it may affect managed code compatibility.
 
 ### Suggested Workflow
 
@@ -100,14 +100,14 @@ We use and recommend the following workflow:
     - You can skip this step for trivial changes.
     - Reuse an existing issue on the topic, if there is one.
     - Get agreement from the team and the community that your proposed change is a good one.
-    - If your change adds a new API, follow the [API Review Process](docs/project/api-review-process.md).
+    - If your change adds a new API, follow the [API Review Process](/docs/project/api-review-process.md).
     - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
 3. In your fork, create a branch off of main (`git checkout -b mybranch`).
     - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue.
     - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
 4. Make and commit your changes to your branch.
-    - [Workflow Instructions](docs/workflow/README.md) explains how to build and test.
+    - [Workflow Instructions](/docs/workflow/README.md) explains how to build and test.
     - Please follow our [Commit Messages](#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
@@ -115,9 +115,9 @@ We use and recommend the following workflow:
     - Make sure that the tests are all passing, including your new tests.
 7. Create a pull request (PR) against the dotnet/runtime repository's **main** branch.
     - State in the description what issue or improvement your change is addressing.
-    - Check if all the Continuous Integration checks are passing. Refer to [triaging failures in CI](docs/workflow/ci/failure-analysis.md) to check if any outstanding errors are known.
-8. Wait for feedback or approval of your changes from the [area owners](docs/area-owners.md).
-    - Details about the pull request [review procedure](docs/workflow/ci/pr-guide.md).
+    - Check if all the Continuous Integration checks are passing. Refer to [triaging failures in CI](/docs/workflow/ci/failure-analysis.md) to check if any outstanding errors are known.
+8. Wait for feedback or approval of your changes from the [area owners](/docs/area-owners.md).
+    - Details about the pull request [review procedure](/docs/workflow/ci/pr-guide.md).
 9. When area owners have signed off, and all checks are green, your PR will be merged.
     - The next official build will automatically include your change.
     - You can delete the branch you used for making the change.

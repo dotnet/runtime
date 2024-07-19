@@ -63,11 +63,11 @@ Therefore the managed portion of each test **must not contain**:
     * `<AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>`
 * When `CrossGenTest` is set to false, this test is not run with standard R2R compilation even if running an R2R test pass.
     * `<CrossGenTest>false</CrossGenTest>`
-* Add NuGet references by updating the following [test project](https://github.com/dotnet/runtime/blob/main/src/tests/Common/test_dependencies/test_dependencies.csproj).
+* Add NuGet references by updating the following [test project](/src/tests/Common/test_dependencies/test_dependencies.csproj).
 * Any System.Private.CoreLib types and methods used by tests must be available for building on all platforms.
 This means there must be enough implementation for the C# compiler to find the referenced types and methods. Unsupported target platforms
 should simply `throw new PlatformNotSupportedException()` in its dummy method implementations.
-* Update exclusion list at [tests/issues.targets](https://github.com/dotnet/runtime/blob/main/src/tests/issues.targets) if the test fails due to active bug.
+* Update exclusion list at [tests/issues.targets](/src/tests/issues.targets) if the test fails due to active bug.
 
 ### Creating a C# test project
 

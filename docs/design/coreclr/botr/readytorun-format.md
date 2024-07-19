@@ -68,7 +68,7 @@ The limitations of the current format are:
 # Structures
 
 The structures and accompanying constants are defined in the
-[readytorun.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h)
+[readytorun.h](/src/coreclr/inc/readytorun.h)
 header file.
 Basically the entire R2R executable image is addressed through the READYTORUN_HEADER singleton
 pointed to by the well-known export RTR_HEADER in the export section of the native executable

@@ -1,8 +1,8 @@
 # Debugging libraries
 
 For building libraries or testing them without debugging, read:
-- [Building libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/building/libraries/README.md),
-- [Testing libraries](https://github.com/dotnet/runtime/blob/main/docs/workflow/testing/libraries/testing.md).
+- [Building libraries](/docs/workflow/building/libraries/README.md),
+- [Testing libraries](/docs/workflow/testing/libraries/testing.md).
 
 ## Run the tests with debugger support
 

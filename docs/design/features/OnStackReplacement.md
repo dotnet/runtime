@@ -660,7 +660,7 @@ prolog and duplicates its saves, and then a subsequent "shrink wrapped" prolog
 
 Callee-saves are currently handled sightly differently on x64
 than it is on arm64:
-* on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame. The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses. THe OSR method then restores this entire set on exit, with a single stack pointer adjustment. See [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md) and the pull request [revise approach for x64 OSR epilogs](https://github.com/dotnet/runtime/pull/65609) for details.
+* on x64, all the integer callee saves are saved in space pre-reserved in the Tier0 frame. The Tier0 method saves whatever subset it uses, and the OSR method saves any additional callee saves it uses. THe OSR method then restores this entire set on exit, with a single stack pointer adjustment. See [OSR x64 Epilog Redesign](/docs/design/features/OSRX64EpilogRedesign.md) and the pull request [revise approach for x64 OSR epilogs](https://github.com/dotnet/runtime/pull/65609) for details.
 * for arm64, the virtual unwind done by the runtime restores the Tier0 callee saves, so the OSR method saves and restores the full set of callee saves it uses, and then does a second stack pointer adjustment to pop the Tier0 frame.
 Eventually we will revise arm64 to behave more like x64.
 * float callee-saves are handled separately for tier0 and OSR methods; there is opportunity here to also share save space as we do for x64 integer registers,
@@ -712,7 +712,7 @@ transition the first time each patchpoint is hit).
 
 The current implementation largely follows the prototype, with a number of relatively small changes described in [On Stack Replacement Next Steps](https://github.com/dotnet/runtime/issues/33658). Support has been extended to arm64.
 
-See [OSR Details and Debugging](https://github.com/dotnet/runtime/blob/main/docs/design/features/OsrDetailsAndDebugging.md) for information on how OSR might
+See [OSR Details and Debugging](/docs/design/features/OsrDetailsAndDebugging.md) for information on how OSR might
 impact debugging or ongoing development.
 
 ### 5.1 Example Codegen
@@ -907,7 +907,7 @@ runtime helper decides to kick off an OSR jit, it sets things up so that the jit
 can retrieve this data.
 
 Since the `PatchpointInfo` is produced and consumed by the jit its format is
-largely opaque to the runtime. It has the following general layout (see [patchpointinfo.h](https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/patchpointinfo.h)):
+largely opaque to the runtime. It has the following general layout (see [patchpointinfo.h](/src/coreclr/inc/patchpointinfo.h)):
 ```C++
 struct PatchpointInfo
 {
@@ -988,5 +988,5 @@ has now become invalid.
 3. <a id="3"></a> S. Fink and F. Qian, "Design, Implementation and
    Evaluation of Adaptive Recompilation with On-Stack Replacement," in _In
    International Symposium on Code Generation and Optimization (CGO)_, 2003.
-4. [OSR x64 Epilog Redesign](https://github.com/dotnet/runtime/blob/main/docs/design/features/OSRX64EpilogRedesign.md)
-5. [OSR Details and Debugging](https://github.com/dotnet/runtime/blob/main/docs/design/features/OsrDetailsAndDebugging.md)
+4. [OSR x64 Epilog Redesign](/docs/design/features/OSRX64EpilogRedesign.md)
+5. [OSR Details and Debugging](/docs/design/features/OsrDetailsAndDebugging.md)

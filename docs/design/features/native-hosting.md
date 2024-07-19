@@ -18,10 +18,10 @@ App (native or .NET Core both) which needs to use some of the other services pro
 
 ## Existing support
 * **C-style ABI in `coreclr`**
-`coreclr` exposes ABI to host the .NET runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/runtime/blob/main/src/coreclr/hosts/inc/coreclrhost.h) for the exposed functions.
+`coreclr` exposes ABI to host the .NET runtime and run managed code already using C-style APIs. See this [header file](/src/coreclr/hosts/inc/coreclrhost.h) for the exposed functions.
 This API requires the native host to locate the runtime and to fully specify all startup parameters for the runtime. There's no inherent interoperability between these APIs and the .NET SDK.
 * **COM-style ABI in `coreclr`**
-`coreclr` exposes COM-style ABI to host the .NET runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/runtime/blob/main/src/coreclr/pal/prebuilt/inc/mscoree.h) for more details.
+`coreclr` exposes COM-style ABI to host the .NET runtime and perform a wide range of operations on it. See this [header file](/src/coreclr/pal/prebuilt/inc/mscoree.h) for more details.
 Similarly to the C-style ABI the COM-style ABI also requires the native host to locate the runtime and to fully specify all startup parameters.
 There's no inherent interoperability between these APIs and the .NET SDK.
 The COM-style ABI is deprecated and should not be used going forward.
@@ -532,8 +532,8 @@ One such scenario is a COM host on multiple threads. The app is not running any 
 At the same time it gives the native app (`comhost` in this case) the ability to query and modify runtime properties in between the `hostfxr_initialize...` and `hostfxr_get_runtime_delegate` calls on the `first host context`.
 
 ### API usage
-The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/runtime/blob/main/src/native/corehost/hostfxr.h) header file.
-The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/runtime/blob/main/src/native/corehost/coreclr_delegates.h) header file.
+The `hostfxr` exports are defined in the [hostfxr.h](/src/native/corehost/hostfxr.h) header file.
+The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](/src/native/corehost/coreclr_delegates.h) header file.
 
 Currently we don't plan to ship these files, but it's possible to take them from the repo and use it.
 
@@ -638,4 +638,4 @@ The exact impact on the `hostfxr`/`hostpolicy` interface needs to be investigate
 Part if this investigation will also be compatibility behavior. Currently "any" version of `hostfxr` needs to be able to use "any" version of `hostpolicy`. But the proposed functionality will need both new `hostfxr` and new `hostpolicy` to work. It is likely the proposed APIs will fail if the app resolves to a framework with old `hostpolicy` without the necessary new APIs. Part of the investigation will be if it's feasible to use the new `hostpolicy` APIs to implement existing old `hostfxr` APIs.
 
 ## Incompatible with trimming
-Native hosting support on managed side is disabled by default on trimmed apps. Native hosting and trimming are incompatible since the trimmer cannot analyze methods that are called by native hosts. Native hosting support for trimming can be managed through the [feature switch](https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md) settings specific to each native host.
+Native hosting support on managed side is disabled by default on trimmed apps. Native hosting and trimming are incompatible since the trimmer cannot analyze methods that are called by native hosts. Native hosting support for trimming can be managed through the [feature switch](/docs/workflow/trimming/feature-switches.md) settings specific to each native host.

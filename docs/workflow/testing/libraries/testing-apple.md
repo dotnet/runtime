@@ -52,7 +52,7 @@ Other possible options are:
 - to sign with an adhoc key by setting `/p:DevTeamProvisioning=adhoc`
 - to skip signing all together by setting `/p:DevTeamProvisioning=-` .
 
-[AppleAppBuilder](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/AppleAppBuilder.cs) generates temp Xcode projects you can manually open and resolve provisioning issues there using native UI and deploy to your devices.
+[AppleAppBuilder](/src/tasks/AppleAppBuilder/AppleAppBuilder.cs) generates temp Xcode projects you can manually open and resolve provisioning issues there using native UI and deploy to your devices.
 
 ### Running individual test suites
 
@@ -129,7 +129,7 @@ To build for AOT-LLVM mode, add `/p:RunAOTCompilation=true /p:MonoEnableInterpre
 To build the test app bundle with the App Sandbox entitlement, add `/p:EnableAppSandbox=true` to a build command.
 
 ### Test App Design
-iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](https://github.com/dotnet/runtime/blob/main/src/tasks/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test
+iOS/tvOS `*.app` (or `*.ipa`) is basically a simple [ObjC app](/src/tasks/AppleAppBuilder/Templates/main-console.m) that inits the Mono Runtime. This Mono Runtime starts a simple xunit test
 runner called XHarness.TestRunner (see https://github.com/dotnet/xharness) which runs tests for all `*.Tests.dll` libs in the bundle. There is also XHarness.CLI tool to deploy `*.app` and `*.ipa` to a target (device or simulator) and listens for logs via network sockets.
 
 ### Existing Limitations

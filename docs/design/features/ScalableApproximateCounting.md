@@ -9,7 +9,7 @@ February 2023
 
 Dynamic PGO works by instrumenting early versions of methods (aka Tier0 codegen) to produce a profile data set that the JIT can use to optimize subsequent versions of those methods (aka Tier1 codegen).
 
-In this note we focus on just one aspect of this instrumentation: *counter based* instrumentation. With PGO enabled, the JIT adds code to each Tier0 method to count how often the parts of the methods execute so that later on in Tier1 it can focus optimization efforts on the parts of the method that seem to be most important for performance. More details on Dynamic PGO can be found [here](https://github.com/dotnet/runtime/blob/main/docs/design/features/DynamicPgo.md).
+In this note we focus on just one aspect of this instrumentation: *counter based* instrumentation. With PGO enabled, the JIT adds code to each Tier0 method to count how often the parts of the methods execute so that later on in Tier1 it can focus optimization efforts on the parts of the method that seem to be most important for performance. More details on Dynamic PGO can be found [here](/docs/design/features/DynamicPgo.md).
 
 From the outset, Dynamic PGO has used fairly simplistic methods of counting&mdash;for each distinct counter, the code the JIT adds will simply increment a shared memory location. Let's call that aspect of counting the counter *implementation* and this particular way of counting *racing*.
 
