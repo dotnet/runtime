@@ -705,9 +705,6 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     assert(clsHnd != NO_CLASS_HANDLE);
     assert(newArr->IsHelperCall());
     assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
-#ifdef FEATURE_READYTORUN
-    assert(newArr->GetHelperNum() == CORINFO_HELP_READYTORUN_NEWARR_1 || !comp->opts.IsReadyToRun());
-#endif
 
     const bool         shortLifetime = false;
     const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
