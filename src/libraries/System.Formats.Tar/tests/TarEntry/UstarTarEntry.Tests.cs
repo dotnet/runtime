@@ -167,11 +167,19 @@ namespace System.Formats.Tar.Tests
 
             entry.DataStream = new MemoryStream();
             entry.DataStream.WriteByte(5);
+            entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             using MemoryStream ms = new();
             using TarWriter writer = new(ms);
             writer.WriteEntry(entry);
             Assert.Equal(512, entry.DataOffset);
+
+            // Write it again, the offset should now point to the second written entry
+            // First entry 512 (header) + 1 (data) + 511 (padding)
+            // Second entry 512 (header)
+            // 512 + 512 + 512 = 1536
+            writer.WriteEntry(entry);
+            Assert.Equal(1536, entry.DataOffset);
         }
 
         [Fact]
@@ -182,11 +190,19 @@ namespace System.Formats.Tar.Tests
 
             entry.DataStream = new MemoryStream();
             entry.DataStream.WriteByte(5);
+            entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             await using MemoryStream ms = new();
             await using TarWriter writer = new(ms);
             await writer.WriteEntryAsync(entry);
             Assert.Equal(512, entry.DataOffset);
+
+            // Write it again, the offset should now point to the second written entry
+            // First entry 512 (header) + 1 (data) + 511 (padding)
+            // Second entry 512 (header)
+            // 512 + 512 + 512 = 1536
+            await writer.WriteEntryAsync(entry);
+            Assert.Equal(1536, entry.DataOffset);
         }
 
         [Fact]
