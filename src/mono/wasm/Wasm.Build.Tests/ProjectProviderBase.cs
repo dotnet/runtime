@@ -369,7 +369,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                     throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
 
                 // predefined ICU name can be identical with the icu files from runtime pack
-                expected.Add(assertOptions.PredefinedIcudt);
+                expected.Add(Path.GetFileName(assertOptions.PredefinedIcudt));
                 break;
             case GlobalizationMode.Sharded:
                 // icu shard chosen based on the locale
@@ -383,7 +383,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         IEnumerable<string> actual = Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "icudt*dat");
         if (assertOptions.GlobalizationMode == GlobalizationMode.Hybrid)
-            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules.json"));
+            actual = actual.Union(Directory.EnumerateFiles(assertOptions.BinFrameworkDir, "segmentation-rules*json"));
 
         if (IsFingerprintingEnabled)
         {
