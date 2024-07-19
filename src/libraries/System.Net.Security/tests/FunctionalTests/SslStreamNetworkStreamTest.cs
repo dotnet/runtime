@@ -697,13 +697,7 @@ namespace System.Net.Security.Tests
         [InlineData(true, true)]
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName, bool useCallback)
         {
-            string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
-            if (PlatformDetection.IsAndroid && !useEmptyName)
-            {
-                // Android does not allow single-word hostnames other than "localhost"
-                targetName = "localhost";
-            }
-
+            string targetName = useEmptyName ? string.Empty : $"{Guid.NewGuid().ToString("N")}.dot.net";
             int count = 0;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();

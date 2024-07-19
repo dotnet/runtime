@@ -60,10 +60,10 @@ namespace System.Net.Security.Tests
 
             Assert.NotNull(e);
 
-            if (OperatingSystem.IsAndroid() && (PlatformDetection.IsX64Process || PlatformDetection.IsX86Process))
+            if (OperatingSystem.IsAndroid())
             {
                 // On Android running on x64 or x86 the server side sometimes throws IOException instead of AuthenticationException
-                Assert.True(typeof(IOException) == e.GetType() || typeof(AuthenticationException) == e.GetType(), $"Unexpected exception type: {e.GetType()}");
+                Assert.True(e is IOException || e is AuthenticationException, $"Unexpected exception type: {e.GetType()}");
             }
             else
             {

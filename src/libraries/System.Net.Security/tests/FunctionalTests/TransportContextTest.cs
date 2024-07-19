@@ -45,13 +45,10 @@ namespace System.Net.Security.Tests
 
             Assert.True(cbt1 != null, "ChannelBindingKind.Endpoint token data should be returned.");
 
-            if (OperatingSystem.IsMacOS())
+            if (OperatingSystem.IsMacOS() || OperatingSystem.IsAndroid())
             {
-                Assert.True(cbt2 == null, "ChannelBindingKind.Unique token data is not expected on OSX platform.");
-            }
-            else if (OperatingSystem.IsAndroid())
-            {
-                Assert.True(cbt2 == null, "ChannelBindingKind.Unique token data is not expected on Android platform.");
+                var platform = OperatingSystem.IsMacOS() ? "macOS" : "Android";
+                Assert.True(cbt2 == null, $"ChannelBindingKind.Unique token data is not expected on {platform}.");
             }
             else
             {
