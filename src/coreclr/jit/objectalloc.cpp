@@ -424,6 +424,11 @@ bool ObjectAllocator::MorphAllocObjNodes()
                             {
                                 allocType = OAT_NEWARR;
                             }
+                            break;
+                        }
+                        default:
+                        {
+                            break;
                         }
                     }
                 }
