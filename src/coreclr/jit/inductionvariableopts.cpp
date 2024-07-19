@@ -1300,7 +1300,7 @@ class StrengthReductionContext
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
-    bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, int derivedLevel, ScevAddRec** nextIV);
+    bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
     bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
     BasicBlock* FindUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors);
@@ -1423,7 +1423,7 @@ bool StrengthReductionContext::TryStrengthReduce()
 
             // Verify that all cursors still represent the same IV
             ScevAddRec* nextIV = nullptr;
-            if (!CheckAdvancedCursors(nextCursors, derivedLevel + 1, &nextIV))
+            if (!CheckAdvancedCursors(nextCursors, &nextIV))
             {
                 break;
             }
@@ -1452,10 +1452,25 @@ bool StrengthReductionContext::TryStrengthReduce()
         DBEXEC(VERBOSE, currentIV->Dump(m_comp));
         JITDUMP("\n");
 
-        if (Scev::Equals(currentIV->Step, primaryIV->Step) && !StressProfitability())
+        if (!StressProfitability())
         {
-            JITDUMP("    Skipping: candidate has same step as primary IV\n");
-            continue;
+            if (Scev::Equals(currentIV->Step, primaryIV->Step))
+            {
+                JITDUMP("    Skipping: Candidate has same step as primary IV\n");
+                continue;
+            }
+
+            // Leave widening up to widening.
+            int64_t newIVStep;
+            int64_t primaryIVStep;
+            if (currentIV->Step->TypeIs(TYP_LONG) && primaryIV->Step->TypeIs(TYP_INT) &&
+                currentIV->Step->GetConstantValue(m_comp, &newIVStep) &&
+                primaryIV->Step->GetConstantValue(m_comp, &primaryIVStep) &&
+                (int32_t)newIVStep == (int32_t)primaryIVStep)
+            {
+                JITDUMP("    Skipping: Candidate has same widened step as primary IV\n");
+                continue;
+            }
         }
 
         if (TryReplaceUsesWithNewPrimaryIV(cursors, currentIV))
@@ -1734,7 +1749,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
         for (int i = 0; i < nextCursors->Height(); i++)
         {
             CursorInfo& nextCursor = nextCursors->BottomRef(i);
-            printf("    [%d] [%06u]%s: ", i, nextCursor.Tree == nullptr ? 0 : Compiler::dspTreeID(nextCursor.Tree));
+            printf("    [%d] [%06u]: ", i, nextCursor.Tree == nullptr ? 0 : Compiler::dspTreeID(nextCursor.Tree));
             if (nextCursor.IV == nullptr)
             {
                 printf("<null IV>");
@@ -1755,8 +1770,6 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //
 // Parameters:
 //   cursors      - List of cursors that were advanced.
-//   derivedLevel - The derived level of the advanced IVs. That is, the number
-//                  of times they are derived from the primary IV.
 //   nextIV       - [out] The next derived IV from the subset of advanced
 //                  cursors to now consider strength reducing.
 //
@@ -1768,9 +1781,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //   This function may remove cursors from m_cursors1 and m_cursors2 if it
 //   decides to no longer consider some cursors for strength reduction.
 //
-bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors,
-                                                    int                     derivedLevel,
-                                                    ScevAddRec**            nextIV)
+bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV)
 {
     *nextIV = nullptr;
 
@@ -1848,14 +1859,14 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 
     ScevLocal* local = (ScevLocal*)baseScev;
 
-    ValueNum vn = m_scevContext.MaterializeVN(baseScev);
-    if (vn == ValueNumStore::NoVN)
+    ValueNumPair vnp = m_scevContext.MaterializeVN(baseScev);
+    if (vnp.GetConservative() == ValueNumStore::NoVN)
     {
         return false;
     }
 
     BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
-    if (!m_comp->optAssertionVNIsNonNull(vn, preheader->bbAssertionOut))
+    if (!m_comp->optAssertionVNIsNonNull(vnp.GetConservative(), preheader->bbAssertionOut))
     {
         return false;
     }
@@ -1893,15 +1904,15 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
             continue;
         }
 
-        ValueNum boundBaseVN = m_scevContext.MaterializeVN(boundBase);
+        ValueNumPair boundBaseVN = m_scevContext.MaterializeVN(boundBase);
 
         VNFuncApp vnf;
-        if (!m_comp->vnStore->GetVNFunc(boundBaseVN, &vnf))
+        if (!m_comp->vnStore->GetVNFunc(boundBaseVN.GetConservative(), &vnf))
         {
             continue;
         }
 
-        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vn))
+        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vnp.GetConservative()))
         {
             continue;
         }
