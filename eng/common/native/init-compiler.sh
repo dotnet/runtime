@@ -82,9 +82,9 @@ if [ -z "$CLR_CC" ]; then
 
     # Set default versions
     if [ -z "$majorVersion" ]; then
+        minVersion=8
         maxVersion="$((maxVersion + 1))" # +1 for headspace
         i="$maxVersion"
-        minVersion=8
         while [ "$i" -ge $minVersion ]; do
             desired_version="$(check_version_exists "$i")"
             if [ "$desired_version" != "-1" ]; then majorVersion="$i"; break; fi
