@@ -749,30 +749,24 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0] | 0x20)
+                return (format[0] | 0x20) switch
                 {
-                    case 'o':
-                        return string.Create(10, this, (destination, value) =>
-                        {
-                            DateTimeFormat.TryFormatDateOnlyO(value.Year, value.Month, value.Day, destination, out int charsWritten);
-                            Debug.Assert(charsWritten == destination.Length);
-                        });
+                    'o' => string.Create(10, this, (destination, value) =>
+                           {
+                               DateTimeFormat.TryFormatDateOnlyO(value.Year, value.Month, value.Day, destination, out int charsWritten);
+                               Debug.Assert(charsWritten == destination.Length);
+                           }),
 
-                    case 'r':
-                        return string.Create(16, this, (destination, value) =>
-                        {
-                            DateTimeFormat.TryFormatDateOnlyR(value.DayOfWeek, value.Year, value.Month, value.Day, destination, out int charsWritten);
-                            Debug.Assert(charsWritten == destination.Length);
-                        });
+                    'r' => string.Create(16, this, (destination, value) =>
+                           {
+                               DateTimeFormat.TryFormatDateOnlyR(value.DayOfWeek, value.Year, value.Month, value.Day, destination, out int charsWritten);
+                               Debug.Assert(charsWritten == destination.Length);
+                           }),
 
-                    case 'm':
-                    case 'd':
-                    case 'y':
-                        return DateTimeFormat.Format(GetEquivalentDateTime(), format, provider);
+                    'm' or 'd' or 'y' => DateTimeFormat.Format(GetEquivalentDateTime(), format, provider),
 
-                    default:
-                        throw new FormatException(SR.Format_InvalidString);
-                }
+                    _ => throw new FormatException(SR.Format_InvalidString),
+                };
             }
 
             DateTimeFormat.IsValidCustomDateOnlyFormat(format.AsSpan(), throwOnError: true);

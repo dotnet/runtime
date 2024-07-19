@@ -251,20 +251,11 @@ namespace System.Reflection.Emit
             }
             if (t.IsEnum)
             {
-                switch (Type.GetTypeCode(Enum.GetUnderlyingType(t)))
-                {
-                    case TypeCode.SByte:
-                    case TypeCode.Byte:
-                    case TypeCode.Int16:
-                    case TypeCode.UInt16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt32:
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        return true;
-                    default:
-                        return false;
-                }
+                return Type.GetTypeCode(Enum.GetUnderlyingType(t)) is
+                    TypeCode.SByte or TypeCode.Byte or
+                    TypeCode.Int16 or TypeCode.UInt16 or
+                    TypeCode.Int32 or TypeCode.UInt32 or
+                    TypeCode.Int64 or TypeCode.UInt64;
             }
             if (t.IsArray)
             {

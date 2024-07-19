@@ -112,26 +112,19 @@ namespace System.IO
             return errorCode;
         }
 
-        internal static bool IsPathUnreachableError(int errorCode)
-        {
-            switch (errorCode)
-            {
-                case Interop.Errors.ERROR_FILE_NOT_FOUND:
-                case Interop.Errors.ERROR_PATH_NOT_FOUND:
-                case Interop.Errors.ERROR_NOT_READY:
-                case Interop.Errors.ERROR_INVALID_NAME:
-                case Interop.Errors.ERROR_BAD_PATHNAME:
-                case Interop.Errors.ERROR_BAD_NETPATH:
-                case Interop.Errors.ERROR_BAD_NET_NAME:
-                case Interop.Errors.ERROR_INVALID_PARAMETER:
-                case Interop.Errors.ERROR_NETWORK_UNREACHABLE:
-                case Interop.Errors.ERROR_NETWORK_ACCESS_DENIED:
-                case Interop.Errors.ERROR_INVALID_HANDLE:           // eg from \\.\CON
-                case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:     // Path is too long
-                    return true;
-                default:
-                    return false;
-            }
-        }
+        internal static bool IsPathUnreachableError(int errorCode) =>
+            errorCode is
+                Interop.Errors.ERROR_FILE_NOT_FOUND or
+                Interop.Errors.ERROR_PATH_NOT_FOUND or
+                Interop.Errors.ERROR_NOT_READY or
+                Interop.Errors.ERROR_INVALID_NAME or
+                Interop.Errors.ERROR_BAD_PATHNAME or
+                Interop.Errors.ERROR_BAD_NETPATH or
+                Interop.Errors.ERROR_BAD_NET_NAME or
+                Interop.Errors.ERROR_INVALID_PARAMETER or
+                Interop.Errors.ERROR_NETWORK_UNREACHABLE or
+                Interop.Errors.ERROR_NETWORK_ACCESS_DENIED or
+                Interop.Errors.ERROR_INVALID_HANDLE or
+                Interop.Errors.ERROR_FILENAME_EXCED_RANGE;
     }
 }
