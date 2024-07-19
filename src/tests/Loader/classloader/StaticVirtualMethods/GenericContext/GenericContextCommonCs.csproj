@@ -1,9 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <!-- Needed for GCStressIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GenericContextCommonCs.cs" />
