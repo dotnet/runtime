@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 using System;
+using System.Buffers;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -33,6 +34,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates basic functionality works
                 test.RunBasicScenario_Load();
+
+                // Validates basic functionality of first-faulting behavior
+                test.RunBasicScenario_LoadFirstFaulting();
 
                 // Validates fully masked out load works.
                 test.RunBasicScenario_FalseMask();
@@ -90,11 +94,13 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             private byte[] inArray1;
             private byte[] inArray2;
+            private byte[] inArray2Ffr;
             private byte[] baseArray;
             private byte[] outArray;
 
             private GCHandle inHandle1;
             private GCHandle inHandle2;
+            private GCHandle inHandle2Ffr;
             private GCHandle baseHandle;
             private GCHandle outHandle;
 
@@ -114,11 +120,13 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 this.inArray1 = new byte[alignment * 2];
                 this.inArray2 = new byte[alignment * 2];
+                this.inArray2Ffr = new byte[alignment * 2];
                 this.baseArray = new byte[alignment + sizeOfBaseArray];
                 this.outArray = new byte[alignment * 2];
 
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
                 this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+                this.inHandle2Ffr = GCHandle.Alloc(this.inArray2Ffr, GCHandleType.Pinned);
                 this.baseHandle = GCHandle.Alloc(this.baseArray, GCHandleType.Pinned);
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
@@ -127,13 +135,34 @@ namespace JIT.HardwareIntrinsics.Arm
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(baseArrayPtr), ref Unsafe.As<{RetBaseType}, byte>(ref baseArray[0]), (uint)sizeOfBaseArray);
 
+                var inArray2Ffr = new {Op2BaseType}[inArray2.Length];
+                inArray2.CopyTo(inArray2Ffr, 0);
+
                 // Add the base pointer to the offsets within inArray2 to create complete pointers.
                 for (var i = 0; i < inArray2.Length; i++) { inArray2[i] += ({Op2BaseType})baseArrayPtr; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+
+                // Add the base pointer to the offsets within inArray2Ffr to create complete pointers.
+                var random = new Random();
+                for (var i = 0; i < inArray2Ffr.Length; i++) 
+                {
+                    // In order to test the first-faulting behavior, we need to put in null pointers after the first active element (element 0).
+                    // We will always cause a fault on the last element for testing.
+                    if (((i != 0) && (random.Next() % 2) == 0) || (i == (inArray2Ffr.Length - 1)))
+                    {
+                        inArray2Ffr[i] = default; // nullptr
+                    }
+                    else
+                    {
+                        inArray2Ffr[i] += ({Op2BaseType})baseArrayPtr;
+                    }
+                }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2FfrPtr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2Ffr[0]), (uint)sizeOfinArray2);
             }
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
             public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2FfrPtr => Align((byte*)(inHandle2Ffr.AddrOfPinnedObject().ToPointer()), alignment);
             public void* baseArrayPtr => Align((byte*)(baseHandle.AddrOfPinnedObject().ToPointer()), alignment);
             public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
@@ -141,6 +170,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 inHandle1.Free();
                 inHandle2.Free();
+                inHandle2Ffr.Free();
                 baseHandle.Free();
                 outHandle.Free();
             }
@@ -265,6 +295,28 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.outArrayPtr);
         }
 
+        public void RunBasicScenario_LoadFirstFaulting()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadFirstFaulting));
+
+            {Op1VectorType}<{Op1BaseType}> loadMask1 = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
+            {Op2VectorType}<{Op2BaseType}> loadMask2 = Sve.CreateTrueMask{Op2BaseType}(SveMaskPattern.All);
+
+            var op1 = {LoadIsa}.Load{Op1VectorType}(loadMask1, ({Op1BaseType}*)(_dataTable.inArray1Ptr));
+            var op2 = {LoadIsa}.Load{Op2VectorType}(loadMask2, ({Op2BaseType}*)(_dataTable.inArray2FfrPtr));
+
+            // Force op1 (mask) to have the first and last element to be active.
+            op1 = op1.WithElement<{Op1BaseType}>(0, 1).WithElement<{Op1BaseType}>(Vector<{Op1BaseType}>.Count - 1, 1);
+
+            Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
+            var result = {Isa}.{Method}(op1, op2);
+            var faultResult = Sve.GetFfr{GetFfrType}();
+
+            ref var op1Ref = ref op1;
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateFirstFaultingResult(Unsafe.AsPointer(ref op1Ref), _dataTable.inArray2FfrPtr, _dataTable.outArrayPtr, faultResult);
+        }
 
         public void RunBasicScenario_FalseMask()
         {
@@ -591,6 +643,36 @@ namespace JIT.HardwareIntrinsics.Arm
                 TestLibrary.TestFramework.LogInformation($" secondOp: ({string.Join(", ", secondOp)})");
                 TestLibrary.TestFramework.LogInformation($"  trueOp: ({string.Join(", ", trueOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateFirstFaultingResult(void* op1, void* op2, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+            {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+        
+            ValidateFirstFaultingResult(inArray1, inArray2, outArray, faultResult, method);
+        }
+
+        private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        {
+            var succeeded = Helpers.CheckGatherVectorBasesFirstFaultingBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}, {GetFfrType}>(firstOp, secondOp, result, faultResult);
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"       firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"      secondOp: ({string.Join(", ", secondOp)})");
+                TestLibrary.TestFramework.LogInformation($"        result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"   faultResult: ({faultResult})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

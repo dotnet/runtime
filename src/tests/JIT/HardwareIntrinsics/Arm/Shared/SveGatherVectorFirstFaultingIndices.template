@@ -286,17 +286,43 @@ namespace JIT.HardwareIntrinsics.Arm
             ref var op2Ref = ref (_dataTable.inBounded.Span.GetPinnableReference());
             var op3 = {LoadIsa}.Load{Op3VectorType}(loadMask3, ({Op3BaseType}*)(_dataTable.inArray3Ptr));
 
+            // We know this is outside the bounds because 'inBounded' will never be the full size of a Vector<T>.
+            var outsideBoundsIndex = ({Op3BaseType})(Vector<{Op2BaseType}>.Count - 1);
+
             // When testing first-faulting behavior, we need to make sure we can get the first element.
             // So set the first active element of the index vector to 0.
+            var firstActiveElement = -1;
             for (var i = 0; i < Vector<{Op3BaseType}>.Count; i++)
             {
                 // op1 is the mask for GatherVector.
                 if (op1[i] != 0)
                 {
-                    op3 = op3.WithElement<{Op3BaseType}>(i, 0);
-                    break;
+                    if (firstActiveElement == -1)
+                    {
+                        op3 = op3.WithElement<{Op3BaseType}>(i, 0);
+                        firstActiveElement = i;
+                    }
+                    else if (op3[i] < 0 || op3[i] > outsideBoundsIndex)
+                    {
+                        op3 = op3.WithElement<{Op3BaseType}>(i, outsideBoundsIndex);
+                    }
                 }
             }
+
+            // Force at least one element to cause a fault (required for testing). So set the last element to an index outside the bounds.
+            var lastIndex = Vector<{Op3BaseType}>.Count - 1;
+
+            // Ensure we at least have one element that we can read.
+            if ((firstActiveElement == -1) || (firstActiveElement == lastIndex))
+            {
+                op1 = op1.WithElement<{Op1BaseType}>(0, 1);
+                op3 = op3.WithElement<{Op3BaseType}>(0, 0);
+            }
+
+            op1 = op1.WithElement<{Op1BaseType}>(lastIndex, 1);
+
+            // Force an index outside the bounds.
+            op3 = op3.WithElement<{Op3BaseType}>(lastIndex, outsideBoundsIndex);
 
             Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
             var result = {Isa}.{Method}(
@@ -306,10 +332,11 @@ namespace JIT.HardwareIntrinsics.Arm
             );
             var faultResult = Sve.GetFfr{GetFfrType}();
 
+            ref var op1Ref = ref op1;
             ref var op3Ref = ref op3;
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(_dataTable.inArray1Ptr, ref op2Ref, _dataTable.inBounded.Span.Length, Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
+            ValidateFirstFaultingResult(Unsafe.AsPointer(ref op1Ref), ref op2Ref, _dataTable.inBounded.Span.Length, Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunBasicScenario_FalseMask()
@@ -599,22 +626,22 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
         
-        private void ValidateFirstFaultingResult(void* op1, ref byte op2, int op2Size, void* op3, void* result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult(void* op1, ref byte op2, int op2Size, void* op3, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
-            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Vector<{Op1BaseType}>.Count];
             {Op2BaseType}[] inArray2 = new {Op2BaseType}[op2Size / Unsafe.SizeOf<{Op2BaseType}>()];
-            {Op3BaseType}[] inArray3 = new {Op3BaseType}[Op3ElementCount];
+            {Op3BaseType}[] inArray3 = new {Op3BaseType}[Vector<{Op3BaseType}>.Count];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)(inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>()));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), ref op2, (uint)(inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>()));
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(op3), (uint)Unsafe.SizeOf<{Op3VectorType}<{Op3BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op3BaseType}, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(op3), (uint)(inArray3.Length * Unsafe.SizeOf<{Op3BaseType}>()));
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
         
             ValidateFirstFaultingResult(inArray1, inArray2, inArray3, outArray, faultResult, method);
         }
 
-        private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
             var succeeded = Helpers.CheckGatherVectorFirstFaultingBehavior(firstOp, secondOp, thirdOp, result, faultResult);
 
