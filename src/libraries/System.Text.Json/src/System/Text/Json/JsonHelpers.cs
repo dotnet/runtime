@@ -317,7 +317,7 @@ namespace System.Text.Json
         /// Gets a Regex instance for recognizing integer representations of enums.
         /// </summary>
         public static readonly Regex IntegerRegex = CreateIntegerRegex();
-        private const string IntegerRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+        private const string IntegerRegexPattern = @"^\s*(?:\+|\-)?[0-9]+\s*$";
         private const int IntegerRegexTimeoutMs = 200;
 
 #if NET
@@ -563,5 +563,52 @@ namespace System.Text.Json
                 }
             }
         }
+
+#if !NET
+        // Polyfill for MemoryExtensions.Trim
+        public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> source)
+        {
+            int start = 0;
+            int end = source.Length - 1;
+
+            while (start <= end && char.IsWhiteSpace(source[start]))
+            {
+                start++;
+            }
+
+            while (end >= start && char.IsWhiteSpace(source[end]))
+            {
+                end--;
+            }
+
+            return source.Slice(start, end - start + 1);
+        }
+
+        public static ReadOnlySpan<char> TrimStart(this ReadOnlySpan<char> source)
+        {
+            int start = 0;
+            int end = source.Length - 1;
+
+            while (start <= end && char.IsWhiteSpace(source[start]))
+            {
+                start++;
+            }
+
+            return source.Slice(start, end - start + 1);
+        }
+
+        public static ReadOnlySpan<char> TrimEnd(this ReadOnlySpan<char> source)
+        {
+            int start = 0;
+            int end = source.Length - 1;
+
+            while (end >= start && char.IsWhiteSpace(source[end]))
+            {
+                end--;
+            }
+
+            return source.Slice(start, end - start + 1);
+        }
+#endif
     }
 }

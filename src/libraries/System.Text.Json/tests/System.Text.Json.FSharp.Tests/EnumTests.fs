@@ -35,13 +35,13 @@ optionsDisableNumeric.Converters.Add(new JsonStringEnumConverter(null, false))
 [<Fact>]
 let ``Deserialize With Exception If Enum Contains Special Char`` () =
     let ex = Assert.Throws<InvalidOperationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumJsonStr, options) |> ignore)
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
+    Assert.Contains("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 
 [<Fact>]
 let ``Serialize With Exception If Enum Contains Special Char`` () =
     let ex = Assert.Throws<InvalidOperationException>(fun () ->  JsonSerializer.Serialize(badEnum, options) |> ignore)
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
+    Assert.Contains("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 [<Fact>]
 let ``Successful Deserialize Normal Enum`` () =
@@ -51,12 +51,12 @@ let ``Successful Deserialize Normal Enum`` () =
 [<Fact>]
 let ``Fail Deserialize Good Value Of Bad Enum Type`` () =
     let ex = Assert.Throws<InvalidOperationException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnumWithGoodValueJsonStr, options) |> ignore)
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
+    Assert.Contains("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 [<Fact>]
 let ``Fail Serialize Good Value Of Bad Enum Type`` () =
     let ex = Assert.Throws<InvalidOperationException>(fun () ->  JsonSerializer.Serialize(badEnumWithGoodValue, options) |> ignore)
-    Assert.Equal("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
+    Assert.Contains("Enum type 'BadEnum' uses unsupported identifier 'There's a comma, in my name'.", ex.Message)
 
 type NumericLabelEnum =
   | ``1`` = 1
@@ -64,18 +64,23 @@ type NumericLabelEnum =
   | ``3`` = 4
 
 [<Theory>]
-[<InlineData("\"1\"")>]
-[<InlineData("\"2\"")>]
-[<InlineData("\"3\"")>]
 [<InlineData("\"4\"")>]
 [<InlineData("\"5\"")>]
 [<InlineData("\"+1\"")>]
 [<InlineData("\"-1\"")>]
-[<InlineData("\"  1  \"")>]
 [<InlineData("\"  +1  \"")>]
 [<InlineData("\"  -1  \"")>]
 let ``Fail Deserialize Numeric label Of Enum When Disallow Integer Values`` (numericValueJsonStr: string) =
     Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<NumericLabelEnum>(numericValueJsonStr, optionsDisableNumeric) |> ignore)
+
+[<Theory>]
+[<InlineData("\"1\"", NumericLabelEnum.``1``)>]
+[<InlineData("\"2\"", NumericLabelEnum.``2``)>]
+[<InlineData("\"3\"", NumericLabelEnum.``3``)>]
+[<InlineData("\"  1  \"", NumericLabelEnum.``1``)>]
+let ``Successful Deserialize Numeric label Of Enum When Disallow Integer Values If Matching Integer Label`` (numericValueJsonStr: string, expectedValue: NumericLabelEnum) =
+    let actual = JsonSerializer.Deserialize<NumericLabelEnum>(numericValueJsonStr, optionsDisableNumeric)
+    Assert.Equal(expectedValue, actual)
     
 [<Theory>]
 [<InlineData("\"1\"", NumericLabelEnum.``1``)>]
@@ -84,11 +89,15 @@ let ``Successful Deserialize Numeric label Of Enum When Allowing Integer Values`
     let actual = JsonSerializer.Deserialize<NumericLabelEnum>(numericValueJsonStr, options)
     Assert.Equal(expectedEnumValue, actual)
     
-[<Fact>]
-let ``Successful Deserialize Numeric label Of Enum But as Underlying value When Allowing Integer Values`` () =
-    let actual = JsonSerializer.Deserialize<NumericLabelEnum>("\"3\"", options)
-    Assert.NotEqual(NumericLabelEnum.``3``, actual)
-    Assert.Equal(LanguagePrimitives.EnumOfValue 3, actual)
+[<Theory>]
+[<InlineData(-1)>]
+[<InlineData(0)>]
+[<InlineData(4)>]
+[<InlineData(Int32.MaxValue)>]
+[<InlineData(Int32.MinValue)>]
+let ``Successful Deserialize Numeric label Of Enum But as Underlying value When Allowing Integer Values`` (numericValue: int) =
+    let actual = JsonSerializer.Deserialize<NumericLabelEnum>($"\"{numericValue}\"", options)
+    Assert.Equal(LanguagePrimitives.EnumOfValue numericValue, actual)
 
 type CharEnum =
   | A = 'A'

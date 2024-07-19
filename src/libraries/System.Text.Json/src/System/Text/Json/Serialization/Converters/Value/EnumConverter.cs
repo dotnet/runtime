@@ -17,6 +17,9 @@ namespace System.Text.Json.Serialization.Converters
         where T : struct, Enum
     {
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
+
+        // Odd type codes are conveniently signed types (for enum backing types).
+        private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
         private static readonly bool s_isFlagsEnum = typeof(T).IsDefined(typeof(FlagsAttribute), inherit: false);
 
         private readonly EnumConverterOptions _converterOptions;
@@ -24,26 +27,28 @@ namespace System.Text.Json.Serialization.Converters
         private readonly JsonNamingPolicy? _namingPolicy;
 
         /// <summary>
-        /// Whether either of the enum fields have been overridden with <see cref="JsonStringEnumMemberNameAttribute"/>.
-        /// </summary>
-        private readonly bool _containsNameAttributes;
-
-        /// <summary>
         /// Stores metadata for the individual fields declared on the enum.
         /// </summary>
         private readonly EnumFieldInfo[] _enumFieldInfo;
 
         /// <summary>
-        /// Holds a mapping from enum value to text that might be formatted with <see cref="_namingPolicy" />.
+        /// Defines a case-insensitive index of enum field names to their metadata.
+        /// In case of casing conflicts, extra fields are appended to a list in the value.
+        /// This is the main dictionary that is queried by the enum parser implementation.
+        /// </summary>
+        private readonly Dictionary<string, EnumFieldInfo> _enumFieldInfoIndex;
+
+        /// <summary>
+        /// Holds a cache from enum value to formatted UTF-8 text including flag combinations.
         /// <see cref="ulong"/> is as the key used rather than <typeparamref name="T"/> given measurements that
         /// show private memory savings when a single type is used https://github.com/dotnet/runtime/pull/36726#discussion_r428868336.
         /// </summary>
         private readonly ConcurrentDictionary<ulong, JsonEncodedText> _nameCacheForWriting;
 
         /// <summary>
-        /// Holds a mapping from text that might be formatted with <see cref="_namingPolicy" /> to enum value.
+        /// Holds a mapping from input text to enum values including flag combinations and alternative casings.
         /// </summary>
-        private readonly ConcurrentDictionary<string, T>? _nameCacheForReading;
+        private readonly ConcurrentDictionary<string, ulong> _nameCacheForReading;
 
         // This is used to prevent flooding the cache due to exponential bitwise combinations of flags.
         // Since multiple threads can add to the cache, a few more values might be added.
@@ -55,92 +60,67 @@ namespace System.Text.Json.Serialization.Converters
 
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
-            _enumFieldInfo = ResolveEnumFields(namingPolicy, out _containsNameAttributes);
+            _enumFieldInfo = ResolveEnumFields(namingPolicy);
 
             _nameCacheForWriting = new();
-            if (namingPolicy != null || _containsNameAttributes)
-            {
-                // We can't rely on the built-in enum parser since custom names are used.
-                _nameCacheForReading = new(StringComparer.Ordinal);
-            }
+            _nameCacheForReading = new(StringComparer.Ordinal);
+            _enumFieldInfoIndex = new(StringComparer.OrdinalIgnoreCase);
 
             JavaScriptEncoder? encoder = options.Encoder;
             foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
             {
                 JsonEncodedText encodedName = JsonEncodedText.Encode(fieldInfo.JsonName, encoder);
                 _nameCacheForWriting.TryAdd(fieldInfo.Key, encodedName);
-                _nameCacheForReading?.TryAdd(fieldInfo.JsonName, fieldInfo.Value);
+                _nameCacheForReading.TryAdd(fieldInfo.JsonName, fieldInfo.Key);
+                AddToEnumFieldIndex(fieldInfo);
+            }
+
+            if (namingPolicy != null)
+            {
+                // Additionally populate the field index with the default names of fields that used a naming policy.
+                // This is done to preserve backward compat: default names should still be recognized by the parser.
+                foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+                {
+                    if (fieldInfo.Kind is EnumFieldNameKind.NamingPolicy)
+                    {
+                        AddToEnumFieldIndex(new EnumFieldInfo(fieldInfo.Key, EnumFieldNameKind.Default, fieldInfo.OriginalName, fieldInfo.OriginalName));
+                    }
+                }
+            }
+
+            void AddToEnumFieldIndex(EnumFieldInfo fieldInfo)
+            {
+                if (!_enumFieldInfoIndex.TryAdd(fieldInfo.JsonName, fieldInfo))
+                {
+                    // We have a casing conflict, append field to the existing entry.
+                    EnumFieldInfo existingFieldInfo = _enumFieldInfoIndex[fieldInfo.JsonName];
+                    existingFieldInfo.AppendConflictingField(fieldInfo);
+                }
             }
         }
 
         public override T Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            JsonTokenType token = reader.TokenType;
-
-            if (token is JsonTokenType.String &&
-                (_converterOptions & EnumConverterOptions.AllowStrings) != 0 &&
-                TryParseEnumFromString(ref reader, out T value))
+            switch (reader.TokenType)
             {
-                return value;
-            }
+                case JsonTokenType.String when (_converterOptions & EnumConverterOptions.AllowStrings) != 0:
+                    if (TryParseEnumFromString(ref reader, out T result))
+                    {
+                        return result;
+                    }
+                    break;
 
-            if (token != JsonTokenType.Number || (_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
-            switch (s_enumTypeCode)
-            {
-                // Switch cases ordered by expected frequency
-
-                case TypeCode.Int32:
-                    if (reader.TryGetInt32(out int int32))
+                case JsonTokenType.Number when (_converterOptions & EnumConverterOptions.AllowNumbers) != 0:
+                    switch (s_enumTypeCode)
                     {
-                        // Use Unsafe.As instead of raw pointers for .NET Standard support.
-                        // https://github.com/dotnet/runtime/issues/84895
-                        return Unsafe.As<int, T>(ref int32);
-                    }
-                    break;
-                case TypeCode.UInt32:
-                    if (reader.TryGetUInt32(out uint uint32))
-                    {
-                        return Unsafe.As<uint, T>(ref uint32);
-                    }
-                    break;
-                case TypeCode.UInt64:
-                    if (reader.TryGetUInt64(out ulong uint64))
-                    {
-                        return Unsafe.As<ulong, T>(ref uint64);
-                    }
-                    break;
-                case TypeCode.Int64:
-                    if (reader.TryGetInt64(out long int64))
-                    {
-                        return Unsafe.As<long, T>(ref int64);
-                    }
-                    break;
-                case TypeCode.SByte:
-                    if (reader.TryGetSByte(out sbyte byte8))
-                    {
-                        return Unsafe.As<sbyte, T>(ref byte8);
-                    }
-                    break;
-                case TypeCode.Byte:
-                    if (reader.TryGetByte(out byte ubyte8))
-                    {
-                        return Unsafe.As<byte, T>(ref ubyte8);
-                    }
-                    break;
-                case TypeCode.Int16:
-                    if (reader.TryGetInt16(out short int16))
-                    {
-                        return Unsafe.As<short, T>(ref int16);
-                    }
-                    break;
-                case TypeCode.UInt16:
-                    if (reader.TryGetUInt16(out ushort uint16))
-                    {
-                        return Unsafe.As<ushort, T>(ref uint16);
+                        case TypeCode.Int32 when reader.TryGetInt32(out int int32): return Unsafe.As<int, T>(ref int32);
+                        case TypeCode.UInt32 when reader.TryGetUInt32(out uint uint32): return Unsafe.As<uint, T>(ref uint32);
+                        case TypeCode.Int64 when reader.TryGetInt64(out long int64): return Unsafe.As<long, T>(ref int64);
+                        case TypeCode.UInt64 when reader.TryGetUInt64(out ulong uint64): return Unsafe.As<ulong, T>(ref uint64);
+                        case TypeCode.Byte when reader.TryGetByte(out byte ubyte8): return Unsafe.As<byte, T>(ref ubyte8);
+                        case TypeCode.SByte when reader.TryGetSByte(out sbyte byte8): return Unsafe.As<sbyte, T>(ref byte8);
+                        case TypeCode.Int16 when reader.TryGetInt16(out short int16): return Unsafe.As<short, T>(ref int16);
+                        case TypeCode.UInt16 when reader.TryGetUInt16(out ushort uint16): return Unsafe.As<ushort, T>(ref uint16);
                     }
                     break;
             }
@@ -151,8 +131,8 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            // If strings are allowed, attempt to write it out as a string value
-            if ((_converterOptions & EnumConverterOptions.AllowStrings) != 0)
+            EnumConverterOptions converterOptions = _converterOptions;
+            if ((converterOptions & EnumConverterOptions.AllowStrings) != 0)
             {
                 ulong key = ConvertToUInt64(value);
 
@@ -183,42 +163,18 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
-            if ((_converterOptions & EnumConverterOptions.AllowNumbers) == 0)
+            if ((converterOptions & EnumConverterOptions.AllowNumbers) == 0)
             {
                 ThrowHelper.ThrowJsonException();
             }
 
-            switch (s_enumTypeCode)
+            if (s_isSignedEnum)
             {
-                case TypeCode.Int32:
-                    // Use Unsafe.As instead of raw pointers for .NET Standard support.
-                    // https://github.com/dotnet/runtime/issues/84895
-                    writer.WriteNumberValue(Unsafe.As<T, int>(ref value));
-                    break;
-                case TypeCode.UInt32:
-                    writer.WriteNumberValue(Unsafe.As<T, uint>(ref value));
-                    break;
-                case TypeCode.UInt64:
-                    writer.WriteNumberValue(Unsafe.As<T, ulong>(ref value));
-                    break;
-                case TypeCode.Int64:
-                    writer.WriteNumberValue(Unsafe.As<T, long>(ref value));
-                    break;
-                case TypeCode.Int16:
-                    writer.WriteNumberValue(Unsafe.As<T, short>(ref value));
-                    break;
-                case TypeCode.UInt16:
-                    writer.WriteNumberValue(Unsafe.As<T, ushort>(ref value));
-                    break;
-                case TypeCode.Byte:
-                    writer.WriteNumberValue(Unsafe.As<T, byte>(ref value));
-                    break;
-                case TypeCode.SByte:
-                    writer.WriteNumberValue(Unsafe.As<T, sbyte>(ref value));
-                    break;
-                default:
-                    Debug.Fail("Should not be reached");
-                    break;
+                writer.WriteNumberValue(ConvertToInt64(value));
+            }
+            else
+            {
+                writer.WriteNumberValue(ConvertToUInt64(value));
             }
         }
 
@@ -227,12 +183,12 @@ namespace System.Text.Json.Serialization.Converters
             // NB JsonSerializerOptions.DictionaryKeyPolicy is ignored on deserialization.
             // This is true for all converters that implement dictionary key serialization.
 
-            if (!TryParseEnumFromString(ref reader, out T value))
+            if (!TryParseEnumFromString(ref reader, out T result))
             {
                 ThrowHelper.ThrowJsonException();
             }
 
-            return value;
+            return result;
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
@@ -248,6 +204,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (IsDefinedValueOrCombinationOfValues(key))
             {
+                Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy != null, "Should only be entered by flags enums or dictionary key policy.");
                 string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy);
                 if (dictionaryKeyPolicy is null && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                 {
@@ -266,155 +223,93 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-            switch (s_enumTypeCode)
+            if (s_isSignedEnum)
             {
-                // Use Unsafe.As instead of raw pointers for .NET Standard support.
-                // https://github.com/dotnet/runtime/issues/84895
-
-                case TypeCode.Int32:
-                    writer.WritePropertyName(Unsafe.As<T, int>(ref value));
-                    break;
-                case TypeCode.UInt32:
-                    writer.WritePropertyName(Unsafe.As<T, uint>(ref value));
-                    break;
-                case TypeCode.UInt64:
-                    writer.WritePropertyName(Unsafe.As<T, ulong>(ref value));
-                    break;
-                case TypeCode.Int64:
-                    writer.WritePropertyName(Unsafe.As<T, long>(ref value));
-                    break;
-                case TypeCode.Int16:
-                    writer.WritePropertyName(Unsafe.As<T, short>(ref value));
-                    break;
-                case TypeCode.UInt16:
-                    writer.WritePropertyName(Unsafe.As<T, ushort>(ref value));
-                    break;
-                case TypeCode.Byte:
-                    writer.WritePropertyName(Unsafe.As<T, byte>(ref value));
-                    break;
-                case TypeCode.SByte:
-                    writer.WritePropertyName(Unsafe.As<T, sbyte>(ref value));
-                    break;
-                default:
-                    Debug.Fail("Should not be reached");
-                    break;
+                writer.WritePropertyName(ConvertToInt64(value));
+            }
+            else
+            {
+                writer.WritePropertyName(key);
             }
         }
 
-        private bool TryParseEnumFromString(ref Utf8JsonReader reader, out T value)
+        private bool TryParseEnumFromString(ref Utf8JsonReader reader, out T result)
         {
-            bool success;
-#if NET
-            char[]? rentedBuffer = null;
+            Debug.Assert(reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName);
+
             int bufferLength = reader.ValueLength;
+            char[]? rentedBuffer = null;
+            bool success;
 
             Span<char> charBuffer = bufferLength <= JsonConstants.StackallocCharThreshold
                 ? stackalloc char[JsonConstants.StackallocCharThreshold]
                 : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
 
             int charsWritten = reader.CopyString(charBuffer);
-            Span<char> source = charBuffer.Slice(0, charsWritten);
+            charBuffer = charBuffer.Slice(0, charsWritten);
+#if NET9_0_OR_GREATER
+            ReadOnlySpan<char> source = charBuffer.Trim();
+            ConcurrentDictionary<string, ulong>.AlternateLookup<ReadOnlySpan<char>> lookup = _nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
 #else
-            string source = reader.GetString();
+            string source = ((ReadOnlySpan<char>)charBuffer).Trim().ToString();
+            ConcurrentDictionary<string, ulong> lookup = _nameCacheForReading;
 #endif
-            // Skip the built-in enum parser and go directly to the read cache if either:
-            //
-            // 1. one of the enum fields have had their names overridden OR
-            // 2. the source string represents a number when numbers are not permitted.
-            //
-            // For backward compatibility reasons the built-in parser is not skipped if a naming policy is specified.
-            bool skipEnumParser = _containsNameAttributes ||
-                ((_converterOptions & EnumConverterOptions.AllowNumbers) is 0 && JsonHelpers.IntegerRegex.IsMatch(source));
-
-            if (!skipEnumParser && Enum.TryParse(source, ignoreCase: true, out value))
+            if (lookup.TryGetValue(source, out ulong key))
             {
+                result = ConvertFromUInt64(key);
                 success = true;
                 goto End;
             }
 
-            Debug.Assert(_nameCacheForReading is null == (_namingPolicy is null && !_containsNameAttributes),
-                         "A read cache should only be populated if we have a naming policy or name attributes.");
-
-            if (_nameCacheForReading is null)
+            if (JsonHelpers.IntegerRegex.IsMatch(source))
             {
-                value = default;
-                success = false;
-                goto End;
+                // We found an integer that is not an enum field name.
+                if ((_converterOptions & EnumConverterOptions.AllowNumbers) != 0)
+                {
+                    success = Enum.TryParse(source, out result);
+                }
+                else
+                {
+                    result = default;
+                    success = false;
+                }
+            }
+            else
+            {
+                success = TryParseNamedEnum(source, out result);
             }
 
-            success = TryParseCommaSeparatedEnumValues(source, out value);
+            if (success && _nameCacheForReading.Count < NameCacheSizeSoftLimit)
+            {
+                lookup.TryAdd(source, ConvertToUInt64(result));
+            }
 
         End:
-#if NET
             if (rentedBuffer != null)
             {
-                source.Clear();
+                charBuffer.Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
             }
-#endif
+
             return success;
         }
 
-        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling)
-        {
-            if ((_converterOptions & EnumConverterOptions.AllowStrings) != 0)
-            {
-                // This explicitly ignores the integer component in converters configured as AllowNumbers | AllowStrings
-                // which is the default for JsonStringEnumConverter. This sacrifices some precision in the schema for simplicity.
-
-                if (s_isFlagsEnum)
-                {
-                    // Do not report enum values in case of flags.
-                    return new() { Type = JsonSchemaType.String };
-                }
-
-                JsonArray enumValues = [];
-                foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
-                {
-                    enumValues.Add((JsonNode)fieldInfo.JsonName);
-                }
-
-                return new() { Enum = enumValues };
-            }
-
-            return new() { Type = JsonSchemaType.Integer };
-        }
-
-        private bool TryParseCommaSeparatedEnumValues(
-#if NET
+        private bool TryParseNamedEnum(
+#if NET9_0_OR_GREATER
             ReadOnlySpan<char> source,
 #else
-            string sourceString,
+            string source,
 #endif
-            out T value)
+            out T result)
         {
-            Debug.Assert(_nameCacheForReading != null);
-            ConcurrentDictionary<string, T> nameCacheForReading = _nameCacheForReading;
 #if NET9_0_OR_GREATER
-            ConcurrentDictionary<string, T>.AlternateLookup<ReadOnlySpan<char>> alternateLookup = nameCacheForReading.GetAlternateLookup<ReadOnlySpan<char>>();
-            if (alternateLookup.TryGetValue(source, out value))
-            {
-                return true;
-            }
-
-            ReadOnlySpan<char> rest = source;
-#elif NET
-            string sourceString = source.ToString();
-            if (nameCacheForReading.TryGetValue(sourceString, out value))
-            {
-                return true;
-            }
-
+            Dictionary<string, EnumFieldInfo>.AlternateLookup<ReadOnlySpan<char>> lookup = _enumFieldInfoIndex.GetAlternateLookup<string, EnumFieldInfo, ReadOnlySpan<char>>();
             ReadOnlySpan<char> rest = source;
 #else
-            if (nameCacheForReading.TryGetValue(sourceString, out value))
-            {
-                return true;
-            }
-
-            ReadOnlySpan<char> rest = sourceString.AsSpan();
+            Dictionary<string, EnumFieldInfo> lookup = _enumFieldInfoIndex;
+            ReadOnlySpan<char> rest = source.AsSpan();
 #endif
-            ulong result = 0;
+            ulong key = 0;
 
             do
             {
@@ -427,36 +322,29 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    next = rest.Slice(0, i);
-                    rest = rest.Slice(i + 1);
+                    next = rest.Slice(0, i).TrimEnd();
+                    rest = rest.Slice(i + 1).TrimStart();
                 }
 
-                next = next.Trim(' ');
-
+                if (lookup.TryGetValue(
 #if NET9_0_OR_GREATER
-                if (!alternateLookup.TryGetValue(next, out value))
+                        next,
 #else
-                if (!nameCacheForReading.TryGetValue(next.ToString(), out value))
+                        next.ToString(),
 #endif
+                        out EnumFieldInfo? firstResult) &&
+                    firstResult.GetMatchingField(next) is EnumFieldInfo match)
                 {
-                    return false;
+                    key |= match.Key;
+                    continue;
                 }
 
-                result |= ConvertToUInt64(value);
+                result = default;
+                return false;
 
             } while (!rest.IsEmpty);
 
-            value = ConvertFromUInt64(result);
-
-            if (nameCacheForReading.Count < NameCacheSizeSoftLimit)
-            {
-#if NET9_0_OR_GREATER
-                alternateLookup[source] = value;
-#else
-                nameCacheForReading[sourceString] = value;
-#endif
-            }
-
+            result = ConvertFromUInt64(key);
             return true;
         }
 
@@ -470,6 +358,20 @@ namespace System.Text.Json.Serialization.Converters
                 default:
                     Debug.Assert(s_enumTypeCode is TypeCode.SByte or TypeCode.Byte);
                     return Unsafe.As<T, byte>(ref value);
+            };
+        }
+
+        private static long ConvertToInt64(T value)
+        {
+            Debug.Assert(s_isSignedEnum);
+            switch (s_enumTypeCode)
+            {
+                case TypeCode.Int32: return Unsafe.As<T, int>(ref value);
+                case TypeCode.Int64: return Unsafe.As<T, long>(ref value);
+                case TypeCode.Int16: return Unsafe.As<T, short>(ref value);
+                default:
+                    Debug.Assert(s_enumTypeCode is TypeCode.SByte);
+                    return Unsafe.As<T, sbyte>(ref value);
             };
         }
 
@@ -518,7 +420,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         remainingBits &= ~fieldKey;
                         string name = dictionaryKeyPolicy is not null
-                            ? ResolveAndValidateJsonName(enumField.Name, dictionaryKeyPolicy, enumField.IsNameFromAttribute)
+                            ? ResolveAndValidateJsonName(enumField.OriginalName, dictionaryKeyPolicy, enumField.Kind)
                             : enumField.JsonName;
 
                         if (sb.Length > 0)
@@ -547,7 +449,7 @@ namespace System.Text.Json.Serialization.Converters
                     // Search for an exact match and apply the key policy.
                     if (enumField.Key == key)
                     {
-                        return ResolveAndValidateJsonName(enumField.Name, dictionaryKeyPolicy, enumField.IsNameFromAttribute);
+                        return ResolveAndValidateJsonName(enumField.OriginalName, dictionaryKeyPolicy, enumField.Kind);
                     }
                 }
 
@@ -558,28 +460,67 @@ namespace System.Text.Json.Serialization.Converters
 
         private bool IsDefinedValueOrCombinationOfValues(ulong key)
         {
-            ulong remainingBits = key;
-
-            foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+            if (s_isFlagsEnum)
             {
-                ulong fieldKey = fieldInfo.Key;
-                if (fieldKey == 0 ? key == 0 : (remainingBits & fieldKey) == fieldKey)
-                {
-                    remainingBits &= ~fieldKey;
+                ulong remainingBits = key;
 
-                    if (remainingBits == 0)
+                foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+                {
+                    ulong fieldKey = fieldInfo.Key;
+                    if (fieldKey == 0 ? key == 0 : (remainingBits & fieldKey) == fieldKey)
+                    {
+                        remainingBits &= ~fieldKey;
+
+                        if (remainingBits == 0)
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+            else
+            {
+                foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+                {
+                    if (fieldInfo.Key == key)
                     {
                         return true;
                     }
                 }
-            }
 
-            return false;
+                return false;
+            }
         }
 
-        private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy, out bool containsNameAttributes)
+        internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling)
         {
-            containsNameAttributes = false;
+            if ((_converterOptions & EnumConverterOptions.AllowStrings) != 0)
+            {
+                // This explicitly ignores the integer component in converters configured as AllowNumbers | AllowStrings
+                // which is the default for JsonStringEnumConverter. This sacrifices some precision in the schema for simplicity.
+
+                if (s_isFlagsEnum)
+                {
+                    // Do not report enum values in case of flags.
+                    return new() { Type = JsonSchemaType.String };
+                }
+
+                JsonArray enumValues = [];
+                foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
+                {
+                    enumValues.Add((JsonNode)fieldInfo.JsonName);
+                }
+
+                return new() { Enum = enumValues };
+            }
+
+            return new() { Type = JsonSchemaType.Integer };
+        }
+
+        private static EnumFieldInfo[] ResolveEnumFields(JsonNamingPolicy? namingPolicy)
+        {
 #if NET
             string[] names = Enum.GetNames<T>();
             T[] values = Enum.GetValues<T>();
@@ -601,49 +542,115 @@ namespace System.Text.Json.Serialization.Converters
             var enumFields = new EnumFieldInfo[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
-                string name = names[i];
+                string originalName = names[i];
                 T value = values[i];
                 ulong key = ConvertToUInt64(value);
-                bool isNameFromAttribute = false;
+                EnumFieldNameKind kind;
 
-                if (enumMemberAttributes != null && enumMemberAttributes.TryGetValue(name, out string? attributeName))
+                if (enumMemberAttributes != null && enumMemberAttributes.TryGetValue(originalName, out string? attributeName))
                 {
-                    name = attributeName;
-                    containsNameAttributes = isNameFromAttribute = true;
+                    originalName = attributeName;
+                    kind = EnumFieldNameKind.Attribute;
+                }
+                else
+                {
+                    kind = namingPolicy != null ? EnumFieldNameKind.NamingPolicy : EnumFieldNameKind.Default;
                 }
 
-                string jsonName = ResolveAndValidateJsonName(name, namingPolicy, isNameFromAttribute);
-                enumFields[i] = new EnumFieldInfo(key, value, name, jsonName, isNameFromAttribute);
+                string jsonName = ResolveAndValidateJsonName(originalName, namingPolicy, kind);
+                enumFields[i] = new EnumFieldInfo(key, kind, originalName, jsonName);
             }
 
             return enumFields;
         }
 
-        private static string ResolveAndValidateJsonName(string name, JsonNamingPolicy? namingPolicy, bool isNameFromAttribute)
+        private static string ResolveAndValidateJsonName(string name, JsonNamingPolicy? namingPolicy, EnumFieldNameKind kind)
         {
-            if (!isNameFromAttribute && namingPolicy is not null)
+            if (kind is not EnumFieldNameKind.Attribute && namingPolicy is not null)
             {
                 // Do not apply a naming policy to names that are explicitly set via attributes.
                 // This is consistent with JsonPropertyNameAttribute semantics.
                 name = namingPolicy.ConvertName(name);
             }
 
-            if (name is null || (s_isFlagsEnum && (name is "" || name.AsSpan().IndexOfAny(' ', ',') >= 0)))
+            if (string.IsNullOrEmpty(name) || char.IsWhiteSpace(name[0]) || char.IsWhiteSpace(name[name.Length - 1]) ||
+                (s_isFlagsEnum && name.AsSpan().IndexOf(',') >= 0))
             {
-                // Reject null strings and in the case of flags additionally reject empty strings or names containing spaces or commas.
+                // Reject null or empty strings or strings with leading or trailing whitespace.
+                // In the case of flags additionally reject strings containing commas.
                 ThrowHelper.ThrowInvalidOperationException_UnsupportedEnumIdentifier(typeof(T), name);
             }
 
             return name;
         }
 
-        private sealed class EnumFieldInfo(ulong key, T value, string name, string jsonName, bool isNameFromAttribute)
+        private sealed class EnumFieldInfo(ulong key, EnumFieldNameKind kind, string originalName, string jsonName)
         {
+            private List<EnumFieldInfo>? _conflictingFields;
+            public EnumFieldNameKind Kind { get; } = kind;
             public ulong Key { get; } = key;
-            public T Value { get; } = value;
-            public string Name { get; } = name;
+            public string OriginalName { get; } = originalName;
             public string JsonName { get; } = jsonName;
-            public bool IsNameFromAttribute { get; } = isNameFromAttribute;
+
+            /// <summary>
+            /// Assuming we have field that conflicts with the current up to case sensitivity,
+            /// append it to a list of trailing values for use by the enum value parser.
+            /// </summary>
+            public void AppendConflictingField(EnumFieldInfo other)
+            {
+                Debug.Assert(JsonName.Equals(other.JsonName, StringComparison.OrdinalIgnoreCase), "The conflicting entry must be equal up to case insensitivity.");
+
+                if (Kind is EnumFieldNameKind.Default || JsonName.Equals(other.JsonName, StringComparison.Ordinal))
+                {
+                    // Silently discard if the preceding entry is the default or has identical name.
+                    return;
+                }
+
+                List<EnumFieldInfo> conflictingFields = _conflictingFields ??= [];
+
+                // Walk the existing list to ensure we do not add duplicates.
+                foreach (EnumFieldInfo conflictingField in conflictingFields)
+                {
+                    if (conflictingField.Kind is EnumFieldNameKind.Default || conflictingField.JsonName.Equals(other.JsonName, StringComparison.Ordinal))
+                    {
+                        return;
+                    }
+                }
+
+                conflictingFields.Add(other);
+            }
+
+            public EnumFieldInfo? GetMatchingField(ReadOnlySpan<char> input)
+            {
+                Debug.Assert(input.Equals(JsonName.AsSpan(), StringComparison.OrdinalIgnoreCase), "Must equal the field name up to case insensitivity.");
+
+                if (Kind is EnumFieldNameKind.Default || input.SequenceEqual(JsonName.AsSpan()))
+                {
+                    // Default enum names use case insensitive parsing so are always a match.
+                    return this;
+                }
+
+                if (_conflictingFields is { } conflictingFields)
+                {
+                    Debug.Assert(conflictingFields.Count > 0);
+                    foreach (EnumFieldInfo matchingField in conflictingFields)
+                    {
+                        if (matchingField.Kind is EnumFieldNameKind.Default || input.SequenceEqual(matchingField.JsonName.AsSpan()))
+                        {
+                            return matchingField;
+                        }
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        private enum EnumFieldNameKind
+        {
+            Default = 0,
+            NamingPolicy = 1,
+            Attribute = 2,
         }
     }
 }

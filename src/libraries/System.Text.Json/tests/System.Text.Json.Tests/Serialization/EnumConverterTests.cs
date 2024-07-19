@@ -15,6 +15,9 @@ namespace System.Text.Json.Serialization.Tests
 {
     public class EnumConverterTests
     {
+        private static readonly JsonSerializerOptions s_optionsWithStringEnumConverter = new() { Converters = { new JsonStringEnumConverter() } };
+        private static readonly JsonSerializerOptions s_optionsWithStringAndNoIntegerEnumConverter = new() { Converters = { new JsonStringEnumConverter(allowIntegerValues: false) } };
+
         [Theory]
         [InlineData(typeof(JsonStringEnumConverter), typeof(DayOfWeek))]
         [InlineData(typeof(JsonStringEnumConverter), typeof(MyCustomEnum))]
@@ -839,11 +842,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(EnumWithMemberAttributes.Value3, "Value3")]
         public static void EnumWithMemberAttributes_StringEnumConverter_SerializesAsExpected(EnumWithMemberAttributes value, string expectedJson)
         {
-            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter() } };
-
-            string json = JsonSerializer.Serialize(value, options);
+            string json = JsonSerializer.Serialize(value, s_optionsWithStringEnumConverter);
             Assert.Equal($"\"{expectedJson}\"", json);
-            Assert.Equal(value, JsonSerializer.Deserialize<EnumWithMemberAttributes>(json, options));
+            Assert.Equal(value, JsonSerializer.Deserialize<EnumWithMemberAttributes>(json, s_optionsWithStringEnumConverter));
         }
 
         [Theory]
@@ -894,6 +895,28 @@ namespace System.Text.Json.Serialization.Tests
                     "VALUE3": ["value3", "CustomValue1"]
                 }
                 """, json);
+        }
+
+        [Theory]
+        [InlineData("\"customvalue1\"")]
+        [InlineData("\"CUSTOMVALUE1\"")]
+        [InlineData("\"cUSTOMvALUE1\"")]
+        [InlineData("\"customvalue2\"")]
+        [InlineData("\"CUSTOMVALUE2\"")]
+        [InlineData("\"cUSTOMvALUE2\"")]
+        public static void EnumWithMemberAttributes_CustomizedValuesAreCaseSensitive(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumWithMemberAttributes>(json, s_optionsWithStringEnumConverter));
+        }
+
+        [Theory]
+        [InlineData("\"value3\"", EnumWithMemberAttributes.Value3)]
+        [InlineData("\"VALUE3\"", EnumWithMemberAttributes.Value3)]
+        [InlineData("\"vALUE3\"", EnumWithMemberAttributes.Value3)]
+        public static void EnumWithMemberAttributes_DefaultValuesAreCaseInsensitive(string json, EnumWithMemberAttributes expectedValue)
+        {
+            EnumWithMemberAttributes value = JsonSerializer.Deserialize<EnumWithMemberAttributes>(json, s_optionsWithStringEnumConverter);
+            Assert.Equal(expectedValue, value);
         }
 
         public enum EnumWithMemberAttributes
@@ -947,6 +970,30 @@ namespace System.Text.Json.Serialization.Tests
                 """, json);
         }
 
+        [Theory]
+        [InlineData("\"a\"")]
+        [InlineData("\"b\"")]
+        [InlineData("\"A, b\"")]
+        [InlineData("\"A, b, C, Value4\"")]
+        [InlineData("\"A, B, c, Value4\"")]
+        [InlineData("\"a, b, c, Value4\"")]
+        [InlineData("\"c, B, A, Value4\"")]
+        public static void EnumFlagsWithMemberAttributes_CustomizedValuesAreCaseSensitive(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumFlagsWithMemberAttributes>(json));
+        }
+
+        [Theory]
+        [InlineData("\"value4\"", EnumFlagsWithMemberAttributes.Value4)]
+        [InlineData("\"value4, VALUE4\"", EnumFlagsWithMemberAttributes.Value4)]
+        [InlineData("\"A, value4, VALUE4, A,B,A,A\"", EnumFlagsWithMemberAttributes.Value1 | EnumFlagsWithMemberAttributes.Value2 | EnumFlagsWithMemberAttributes.Value4)]
+        [InlineData("\"VALUE4, VAlUE5\"", EnumFlagsWithMemberAttributes.Value4 | EnumFlagsWithMemberAttributes.Value5)]
+        public static void EnumFlagsWithMemberAttributes_DefaultValuesAreCaseInsensitive(string json, EnumFlagsWithMemberAttributes expectedValue)
+        {
+            EnumFlagsWithMemberAttributes value = JsonSerializer.Deserialize<EnumFlagsWithMemberAttributes>(json);
+            Assert.Equal(expectedValue, value);
+        }
+
         [Flags, JsonConverter(typeof(JsonStringEnumConverter<EnumFlagsWithMemberAttributes>))]
         public enum EnumFlagsWithMemberAttributes
         {
@@ -957,6 +1004,7 @@ namespace System.Text.Json.Serialization.Tests
             [JsonStringEnumMemberName("C")]
             Value3 = 4,
             Value4 = 8,
+            Value5 = 16,
         }
 
         [Theory]
@@ -981,11 +1029,11 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(EnumWithValidMemberNames.Value1, "\"Spaces are allowed in non flags enums\"")]
+        [InlineData(EnumWithValidMemberNames.Value1, "\"Intermediate whitespace\\t is allowed\\r\\nin enums\"")]
         [InlineData(EnumWithValidMemberNames.Value2, "\"Including support for commas, and other punctuation.\"")]
         [InlineData(EnumWithValidMemberNames.Value3, "\"Nice \\uD83D\\uDE80\\uD83D\\uDE80\\uD83D\\uDE80\"")]
-        [InlineData(EnumWithValidMemberNames.Value4, "\"\"")]
-        [InlineData(EnumWithValidMemberNames.Value5, "\"    \"")]
+        [InlineData(EnumWithValidMemberNames.Value4, "\"5\"")]
+        [InlineData(EnumWithValidMemberNames.Value1 | EnumWithValidMemberNames.Value4, "5")]
         public static void EnumWithValidMemberNameOverrides(EnumWithValidMemberNames value, string expectedJsonString)
         {
             string json = JsonSerializer.Serialize(value);
@@ -993,10 +1041,23 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(value, JsonSerializer.Deserialize<EnumWithValidMemberNames>(json));
         }
 
+        [Fact]
+        public static void EnumWithNumberIdentifier_CanDeserializeAsUnderlyingValue()
+        {
+            EnumWithValidMemberNames value = JsonSerializer.Deserialize<EnumWithValidMemberNames>("\"4\"");
+            Assert.Equal(EnumWithValidMemberNames.Value4, value);
+        }
+
+        [Fact]
+        public static void EnumWithNumberIdentifier_NoNumberSupported_FailsWhenDeserializingUnderlyingValue()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumWithValidMemberNames>("\"4\"", s_optionsWithStringAndNoIntegerEnumConverter));
+        }
+
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public enum EnumWithValidMemberNames
         {
-            [JsonStringEnumMemberName("Spaces are allowed in non flags enums")]
+            [JsonStringEnumMemberName("Intermediate whitespace\t is allowed\r\nin enums")]
             Value1 = 1,
 
             [JsonStringEnumMemberName("Including support for commas, and other punctuation.")]
@@ -1005,32 +1066,78 @@ namespace System.Text.Json.Serialization.Tests
             [JsonStringEnumMemberName("Nice 🚀🚀🚀")]
             Value3 = 3,
 
-            [JsonStringEnumMemberName("")]
-            Value4 = 4,
+            [JsonStringEnumMemberName("5")]
+            Value4 = 4
+        }
 
-            [JsonStringEnumMemberName("    ")]
-            Value5 = 5,
+        [Theory]
+        [InlineData(EnumFlagsWithValidMemberNames.Value1 | EnumFlagsWithValidMemberNames.Value2, "\"Intermediate whitespace\\t is allowed\\r\\nin enums, Including support for some punctuation; except commas.\"")]
+        [InlineData(EnumFlagsWithValidMemberNames.Value3 | EnumFlagsWithValidMemberNames.Value4, "\"Nice \\uD83D\\uDE80\\uD83D\\uDE80\\uD83D\\uDE80, 5\"")]
+        [InlineData(EnumFlagsWithValidMemberNames.Value4, "\"5\"")]
+        public static void EnumFlagsWithValidMemberNameOverrides(EnumFlagsWithValidMemberNames value, string expectedJsonString)
+        {
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(expectedJsonString, json);
+            Assert.Equal(value, JsonSerializer.Deserialize<EnumFlagsWithValidMemberNames>(json));
+        }
+
+        [Theory]
+        [InlineData("\"\\r\\n Intermediate whitespace\\t is allowed\\r\\nin enums   ,      Including support for some punctuation; except commas.\\r\\n\"", EnumFlagsWithValidMemberNames.Value1 | EnumFlagsWithValidMemberNames.Value2)]
+        [InlineData("\"         5\\t,     \\r\\n      5,\\t          5\"", EnumFlagsWithValidMemberNames.Value4)]
+        public static void EnumFlagsWithValidMemberNameOverrides_SupportsWhitespaceSeparatedValues(string json, EnumFlagsWithValidMemberNames expectedValue)
+        {
+            EnumFlagsWithValidMemberNames result = JsonSerializer.Deserialize<EnumFlagsWithValidMemberNames>(json);
+            Assert.Equal(expectedValue, result);
+        }
+
+        [Theory]
+        [InlineData("\"\"")]
+        [InlineData("\"    \\r\\n   \"")]
+        [InlineData("\",\"")]
+        [InlineData("\",,,\"")]
+        [InlineData("\", \\r\\n,,\"")]
+        [InlineData("\"\\r\\n Intermediate whitespace\\t is allowed\\r\\nin enums   ,  13 ,    Including support for some punctuation; except commas.\\r\\n\"")]
+        [InlineData("\"\\r\\n Intermediate whitespace\\t is allowed\\r\\nin enums   ,  ,    Including support for some punctuation; except commas.\\r\\n\"")]
+        [InlineData("\"         5\\t,     \\r\\n , UNKNOWN_IDENTIFIER \r\n,     5,\\t          5\"")]
+        public static void EnumFlagsWithValidMemberNameOverrides_FailsOnInvalidJsonValues(string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<EnumFlagsWithValidMemberNames>(json));
+        }
+
+        [Flags, JsonConverter(typeof(JsonStringEnumConverter))]
+        public enum EnumFlagsWithValidMemberNames
+        {
+            [JsonStringEnumMemberName("Intermediate whitespace\t is allowed\r\nin enums")]
+            Value1 = 1,
+
+            [JsonStringEnumMemberName("Including support for some punctuation; except commas.")]
+            Value2 = 2,
+
+            [JsonStringEnumMemberName("Nice 🚀🚀🚀")]
+            Value3 = 4,
+
+            [JsonStringEnumMemberName("5")]
+            Value4 = 8
         }
 
         [Theory]
         [InlineData(typeof(EnumWithInvalidMemberName1), "")]
         [InlineData(typeof(EnumWithInvalidMemberName2), "")]
         [InlineData(typeof(EnumWithInvalidMemberName3), "   ")]
-        [InlineData(typeof(EnumWithInvalidMemberName4), "Spaces not allowed in flags enums")]
-        [InlineData(typeof(EnumWithInvalidMemberName5), "Commas,not,allowed,in,flags,enums")]
+        [InlineData(typeof(EnumWithInvalidMemberName4), "   HasLeadingWhitespace")]
+        [InlineData(typeof(EnumWithInvalidMemberName5), "HasTrailingWhitespace\n")]
+        [InlineData(typeof(EnumWithInvalidMemberName6), "Comma separators not allowed, in flags enums")]
         public static void EnumWithInvalidMemberName_Throws(Type enumType, string memberName)
         {
-            JsonSerializerOptions options = new() { Converters = { new JsonStringEnumConverter() } };
-
             object value = Activator.CreateInstance(enumType);
             string expectedExceptionMessage = $"Enum type '{enumType.Name}' uses unsupported identifier '{memberName}'.";
             InvalidOperationException ex;
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, enumType, options));
-            Assert.Equal(expectedExceptionMessage, ex.Message);
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, enumType, s_optionsWithStringEnumConverter));
+            Assert.Contains(expectedExceptionMessage, ex.Message);
 
-            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("\"str\"", enumType, options));
-            Assert.Equal(expectedExceptionMessage, ex.Message);
+            ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("\"str\"", enumType, s_optionsWithStringEnumConverter));
+            Assert.Contains(expectedExceptionMessage, ex.Message);
         }
 
         public enum EnumWithInvalidMemberName1
@@ -1039,31 +1146,34 @@ namespace System.Text.Json.Serialization.Tests
             Value
         }
 
-        [Flags]
         public enum EnumWithInvalidMemberName2
         {
             [JsonStringEnumMemberName("")]
             Value
         }
 
-        [Flags]
         public enum EnumWithInvalidMemberName3
         {
             [JsonStringEnumMemberName("   ")]
             Value
         }
 
-        [Flags]
         public enum EnumWithInvalidMemberName4
         {
-            [JsonStringEnumMemberName("Spaces not allowed in flags enums")]
+            [JsonStringEnumMemberName("   HasLeadingWhitespace")]
+            Value
+        }
+
+        public enum EnumWithInvalidMemberName5
+        {
+            [JsonStringEnumMemberName("HasTrailingWhitespace\n")]
             Value
         }
 
         [Flags]
-        public enum EnumWithInvalidMemberName5
+        public enum EnumWithInvalidMemberName6
         {
-            [JsonStringEnumMemberName("Commas,not,allowed,in,flags,enums")]
+            [JsonStringEnumMemberName("Comma separators not allowed, in flags enums")]
             Value
         }
     }
