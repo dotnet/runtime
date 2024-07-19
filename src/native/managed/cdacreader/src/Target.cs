@@ -14,6 +14,8 @@ namespace Microsoft.Diagnostics.DataContractReader;
 public readonly struct TargetPointer : IEquatable<TargetPointer>
 {
     public static TargetPointer Null = new(0);
+    public static TargetPointer Max32Bit = new(uint.MaxValue);
+    public static TargetPointer Max64Bit = new(ulong.MaxValue);
 
     public readonly ulong Value;
     public TargetPointer(ulong value) => Value = value;

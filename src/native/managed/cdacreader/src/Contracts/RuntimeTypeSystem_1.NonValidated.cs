@@ -253,8 +253,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             NonValidated.MethodDesc umd = GetMethodDescThrowing(methodDescPointer, out methodDescChunkPointer);
             TargetPointer methodTablePointer = umd.MethodTable;
             if (methodTablePointer == TargetPointer.Null
-                || methodTablePointer == new TargetPointer(0xffffffff_fffffffful)
-                || methodTablePointer == new TargetPointer(0x00000000_fffffffful))
+                || methodTablePointer == TargetPointer.Max64Bit
+                || methodTablePointer == TargetPointer.Max32Bit)
             {
                 return false;
             }
