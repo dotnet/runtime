@@ -561,6 +561,42 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public void ScopeValidationNotEnabledInDevelopmentWithServiceProviderChanges()
+        {
+            using var host = new HostBuilder()
+                .UseEnvironment(Environments.Development)
+                .ConfigureServices(serices =>
+                {
+                    serices.AddScoped<ServiceA>();
+                })
+                .UseDefaultServiceProvider((context, options) =>
+                {
+                    options.ValidateScopes = false;
+                })
+                .Build();
+
+            Assert.NotNull(host.Services.GetRequiredService<ServiceA>());
+        }
+
+        [Fact]
+        public void ValidateOnBuildNotEnabledInDevelopmentWithServiceProviderChanges()
+        {
+            using var host = new HostBuilder()
+                .UseEnvironment(Environments.Development)
+                .ConfigureServices(serices =>
+                {
+                    serices.AddSingleton<ServiceC>();
+                })
+                .UseDefaultServiceProvider((context, options) =>
+                {
+                    options.ValidateOnBuild = false;
+                })
+                .Build();
+
+            Assert.NotNull(host);
+        }
+
+        [Fact]
         public void HostingContextContainsAppConfigurationDuringConfigureLogging()
         {
             var hostBuilder = new HostBuilder()
