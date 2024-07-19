@@ -17,8 +17,8 @@ namespace System.IO.Packaging.Tests
         private record class PartConstructionParameters (string FullPath, bool CreateAsAtomic, bool CreateAsValidPieceSequence, bool UppercaseFileName, bool ShufflePieces, int[] PieceLengths, FileContentsGenerator PieceGenerator)
         { }
 
-        private static Type s_ZipPackagePartPieceType = typeof(ZipPackage).Assembly.GetType("System.IO.Packaging.ZipPackagePartPiece");
-        private static MethodInfo s_TryParseZipPackagePartPiece = s_ZipPackagePartPieceType.GetMethod("TryParse", BindingFlags.Static | BindingFlags.NonPublic);
+        private static Type s_ZipPackagePartPieceType = Type.GetType("System.IO.Packaging.ZipPackagePartPiece, System.IO.Packaging");
+        private static MethodInfo s_TryParseZipPackagePartPiece = Type.GetType("System.IO.Packaging.ZipPackagePartPiece, System.IO.Packaging").GetMethod("TryParse", BindingFlags.Static | BindingFlags.NonPublic);
 
         private string m_contentTypesXml = @"<?xml version=""1.0"" encoding=""utf-8""?>
 <Types xmlns=""http://schemas.openxmlformats.org/package/2006/content-types"">
