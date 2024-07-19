@@ -289,46 +289,7 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            return Hypot(value.m_real, value.m_imaginary);
-        }
-
-        private static double Hypot(double a, double b)
-        {
-            // Using
-            //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
-            // we can factor out the larger component to dodge overflow even when a * a would overflow.
-
-            a = Math.Abs(a);
-            b = Math.Abs(b);
-
-            double small, large;
-            if (a < b)
-            {
-                small = a;
-                large = b;
-            }
-            else
-            {
-                small = b;
-                large = a;
-            }
-
-            if (small == 0.0)
-            {
-                return (large);
-            }
-            else if (double.IsPositiveInfinity(large) && !double.IsNaN(small))
-            {
-                // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
-                // NaN in any other place returns NaN without any special handling.
-                return (double.PositiveInfinity);
-            }
-            else
-            {
-                double ratio = small / large;
-                return (large * Math.Sqrt(1.0 + ratio * ratio));
-            }
-
+            return double.Hypot(value.m_real, value.m_imaginary);
         }
 
         private static double Log1P(double x)
@@ -590,8 +551,8 @@ namespace System.Numerics
             }
             else
             {
-                double r = Hypot((x + 1.0), y);
-                double s = Hypot((x - 1.0), y);
+                double r = double.Hypot((x + 1.0), y);
+                double s = double.Hypot((x - 1.0), y);
 
                 double a = (r + s) * 0.5;
                 b = x / a;
@@ -673,6 +634,28 @@ namespace System.Numerics
         public static Complex Sqrt(Complex value)
         {
 
+            // Handle NaN input cases according to IEEE 754
+            if (double.IsNaN(value.m_real))
+            {
+                if (double.IsInfinity(value.m_imaginary))
+                {
+                    return new Complex(double.PositiveInfinity, value.m_imaginary);
+                }
+                return new Complex(double.NaN, double.NaN);
+            }
+            if (double.IsNaN(value.m_imaginary))
+            {
+                if (double.IsPositiveInfinity(value.m_real))
+                {
+                    return new Complex(double.NaN, double.PositiveInfinity);
+                }
+                if (double.IsNegativeInfinity(value.m_real))
+                {
+                    return new Complex(double.PositiveInfinity, double.NaN);
+                }
+                return new Complex(double.NaN, double.NaN);
+            }
+
             if (value.m_imaginary == 0.0)
             {
                 // Handle the trivial case quickly.
@@ -715,11 +698,10 @@ namespace System.Numerics
             double imaginaryCopy = value.m_imaginary;
             if ((Math.Abs(realCopy) >= s_sqrtRescaleThreshold) || (Math.Abs(imaginaryCopy) >= s_sqrtRescaleThreshold))
             {
-                if (double.IsInfinity(value.m_imaginary) && !double.IsNaN(value.m_real))
+                if (double.IsInfinity(value.m_imaginary))
                 {
                     // We need to handle infinite imaginary parts specially because otherwise
-                    // our formulas below produce inf/inf = NaN. The NaN test is necessary
-                    // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                    // our formulas below produce inf/inf = NaN.
                     return (new Complex(double.PositiveInfinity, imaginaryCopy));
                 }
 
@@ -732,12 +714,12 @@ namespace System.Numerics
             double x, y;
             if (realCopy >= 0.0)
             {
-                x = Math.Sqrt((Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
+                x = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) + realCopy) * 0.5);
                 y = imaginaryCopy / (2.0 * x);
             }
             else
             {
-                y = Math.Sqrt((Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
+                y = Math.Sqrt((double.Hypot(realCopy, imaginaryCopy) - realCopy) * 0.5);
                 if (imaginaryCopy < 0.0) y = -y;
                 x = imaginaryCopy / (2.0 * y);
             }
@@ -2131,7 +2113,7 @@ namespace System.Numerics
                 return false;
             }
 
-            if (!double.TryParse(s.Slice(openBracket + 1, semicolon), style, provider, out double real))
+            if (!double.TryParse(s.Slice(openBracket + 1, semicolon - openBracket - 1), style, provider, out double real))
             {
                 result = default;
                 return false;
@@ -2144,7 +2126,7 @@ namespace System.Numerics
                 semicolon += 1;
             }
 
-            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon), style, provider, out double imaginary))
+            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon - 1), style, provider, out double imaginary))
             {
                 result = default;
                 return false;

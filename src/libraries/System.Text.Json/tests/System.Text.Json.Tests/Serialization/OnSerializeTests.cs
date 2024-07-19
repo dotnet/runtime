@@ -384,10 +384,122 @@ namespace System.Text.Json.Serialization.Tests
             IJsonOnSerializing,
             IJsonOnSerialized
         {
-            public void OnDeserialized() => Assert.Fail("Not expected");
-            public void OnDeserializing() => Assert.Fail("Not expected");
-            public void OnSerialized() => Assert.Fail("Not expected");
-            public void OnSerializing() => Assert.Fail("Not expected");
+            internal int _onSerializingCount;
+            internal int _onSerializedCount;
+            internal int _onDeserializingCount;
+            internal int _onDeserializedCount;
+
+            public void OnSerializing()
+            {
+                _onSerializingCount++;
+                Assert.Equal(1, this[0]);
+                this[0]++;
+            }
+
+            public void OnSerialized()
+            {
+                Assert.Equal(1, _onSerializingCount);
+                _onSerializedCount++;
+                Assert.Equal(2, this[0]);
+                this[0]++;
+            }
+
+            public void OnDeserializing()
+            {
+                _onDeserializingCount++;
+                Assert.Empty(this);
+            }
+
+            public void OnDeserialized()
+            {
+                Assert.Equal(1, _onDeserializingCount);
+                _onDeserializedCount++;
+                Assert.Equal(1, this[0]);
+                this[0]++;
+            }
+        }
+
+        [Fact]
+        public static void Test_MyCollection()
+        {
+            MyCollection obj = new() { 1 };
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal("[2]", json);
+            Assert.Equal(3, obj[0]);
+            Assert.Equal(1, obj._onSerializingCount);
+            Assert.Equal(1, obj._onSerializedCount);
+            Assert.Equal(0, obj._onDeserializingCount);
+            Assert.Equal(0, obj._onDeserializedCount);
+
+            obj = JsonSerializer.Deserialize<MyCollection>("[1]");
+            Assert.Equal(2, obj[0]);
+            Assert.Equal(0, obj._onSerializingCount);
+            Assert.Equal(0, obj._onSerializedCount);
+            Assert.Equal(1, obj._onDeserializingCount);
+            Assert.Equal(1, obj._onDeserializedCount);
+        }
+
+        private class MyDictionary : Dictionary<string, int>,
+            IJsonOnDeserializing,
+            IJsonOnDeserialized,
+            IJsonOnSerializing,
+            IJsonOnSerialized
+        {
+            internal int _onSerializingCount;
+            internal int _onSerializedCount;
+            internal int _onDeserializingCount;
+            internal int _onDeserializedCount;
+
+            public void OnSerializing()
+            {
+                _onSerializingCount++;
+                Assert.Equal(1, this["A"]);
+                this["A"]++;
+            }
+
+            public void OnSerialized()
+            {
+                Assert.Equal(1, _onSerializingCount);
+                _onSerializedCount++;
+                Assert.Equal(2, this["A"]);
+                this["A"]++;
+            }
+
+            public void OnDeserializing()
+            {
+                _onDeserializingCount++;
+                Assert.Empty(this);
+            }
+
+            public void OnDeserialized()
+            {
+                Assert.Equal(1, _onDeserializingCount);
+                _onDeserializedCount++;
+                Assert.Equal(1, this["A"]);
+                this["A"]++;
+            }
+        }
+
+        [Fact]
+        public static void Test_MyDictionary()
+        {
+            MyDictionary obj = new() { ["A"] = 1 };
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"A\":2}", json);
+            Assert.Equal(3, obj["A"]);
+            Assert.Equal(1, obj._onSerializingCount);
+            Assert.Equal(1, obj._onSerializedCount);
+            Assert.Equal(0, obj._onDeserializingCount);
+            Assert.Equal(0, obj._onDeserializedCount);
+
+            obj = JsonSerializer.Deserialize<MyDictionary>("{\"A\":1}");
+            Assert.Equal(2, obj["A"]);
+            Assert.Equal(0, obj._onSerializingCount);
+            Assert.Equal(0, obj._onSerializedCount);
+            Assert.Equal(1, obj._onDeserializingCount);
+            Assert.Equal(1, obj._onDeserializedCount);
         }
 
         [JsonConverter(converterType: typeof(MyValueConverter))]
@@ -419,10 +531,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NonPocosIgnored()
         {
-            JsonSerializer.Serialize(new MyCollection());
-            JsonSerializer.Deserialize<MyCollection>("[]");
             JsonSerializer.Serialize(new MyValue());
-            JsonSerializer.Deserialize<MyCollection>("[]");
         }
     }
 }

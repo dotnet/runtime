@@ -36,6 +36,12 @@ namespace System.Text.Json
             throw GetArgumentOutOfRangeException(parameterName, SR.MaxDepthMustBePositive);
         }
 
+        [DoesNotReturn]
+        public static void ThrowArgumentOutOfRangeException_JsonNumberExponentTooLarge(string parameterName)
+        {
+            throw GetArgumentOutOfRangeException(parameterName, SR.JsonNumberExponentTooLarge);
+        }
+
         private static ArgumentOutOfRangeException GetArgumentOutOfRangeException(string parameterName, string message)
         {
             return new ArgumentOutOfRangeException(parameterName, message);

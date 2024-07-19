@@ -36,12 +36,17 @@ namespace Internal.TypeSystem
         }
 
         public static TypeDesc GetTypeByCustomAttributeTypeNameForDataFlow(string name, ModuleDesc callingModule,
-            TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
+            TypeSystemContext context, List<ModuleDesc> referencedModules, bool needsAssemblyName, out bool failedBecauseNotFullyQualified)
         {
-            typeWasNotFoundInAssemblyNorBaseLibrary = false;
-
+            failedBecauseNotFullyQualified = false;
             if (!TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions))
                 return null;
+
+            if (needsAssemblyName && !IsFullyQualified(parsed))
+            {
+                failedBecauseNotFullyQualified = true;
+                return null;
+            }
 
             TypeNameResolver resolver = new()
             {
@@ -52,8 +57,33 @@ namespace Internal.TypeSystem
 
             TypeDesc type = resolver.Resolve(parsed);
 
-            typeWasNotFoundInAssemblyNorBaseLibrary = resolver._typeWasNotFoundInAssemblyNorBaseLibrary;
             return type;
+
+            static bool IsFullyQualified(TypeName typeName)
+            {
+                if (typeName.AssemblyName is null)
+                {
+                    return false;
+                }
+
+                if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+                {
+                    return IsFullyQualified(typeName.GetElementType());
+                }
+
+                if (typeName.IsConstructedGenericType)
+                {
+                    foreach (var typeArgument in typeName.GetGenericArguments())
+                    {
+                        if (!IsFullyQualified(typeArgument))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
         }
 
         private struct TypeNameResolver
@@ -64,7 +94,6 @@ namespace Internal.TypeSystem
             internal Func<ModuleDesc, string, MetadataType> _canonResolver;
 
             internal List<ModuleDesc> _referencedModules;
-            internal bool _typeWasNotFoundInAssemblyNorBaseLibrary;
 
             internal TypeDesc Resolve(TypeName typeName)
             {
@@ -136,8 +165,6 @@ namespace Internal.TypeSystem
                             return type;
                         }
                     }
-
-                    _typeWasNotFoundInAssemblyNorBaseLibrary = true;
                 }
 
                 if (_throwIfNotFound)

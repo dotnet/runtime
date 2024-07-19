@@ -293,9 +293,15 @@ struct GenericsDictInfo
 
     // Number of type parameters (NOT including those of superclasses).
     WORD   m_wNumTyPars;
+    template<typename T> friend struct ::cdac_offsets;
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
+template<>
+struct cdac_offsets<GenericsDictInfo>
+{
+    static constexpr size_t NumTypeArgs = offsetof(GenericsDictInfo, m_wNumTyPars);
+};
 
 // These various statics structures exist directly before the MethodTableAuxiliaryData
 
@@ -332,7 +338,11 @@ struct MethodTableAuxiliaryData
         enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x0004,     // Is any field type or sub field type overridden Equals or GetHashCode
 
         enum_flag_HasApproxParent           = 0x0010,
-        // enum_unused                      = 0x0020,
+#ifdef _DEBUG
+        // The MethodTable is in the right state to be published, and will be inevitably.
+        // Currently DEBUG only as it does not affect behavior in any way in a release build
+        enum_flag_IsPublished               = 0x0020,
+#endif
         enum_flag_IsNotFullyLoaded          = 0x0040,
         enum_flag_DependenciesLoaded        = 0x0080,     // class and all dependencies loaded up to CLASS_LOADED_BUT_NOT_VERIFIED
 
@@ -506,6 +516,25 @@ public:
 
     }
 
+#ifdef _DEBUG
+#ifndef DACCESS_COMPILE
+    // Used in DEBUG builds to indicate that the MethodTable is in the right state to be published, and will be inevitably.
+    void SetIsPublished()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_dwFlags |= (MethodTableAuxiliaryData::enum_flag_IsPublished);
+    }
+#endif
+
+    // The MethodTable is in the right state to be published, and will be inevitably.
+    // Currently DEBUG only as it does not affect behavior in any way in a release build
+    bool IsPublished() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (VolatileLoad(&m_dwFlags) & enum_flag_IsPublished);
+    }
+#endif // _DEBUG
+
     // The NonVirtualSlots array grows backwards, so this pointer points at just AFTER the first entry in the array
     // To access, use a construct like... GetNonVirtualSlotsArray(pAuxiliaryData)[-(1 + index)]
     static inline PTR_PCODE GetNonVirtualSlotsArray(PTR_Const_MethodTableAuxiliaryData pAuxiliaryData)
@@ -601,6 +630,7 @@ public:
             {
                 oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal | oldVal, oldVal);
             }
+
         } while(oldValFromInterlockedOp != oldVal);
         return true;
     }
@@ -1128,8 +1158,6 @@ public:
     // THE CLASS CONSTRUCTOR
     //
 
-    MethodDesc * GetClassConstructor();
-
     BOOL HasClassConstructor();
     void SetHasClassConstructor();
     WORD GetClassConstructorSlot();
@@ -1649,7 +1677,17 @@ public:
     // Slots <-> the MethodDesc associated with the slot.
     //
 
+#ifndef DACCESS_COMPILE
+    // Get the MethodDesc that implements a given slot
+    // NOTE: Since this may fill in the slot with a temporary entrypoint if that hasn't happened
+    //       yet, when writing asserts, GetMethodDescForSlot_NoThrow should be used to avoid
+    //       the presence of an assert hiding bugs.
     MethodDesc* GetMethodDescForSlot(DWORD slot);
+#endif
+
+    // This api produces the same result as GetMethodDescForSlot, but it uses a variation on the
+    // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
+    MethodDesc* GetMethodDescForSlot_NoThrow(DWORD slot);
 
     static MethodDesc*  GetMethodDescForSlotAddress(PCODE addr, BOOL fSpeculative = FALSE);
 
@@ -1784,10 +1822,10 @@ public:
 
     inline WORD GetNumIntroducedInstanceFields();
 
-    BOOL           ContainsPointers()
+    BOOL           ContainsGCPointers()
     {
         LIMITED_METHOD_CONTRACT;
-        return !!GetFlag(enum_flag_ContainsPointers);
+        return !!GetFlag(enum_flag_ContainsGCPointers);
     }
 
     BOOL            Collectible()
@@ -1800,10 +1838,10 @@ public:
 #endif
     }
 
-    BOOL            ContainsPointersOrCollectible()
+    BOOL            ContainsGCPointersOrCollectible()
     {
         LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_ContainsPointers) || GetFlag(enum_flag_Collectible);
+        return GetFlag(enum_flag_ContainsGCPointers) || GetFlag(enum_flag_Collectible);
     }
 
     OBJECTHANDLE    GetLoaderAllocatorObjectHandle();
@@ -1813,10 +1851,10 @@ public:
 
     BOOL            IsAllGCPointers();
 
-    void SetContainsPointers()
+    void SetContainsGCPointers()
     {
         LIMITED_METHOD_CONTRACT;
-        SetFlag(enum_flag_ContainsPointers);
+        SetFlag(enum_flag_ContainsGCPointers);
     }
 
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -2403,8 +2441,6 @@ public:
     // exact result.
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
     bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
-
-    MethodDesc *GetIntroducingMethodDesc(DWORD slotNumber);
 
     // Determines whether all methods in the given interface have their final implementing
     // slot in a parent class. I.e. if this returns TRUE, it is trivial (no VSD lookup) to
@@ -3014,6 +3050,7 @@ public:
         virtual MethodData  *GetImplMethodData() = 0;
         MethodTable *GetImplMethodTable() { return m_pImplMT; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber) = 0;
+        virtual bool IsImplSlotNull(UINT32 slotNumber) = 0;
         // Returns INVALID_SLOT_NUMBER if no implementation exists.
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber) = 0;
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber) = 0;
@@ -3126,6 +3163,7 @@ protected:
         virtual MethodData  *GetImplMethodData()
             { LIMITED_METHOD_CONTRACT; return this; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber);
+        virtual bool IsImplSlotNull(UINT32 slotNumber) { LIMITED_METHOD_CONTRACT; return false; } // Every valid slot on an actual MethodTable has a MethodDesc which is associated with it
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber);
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
         virtual void InvalidateCachedVirtualSlot(UINT32 slotNumber);
@@ -3266,6 +3304,12 @@ protected:
             { LIMITED_METHOD_CONTRACT; return this; }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber)
             { WRAPPER_NO_CONTRACT; return DispatchSlot(m_pDeclMT->GetRestoredSlot(slotNumber)); }
+        virtual bool IsImplSlotNull(UINT32 slotNumber)
+        {
+            // Every valid slot on an actual MethodTable has a MethodDesc which is associated with it
+            LIMITED_METHOD_CONTRACT;
+            return false;
+        }
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber)
             { LIMITED_METHOD_CONTRACT; return slotNumber; }
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
@@ -3312,6 +3356,7 @@ protected:
         virtual MethodTable *GetImplMethodTable()
             { WRAPPER_NO_CONTRACT; return m_pImpl->GetImplMethodTable(); }
         virtual DispatchSlot GetImplSlot(UINT32 slotNumber);
+        virtual bool IsImplSlotNull(UINT32 slotNumber);
         virtual UINT32       GetImplSlotNumber(UINT32 slotNumber);
         virtual MethodDesc  *GetImplMethodDesc(UINT32 slotNumber);
         virtual void InvalidateCachedVirtualSlot(UINT32 slotNumber);
@@ -3436,6 +3481,7 @@ public:
         inline BOOL IsVirtual() const;
         inline UINT32 GetNumVirtuals() const;
         inline DispatchSlot GetTarget() const;
+        inline bool IsTargetNull() const;
 
         // Can be called only if IsValid()=TRUE
         inline MethodDesc *GetMethodDesc() const;
@@ -3603,7 +3649,7 @@ private:
         enum_flag_RequiresAlign8              = 0x00800000, // Type requires 8-byte alignment (only set on platforms that require this and don't get it implicitly)
 #endif
 
-        enum_flag_ContainsPointers            = 0x01000000, // Contains object references
+        enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
         enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
         // unused                             = 0x08000000,
@@ -3888,7 +3934,23 @@ public:
     BOOL Validate ();
 
     static void GetStaticsOffsets(StaticsOffsetType staticsOffsetType, bool fGenericsStatics, uint32_t *dwGCOffset, uint32_t *dwNonGCOffset);
+
+    template<typename T> friend struct ::cdac_offsets;
 };  // class MethodTable
+
+template<> struct cdac_offsets<MethodTable>
+{
+    static constexpr size_t MTFlags = offsetof(MethodTable, m_dwFlags);
+    static constexpr size_t BaseSize = offsetof(MethodTable, m_BaseSize);
+    static constexpr size_t MTFlags2 = offsetof(MethodTable, m_dwFlags2);
+    static constexpr size_t EEClassOrCanonMT = offsetof(MethodTable, m_pEEClass);
+    static constexpr size_t Module = offsetof(MethodTable, m_pModule);
+    static constexpr size_t AuxiliaryData = offsetof(MethodTable, m_pAuxiliaryData);
+    static constexpr size_t ParentMethodTable = offsetof(MethodTable, m_pParentMethodTable);
+    static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
+    static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
+    static constexpr size_t PerInstInfo = offsetof(MethodTable, m_pPerInstInfo);
+};
 
 #ifndef CROSSBITNESS_COMPILE
 static_assert_no_msg(sizeof(MethodTable) == SIZEOF__MethodTable_);
