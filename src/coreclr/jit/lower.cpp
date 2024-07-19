@@ -5568,7 +5568,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call, bool* shouldEndNogcBef
         // and the method is marked as interruptible, we need to insert a GT_START_NONGC before the call.
         // to keep the delegate object alive while we're obtaining the function pointer.
         GenTree* startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
-        BlockRange().InsertBefore(newThisAddr, startNonGCNode);
+        BlockRange().InsertAfter(thisArgNode, startNonGCNode);
 
         // We should try to end the non-GC region just before the actual call.
         *shouldEndNogcBeforeCall = true;
