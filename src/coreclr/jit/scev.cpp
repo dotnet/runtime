@@ -1501,16 +1501,13 @@ RelopEvaluationResult ScalarEvolutionContext::EvaluateRelop(ValueNum vn)
     }
 
     // Evaluate by using dominators and RBO's logic.
+    assert(m_comp->m_domTree != nullptr);
     //
     // TODO-CQ: Using assertions could be stronger given its dataflow, but it
     // is not convenient to use (optVNConstantPropOnJTrue does not actually
     // make any use of assertions to evaluate conditionals, so it seems like
     // the logic does not actually exist anywhere.)
     //
-    if (m_comp->m_domTree == nullptr)
-    {
-        m_comp->m_domTree = FlowGraphDominatorTree::Build(m_comp->m_dfsTree);
-    }
 
     for (BasicBlock* idom = m_loop->GetHeader()->bbIDom; idom != nullptr; idom = idom->bbIDom)
     {
