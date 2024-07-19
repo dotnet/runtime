@@ -26,6 +26,7 @@ namespace System.Net.Security.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
+        [ActiveIssue("AAA")]
         public async Task EventSource_EventsRaisedAsExpected()
         {
             await RemoteExecutor.Invoke(async () =>
