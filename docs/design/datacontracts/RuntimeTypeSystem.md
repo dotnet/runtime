@@ -261,7 +261,11 @@ static class RuntimeTypeSystem_1_Helpers
 }
 ```
 
-The contract depends on the global pointer value `FreeObjectMethodTablePointer`.
+The contract depends on the following globals
+
+| Global name | Meaning |
+| --- | --- |
+| `FreeObjectMethodTablePointer` | A pointer to the address of a `MethodTable` used by the GC to indicate reclaimed memory
 
 The contract additionally depends on these data descriptors
 
@@ -556,6 +560,11 @@ The contract additionally depends on these data descriptors
 ### MethodDesc
 
 The version 1 `MethodDesc` APIs depend on the `MethodDescAlignment` global and the `MethodDesc` and `MethodDescChunk` data descriptors.
+
+| Global name | Meaning |
+| --- | --- |
+| `MethodDescAlignment` | `MethodDescChunk` trailing data is allocated in multiples of this constant.  The size (in bytes) of each `MethodDesc` (or subclass) instance is a multiple of this constant.
+
 
 In the runtime a `MethodDesc` implicitly belongs to a single `MethodDescChunk` and some common data is shared between method descriptors that belong to the same chunk.  A single method table
 will typically have multiple chunks.  There are subkinds of MethodDescs at runtime of varying sizes (but the sizes must be mutliples of `MethodDescAlignment`) and each chunk contains method descriptors of the same size.
