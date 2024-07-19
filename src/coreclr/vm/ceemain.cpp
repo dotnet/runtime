@@ -625,6 +625,7 @@ void EEStartupHelper()
 
         // We cache the SystemInfo for anyone to use throughout the life of the EE.
         GetSystemInfo(&g_SystemInfo);
+        PrecodeMachineDescriptor::Init();
 
         // Set callbacks so that LoadStringRC knows which language our
         // threads are in so that it can return the proper localized string.

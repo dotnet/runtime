@@ -35,6 +35,8 @@
 
 #include "codeversion.h"
 
+#include "cdacdata.h"
+
 class BaseDomain;
 class SystemDomain;
 class AppDomain;

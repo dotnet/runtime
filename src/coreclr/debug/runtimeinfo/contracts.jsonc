@@ -13,6 +13,7 @@
   "EcmaMetadata" : 1,
   "Exception": 1,
   "Loader": 1,
+  "NativeCodePointers": 1,
   "Object": 1,
   "RuntimeTypeSystem": 1,
   "Thread": 1
