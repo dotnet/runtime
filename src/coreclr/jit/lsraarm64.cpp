@@ -1530,7 +1530,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // Can only avoid generating a table if both immediates are constant.
                         assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        // Ensure that internal does not collide with desination.
+                        // Ensure that internal does not collide with destination.
+                        setInternalRegsDelayFree = true;
+                        break;
+
+                    case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                        // This API has two immediates, one of which is used to index pairs of floats in a vector.
+                        // For a vector width of 128 bits, this means the index's range is [0, 1],
+                        // which means we will skip the above jump table register check,
+                        // even though we might need a jump table for the second immediate.
+                        // Thus, this API is special-cased, and does not use the HW_Category_SIMDByIndexedElement path.
+                        // Also, only one internal register is needed for the jump table;
+                        // we will combine the two immediates into one jump table.
+
+                        // Can only avoid generating a table if both immediates are constant.
+                        assert(intrin.op4->isContainedIntOrIImmed() == intrin.op5->isContainedIntOrIImmed());
+                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        // Ensure that internal does not collide with destination.
                         setInternalRegsDelayFree = true;
                         break;
 
@@ -1960,38 +1976,36 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             // Special handling for embedded intrinsics with immediates:
             // We might need an additional register to hold branch targets into the switch table
             // that encodes the immediate
+            bool needsInternalRegister;
             switch (intrinEmb.id)
             {
                 case NI_Sve_ShiftRightArithmeticForDivide:
                     assert(embHasImmediateOperand);
                     assert(numArgs == 2);
-                    if (!embOp2Node->Op(2)->isContainedIntOrIImmed())
-                    {
-                        buildInternalIntRegisterDefForNode(embOp2Node);
-                    }
+                    needsInternalRegister = !embOp2Node->Op(2)->isContainedIntOrIImmed();
                     break;
 
                 case NI_Sve_AddRotateComplex:
                     assert(embHasImmediateOperand);
                     assert(numArgs == 3);
-                    if (!embOp2Node->Op(3)->isContainedIntOrIImmed())
-                    {
-                        buildInternalIntRegisterDefForNode(embOp2Node);
-                    }
+                    needsInternalRegister = !embOp2Node->Op(3)->isContainedIntOrIImmed();
                     break;
 
                 case NI_Sve_MultiplyAddRotateComplex:
                     assert(embHasImmediateOperand);
                     assert(numArgs == 4);
-                    if (!embOp2Node->Op(4)->isContainedIntOrIImmed())
-                    {
-                        buildInternalIntRegisterDefForNode(embOp2Node);
-                    }
+                    needsInternalRegister = !embOp2Node->Op(4)->isContainedIntOrIImmed();
                     break;
 
                 default:
                     assert(!embHasImmediateOperand);
+                    needsInternalRegister = false;
                     break;
+            }
+
+            if (needsInternalRegister)
+            {
+                buildInternalIntRegisterDefForNode(embOp2Node);
             }
 
             size_t prefUseOpNum = 1;
@@ -2127,6 +2141,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(lowVectorOperandNum != 4);
                 assert(!tgtPrefOp2);
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
+
+                if (intrin.op5 != nullptr)
+                {
+                    assert(isRMW);
+                    srcCount += BuildDelayFreeUses(intrin.op5, intrin.op1);
+                }
             }
         }
     }
@@ -2448,6 +2468,7 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
         case NI_Sve_DotProductBySelectedScalar:
         case NI_Sve_FusedMultiplyAddBySelectedScalar:
         case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+        case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
             *operandNum = 3;
             break;
         case NI_Sve_MultiplyBySelectedScalar:

@@ -536,6 +536,22 @@ namespace System.Runtime.Serialization.Formatters.Tests
             BinaryFormatterHelpers.Clone(Array.CreateInstance(typeof(uint[]), new[] { 5 }, new[] { 1 }));
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Unpatched versions of .NET Framework would throw.")]
+        public void AssignUniqueIdToValueType()
+        {
+            Tuple<IComparable, object> tuple = new Tuple<IComparable, object>(42, new byte[] { 1, 2, 3, 4 });
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (MemoryStream stream = new MemoryStream())
+            {
+                formatter.Serialize(stream, tuple);
+                stream.Position = 0;
+                Tuple<IComparable, object> deserialized = (Tuple<IComparable, object>)formatter.Deserialize(stream);
+                Assert.Equal(tuple.Item1, deserialized.Item1);
+                Assert.Equal(tuple.Item2, deserialized.Item2);
+            }
+        }
+
         private static void ValidateEqualityComparer(object obj)
         {
             Type objType = obj.GetType();

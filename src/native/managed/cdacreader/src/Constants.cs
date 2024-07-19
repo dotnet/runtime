@@ -14,6 +14,7 @@ internal static class Constants
         internal const string GCThread = nameof(GCThread);
 
         internal const string FeatureEHFunclets = nameof(FeatureEHFunclets);
+        internal const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 
         internal const string ExceptionMethodTable = nameof(ExceptionMethodTable);
