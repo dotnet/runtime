@@ -431,7 +431,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <DevTeamProvisioning>-</DevTeamProvisioning>
+      <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
       <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
       <GenerateXcodeProject>true</GenerateXcodeProject>
       <AppleBundleDir>$(AppDir)</AppleBundleDir>
