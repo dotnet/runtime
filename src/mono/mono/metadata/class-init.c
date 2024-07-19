@@ -4271,8 +4271,8 @@ build_variance_search_table (MonoClass *klass) {
 	gboolean any_items = build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass, TRUE);
 
 	if (any_items) {
-		guint bytes = ((buf_count - 1) * sizeof(MonoVarianceSearchTableEntry)) + sizeof(VarianceSearchTable);
-		result = (VarianceSearchTable *)mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes);
+		guint bytes = (buf_count * sizeof(MonoVarianceSearchTableEntry));
+		result = (VarianceSearchTable *)mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes + sizeof(VarianceSearchTable));
 		result->count = buf_count;
 		memcpy (result->entries, buf, bytes);
 	}

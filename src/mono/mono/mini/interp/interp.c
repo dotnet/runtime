@@ -625,6 +625,7 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 	}
 
 	MonoMethod *virtual_method = m_class_get_vtable (vtable->klass) [slot];
+	g_assert (virtual_method);
 	if (m->is_inflated && mono_method_get_context (m)->method_inst) {
 		MonoGenericContext context = { NULL, NULL };
 
@@ -648,8 +649,30 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 	}
 
 	// Basic sanity check since a call might crash if we have the wrong method somehow
-	g_assert (m->signature->param_count == virtual_method->signature->param_count);
-	g_assert (m->signature->hasthis == virtual_method->signature->hasthis);
+
+	MonoMethodSignature *m_sig, *virtual_method_sig;
+	{
+		ERROR_DECL (error);
+		m_sig = mono_method_signature_checked (m, error);
+		mono_error_cleanup (error);
+	}
+	{
+		ERROR_DECL (error);
+		virtual_method_sig = mono_method_signature_checked (virtual_method, error);
+		mono_error_cleanup (error);
+	}
+	gboolean ok = m_sig &&
+		virtual_method_sig &&
+		(m_sig->param_count == virtual_method_sig->param_count) &&
+		(m_sig->hasthis == virtual_method_sig->hasthis);
+	if (!ok) {
+		g_print (
+			"get_virtual_method signature mismatch for %s.%s and %s.%s\n",
+			m_class_get_name (m->klass), m->name,
+			m_class_get_name (virtual_method->klass), virtual_method->name
+		);
+		g_assert (ok);
+	}
 
 	InterpMethod *virtual_imethod = mono_interp_get_imethod (virtual_method);
 	return virtual_imethod;
