@@ -1096,8 +1096,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
-				g_assert (size == 8);
-
+				g_assert (size == TARGET_SIZEOF_VOID_P);
 				ainfo->storage = ArgValuetypeInReg;
 				ainfo->pair_storage [0] = ArgInIReg;
 				ainfo->pair_storage [1] = ArgNone;

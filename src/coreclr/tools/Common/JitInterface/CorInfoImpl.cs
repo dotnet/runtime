@@ -1248,6 +1248,11 @@ namespace Internal.JitInterface
             return meth1.GetTypicalMethodDefinition() == meth2.GetTypicalMethodDefinition();
         }
 
+        private CORINFO_CLASS_STRUCT_* getTypeDefinition(CORINFO_CLASS_STRUCT_* type)
+        {
+            return ObjectToHandle(HandleToObject(type).GetTypeDefinition());
+        }
+
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);

@@ -278,10 +278,10 @@ namespace System.Globalization
 
             if (secondaryGroupingSize == 0)
             {
-                return new int[] { primaryGroupingSize };
+                return [primaryGroupingSize];
             }
 
-            return new int[] { primaryGroupingSize, secondaryGroupingSize };
+            return [primaryGroupingSize, secondaryGroupingSize];
         }
 
         private string IcuGetTimeFormatString() => IcuGetTimeFormatString(shortFormat: false);
