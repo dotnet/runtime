@@ -283,6 +283,23 @@ public sealed unsafe class Target
             : T.TryReadBigEndian(buffer, !IsSigned<T>(), out value);
     }
 
+    private static T Read<T>(ReadOnlySpan<byte> bytes, bool isLittleEndian) where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
+    {
+        if (sizeof(T) != bytes.Length)
+            throw new ArgumentException(nameof(bytes));
+
+        T value;
+        if (isLittleEndian)
+        {
+            T.TryReadLittleEndian(bytes, !IsSigned<T>(), out value);
+        }
+        else
+        {
+            T.TryReadBigEndian(bytes, !IsSigned<T>(), out value);
+        }
+        return value;
+    }
+
     public void ReadBuffer(ulong address, Span<byte> buffer)
     {
         if (!TryReadBuffer(address, buffer))
@@ -306,6 +323,18 @@ public sealed unsafe class Target
             throw new InvalidOperationException($"Failed to read pointer at 0x{address:x8}.");
 
         return pointer;
+    }
+
+    public TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    {
+        if (_config.PointerSize == sizeof(uint))
+        {
+            return new TargetPointer(Read<uint>(bytes.Slice(0, sizeof(uint)), _config.IsLittleEndian));
+        }
+        else
+        {
+            return new TargetPointer(Read<ulong>(bytes.Slice(0, sizeof(ulong)), _config.IsLittleEndian));
+        }
     }
 
     public void ReadPointers(ulong address, Span<TargetPointer> buffer)

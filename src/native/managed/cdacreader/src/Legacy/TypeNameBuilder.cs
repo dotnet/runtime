@@ -17,6 +17,7 @@ internal enum TypeNameFormat
     FormatAngleBrackets = 4,
     FormatAssembly = 8,
     FormatGenericParam = 16,
+    FormatSignature = 32,
 }
 
 internal struct TypeNameBuilder
@@ -51,15 +52,133 @@ internal struct TypeNameBuilder
         State = ParseState.Start;
     }
 
+    public static void AppendMethodInternal(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, TypeNameFormat format)
+    {
+        AppendMethodImpl(target, stringBuilder, method, default, format);
+    }
+
+    public static void AppendMethodImpl(Target target, StringBuilder stringBuilder, Contracts.MethodDescHandle method, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
+    {
+        IRuntimeTypeSystem runtimeTypeSystem = target.Contracts.RuntimeTypeSystem;
+        ILoader loader = target.Contracts.Loader;
+        ReadOnlySpan<byte> methodNameSpan;
+        TypeHandle th = default;
+        Contracts.ModuleHandle module = default;
+
+        bool isDynamicMethod = runtimeTypeSystem.IsDynamicMethod(method, out methodNameSpan);
+        if (isDynamicMethod)
+        {
+            if (runtimeTypeSystem.IsLCGMethod(method))
+            {
+                stringBuilder.Append("DynamicClass");
+            }
+            else if (runtimeTypeSystem.IsILStub(method))
+            {
+                stringBuilder.Append("ILStubClass");
+            }
+        }
+        else
+        {
+            th = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
+            AppendType(target, stringBuilder, th, typeInstantiation, format);
+        }
+
+        stringBuilder.Append('.');
+
+        if (isDynamicMethod)
+        {
+            stringBuilder.Append(Encoding.UTF8.GetString(methodNameSpan));
+        }
+        else if (runtimeTypeSystem.IsArrayMethod(method, out ArrayFunctionType functionType))
+        {
+            string arrayName;
+
+            switch (functionType)
+            {
+                case ArrayFunctionType.Set:
+                    arrayName = "Set";
+                    break;
+                case ArrayFunctionType.Get:
+                    arrayName = "Get";
+                    break;
+                case ArrayFunctionType.Address:
+                    arrayName = "Address";
+                    break;
+                case ArrayFunctionType.Constructor:
+                    arrayName = ".ctor";
+                    break;
+                default:
+                    throw new ArgumentException(nameof(method));
+            }
+
+            stringBuilder.Append(arrayName);
+        }
+        else
+        {
+            module = loader.GetModuleHandle(runtimeTypeSystem.GetModule(th));
+            EcmaMetadataReader reader = target.Metadata.GetMetadata(module).EcmaMetadataReader;
+            var cursor = reader.GetCursor(runtimeTypeSystem.GetMethodToken(method));
+            stringBuilder.Append(reader.GetColumnAsUtf8String(cursor, MetadataColumnIndex.MethodDef_Name));
+        }
+
+        if (format.HasFlag(TypeNameFormat.FormatSignature))
+        {
+            ReadOnlySpan<byte> signature;
+            EcmaMetadataReader? reader = default;
+            if (!runtimeTypeSystem.IsStoredSigMethodDesc(method, out signature))
+            {
+                reader = target.Metadata.GetMetadata(module).EcmaMetadataReader;
+                var cursor = reader.GetCursor(runtimeTypeSystem.GetMethodToken(method));
+                signature = reader.GetColumnAsBlob(cursor, MetadataColumnIndex.MethodDef_Signature);
+            }
+
+            ReadOnlySpan<TypeHandle> typeInstantiationSigFormat = default;
+            if (!th.IsNull)
+            {
+                typeInstantiationSigFormat = runtimeTypeSystem.GetInstantiation(th);
+            }
+
+            SigFormat.AppendSigFormat(target, stringBuilder, signature, reader, null, null, null, typeInstantiationSigFormat, runtimeTypeSystem.GetGenericMethodInstantiation(method), true);
+        }
+    }
+
+    public static TypeHandle GetExactOwningType(IRuntimeTypeSystem runtimeTypeSystem, TypeHandle possiblyDerivedType, MethodDescHandle method)
+    {
+        TypeHandle approxOwner = runtimeTypeSystem.GetTypeHandle(runtimeTypeSystem.GetMethodTable(method));
+
+        uint typeDefTokenOfOwner = runtimeTypeSystem.GetTypeDefToken(approxOwner);
+        TargetPointer moduleOfOwner = runtimeTypeSystem.GetModule(approxOwner);
+
+        do
+        {
+            uint typeDefTokenOfPossiblyDerivedType = runtimeTypeSystem.GetTypeDefToken(possiblyDerivedType);
+            TargetPointer moduleOfPossiblyDerivedType = runtimeTypeSystem.GetModule(possiblyDerivedType);
+
+            if ((typeDefTokenOfOwner == typeDefTokenOfPossiblyDerivedType) && (moduleOfOwner == moduleOfPossiblyDerivedType))
+            {
+                return possiblyDerivedType;
+            }
+
+            TargetPointer parentTypePointer = runtimeTypeSystem.GetParentMethodTable(possiblyDerivedType);
+            if (parentTypePointer.Value == 0)
+                throw new InvalidOperationException("Invalid parent type");
+
+            // TODO(cdac) - Consider adding infinite loop detection here
+            possiblyDerivedType = runtimeTypeSystem.GetTypeHandle(parentTypePointer);
+        } while (true);
+    }
+
     public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, TypeNameFormat format)
     {
         AppendType(target, stringBuilder, typeHandle, default, format);
     }
+
     public static void AppendType(Target target, StringBuilder stringBuilder, Contracts.TypeHandle typeHandle, ReadOnlySpan<TypeHandle> typeInstantiation, TypeNameFormat format)
     {
         TypeNameBuilder builder = new(stringBuilder, target, format);
         AppendTypeCore(ref builder, typeHandle, typeInstantiation, format);
     }
+
     private static void AppendTypeCore(ref TypeNameBuilder tnb, Contracts.TypeHandle typeHandle, ReadOnlySpan<Contracts.TypeHandle> instantiation, TypeNameFormat format)
     {
         bool toString = format.HasFlag(TypeNameFormat.FormatNamespace) && !format.HasFlag(TypeNameFormat.FormatFullInst) && !format.HasFlag(TypeNameFormat.FormatAssembly);

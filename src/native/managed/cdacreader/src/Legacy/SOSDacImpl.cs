@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -111,7 +112,69 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
     }
 
     public unsafe int GetMethodDescFromToken(ulong moduleAddr, uint token, ulong* methodDesc) => HResults.E_NOTIMPL;
-    public unsafe int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded) => HResults.E_NOTIMPL;
+    public unsafe int GetMethodDescName(ulong methodDesc, uint count, char* name, uint* pNeeded)
+    {
+        if (methodDesc == 0)
+            return HResults.E_INVALIDARG;
+
+        int hr = HResults.S_OK;
+        if (pNeeded != null)
+            *pNeeded = 0;
+        try
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            Contracts.IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+            Contracts.MethodDescHandle methodDescHandle = rtsContract.GetMethodDescHandle(methodDesc);
+            try
+            {
+                TypeNameBuilder.AppendMethodInternal(_target, stringBuilder, methodDescHandle, TypeNameFormat.FormatSignature | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+            }
+            catch
+            {
+                hr = HResults.E_FAIL;
+                if (rtsContract.IsDynamicMethod(methodDescHandle, out _))
+                {
+                    // In heap dumps, trying to format the signature can fail
+                    // in certain cases.
+                    stringBuilder.Clear();
+                    TypeNameBuilder.AppendMethodInternal(_target, stringBuilder, methodDescHandle, TypeNameFormat.FormatNamespace | TypeNameFormat.FormatFullInst);
+                    hr = HResults.S_OK;
+                }
+                else
+                {
+                    string? fallbackNameString = _target.Contracts.DacStreams.StringFromEEAddress(methodDesc);
+                    if (!string.IsNullOrEmpty(fallbackNameString))
+                    {
+                        stringBuilder.Clear();
+                        stringBuilder.Append(fallbackNameString);
+                        hr = HResults.S_OK;
+                    }
+                    else
+                    {
+                        TargetPointer modulePtr = rtsContract.GetModule(rtsContract.GetTypeHandle(rtsContract.GetMethodTable(methodDescHandle)));
+                        Contracts.ModuleHandle module = _target.Contracts.Loader.GetModuleHandle(modulePtr);
+                        string modulePath = _target.Contracts.Loader.GetPath(module);
+                        stringBuilder.Clear();
+                        stringBuilder.Append(modulePath);
+                        stringBuilder.Append("!Unknown");
+                        hr = HResults.S_OK;
+                    }
+                }
+            }
+
+            if (hr ==  HResults.S_OK)
+            {
+                CopyStringToTargetBuffer(name, count, pNeeded, stringBuilder.ToString());
+            }
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return hr;
+    }
+
     public unsafe int GetMethodDescPtrFromFrame(ulong frameAddr, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD) => HResults.E_NOTIMPL;
     public unsafe int GetMethodDescTransparencyData(ulong methodDesc, void* data) => HResults.E_NOTIMPL;
