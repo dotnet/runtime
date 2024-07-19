@@ -1841,7 +1841,7 @@ namespace System
 
                 if ((options & StringSplitOptions.RemoveEmptyEntries) == 0 || candidate.Length != 0)
                 {
-                    return new string[] { candidate };
+                    return [candidate];
                 }
             }
 

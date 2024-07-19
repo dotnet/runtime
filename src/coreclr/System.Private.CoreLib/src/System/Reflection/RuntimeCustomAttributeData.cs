@@ -383,11 +383,10 @@ namespace System.Reflection
         {
             Type type = typeof(TypeForwardedToAttribute);
 
-            Type[] sig = new Type[] { typeof(Type) };
+            Type[] sig = [typeof(Type)];
             m_ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, sig, null)!;
 
-            CustomAttributeTypedArgument[] typedArgs = new CustomAttributeTypedArgument[1];
-            typedArgs[0] = new CustomAttributeTypedArgument(typeof(Type), forwardedTo.Destination);
+            CustomAttributeTypedArgument[] typedArgs = [new CustomAttributeTypedArgument(typeof(Type), forwardedTo.Destination)];
             m_typedCtorArgs = Array.AsReadOnly(typedArgs);
 
             m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
@@ -1954,8 +1953,8 @@ namespace System.Reflection
         #region Static Constructor
         private static HashSet<RuntimeType> CreatePseudoCustomAttributeHashSet()
         {
-            Type[] pcas = new Type[]
-            {
+            Type[] pcas =
+            [
                 // See https://github.com/dotnet/runtime/blob/main/src/coreclr/md/compiler/custattr_emit.cpp
                 typeof(FieldOffsetAttribute), // field
                 typeof(SerializableAttribute), // class, struct, enum, delegate
@@ -1968,7 +1967,7 @@ namespace System.Reflection
                 typeof(DllImportAttribute), // method
                 typeof(PreserveSigAttribute), // method
                 typeof(TypeForwardedToAttribute), // assembly
-            };
+            ];
 
             HashSet<RuntimeType> set = new HashSet<RuntimeType>(pcas.Length);
             foreach (RuntimeType runtimeType in pcas)
