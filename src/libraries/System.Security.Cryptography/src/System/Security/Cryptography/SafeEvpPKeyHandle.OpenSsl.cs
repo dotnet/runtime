@@ -198,10 +198,10 @@ namespace System.Security.Cryptography
         ///   Open a named public key using a named <c>OSSL_PROVIDER</c>.
         /// </summary>
         /// <param name="providerName">
-        ///   The name of the <code>provider</code> to process the key open request.
+        ///   The name of the <c>OSSL_PROVIDER</c> to process the key open request.
         /// </param>
         /// <param name="keyUri">
-        ///   The provider-assigned URI of the key to open.
+        ///   The URI assigned by the <c>OSSL_PROVIDER</c> of the key to open.
         /// </param>
         /// <returns>
         ///   The opened key.
@@ -213,19 +213,19 @@ namespace System.Security.Cryptography
         ///   <paramref name="providerName"/> or <paramref name="keyUri"/> is the empty string.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   the key could not be opened via the specified provider.
+        ///   the key could not be opened via the specified named <c>OSSL_PROVIDER</c>.
         /// </exception>
         /// <remarks>
         ///   <para>
         ///     Both <paramref name="providerName" /> and <paramref name="keyUri" /> must be trusted inputs.
         ///   </para>
         ///   <para>
-        ///     This operation will fail if OpenSSL cannot successfully load the named <code>provider</code>,
-        ///     or if the named <code>provider</code> cannot load the named key.
+        ///     This operation will fail if OpenSSL cannot successfully load the named <c>OSSL_PROVIDER</c>,
+        ///     or if the named <c>OSSL_PROVIDER</c> cannot load the named key.
         ///   </para>
         ///   <para>
         ///     The syntax for <paramref name="keyUri"/> is determined by each individual
-        ///     <code>provider</code>.
+        ///     named <c>OSSL_PROVIDER</c>.
         ///   </para>
         /// </remarks>
         [UnsupportedOSPlatform("android")]
