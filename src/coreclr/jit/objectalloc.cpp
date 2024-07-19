@@ -993,8 +993,16 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 }
                 FALLTHROUGH;
             case GT_IND:
-                // Address of the field/ind is not taken so the local doesn't escape.
-                canLclVarEscapeViaParentStack = false;
+                if (parent->OperIs(GT_IND) && parent->TypeIs(TYP_REF))
+                {
+                    ++parentIndex;
+                    keepChecking = true;
+                }
+                else
+                {
+                    // Address of the field/ind is not taken so the local doesn't escape.
+                    canLclVarEscapeViaParentStack = false;
+                }
                 break;
 
             case GT_CALL:
