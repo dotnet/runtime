@@ -1165,12 +1165,12 @@ namespace System.Net.Http.Headers
                 else
                 {
                     Debug.Assert(length > 1, "The header should have been removed when it became empty");
-                    values = multiValue = new string[length];
+                    values = (multiValue = new string[length])!;
                 }
 
                 int currentIndex = 0;
-                ReadStoreValues<object?>(values, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
-                ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
+                ReadStoreValues<object?>(values!, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
+                ReadStoreValues<string?>(values!, info.RawValue, null, ref currentIndex);
 
                 Debug.Assert(currentIndex == length);
             }
@@ -1205,8 +1205,8 @@ namespace System.Net.Http.Headers
                 }
 
                 int currentIndex = 0;
-                ReadStoreValues<object?>(values, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
-                ReadStoreValues<string?>(values, info.RawValue, null, ref currentIndex);
+                ReadStoreValues<object?>(values!, info.ParsedAndInvalidValues, descriptor.Parser, ref currentIndex);
+                ReadStoreValues<string?>(values!, info.RawValue, null, ref currentIndex);
                 Debug.Assert(currentIndex == length);
 
                 return length;

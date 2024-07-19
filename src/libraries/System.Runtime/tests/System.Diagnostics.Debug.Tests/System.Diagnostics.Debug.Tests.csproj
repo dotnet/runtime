@@ -14,6 +14,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Memory\src\System.Memory.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DebugTests.cs" />
