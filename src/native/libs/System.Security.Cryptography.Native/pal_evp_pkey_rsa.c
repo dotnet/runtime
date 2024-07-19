@@ -274,6 +274,22 @@ int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
         goto done;
     }
 
+    // This check will not work with hardware keys coming from OpenSSL providers
+    // because providers don't seem to set RSA_FLAG_EXT_PKEY (the tpm2 most notably)
+    // ENGINE-s may or may not set it.
+    // This is needed only on OpenSSL < 3.0,
+    // see: https://github.com/dotnet/runtime/issues/53345
+    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
+    {
+        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            goto done;
+        }
+    }
+
     size_t written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_sign(ctx, destination, &written, hash, Int32ToSizeT(hashLen)) > 0)
@@ -318,22 +334,6 @@ int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
     if (!ConfigureSignature(ctx, padding, digest))
     {
         goto done;
-    }
-
-    // This check will not work with hardware keys coming from OpenSSL providers
-    // because providers don't seem to set RSA_FLAG_EXT_PKEY (the tpm2 most notably)
-    // ENGINE-s may or may not set it.
-    // This is needed only on OpenSSL < 3.0,
-    // see: https://github.com/dotnet/runtime/issues/53345
-    if (CryptoNative_OpenSslVersionNumber() < OPENSSL_VERSION_3_0_RTM)
-    {
-        const RSA* rsa = EVP_PKEY_get0_RSA(pkey);
-
-        if (rsa == NULL || HasNoPrivateKey(rsa))
-        {
-            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-            goto done;
-        }
     }
 
     // EVP_PKEY_verify is not consistent on whether a missized hash is an error or just a mismatch.
