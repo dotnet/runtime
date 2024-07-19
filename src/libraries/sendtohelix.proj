@@ -100,6 +100,9 @@
         <Fingerprinting>%(_TestUsingFingerprintingValues.Identity)</Fingerprinting>
       </_TestUsingCrossProductValues>
 
+      <!-- There no tests without fingerprinting and without workloads -->
+      <_TestUsingCrossProductValues Remove="@(_TestUsingCrossProductValues)" Condition="'%(_TestUsingCrossProductValues.Workloads)' == 'false' and '%(_TestUsingCrossProductValues.Fingerprinting)' == 'false'" />
+
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingCrossProductValues.Workloads);TestUsingWebcil=%(_TestUsingCrossProductValues.Webcil);TestUsingFingerprinting=%(_TestUsingCrossProductValues.Fingerprinting)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
