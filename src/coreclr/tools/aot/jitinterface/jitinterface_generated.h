@@ -36,7 +36,6 @@ struct JitInterfaceCallbacks
     bool (* pInvokeMarshalingRequired)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
     bool (* satisfiesMethodConstraints)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE parent, CORINFO_METHOD_HANDLE method);
     void (* methodMustBeLoadedBeforeCodeIsRun)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
-    CORINFO_METHOD_HANDLE (* mapMethodDeclToMethodImpl)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method);
     void (* getGSCookie)(void * thisHandle, CorInfoExceptionClass** ppException, GSCookie* pCookieVal, GSCookie** ppCookieVal);
     void (* setPatchpointInfo)(void * thisHandle, CorInfoExceptionClass** ppException, PatchpointInfo* patchpointInfo);
     PatchpointInfo* (* getOSRInfo)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned* ilOffset);
@@ -447,15 +446,6 @@ public:
     CorInfoExceptionClass* pException = nullptr;
     _callbacks->methodMustBeLoadedBeforeCodeIsRun(_thisHandle, &pException, method);
     if (pException != nullptr) throw pException;
-}
-
-    virtual CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    CORINFO_METHOD_HANDLE temp = _callbacks->mapMethodDeclToMethodImpl(_thisHandle, &pException, method);
-    if (pException != nullptr) throw pException;
-    return temp;
 }
 
     virtual void getGSCookie(

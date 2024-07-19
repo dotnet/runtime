@@ -285,6 +285,7 @@ LPCUTF8 MethodDesc::GetNameThrowing()
 }
 
 //*******************************************************************************
+#ifndef DACCESS_COMPILE
 LPCUTF8 MethodDesc::GetName(USHORT slot)
 {
     // MethodDesc::GetDeclMethodDesc can throw.
@@ -293,6 +294,7 @@ LPCUTF8 MethodDesc::GetName(USHORT slot)
     CONSISTENCY_CHECK(IsInterface() || !pDeclMD->IsInterface());
     return pDeclMD->GetName();
 }
+#endif // DACCESS_COMPILE
 
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetName()
@@ -590,6 +592,7 @@ PTR_PCODE MethodDesc::GetAddrOfSlot()
 }
 
 //*******************************************************************************
+#ifndef DACCESS_COMPILE
 PTR_MethodDesc MethodDesc::GetDeclMethodDesc(UINT32 slotNumber)
 {
     CONTRACTL {
@@ -642,6 +645,7 @@ PTR_MethodDesc MethodDesc::GetDeclMethodDesc(UINT32 slotNumber)
     CONSISTENCY_CHECK((UINT32)pMDResult->GetSlot() == slotNumber);
     return PTR_MethodDesc(pMDResult);
 }
+#endif // DACCESS_COMPILE
 
 //*******************************************************************************
 // Returns a hash for the method.
@@ -2136,10 +2140,9 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
     CONTRACTL_END
 
-    if (IsGenericMethodDefinition())
+    if (ContainsGenericVariables())
     {
-        _ASSERTE(!"Cannot take the address of an uninstantiated generic method.");
-        COMPlusThrow(kInvalidProgramException);
+        COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
     }
 
     if (accessFlags & CORINFO_ACCESS_LDFTN)

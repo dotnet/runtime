@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.Build.NoTargets">
+
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
@@ -13,6 +14,7 @@
     <NoWarn>$(NoWarn);NU5128</NoWarn>
     <!-- Disabling baseline validation since this is  binary blob -nd we do not need API compat. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <PackageReadmeFilePath>$(MSBuildThisFileDirectory)../src/PACKAGE.md</PackageReadmeFilePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,4 +30,5 @@
                                    TargetFramework="$(TargetFramework)" />
     </ItemGroup>
   </Target>
+
 </Project>

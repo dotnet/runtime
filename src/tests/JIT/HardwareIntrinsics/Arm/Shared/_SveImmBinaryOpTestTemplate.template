@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -145,7 +146,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-                for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
+                for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp2}; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref testStruct._fld2), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
 
                 return testStruct;
@@ -173,7 +174,7 @@ namespace JIT.HardwareIntrinsics.Arm
         private {Op1VectorType}<{Op1BaseType}> _mask;
         private {Op1VectorType}<{Op1BaseType}> _fld1;
         private {Op1VectorType}<{Op1BaseType}> _fld2;
-	private {Op1VectorType}<{Op1BaseType}> _falseFld;
+        private {Op1VectorType}<{Op1BaseType}> _falseFld;
 
         private DataTable _dataTable;
 
@@ -181,16 +182,16 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
+            for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueMask} % 2); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
-            for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp2}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _falseFld), ref Unsafe.As<{Op1BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());            
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
-            for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
+            for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp2}; }
             _dataTable = new DataTable(_data1, _data2, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
