@@ -1452,10 +1452,25 @@ bool StrengthReductionContext::TryStrengthReduce()
         DBEXEC(VERBOSE, currentIV->Dump(m_comp));
         JITDUMP("\n");
 
-        if (Scev::Equals(currentIV->Step, primaryIV->Step) && !StressProfitability())
+        if (!StressProfitability())
         {
-            JITDUMP("    Skipping: candidate has same step as primary IV\n");
-            continue;
+            if (Scev::Equals(currentIV->Step, primaryIV->Step))
+            {
+                JITDUMP("    Skipping: Candidate has same step as primary IV\n");
+                continue;
+            }
+
+            // Leave widening up to widening.
+            int64_t newIVStep;
+            int64_t primaryIVStep;
+            if (currentIV->Step->TypeIs(TYP_LONG) && primaryIV->Step->TypeIs(TYP_INT) &&
+                currentIV->Step->GetConstantValue(m_comp, &newIVStep) &&
+                primaryIV->Step->GetConstantValue(m_comp, &primaryIVStep) &&
+                (int32_t)newIVStep == (int32_t)primaryIVStep)
+            {
+                JITDUMP("    Skipping: Candidate has same widened step as primary IV\n");
+                continue;
+            }
         }
 
         if (TryReplaceUsesWithNewPrimaryIV(cursors, currentIV))
@@ -1844,14 +1859,14 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
 
     ScevLocal* local = (ScevLocal*)baseScev;
 
-    ValueNum vn = m_scevContext.MaterializeVN(baseScev);
-    if (vn == ValueNumStore::NoVN)
+    ValueNumPair vnp = m_scevContext.MaterializeVN(baseScev);
+    if (vnp.GetConservative() == ValueNumStore::NoVN)
     {
         return false;
     }
 
     BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
-    if (!m_comp->optAssertionVNIsNonNull(vn, preheader->bbAssertionOut))
+    if (!m_comp->optAssertionVNIsNonNull(vnp.GetConservative(), preheader->bbAssertionOut))
     {
         return false;
     }
@@ -1889,15 +1904,15 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
             continue;
         }
 
-        ValueNum boundBaseVN = m_scevContext.MaterializeVN(boundBase);
+        ValueNumPair boundBaseVN = m_scevContext.MaterializeVN(boundBase);
 
         VNFuncApp vnf;
-        if (!m_comp->vnStore->GetVNFunc(boundBaseVN, &vnf))
+        if (!m_comp->vnStore->GetVNFunc(boundBaseVN.GetConservative(), &vnf))
         {
             continue;
         }
 
-        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vn))
+        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vnp.GetConservative()))
         {
             continue;
         }
