@@ -20,6 +20,7 @@ public enum DataType
     pointer,
 
     GCHandle,
+    CodePointer,
     Thread,
     ThreadStore,
     GCAllocContext,
@@ -42,6 +43,7 @@ public enum DataType
     String,
     MethodDesc,
     MethodDescChunk,
+    MethodDescCodeData,
     Array,
     SyncBlock,
     SyncTableEntry,

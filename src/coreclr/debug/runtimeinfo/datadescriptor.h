@@ -304,6 +304,8 @@ CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_data<MethodDesc>::ChunkI
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Slot, cdac_data<MethodDesc>::Slot)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_data<MethodDesc>::Flags)
 CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags3AndTokenRemainder, cdac_data<MethodDesc>::Flags3AndTokenRemainder)
+CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, EntryPointFlags, cdac_data<MethodDesc>::EntryPointFlags)
+CDAC_TYPE_FIELD(MethodDesc, /*pointer*/, CodeData, cdac_data<MethodDesc>::CodeData)
 CDAC_TYPE_END(MethodDesc)
 
 CDAC_TYPE_BEGIN(MethodDescChunk)
@@ -333,6 +335,15 @@ CDAC_TYPE_BEGIN(DynamicMethodDesc)
 CDAC_TYPE_INDETERMINATE(DynamicMethodDesc)
 CDAC_TYPE_FIELD(DynamicMethodDesc, /*pointer*/, MethodName, cdac_data<DynamicMethodDesc>::MethodName)
 CDAC_TYPE_END(DynamicMethodDesc)
+
+CDAC_TYPE_BEGIN(CodePointer)
+CDAC_TYPE_SIZE(sizeof(PCODE))
+CDAC_TYPE_END(CodePointer)
+
+CDAC_TYPE_BEGIN(MethodDescCodeData)
+CDAC_TYPE_INDETERMINATE(MethodDescCodeData)
+CDAC_TYPE_FIELD(MethodDescCodeData, /*CodePointer*/, TemporaryEntryPoint, offsetof(MethodDescCodeData,TemporaryEntryPoint))
+CDAC_TYPE_END(MethodDescCodeData)
 
 CDAC_TYPES_END()
 

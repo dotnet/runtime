@@ -33,6 +33,29 @@ public readonly struct TargetPointer : IEquatable<TargetPointer>
     public override int GetHashCode() => Value.GetHashCode();
 }
 
+public readonly struct TargetCodePointer : IEquatable<TargetCodePointer>
+{
+    public static TargetCodePointer Null = new(0);
+    public readonly ulong Value;
+    public TargetCodePointer(ulong value) => Value = value;
+
+    public static implicit operator ulong(TargetCodePointer p) => p.Value;
+    public static implicit operator TargetCodePointer(ulong v) => new TargetCodePointer(v);
+
+    public static bool operator ==(TargetCodePointer left, TargetCodePointer right) => left.Value == right.Value;
+    public static bool operator !=(TargetCodePointer left, TargetCodePointer right) => left.Value != right.Value;
+
+    public override bool Equals(object? obj) => obj is TargetCodePointer pointer && Equals(pointer);
+    public bool Equals(TargetCodePointer other) => Value == other.Value;
+
+    public override int GetHashCode() => Value.GetHashCode();
+
+    public bool Equals(TargetCodePointer x, TargetCodePointer y) => x.Value == y.Value;
+    public int GetHashCode(TargetCodePointer obj) => obj.Value.GetHashCode();
+
+    public TargetPointer AsTargetPointer => new(Value);
+}
+
 public readonly struct TargetNUInt
 {
     public readonly ulong Value;
@@ -337,6 +360,20 @@ public sealed unsafe class Target
         {
             return new TargetPointer(Read<ulong>(bytes.Slice(0, sizeof(ulong)), _config.IsLittleEndian));
         }
+    }
+
+    public TargetCodePointer ReadCodePointer(ulong address)
+    {
+        TypeInfo codePointerTypeInfo = GetTypeInfo(DataType.CodePointer);
+        if (codePointerTypeInfo.Size is sizeof(uint))
+        {
+            return new TargetCodePointer(Read<uint>(address));
+        }
+        else if (codePointerTypeInfo.Size is sizeof(ulong))
+        {
+            return new TargetCodePointer(Read<ulong>(address));
+        }
+        throw new InvalidOperationException($"Failed to read code pointer at 0x{address:x8} because CodePointer size is not 4 or 8");
     }
 
     public void ReadPointers(ulong address, Span<TargetPointer> buffer)

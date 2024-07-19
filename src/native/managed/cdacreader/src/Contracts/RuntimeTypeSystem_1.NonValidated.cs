@@ -99,11 +99,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
 
             private bool HasFlag(MethodDescFlags flag) => (_desc.Flags & (ushort)flag) != 0;
+            private bool HasFlag(MethodDescEntryPointFlags flag) => (_desc.EntryPointFlags & (byte)flag) != 0;
 
             internal byte ChunkIndex => _desc.ChunkIndex;
             internal TargetPointer MethodTable => _chunk.MethodTable;
             internal ushort Slot => _desc.Slot;
             internal bool HasNonVtableSlot => HasFlag(MethodDescFlags.HasNonVtableSlot);
+
+            internal bool TemporaryEntryPointAssigned => HasFlag(MethodDescEntryPointFlags.TemporaryEntryPointAssigned);
         }
 
         internal static MethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
@@ -242,6 +245,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         Data.MethodDesc desc = new Data.MethodDesc(_target, methodDescPointer);
         Data.MethodDescChunk chunk = GetMethodDescChunkThrowing(methodDescPointer, desc, out methodDescChunkPointer);
         return new NonValidated.MethodDesc(_target, desc, chunk);
+    }
+
+    private TargetCodePointer GetTemporaryEntryPointIfExists(NonValidated.MethodDesc umd)
+    {
+        if (!umd.TemporaryEntryPointAssigned)
+        {
+            return TargetCodePointer.Null;
+        }
+        throw new NotImplementedException(); // TODO[cdac]: read MethodDescCodeData::TemporaryEntryPoint
     }
 
     private bool ValidateMethodDescPointer(TargetPointer methodDescPointer, [NotNullWhen(true)] out TargetPointer methodDescChunkPointer)

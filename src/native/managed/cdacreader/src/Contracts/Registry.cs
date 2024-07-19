@@ -25,6 +25,7 @@ internal sealed class Registry
     public IThread Thread => GetContract<IThread>();
     public IRuntimeTypeSystem RuntimeTypeSystem => GetContract<IRuntimeTypeSystem>();
     public IDacStreams DacStreams => GetContract<IDacStreams>();
+    public INativeCodePointers NativeCodePointers => GetContract<INativeCodePointers>();
 
     private T GetContract<T>() where T : IContract
     {

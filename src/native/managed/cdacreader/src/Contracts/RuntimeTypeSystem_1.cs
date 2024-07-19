@@ -109,6 +109,12 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         IsILStub = 0x00008000,
     }
 
+    [Flags]
+    internal enum MethodDescEntryPointFlags : byte
+    {
+        TemporaryEntryPointAssigned = 0x04,
+    }
+
     internal struct MethodDesc
     {
         private readonly Data.MethodDesc _desc;

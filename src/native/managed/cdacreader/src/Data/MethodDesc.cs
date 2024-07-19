@@ -16,12 +16,14 @@ internal sealed class MethodDesc : IData<MethodDesc>
         Slot = target.Read<ushort>(address + (ulong)type.Fields[nameof(Slot)].Offset);
         Flags = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags)].Offset);
         Flags3AndTokenRemainder = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags3AndTokenRemainder)].Offset);
+        EntryPointFlags = target.Read<byte>(address + (ulong)type.Fields[nameof(EntryPointFlags)].Offset);
     }
 
     public byte ChunkIndex { get; init; }
     public ushort Slot { get; init; }
     public ushort Flags { get; init; }
     public ushort Flags3AndTokenRemainder { get; init; }
+    public byte EntryPointFlags { get; init; }
 }
 
 internal sealed class InstantiatedMethodDesc : IData<InstantiatedMethodDesc>
