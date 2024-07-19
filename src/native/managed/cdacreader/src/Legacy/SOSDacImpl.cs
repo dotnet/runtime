@@ -308,7 +308,21 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
         return HResults.S_OK;
     }
 
-    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded) => HResults.E_NOTIMPL;
+    public unsafe int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded)
+    {
+        try
+        {
+            Contracts.IObject contract = _target.Contracts.Object;
+            string str = contract.GetStringValue(obj);
+            CopyStringToTargetBuffer(stringData, count, pNeeded, str);
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult;
+        }
+
+        return HResults.S_OK;
+    }
     public unsafe int GetOOMData(ulong oomAddr, void* data) => HResults.E_NOTIMPL;
     public unsafe int GetOOMStaticData(void* data) => HResults.E_NOTIMPL;
     public unsafe int GetPEFileBase(ulong addr, ulong* peBase) => HResults.E_NOTIMPL;
