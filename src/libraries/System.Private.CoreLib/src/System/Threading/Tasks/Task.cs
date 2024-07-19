@@ -3252,8 +3252,7 @@ namespace System.Threading.Tasks
             if (cancellationException != null)
             {
 #if DEBUG
-                var oce = cancellationException as OperationCanceledException;
-                if (oce == null)
+                if (cancellationException is not OperationCanceledException oce)
                 {
                     var edi = cancellationException as ExceptionDispatchInfo;
                     Debug.Assert(edi != null, "Expected either an OCE or an EDI");
