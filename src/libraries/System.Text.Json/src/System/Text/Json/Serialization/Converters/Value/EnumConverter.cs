@@ -61,18 +61,19 @@ namespace System.Text.Json.Serialization.Converters
             _converterOptions = converterOptions;
             _namingPolicy = namingPolicy;
             _enumFieldInfo = ResolveEnumFields(namingPolicy);
+            _enumFieldInfoIndex = new(StringComparer.OrdinalIgnoreCase);
 
             _nameCacheForWriting = new();
             _nameCacheForReading = new(StringComparer.Ordinal);
-            _enumFieldInfoIndex = new(StringComparer.OrdinalIgnoreCase);
 
             JavaScriptEncoder? encoder = options.Encoder;
             foreach (EnumFieldInfo fieldInfo in _enumFieldInfo)
             {
+                AddToEnumFieldIndex(fieldInfo);
+
                 JsonEncodedText encodedName = JsonEncodedText.Encode(fieldInfo.JsonName, encoder);
                 _nameCacheForWriting.TryAdd(fieldInfo.Key, encodedName);
                 _nameCacheForReading.TryAdd(fieldInfo.JsonName, fieldInfo.Key);
-                AddToEnumFieldIndex(fieldInfo);
             }
 
             if (namingPolicy != null)
