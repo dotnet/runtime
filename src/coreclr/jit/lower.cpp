@@ -2691,7 +2691,6 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // note that everything generated from this point might run AFTER the outgoing args are placed
     GenTree* controlExpr          = nullptr;
     bool     callWasExpandedEarly = false;
-    bool     endNogcBeforeCall    = false;
 
     // for x86, this is where we record ESP for checking later to make sure stack is balanced
 
@@ -2808,7 +2807,6 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
     ContainCheckCallOperands(call);
-
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
