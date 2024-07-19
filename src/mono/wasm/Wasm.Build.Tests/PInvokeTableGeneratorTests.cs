@@ -719,6 +719,39 @@ namespace Wasm.Build.Tests
             return (buildArgs, output);
         }
 
+        private void EnsureComInteropCompiles(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string programText = @"
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.ComTypes;
+
+                public static int Main(string[] args)
+                {
+                    var s = new STGMEDIUM();
+                    ReleaseStgMedium(ref s);
+                    return 42;
+                }
+
+                [DllImport(""ole32.dll"")]
+                internal static extern void ReleaseStgMedium(ref STGMEDIUM medium);
+            ";
+
+            (string libraryDir, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
+                                            },
+                                            Publish: buildArgs.AOT,
+                                            // Verbosity: "diagnostic",
+                                            DotnetWasmFromRuntimePack: true));
+
+            Assert.Contains("Generated app bundle at " + libraryDir, output);
+        }
+
         private void EnsureWasmAbiRulesAreFollowed(BuildArgs buildArgs, RunHost host, string id)
         {
             string programText = @"
@@ -884,6 +917,11 @@ namespace Wasm.Build.Tests
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
         public void EnsureWasmAbiRulesAreFollowedInInterpreter(BuildArgs buildArgs, RunHost host, string id) =>
             EnsureWasmAbiRulesAreFollowed(buildArgs, host, id);
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, aot: true)]
+        public void EnsureComInteropCompilesInAOT(BuildArgs buildArgs, RunHost host, string id) =>
+            EnsureComInteropCompiles(buildArgs, host, id);
 
         [Theory]
         [BuildAndRun(host: RunHost.Chrome, aot: false)]
