@@ -65,11 +65,11 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer) 
         size_t gcHandle = 0;
         nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
         NSNumber* num = nw_framer_options_copy_object_value(framer_options, "GCHANDLE");
-        assert(num != NULL);
-
-        nw_retain(framer);
-        [num getValue:&gcHandle];
-        (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStart, 0, 0);
+        if (num != NULL)
+        {
+            [num getValue:&gcHandle];
+            (_statusFunc)(gcHandle, PAL_NwStatusUpdates_FramerStart, 0, 0);
+        }
     }
     else
     {
@@ -110,6 +110,11 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
 // this takes encrypted input from underlying stream and feeds it to nw_connection.
 int32_t AppleCryptoNative_NwProcessInputData(nw_connection_t connection, nw_framer_t framer, const uint8_t * buffer, int bufferLength)
 {
+    if (connection == NULL || framer == NULL)
+    {
+        return -1;
+    }
+
     nw_framer_message_t message = nw_framer_message_create(framer);
 
     // There is race condition when connection can fail or be canceled and if it does we fail to create the message here.

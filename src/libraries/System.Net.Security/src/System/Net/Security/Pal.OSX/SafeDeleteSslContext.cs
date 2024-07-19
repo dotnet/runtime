@@ -269,6 +269,7 @@ namespace System.Net
                 {
                     if (UseNwFramework && !_disposed)
                     {
+                        _framer = IntPtr.Zero;
                         lock (SslContext)
                         {
                             // alternativelly we can inject Framer errro
