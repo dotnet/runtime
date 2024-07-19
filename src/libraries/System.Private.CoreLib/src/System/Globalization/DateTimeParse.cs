@@ -5300,7 +5300,7 @@ namespace System
             }
 
             buffer.Append(',');
-            s = Hex(strs[strs.Length - 1]);
+            s = Hex(strs[^1]);
             if (s.Length > MaxLineLength || (curLineLength + s.Length + 6) > MaxLineLength)
             {
                 buffer.AppendLine();
