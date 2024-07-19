@@ -49,7 +49,7 @@ public class BuildPublishTests : BlazorWasmTestBase
         }
         data.Add("Release", false); // Release relinks by default
 
-        // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497", TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103625", TestPlatforms.Windows)]
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             if (!isAot)
