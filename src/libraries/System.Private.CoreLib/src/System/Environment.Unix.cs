@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -42,28 +43,35 @@ namespace System
             return Array.Empty<string>();
         }
 
-        private static long s_ticksPerSecond;
 
-        /// <summary>Convert a number of "jiffies", or ticks, to a TimeSpan.</summary>
-        /// <param name="ticks">The number of ticks.</param>
-        /// <returns>The equivalent TimeSpan.</returns>
-        internal static TimeSpan TicksToTimeSpan(double ticks)
+        /// <summary>
+        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
+        /// and the total time spent running both the application and operating system code.
+        /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static ProcessCpuUsage CpuUsage
         {
-            long ticksPerSecond = Volatile.Read(ref s_ticksPerSecond);
-            if (ticksPerSecond == 0)
+            get
             {
-                // Look up the number of ticks per second in the system's configuration,
-                // then use that to convert to a TimeSpan
-                ticksPerSecond = Interop.Sys.SysConf(Interop.Sys.SysConfName._SC_CLK_TCK);
-                if (ticksPerSecond <= 0)
+                Interop.Sys.ProcessCpuInformation cpuInfo = default;
+                Interop.Sys.GetCpuUtilization(ref cpuInfo);
+
+                ulong userTime100Nanoseconds = cpuInfo.lastRecordedUserTime / 100; // nanoseconds to 100-nanoseconds
+                if (userTime100Nanoseconds > long.MaxValue)
                 {
-                    throw new Win32Exception();
+                    userTime100Nanoseconds = long.MaxValue;
                 }
 
-                Volatile.Write(ref s_ticksPerSecond, ticksPerSecond);
-            }
+                ulong kernelTime100Nanoseconds = cpuInfo.lastRecordedKernelTime / 100; // nanoseconds to 100-nanoseconds
+                if (kernelTime100Nanoseconds > long.MaxValue)
+                {
+                    kernelTime100Nanoseconds = long.MaxValue;
+                }
 
-            return TimeSpan.FromSeconds(ticks / (double)ticksPerSecond);
+                return new ProcessCpuUsage { UserTime = new TimeSpan((long)userTime100Nanoseconds), PrivilegedTime = new TimeSpan((long)kernelTime100Nanoseconds) };
+            }
         }
     }
 }

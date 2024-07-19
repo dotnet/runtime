@@ -23,21 +23,5 @@ namespace System
                 }
             }
         }
-
-        /// <summary>
-        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
-        /// and the total time spent running both the application and operating system code.
-        /// </summary>
-        [SupportedOSPlatform("maccatalyst")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public static ProcessCpuUsage CpuUsage
-        {
-            get
-            {
-                Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(ProcessId, 0);
-                return new ProcessCpuUsage { UserTime = TicksToTimeSpan(stat.userTime), PrivilegedTime = TicksToTimeSpan(stat.systemTime) };
-            }
-        }
     }
 }
