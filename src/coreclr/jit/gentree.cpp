@@ -26619,12 +26619,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 
             case NI_Sve_GatherVector:
             case NI_Sve_GatherVectorByteZeroExtend:
+            case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorFirstFaulting:
             case NI_Sve_GatherVectorInt16SignExtend:
+            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt32SignExtend:
+            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
             case NI_Sve_GatherVectorSByteSignExtend:
+            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt16ZeroExtend:
@@ -26715,17 +26721,24 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
     {
 #ifdef TARGET_ARM64
         static_assert_no_msg(
-            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend, NI_Sve_GatherVectorFirstFaulting,
-                          NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
-                          NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
-                          NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
+            AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend,
+                          NI_Sve_GatherVectorFirstFaulting, NI_Sve_GatherVectorByteZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16SignExtendFirstFaulting,
+                          NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
+                          NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting,
+                          NI_Sve_GatherVectorInt32SignExtend, NI_Sve_GatherVectorInt32SignExtendFirstFaulting,
+                          NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend,
+                          NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting,
+                          NI_Sve_GatherVectorSByteSignExtend, NI_Sve_GatherVectorSByteSignExtendFirstFaulting,
+                          NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend,
                           NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting,
                           NI_Sve_GatherVectorUInt16ZeroExtend, NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting,
                           NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend,
                           NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting,
                           NI_Sve_GatherVectorUInt32ZeroExtend, NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting));
-        assert(varTypeIsI(addr) || (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
-                                                            (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting))));
+        assert(varTypeIsI(addr) ||
+               (varTypeIsSIMD(addr) && ((intrinsicId >= NI_Sve_GatherVector) &&
+                                        (intrinsicId <= NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting))));
 #else
         assert(varTypeIsI(addr));
 #endif

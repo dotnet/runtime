@@ -8305,7 +8305,15 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
-        
+
+        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Vector<T> faultResult)
+                where T : INumberBase<T>
+                where AddressT : unmanaged, INumberBase<AddressT>
+                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        {
+            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
+        }
+
         private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)
         {
             int last = LastActiveElement(op1);

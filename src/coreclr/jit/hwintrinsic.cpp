@@ -1858,12 +1858,18 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #elif defined(TARGET_ARM64)
                     case NI_Sve_GatherVector:
                     case NI_Sve_GatherVectorByteZeroExtend:
+                    case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorFirstFaulting:
                     case NI_Sve_GatherVectorInt16SignExtend:
+                    case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt32SignExtend:
+                    case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
                     case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+                    case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorSByteSignExtend:
+                    case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
                     case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
                     case NI_Sve_GatherVectorUInt16ZeroExtend:

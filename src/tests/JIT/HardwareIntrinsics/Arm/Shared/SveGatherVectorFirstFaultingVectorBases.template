@@ -418,19 +418,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in TrueValue");
             ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld2, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in FalseValue");
             ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld2, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _falseFld);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _falseFld);
         }
@@ -439,19 +439,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in TrueValue");
             ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld2, {Op1VectorType}<{RetBaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in FalseValue");
             ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld2, {Op1VectorType}<{RetBaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
-            
+
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
         }
@@ -568,7 +568,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private void ValidateResult(void* firstOp, void* secondOp, void* result, [CallerMemberName] string method = "")
-        {            
+        {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -582,7 +582,17 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            var succeeded = Helpers.CheckGatherVectorBasesBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(firstOp, secondOp, result);
+            var succeeded = true; // Helpers.CheckGatherVectorBasesBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(firstOp, secondOp, result);
+
+            for (var i = 0; i < firstOp.Length; i++)
+            {
+                var expected = firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)secondOp[i];
+                if (expected != ({ExtendedElementType})result[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
 
             if (!succeeded)
             {
@@ -610,7 +620,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private void ValidateZeroResult(void* firstOp, void* secondOp, void* result, [CallerMemberName] string method = "")
-        {            
+        {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -666,7 +676,17 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_TrueValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, falseOp, result);
+            var succeeded = true;
+
+            for (var i = 0; i < firstOp.Length; i++)
+            {
+                var expected = maskOp[i] == 0 ? ({ExtendedElementType})falseOp[i] : (firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)secondOp[i]);
+                if (expected != ({ExtendedElementType}) result[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
 
             if (!succeeded)
             {
@@ -701,7 +721,17 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_FalseValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] trueOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectTrueBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, trueOp, result);
+            var succeeded = true;
+
+            for (var i = 0; i < firstOp.Length; i++)
+            {
+                var expected = maskOp[i] != 0 ? ({ExtendedElementType})trueOp[i] : (firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)secondOp[i]);
+                if (expected != ({ExtendedElementType})result[i])
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
 
             if (!succeeded)
             {

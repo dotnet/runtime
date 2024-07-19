@@ -1978,12 +1978,18 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_GatherVector:
             case NI_Sve_GatherVectorByteZeroExtend:
+            case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorFirstFaulting:
             case NI_Sve_GatherVectorInt16SignExtend:
+            case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt32SignExtend:
+            case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
             case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
             case NI_Sve_GatherVectorSByteSignExtend:
+            case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
             case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
             case NI_Sve_GatherVectorUInt16ZeroExtend:
@@ -2000,22 +2006,21 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrin.numOperands == 3);
                     emitAttr        baseSize = emitActualTypeSize(intrin.baseType);
                     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
+                    bool isLoadingBytes      = (ins == INS_sve_ld1b || ins == INS_sve_ld1sb || ins == INS_sve_ldff1b ||
+                                           ins == INS_sve_ldff1sb);
 
                     if (baseSize == EA_8BYTE)
                     {
                         // Index is multiplied.
-                        sopt = (ins == INS_sve_ld1b || ins == INS_sve_ld1sb) ? INS_SCALABLE_OPTS_NONE
-                                                                             : INS_SCALABLE_OPTS_LSL_N;
+                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
                     }
                     else
                     {
                         // Index is sign or zero extended to 64bits, then multiplied.
                         assert(baseSize == EA_4BYTE);
-                        opt = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
-                                                                          : INS_OPTS_SCALABLE_S_SXTW;
-
-                        sopt = (ins == INS_sve_ld1b || ins == INS_sve_ld1sb) ? INS_SCALABLE_OPTS_NONE
-                                                                             : INS_SCALABLE_OPTS_MOD_N;
+                        opt  = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
+                                                                            : INS_OPTS_SCALABLE_S_SXTW;
+                        sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_MOD_N;
                     }
 
                     GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, opt, sopt);
