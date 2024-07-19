@@ -2700,7 +2700,7 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // an indirect call.
     if (call->IsDelegateInvoke())
     {
-        controlExpr = LowerDelegateInvoke(call, &endNogcBeforeCall);
+        controlExpr = LowerDelegateInvoke(call);
     }
     else
     {
@@ -2808,12 +2808,6 @@ GenTree* Lowering::LowerCall(GenTree* node)
     }
 
     ContainCheckCallOperands(call);
-
-    if (endNogcBeforeCall)
-    {
-        GenTree* stopNonGCNode = new (comp, GT_STOP_NONGC) GenTree(GT_STOP_NONGC, TYP_VOID);
-        BlockRange().InsertBefore(call, stopNonGCNode);
-    }
 
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
@@ -5499,10 +5493,8 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     return result;
 }
 
-GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call, bool* shouldEndNogcBeforeCall)
+GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
 {
-    assert(shouldEndNogcBeforeCall != nullptr);
-    *shouldEndNogcBeforeCall = false;
     noway_assert(call->gtCallType == CT_USER_FUNC);
 
     assert((comp->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) &
@@ -5568,10 +5560,9 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call, bool* shouldEndNogcBef
         // and the method is marked as interruptible, we need to insert a GT_START_NONGC before the call.
         // to keep the delegate object alive while we're obtaining the function pointer.
         GenTree* startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
+        GenTree* stopNonGCNode  = new (comp, GT_STOP_NONGC) GenTree(GT_STOP_NONGC, TYP_VOID);
         BlockRange().InsertAfter(thisArgNode, startNonGCNode);
-
-        // We should try to end the non-GC region just before the actual call.
-        *shouldEndNogcBeforeCall = true;
+        BlockRange().InsertAfter(call, stopNonGCNode);
     }
 #endif
 
