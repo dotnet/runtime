@@ -712,7 +712,7 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
 
     if (alignTo8)
     {
-        blockSize = AlignUp(blockSize, TARGET_POINTER_SIZE);
+        blockSize = AlignUp(blockSize, 8);
     }
 
     comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(blockSize), /* unsafeValueClsCheck */ false);
