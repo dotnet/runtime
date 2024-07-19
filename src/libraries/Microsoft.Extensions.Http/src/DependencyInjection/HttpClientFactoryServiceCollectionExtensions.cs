@@ -63,10 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.TryAddSingleton(new DefaultHttpClientConfigurationTracker());
 
             // Register default client as HttpClient
-            services.TryAddTransient(s =>
-            {
-                return s.GetRequiredService<IHttpClientFactory>().CreateClient(string.Empty);
-            });
+            TryAddEmptyNameHttpClient(services);
 
             return services;
         }
@@ -833,6 +830,35 @@ namespace Microsoft.Extensions.DependencyInjection
             var builder = new DefaultHttpClientBuilder(services, name);
             builder.AddTypedClient<TClient>(factory);
             return builder;
+        }
+
+        internal static HttpClientMappingRegistry GetMappingRegistry(IServiceCollection services)
+        {
+            var registry = (HttpClientMappingRegistry?)services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
+            Debug.Assert(registry != null);
+            return registry;
+        }
+
+        private static void TryAddEmptyNameHttpClient(IServiceCollection services)
+        {
+            HttpClientMappingRegistry mappingRegistry = GetMappingRegistry(services);
+
+            if (mappingRegistry.EmptyNameHttpClientDescriptor is not null)
+            {
+                return;
+            }
+
+            if (services.Any(sd => sd.ServiceType == typeof(HttpClient) && sd.ServiceKey is null))
+            {
+                return;
+            }
+
+            mappingRegistry.EmptyNameHttpClientDescriptor = ServiceDescriptor.Transient(s =>
+            {
+                return s.GetRequiredService<IHttpClientFactory>().CreateClient(string.Empty);
+            });
+
+            services.Add(mappingRegistry.EmptyNameHttpClientDescriptor);
         }
     }
 }
