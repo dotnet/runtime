@@ -408,10 +408,24 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     allocType = OAT_NEWOBJ;
                 }
-                else if (data->IsHelperCall(comp, CORINFO_HELP_NEWARR_1_VC) &&
-                         data->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                else if (data->IsHelperCall())
                 {
-                    allocType = OAT_NEWARR;
+                    switch (data->AsCall()->GetHelperNum())
+                    {
+                        case CORINFO_HELP_NEWARR_1_VC:
+                        case CORINFO_HELP_NEWARR_1_OBJ:
+                        case CORINFO_HELP_NEWARR_1_DIRECT:
+                        case CORINFO_HELP_NEWARR_1_ALIGN8:
+#ifdef FEATURE_READYTORUN
+                        case CORINFO_HELP_READYTORUN_NEWARR_1:
+#endif
+                        {
+                            if (data->AsCall()->gtArgs.GetArgByIndex(0)->GetNode()->IsCnsIntOrI())
+                            {
+                                allocType = OAT_NEWARR;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -437,25 +451,42 @@ bool ObjectAllocator::MorphAllocObjNodes()
                 {
                     if (allocType == OAT_NEWARR)
                     {
-                        assert(data->AsCall()->GetHelperNum() == CORINFO_HELP_NEWARR_1_VC);
+                        assert(basicBlockHasNewArr);
                         //------------------------------------------------------------------------
                         // We expect the following expression tree at this point
+                        // For non-ReadyToRun:
                         //  STMTx (IL 0x... ???)
                         //    * STORE_LCL_VAR   ref
-                        //    \--*  CALL help  ref    CORINFO_HELP_NEWARR_1_VC
+                        //    \--*  CALL help  ref
                         //       +--*  CNS_INT(h) long
+                        //       \--*  CNS_INT long
+                        // For ReadyToRun:
+                        //  STMTx (IL 0x... ???)
+                        //    * STORE_LCL_VAR   ref
+                        //    \--*  CALL help  ref
                         //       \--*  CNS_INT long
                         //------------------------------------------------------------------------
 
                         CallArg*             arg       = data->AsCall()->gtArgs.GetArgByIndex(0);
-                        GenTree*             node      = arg->GetNode();
                         bool                 isExact   = false;
                         bool                 isNonNull = false;
                         CORINFO_CLASS_HANDLE clsHnd =
                             comp->gtGetHelperCallClassHandle(data->AsCall(), &isExact, &isNonNull);
-                        GenTree*     len       = arg->GetNext()->GetNode();
-                        unsigned int blockSize = 0;
+                        GenTree* len = nullptr;
+#ifdef FEATURE_READYTORUN
+                        if (comp->opts.IsReadyToRun() && data->IsHelperCall(comp, CORINFO_HELP_READYTORUN_NEWARR_1))
+                        {
+                            len = arg->GetNode();
+                        }
+                        else
+#endif
+                        {
+                            len = arg->GetNext()->GetNode();
+                        }
 
+                        assert(len != nullptr);
+
+                        unsigned int blockSize = 0;
                         comp->Metrics.NewArrayHelperCalls++;
 
                         if (!isExact || !isNonNull)
@@ -659,9 +690,20 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     assert(newArr != nullptr);
     assert(m_AnalysisDone);
     assert(clsHnd != NO_CLASS_HANDLE);
+    assert(newArr->IsHelperCall());
+    assert(newArr->GetHelperNum() != CORINFO_HELP_NEWARR_1_MAYBEFROZEN);
+#ifdef FEATURE_READYTORUN
+    assert(newArr->GetHelperNum() == CORINFO_HELP_READYTORUN_NEWARR_1 || !comp->opts.IsReadyToRun());
+#endif
 
     const bool         shortLifetime = false;
+    const bool         alignTo8      = newArr->GetHelperNum() == CORINFO_HELP_NEWARR_1_ALIGN8;
     const unsigned int lclNum        = comp->lvaGrabTemp(shortLifetime DEBUGARG("stack allocated array temp"));
+
+    if (alignTo8)
+    {
+        blockSize = AlignUp(blockSize, TARGET_POINTER_SIZE);
+    }
 
     comp->lvaSetStruct(lclNum, comp->typGetBlkLayout(blockSize), /* unsafeValueClsCheck */ false);
 
@@ -669,7 +711,6 @@ unsigned int ObjectAllocator::MorphNewArrNodeIntoStackAlloc(GenTreeCall*        
     bool             bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
     bool             bbIsReturn = block->KindIs(BBJ_RETURN);
     LclVarDsc* const lclDsc     = comp->lvaGetDesc(lclNum);
-    lclDsc->lvStackAllocatedBox = false;
     if (comp->fgVarNeedsExplicitZeroInit(lclNum, bbInALoop, bbIsReturn))
     {
         //------------------------------------------------------------------------
