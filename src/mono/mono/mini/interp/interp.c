@@ -647,6 +647,10 @@ get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 		virtual_method = mono_marshal_get_synchronized_wrapper (virtual_method);
 	}
 
+	// Basic sanity check since a call might crash if we have the wrong method somehow
+	g_assert (m->signature->param_count == virtual_method->signature->param_count);
+	g_assert (m->signature->hasthis == virtual_method->signature->hasthis);
+
 	InterpMethod *virtual_imethod = mono_interp_get_imethod (virtual_method);
 	return virtual_imethod;
 }
@@ -7479,7 +7483,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			if (local_cmethod->is_generic || mono_class_is_gtd (local_cmethod->klass)) {
 				MonoException *ex = mono_exception_from_name_msg (mono_defaults.corlib, "System", "InvalidOperationException", "");
 				THROW_EX (ex, ip);
-			}			
+			}
 
 			// FIXME push/pop LMF
 			if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (local_cmethod))) {
