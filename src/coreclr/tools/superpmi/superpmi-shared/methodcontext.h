@@ -248,6 +248,10 @@ public:
     void dmpGetTypeForBox(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeForBox(CORINFO_CLASS_HANDLE cls);
 
+    void recGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeForBoxOnStack(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls);
+
     void recGetBoxHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc result);
     void dmpGetBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetBoxHelper(CORINFO_CLASS_HANDLE cls);
@@ -727,6 +731,10 @@ public:
     void dmpIsExactType(DWORDLONG key, DWORD value);
     bool repIsExactType(CORINFO_CLASS_HANDLE cls);
 
+    void recIsGenericType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
+    void dmpIsGenericType(DWORDLONG key, DWORD value);
+    TypeCompareState repIsGenericType(CORINFO_CLASS_HANDLE cls);
+
     void recIsNullableType(CORINFO_CLASS_HANDLE cls, TypeCompareState result);
     void dmpIsNullableType(DWORDLONG key, DWORD value);
     TypeCompareState repIsNullableType(CORINFO_CLASS_HANDLE cls);
@@ -912,7 +920,6 @@ public:
     }
 
     CompileResult* cr;
-    CompileResult* originalCR;
     int            index;
     bool           ignoreStoredConfig;
 
@@ -1176,6 +1183,8 @@ enum mcPackets
     Packet_IsNullableType = 217,
     Packet_GetClassStaticDynamicInfo = 218,
     Packet_GetClassThreadStaticDynamicInfo = 219,
+    Packet_IsGenericType = 220,
+    Packet_GetTypeForBoxOnStack = 221,
 };
 
 void SetDebugDumpVariables();

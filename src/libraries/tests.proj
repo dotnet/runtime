@@ -131,6 +131,13 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Tests\ComInterfaceGenerator.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'illumos'">
+    <!-- LibraryImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for illumos. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\ComInterfaceGenerator.Tests\ComInterfaceGenerator.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'linux' and '$(TargetArchitecture)' == 's390x'">
     <!-- LibraryImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for s390x. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
@@ -149,6 +156,7 @@
     <!-- Issue: https://github.com/dotnet/runtime/issues/97296 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\Net8Tests\System.Numerics.Tensors.Net8.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'windows' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisabledMonoTestsOnWindows)' != 'true'">
@@ -425,6 +433,11 @@
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.IO.IsolatedStorage\tests\System.IO.IsolatedStorage.Tests.csproj" />
   </ItemGroup>
+  
+  <ItemGroup Condition="'$(TestNativeAot)' == 'true' or '$(TargetsMobile)' == 'true'">
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\BinaryFormatTests\System.Resources.Extensions.BinaryFormat.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\CompatTests\System.Resources.Extensions.Compat.Tests.csproj" />
+  </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
     <!-- https://github.com/dotnet/runtime/issues/72908 -->
@@ -506,8 +519,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj"
                       Condition="'$(TargetOS)' == 'windows'"/>
 
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\CompatTests\System.Resources.Extensions.Compat.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.Extensions\tests\BinaryFormatTests\System.Resources.Extensions.BinaryFormat.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\tests\Microsoft.VisualBasic.Core.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.CodeDom\tests\System.CodeDom.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ComponentModel.Annotations\tests\System.ComponentModel.Annotations.Tests.csproj" />
@@ -647,10 +658,6 @@
                       BuildInParallel="$(BuildTestInParallel)" />
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
-
-    <!-- We need to go over these disablements: https://github.com/dotnet/runtime/issues/101228 -->
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml.Linq\tests\TrimmingTests\System.Xml.Linq.TrimmingTests.proj" />
-    <ProjectExclusions Condition="'$(RunNativeAotTestApps)' == 'true'" Include="$(MSBuildThisFileDirectory)\System.Private.Xml\tests\TrimmingTests\System.Private.Xml.TrimmingTests.proj" />
 
     <TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"
                       Exclude="@(ProjectExclusions)"

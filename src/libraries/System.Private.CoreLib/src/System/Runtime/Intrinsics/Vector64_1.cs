@@ -41,7 +41,6 @@ namespace System.Runtime.Intrinsics
             get => Vector64.Create(Scalar<T>.AllBitsSet);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static unsafe int Count
@@ -53,7 +52,6 @@ namespace System.Runtime.Intrinsics
                 return Vector64.Size / sizeof(T);
             }
         }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Gets a new <see cref="Vector64{T}" /> with the elements set to their index.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
@@ -536,8 +534,17 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Ceiling(Vector64<T> vector) => Vector64.Ceiling(vector);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.Clamp(Vector64<T> value, Vector64<T> min, Vector64<T> max) => Vector64.Clamp(value, min, max);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.ClampNative(Vector64<T> value, Vector64<T> min, Vector64<T> max) => Vector64.ClampNative(value, min, max);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.ConditionalSelect(Vector64<T> condition, Vector64<T> left, Vector64<T> right) => Vector64.ConditionalSelect(condition, left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.CopySign(Vector64<T> value, Vector64<T> sign) => Vector64.CopySign(value, sign);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
         static void ISimdVector<Vector64<T>, T>.CopyTo(Vector64<T> vector, T[] destination) => vector.CopyTo(destination);
@@ -626,7 +633,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
         static bool ISimdVector<Vector64<T>, T>.LessThanOrEqualAny(Vector64<T> left, Vector64<T> right) => Vector64.LessThanOrEqualAny(left, right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Load(T* source) => Vector64.Load(source);
 
@@ -635,7 +641,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadAlignedNonTemporal(T* source) => Vector64.LoadAlignedNonTemporal(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.LoadUnsafe(ref readonly T source) => Vector64.LoadUnsafe(in source);
@@ -646,8 +651,32 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Max(Vector64<T> left, Vector64<T> right) => Vector64.Max(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MaxMagnitude(Vector64<T> left, Vector64<T> right) => Vector64.MaxMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MaxMagnitudeNumber(Vector64<T> left, Vector64<T> right) => Vector64.MaxMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MaxNative(Vector64<T> left, Vector64<T> right) => Vector64.MaxNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MaxNumber(Vector64<T> left, Vector64<T> right) => Vector64.MaxNumber(left, right);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Min(Vector64<T> left, Vector64<T> right) => Vector64.Min(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MinMagnitude(Vector64<T> left, Vector64<T> right) => Vector64.MinMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MinMagnitudeNumber(Vector64<T> left, Vector64<T> right) => Vector64.MinMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MinNative(Vector64<T> left, Vector64<T> right) => Vector64.MinNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MinNumber(Vector64<T> left, Vector64<T> right) => Vector64.MinNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Multiply(Vector64<T> left, Vector64<T> right) => left * right;
@@ -655,11 +684,17 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Multiply(Vector64<T> left, T right) => left * right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.MultiplyAddEstimate(Vector64<T> left, Vector64<T> right, Vector64<T> addend) => Vector64.MultiplyAddEstimate(left, right, addend);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Negate(Vector64<T> vector) => -vector;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.OnesComplement(Vector64<T> vector) => ~vector;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.Round(Vector64<T> vector) => Vector64.Round(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.ShiftLeft(Vector64<T> vector, int shiftCount) => vector << shiftCount;
@@ -673,7 +708,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
         static Vector64<T> ISimdVector<Vector64<T>, T>.Sqrt(Vector64<T> vector) => Vector64.Sqrt(vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         static void ISimdVector<Vector64<T>, T>.Store(Vector64<T> source, T* destination) => source.Store(destination);
 
@@ -682,7 +716,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         static void ISimdVector<Vector64<T>, T>.StoreAlignedNonTemporal(Vector64<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
         static void ISimdVector<Vector64<T>, T>.StoreUnsafe(Vector64<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
@@ -698,6 +731,9 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
         static T ISimdVector<Vector64<T>, T>.ToScalar(Vector64<T> vector) => vector.ToScalar();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        static Vector64<T> ISimdVector<Vector64<T>, T>.Truncate(Vector64<T> vector) => Vector64.Truncate(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
         static bool ISimdVector<Vector64<T>, T>.TryCopyTo(Vector64<T> vector, Span<T> destination) => vector.TryCopyTo(destination);
@@ -721,5 +757,15 @@ namespace System.Runtime.Intrinsics
             uint mask = vector.ExtractMostSignificantBits();
             return 31 - BitOperations.LeadingZeroCount(mask); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
         }
+
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNaN(Vector64<T> vector) => Vector64.IsNaN(vector);
+
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsNegative(Vector64<T> vector) => Vector64.IsNegative(vector);
+
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsPositive(Vector64<T> vector) => Vector64.IsPositive(vector);
+
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsPositiveInfinity(Vector64<T> vector) => Vector64.IsPositiveInfinity(vector);
+
+        static Vector64<T> ISimdVector<Vector64<T>, T>.IsZero(Vector64<T> vector) => Vector64.IsZero(vector);
     }
 }

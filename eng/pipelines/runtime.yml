@@ -443,27 +443,6 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR Formatting Job
-      # Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
-      # both Rolling and PR builds).
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
-          platforms:
-          - linux_x64
-          - windows_x64
-          jobParameters:
-            condition: >-
-              and(
-                or(
-                  eq(variables['Build.SourceBranchName'], 'main'),
-                  eq(variables['System.PullRequest.TargetBranch'], 'main')),
-                or(
-                  eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
-                  eq(variables['isRollingBuild'], true)))
-
-      #
       # Build CoreCLR with no R2R
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -800,7 +779,9 @@ extends:
           runtimeFlavor: mono
           platforms:
           - tvossimulator_x64
+          - linux_x64
           - linux_arm
+          - linux_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -820,6 +801,7 @@ extends:
           platforms:
           - linux_musl_x64
           - linux_riscv64
+          - osx_x64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -1029,7 +1011,8 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
-            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=true
+            # Tracking issue: https://github.com/dotnet/runtime/issues/82637
+            buildArgs: -s mono+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:RunSmokeTestsOnly=true /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true /p:EnableAggressiveTrimming=false
             timeoutInMinutes: 480
             condition: >-
               or(
@@ -1135,48 +1118,6 @@ extends:
                       eq(variables['librariesContainsChange'], true),
                       eq(variables['monoContainsChange'], true),
                       eq(variables['isRollingBuild'], true))
-
-      #
-      # Build Mono and Installer on LLVMJIT mode
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: Release
-          runtimeFlavor: mono
-          platforms:
-          - osx_x64
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMJIT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
-          runtimeFlavor: mono
-          platforms:
-          - linux_x64
-          - linux_arm64
-          jobParameters:
-            testGroup: innerloop
-            nameSuffix: AllSubsets_Mono_LLVMJIT
-            buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-                      /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
-            condition: >-
-              or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
 
       #
       # Build Mono and Installer on LLVMAOT mode

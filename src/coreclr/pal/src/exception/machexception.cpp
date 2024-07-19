@@ -681,8 +681,8 @@ HijackFaultingThread(
     BuildExceptionRecord(exceptionInfo, &exceptionRecord);
 
 #if defined(HOST_AMD64)
-    threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
-    CONTEXT_GetThreadContextFromThreadState(x86_FLOAT_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
+    threadContext.ContextFlags = CONTEXT_FLOATING_POINT | CONTEXT_XSTATE;
+    CONTEXT_GetThreadContextFromThreadState(x86_AVX512_STATE, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS;
     CONTEXT_GetThreadContextFromThreadState(x86_THREAD_STATE, (thread_state_t)&exceptionInfo.ThreadState, &threadContext);
@@ -1265,10 +1265,19 @@ MachExceptionInfo::MachExceptionInfo(mach_port_t thread, MachMessage& message)
     machret = thread_get_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, &count);
     CHECK_MACH("thread_get_state", machret);
 
-    count = x86_FLOAT_STATE_COUNT;
-    machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
-    CHECK_MACH("thread_get_state(float)", machret);
-
+    count = x86_AVX512_STATE_COUNT;
+    machret = thread_get_state(thread, x86_AVX512_STATE, (thread_state_t)&FloatState, &count);
+    if (machret != KERN_SUCCESS)
+    {
+        count = x86_AVX_STATE_COUNT;
+        machret = thread_get_state(thread, x86_AVX_STATE, (thread_state_t)&FloatState, &count);
+        if (machret != KERN_SUCCESS)
+        {
+            count = x86_FLOAT_STATE_COUNT;
+            machret = thread_get_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, &count);
+            CHECK_MACH("thread_get_state(float)", machret);
+        }
+    }
     count = x86_DEBUG_STATE_COUNT;
     machret = thread_get_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, &count);
     CHECK_MACH("thread_get_state(debug)", machret);
@@ -1316,7 +1325,7 @@ void MachExceptionInfo::RestoreState(mach_port_t thread)
     kern_return_t machret = thread_set_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, x86_THREAD_STATE_COUNT);
     CHECK_MACH("thread_set_state(thread)", machret);
 
-    machret = thread_set_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, x86_FLOAT_STATE_COUNT);
+    machret = thread_set_state(thread, FloatState.ash.flavor, (thread_state_t)&FloatState, FloatState.ash.count);
     CHECK_MACH("thread_set_state(float)", machret);
 
     machret = thread_set_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, x86_DEBUG_STATE_COUNT);

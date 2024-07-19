@@ -6,6 +6,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <DefineConstants>SYSTEM_COLLECTIONS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

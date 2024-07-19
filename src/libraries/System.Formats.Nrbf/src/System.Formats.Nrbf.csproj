@@ -15,9 +15,10 @@ System.Formats.Nrbf.NrbfDecoder</PackageDescription>
          Once this package has shipped a stable version, the following line
          should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Hashing\src\System.IO.Hashing.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -26,5 +27,6 @@ System.Formats.Nrbf.NrbfDecoder</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs"
          Link="System\Diagnostics\CodeAnalysis\RequiresDynamicCodeAttribute.cs" />
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="$(MicrosoftBclHashCodeVersion)" />
   </ItemGroup>
 </Project>

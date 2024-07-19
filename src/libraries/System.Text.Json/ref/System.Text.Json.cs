@@ -4,6 +4,13 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System.Runtime.InteropServices
+{
+    public static partial class JsonMarshal
+    {
+        public static System.ReadOnlySpan<byte> GetRawUtf8Value(System.Text.Json.JsonElement element) { throw null; }
+    }
+}
 namespace System.Text.Json
 {
     public enum JsonCommentHandling : byte
@@ -41,6 +48,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonElement this[int index] { get { throw null; } }
         public System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
         public System.Text.Json.JsonElement Clone() { throw null; }
+        public static bool DeepEquals(System.Text.Json.JsonElement element1, System.Text.Json.JsonElement element2) { throw null; }
         public System.Text.Json.JsonElement.ArrayEnumerator EnumerateArray() { throw null; }
         public System.Text.Json.JsonElement.ObjectEnumerator EnumerateObject() { throw null; }
         public int GetArrayLength() { throw null; }
@@ -187,6 +195,7 @@ namespace System.Text.Json
     {
         private int _dummyPrimitive;
         public bool AllowTrailingCommas { readonly get { throw null; } set { } }
+        public bool AllowMultipleValues { readonly get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { readonly get { throw null; } set { } }
     }
@@ -247,7 +256,11 @@ namespace System.Text.Json
         public static System.Threading.Tasks.ValueTask<object?> DeserializeAsync(System.IO.Stream utf8Json, System.Type returnType, System.Text.Json.Serialization.JsonSerializerContext context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
+        public static System.Collections.Generic.IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(System.IO.Stream utf8Json, bool topLevelValues, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
         public static System.Collections.Generic.IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(System.IO.Stream utf8Json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TValue> jsonTypeInfo, bool topLevelValues, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Collections.Generic.IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(System.IO.Stream utf8Json, System.Text.Json.Serialization.Metadata.JsonTypeInfo<TValue> jsonTypeInfo, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.")]
@@ -706,11 +719,11 @@ namespace System.Text.Json.Nodes
         public System.Text.Json.Nodes.JsonValue AsValue() { throw null; }
         public System.Text.Json.Nodes.JsonNode DeepClone() { throw null; }
         public static bool DeepEquals(System.Text.Json.Nodes.JsonNode? node1, System.Text.Json.Nodes.JsonNode? node2) { throw null; }
-        public string GetPropertyName() { throw null; }
-        public string GetPath() { throw null; }
-        public virtual T GetValue<T>() { throw null; }
-        public JsonValueKind GetValueKind() { throw null; }
         public int GetElementIndex() { throw null; }
+        public string GetPath() { throw null; }
+        public string GetPropertyName() { throw null; }
+        public System.Text.Json.JsonValueKind GetValueKind() { throw null; }
+        public virtual T GetValue<T>() { throw null; }
         public static explicit operator bool (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator byte (System.Text.Json.Nodes.JsonNode value) { throw null; }
         public static explicit operator char (System.Text.Json.Nodes.JsonNode value) { throw null; }
@@ -801,7 +814,7 @@ namespace System.Text.Json.Nodes
         public static System.Threading.Tasks.Task<System.Text.Json.Nodes.JsonNode?> ParseAsync(System.IO.Stream utf8Json, System.Text.Json.Nodes.JsonNodeOptions? nodeOptions = default(System.Text.Json.Nodes.JsonNodeOptions?), System.Text.Json.JsonDocumentOptions documentOptions = default(System.Text.Json.JsonDocumentOptions), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Creating JsonValue instances with non-primitive types requires generating code at runtime.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Creating JsonValue instances with non-primitive types is not compatible with trimming. It can result in non-primitive types being serialized, which may have their members trimmed.")]
-        public void ReplaceWith<T>(T value) { throw null; }
+        public void ReplaceWith<T>(T value) { }
         public string ToJsonString(System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public override string ToString() { throw null; }
         public abstract void WriteTo(System.Text.Json.Utf8JsonWriter writer, System.Text.Json.JsonSerializerOptions? options = null);
@@ -811,7 +824,7 @@ namespace System.Text.Json.Nodes
         private int _dummyPrimitive;
         public bool PropertyNameCaseInsensitive { readonly get { throw null; } set { } }
     }
-    public sealed partial class JsonObject : System.Text.Json.Nodes.JsonNode, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>, System.Collections.Generic.IDictionary<string, System.Text.Json.Nodes.JsonNode?>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>, System.Collections.IEnumerable
+    public sealed partial class JsonObject : System.Text.Json.Nodes.JsonNode, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>, System.Collections.Generic.IDictionary<string, System.Text.Json.Nodes.JsonNode?>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>, System.Collections.IEnumerable
     {
         public JsonObject(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>> properties, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { }
         public JsonObject(System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { }
@@ -819,17 +832,27 @@ namespace System.Text.Json.Nodes
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.IsReadOnly { get { throw null; } }
         System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<string, System.Text.Json.Nodes.JsonNode?>.Keys { get { throw null; } }
         System.Collections.Generic.ICollection<System.Text.Json.Nodes.JsonNode?> System.Collections.Generic.IDictionary<string, System.Text.Json.Nodes.JsonNode?>.Values { get { throw null; } }
+        System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?> System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.this[int index] { get { throw null; } set { } }
         public void Add(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?> property) { }
         public void Add(string propertyName, System.Text.Json.Nodes.JsonNode? value) { }
         public void Clear() { }
         public bool ContainsKey(string propertyName) { throw null; }
         public static System.Text.Json.Nodes.JsonObject? Create(System.Text.Json.JsonElement element, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
+        public System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?> GetAt(int index) { throw null; }
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>> GetEnumerator() { throw null; }
+        public int IndexOf(string propertyName) { throw null; }
+        public void Insert(int index, string propertyName, System.Text.Json.Nodes.JsonNode? value) { }
         public bool Remove(string propertyName) { throw null; }
+        public void RemoveAt(int index) { }
+        public void SetAt(int index, string propertyName, System.Text.Json.Nodes.JsonNode? value) { }
+        public void SetAt(int index, System.Text.Json.Nodes.JsonNode? value) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.Contains(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode> item) { throw null; }
         void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.CopyTo(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode>[] array, int index) { }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.Remove(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode> item) { throw null; }
-        bool System.Collections.Generic.IDictionary<string, System.Text.Json.Nodes.JsonNode?>.TryGetValue(string propertyName, out System.Text.Json.Nodes.JsonNode? jsonNode) { throw null; }
+        bool System.Collections.Generic.IDictionary<string, System.Text.Json.Nodes.JsonNode?>.TryGetValue(string propertyName, out System.Text.Json.Nodes.JsonNode jsonNode) { throw null; }
+        int System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.IndexOf(System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode> item) { throw null; }
+        void System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.Insert(int index, System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode> item) { }
+        void System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<string, System.Text.Json.Nodes.JsonNode?>>.RemoveAt(int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetPropertyValue(string propertyName, out System.Text.Json.Nodes.JsonNode? jsonNode) { throw null; }
         public override void WriteTo(System.Text.Json.Utf8JsonWriter writer, System.Text.Json.JsonSerializerOptions? options = null) { }
@@ -886,6 +909,30 @@ namespace System.Text.Json.Nodes
         public static System.Text.Json.Nodes.JsonValue? Create<T>(T? value, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public static System.Text.Json.Nodes.JsonValue? Create<T>(T? value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> jsonTypeInfo, System.Text.Json.Nodes.JsonNodeOptions? options = default(System.Text.Json.Nodes.JsonNodeOptions?)) { throw null; }
         public abstract bool TryGetValue<T>([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T? value);
+    }
+}
+namespace System.Text.Json.Schema
+{
+    public static partial class JsonSchemaExporter
+    {
+        public static System.Text.Json.Nodes.JsonNode GetJsonSchemaAsNode(this System.Text.Json.JsonSerializerOptions options, System.Type type, System.Text.Json.Schema.JsonSchemaExporterOptions? exporterOptions = null) { throw null; }
+        public static System.Text.Json.Nodes.JsonNode GetJsonSchemaAsNode(this System.Text.Json.Serialization.Metadata.JsonTypeInfo typeInfo, System.Text.Json.Schema.JsonSchemaExporterOptions? exporterOptions = null) { throw null; }
+    }
+    public readonly partial struct JsonSchemaExporterContext
+    {
+        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo? BaseTypeInfo { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonPropertyInfo? PropertyInfo { get { throw null; } }
+        public System.ReadOnlySpan<string> Path { get { throw null; } }
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo TypeInfo { get { throw null; } }
+    }
+    public sealed partial class JsonSchemaExporterOptions
+    {
+        public JsonSchemaExporterOptions() { }
+        public static System.Text.Json.Schema.JsonSchemaExporterOptions Default { get { throw null; } }
+        public System.Func<JsonSchemaExporterContext, System.Text.Json.Nodes.JsonNode, System.Text.Json.Nodes.JsonNode>? TransformSchemaNode { get { throw null; } init { } }
+        public bool TreatNullObliviousAsNonNullable { get { throw null; } init { } }
     }
 }
 namespace System.Text.Json.Serialization

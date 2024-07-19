@@ -62,14 +62,19 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.WriteBarrier:
-                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpAssignRefArm64" : "RhpAssignRef";
+                    mangledName = context.Target.Architecture switch
+                    {
+                        TargetArchitecture.ARM64 => "RhpAssignRefArm64",
+                        TargetArchitecture.LoongArch64 => "RhpAssignRefLoongArch64",
+                        _ => "RhpAssignRef"
+                    };
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
                     break;
                 case ReadyToRunHelper.BulkWriteBarrier:
-                   mangledName = "RhBuffer_BulkMoveWithWriteBarrier";
-                   break;
+                    mangledName = "RhBuffer_BulkMoveWithWriteBarrier";
+                    break;
                 case ReadyToRunHelper.ByRefWriteBarrier:
                     mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpByRefAssignRefArm64" : "RhpByRefAssignRef";
                     break;
@@ -118,6 +123,9 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.Unbox_Nullable:
                     mangledName = "RhUnboxNullable";
+                    break;
+                case ReadyToRunHelper.Unbox_TypeTest:
+                    mangledName = "RhUnboxTypeTest";
                     break;
 
                 case ReadyToRunHelper.NewMultiDimArr:

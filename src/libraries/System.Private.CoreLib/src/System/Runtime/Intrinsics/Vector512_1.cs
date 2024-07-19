@@ -41,7 +41,6 @@ namespace System.Runtime.Intrinsics
             get => Vector512.Create(Scalar<T>.AllBitsSet);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector512{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static int Count
@@ -53,7 +52,6 @@ namespace System.Runtime.Intrinsics
                 return Vector512.Size / sizeof(T);
             }
         }
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Gets a new <see cref="Vector512{T}" /> with the elements set to their index.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
@@ -468,8 +466,17 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Ceiling(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Ceiling(Vector512<T> vector) => Vector512.Ceiling(vector);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Clamp(Vector512<T> value, Vector512<T> min, Vector512<T> max) => Vector512.Clamp(value, min, max);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.ClampNative(Vector512<T> value, Vector512<T> min, Vector512<T> max) => Vector512.ClampNative(value, min, max);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.ConditionalSelect(Vector512<T> condition, Vector512<T> left, Vector512<T> right) => Vector512.ConditionalSelect(condition, left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.CopySign(Vector512<T> value, Vector512<T> sign) => Vector512.CopySign(value, sign);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopyTo(TSelf, T[])" />
         static void ISimdVector<Vector512<T>, T>.CopyTo(Vector512<T> vector, T[] destination) => vector.CopyTo(destination);
@@ -558,7 +565,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
         static bool ISimdVector<Vector512<T>, T>.LessThanOrEqualAny(Vector512<T> left, Vector512<T> right) => Vector512.LessThanOrEqualAny(left, right);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Load(T*)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Load(T* source) => Vector512.Load(source);
 
@@ -567,7 +573,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadAlignedNonTemporal(T*)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.LoadAlignedNonTemporal(T* source) => Vector512.LoadAlignedNonTemporal(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref readonly T)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.LoadUnsafe(ref readonly T source) => Vector512.LoadUnsafe(in source);
@@ -578,8 +583,32 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Max(Vector512<T> left, Vector512<T> right) => Vector512.Max(left, right);
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MaxMagnitude(Vector512<T> left, Vector512<T> right) => Vector512.MaxMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MaxMagnitudeNumber(Vector512<T> left, Vector512<T> right) => Vector512.MaxMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MaxNative(Vector512<T> left, Vector512<T> right) => Vector512.MaxNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MaxNumber(Vector512<T> left, Vector512<T> right) => Vector512.MaxNumber(left, right);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Min(Vector512<T> left, Vector512<T> right) => Vector512.Min(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MinMagnitude(Vector512<T> left, Vector512<T> right) => Vector512.MinMagnitude(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MinMagnitudeNumber(Vector512<T> left, Vector512<T> right) => Vector512.MinMagnitudeNumber(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MinNative(Vector512<T> left, Vector512<T> right) => Vector512.MinNative(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MinNumber(Vector512<T> left, Vector512<T> right) => Vector512.MinNumber(left, right);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, T)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Multiply(Vector512<T> left, Vector512<T> right) => left * right;
@@ -587,11 +616,17 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Multiply(TSelf, TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Multiply(Vector512<T> left, T right) => left * right;
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.MultiplyAddEstimate(Vector512<T> left, Vector512<T> right, Vector512<T> addend) => Vector512.MultiplyAddEstimate(left, right, addend);
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Negate(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Negate(Vector512<T> vector) => -vector;
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.OnesComplement(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.OnesComplement(Vector512<T> vector) => ~vector;
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Round(TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Round(Vector512<T> vector) => Vector512.Round(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ShiftLeft(TSelf, int)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.ShiftLeft(Vector512<T> vector, int shiftCount) => vector << shiftCount;
@@ -605,7 +640,6 @@ namespace System.Runtime.Intrinsics
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Sqrt(TSelf)" />
         static Vector512<T> ISimdVector<Vector512<T>, T>.Sqrt(Vector512<T> vector) => Vector512.Sqrt(vector);
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <inheritdoc cref="ISimdVector{TSelf, T}.Store(TSelf, T*)" />
         static void ISimdVector<Vector512<T>, T>.Store(Vector512<T> source, T* destination) => source.Store(destination);
 
@@ -614,7 +648,6 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreAlignedNonTemporal(TSelf, T*)" />
         static void ISimdVector<Vector512<T>, T>.StoreAlignedNonTemporal(Vector512<T> source, T* destination) => source.StoreAlignedNonTemporal(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
         static void ISimdVector<Vector512<T>, T>.StoreUnsafe(Vector512<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
@@ -630,6 +663,9 @@ namespace System.Runtime.Intrinsics
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
         static T ISimdVector<Vector512<T>, T>.ToScalar(Vector512<T> vector) => vector.ToScalar();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Truncate(TSelf)" />
+        static Vector512<T> ISimdVector<Vector512<T>, T>.Truncate(Vector512<T> vector) => Vector512.Truncate(vector);
 
         /// <inheritdoc cref="ISimdVector{TSelf, T}.TryCopyTo(TSelf, Span{T})" />
         static bool ISimdVector<Vector512<T>, T>.TryCopyTo(Vector512<T> vector, Span<T> destination) => vector.TryCopyTo(destination);
@@ -653,5 +689,15 @@ namespace System.Runtime.Intrinsics
             ulong mask = vector.ExtractMostSignificantBits();
             return 63 - BitOperations.LeadingZeroCount(mask); // 63 = 64 (bits in Int64) - 1 (indexing from zero)
         }
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsNaN(Vector512<T> vector) => Vector512.IsNaN(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsNegative(Vector512<T> vector) => Vector512.IsNegative(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsPositive(Vector512<T> vector) => Vector512.IsPositive(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsPositiveInfinity(Vector512<T> vector) => Vector512.IsPositiveInfinity(vector);
+
+        static Vector512<T> ISimdVector<Vector512<T>, T>.IsZero(Vector512<T> vector) => Vector512.IsZero(vector);
     }
 }

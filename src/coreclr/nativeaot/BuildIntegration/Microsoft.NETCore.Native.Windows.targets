@@ -46,6 +46,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(IlcMultiModule)' == 'true'" Include="$(SharedLibrary)" />
       <NativeLibrary Include="$(IlcSdkPath)$(StandaloneGCSupportName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)zlibstatic$(LibFileExt)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -98,6 +99,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="'$(_targetArchitecture)' == 'x86'" Include="/safeseh" />
       <!-- Do not warn if someone declares UnmanagedCallersOnly with an entrypoint of 'DllGetClassObject' and similar -->
       <LinkerArg Include="/IGNORE:4104" />
+      <!-- Opt into CETCOMPAT by default. -->
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT" />
+      <!-- Allow user to opt out. -->
+      <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" />
+      <!-- Enable EHCONT if CET is not disabled and CFG is enabled. -->
+      <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont"/>
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">

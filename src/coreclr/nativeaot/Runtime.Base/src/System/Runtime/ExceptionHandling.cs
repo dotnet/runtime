@@ -279,12 +279,11 @@ namespace System.Runtime
                 isFirstFrame = false;
             }
 #else
-#pragma warning disable CS8500
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
                 InternalCalls.RhpAppendExceptionStackFrame(ObjectHandleOnStack.Create(ref exception), ip, sp, flags, pExInfo);
             }
-#pragma warning restore CS8500
+
             // Clear flags only if we called the function
             isFirstRethrowFrame = false;
             isFirstFrame = false;
@@ -461,7 +460,7 @@ namespace System.Runtime
             // the rest of the struct is left unspecified.
         }
 
-        // N.B. -- These values are burned into the throw helper assembly code and are also known the the
+        // N.B. -- These values are burned into the throw helper assembly code and are also known to the
         //         StackFrameIterator code.
         [Flags]
         internal enum ExKind : byte
@@ -686,13 +685,11 @@ namespace System.Runtime
             if (unwoundReversePInvoke)
             {
                 object exceptionObj = exInfo.ThrownException;
-#pragma warning disable CS8500
                 fixed (EH.ExInfo* pExInfo = &exInfo)
                 {
                     InternalCalls.RhpCallCatchFunclet(
                         ObjectHandleOnStack.Create(ref exceptionObj), null, exInfo._frameIter.RegisterSet, pExInfo);
                 }
-#pragma warning restore CS8500
             }
             else
             {
@@ -922,13 +919,11 @@ namespace System.Runtime
             InternalCalls.RhpCallCatchFunclet(
                 exceptionObj, pCatchHandler, frameIter.RegisterSet, ref exInfo);
 #else // NATIVEAOT
-#pragma warning disable CS8500
             fixed (EH.ExInfo* pExInfo = &exInfo)
             {
                 InternalCalls.RhpCallCatchFunclet(
                     ObjectHandleOnStack.Create(ref exceptionObj), pCatchHandler, frameIter.RegisterSet, pExInfo);
             }
-#pragma warning restore CS8500
 #endif // NATIVEAOT
             // currently, RhpCallCatchFunclet will resume after the catch
             Debug.Assert(false, "unreachable");
@@ -1209,12 +1204,10 @@ namespace System.Runtime
 #if NATIVEAOT
                 InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet);
 #else // NATIVEAOT
-#pragma warning disable CS8500
                 fixed (EH.ExInfo* pExInfo = &exInfo)
                 {
                     InternalCalls.RhpCallFinallyFunclet(pFinallyHandler, exInfo._frameIter.RegisterSet, pExInfo);
                 }
-#pragma warning restore CS8500
 #endif // NATIVEAOT
                 exInfo._idxCurClause = MaxTryRegionIdx;
             }

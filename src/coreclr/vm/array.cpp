@@ -72,10 +72,8 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
     PCCOR_SIGNATURE *ppSig,// Generated signature
     DWORD * pcSig,         // Generated signature size
     LoaderAllocator *pLoaderAllocator,
-    AllocMemTracker *pamTracker
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-    ,BOOL fForStubAsIL
-#endif
+    AllocMemTracker *pamTracker,
+    BOOL fForStubAsIL
     )
 {
     CONTRACTL {
@@ -109,9 +107,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
         // <callconv> <argcount> BYREF VAR 0 I4 , ... , I4
         case ArrayMethodDesc::ARRAY_FUNC_ADDRESS:
             dwCallSigSize += 5;
-#ifdef FEATURE_ARRAYSTUB_AS_IL
             if(fForStubAsIL) {dwArgCount++; dwCallSigSize++;}
-#endif
             break;
     }
 
@@ -124,11 +120,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
     pSig = pSigMemory;
     BYTE callConv = IMAGE_CEE_CS_CALLCONV_DEFAULT + IMAGE_CEE_CS_CALLCONV_HASTHIS;
 
-    if (dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-        && !fForStubAsIL
-#endif
-	   )
+    if (dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && !fForStubAsIL)
     {
         callConv |= CORINFO_CALLCONV_PARAMTYPE;     // Address routine needs special hidden arg
     }
@@ -154,7 +146,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
             break;
     }
 
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && !defined(TARGET_X86)
+#ifndef TARGET_X86
     if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -169,7 +161,7 @@ VOID ArrayClass::GenerateArrayAccessorCallSig(
         *pSig++ = ELEMENT_TYPE_VAR;
         *pSig++ = 0;        // variable 0
     }
-#if defined(FEATURE_ARRAYSTUB_AS_IL ) && defined(TARGET_X86)
+#ifdef TARGET_X86
     else if(dwFuncType == ArrayMethodDesc::ARRAY_FUNC_ADDRESS && fForStubAsIL)
     {
         *pSig++ = ELEMENT_TYPE_I;
@@ -193,7 +185,6 @@ void ArrayClass::InitArrayMethodDesc(
     PCCOR_SIGNATURE pShortSig,
     DWORD   cShortSig,
     DWORD   dwVtableSlot,
-    LoaderAllocator *pLoaderAllocator,
     AllocMemTracker *pamTracker)
 {
     STANDARD_VM_CONTRACT;
@@ -206,7 +197,7 @@ void ArrayClass::InitArrayMethodDesc(
     pNewMD->SetStoredMethodSig(pShortSig, cShortSig);
 
     _ASSERTE(!pNewMD->MayHaveNativeCode());
-    pNewMD->SetTemporaryEntryPoint(pLoaderAllocator, pamTracker);
+    pNewMD->SetTemporaryEntryPoint(pamTracker);
 
 #ifdef _DEBUG
     _ASSERTE(pNewMD->GetMethodName() && GetDebugClassName());
@@ -246,7 +237,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     BOOL            containsPointers = CorTypeInfo::IsObjRef(elemType);
-    if (elemType == ELEMENT_TYPE_VALUETYPE && pElemMT->ContainsPointers())
+    if (elemType == ELEMENT_TYPE_VALUETYPE && pElemMT->ContainsGCPointers())
         containsPointers = TRUE;
 
     // this is the base for every array type
@@ -515,13 +506,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             PCCOR_SIGNATURE pSig;
             DWORD           cSig;
 
-            pClass->GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker
-    #ifdef FEATURE_ARRAYSTUB_AS_IL
-                                                 ,0
-    #endif
-                                                );
+            pClass->GenerateArrayAccessorCallSig(dwFuncRank, dwFuncType, &pSig, &cSig, pAllocator, pamTracker, FALSE);
 
-            pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pAllocator, pamTracker);
+            pClass->InitArrayMethodDesc(pNewMD, pSig, cSig, numVirtuals + dwMethodIndex, pamTracker);
 
             dwMethodIndex++;
         }
@@ -532,7 +519,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     if (CorTypeInfo::IsObjRef(elemType) ||
         ((elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers()))
     {
-        pMT->SetContainsPointers();
+        pMT->SetContainsGCPointers();
 
         // This array is all GC Pointers
         CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
@@ -548,9 +535,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     else if (elemType == ELEMENT_TYPE_VALUETYPE)
     {
         // If it's an array of value classes, there is a different format for the GCDesc if it contains pointers
-        if (pElemMT->ContainsPointers())
+        if (pElemMT->ContainsGCPointers())
         {
-            pMT->SetContainsPointers();
+            pMT->SetContainsGCPointers();
 
             CGCDescSeries* pElemSeries = CGCDesc::GetCGCDescFromMT(pElemMT)->GetHighestSeries();
 
@@ -628,8 +615,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 } // Module::CreateArrayMethodTable
 
 
-#ifdef FEATURE_ARRAYSTUB_AS_IL
-
 class ArrayOpLinker : public ILStubLinker
 {
     ILCodeStream * m_pCode;
@@ -706,7 +691,7 @@ public:
                 // Call type check helper
                 m_pCode->EmitLDARG(rank);
                 m_pCode->EmitLoadThis();
-                m_pCode->EmitCALL(METHOD__STUBHELPERS__ARRAY_TYPE_CHECK,2,0);
+                m_pCode->EmitCALL(METHOD__CASTHELPERS__ARRAYTYPECHECK,2,0);
 
                 m_pCode->EmitLabel(pTypeCheckOK);
 
@@ -929,237 +914,6 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
 
     return Stub::NewStub(JitILStub(pStubMD));
 }
-
-#else // FEATURE_ARRAYSTUB_AS_IL
-//========================================================================
-// Generates the platform-independent arrayop stub.
-//========================================================================
-void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
-{
-    STANDARD_VM_CONTRACT;
-
-    ArrayOpIndexSpec *pai = NULL;
-    MethodTable *pMT = pMD->GetMethodTable();
-    ArrayClass *pcls = (ArrayClass*)(pMT->GetClass());
-
-    // The ArrayOpScript and ArrayOpIndexSpec structs double as hash keys
-    // for the ArrayStubCache.  Thus, it's imperative that there be no
-    // unused "pad" fields that contain unstable values.
-    // pMT->GetRank() is bounded so the arithmetics here is safe.
-    memset(paos, 0, sizeof(ArrayOpScript) + sizeof(ArrayOpIndexSpec) * pMT->GetRank());
-
-    paos->m_rank            = (BYTE)(pMT->GetRank());
-    paos->m_fHasLowerBounds = (pMT->GetInternalCorElementType() == ELEMENT_TYPE_ARRAY);
-
-    paos->m_ofsoffirst      = ArrayBase::GetDataPtrOffset(pMT);
-
-    switch (pMD->GetArrayFuncIndex())
-    {
-    case ArrayMethodDesc::ARRAY_FUNC_GET:
-        paos->m_op = ArrayOpScript::LOAD;
-        break;
-    case ArrayMethodDesc::ARRAY_FUNC_SET:
-        paos->m_op = ArrayOpScript::STORE;
-        break;
-    case ArrayMethodDesc::ARRAY_FUNC_ADDRESS:
-        paos->m_op = ArrayOpScript::LOADADDR;
-        break;
-    default:
-        _ASSERTE(!"Unknown array func!");
-    }
-
-    MetaSig msig(pMD);
-    _ASSERTE(!msig.IsVarArg());     // No array signature is varargs, code below does not expect it.
-
-    switch (pMT->GetArrayElementTypeHandle().GetInternalCorElementType())
-    {
-        // These are all different because of sign extension
-
-        case ELEMENT_TYPE_I1:
-            paos->m_elemsize = 1;
-            paos->m_signed = TRUE;
-            break;
-
-        case ELEMENT_TYPE_BOOLEAN:
-        case ELEMENT_TYPE_U1:
-            paos->m_elemsize = 1;
-            break;
-
-        case ELEMENT_TYPE_I2:
-            paos->m_elemsize = 2;
-            paos->m_signed = TRUE;
-            break;
-
-        case ELEMENT_TYPE_CHAR:
-        case ELEMENT_TYPE_U2:
-            paos->m_elemsize = 2;
-            break;
-
-        case ELEMENT_TYPE_I4:
-        IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
-            paos->m_elemsize = 4;
-            paos->m_signed = TRUE;
-            break;
-
-        case ELEMENT_TYPE_U4:
-        IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
-        IN_TARGET_32BIT(case ELEMENT_TYPE_PTR:)
-            paos->m_elemsize = 4;
-            break;
-
-        case ELEMENT_TYPE_I8:
-        IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
-            paos->m_elemsize = 8;
-            paos->m_signed = TRUE;
-            break;
-
-        case ELEMENT_TYPE_U8:
-        IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
-        IN_TARGET_64BIT(case ELEMENT_TYPE_PTR:)
-            paos->m_elemsize = 8;
-            break;
-
-        case ELEMENT_TYPE_R4:
-            paos->m_elemsize = 4;
-            paos->m_flags |= paos->ISFPUTYPE;
-            break;
-
-        case ELEMENT_TYPE_R8:
-            paos->m_elemsize = 8;
-            paos->m_flags |= paos->ISFPUTYPE;
-            break;
-
-        case ELEMENT_TYPE_SZARRAY:
-        case ELEMENT_TYPE_ARRAY:
-        case ELEMENT_TYPE_CLASS:
-        case ELEMENT_TYPE_STRING:
-        case ELEMENT_TYPE_OBJECT:
-            paos->m_elemsize = sizeof(LPVOID);
-            paos->m_flags |= paos->NEEDSWRITEBARRIER;
-            if (paos->m_op != ArrayOpScript::LOAD)
-            {
-                paos->m_flags |= paos->NEEDSTYPECHECK;
-            }
-
-            break;
-
-        case ELEMENT_TYPE_VALUETYPE:
-            paos->m_elemsize = pMT->GetComponentSize();
-            if (pMT->ContainsPointers())
-            {
-                paos->m_gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
-                paos->m_flags |= paos->NEEDSWRITEBARRIER;
-            }
-            break;
-
-        default:
-            _ASSERTE(!"Unsupported Array Type!");
-    }
-
-    ArgIterator argit(&msig);
-
-#ifdef TARGET_X86
-    UINT stackPop = argit.CbStackPop();
-    _ASSERTE(stackPop <= USHRT_MAX);
-    paos->m_cbretpop = (UINT16)stackPop;
-#endif
-
-    if (argit.HasRetBuffArg())
-    {
-        paos->m_flags |= ArrayOpScript::HASRETVALBUFFER;
-        UINT refBuffOffset = argit.GetRetBuffArgOffset();
-        _ASSERTE(refBuffOffset <= USHRT_MAX);
-        paos->m_fRetBufLoc = (UINT16)refBuffOffset;
-    }
-
-    if (paos->m_op == ArrayOpScript::LOADADDR)
-    {
-        paos->m_typeParamOffs = argit.GetParamTypeArgOffset();
-    }
-
-    for (UINT idx = 0; idx < paos->m_rank; idx++)
-    {
-        pai = (ArrayOpIndexSpec*)(paos->GetArrayOpIndexSpecs() + idx);
-
-        pai->m_idxloc = argit.GetNextOffset();
-        pai->m_lboundofs = paos->m_fHasLowerBounds ? (UINT32) (ArrayBase::GetLowerBoundsOffset(pMT) + idx*sizeof(DWORD)) : 0;
-        pai->m_lengthofs = ArrayBase::GetBoundsOffset(pMT) + idx*sizeof(DWORD);
-    }
-
-    if (paos->m_op == paos->STORE)
-    {
-        UINT offset = argit.GetNextOffset();
-        _ASSERTE(offset <= USHRT_MAX);
-        paos->m_fValLoc = (UINT16)offset;
-    }
-}
-
-//---------------------------------------------------------
-// Cache for array stubs
-//---------------------------------------------------------
-class ArrayStubCache : public StubCacheBase
-{
-    virtual DWORD CompileStub(const BYTE *pRawStub,
-                             StubLinker *psl);
-    virtual UINT Length(const BYTE *pRawStub);
-
-public:
-public:
-    ArrayStubCache(LoaderHeap* heap) : StubCacheBase(heap)
-    {
-    }
-
-    static ArrayStubCache * GetArrayStubCache()
-    {
-        STANDARD_VM_CONTRACT;
-
-        static ArrayStubCache * s_pArrayStubCache = NULL;
-
-        if (s_pArrayStubCache == NULL)
-        {
-            ArrayStubCache * pArrayStubCache = new ArrayStubCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
-            if (InterlockedCompareExchangeT(&s_pArrayStubCache, pArrayStubCache, NULL) != NULL)
-                delete pArrayStubCache;
-        }
-
-        return s_pArrayStubCache;
-    }
-};
-
-Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
-{
-    STANDARD_VM_CONTRACT;
-
-    MethodTable *pMT = pMD->GetMethodTable();
-
-    ArrayOpScript *paos = (ArrayOpScript*)_alloca(sizeof(ArrayOpScript) + sizeof(ArrayOpIndexSpec) * pMT->GetRank());
-
-    GenerateArrayOpScript(pMD, paos);
-
-    Stub *pArrayOpStub;
-    pArrayOpStub = ArrayStubCache::GetArrayStubCache()->Canonicalize((const BYTE *)paos);
-    if (pArrayOpStub == NULL)
-        COMPlusThrowOM();
-
-    return pArrayOpStub;
-}
-
-DWORD ArrayStubCache::CompileStub(const BYTE *pRawStub,
-                                 StubLinker *psl)
-{
-    STANDARD_VM_CONTRACT;
-
-    ((CPUSTUBLINKER*)psl)->EmitArrayOpStub((ArrayOpScript*)pRawStub);
-    return NEWSTUB_FL_NONE;
-}
-
-UINT ArrayStubCache::Length(const BYTE *pRawStub)
-{
-    LIMITED_METHOD_CONTRACT;
-    return ((ArrayOpScript*)pRawStub)->Length();
-}
-
-#endif // FEATURE_ARRAYSTUB_AS_IL
 
 
 //---------------------------------------------------------------------

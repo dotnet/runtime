@@ -658,7 +658,7 @@ void MethodTable::AllocateAuxiliaryData(LoaderAllocator *pAllocator, Module *pLo
     }
 
     prependedAllocationSpace = prependedAllocationSpace + sizeofStaticsStructure;
-    
+
     cbAuxiliaryData = cbAuxiliaryData + S_SIZE_T(prependedAllocationSpace) + extraAllocation;
     if (cbAuxiliaryData.IsOverflow())
         ThrowHR(COR_E_OVERFLOW);
@@ -748,6 +748,7 @@ MethodTable* CreateMinimalMethodTable(Module* pContainingModule,
 #ifdef _DEBUG
     pClass->SetDebugClassName("dynamicClass");
     pMT->SetDebugClassName("dynamicClass");
+    pMT->GetAuxiliaryDataForWrite()->SetIsPublished();
 #endif
 
     LOG((LF_BCL, LL_INFO10, "Level1 - MethodTable created {0x%p}\n", pClass));
@@ -1569,7 +1570,7 @@ MethodTable::IsExternallyVisible()
 
 BOOL MethodTable::IsAllGCPointers()
 {
-    if (this->ContainsPointers())
+    if (this->ContainsGCPointers())
     {
         // check for canonical GC encoding for all-pointer types
         CGCDesc* pDesc = CGCDesc::GetCGCDescFromMT(this);
@@ -1644,7 +1645,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                            name,
                            pszName,
                            IsMdFinal(dwAttrs) ? " (final)" : "",
-                           (VOID *)pMD->GetMethodEntryPoint(),
+                           (VOID *)pMD->GetMethodEntryPointIfExists(),
                            pMD->GetSlot()
                           );
                 OutputDebugStringUtf8(buff);
@@ -1658,7 +1659,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                      pMD->GetClass()->GetDebugClassName(),
                      pszName,
                      IsMdFinal(dwAttrs) ? " (final)" : "",
-                     (VOID *)pMD->GetMethodEntryPoint(),
+                     (VOID *)pMD->GetMethodEntryPointIfExists(),
                      pMD->GetSlot()
                     ));
             }
@@ -1771,9 +1772,9 @@ MethodTable::Debug_DumpDispatchMap()
             nInterfaceIndex,
             pInterface->GetDebugClassName(),
             nInterfaceSlotNumber,
-            pInterface->GetMethodDescForSlot(nInterfaceSlotNumber)->GetName(),
+            pInterface->GetMethodDescForSlot_NoThrow(nInterfaceSlotNumber)->GetName(),
             nImplementationSlotNumber,
-            GetMethodDescForSlot(nImplementationSlotNumber)->GetName()));
+            GetMethodDescForSlot_NoThrow(nImplementationSlotNumber)->GetName()));
 
         it.Next();
     }
@@ -2114,11 +2115,14 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     DWORD numIntroducedFields = GetNumIntroducedInstanceFields();
 
-    // It appears the VM gives a struct with no fields of size 1.
-    // Don't pass in register such structure.
     if (numIntroducedFields == 0)
     {
-        return false;
+        helperPtr->largestFieldOffset = startOffsetOfStruct;
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify empty struct %s (%p) like padding, startOffset %d, total struct size %d\n",
+            nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
+
+        AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+        return true;
     }
 
     // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
@@ -2334,7 +2338,12 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     // No fields.
     if (numIntroducedFields == 0)
     {
-        return false;
+        helperPtr->largestFieldOffset = startOffsetOfStruct;
+        LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify empty struct %s (%p) like padding, startOffset %d, total struct size %d\n",
+            nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
+
+        AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
+        return true;
     }
 
     bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this);
@@ -2586,8 +2595,12 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         // Calculate the eightbytes and their types.
 
         int lastFieldOrdinal = sortedFieldOrder[largestFieldOffset];
-        unsigned int offsetAfterLastFieldByte = largestFieldOffset + helperPtr->fieldSizes[lastFieldOrdinal];
-        SystemVClassificationType lastFieldClassification = helperPtr->fieldClassifications[lastFieldOrdinal];
+        unsigned int lastFieldSize = (lastFieldOrdinal >= 0) ? helperPtr->fieldSizes[lastFieldOrdinal] : 0;
+        unsigned int offsetAfterLastFieldByte = largestFieldOffset + lastFieldSize;
+        _ASSERTE(offsetAfterLastFieldByte <= helperPtr->structSize);
+        SystemVClassificationType lastFieldClassification = (lastFieldOrdinal >= 0)
+            ? helperPtr->fieldClassifications[lastFieldOrdinal]
+            : SystemVClassificationTypeNoClass;
 
         unsigned int usedEightBytes = 0;
         unsigned int accumulatedSizeForEightBytes = 0;
@@ -2614,6 +2627,8 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 // the SysV ABI spec.
                 fieldSize = 1;
                 fieldClassificationType = offset < offsetAfterLastFieldByte ? SystemVClassificationTypeNoClass : lastFieldClassification;
+                if (offset % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0) // new eightbyte
+                    foundFieldInEightByte = false;
             }
             else
             {
@@ -2666,13 +2681,16 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 }
             }
 
-            if ((offset + 1) % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0) // If we just finished checking the last byte of an eightbyte
+            //  If we just finished checking the last byte of an eightbyte or the entire struct
+            if ((offset + 1) % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0 || (offset + 1) == helperPtr->structSize)
             {
                 if (!foundFieldInEightByte)
                 {
-                    // If we didn't find a field in an eight-byte (i.e. there are no explicit offsets that start a field in this eightbyte)
+                    // If we didn't find a field in an eightbyte (i.e. there are no explicit offsets that start a field in this eightbyte)
                     // then the classification of this eightbyte might be NoClass. We can't hand a classification of NoClass to the JIT
                     // so set the class to Integer (as though the struct has a char[8] padding) if the class is NoClass.
+                    //
+                    // TODO: Fix JIT, NoClass eightbytes are valid and passing them is broken because of this.
                     if (helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] == SystemVClassificationTypeNoClass)
                     {
                         helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] = SystemVClassificationTypeInteger;
@@ -2705,9 +2723,9 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         LOG((LF_JIT, LL_EVERYTHING, "     **** Number EightBytes: %d\n", helperPtr->eightByteCount));
         for (unsigned i = 0; i < helperPtr->eightByteCount; i++)
         {
-            _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
             LOG((LF_JIT, LL_EVERYTHING, "     **** eightByte %d -- classType: %s, eightByteOffset: %d, eightByteSize: %d\n",
                 i, GetSystemVClassificationTypeName(helperPtr->eightByteClassifications[i]), helperPtr->eightByteOffsets[i], helperPtr->eightByteSizes[i]));
+            _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
         }
 #endif // _DEBUG
     }
@@ -3351,7 +3369,7 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
     bool hasFixedAddr = HasFixedAddressVTStatics();
 
     LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-    const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+    const bool canBeFrozen = !pFieldMT->ContainsGCPointers() && !Collectible();
     OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, canBeFrozen);
     SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
     GCPROTECT_END();
@@ -3377,7 +3395,7 @@ OBJECTREF MethodTable::AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, bo
     if (canBeFrozen)
     {
         // In case if we don't plan to collect this handle we may try to allocate it on FOH
-        _ASSERT(!pFieldMT->ContainsPointers());
+        _ASSERT(!pFieldMT->ContainsGCPointers());
         FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
         obj = ObjectToOBJECTREF(foh->TryAllocateObject(pFieldMT, pFieldMT->GetBaseSize()));
         // obj can be null in case if struct is huge (>64kb)
@@ -3431,7 +3449,7 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         MethodTable * pCanonMT = GetCanonicalMethodTable();
 
         // Call the code method without touching MethodDesc if possible
-        PCODE pCctorCode = pCanonMT->GetSlot(pCanonMT->GetClassConstructorSlot());
+        PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
 
         if (pCanonMT->IsSharedByGenericInstantiations())
         {
@@ -3765,20 +3783,42 @@ void MethodTable::EnsureStaticDataAllocated()
     CONTRACTL_END;
 
     PTR_MethodTableAuxiliaryData pAuxiliaryData = GetAuxiliaryDataForWrite();
-    if (!pAuxiliaryData->IsStaticDataAllocated() && IsDynamicStatics())
+    if (!pAuxiliaryData->IsStaticDataAllocated())
     {
-        DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
-        // Allocate space for normal statics if we might have them
-        if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes());
+        bool isInitedIfStaticDataAllocated = IsInitedIfStaticDataAllocated();
+        if (IsDynamicStatics() && !IsSharedByGenericInstantiations())
+        {
+            DynamicStaticsInfo *pDynamicStaticsInfo = GetDynamicStaticsInfo();
+            // Allocate space for normal statics if we might have them
+            if (pDynamicStaticsInfo->GetNonGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNonGCRegularStaticFieldBytes(), isInitedIfStaticDataAllocated);
 
-        if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
-            GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL);
+            if (pDynamicStaticsInfo->GetGCStaticsPointer() == NULL)
+                GetLoaderAllocator()->AllocateGCHandlesBytesForStaticVariables(pDynamicStaticsInfo, GetClass()->GetNumHandleRegularStatics(), this->HasBoxedRegularStatics() ? this : NULL, isInitedIfStaticDataAllocated);
+        }
+        pAuxiliaryData->SetIsStaticDataAllocated(isInitedIfStaticDataAllocated);
     }
-    pAuxiliaryData->SetIsStaticDataAllocated();
 }
 
-void MethodTable::AttemptToPreinit()
+bool MethodTable::IsClassInitedOrPreinited()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+    bool initResult;
+    if (GetAuxiliaryData()->IsClassInitedOrPreinitedDecided(&initResult))
+        return initResult;
+
+    EnsureStaticDataAllocated();
+    return IsClassInited();
+}
+
+bool MethodTable::IsInitedIfStaticDataAllocated()
 {
     CONTRACTL
     {
@@ -3789,33 +3829,32 @@ void MethodTable::AttemptToPreinit()
     CONTRACTL_END;
 
     if (IsClassInited())
-        return;
+    {
+        return true;
+    }
 
     if (HasClassConstructor())
     {
         // If there is a class constructor, then the class cannot be preinitted.
-        return;
+        return false;
     }
-    
+
     if (GetClass()->GetNonGCRegularStaticFieldBytes() == 0 && GetClass()->GetNumHandleRegularStatics() == 0)
     {
-        // If there are static fields that are not thread statics, then the class is preinitted.
-        SetClassInited();
-        return;
+        // If there aren't static fields that are not thread statics, then the class is preinitted.
+        return true;
     }
 
     // At this point, we are looking at a class that has no class constructor, but does have static fields
 
     if (IsSharedByGenericInstantiations())
     {
-        // If we don't know the exact type, we can't pre-allocate the fields
-        return;
+        // If we don't know the exact type, we can't pre-init the the fields
+        return false;
     }
 
     // All this class needs to be initialized is to allocate the memory for the static fields. Do so, and mark the type as initialized
-    EnsureStaticDataAllocated();
-    SetClassInited();
-    return;
+    return true;
 }
 
 void MethodTable::EnsureTlsIndexAllocated()
@@ -3953,186 +3992,6 @@ OBJECTREF MethodTable::FastBox(void** data)
 
     CopyValueClass(ref->UnBox(), *data, this);
     return ref;
-}
-
-#if TARGET_X86 || TARGET_AMD64
-//==========================================================================================
-static void FastCallFinalize(Object *obj, PCODE funcPtr, BOOL fCriticalCall)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    BEGIN_CALL_TO_MANAGEDEX(fCriticalCall ? EEToManagedCriticalCall : EEToManagedDefault);
-
-#if defined(TARGET_X86)
-
-#ifdef TARGET_WINDOWS
-    __asm
-    {
-        mov     ecx, [obj]
-        call    [funcPtr]
-        INDEBUG(nop)            // Mark the fact that we can call managed code
-    }
-#else
-    __asm
-    (
-        "mov     %%ecx, %[obj]\n\t"
-        "call    *%[funcPtr]\n\t"
-        INDEBUG("nop\n\t")
-        :
-        : [obj] "m" (obj), [funcPtr] "m" (funcPtr)
-        : "ecx"
-    );
-#endif
-
-
-#else // TARGET_X86
-
-    FastCallFinalizeWorker(obj, funcPtr);
-
-#endif // TARGET_X86
-
-    END_CALL_TO_MANAGED();
-}
-
-#endif // TARGET_X86 || TARGET_AMD64
-
-void CallFinalizerOnThreadObject(Object *obj)
-{
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    THREADBASEREF   refThis = (THREADBASEREF)ObjectToOBJECTREF(obj);
-    Thread*         thread  = refThis->GetInternal();
-
-    // Prevent multiple calls to Finalize
-    // Objects can be resurrected after being finalized.  However, there is no
-    // race condition here.  We always check whether an exposed thread object is
-    // still attached to the internal Thread object, before proceeding.
-    if (thread)
-    {
-        refThis->ResetStartHelper();
-
-        // During process shutdown, we finalize even reachable objects.  But if we break
-        // the link between the System.Thread and the internal Thread object, the runtime
-        // may not work correctly.  In particular, we won't be able to transition between
-        // contexts and domains to finalize other objects.  Since the runtime doesn't
-        // require that Threads finalize during shutdown, we need to disable this.  If
-        // we wait until phase 2 of shutdown finalization (when the EE is suspended and
-        // will never resume) then we can simply skip the side effects of Thread
-        // finalization.
-        if ((g_fEEShutDown & ShutDown_Finalize2) == 0)
-        {
-            if (GetThreadNULLOk() != thread)
-            {
-                refThis->ClearInternal();
-            }
-
-            thread->SetThreadState(Thread::TS_Finalized);
-            Thread::SetCleanupNeededForFinalizedThread();
-        }
-    }
-}
-
-//==========================================================================================
-// From the GC finalizer thread, invoke the Finalize() method on an object.
-void MethodTable::CallFinalizer(Object *obj)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(obj->GetMethodTable()->HasFinalizer());
-    }
-    CONTRACTL_END;
-
-    MethodTable *pMT = obj->GetMethodTable();
-
-    // Check for precise init class constructors that have failed, if any have failed, then we didn't run the
-    // constructor for the object, and running the finalizer for the object would violate the CLI spec by running
-    // instance code without having successfully run the precise-init class constructor.
-    if (pMT->HasPreciseInitCctors())
-    {
-        MethodTable *pMTCur = pMT;
-        do
-        {
-            if ((!pMTCur->GetClass()->IsBeforeFieldInit()) && pMTCur->IsInitError())
-            {
-                // Precise init Type Initializer for type failed... do not run finalizer
-                return;
-            }
-
-            pMTCur = pMTCur->GetParentMethodTable();
-        }
-        while (pMTCur != NULL);
-    }
-
-    if (pMT == g_pThreadClass)
-    {
-        // Finalizing Thread object requires ThreadStoreLock.  It is expensive if
-        // we keep taking ThreadStoreLock.  This is very bad if we have high retiring
-        // rate of Thread objects.
-        // To avoid taking ThreadStoreLock multiple times, we mark Thread with TS_Finalized
-        // and clean up a batch of them when we take ThreadStoreLock next time.
-
-        // To avoid possible hierarchy requirement between critical finalizers, we call cleanup
-        // code directly.
-        CallFinalizerOnThreadObject(obj);
-        return;
-    }
-
-
-    // Determine if the object has a critical or normal finalizer.
-    BOOL fCriticalFinalizer = pMT->HasCriticalFinalizer();
-
-    // There's no reason to actually set up a frame here.  If we crawl out of the
-    // Finalize() method on this thread, we will see FRAME_TOP which indicates
-    // that the crawl should terminate.  This is analogous to how KickOffThread()
-    // starts new threads in the runtime.
-    PCODE funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
-
-#ifdef STRESS_LOG
-    if (fCriticalFinalizer)
-    {
-        STRESS_LOG1(LF_GCALLOC, LL_INFO100, "Finalizing CriticalFinalizer %pM\n",
-                    pMT);
-    }
-#endif
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-#ifdef DEBUGGING_SUPPORTED
-    if (CORDebuggerTraceCall())
-        g_pDebugInterface->TraceCall((const BYTE *) funcPtr);
-#endif // DEBUGGING_SUPPORTED
-
-    FastCallFinalize(obj, funcPtr, fCriticalFinalizer);
-
-#else // defined(TARGET_X86) || defined(TARGET_AMD64)
-
-    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(funcPtr);
-
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-
-    args[ARGNUM_0] = PTR_TO_ARGHOLDER(obj);
-
-    if (fCriticalFinalizer)
-    {
-        CRITICAL_CALLSITE;
-    }
-
-    CALL_MANAGED_METHOD_NORET(args);
-
-#endif // (defined(TARGET_X86) && defined(TARGET_AMD64)
-
-#ifdef STRESS_LOG
-    if (fCriticalFinalizer)
-    {
-        STRESS_LOG1(LF_GCALLOC, LL_INFO100, "Finalized CriticalFinalizer %pM without exception\n",
-                    pMT);
-    }
-#endif
 }
 
 //==========================================================================
@@ -4973,7 +4832,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
     CorElementType ret;
 
-    switch (GetFlag(enum_flag_Category_ElementTypeMask))
+    switch (GetFlag(enum_flag_Category_Mask))
     {
     case enum_flag_Category_Array:
         ret = ELEMENT_TYPE_ARRAY;
@@ -4984,17 +4843,13 @@ CorElementType MethodTable::GetSignatureCorElementType()
         break;
 
     case enum_flag_Category_ValueType:
+    case enum_flag_Category_Nullable:
+    case enum_flag_Category_PrimitiveValueType:
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_PrimitiveValueType:
-        //
-        // This is the only difference from MethodTable::GetInternalCorElementType()
-        //
-        if (IsTruePrimitive())
-            ret = GetClass()->GetInternalCorElementType();
-        else
-            ret = ELEMENT_TYPE_VALUETYPE;
+    case enum_flag_Category_TruePrimitive:
+        ret = GetClass()->GetInternalCorElementType();
         break;
 
     default:
@@ -5999,41 +5854,6 @@ bool MethodTable::DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, Me
 }
 
 //==========================================================================================
-MethodDesc * MethodTable::GetIntroducingMethodDesc(DWORD slotNumber)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodDesc * pCurrentMD = GetMethodDescForSlot(slotNumber);
-    DWORD        dwSlot = pCurrentMD->GetSlot();
-    MethodDesc * pIntroducingMD = NULL;
-
-    MethodTable * pParentType = GetParentMethodTable();
-    MethodTable * pPrevParentType = NULL;
-
-    // Find this method in the parent.
-    // If it does exist in the parent, it would be at the same vtable slot.
-    while ((pParentType != NULL) &&
-           (dwSlot < pParentType->GetNumVirtuals()))
-    {
-        pPrevParentType = pParentType;
-        pParentType = pParentType->GetParentMethodTable();
-    }
-
-    if (pPrevParentType != NULL)
-    {
-        pIntroducingMD = pPrevParentType->GetMethodDescForSlot(dwSlot);
-    }
-
-    return pIntroducingMD;
-}
-
-//==========================================================================================
 // There is a case where a method declared in a type can be explicitly
 // overridden by a methodImpl on another method within the same type. In
 // this case, we need to call the methodImpl target, and this will map
@@ -6417,19 +6237,6 @@ void MethodTable::SetCl(mdTypeDef token)
 }
 
 //==========================================================================================
-MethodDesc * MethodTable::GetClassConstructor()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    return GetMethodDescForSlot(GetClassConstructorSlot());
-}
-
-//==========================================================================================
 DWORD MethodTable::HasFixedAddressVTStatics()
 {
     LIMITED_METHOD_CONTRACT;
@@ -6616,6 +6423,8 @@ InteropMethodTableData *MethodTable::GetComInteropData()
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
+
+    _ASSERTE(GetAuxiliaryData()->IsPublished());
 
     InteropMethodTableData *pData = LookupComInteropData();
 
@@ -6895,13 +6704,13 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
     if (pMDRet == NULL)
     {
         _ASSERTE(slotNumber < GetNumVirtuals());
-        pMDRet = m_pDeclMT->GetMethodDescForSlot(slotNumber);
+        pMDRet = m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber);
         _ASSERTE(CheckPointer(pMDRet));
         pEntry->SetImplMethodDesc(pMDRet);
     }
     else
     {
-        _ASSERTE(slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot(slotNumber));
+        _ASSERTE(slotNumber >= GetNumVirtuals() || pMDRet == m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber));
     }
 
     return pMDRet;
@@ -6937,7 +6746,7 @@ void MethodTable::MethodDataObject::InvalidateCachedVirtualSlot(UINT32 slotNumbe
 MethodDesc *MethodTable::MethodDataInterface::GetDeclMethodDesc(UINT32 slotNumber)
 {
     WRAPPER_NO_CONTRACT;
-    return m_pDeclMT->GetMethodDescForSlot(slotNumber);
+    return m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber);
 }
 
 //==========================================================================================
@@ -7112,6 +6921,14 @@ DispatchSlot MethodTable::MethodDataInterfaceImpl::GetImplSlot(UINT32 slotNumber
         return DispatchSlot(0);
     }
     return m_pImpl->GetImplSlot(implSlotNumber);
+}
+
+//==========================================================================================
+bool MethodTable::MethodDataInterfaceImpl::IsImplSlotNull(UINT32 slotNumber)
+{
+    WRAPPER_NO_CONTRACT;
+    UINT32 implSlotNumber = MapToImplSlotNumber(slotNumber);
+    return (implSlotNumber == INVALID_SLOT_NUMBER);
 }
 
 //==========================================================================================
@@ -7597,7 +7414,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DacEnumMemoryRegion(dac_cast<TADDR>(this), size);
 
     // Make sure the GCDescs are added to the dump
-    if (ContainsPointers())
+    if (ContainsGCPointers())
     {
         PTR_CGCDesc gcdesc = CGCDesc::GetCGCDescFromMT(this);
         size_t size = gcdesc->GetSize();
@@ -7649,16 +7466,6 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pMTParent->EnumMemoryRegions(flags);
     }
 
-    if (HasNonVirtualSlots())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryData())) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
-    }
-
-    if (HasGenericsStaticsInfo())
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(GetGenericsStaticsInfo()), sizeof(GenericsStaticsInfo));
-    }
-
     if (HasInterfaceMap())
     {
 #ifdef FEATURE_COMINTEROP
@@ -7693,6 +7500,23 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (pAuxiliaryData.IsValid())
     {
         pAuxiliaryData.EnumMem();
+
+        if (HasGenericsStaticsInfo())
+        {
+            MethodTableAuxiliaryData::GetGenericStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (IsDynamicStatics())
+        {
+            MethodTableAuxiliaryData::GetDynamicStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (GetNumThreadStaticFields() > 0)
+        {
+            MethodTableAuxiliaryData::GetThreadStaticsInfo(pAuxiliaryData).EnumMem();
+        }
+        if (HasNonVirtualSlots())
+        {
+            DacEnumMemoryRegion(dac_cast<TADDR>(MethodTableAuxiliaryData::GetNonVirtualSlotsArray(pAuxiliaryData)) - GetNonVirtualSlotsArraySize(), GetNonVirtualSlotsArraySize());
+        }
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
@@ -7760,18 +7584,37 @@ Module *MethodTable::GetDefiningModuleForOpenType()
 PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
 {
     CONTRACTL {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     } CONTRACTL_END;
+
+    // Since this can allocate memory that won't be freed until the LoaderAllocator is release, we need
+    // to make sure that the associated MethodTable is fully allocated and permanent.
+    _ASSERTE(GetAuxiliaryData()->IsPublished());
 
     //
     // Keep in sync with code:MethodTable::GetRestoredSlotMT
     //
 
     PCODE slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
-    _ASSERTE(slot != NULL);
+#ifndef DACCESS_COMPILE
+    if (slot == (PCODE)NULL)
+    {
+        // This is a slot that has not been filled in yet. This can happen if we are
+        // looking at a slot which has not yet been given a temporary entry point.
+        MethodDesc *pMD = GetCanonicalMethodTable()->GetMethodDescForSlot_NoThrow(slotNumber);
+        PCODE temporaryEntryPoint = pMD->GetTemporaryEntryPoint();
+        slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
+        if (slot == (PCODE)NULL)
+        {
+            InterlockedCompareExchangeT(GetCanonicalMethodTable()->GetSlotPtrRaw(slotNumber), temporaryEntryPoint, (PCODE)NULL);
+            slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
+        }
+    }
+    _ASSERTE(slot != (PCODE)NULL);
+#endif // DACCESS_COMPILE
     return slot;
 }
 
@@ -7847,7 +7690,7 @@ MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
         return GetParallelMethodDescForEnC(this, pDefMD);
 #endif // FEATURE_METADATA_UPDATER
 
-    return GetMethodDescForSlot(pDefMD->GetSlot());
+    return GetMethodDescForSlot_NoThrow(pDefMD->GetSlot()); // TODO! We should probably use the throwing variant where possible
 }
 
 #ifndef DACCESS_COMPILE
@@ -7920,7 +7763,7 @@ BOOL MethodTable::HasExplicitOrImplicitPublicDefaultConstructor()
         return FALSE;
     }
 
-    MethodDesc * pCanonMD = GetMethodDescForSlot(GetDefaultConstructorSlot());
+    MethodDesc * pCanonMD = GetMethodDescForSlot_NoThrow(GetDefaultConstructorSlot());
     return pCanonMD != NULL && pCanonMD->IsPublic();
 }
 

@@ -267,14 +267,6 @@ void MyICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE method)
     jitInstance->mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE method)
-{
-    jitInstance->mc->cr->AddCall("mapMethodDeclToMethodImpl");
-    LogError("Hit unimplemented mapMethodDeclToMethodImpl");
-    DebugBreakorAV(17);
-    return 0;
-}
-
 // Returns the global cookie for the /GS unsafe buffer checks
 // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
 void MyICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
@@ -509,7 +501,7 @@ unsigned MyICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls, bool fDo
     return jitInstance->mc->repGetClassAlignmentRequirement(cls, fDoubleAlignHint);
 }
 
-// This is only called for Value classes.  It returns a boolean array
+// This called for ref and value classes.  It returns a boolean array
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
 // (of length // getClassSize(cls) / sizeof(void*)),
@@ -596,6 +588,13 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeForBox(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getTypeForBox");
     return jitInstance->mc->repGetTypeForBox(cls);
+}
+
+// Class handle for a boxed value type, on the stack.
+CORINFO_CLASS_HANDLE MyICJI::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getTypeForBoxOnStack");
+    return jitInstance->mc->repGetTypeForBoxOnStack(cls);
 }
 
 // returns the correct box helper for a particular class.  Note
@@ -766,6 +765,13 @@ bool MyICJI::isExactType(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("isExactType");
     return jitInstance->mc->repIsExactType(cls);
+}
+
+// Returns true if a class handle represents a generic type.
+TypeCompareState MyICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("isGenericType");
+    return jitInstance->mc->repIsGenericType(cls);
 }
 
 // Returns true if a class handle represents a Nullable type.

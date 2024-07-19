@@ -120,7 +120,7 @@
   <PropertyGroup>
     <!-- CLR NativeAot only builds in a subset of the matrix -->
     <_NativeAotSupportedOS Condition="'$(TargetOS)' == 'windows' or '$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'freebsd'">true</_NativeAotSupportedOS>
-    <_NativeAotSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86')">true</_NativeAotSupportedArch>
+    <_NativeAotSupportedArch Condition="'$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'loongarch64' or ('$(TargetOS)' == 'windows' and '$(TargetArchitecture)' == 'x86')">true</_NativeAotSupportedArch>
     <NativeAotSupported Condition="'$(_NativeAotSupportedOS)' == 'true' and '$(_NativeAotSupportedArch)' == 'true'">true</NativeAotSupported>
     <UseNativeAotForComponents Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == '$(HostOS)' and ('$(TargetOS)' != 'windows' or '$(TargetArchitecture)' != 'x86') and '$(TargetsLinuxBionic)' != 'true' and ('$(TargetsLinuxMusl)' != 'true' or '$(TargetArchitecture)' != 'arm')">true</UseNativeAotForComponents>
 
@@ -287,10 +287,7 @@
       AdditionalProperties="%(AdditionalProperties);
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(BuildArchitecture);
-                            TargetArchitecture=$(TargetArchitecture);
                             HostCrossOS=$(HostOS);
-                            HostOS=$(HostOS);
-                            TargetOS=$(TargetOS);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;

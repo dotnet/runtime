@@ -316,12 +316,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(CORINFO_METHOD_HANDLE m
     mc->cr->recMethodMustBeLoadedBeforeCodeIsRun(method);
 }
 
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE method)
-{
-    mc->cr->AddCall("mapMethodDeclToMethodImpl");
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
-}
-
 // Returns the global cookie for the /GS unsafe buffer checks
 // The cookie might be a constant value (JIT), or a handle to memory location (Ngen)
 void interceptor_ICJI::getGSCookie(GSCookie*  pCookieVal, // OUT
@@ -585,7 +579,7 @@ unsigned interceptor_ICJI::getClassAlignmentRequirement(CORINFO_CLASS_HANDLE cls
     return temp;
 }
 
-// This is only called for Value classes.  It returns a boolean array
+// This is called for ref and value classes.  It returns a boolean array
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
 // (of length // getClassSize(cls) / sizeof(void*)),
@@ -600,7 +594,15 @@ unsigned interceptor_ICJI::getClassGClayout(CORINFO_CLASS_HANDLE cls,   /* IN */
 {
     mc->cr->AddCall("getClassGClayout");
     unsigned temp = original_ICorJitInfo->getClassGClayout(cls, gcPtrs);
-    unsigned len  = (getClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+    unsigned len = 0;
+    if (isValueClass(cls))
+    {
+        len = (getClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+    }
+    else
+    {
+        len = (getHeapClassSize(cls) + sizeof(void*) - 1) / sizeof(void*);
+    }
     mc->recGetClassGClayout(cls, gcPtrs, len, temp);
     return temp;
 }
@@ -704,6 +706,15 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(CORINFO_CLASS_HANDLE cls)
     mc->cr->AddCall("getTypeForBox");
     CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getTypeForBox(cls);
     mc->recGetTypeForBox(cls, temp);
+    return temp;
+}
+
+// Class handle for a boxed value type, on the stack.
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getTypeForBoxOnStack");
+    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getTypeForBoxOnStack(cls);
+    mc->recGetTypeForBoxOnStack(cls, temp);
     return temp;
 }
 
@@ -902,6 +913,15 @@ bool interceptor_ICJI::isExactType(CORINFO_CLASS_HANDLE cls)
     mc->cr->AddCall("isExactType");
     bool temp = original_ICorJitInfo->isExactType(cls);
     mc->recIsExactType(cls, temp);
+    return temp;
+}
+
+// Returns whether a class handle represents a generic type, if that can be statically determined.
+TypeCompareState interceptor_ICJI::isGenericType(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("isGenericType");
+    TypeCompareState temp = original_ICorJitInfo->isGenericType(cls);
+    mc->recIsGenericType(cls, temp);
     return temp;
 }
 

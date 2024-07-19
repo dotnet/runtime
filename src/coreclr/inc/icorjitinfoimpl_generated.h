@@ -126,9 +126,6 @@ bool satisfiesMethodConstraints(
 void methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method) override;
 
-CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method) override;
-
 void getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal) override;
@@ -275,6 +272,9 @@ CorInfoHelpFunc getSharedCCtorHelper(
 CORINFO_CLASS_HANDLE getTypeForBox(
           CORINFO_CLASS_HANDLE cls) override;
 
+CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls) override;
+
 CorInfoHelpFunc getBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -343,6 +343,9 @@ bool isMoreSpecificType(
           CORINFO_CLASS_HANDLE cls2) override;
 
 bool isExactType(
+          CORINFO_CLASS_HANDLE cls) override;
+
+TypeCompareState isGenericType(
           CORINFO_CLASS_HANDLE cls) override;
 
 TypeCompareState isNullableType(

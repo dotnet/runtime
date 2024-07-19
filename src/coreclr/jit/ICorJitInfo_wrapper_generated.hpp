@@ -258,15 +258,6 @@ void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
     API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
 }
 
-CORINFO_METHOD_HANDLE WrapICorJitInfo::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(mapMethodDeclToMethodImpl);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->mapMethodDeclToMethodImpl(method);
-    API_LEAVE(mapMethodDeclToMethodImpl);
-    return temp;
-}
-
 void WrapICorJitInfo::getGSCookie(
           GSCookie* pCookieVal,
           GSCookie** ppCookieVal)
@@ -635,6 +626,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBox(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getTypeForBoxOnStack);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBoxOnStack(cls);
+    API_LEAVE(getTypeForBoxOnStack);
+    return temp;
+}
+
 CorInfoHelpFunc WrapICorJitInfo::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -808,6 +808,15 @@ bool WrapICorJitInfo::isExactType(
     API_ENTER(isExactType);
     bool temp = wrapHnd->isExactType(cls);
     API_LEAVE(isExactType);
+    return temp;
+}
+
+TypeCompareState WrapICorJitInfo::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isGenericType);
+    TypeCompareState temp = wrapHnd->isGenericType(cls);
+    API_LEAVE(isGenericType);
     return temp;
 }
 
