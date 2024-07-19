@@ -13,11 +13,11 @@ internal sealed class MethodDesc : IData<MethodDesc>
         Target.TypeInfo type = target.GetTypeInfo(DataType.MethodDesc);
 
         ChunkIndex = target.Read<byte>(address + (ulong)type.Fields[nameof(ChunkIndex)].Offset);
-        Slot = target.Read<byte>(address + (ulong)type.Fields[nameof(Slot)].Offset);
+        Slot = target.Read<ushort>(address + (ulong)type.Fields[nameof(Slot)].Offset);
         Flags = target.Read<ushort>(address + (ulong)type.Fields[nameof(Flags)].Offset);
     }
 
     public byte ChunkIndex { get; init; }
-    public byte Slot { get; init; }
+    public ushort Slot { get; init; }
     public ushort Flags { get; init; }
 }
