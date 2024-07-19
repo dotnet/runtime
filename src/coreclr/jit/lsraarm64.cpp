@@ -607,9 +607,16 @@ int LinearScan::BuildNode(GenTree* tree)
     switch (tree->OperGet())
     {
         default:
+        {
             srcCount = BuildSimple(tree);
             break;
-
+        }
+        case GT_PHYSREG:
+        {
+            srcCount = 0;
+            BuildDef(tree, getSingleTypeRegMask(tree->AsPhysReg()->gtSrcReg, TYP_MASK));
+            break;
+        }
         case GT_LCL_VAR:
             // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
             // after liveness. In either case we don't build any uses or defs. Otherwise, this is a

@@ -130,6 +130,29 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
     return lvaSIMDInitTempVarNum;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// Get, and allocate if necessary, the SIMD temp used for various operations.
+// The temp is allocated as the maximum sized type of all operations required.
+//
+// Arguments:
+//    simdType - Required SIMD type
+//
+// Returns:
+//    The temp number
+//
+unsigned Compiler::getFFRegisterVarNum()
+{
+    if (lvaFfrRegister == BAD_VAR_NUM)
+    {
+        lvaFfrRegister = lvaGrabTempWithImplicitUse(false DEBUGARG("Save the FFR value."));
+        lvaTable[lvaFfrRegister].lvType = TYP_MASK;
+        lvaTable[lvaFfrRegister].lvUsedInSIMDIntrinsic = true;
+    }    
+    return lvaFfrRegister;
+}
+#endif
+
 //----------------------------------------------------------------------------------
 // Return the base type and size of SIMD vector type given its type handle.
 //

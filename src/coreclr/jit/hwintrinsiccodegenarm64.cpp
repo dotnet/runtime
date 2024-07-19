@@ -303,6 +303,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     emitAttr emitSize;
     insOpts  opt;
+    bool     unspilledFfr = false;
 
     if (HWIntrinsicInfo::SIMDScalar(intrin.id))
     {
@@ -318,6 +319,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         emitSize = EA_SCALABLE;
         opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
+
+        bool readsFfr = false;
+        switch (intrin.id)
+        {
+            case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrInt16:
+            case NI_Sve_GetFfrInt32:
+            case NI_Sve_GetFfrInt64:
+            case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrUInt16:
+            case NI_Sve_GetFfrUInt32:
+            case NI_Sve_GetFfrUInt64:
+            case NI_Sve_LoadVectorFirstFaulting:
+                readsFfr = true;
+                break;
+            default:
+                break;
+        }
+
+        if (readsFfr && (intrin.op1 != nullptr) && ((intrin.op1->gtFlags & GTF_SPILLED) != 0))
+        {
+            unspilledFfr = true;
+        }
     }
     else if (intrin.category == HW_Category_Special)
     {
@@ -2366,6 +2390,37 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Sve_LoadVectorFirstFaulting:
+            {
+                insScalableOpts sopt = (opt == INS_OPTS_SCALABLE_B) ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
+                GetEmitter()->emitIns_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, REG_ZR, opt, sopt);
+                break;
+            }
+
+            case NI_Sve_GetFfrByte:
+            case NI_Sve_GetFfrInt16:
+            case NI_Sve_GetFfrInt32:
+            case NI_Sve_GetFfrInt64:
+            case NI_Sve_GetFfrSByte:
+            case NI_Sve_GetFfrUInt16:
+            case NI_Sve_GetFfrUInt32:
+            case NI_Sve_GetFfrUInt64:
+            {
+                if (unspilledFfr)
+                {
+                    // We have unspilled the FFR in op1Reg. Restore it back in FFR register.
+                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op1Reg, opt);
+                }
+
+                GetEmitter()->emitIns_R(ins, emitSize, targetReg, INS_OPTS_SCALABLE_B);
+                break;
+            }
+            case NI_Sve_SetFfr:
+            {
+                assert(targetReg == REG_NA);
+                GetEmitter()->emitIns_R(ins, emitSize, op1Reg, opt);
+                break;
+            }
             case NI_Sve_ConditionalExtractAfterLastActiveElementScalar:
             case NI_Sve_ConditionalExtractLastActiveElementScalar:
             {
