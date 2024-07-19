@@ -1624,9 +1624,6 @@ namespace Internal.JitInterface
         {
         }
 
-        private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
-
         private static object ResolveTokenWithSubstitution(MethodILScope methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {
             // Grab the generic definition of the method IL, resolve the token within the definition,
