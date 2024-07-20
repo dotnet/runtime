@@ -951,7 +951,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 if (tree != parent->AsIndir()->Addr())
                 {
                     GenTree* target = parent->AsIndir()->Addr();
-                    while (target->OperIs(GT_ADD, GT_SUB))
+                    while (target->OperIs(GT_ADD, GT_SUB) && target->TypeIs(TYP_BYREF))
                     {
                         target = target->AsOp()->gtGetOp1();
                     }
