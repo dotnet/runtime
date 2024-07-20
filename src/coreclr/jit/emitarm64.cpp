@@ -11081,8 +11081,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // update.
             if (insOptsIndexed(id->idInsOpt()) && !id->idIsSmallDsc())
             {
-                // Handle GC update here: we may have up to two updated GC
-                // registers by this instruction.
                 if (emitInsIsLoad(ins))
                 {
                     // Load will write the destination (reg1).
@@ -11096,8 +11094,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     }
                 }
 
-                // We will always write reg2. Note that it is stored encoded,
-                // so we have to decode it.
+                // We will always write reg2.
                 if (id->idGCrefReg2() != GCT_NONE)
                 {
                     emitGCregLiveUpd(id->idGCrefReg2(), id->idReg2(), dst);
