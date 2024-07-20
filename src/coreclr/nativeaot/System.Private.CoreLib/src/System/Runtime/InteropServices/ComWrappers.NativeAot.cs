@@ -1226,32 +1226,26 @@ namespace System.Runtime.InteropServices
             {
                 // Here we aren't part of a GC callback, so other threads can still be running
                 // who are adding and removing from the collection. The collection we are enumerating over
-                // supports lock free enumeration, but it is possible we can run into handles
-                // that just got removed and freed. So we guard against that here. If they have
-                // been freed, we don't need to worry about them as they don't need to be released.
+                // supports lock free enumeration, but it is possible we can run into handles that just
+                // got removed and freed. So we guard against that here by using GCHandle.ToIntPtr
+                // rather than Target given the latter would throw an exception. If they have been freed,
+                // we don't need to worry about them as they don't need to be released.
                 // In addition, we are only handling objects from our current thread here.
-                if (!weakNativeObjectWrapperHandle.IsAllocated)
+                IntPtr ptr = GCHandle.ToIntPtr(weakNativeObjectWrapperHandle);
+                if (ptr == default)
                 {
                     continue;
                 }
 
-                try
+                ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(GCHandle.InternalGet(ptr));
+                if (nativeObjectWrapper != null &&
+                    nativeObjectWrapper._contextToken == contextToken)
                 {
-                    ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper?>(weakNativeObjectWrapperHandle.Target);
-                    if (nativeObjectWrapper != null &&
-                        nativeObjectWrapper._contextToken == contextToken)
-                    {
-                        objects.Add(nativeObjectWrapper._proxyHandle.Target);
+                    objects.Add(nativeObjectWrapper._proxyHandle.Target);
 
-                        // Separate the wrapper from the tracker runtime prior to
-                        // passing them.
-                        nativeObjectWrapper.DisconnectTracker();
-                    }
-                }
-                catch (InvalidOperationException)
-                {
-                    // Even though we check for if a handle is allocated before trying to get it,
-                    // it is possible we can race. So catch such scenarios here.
+                    // Separate the wrapper from the tracker runtime prior to
+                    // passing them.
+                    nativeObjectWrapper.DisconnectTracker();
                 }
             }
 
