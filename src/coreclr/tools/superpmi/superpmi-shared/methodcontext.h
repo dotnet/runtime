@@ -422,6 +422,10 @@ public:
     void dmpHaveSameMethodDefinition(const DLDL& key, DWORD value);
     bool repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, CORINFO_METHOD_HANDLE methHnd2);
 
+    void recGetTypeDefinition(CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeDefinition(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetTypeDefinition(CORINFO_CLASS_HANDLE type);
+
     void recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                          bool                  hasSideEffects,
                          CorInfoHelpFunc       result,
@@ -1185,6 +1189,7 @@ enum mcPackets
     Packet_GetClassThreadStaticDynamicInfo = 219,
     Packet_IsGenericType = 220,
     Packet_GetTypeForBoxOnStack = 221,
+    Packet_GetTypeDefinition = 222,
 };
 
 void SetDebugDumpVariables();

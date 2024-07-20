@@ -1242,6 +1242,7 @@ public:
     HRESULT GetMethodTableNameImpl(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded);
     HRESULT GetObjectExceptionDataImpl(CLRDATA_ADDRESS objAddr, struct DacpExceptionObjectData *data);
     HRESULT GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded);
+    HRESULT GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData);
 
     BOOL IsExceptionFromManagedCode(EXCEPTION_RECORD * pExceptionRecord);
 #ifndef TARGET_UNIX
@@ -2005,7 +2006,7 @@ public:
     DacMethodTableSlotEnumerator() : mIteratorIndex(0)
     {
     }
-    
+
     virtual ~DacMethodTableSlotEnumerator() {}
 
     HRESULT Init(PTR_MethodTable mTable);

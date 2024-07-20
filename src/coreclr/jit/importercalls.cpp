@@ -3337,6 +3337,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
 
+            // This allows folding "typeof(...).GetGenericTypeDefinition() == typeof(...)"
+            case NI_System_Type_GetGenericTypeDefinition:
+
             // These may lead to early dead code elimination
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsPrimitive:
@@ -3872,6 +3875,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Type_GetGenericTypeDefinition:
+            {
+                GenTree* type = impStackTop(0).val;
+
+                retNode = impGetGenericTypeDefinition(type);
+                break;
+            }
+
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
             {
@@ -4146,11 +4157,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Threading_Interlocked_Exchange:
             case NI_System_Threading_Interlocked_ExchangeAdd:
             {
-                assert(callType != TYP_STRUCT);
-                assert(sig->numArgs == 2);
-
                 var_types retType = JITtype2varType(sig->retType);
-                assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
 
                 if (genTypeSize(retType) > TARGET_POINTER_SIZE)
                 {
@@ -4174,6 +4181,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 {
                     break;
                 }
+
+                assert(callType != TYP_STRUCT);
+                assert(sig->numArgs == 2);
+                assert((genTypeSize(retType) >= 4) || (ni == NI_System_Threading_Interlocked_Exchange));
 
                 GenTree* op2 = impPopStack().val;
                 GenTree* op1 = impPopStack().val;
@@ -10235,6 +10246,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "GetTypeFromHandle") == 0)
                         {
                             result = NI_System_Type_GetTypeFromHandle;
+                        }
+                        else if (strcmp(methodName, "GetGenericTypeDefinition") == 0)
+                        {
+                            result = NI_System_Type_GetGenericTypeDefinition;
                         }
                         else if (strcmp(methodName, "IsAssignableFrom") == 0)
                         {
