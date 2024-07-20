@@ -7154,28 +7154,79 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     if (ftn->GetMemberDef() != CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_T)->GetMemberDef())
         return false;
 
-    // Get MethodDesc for non-generic System.Threading.Interlocked.CompareExchange()
-    MethodDesc* cmpxchgObject = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);
+    // Determine the type of the generic T method parameter
+    _ASSERTE(ftn->HasMethodInstantiation());
+    _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+    TypeHandle typeHandle = ftn->GetMethodInstantiation()[0];
 
-    // Setup up the body of the method
-    static BYTE il[] = {
-                          CEE_LDARG_0,
-                          CEE_LDARG_1,
-                          CEE_LDARG_2,
-                          CEE_CALL,0,0,0,0,
-                          CEE_RET
-                        };
+    // Setup up the body of the CompareExchange methods; the method token will be patched on first use.
+    static BYTE il[5][9] =
+    {
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // object
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // byte
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // ushort
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // int
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // long
+    };
 
-    // Get the token for non-generic System.Threading.Interlocked.CompareExchange(), and patch [target]
-    mdMethodDef cmpxchgObjectToken = cmpxchgObject->GetMemberDef();
-    il[4] = (BYTE)((int)cmpxchgObjectToken >> 0);
-    il[5] = (BYTE)((int)cmpxchgObjectToken >> 8);
-    il[6] = (BYTE)((int)cmpxchgObjectToken >> 16);
-    il[7] = (BYTE)((int)cmpxchgObjectToken >> 24);
+    // Based on the generic method parameter, determine which overload of CompareExchange
+    // to delegate to, or if we can't handle the type at all.
+    int ilIndex;
+    MethodDesc* cmpxchgMethod;
+    if (!typeHandle.IsValueType())
+    {
+        ilIndex = 0;
+        cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);
+    }
+    else
+    {
+        CorElementType elementType = typeHandle.GetVerifierCorElementType();
+        if (!CorTypeInfo::IsPrimitiveType(elementType) ||
+            elementType == ELEMENT_TYPE_R4 ||
+            elementType == ELEMENT_TYPE_R8)
+        {
+            return false;
+        }
+        else
+        {
+            switch (typeHandle.GetSize())
+            {
+                case 1:
+                    ilIndex = 1;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_BYTE);
+                    break;
+
+                case 2:
+                    ilIndex = 2;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_USHRT);
+                    break;
+
+                case 4:
+                    ilIndex = 3;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_INT);
+                    break;
+
+                case 8:
+                    ilIndex = 4;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_LONG);
+                    break;
+
+                default:
+                    _ASSERT(!"Unexpected primitive type size");
+                    return false;
+            }
+        }
+    }
+
+    mdMethodDef cmpxchgToken = cmpxchgMethod->GetMemberDef();
+    il[ilIndex][4] = (BYTE)((int)cmpxchgToken >> 0);
+    il[ilIndex][5] = (BYTE)((int)cmpxchgToken >> 8);
+    il[ilIndex][6] = (BYTE)((int)cmpxchgToken >> 16);
+    il[ilIndex][7] = (BYTE)((int)cmpxchgToken >> 24);
 
     // Initialize methInfo
-    methInfo->ILCode = const_cast<BYTE*>(il);
-    methInfo->ILCodeSize = sizeof(il);
+    methInfo->ILCode = const_cast<BYTE*>(il[ilIndex]);
+    methInfo->ILCodeSize = sizeof(il[ilIndex]);
     methInfo->maxStack = 3;
     methInfo->EHcount = 0;
     methInfo->options = (CorInfoOptions)0;
@@ -7728,6 +7779,40 @@ bool CEEInfo::haveSameMethodDefinition(
     result = meth1->HasSameMethodDefAs(meth2);
 
     EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(type);
+
+    if (th.HasInstantiation() && !th.IsGenericTypeDefinition())
+    {
+        th = ClassLoader::LoadTypeDefThrowing(
+            th.GetModule(),
+            th.GetMethodTable()->GetCl(),
+            ClassLoader::ThrowIfNotFound,
+            ClassLoader::PermitUninstDefOrRef);
+
+        _ASSERTE(th.IsGenericTypeDefinition());
+    }
+
+    result = CORINFO_CLASS_HANDLE(th.AsPtr());
+
+    EE_TO_JIT_TRANSITION();    
+
+    _ASSERTE(result != NULL);
 
     return result;
 }
