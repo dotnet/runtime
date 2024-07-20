@@ -17265,7 +17265,7 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
     }
 
     // Only some post-indexing offsets can be represented.
-    if ((imm < -256) || (imm >= 255))
+    if ((imm < -256) || (imm >= 256))
     {
         return false;
     }
