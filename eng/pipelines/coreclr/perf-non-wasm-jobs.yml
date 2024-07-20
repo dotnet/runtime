@@ -255,23 +255,6 @@ jobs:
         logicalmachine: 'perftiger'
         r2rRunType: --nor2r
 
-  # run coreclr perftiger microbenchmarks memory randomization jobs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perftiger'
-        experimentName: 'memoryRandomization'
-
   # run coreclr perfowl microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -306,24 +289,6 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfviper'
 
-  # run coreclr perfowl microbenchmarks perf gdv3 jobs
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - linux_x64
-      - windows_x64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfowl'
-        experimentName: 'gdv3'
-
   # run coreclr perfowl microbenchmarks perf rlcse jobs
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -342,7 +307,7 @@ jobs:
         logicalmachine: 'perfowl'
         experimentName: 'rlcse'
 
-  # run coreclr perfowl microbenchmarks perf jitoptrepeat jobs
+  # run coreclr perfviper microbenchmarks perf jitoptrepeat jobs
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
@@ -357,7 +322,7 @@ jobs:
         projectFile: $(Agent.BuildDirectory)/performance/eng/performance/helix.proj
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfowl'
+        logicalmachine: 'perfviper'
         experimentName: 'jitoptrepeat'
 
   # run coreclr crossgen perf job

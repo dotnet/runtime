@@ -42,6 +42,13 @@ internal static partial class Interop
                 return true;
             }
 
+            internal static SafeJObjectHandle CreateGlobalReferenceFromHandle(IntPtr handle)
+            {
+                var jObjectHandle = new SafeJObjectHandle();
+                Marshal.InitHandle(jObjectHandle, NewGlobalReference(handle));
+                return jObjectHandle;
+            }
+
             public override bool IsInvalid => handle == IntPtr.Zero;
         }
     }

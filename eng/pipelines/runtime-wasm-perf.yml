@@ -22,7 +22,7 @@ pr:
     - eng/pipelines/coreclr/templates/run-perf*
     - eng/pipelines/coreclr/templates/run-scenarios-job.yml
     - eng/testing/performance/*
-    - eng/testing/ChromeVersions.props
+    - eng/testing/BrowserVersions.props
 
 variables:
   - template: /eng/pipelines/common/variables.yml

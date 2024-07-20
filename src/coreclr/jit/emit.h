@@ -758,14 +758,14 @@ protected:
         // x86:         38 bits
         // amd64:       38 bits
         // arm:         32 bits
-        // arm64:       44 bits
+        // arm64:       46 bits
         // loongarch64: 28 bits
         // risc-v:      28 bits
 
-        unsigned _idSmallDsc  : 1; // is this a "small" descriptor?
-        unsigned _idLargeCns  : 1; // does a large constant     follow?
-        unsigned _idLargeDsp  : 1; // does a large displacement follow?
-        unsigned _idLargeCall : 1; // large call descriptor used
+        unsigned _idSmallDsc : 1; // is this a "small" descriptor?
+        unsigned _idLargeCns : 1; // does a large constant     follow? (or if large call descriptor used)
+        unsigned _idLargeDsp : 1; // does a large displacement follow?
+        unsigned _idCall     : 1; // this is a call
 
         // We have several pieces of information we need to encode but which are only applicable
         // to a subset of instrDescs. To accommodate that, we define a several _idCustom# bitfields
@@ -828,7 +828,7 @@ protected:
         // x86:         48 bits
         // amd64:       48 bits
         // arm:         48 bits
-        // arm64:       53 bits
+        // arm64:       55 bits
         // loongarch64: 46 bits
         // risc-v:      46 bits
 
@@ -840,7 +840,7 @@ protected:
 #if defined(TARGET_ARM)
 #define ID_EXTRA_BITFIELD_BITS (16)
 #elif defined(TARGET_ARM64)
-#define ID_EXTRA_BITFIELD_BITS (21)
+#define ID_EXTRA_BITFIELD_BITS (23)
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define ID_EXTRA_BITFIELD_BITS (14)
 #elif defined(TARGET_XARCH)
@@ -881,7 +881,7 @@ protected:
         // x86:         54/50 bits
         // amd64:       55/50 bits
         // arm:         54/50 bits
-        // arm64:       60/55 bits
+        // arm64:       62/57 bits
         // loongarch64: 53/48 bits
         // risc-v:      53/48 bits
 
@@ -897,7 +897,7 @@ protected:
         // x86:         10/14 bits
         // amd64:       9/14 bits
         // arm:         10/14 bits
-        // arm64:        4/9 bits
+        // arm64:        2/7 bits
         // loongarch64: 11/16 bits
         // risc-v:      11/16 bits
 
@@ -1565,7 +1565,7 @@ protected:
 
         bool idIsLargeCns() const
         {
-            return _idLargeCns != 0;
+            return _idLargeCns != 0 && !idIsCall();
         }
         void idSetIsLargeCns()
         {
@@ -1585,13 +1585,23 @@ protected:
             _idLargeDsp = 0;
         }
 
+        bool idIsCall() const
+        {
+            return _idCall != 0;
+        }
+        void idSetIsCall()
+        {
+            _idCall = 1;
+        }
+
         bool idIsLargeCall() const
         {
-            return _idLargeCall != 0;
+            return idIsCall() && _idLargeCns == 1;
         }
         void idSetIsLargeCall()
         {
-            _idLargeCall = 1;
+            idSetIsCall();
+            _idLargeCns = 1;
         }
 
         bool idIsBound() const
@@ -1653,27 +1663,41 @@ protected:
         {
             assert(!idIsEvexbContextSet());
 
-            if (instOptions == INS_OPTS_EVEX_eb_er_rd)
+            switch (instOptions & INS_OPTS_EVEX_b_MASK)
             {
-                _idEvexbContext = 1;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_ru)
-            {
-                _idEvexbContext = 2;
-            }
-            else if (instOptions == INS_OPTS_EVEX_er_rz)
-            {
-                _idEvexbContext = 3;
-            }
-            else
-            {
-                unreached();
+                case INS_OPTS_EVEX_eb_er_rd:
+                {
+                    _idEvexbContext = 1;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_ru:
+                {
+                    _idEvexbContext = 2;
+                    break;
+                }
+
+                case INS_OPTS_EVEX_er_rz:
+                {
+                    _idEvexbContext = 3;
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
             }
         }
 
         unsigned idGetEvexbContext() const
         {
             return _idEvexbContext;
+        }
+
+        bool idIsEvexAaaContextSet() const
+        {
+            return idGetEvexAaaContext() != 0;
         }
 
         unsigned idGetEvexAaaContext() const
@@ -1897,6 +1921,7 @@ protected:
 #define PERFSCORE_LATENCY_26C  26.0f
 #define PERFSCORE_LATENCY_62C  62.0f
 #define PERFSCORE_LATENCY_69C  69.0f
+#define PERFSCORE_LATENCY_105C 105.0f
 #define PERFSCORE_LATENCY_140C 140.0f
 #define PERFSCORE_LATENCY_400C 400.0f // Intel microcode issue with these instructions
 
@@ -2279,9 +2304,9 @@ protected:
     void emitDispInsAddr(const BYTE* code);
     void emitDispInsOffs(unsigned offs, bool doffs);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
-    void emitDispEmbBroadcastCount(instrDesc* id);
-    void emitDispEmbRounding(instrDesc* id);
-    void emitDispEmbMasking(instrDesc* id);
+    void emitDispEmbBroadcastCount(instrDesc* id) const;
+    void emitDispEmbRounding(instrDesc* id) const;
+    void emitDispEmbMasking(instrDesc* id) const;
     void emitDispIns(instrDesc* id,
                      bool       isNew,
                      bool       doffs,
@@ -2440,10 +2465,10 @@ public:
     unsigned char emitOutputLong(BYTE* dst, size_t val);
     unsigned char emitOutputSizeT(BYTE* dst, size_t val);
 
-    unsigned char emitOutputByte(BYTE* dst, unsigned __int64 val);
-    unsigned char emitOutputWord(BYTE* dst, unsigned __int64 val);
-    unsigned char emitOutputLong(BYTE* dst, unsigned __int64 val);
-    unsigned char emitOutputSizeT(BYTE* dst, unsigned __int64 val);
+    unsigned char emitOutputByte(BYTE* dst, uint64_t val);
+    unsigned char emitOutputWord(BYTE* dst, uint64_t val);
+    unsigned char emitOutputLong(BYTE* dst, uint64_t val);
+    unsigned char emitOutputSizeT(BYTE* dst, uint64_t val);
 #endif // defined(TARGET_X86)
 #endif // !defined(HOST_64BIT)
 
@@ -2500,8 +2525,11 @@ private:
 #if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
     CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
-    CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
@@ -2857,9 +2885,11 @@ private:
     // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
     // and registers.
-    void* emitAddLabel(VARSET_VALARG_TP    GCvars,
-                       regMaskTP           gcrefRegs,
-                       regMaskTP byrefRegs DEBUG_ARG(BasicBlock* block = nullptr));
+    // prevBlock is passed when starting a new block.
+    void* emitAddLabel(VARSET_VALARG_TP GCvars,
+                       regMaskTP        gcrefRegs,
+                       regMaskTP        byrefRegs,
+                       BasicBlock*      prevBlock = nullptr);
 
     // Same as above, except the label is added and is conceptually "inline" in
     // the current block. Thus it extends the previous block and the emitter
@@ -3129,13 +3159,14 @@ public:
     /*    The following is used to distinguish helper vs non-helper calls   */
     /************************************************************************/
 
-    static bool emitNoGChelper(CorInfoHelpFunc helpFunc);
+private:
     static bool emitNoGChelper(CORINFO_METHOD_HANDLE methHnd);
 
     /************************************************************************/
     /*         The following logic keeps track of live GC ref values        */
     /************************************************************************/
 
+public:
     bool emitFullArgInfo; // full arg info (including non-ptr arg)?
     bool emitFullGCinfo;  // full GC pointer maps?
     bool emitFullyInt;    // fully interruptible code?
@@ -3189,6 +3220,8 @@ public:
     void emitStackKillArgs(BYTE* addr, unsigned count, unsigned char callInstrSize);
 
     void emitRecordGCcall(BYTE* codePos, unsigned char callInstrSize);
+
+    bool emitLastInsIsCallWithGC();
 
     // Helpers for the above
 
@@ -4020,6 +4053,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_subss:
         case INS_ucomiss:
         case INS_vbroadcastss:
+        case INS_vcvttss2usi32:
+        case INS_vcvttss2usi64:
         case INS_vfmadd132ss:
         case INS_vfmadd213ss:
         case INS_vfmadd231ss:
@@ -4067,6 +4102,8 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
         case INS_subsd:
         case INS_ucomisd:
         case INS_vbroadcastsd:
+        case INS_vcvttsd2usi32:
+        case INS_vcvttsd2usi64:
         case INS_vfmadd132sd:
         case INS_vfmadd213sd:
         case INS_vfmadd231sd:
@@ -4176,6 +4213,10 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
             return EA_16BYTE;
         }
 
+        case INS_vbroadcastf32x8:
+        case INS_vbroadcasti32x8:
+        case INS_vbroadcasti64x4:
+        case INS_vbroadcastf64x4:
         case INS_vextractf32x8:
         case INS_vextracti32x8:
         case INS_vextractf64x4:

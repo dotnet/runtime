@@ -67,7 +67,7 @@ namespace System.Net.Sockets
         private bool _receivingPacketInformation;
 
         private int _closeTimeout = Socket.DefaultCloseTimeout;
-        private int _disposed; // 0 == false, anything else == true
+        private bool _disposed;
 
         public Socket(SocketType socketType, ProtocolType protocolType)
             : this(OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork, socketType, protocolType)
@@ -636,7 +636,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (_addressFamily == AddressFamily.InterNetwork)
+                if (_addressFamily == AddressFamily.InterNetwork || (_addressFamily == AddressFamily.InterNetworkV6 && DualMode))
                 {
                     return (int)GetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment)! != 0 ? true : false;
                 }
@@ -648,7 +648,7 @@ namespace System.Net.Sockets
 
             set
             {
-                if (_addressFamily == AddressFamily.InterNetwork)
+                if (_addressFamily == AddressFamily.InterNetwork || (_addressFamily == AddressFamily.InterNetworkV6 && DualMode))
                 {
                     SetSocketOption(SocketOptionLevel.IP, SocketOptionName.DontFragment, value ? 1 : 0);
                 }
@@ -1909,8 +1909,6 @@ namespace System.Net.Sockets
 
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedAddress.Buffer, out int socketAddressSize, out bytesTransferred);
-            receivedAddress.Size = socketAddressSize;
-
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
             if (errorCode != SocketError.Success)
@@ -1927,6 +1925,7 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
+            receivedAddress.Size = socketAddressSize;
             return bytesTransferred;
         }
 
@@ -2783,7 +2782,7 @@ namespace System.Net.Sockets
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
 
-                SocketsTelemetry.Log.ConnectStart(e._socketAddress!);
+                e.ConnectActivity = SocketsTelemetry.Log.ConnectStart(e._socketAddress!, _protocolType, endPointSnapshot, keepActivityCurrent: true);
 
                 // Prepare for the native call.
                 try
@@ -2793,7 +2792,8 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e.ConnectActivity, ex.Message);
+                    e.ConnectActivity = null;
                     throw;
                 }
 
@@ -2809,7 +2809,8 @@ namespace System.Net.Sockets
                 }
                 catch (Exception ex)
                 {
-                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                    SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, e.ConnectActivity, ex.Message);
+                    e.ConnectActivity = null;
 
                     _localEndPoint = null;
 
@@ -3147,7 +3148,7 @@ namespace System.Net.Sockets
         // Internal and private properties
         //
 
-        internal bool Disposed => _disposed != 0;
+        internal bool Disposed => _disposed;
 
         //
         // Internal and private methods
@@ -3190,7 +3191,7 @@ namespace System.Net.Sockets
 
         private void DoConnect(EndPoint endPointSnapshot, SocketAddress socketAddress)
         {
-            SocketsTelemetry.Log.ConnectStart(socketAddress);
+            Activity? activity = SocketsTelemetry.Log.ConnectStart(socketAddress, _protocolType, endPointSnapshot, keepActivityCurrent: false);
             SocketError errorCode;
             try
             {
@@ -3198,7 +3199,7 @@ namespace System.Net.Sockets
             }
             catch (Exception ex)
             {
-                SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
+                SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, activity, ex.Message);
                 throw;
             }
 
@@ -3211,12 +3212,12 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketError(socketException);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
 
-                SocketsTelemetry.Log.AfterConnect(errorCode);
+                SocketsTelemetry.Log.AfterConnect(errorCode, activity);
 
                 throw socketException;
             }
 
-            SocketsTelemetry.Log.AfterConnect(SocketError.Success);
+            SocketsTelemetry.Log.AfterConnect(SocketError.Success, activity);
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 
@@ -3239,7 +3240,7 @@ namespace System.Net.Sockets
             }
 
             // Make sure we're the first call to Dispose
-            if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 1)
+            if (Interlocked.Exchange(ref _disposed, true))
             {
                 return;
             }
@@ -3754,7 +3755,7 @@ namespace System.Net.Sockets
 
             if (disconnectOnFailure && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
-                    errorCode != SocketError.TimedOut)))
+                    errorCode != SocketError.TimedOut && errorCode != SocketError.OperationAborted)))
             {
                 // The socket is no longer a valid socket.
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Invalidating socket.");

@@ -35,4 +35,7 @@ mono_lookup_pinvoke_qcall_internal (const char *name);
 void
 mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn);
 
+char *
+mono_fixup_symbol_name (const char *prefix, const char *key, const char *suffix);
+
 #endif

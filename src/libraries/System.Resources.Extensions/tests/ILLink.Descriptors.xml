@@ -1,0 +1,4 @@
+<linker>
+  <assembly fullname="System.Drawing" />
+  <assembly fullname="System.Resources.Extensions" />
+</linker>

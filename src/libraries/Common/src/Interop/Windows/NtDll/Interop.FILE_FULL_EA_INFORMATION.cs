@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class NtDll
     {
         /// <summary>
-        /// <a href="https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/content/wdm/ns-wdm-_file_full_ea_information">FILE_FULL_EA_INFORMATION</a> structure.
+        /// <a href="https://learn.microsoft.com/windows-hardware/drivers/ddi/content/wdm/ns-wdm-_file_full_ea_information">FILE_FULL_EA_INFORMATION</a> structure.
         /// Provides extended attribute (EA) information. This structure is used primarily by network drivers.
         /// </summary>
         [StructLayoutAttribute(LayoutKind.Sequential)]

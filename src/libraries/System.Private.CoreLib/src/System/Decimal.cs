@@ -578,7 +578,7 @@ namespace System
         //
         public static int[] GetBits(decimal d)
         {
-            return new int[] { (int)d.Low, (int)d.Mid, (int)d.High, d._flags };
+            return [(int)d.Low, (int)d.Mid, (int)d.High, d._flags];
         }
 
         /// <summary>
@@ -1117,6 +1117,14 @@ namespace System
         // IFloatingPoint
         //
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToInteger{TInteger}(TSelf)" />
+        public static TInteger ConvertToInteger<TInteger>(decimal value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.ConvertToIntegerNative{TInteger}(TSelf)" />
+        public static TInteger ConvertToIntegerNative<TInteger>(decimal value)
+            where TInteger : IBinaryInteger<TInteger> => TInteger.CreateSaturating(value);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
         int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
 
@@ -1489,6 +1497,9 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
         static decimal INumberBase<decimal>.MinMagnitudeNumber(decimal x, decimal y) => MinMagnitude(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MultiplyAddEstimate(TSelf, TSelf, TSelf)" />
+        static decimal INumberBase<decimal>.MultiplyAddEstimate(decimal left, decimal right, decimal addend) => (left * right) + addend;
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

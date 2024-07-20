@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
@@ -76,7 +75,7 @@ namespace Mono.Linker.Dataflow
 
 			if (!methodIL.Method.ReturnsVoid ()) {
 				var method = methodIL.Method;
-				var methodReturnValue = _annotations.GetMethodReturnValue (method);
+				var methodReturnValue = _annotations.GetMethodReturnValue (method, isNewObj: false);
 				if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
 					HandleAssignmentPattern (_origin, ReturnValue, methodReturnValue);
 			}
@@ -118,19 +117,17 @@ namespace Mono.Linker.Dataflow
 		protected override void HandleStoreMethodReturnValue (MethodDefinition method, MethodReturnValue returnValue, Instruction operation, MultiValue valueToStore)
 			=> HandleStoreValueWithDynamicallyAccessedMembers (returnValue, operation, valueToStore);
 
-		public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out MultiValue methodReturnValue)
+		public override MultiValue HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams)
 		{
 			var reflectionProcessed = _markStep.ProcessReflectionDependency (callingMethodBody, operation);
 			if (reflectionProcessed) {
-				methodReturnValue = default;
-				return false;
+				return UnknownValue.Instance;
 			}
 
 			Debug.Assert (callingMethodBody.Method == _origin.Provider);
 			var calledMethodDefinition = _context.TryResolve (calledMethod);
 			if (calledMethodDefinition == null) {
-				methodReturnValue = default;
-				return false;
+				return UnknownValue.Instance;
 			}
 
 			_origin = _origin.WithInstructionOffset (operation.Offset);
@@ -162,11 +159,10 @@ namespace Mono.Linker.Dataflow
 				diagnosticContext,
 				_reflectionMarker,
 				_context,
-				_markStep,
-				out methodReturnValue);
+				_markStep);
 		}
 
-		public static bool HandleCall (
+		public static MultiValue HandleCall (
 			Instruction operation,
 			MethodReference calledMethod,
 			MultiValue instanceValue,
@@ -174,8 +170,7 @@ namespace Mono.Linker.Dataflow
 			DiagnosticContext diagnosticContext,
 			ReflectionMarker reflectionMarker,
 			LinkContext context,
-			MarkStep markStep,
-			out MultiValue methodReturnValue)
+			MarkStep markStep)
 		{
 			var origin = diagnosticContext.Origin;
 			var calledMethodDefinition = context.TryResolve (calledMethod);
@@ -184,203 +179,15 @@ namespace Mono.Linker.Dataflow
 			Debug.Assert (callingMethodDefinition != null);
 
 			bool requiresDataFlowAnalysis = context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
-			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition);
+			bool isNewObj = operation.OpCode.Code == Code.Newobj;
+			var annotatedMethodReturnValue = context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition, isNewObj);
 			Debug.Assert (requiresDataFlowAnalysis || annotatedMethodReturnValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None);
 
-			MultiValue? maybeMethodReturnValue = null;
-
-			var handleCallAction = new HandleCallAction (context, reflectionMarker, diagnosticContext, callingMethodDefinition);
+			var handleCallAction = new HandleCallAction (context, operation, markStep, reflectionMarker, diagnosticContext, callingMethodDefinition, calledMethod);
 			var intrinsicId = Intrinsics.GetIntrinsicIdForMethod (calledMethodDefinition);
-			switch (intrinsicId) {
-			case IntrinsicId.IntrospectionExtensions_GetTypeInfo:
-			case IntrinsicId.TypeInfo_AsType:
-			case IntrinsicId.Type_get_UnderlyingSystemType:
-			case IntrinsicId.Type_GetTypeFromHandle:
-			case IntrinsicId.Type_get_TypeHandle:
-			case IntrinsicId.Type_GetInterface:
-			case IntrinsicId.Type_get_AssemblyQualifiedName:
-			case IntrinsicId.RuntimeHelpers_RunClassConstructor:
-			case IntrinsicId.Type_GetConstructors__BindingFlags:
-			case IntrinsicId.Type_GetMethods__BindingFlags:
-			case IntrinsicId.Type_GetFields__BindingFlags:
-			case IntrinsicId.Type_GetProperties__BindingFlags:
-			case IntrinsicId.Type_GetEvents__BindingFlags:
-			case IntrinsicId.Type_GetNestedTypes__BindingFlags:
-			case IntrinsicId.Type_GetMembers__BindingFlags:
-			case IntrinsicId.Type_GetField:
-			case IntrinsicId.Type_GetProperty:
-			case IntrinsicId.Type_GetEvent:
-			case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeEvent:
-			case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeField:
-			case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeMethod:
-			case IntrinsicId.RuntimeReflectionExtensions_GetRuntimeProperty:
-			case IntrinsicId.Type_GetMember:
-			case IntrinsicId.Type_GetMethod:
-			case IntrinsicId.Type_GetNestedType:
-			case IntrinsicId.Nullable_GetUnderlyingType:
-			case IntrinsicId.Expression_Property:
-			case IntrinsicId.Expression_Field:
-			case IntrinsicId.Type_get_BaseType:
-			case IntrinsicId.Type_GetConstructor:
-			case IntrinsicId.MethodBase_GetMethodFromHandle:
-			case IntrinsicId.MethodBase_get_MethodHandle:
-			case IntrinsicId.Type_MakeGenericType:
-			case IntrinsicId.MethodInfo_MakeGenericMethod:
-			case IntrinsicId.Expression_Call:
-			case IntrinsicId.Expression_New:
-			case IntrinsicId.Type_GetType:
-			case IntrinsicId.Activator_CreateInstance__Type:
-			case IntrinsicId.Activator_CreateInstance__AssemblyName_TypeName:
-			case IntrinsicId.Activator_CreateInstanceFrom:
-			case IntrinsicId.AppDomain_CreateInstance:
-			case IntrinsicId.AppDomain_CreateInstanceAndUnwrap:
-			case IntrinsicId.AppDomain_CreateInstanceFrom:
-			case IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
-			case IntrinsicId.Assembly_CreateInstance: {
-					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
-				}
-
-			case IntrinsicId.None: {
-					if (IsPInvokeDangerous (calledMethodDefinition, context, out bool comDangerousMethod)) {
-						Debug.Assert (comDangerousMethod); // Currently COM dangerous is the only one we detect
-						diagnosticContext.AddDiagnostic (DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName ());
-					}
-					if (context.Annotations.DoesMethodRequireUnreferencedCode (calledMethodDefinition, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
-						MarkStep.ReportRequiresUnreferencedCode (calledMethodDefinition.GetDisplayName (), requiresUnreferencedCode, diagnosticContext);
-
-					return handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, intrinsicId, out methodReturnValue);
-				}
-
-			case IntrinsicId.TypeDelegator_Ctor: {
-					// This is an identity function for analysis purposes
-					if (operation.OpCode == OpCodes.Newobj)
-						AddReturnValue (argumentValues[0]);
-				}
-				break;
-
-			case IntrinsicId.Array_Empty: {
-					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod).GenericArguments[0]));
-				}
-				break;
-
-			case IntrinsicId.Array_CreateInstance:
-			case IntrinsicId.Enum_GetValues:
-			case IntrinsicId.Marshal_SizeOf:
-			case IntrinsicId.Marshal_OffsetOf:
-			case IntrinsicId.Marshal_PtrToStructure:
-			case IntrinsicId.Marshal_DestroyStructure:
-			case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
-			case IntrinsicId.Assembly_get_Location:
-			case IntrinsicId.Assembly_GetFile:
-			case IntrinsicId.Assembly_GetFiles:
-			case IntrinsicId.AssemblyName_get_CodeBase:
-			case IntrinsicId.AssemblyName_get_EscapedCodeBase:
-			case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
-			case IntrinsicId.Delegate_get_Method:
-				// These intrinsics are not interesting for trimmer (they are interesting for AOT and that's why they are recognized)
-				break;
-
-			//
-			// System.Object
-			//
-			// GetType()
-			//
-			case IntrinsicId.Object_GetType: {
-					foreach (var valueNode in instanceValue.AsEnumerable ()) {
-						// Note that valueNode can be statically typed in IL as some generic argument type.
-						// For example:
-						//   void Method<T>(T instance) { instance.GetType().... }
-						// Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
-						// But it could be that T is annotated with for example PublicMethods:
-						//   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
-						// In this case it's in theory possible to handle it, by treating the T basically as a base class
-						// for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
-						// has to happen on the callsite, which doesn't know that GetType() will be used...).
-						// For now we're intentionally ignoring this case - it will produce a warning.
-						// The counter example is:
-						//   Method<Base>(new Derived);
-						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
-						// currently it won't do.
-
-						TypeDefinition? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
-						if (staticType is null) {
-							// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
-							AddReturnValue (context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition));
-						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
-							// We can treat this one the same as if it was a typeof() expression
-
-							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
-							// on delegates anyway so reflection on something this approximation would miss is actually safe.
-
-							// We can also treat all arrays as "sealed" since it's not legal to derive from Array type (even though it is not sealed itself)
-
-							// We ignore the fact that the type can be annotated (see below for handling of annotated types)
-							// This means the annotations (if any) won't be applied - instead we rely on the exact knowledge
-							// of the type. So for example even if the type is annotated with PublicMethods
-							// but the code calls GetProperties on it - it will work - mark properties, don't mark methods
-							// since we ignored the fact that it's annotated.
-							// This can be seen a little bit as a violation of the annotation, but we already have similar cases
-							// where a parameter is annotated and if something in the method sets a specific known type to it
-							// we will also make it just work, even if the annotation doesn't match the usage.
-							AddReturnValue (new SystemTypeValue (staticType));
-						} else {
-							// Make sure the type is marked (this will mark it as used via reflection, which is sort of true)
-							// This should already be true for most cases (method params, fields, ...), but just in case
-							reflectionMarker.MarkType (origin, staticType);
-
-							var annotation = markStep.DynamicallyAccessedMembersTypeHierarchy
-								.ApplyDynamicallyAccessedMembersToTypeHierarchy (staticType);
-
-							// Return a value which is "unknown type" with annotation. For now we'll use the return value node
-							// for the method, which means we're loosing the information about which staticType this
-							// started with. For now we don't need it, but we can add it later on.
-							AddReturnValue (context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethodDefinition, annotation));
-						}
-					}
-				}
-				break;
-
-			// Note about Activator.CreateInstance<T>
-			// There are 2 interesting cases:
-			//  - The generic argument for T is either specific type or annotated - in that case generic instantiation will handle this
-			//    since from .NET 6+ the T is annotated with PublicParameterlessConstructor annotation, so the trimming tools would apply this as for any other method.
-			//  - The generic argument for T is unannotated type - the generic instantiantion handling has a special case for handling PublicParameterlessConstructor requirement
-			//    in such that if the generic argument type has the "new" constraint it will not warn (as it is effectively the same thing semantically).
-			//    For all other cases, the trimming tools would have already produced a warning.
-
-			default:
+			if (!handleCallAction.Invoke (calledMethodDefinition, instanceValue, argumentValues, intrinsicId, out MultiValue methodReturnValue))
 				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
-			}
-
-			// If we get here, we handled this as an intrinsic.  As a convenience, if the code above
-			// didn't set the return value (and the method has a return value), we will set it to be an
-			// unknown value with the return type of the method.
-			bool returnsVoid = calledMethod.ReturnsVoid ();
-			methodReturnValue = maybeMethodReturnValue ?? (returnsVoid ?
-				MultiValueLattice.Top :
-				annotatedMethodReturnValue);
-
-			// Validate that the return value has the correct annotations as per the method return value annotations
-			if (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes != 0) {
-				foreach (var uniqueValue in methodReturnValue.AsEnumerable ()) {
-					if (uniqueValue is ValueWithDynamicallyAccessedMembers methodReturnValueWithMemberTypes) {
-						if (!methodReturnValueWithMemberTypes.DynamicallyAccessedMemberTypes.HasFlag (annotatedMethodReturnValue.DynamicallyAccessedMemberTypes))
-							throw new InvalidOperationException ($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-					} else if (uniqueValue is SystemTypeValue) {
-						// SystemTypeValue can fulfill any requirement, so it's always valid
-						// The requirements will be applied at the point where it's consumed (passed as a method parameter, set as field value, returned from the method)
-					} else {
-						throw new InvalidOperationException ($"Internal trimming error: processing of call from {callingMethodDefinition.GetDisplayName ()} to {calledMethod.GetDisplayName ()} returned value which is not correctly annotated with the expected dynamic member access kinds.");
-					}
-				}
-			}
-
-			return true;
-
-			void AddReturnValue (MultiValue value)
-			{
-				maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet ((MultiValue) maybeMethodReturnValue, value);
-			}
+			return methodReturnValue;
 		}
 
 		static bool IsComInterop (IMarshalInfoProvider marshalInfoProvider, TypeReference parameterType, LinkContext context)
@@ -449,7 +256,7 @@ namespace Mono.Linker.Dataflow
 			TrimAnalysisPatterns.Add (new TrimAnalysisAssignmentPattern (value, targetValue, origin));
 		}
 
-		private static bool IsPInvokeDangerous (MethodDefinition methodDefinition, LinkContext context, out bool comDangerousMethod)
+		internal static bool IsPInvokeDangerous (MethodDefinition methodDefinition, LinkContext context, out bool comDangerousMethod)
 		{
 			// The method in ILLink only detects one condition - COM Dangerous, but it's structured like this
 			// so that the code looks very similar to AOT which has more than one condition.

@@ -12,6 +12,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mempool-internals.h>
+#include <mono/metadata/native-library.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/abi-details.h>
@@ -1426,15 +1427,18 @@ convert (EmitContext *ctx, LLVMValueRef v, LLVMTypeRef dtype)
 }
 
 static void
-emit_memset (EmitContext *ctx, LLVMValueRef v, LLVMValueRef size, int alignment)
+emit_memset (EmitContext *ctx, LLVMValueRef dest, LLVMValueRef val, LLVMValueRef size, int alignment)
 {
 	LLVMValueRef args [5];
 	int aindex = 0;
 
-	args [aindex ++] = v;
-	args [aindex ++] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
+	args [aindex ++] = dest;
+	if (val)
+		args [aindex ++] = val;
+	else
+		args [aindex ++] = LLVMConstInt (LLVMInt8Type (), 0, FALSE);
 	args [aindex ++] = size;
-	args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+	args [aindex ++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE); // is_volatile
 	call_intrins (ctx, INTRINS_MEMSET, args, "");
 }
 
@@ -6118,8 +6122,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				gboolean src_in_reg = FALSE;
 				gboolean is_simd = mini_class_is_simd (ctx->cfg, mono_class_from_mono_type_internal (sig->ret));
 				switch (linfo->ret.storage) {
-				case LLVMArgNormal: src_in_reg = TRUE; break;
-				case LLVMArgVtypeInReg: case LLVMArgVtypeAsScalar: src_in_reg = is_simd; break;
+				case LLVMArgNormal:
+					src_in_reg = TRUE;
+					break;
+				case LLVMArgVtypeInReg:
+				case LLVMArgVtypeAsScalar:
+				case LLVMArgWasmVtypeAsScalar:
+					src_in_reg = is_simd;
+					break;
 				}
 				if (src_in_reg && (!lhs || ctx->is_dead [ins->sreg1])) {
 					/*
@@ -6152,7 +6162,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						 * load it into registers.
 						 */
 						LLVMValueRef buf = build_alloca_llvm_type_name (ctx, pointer_type (ret_type), 0, "ret_buf");
-						emit_memset (ctx, buf, LLVMSizeOf (ret_type), 1);
+						emit_memset (ctx, buf, NULL, LLVMSizeOf (ret_type), 1);
 
 						int width = mono_type_size (sig->ret, NULL);
 						LLVMValueRef args [] = {
@@ -6993,7 +7003,7 @@ MONO_RESTORE_WARNING
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT, "");
 
 			if (ins->flags & MONO_INST_INIT)
-				emit_memset (ctx, v, const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT);
+				emit_memset (ctx, v, NULL, const_int32 (size), MONO_ARCH_FRAME_ALIGNMENT);
 
 			values [ins->dreg] = v;
 			break;
@@ -7006,7 +7016,7 @@ MONO_RESTORE_WARNING
 			v = mono_llvm_build_alloca (builder, LLVMInt8Type (), size, MONO_ARCH_FRAME_ALIGNMENT, "");
 
 			if (ins->flags & MONO_INST_INIT)
-				emit_memset (ctx, v, size, MONO_ARCH_FRAME_ALIGNMENT);
+				emit_memset (ctx, v, NULL, size, MONO_ARCH_FRAME_ALIGNMENT);
 			values [ins->dreg] = v;
 			break;
 		}
@@ -7222,6 +7232,19 @@ MONO_RESTORE_WARNING
 			args [argn++] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);  // is_volatile
 
 			call_intrins (ctx, INTRINS_MEMMOVE, args, "");
+			break;
+		}
+		case OP_MEMSET_ZERO: {
+			LLVMValueRef dest = convert (ctx, values [ins->sreg1], pointer_type (LLVMInt8Type ()));
+			LLVMValueRef size = convert (ctx, values [ins->sreg2], LLVMInt64Type ());
+			emit_memset (ctx, dest, NULL, size, MONO_ARCH_FRAME_ALIGNMENT);
+			break;
+		}
+		case OP_MEMSET: {
+			LLVMValueRef dest = convert (ctx, values [ins->sreg1], pointer_type (LLVMInt8Type ()));
+			LLVMValueRef val = convert (ctx, values [ins->sreg2], LLVMInt8Type ());
+			LLVMValueRef size = convert (ctx, values [ins->sreg3], LLVMInt64Type ());
+			emit_memset (ctx, dest, val, size, MONO_ARCH_FRAME_ALIGNMENT);
 			break;
 		}
 		case OP_NOT_REACHED:
@@ -7856,7 +7879,7 @@ MONO_RESTORE_WARNING
 				addresses [ins->dreg] = create_address (ctx, build_named_alloca (ctx, m_class_get_byval_arg (klass), "vzero"), etype);
 			}
 			LLVMValueRef ptr = build_ptr_cast (builder, addresses [ins->dreg]->value, pointer_type (LLVMInt8Type ()));
-			emit_memset (ctx, ptr, const_int32 (mono_class_value_size (klass, NULL)), 0);
+			emit_memset (ctx, ptr, NULL, const_int32 (mono_class_value_size (klass, NULL)), 0);
 			break;
 		}
 		case OP_DUMMY_VZERO:
@@ -11753,11 +11776,11 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_STM: {
+		case OP_ARM64_STM:
+		case OP_ARM64_STM_ZIP: {
 			LLVMTypeRef tuple_t = simd_class_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (tuple_t);
 
-			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
 			llvm_ovr_tag_t ovr_tag = ovr_tag_from_llvm_type (vec_t);
 
 			LLVMValueRef value_tuple = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "load_param");
@@ -11771,6 +11794,78 @@ MONO_RESTORE_WARNING
 				args [i] = elem;
 			}
 			args [len] = lhs;
+
+			IntrinsicId iid = 0;
+			if (iid == 0) {
+				unsigned int n_elem_vector = LLVMGetVectorSize (vec_t);
+				LLVMTypeRef elem_t = LLVMGetElementType (vec_t);
+				unsigned int elem_bits = mono_llvm_get_prim_size_bits (elem_t);
+				unsigned int vector_size = n_elem_vector * elem_bits;
+				switch (vector_size) {
+				case 64: {
+					switch (len) {
+					case 2:
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V64; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V64; break;
+						default: g_assert_not_reached ();
+						}
+						break;
+					case 3:
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V64; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V64; break;
+						default: g_assert_not_reached ();
+						}
+						break;
+					case 4:
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V64; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V64; break;
+						default: g_assert_not_reached ();
+						}
+						break;
+					default:
+						g_assert_not_reached ();
+						break;
+					}
+					break;
+				}
+				case 128: {
+					switch (len) {
+					case 2:
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X2_V128; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST2_V128; break;
+						default: g_assert_not_reached ();
+						}
+						break;
+					case 3:
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X3_V128; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST3_V128; break;
+						default: g_assert_not_reached ();
+						}
+						break;
+					case 4:
+						switch (ins->opcode) {
+						case OP_ARM64_STM: iid = INTRINS_AARCH64_ADV_SIMD_ST1X4_V128; break;
+						case OP_ARM64_STM_ZIP: iid = INTRINS_AARCH64_ADV_SIMD_ST4_V128; break;
+						default: g_assert_not_reached ();
+						}
+						break;
+					default:
+						g_assert_not_reached ();
+						break;
+					}
+					break;
+				}
+				default:
+					g_assert_not_reached ();
+					break;
+				
+				}
+			}
 
 			call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
@@ -11837,7 +11932,6 @@ MONO_RESTORE_WARNING
 			default:
 				g_assert_not_reached ();
 				break;
-			
 			}
 
 			rhs = LLVMBuildLoad2 (builder, tuple_t, addresses [ins->sreg2]->value, "");
@@ -14519,18 +14613,10 @@ emit_aot_file_info (MonoLLVMModule *module)
 	LLVMSetInitializer (info_var, LLVMConstNamedStruct (module->info_var_type, fields, nfields));
 
 	if (module->static_link) {
-		char *s, *p;
 		LLVMValueRef var;
-
-		s = g_strdup_printf ("mono_aot_module_%s_info", module->assembly->aname.name);
-		/* Get rid of characters which cannot occur in symbols */
-		p = s;
-		for (p = s; *p; ++p) {
-			if (!(isalnum (*p) || *p == '_'))
-				*p = '_';
-		}
-		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), s);
-		g_free (s);
+		char *fixedName = mono_fixup_symbol_name ("mono_aot_module_", module->assembly->aname.name, "_info");
+		var = LLVMAddGlobal (module->lmodule, pointer_type (LLVMInt8Type ()), fixedName);
+		free (fixedName);
 		LLVMSetInitializer (var, LLVMConstBitCast (LLVMGetNamedGlobal (module->lmodule, "mono_aot_file_info"), pointer_type (LLVMInt8Type ())));
 		LLVMSetLinkage (var, LLVMExternalLinkage);
 	}

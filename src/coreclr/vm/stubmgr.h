@@ -215,7 +215,7 @@ class StubManager
     static BOOL IsStub(PCODE stubAddress)
     {
         WRAPPER_NO_CONTRACT;
-        return FindStubManager(stubAddress) != NULL;
+        return FindStubManager(stubAddress) != nullptr;
     }
 
     // Find stub manager for given code address
@@ -627,7 +627,7 @@ class RangeSectionStubManager : public StubManager
 typedef VPTR(class ILStubManager) PTR_ILStubManager;
 
 #ifdef FEATURE_COMINTEROP
-struct ComPlusCallInfo;
+struct CLRToCOMCallInfo;
 #endif // FEATURE_COMINTEROP
 
 class ILStubManager : public StubManager
@@ -680,7 +680,7 @@ class ILStubManager : public StubManager
 };
 
 // This is used to recognize
-//   GenericComPlusCallStub()
+//   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()
 //   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;
@@ -797,7 +797,7 @@ public:
         return pContext->Lr;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetReturnAddress");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -833,7 +833,7 @@ public:
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetTailCallTarget");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -849,7 +849,7 @@ public:
         return pContext->X12;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetHiddenArg");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -879,7 +879,7 @@ public:
         return *((PCODE *)pContext->Fp + 1);
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetRetAddrFromMulticastILStubFrame");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 
@@ -899,7 +899,7 @@ public:
         return pContext->X1;
 #else
         PORTABILITY_ASSERT("StubManagerHelpers::GetSecondArg");
-        return NULL;
+        return (TADDR)NULL;
 #endif
     }
 

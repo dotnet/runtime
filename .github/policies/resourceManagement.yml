@@ -114,8 +114,213 @@ configuration:
       - or:
         - payloadType: Issues
         - payloadType: Pull_Request
-      - isAction:
-          action: Opened
+      - or:
+        - labelAdded:
+            label: area-AssemblyLoader-coreclr
+        - labelAdded:
+            label: area-AssemblyLoader-mono
+        - labelAdded:
+            label: area-CodeGen-coreclr
+        - labelAdded:
+            label: area-Codegen-Interpreter-mono
+        - labelAdded:
+            label: area-Codegen-JIT-Mono
+        - labelAdded:
+            label: area-CodeGen-LLVM-Mono
+        - labelAdded:
+            label: area-Codegen-Intrinsics-mono
+        - labelAdded:
+            label: area-CodeGen-meta-Mono
+        - labelAdded:
+            label: area-System.DateTime
+        - labelAdded:
+            label: area-Debugger-mono
+        - labelAdded:
+            label: area-DependencyModel
+        - labelAdded:
+            label: area-Diagnostics-coreclr
+        - labelAdded:
+            label: area-Extensions-Caching
+        - labelAdded:
+            label: area-Extensions-Configuration
+        - labelAdded:
+            label: area-Extensions-DependencyInjection
+        - labelAdded:
+            label: area-Extensions-FileSystem
+        - labelAdded:
+            label: area-Extensions-Hosting
+        - labelAdded:
+            label: area-Extensions-HttpClientFactory
+        - labelAdded:
+            label: area-Extensions-Logging
+        - labelAdded:
+            label: area-Extensions-Options
+        - labelAdded:
+            label: area-Extensions-Primitives
+        - labelAdded:
+            label: area-GC-coreclr
+        - labelAdded:
+            label: area-GC-mono
+        - labelAdded:
+            label: area-Host
+        - labelAdded:
+            label: area-HostModel
+        - labelAdded:
+            label: area-ILTools-coreclr
+        - labelAdded:
+            label: area-Tools-ILVerification
+        - labelAdded:
+            label: area-Infrastructure
+        - labelAdded:
+            label: area-Infrastructure-coreclr
+        - labelAdded:
+            label: area-Infrastructure-libraries
+        - labelAdded:
+            label: area-Infrastructure-mono
+        - labelAdded:
+            label: area-Meta
+        - labelAdded:
+            label: area-Microsoft.CSharp
+        - labelAdded:
+            label: area-Microsoft.Extensions
+        - labelAdded:
+            label: area-Microsoft.VisualBasic
+        - labelAdded:
+            label: area-Microsoft.Win32
+        - labelAdded:
+            label: area-NativeAOT-coreclr
+        - labelAdded:
+            label: area-Single-File
+        - labelAdded:
+            label: area-System.Buffers
+        - labelAdded:
+            label: area-System.CodeDom
+        - labelAdded:
+            label: area-System.Collections
+        - labelAdded:
+            label: area-System.ComponentModel
+        - labelAdded:
+            label: area-System.ComponentModel.Composition
+        - labelAdded:
+            label: area-System.ComponentModel.DataAnnotations
+        - labelAdded:
+            label: area-System.Composition
+        - labelAdded:
+            label: area-System.Configuration
+        - labelAdded:
+            label: area-System.Console
+        - labelAdded:
+            label: area-System.Data
+        - labelAdded:
+            label: area-System.Data.Odbc
+        - labelAdded:
+            label: area-System.Data.OleDB
+        - labelAdded:
+            label: area-System.Data.SqlClient
+        - labelAdded:
+            label: area-System.Diagnostics
+        - labelAdded:
+            label: area-System.Diagnostics.Activity
+        - labelAdded:
+            label: area-System.Diagnostics.EventLog
+        - labelAdded:
+            label: area-System.Diagnostics.PerformanceCounter
+        - labelAdded:
+            label: area-System.Diagnostics.Process
+        - labelAdded:
+            label: area-System.Diagnostics.TraceSource
+        - labelAdded:
+            label: area-System.Diagnostics.Tracing
+        - labelAdded:
+            label: area-System.DirectoryServices
+        - labelAdded:
+            label: area-System.Drawing
+        - labelAdded:
+            label: area-System.Dynamic.Runtime
+        - labelAdded:
+            label: area-System.Formats.Asn1
+        - labelAdded:
+            label: area-System.Formats.Cbor
+        - labelAdded:
+            label: area-System.Formats.Tar
+        - labelAdded:
+            label: area-System.Globalization
+        - labelAdded:
+            label: area-System.IO
+        - labelAdded:
+            label: area-System.IO.Compression
+        - labelAdded:
+            label: area-System.IO.Hashing
+        - labelAdded:
+            label: area-System.IO.Ports
+        - labelAdded:
+            label: area-System.Linq
+        - labelAdded:
+            label: area-System.Linq.Expressions
+        - labelAdded:
+            label: area-System.Linq.Parallel
+        - labelAdded:
+            label: area-System.Management
+        - labelAdded:
+            label: area-System.Memory
+        - labelAdded:
+            label: area-System.Net
+        - labelAdded:
+            label: area-System.Net.Http
+        - labelAdded:
+            label: area-System.Net.Quic
+        - labelAdded:
+            label: area-System.Net.Security
+        - labelAdded:
+            label: area-System.Net.Sockets
+        - labelAdded:
+            label: area-System.Numerics
+        - labelAdded:
+            label: area-System.Numerics.Tensors
+        - labelAdded:
+            label: area-System.Reflection
+        - labelAdded:
+            label: area-System.Reflection.Emit
+        - labelAdded:
+            label: area-System.Reflection.Metadata
+        - labelAdded:
+            label: area-System.Resources
+        - labelAdded:
+            label: area-System.Runtime
+        - labelAdded:
+            label: area-System.Runtime.CompilerServices
+        - labelAdded:
+            label: area-System.Runtime.InteropServices
+        - labelAdded:
+            label: area-System.Runtime.Intrinsics
+        - labelAdded:
+            label: area-System.Security
+        - labelAdded:
+            label: area-System.ServiceProcess
+        - labelAdded:
+            label: area-System.Speech
+        - labelAdded:
+            label: area-System.Text.Encoding
+        - labelAdded:
+            label: area-System.Text.Encodings.Web
+        - labelAdded:
+            label: area-System.Text.Json
+        - labelAdded:
+            label: area-System.Text.RegularExpressions
+        - labelAdded:
+            label: area-System.Threading
+        - labelAdded:
+            label: area-System.Threading.Channels
+        - labelAdded:
+            label: area-System.Threading.Tasks
+        - labelAdded:
+            label: area-System.Transactions
+        - labelAdded:
+            label: area-System.Xml
+        - labelAdded:
+            label: area-Tools-ILLink
+        - labelAdded:
+            label: area-vm-coreclr
       then:
       - if:
         - hasLabel:
@@ -494,6 +699,7 @@ configuration:
         - mentionUsers:
             mentionees:
             - directhex
+            - matouskozak
             replyTemplate: >-
               Tagging subscribers to this area: ${mentionees}
 
@@ -1510,9 +1716,11 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
-            - kotlarmilos
             replyTemplate: >-
               Tagging subscribers to 'os-ios': ${mentionees}
 
@@ -1532,6 +1740,8 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - simonrozsival
             - steveisok
             - akoeplinger
             replyTemplate: >-
@@ -1601,6 +1811,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
             replyTemplate: >-
@@ -1622,6 +1835,9 @@ configuration:
         then:
         - mentionUsers:
             mentionees:
+            - vitek-karas
+            - kotlarmilos
+            - ivanpovazan
             - steveisok
             - akoeplinger
             replyTemplate: >-

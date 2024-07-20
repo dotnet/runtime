@@ -49,7 +49,7 @@
 #define EEHASH_MEMORY_POOL_GROW_COUNT 128
 
 StringLiteralEntryArray *StringLiteralEntry::s_EntryList = NULL;
-DWORD StringLiteralEntry::s_UsedEntries = NULL;
+DWORD StringLiteralEntry::s_UsedEntries = 0;
 StringLiteralEntry *StringLiteralEntry::s_FreeEntryList = NULL;
 
 StringLiteralMap::StringLiteralMap()
@@ -341,7 +341,7 @@ GlobalStringLiteralMap::~GlobalStringLiteralMap()
     {
         // We are shutting down, the OS will reclaim the memory from the StringLiteralEntries,
         // m_MemoryPool and m_StringToEntryHashTable.
-        _ASSERTE(g_fProcessDetach);
+        _ASSERTE(IsAtProcessExit());
     }
 }
 

@@ -1792,12 +1792,11 @@ void LIR::InsertBeforeTerminator(BasicBlock* block, LIR::Range&& range)
                 break;
 
             case BBJ_SWITCH:
-                assert((insertionPoint->OperGet() == GT_SWITCH) || (insertionPoint->OperGet() == GT_SWITCH_TABLE));
+                assert(insertionPoint->OperIs(GT_SWITCH, GT_SWITCH_TABLE));
                 break;
 
             case BBJ_RETURN:
-                assert((insertionPoint->OperGet() == GT_RETURN) || (insertionPoint->OperGet() == GT_JMP) ||
-                       (insertionPoint->OperGet() == GT_CALL));
+                assert(insertionPoint->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET, GT_JMP, GT_CALL));
                 break;
 
             default:

@@ -817,9 +817,9 @@ class Wrapper : public BaseWrapper<TYPE, FunctionBase<TYPE, ACQUIREF, RELEASEF>,
 #endif
 
 template <typename _TYPE, void (*_RELEASEF)(_TYPE*)>
-class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, NULL>
+class SpecializedWrapper : public Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>
 {
-    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, NULL>;
+    using BaseT = Wrapper<_TYPE*, DoNothing<_TYPE*>, _RELEASEF, 0>;
 public:
     FORCEINLINE SpecializedWrapper() : BaseT(NULL, FALSE)
     {
@@ -997,19 +997,6 @@ FORCEINLINE void Delete(TYPE *value)
 template<typename _TYPE>
 using NewHolder = SpecializedWrapper<_TYPE, Delete<_TYPE>>;
 
- //-----------------------------------------------------------------------------
-// NewExecutableHolder : New'ed memory holder for executable memory.
-//
-//  {
-//      NewExecutableHolder<Foo> foo = (Foo*) new (executable) Byte[num];
-//  } // delete foo on out of scope
-//-----------------------------------------------------------------------------
-// IJW
-template<class T> void DeleteExecutable(T *p);
-
-template<typename _TYPE>
-using NewExecutableHolder = SpecializedWrapper<_TYPE, DeleteExecutable<_TYPE>>;
-
 //-----------------------------------------------------------------------------
 // NewArrayHolder : New []'ed pointer holder
 //  {
@@ -1146,7 +1133,7 @@ typedef Wrapper<void *, DoNothing, VoidUnmapViewOfFile> MapViewHolder;
 // A holder for HMODULE.
 FORCEINLINE void HolderFreeLibrary(HMODULE h) { FreeLibrary(h); }
 
-typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, NULL> HModuleHolder;
+typedef Wrapper<HMODULE, DoNothing<HMODULE>, HolderFreeLibrary, 0> HModuleHolder;
 
 template <typename T> FORCEINLINE
 void DoLocalFree(T* pMem)
@@ -1208,7 +1195,7 @@ public:
 //
 //  {
 //      HKEYHolder hFoo = NULL;
-//      WszRegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
+//      RegOpenKeyEx(HKEY_CLASSES_ROOT, L"Interface",0, KEY_READ, hFoo);
 //
 //  } // close key on out of scope via RegCloseKey.
 //-----------------------------------------------------------------------------

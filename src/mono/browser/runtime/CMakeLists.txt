@@ -28,6 +28,7 @@ target_link_libraries(dotnet.native
     ${MONO_ARTIFACTS_DIR}/libmono-wasm-${CONFIGURATION_INTERPSIMDTABLES_LIB}.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-aot.a
     ${MONO_ARTIFACTS_DIR}/libmono-profiler-browser.a
+    ${MONO_ARTIFACTS_DIR}/libz.a
     ${NATIVE_BIN_DIR}/wasm-bundled-timezones.a
     ${NATIVE_BIN_DIR}/libSystem.Native.a
     ${NATIVE_BIN_DIR}/libSystem.Globalization.Native.a
@@ -44,7 +45,7 @@ set(ignoreMeEmsdkPath "${EMSDK_PATH}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     add_custom_command(TARGET dotnet.native
-                        POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --enable-exception-handling ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
+                        POST_BUILD COMMAND ${EMSDK_PATH}/bin/wasm-opt --enable-exception-handling --enable-simd --enable-bulk-memory ${CONFIGURATION_WASM_OPT_FLAGS} --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.native.wasm -o ${NATIVE_BIN_DIR}/dotnet.native.wasm
                         COMMENT "Stripping debug symbols from dotnet.native.wasm using wasm-opt")
 endif()
 

@@ -331,22 +331,6 @@ public:
     // so the direct reference will be stored to the pDest argument. In case of unloadable
     // context, an index to the pinned table will be saved.
     void AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest);
-
-    FORCEINLINE static bool GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle, OBJECTREF* pRef)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // For a non-unloadable context, handle is expected to be either null (is not cached yet)
-        // or be a direct pointer to a frozen RuntimeType object
-
-        if (handle & 1)
-        {
-            // Clear the "is pinned object" bit from the managed reference
-            *pRef = (OBJECTREF)(handle - 1);
-            return true;
-        }
-        return false;
-    }
 #endif
 
     // Similar to IsCanonicalSubtype, but applied to a vector.
@@ -479,6 +463,9 @@ public:
     // PTR
     BOOL IsPointer() const;
 
+    // String
+    BOOL IsString() const;
+
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
 
@@ -518,7 +505,7 @@ public:
 #endif
 
     OBJECTREF GetManagedClassObject() const;
-    OBJECTREF GetManagedClassObjectFast() const;
+    OBJECTREF GetManagedClassObjectIfExists() const;
 
     static TypeHandle MergeArrayTypeHandlesToCommonParent(
         TypeHandle ta, TypeHandle tb);
@@ -617,6 +604,15 @@ public:
 };
 
 #if CHECK_INVARIANTS
+template <typename Dummy = TypeHandle>
+typename std::enable_if<has_Check<Dummy>::value, CHECK>::type CheckPointerImpl(Dummy th, IsNullOK ok)
+{
+    CHECK(th.Check());
+}
+
+template <typename Dummy = TypeHandle>
+typename std::enable_if<!has_Check<Dummy>::value, CHECK>::type CheckPointerImpl(Dummy th, IsNullOK ok) { CHECK_OK; }
+
 inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 {
     STATIC_CONTRACT_NOTHROW;
@@ -631,10 +627,7 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
     }
     else
     {
-        __if_exists(TypeHandle::Check)
-        {
-            CHECK(th.Check());
-        }
+        CheckPointerImpl(th, ok);
 #if 0
         CHECK(CheckInvariant(o));
 #endif
@@ -642,7 +635,6 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 
     CHECK_OK;
 }
-
 #endif  // CHECK_INVARIANTS
 
 /*************************************************************************/

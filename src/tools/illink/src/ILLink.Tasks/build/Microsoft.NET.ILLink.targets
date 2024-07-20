@@ -53,6 +53,10 @@ Copyright (c) .NET Foundation. All rights reserved.
     <!-- Trim managed NTLM on Linux when it's not explicitly requested -->
     <_UseManagedNtlm Condition="'$(_UseManagedNtlm)' == '' and $(RuntimeIdentifier.StartsWith('linux'))">false</_UseManagedNtlm>
     <_ComObjectDescriptorSupport Condition="'$(_ComObjectDescriptorSupport)' == ''">false</_ComObjectDescriptorSupport>
+    <_DesignerHostSupport Condition="'$(_DesignerHostSupport)' == ''">false</_DesignerHostSupport>
+    <_DefaultValueAttributeSupport Condition="'$(_DefaultValueAttributeSupport)' == ''">false</_DefaultValueAttributeSupport>
+    <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">true</DynamicCodeSupport>
+    <UseSystemResourceKeys Condition="'$(UseSystemResourceKeys)' == ''">false</UseSystemResourceKeys>
   </PropertyGroup>
 
 
@@ -142,6 +146,7 @@ Copyright (c) .NET Foundation. All rights reserved.
             TrimMode="$(TrimMode)"
             DefaultAction="$(_TrimmerDefaultAction)"
             RemoveSymbols="$(TrimmerRemoveSymbols)"
+            PreserveSymbolPaths="$(_TrimmerPreserveSymbolPaths)"
             FeatureSettings="@(_TrimmerFeatureSettings)"
             CustomData="@(_TrimmerCustomData)"
 
@@ -233,6 +238,11 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- The default is to remove symbols when debugger support is disabled, and keep them otherwise. -->
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' == 'false' ">true</TrimmerRemoveSymbols>
       <TrimmerRemoveSymbols Condition=" '$(DebuggerSupport)' != 'false' ">false</TrimmerRemoveSymbols>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <_TrimmerPreserveSymbolPaths Condition=" '$(_TrimmerPreserveSymbolPaths)' == '' and '$(DeterministicSourcePaths)' == 'true' ">true</_TrimmerPreserveSymbolPaths>
+      <_TrimmerPreserveSymbolPaths Condition=" '$(_TrimmerPreserveSymbolPaths)' == '' ">false</_TrimmerPreserveSymbolPaths>
     </PropertyGroup>
 
     <!-- Set IsTrimmable for any assemblies that already have customized TrimMode. -->

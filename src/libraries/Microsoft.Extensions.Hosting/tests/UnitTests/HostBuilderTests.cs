@@ -174,7 +174,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 {
                     var env = hostContext.HostingEnvironment;
                     Assert.Equal(Environments.Production, env.EnvironmentName);
-#if NETCOREAPP
+#if NET
                     Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             {
                 var env = host.Services.GetRequiredService<IHostEnvironment>();
                 Assert.Equal(Environments.Production, env.EnvironmentName);
-#if NETCOREAPP
+#if NET
                 Assert.NotNull(env.ApplicationName);
 #elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.
@@ -531,6 +531,33 @@ namespace Microsoft.Extensions.Hosting.Tests
                 {
                 });
             Assert.Throws<InvalidCastException>(() => hostBuilder.Build());
+        }
+
+        [Fact]
+        public void ScopeValidationEnabledInDevelopment()
+        {
+            using var host = new HostBuilder()
+                .UseEnvironment(Environments.Development)
+                .ConfigureServices(serices =>
+                {
+                    serices.AddScoped<ServiceA>();
+                })
+                .Build();
+
+            Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceA>(); });
+        }
+
+        [Fact]
+        public void ValidateOnBuildEnabledInDevelopment()
+        {
+            var hostBuilder = new HostBuilder()
+                .UseEnvironment(Environments.Development)
+                .ConfigureServices(serices =>
+                {
+                    serices.AddSingleton<ServiceC>();
+                });
+
+            Assert.Throws<AggregateException>(() => hostBuilder.Build());
         }
 
         [Fact]

@@ -41,6 +41,7 @@ namespace System.Security.Cryptography
         internal const string SigningCertificate = "1.2.840.113549.1.9.16.2.12";
         internal const string SigningCertificateV2 = "1.2.840.113549.1.9.16.2.47";
         internal const string DocumentName = "1.3.6.1.4.1.311.88.2.1";
+        internal const string Pkcs9FriendlyName = "1.2.840.113549.1.9.20";
         internal const string LocalKeyId = "1.2.840.113549.1.9.21";
         internal const string EnrollCertTypeExtension = "1.3.6.1.4.1.311.20.2";
         internal const string UserPrincipalName = "1.3.6.1.4.1.311.20.2.3";
@@ -50,6 +51,8 @@ namespace System.Security.Cryptography
         internal const string OcspEndpoint = "1.3.6.1.5.5.7.48.1";
         internal const string CertificateAuthorityIssuers = "1.3.6.1.5.5.7.48.2";
         internal const string Pkcs9ExtensionRequest = "1.2.840.113549.1.9.14";
+        internal const string MsPkcs12KeyProviderName = "1.3.6.1.4.1.311.17.1";
+        internal const string MsPkcs12MachineKeySet = "1.3.6.1.4.1.311.17.2";
 
         // Key wrap algorithms
         internal const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";

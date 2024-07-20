@@ -19,6 +19,8 @@
 #include <mono/utils/mono-error.h>
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
+// for dn_simdhash_string_ptr_t and dn_simdhash_u32_ptr_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 struct _MonoType {
 	union {
@@ -416,11 +418,11 @@ struct _MonoImage {
 	/*
 	 * Indexed by method tokens and typedef tokens.
 	 */
-	GHashTable *method_cache; /*protected by the image lock*/
+	dn_simdhash_u32_ptr_t *method_cache; /*protected by the image lock*/
 	MonoInternalHashTable class_cache;
 
 	/* Indexed by memberref + methodspec tokens */
-	GHashTable *methodref_cache; /*protected by the image lock*/
+	dn_simdhash_u32_ptr_t *methodref_cache; /*protected by the image lock*/
 
 	/*
 	 * Indexed by fielddef and memberref tokens
@@ -438,7 +440,7 @@ struct _MonoImage {
 	/*
 	 * Indexes namespaces to hash tables that map class name to typedef token.
 	 */
-	GHashTable *name_cache;  /*protected by the image lock*/
+	dn_simdhash_string_ptr_t *name_cache;  /*protected by the image lock*/
 
 	/*
 	 * Indexed by MonoClass
@@ -1008,6 +1010,8 @@ MonoMethodSignature  *mono_metadata_signature_dup_mempool (MonoMemPool *mp, Mono
 MonoMethodSignature  *mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig);
 MonoMethodSignature  *mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass);
 MonoMethodSignature  *mono_metadata_signature_dup_delegate_invoke_to_target (MonoMethodSignature *sig);
+MonoMethodSignature  *mono_metadata_signature_allocate_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager, size_t sig_size);
+MonoMethodSignature  *mono_metadata_signature_dup_new_params (MonoMemPool *mp, MonoMemoryManager *mem_manager, MonoMethodSignature *sig, uint32_t num_params, MonoType **new_params);
 
 MonoGenericInst *
 mono_get_shared_generic_inst (MonoGenericContainer *container);

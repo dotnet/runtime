@@ -24,95 +24,57 @@ typedef struct
     void* m_array;
 } ConstArray;
 
-typedef struct
-{
-    I4Array * largeResult;
-    int length;
-    int smallResult[16];
-} MetadataEnumResult;
-
-#define MDDecl0(RET, NAME) static FCDECL1(RET, NAME, IMDInternalImport* pScope)
-#define MDDecl1(RET, NAME, arg0) static FCDECL2(RET, NAME, IMDInternalImport* pScope, arg0)
-#define MDDecl2(RET, NAME, arg0, arg1) static FCDECL3(RET, NAME, IMDInternalImport* pScope, arg0, arg1)
-#define MDDecl3(RET, NAME, arg0, arg1, arg2) static FCDECL4(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2)
-#define MDDecl4(RET, NAME, arg0, arg1, arg2, arg3) static FCDECL5(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3)
-#define MDDecl5(RET, NAME, arg0, arg1, arg2, arg3, arg4) static FCDECL6(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4)
-#define MDDecl6(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5) static FCDECL7(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5)
-#define MDDecl7(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6) static FCDECL8(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
-#define MDDecl8(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) static FCDECL9(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-#define MDDecl9(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) static FCDECL10(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-#define MDDecl10(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) static FCDECL11(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
-
-#define MDImpl0(RET, NAME) FCIMPL1(RET, NAME, IMDInternalImport* pScope)
-#define MDImpl1(RET, NAME, arg0) FCIMPL2(RET, NAME, IMDInternalImport* pScope, arg0)
-#define MDImpl2(RET, NAME, arg0, arg1) FCIMPL3(RET, NAME, IMDInternalImport* pScope, arg0, arg1)
-#define MDImpl3(RET, NAME, arg0, arg1, arg2) FCIMPL4(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2)
-#define MDImpl4(RET, NAME, arg0, arg1, arg2, arg3) FCIMPL5(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3)
-#define MDImpl5(RET, NAME, arg0, arg1, arg2, arg3, arg4) FCIMPL6(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4)
-#define MDImpl6(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5) FCIMPL7(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5)
-#define MDImpl7(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6) FCIMPL8(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6)
-#define MDImpl8(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) FCIMPL9(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-#define MDImpl9(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) FCIMPL10(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-#define MDImpl10(RET, NAME, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) FCIMPL11(RET, NAME, IMDInternalImport* pScope, arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
-
 class MetaDataImport
 {
 public:
-    //
-    // GetXXXProps
-    //
-    MDDecl1(void, GetScopeProps, GUID* pmvid);
-    MDDecl4(void, GetTypeDefProps, mdTypeDef td, STRINGREF* pszTypeDef, DWORD* pdwTypeDefFlags, mdToken* ptkExtends);
-    MDDecl2(void, GetMemberRefProps, mdMemberRef mr, ConstArray* ppvSigBlob);
+    static FCDECL1(IMDInternalImport*, GetMetadataImport, ReflectModuleBaseObject* pModuleUNSAFE);
+    static FCDECL2(HRESULT, GetScopeProps, IMDInternalImport* pScope, GUID* pmvid);
+    static FCDECL3(HRESULT, GetMemberRefProps, IMDInternalImport* pScope, mdMemberRef mr, ConstArray* ppvSigBlob);
 
+    static FCDECL4(HRESULT, GetCustomAttributeProps, IMDInternalImport* pScope, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
 
-    ////
-    //// EnumXXX
-    ////
-    MDDecl3(void, Enum, mdToken type, mdToken tkParent, MetadataEnumResult * pResult);
-    MDDecl3(void, GetCustomAttributeProps, mdCustomAttribute cv, mdToken* ptkType, ConstArray* ppBlob);
+    static FCDECL6(HRESULT, GetDefaultValue, IMDInternalImport* pScope, mdToken tk, INT64* pDefaultValue, LPCWSTR* pStringValue, INT32* pLength, INT32* pCorElementType);
+    static FCDECL3(HRESULT, GetName, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
+    static FCDECL4(HRESULT, GetUserString, IMDInternalImport* pScope, mdToken tk, LPCWSTR* pszName, ULONG* pCount);
+    static FCDECL3(HRESULT, GetNamespace, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName);
+    static FCDECL3(HRESULT, GetParentToken, IMDInternalImport* pScope, mdToken tk, mdToken* ptk);
+    static FCDECL4(HRESULT, GetParamDefProps, IMDInternalImport* pScope, mdToken tk, INT32* pSequence, INT32* pAttributes);
+    static FCDECL5(HRESULT, GetPInvokeMap, IMDInternalImport* pScope, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll);
 
-    ////
-    //// Misc
-    ////
+    static FCDECL4(HRESULT, GetClassLayout, IMDInternalImport* pScope, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize);
+    static FCDECL5(HRESULT, GetFieldOffset, IMDInternalImport* pScope, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffsetGetFieldOffset, CLR_BOOL* found);
 
-    MDDecl4(Object *, GetDefaultValue, mdToken tk, INT64* pDefaultValue, INT32* pLength, INT32* pCorElementType);
-    MDDecl2(void, GetName, mdToken tk, LPCSTR* pszName);
-    MDDecl3(void, GetUserString, mdToken tk, LPCSTR* pszName, ULONG* pCount);
-    MDDecl2(void, GetNamespace, mdToken tk, LPCSTR* pszName);
-    MDDecl2(void, GetParentToken, mdToken tk, mdToken* ptk);
-    MDDecl3(void, GetParamDefProps, mdToken tk, INT32* pSequence, INT32* pAttributes);
-    MDDecl4(void, GetPinvokeMap, mdToken tk, DWORD* pMappingFlags, LPCSTR* pszImportName, LPCSTR* pszImportDll);
+    static FCDECL4(HRESULT, GetEventProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags);
+    static FCDECL3(HRESULT, GetGenericParamProps, IMDInternalImport* pScope, mdToken tk, DWORD* pAttributes);
+    static FCDECL3(HRESULT, GetFieldDefProps, IMDInternalImport* pScope, mdToken tk, INT32 *pdwFieldFlags);
+    static FCDECL5(HRESULT, GetPropertyProps, IMDInternalImport* pScope, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppvSigBlob);
 
-    MDDecl3(void, GetClassLayout, mdTypeDef td, DWORD* pdwPackSize, ULONG* pulClassSize);
-    MDDecl3(FC_BOOL_RET, GetFieldOffset, mdTypeDef td, mdFieldDef target, DWORD* pdwFieldOffset);
+    static FCDECL3(HRESULT, GetSignatureFromToken, IMDInternalImport* pScope, mdToken tk, ConstArray* pSig);
+    static FCDECL3(HRESULT, GetSigOfFieldDef, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
+    static FCDECL3(HRESULT, GetSigOfMethodDef, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
+    static FCDECL3(HRESULT, GetFieldMarshal, IMDInternalImport* pScope, mdToken tk, ConstArray* pMarshalInfo);
+    static FCDECL2(FC_BOOL_RET, IsValidToken, IMDInternalImport* pScope, mdToken tk);
 
-    MDDecl3(void, GetEventProps, mdToken tk, LPCSTR* pszName, INT32 *pdwEventFlags);
-    MDDecl2(void, GetGenericParamProps, mdToken tk, DWORD* pAttributes);
-    MDDecl2(void, GetFieldDefProps, mdToken tk, INT32 *pdwFieldFlags);
-    MDDecl4(void, GetPropertyProps, mdToken tk, LPCSTR* pszName, INT32 *pdwPropertyFlags, ConstArray* ppvSigBlob);
-
-    MDDecl2(void, GetSignatureFromToken, mdToken tk, ConstArray* pSig);
-    MDDecl2(void, GetSigOfFieldDef, mdToken tk, ConstArray* pMarshalInfo);
-    MDDecl2(void, GetSigOfMethodDef, mdToken tk, ConstArray* pMarshalInfo);
-    MDDecl2(void, GetFieldMarshal, mdToken tk, ConstArray* pMarshalInfo);
-    MDDecl2(mdParamDef, GetParamForMethodIndex, mdMethodDef md, ULONG ulParamSeq);
-    MDDecl1(FC_BOOL_RET, IsValidToken, mdToken tk);
-    MDDecl1(mdTypeDef, GetNestedClassProps, mdTypeDef tdNestedClass);
-    MDDecl1(ULONG, GetNativeCallConvFromSig, ConstArray sig);
-
-    static FCDECL11(void, GetMarshalAs,
-        BYTE*           pvNativeType,
-        ULONG           cbNativeType,
-        INT32*          unmanagedType,
-        INT32*          safeArraySubType,
-        STRINGREF*      safeArrayUserDefinedSubType,
-        INT32*          arraySubType,
-        INT32*          sizeParamIndex,
-        INT32*          sizeConst,
-        STRINGREF*      marshalType,
-        STRINGREF*      marshalCookie,
-        INT32*          iidParamIndex);
+    static FCDECL11(FC_BOOL_RET, GetMarshalAs,
+        BYTE*   pvNativeType,
+        ULONG   cbNativeType,
+        INT32*  unmanagedType,
+        INT32*  safeArraySubType,
+        LPUTF8* safeArrayUserDefinedSubType,
+        INT32*  arraySubType,
+        INT32*  sizeParamIndex,
+        INT32*  sizeConst,
+        LPUTF8* marshalType,
+        LPUTF8* marshalCookie,
+        INT32*  iidParamIndex);
 };
+
+extern "C" void QCALLTYPE MetadataImport_Enum(
+    IMDInternalImport* pScope,
+    mdToken type,
+    mdToken tkParent,
+    INT32* length,
+    INT32* shortResult,
+    QCall::ObjectHandleOnStack longResult);
 
 #endif

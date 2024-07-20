@@ -574,7 +574,6 @@ LPCSTR Exception::GetHRSymbolicName(HRESULT hr)
     CASE_HRESULT(COR_E_CANNOTUNLOADAPPDOMAIN)
     CASE_HRESULT(MSEE_E_ASSEMBLYLOADINPROGRESS)
     CASE_HRESULT(FUSION_E_REF_DEF_MISMATCH)
-    CASE_HRESULT(FUSION_E_PRIVATE_ASM_DISALLOWED)
     CASE_HRESULT(FUSION_E_INVALID_NAME)
     CASE_HRESULT(CLDB_E_FILE_BADREAD)
     CASE_HRESULT(CLDB_E_FILE_BADWRITE)
@@ -812,11 +811,13 @@ HRESULT SEHException::GetHR()
         return m_exception.ExceptionCode;
 }
 
+#ifdef FEATURE_COMINTEROP
 IErrorInfo *SEHException::GetErrorInfo()
 {
     LIMITED_METHOD_CONTRACT;
     return NULL;
 }
+#endif // FEATURE_COMINTEROP
 
 void SEHException::GetMessage(SString &string)
 {
@@ -897,6 +898,7 @@ HRESULT DelegatingException::GetHR()
 
 } // HRESULT DelegatingException::GetHR()
 
+#ifdef FEATURE_COMINTEROP
 //------------------------------------------------------------------------------
 IErrorInfo *DelegatingException::GetErrorInfo()
 {
@@ -910,6 +912,7 @@ IErrorInfo *DelegatingException::GetErrorInfo()
     return pDelegate ? pDelegate->GetErrorInfo() : NULL;
 
 } // IErrorInfo *DelegatingException::GetErrorInfo()
+#endif // FEATURE_COMINTEROP
 
 //------------------------------------------------------------------------------
 void DelegatingException::GetMessage(SString &result)

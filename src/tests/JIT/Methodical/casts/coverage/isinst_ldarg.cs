@@ -33,6 +33,7 @@ namespace JitTest_isinst_ldarg_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             if (!Test_LDARG(new TestClass(), true))

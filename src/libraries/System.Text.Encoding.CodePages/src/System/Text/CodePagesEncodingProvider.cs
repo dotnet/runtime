@@ -197,7 +197,7 @@ namespace System.Text
         internal static unsafe ref T GetNonNullPinnableReference<T>(T[] array) where T : struct
         {
             return ref
-#if NET5_0_OR_GREATER
+#if NET
                 MemoryMarshal.GetArrayDataReference(array);
 #else
                 array.Length != 0 ? ref array[0] : ref Unsafe.AsRef<T>((void*)1);

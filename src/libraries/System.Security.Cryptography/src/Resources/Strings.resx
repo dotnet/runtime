@@ -327,6 +327,9 @@
   <data name="Cryptography_EncryptedIncorrectLength" xml:space="preserve">
     <value>{0} unexpectedly produced a ciphertext with the incorrect length.</value>
   </data>
+  <data name="Cryptography_EnginesNotSupported" xml:space="preserve">
+    <value>OpenSSL ENGINE is not available on this platform.</value>
+  </data>
   <data name="Cryptography_ExceedKdfExtractLimit" xml:space="preserve">
     <value>The total number of bytes extracted cannot exceed UInt32.MaxValue * hash length.</value>
   </data>
@@ -717,6 +720,12 @@
   <data name="Cryptography_X509_PKCS12_ExportableNotSupported" xml:space="preserve">
     <value>The PKCS#12 Exportable flag is not supported on this platform.</value>
   </data>
+  <data name="Cryptography_X509_PKCS12_LimitExceeded" xml:space="preserve">
+    <value>The PKCS#12/PFX violated the '{0}' limit.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_LimitsReadOnly" xml:space="preserve">
+    <value>This Pkcs12LoaderLimits object has been made read-only and can no longer be modified.</value>
+  </data>
   <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
     <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
   </data>
@@ -779,6 +788,9 @@
   </data>
   <data name="InvalidOperation_UnsupportedBlockSize" xml:space="preserve">
     <value>The algorithm's block size is not supported.</value>
+  </data>
+  <data name="InvalidOperation_AlreadyReading" xml:space="preserve">
+    <value>This operation is not supported once the algorithm has started reading.</value>
   </data>
   <data name="NotSupported_ECDsa_Csp" xml:space="preserve">
     <value>CryptoApi ECDsa keys are not supported.</value>

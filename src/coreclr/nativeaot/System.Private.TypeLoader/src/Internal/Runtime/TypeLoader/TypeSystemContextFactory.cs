@@ -42,6 +42,8 @@ namespace Internal.Runtime.TypeLoader
             TargetArchitecture.X64,
 #elif TARGET_WASM
             TargetArchitecture.Wasm32,
+#elif TARGET_LOONGARCH64
+            TargetArchitecture.LoongArch64,
 #else
 #error Unknown architecture
 #endif

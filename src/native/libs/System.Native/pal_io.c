@@ -49,7 +49,13 @@
 #elif HAVE_SYS_STATVFS_H && !HAVE_NON_LEGACY_STATFS // SunOS
 #include <sys/types.h>
 #include <sys/statvfs.h>
+#if HAVE_STATFS_VFS
 #include <sys/vfs.h>
+#endif
+#endif
+
+#ifdef TARGET_SUNOS
+#include <sys/param.h>
 #endif
 
 #ifdef _AIX
@@ -57,15 +63,10 @@
 // Somehow, AIX mangles the definition for this behind a C++ def
 // Redeclare it here
 extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
-#elif defined(TARGET_SUNOS)
-#ifndef _KERNEL
-#define _KERNEL
-#define UNDEF_KERNEL
 #endif
-#include <sys/procfs.h>
-#ifdef UNDEF_KERNEL
-#undef _KERNEL
-#endif
+
+#if defined(TARGET_SUNOS)
+#include <procfs.h>
 #endif
 
 #ifdef __linux__
@@ -439,10 +440,17 @@ static const size_t dirent_alignment = 8;
 int32_t SystemNative_GetReadDirRBufferSize(void)
 {
 #if HAVE_READDIR_R
+    size_t result = sizeof(struct dirent);
+#ifdef TARGET_SUNOS
+    // The d_name array is declared with only a single byte in it.
+    // We have to add pathconf("dir", _PC_NAME_MAX) more bytes.
+    // MAXNAMELEN is the largest possible value returned from pathconf.
+    result += MAXNAMELEN;
+#endif
     // dirent should be under 2k in size
-    assert(sizeof(struct dirent) < 2048);
+    assert(result < 2048);
     // add some extra space so we can align the buffer to dirent.
-    return sizeof(struct dirent) + dirent_alignment - 1;
+    return (int32_t)(result + dirent_alignment - 1);
 #else
     return 0;
 #endif
@@ -1050,6 +1058,8 @@ int32_t SystemNative_MAdvise(void* address, uint64_t length, int32_t advice)
             errno = ENOTSUP;
             return -1;
 #endif
+        default:
+            break; // fall through to error
     }
 
     assert_msg(false, "Unknown MemoryAdvice", (int)advice);
@@ -1087,6 +1097,8 @@ int64_t SystemNative_SysConf(int32_t name)
             return sysconf(_SC_CLK_TCK);
         case PAL_SC_PAGESIZE:
             return sysconf(_SC_PAGESIZE);
+        default:
+            break; // fall through to error
     }
 
     assert_msg(false, "Unknown SysConf name", (int)name);

@@ -922,7 +922,11 @@ void GcInfoEncoder::FinalizeSlotIds()
 #endif
 }
 
-bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
+#ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
+
+// tells whether a slot cannot contain an object reference
+// at call instruction or right after returning
+bool GcInfoEncoder::DoNotTrackInPartiallyInterruptible(GcSlotDesc &slotDesc)
 {
 #if defined(TARGET_ARM)
 
@@ -933,7 +937,31 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
         _ASSERTE(regNum >= 0 && regNum <= 14);
         _ASSERTE(regNum != 13);  // sp
 
-        return ((regNum <= 3) || (regNum >= 12)); // R12 and R14/LR are both scratch registers
+        return ((regNum <= 3) || (regNum >= 12)) // R12 is volatile and SP/LR can't contain objects around calls
+            && regNum != 0                       // R0 can contain return value
+            ;
+    }
+    else if (!slotDesc.IsUntracked() && (slotDesc.Slot.Stack.Base == GC_SP_REL) &&
+        ((UINT32)slotDesc.Slot.Stack.SpOffset < m_SizeOfStackOutgoingAndScratchArea))
+    {
+        return TRUE;
+    }
+    else
+        return FALSE;
+
+#elif defined(TARGET_ARM64)
+
+    _ASSERTE(m_SizeOfStackOutgoingAndScratchArea != (UINT32)-1);
+    if (slotDesc.IsRegister())
+    {
+        int regNum = (int)slotDesc.Slot.RegisterNumber;
+        _ASSERTE(regNum >= 0 && regNum <= 30);
+        _ASSERTE(regNum != 18);
+
+        return (regNum <= 17 || regNum >= 29) // X0 through X17 are scratch, FP/LR can't be used for objects around calls
+            && regNum != 0                    // X0 can contain return value
+            && regNum != 1                    // X1 can contain return value
+            ;
     }
     else if (!slotDesc.IsUntracked() && (slotDesc.Slot.Stack.Base == GC_SP_REL) &&
         ((UINT32)slotDesc.Slot.Stack.SpOffset < m_SizeOfStackOutgoingAndScratchArea))
@@ -953,7 +981,7 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
         _ASSERTE(regNum != 4);  // rsp
 
         UINT16 PreservedRegMask =
-              (1 << 3)  // rbx
+            (1 << 3)  // rbx
             | (1 << 5)  // rbp
 #ifndef UNIX_AMD64_ABI
             | (1 << 6)  // rsi
@@ -962,7 +990,12 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
             | (1 << 12)  // r12
             | (1 << 13)  // r13
             | (1 << 14)  // r14
-            | (1 << 15); // r15
+            | (1 << 15)  // r15
+            | (1 << 0)   // rax - may contain return value
+#ifdef UNIX_AMD64_ABI
+            | (1 << 2)   // rdx - may contain return value
+#endif
+            ;
 
         return !(PreservedRegMask & (1 << regNum));
     }
@@ -978,6 +1011,7 @@ bool GcInfoEncoder::IsAlwaysScratch(GcSlotDesc &slotDesc)
     return FALSE;
 #endif
 }
+#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
 void GcInfoEncoder::Build()
 {
@@ -1182,42 +1216,19 @@ void GcInfoEncoder::Build()
 
     ///////////////////////////////////////////////////////////////////////
     // Normalize call sites
-    // Eliminate call sites that fall inside interruptible ranges
     ///////////////////////////////////////////////////////////////////////
+
+    _ASSERTE(m_NumCallSites == 0 || numInterruptibleRanges == 0);
 
     UINT32 numCallSites = 0;
     for(UINT32 callSiteIndex = 0; callSiteIndex < m_NumCallSites; callSiteIndex++)
     {
         UINT32 callSite = m_pCallSites[callSiteIndex];
-        // There's a contract with the EE that says for non-leaf stack frames, where the
-        // method is stopped at a call site, the EE will not query with the return PC, but
-        // rather the return PC *minus 1*.
-        // The reason is that variable/register liveness may change at the instruction immediately after the
-        // call, so we want such frames to appear as if they are "within" the call.
-        // Since we use "callSite" as the "key" when we search for the matching descriptor, also subtract 1 here
-        // (after, of course, adding the size of the call instruction to get the return PC).
-        callSite += m_pCallSiteSizes[callSiteIndex] - 1;
+        callSite += m_pCallSiteSizes[callSiteIndex];
 
         _ASSERTE(DENORMALIZE_CODE_OFFSET(NORMALIZE_CODE_OFFSET(callSite)) == callSite);
         UINT32 normOffset = NORMALIZE_CODE_OFFSET(callSite);
-
-        BOOL keepIt = TRUE;
-
-        for(UINT32 intRangeIndex = 0; intRangeIndex < numInterruptibleRanges; intRangeIndex++)
-        {
-            InterruptibleRange *pRange = &pRanges[intRangeIndex];
-            if(pRange->NormStopOffset > normOffset)
-            {
-                if(pRange->NormStartOffset <= normOffset)
-                {
-                    keepIt = FALSE;
-                }
-                break;
-            }
-        }
-
-        if(keepIt)
-            m_pCallSites[numCallSites++] = normOffset;
+        m_pCallSites[numCallSites++] = normOffset;
     }
 
     GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_NUM_SAFE_POINTS(numCallSites), NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
@@ -1384,7 +1395,7 @@ void GcInfoEncoder::Build()
 
         for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
         {
-            if(pCurrent->CodeOffset > callSite)
+            if(pCurrent->CodeOffset >= callSite)
             {
                 couldBeLive |= liveState;
 
@@ -1396,7 +1407,7 @@ void GcInfoEncoder::Build()
             else
             {
                 UINT32 slotIndex = pCurrent->SlotId;
-                if(!IsAlwaysScratch(m_SlotTable[slotIndex]))
+                if(!DoNotTrackInPartiallyInterruptible(m_SlotTable[slotIndex]))
                 {
                     BYTE becomesLive = pCurrent->BecomesLive;
                     _ASSERTE((liveState.ReadBit(slotIndex) && !becomesLive)
@@ -1739,7 +1750,7 @@ void GcInfoEncoder::Build()
         {
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset > callSite)
+                if(pCurrent->CodeOffset >= callSite)
                 {
                     // Time to record the call site
 
@@ -1838,7 +1849,7 @@ void GcInfoEncoder::Build()
 
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset > callSite)
+                if(pCurrent->CodeOffset >= callSite)
                 {
                     // Time to encode the call site
 
@@ -1885,7 +1896,7 @@ void GcInfoEncoder::Build()
 
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset > callSite)
+                if(pCurrent->CodeOffset >= callSite)
                 {
                     // Time to encode the call site
                     GCINFO_WRITE_VECTOR(m_Info1, liveState, CallSiteStateSize);

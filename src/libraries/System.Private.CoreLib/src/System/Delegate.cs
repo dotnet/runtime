@@ -23,14 +23,30 @@ namespace System
             return a.CombineImpl(b);
         }
 
-        public static Delegate? Combine(params Delegate?[]? delegates)
-        {
-            if (delegates == null || delegates.Length == 0)
-                return null;
+        public static Delegate? Combine(params Delegate?[]? delegates) =>
+            Combine((ReadOnlySpan<Delegate?>)delegates);
 
-            Delegate? d = delegates[0];
-            for (int i = 1; i < delegates.Length; i++)
-                d = Combine(d, delegates[i]);
+        /// <summary>
+        /// Concatenates the invocation lists of an span of delegates.
+        /// </summary>
+        /// <param name="delegates">The span of delegates to combine.</param>
+        /// <returns>
+        /// A new delegate with an invocation list that concatenates the invocation lists of the delegates in the <paramref name="delegates"/> span.
+        /// Returns <see langword="null" /> if <paramref name="delegates"/> is <see langword="null" />,
+        /// if <paramref name="delegates"/> contains zero elements, or if every entry in <paramref name="delegates"/> is <see langword="null" />.
+        /// </returns>
+        public static Delegate? Combine(params ReadOnlySpan<Delegate?> delegates)
+        {
+            Delegate? d = null;
+
+            if (!delegates.IsEmpty)
+            {
+                d = delegates[0];
+                for (int i = 1; i < delegates.Length; i++)
+                {
+                    d = Combine(d, delegates[i]);
+                }
+            }
 
             return d;
         }
@@ -56,7 +72,7 @@ namespace System
 
         protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
 
-        public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
+        public virtual Delegate[] GetInvocationList() => [this];
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.

@@ -28,26 +28,17 @@ void Compiler::fgPrintEdgeWeights()
 
                 printf(FMT_BB " ", bSrc->bbNum);
 
-                if (edge->edgeWeightMin() < BB_MAX_WEIGHT)
+                const weight_t weight = edge->getLikelyWeight();
+
+                if (weight < BB_MAX_WEIGHT)
                 {
-                    printf("(%f", edge->edgeWeightMin());
+                    printf("(%f)", weight);
                 }
                 else
                 {
-                    printf("(MAX");
+                    printf("(MAX)");
                 }
-                if (edge->edgeWeightMin() != edge->edgeWeightMax())
-                {
-                    if (edge->edgeWeightMax() < BB_MAX_WEIGHT)
-                    {
-                        printf("..%f", edge->edgeWeightMax());
-                    }
-                    else
-                    {
-                        printf("..MAX");
-                    }
-                }
-                printf(")");
+
                 if (edge->getNextPredEdge() != nullptr)
                 {
                     printf(", ");
@@ -65,7 +56,7 @@ void Compiler::fgPrintEdgeWeights()
 
 #ifdef DEBUG
 
-void Compiler::fgDebugCheckUpdate()
+void Compiler::fgDebugCheckUpdate(const bool doAggressiveCompaction)
 {
     if (!compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
     {
@@ -148,7 +139,7 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlocks(block, block->Next()))
+        if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
@@ -379,12 +370,12 @@ namespace
 {
 const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
 {
-    int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
+    int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
     if (utf8Len == 0)
         return nullptr;
 
     char* alloc = (char*)allocator.allocate<char>(utf8Len);
-    if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
+    if (0 == WideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
         return nullptr;
 
     return alloc;
@@ -735,7 +726,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
     JITDUMP("Writing out flow graph %s phase %s\n", (pos == PhasePosition::PrePhase) ? "before" : "after",
             PhaseNames[phase]);
 
-    bool        validWeights  = fgHaveValidEdgeWeights;
     double      weightDivisor = (double)BasicBlock::getCalledCount(this);
     const char* escapedString;
     const char* regionString = "NONE";
@@ -790,14 +780,6 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
         if (fgHasLoops)
         {
             fprintf(fgxFile, "\n    hasLoops=\"true\"");
-        }
-        if (validWeights)
-        {
-            fprintf(fgxFile, "\n    validEdgeWeights=\"true\"");
-            if (!fgSlopUsedInEdgeWeights && !fgRangeUsedInEdgeWeights)
-            {
-                fprintf(fgxFile, "\n    exactEdgeWeights=\"true\"");
-            }
         }
         if (fgFirstColdBlock != nullptr)
         {
@@ -1081,11 +1063,8 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                         fprintf(fgxFile, " [");
                     }
 
-                    if (validWeights)
-                    {
-                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
-                        fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
-                    }
+                    const weight_t edgeWeight = edge->getLikelyWeight();
+                    fprintf(fgxFile, "%slabel=\"%7.2f\"", sep, (double)edgeWeight / weightDivisor);
 
                     fprintf(fgxFile, "];\n");
                 }
@@ -1106,32 +1085,22 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                             fprintf(fgxFile, "\n            switchDefault=\"true\"");
                         }
                     }
-                    if (validWeights)
+
+                    const weight_t edgeWeight = edge->getLikelyWeight();
+                    fprintf(fgxFile, "\n            weight=");
+                    fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
+
+                    if (edgeWeight > 0)
                     {
-                        weight_t edgeWeight = (edge->edgeWeightMin() + edge->edgeWeightMax()) / 2;
-                        fprintf(fgxFile, "\n            weight=");
-                        fprintfDouble(fgxFile, ((double)edgeWeight) / weightDivisor);
-
-                        if (edge->edgeWeightMin() != edge->edgeWeightMax())
+                        if (edgeWeight < bSource->bbWeight)
                         {
-                            fprintf(fgxFile, "\n            minWeight=");
-                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMin()) / weightDivisor);
-                            fprintf(fgxFile, "\n            maxWeight=");
-                            fprintfDouble(fgxFile, ((double)edge->edgeWeightMax()) / weightDivisor);
+                            fprintf(fgxFile, "\n            out=");
+                            fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
                         }
-
-                        if (edgeWeight > 0)
+                        if (edgeWeight < bTarget->bbWeight)
                         {
-                            if (edgeWeight < bSource->bbWeight)
-                            {
-                                fprintf(fgxFile, "\n            out=");
-                                fprintfDouble(fgxFile, ((double)edgeWeight) / sourceWeightDivisor);
-                            }
-                            if (edgeWeight < bTarget->bbWeight)
-                            {
-                                fprintf(fgxFile, "\n            in=");
-                                fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
-                            }
+                            fprintf(fgxFile, "\n            in=");
+                            fprintfDouble(fgxFile, ((double)edgeWeight) / targetWeightDivisor);
                         }
                     }
                 }
@@ -1813,13 +1782,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                                      int               blockTargetFieldWidth /* = 21 */,
                                      int               ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags            = block->GetFlagsRaw();
-    unsigned               bbNumMax         = fgBBNumMax;
-    int                    maxBlockNumWidth = CountDigits(bbNumMax);
-    maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
-    int blockNumWidth                       = CountDigits(block->bbNum);
-    blockNumWidth                           = max(blockNumWidth, 2);
-    int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
+    const uint64_t flags            = block->GetFlagsRaw();
+    unsigned       bbNumMax         = fgBBNumMax;
+    int            maxBlockNumWidth = CountDigits(bbNumMax);
+    maxBlockNumWidth                = max(maxBlockNumWidth, 2);
+    int blockNumWidth               = CountDigits(block->bbNum);
+    blockNumWidth                   = max(blockNumWidth, 2);
+    int blockNumPadding             = maxBlockNumWidth - blockNumWidth;
 
     // Instead of displaying a block number, should we instead display "*" when the specified block is
     // the next block?
@@ -3391,37 +3360,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             break;
 
         case GT_IND:
-            // Do we have a constant integer address as op1 that is also a handle?
-            if (op1->IsIconHandle())
-            {
-                if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
-                {
-                    actualFlags |= GTF_IND_INVARIANT;
-                }
-                if ((tree->gtFlags & GTF_IND_NONFAULTING) != 0)
-                {
-                    actualFlags |= GTF_IND_NONFAULTING;
-                }
-
-                GenTreeFlags handleKind = op1->GetIconHandleFlag();
-
-                // Some of these aren't handles to invariant data...
-                if (GenTree::HandleKindDataIsInvariant(handleKind) && (handleKind != GTF_ICON_FTN_ADDR))
-                {
-                    expectedFlags |= GTF_IND_INVARIANT;
-                }
-                else
-                {
-                    // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
-                    // fail to set it in a number of situations, and so this check is disabled.
-                    // TODO: enable checking of GTF_GLOB_REF.
-                    // expectedFlags |= GTF_GLOB_REF;
-                }
-
-                // Currently we expect all indirections with constant addresses to be nonfaulting.
-                expectedFlags |= GTF_IND_NONFAULTING;
-            }
-
             assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
             break;
 
@@ -3490,6 +3428,14 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 
 #if defined(TARGET_ARM64)
                     case NI_ArmBase_Yield:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                    case NI_Sve_GatherPrefetch8Bit:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;

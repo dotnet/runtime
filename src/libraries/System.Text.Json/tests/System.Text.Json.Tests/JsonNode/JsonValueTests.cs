@@ -1,9 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Text.Json.Serialization;
-using System.Xml.Linq;
+using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
 namespace System.Text.Json.Nodes.Tests
@@ -378,6 +380,104 @@ namespace System.Text.Json.Nodes.Tests
             JsonNodeTests.AssertNotDeepEqual(JsonValue.Create(10), JsonValue.Create("10"));
         }
 
+        [Theory]
+        [InlineData("-0.0", "0")]
+        [InlineData("0", "0.0000e4")]
+        [InlineData("0", "0.0000e-4")]
+        [InlineData("1", "1.0")]
+        [InlineData("1", "1e0")]
+        [InlineData("1", "1.0000")]
+        [InlineData("1", "1.0000e0")]
+        [InlineData("1", "0.10000e1")]
+        [InlineData("1", "10.0000e-1")]
+        [InlineData("10001", "1.0001e4")]
+        [InlineData("10001e-3", "1.0001e1")]
+        [InlineData("1", "0.1e1")]
+        [InlineData("0.1", "1e-1")]
+        [InlineData("0.001", "1e-3")]
+        [InlineData("1e9", "1000000000")]
+        [InlineData("11", "1.100000000e1")]
+        [InlineData("3.141592653589793", "3141592653589793E-15")]
+        [InlineData("0.000000000000000000000000000000000000000001", "1e-42")]
+        [InlineData("1000000000000000000000000000000000000000000", "1e42")]
+        [InlineData("-1.1e3", "-1100")]
+        [InlineData("79228162514264337593543950336", "792281625142643375935439503360e-1")] // decimal.MaxValue + 1
+        [InlineData("79228162514.264337593543950336", "792281625142643375935439503360e-19")]
+        [InlineData("1.75e+300", "1.75E+300")] // Variations in exponent casing
+        [InlineData( // > 256 digits
+            "1.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+              "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+              "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+              "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001" ,
+
+            "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+             "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+             "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+             "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001" + "E-512")]
+        public static void DeepEqualsNumericType(string leftStr, string rightStr)
+        {
+            JsonNode left = JsonNode.Parse(leftStr);
+            JsonNode right = JsonNode.Parse(rightStr);
+
+            JsonNodeTests.AssertDeepEqual(left, right);
+        }
+
+        [Theory]
+        [InlineData("0", "1")]
+        [InlineData("1", "-1")]
+        [InlineData("1.1", "-1.1")]
+        [InlineData("1.1e5", "-1.1e5")]
+        [InlineData("0", "1e-1024")]
+        [InlineData("1", "0.1")]
+        [InlineData("1", "1.1")]
+        [InlineData("1", "1e1")]
+        [InlineData("1", "1.00001")]
+        [InlineData("1", "1.0000e1")]
+        [InlineData("1", "0.1000e-1")]
+        [InlineData("1", "10.0000e-2")]
+        [InlineData("10001", "1.0001e3")]
+        [InlineData("10001e-3", "1.0001e2")]
+        [InlineData("1", "0.1e2")]
+        [InlineData("0.1", "1e-2")]
+        [InlineData("0.001", "1e-4")]
+        [InlineData("1e9", "1000000001")]
+        [InlineData("11", "1.100000001e1")]
+        [InlineData("0.000000000000000000000000000000000000000001", "1e-43")]
+        [InlineData("1000000000000000000000000000000000000000000", "1e43")]
+        [InlineData("-1.1e3", "-1100.1")]
+        [InlineData("79228162514264337593543950336", "7922816251426433759354395033600e-1")] // decimal.MaxValue + 1
+        [InlineData("79228162514.264337593543950336", "7922816251426433759354395033601e-19")]
+        [InlineData("1.75e+300", "1.75E+301")] // Variations in exponent casing
+        [InlineData("1e2147483647", "1e-2147483648")] // int.MaxValue, int.MinValue exponents
+        [InlineData( // > 256 digits
+            "1.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+              "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+              "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+              "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+
+            "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+             "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+             "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+             "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003" + "E-512")]
+        public static void NotDeepEqualsNumericType(string leftStr, string rightStr)
+        {
+            JsonNode left = JsonNode.Parse(leftStr);
+            JsonNode right = JsonNode.Parse(rightStr);
+
+            JsonNodeTests.AssertNotDeepEqual(left, right);
+        }
+
+        [Theory]
+        [InlineData(int.MinValue - 1L)]
+        [InlineData(int.MaxValue + 1L)]
+        [InlineData(long.MinValue)]
+        [InlineData(long.MaxValue)]
+        public static void DeepEquals_ExponentExceedsInt32_ThrowsArgumentOutOfRangeException(long exponent)
+        {
+            JsonNode node = JsonNode.Parse($"1e{exponent}");
+            Assert.Throws<ArgumentOutOfRangeException>(() => JsonNode.DeepEquals(node, node));
+        }
+
         [Fact]
         public static void DeepEqualsJsonElement()
         {
@@ -417,6 +517,20 @@ namespace System.Text.Json.Nodes.Tests
             }
         }
 
+        [Theory]
+        [InlineData(JsonNumberHandling.Strict, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.AllowReadingFromString, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.AllowNamedFloatingPointLiterals, JsonValueKind.Number)]
+        [InlineData(JsonNumberHandling.WriteAsString, JsonValueKind.String)]
+        [InlineData(JsonNumberHandling.WriteAsString | JsonNumberHandling.AllowNamedFloatingPointLiterals, JsonValueKind.String)]
+        public static void GetValueKind_NumberHandling(JsonNumberHandling numberHandling, JsonValueKind expectedKind)
+        {
+            JsonSerializerOptions options = new(JsonSerializerOptions.Default) { NumberHandling = numberHandling };
+            JsonTypeInfo<int> typeInfo = (JsonTypeInfo<int>)options.GetTypeInfo(typeof(int));
+            JsonValue value = JsonValue.Create(42, typeInfo);
+            Assert.Equal(expectedKind, value.GetValueKind());
+        }
+
         [Fact]
         public static void DeepEquals_EscapedString()
         {
@@ -428,7 +542,89 @@ namespace System.Text.Json.Nodes.Tests
         private class Student
         {
             public int Id { get; set; }
-            public string Name { get; set; }
+            public string? Name { get; set; }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_ReturnExpectedTypeKind<T>(T value, JsonValueKind expectedKind)
+        {
+            JsonNode node = JsonValue.Create(value);
+            Assert.Equal(expectedKind, node.GetValueKind());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_EqualThemselves<T>(T value, JsonValueKind _)
+        {
+            JsonNode node = JsonValue.Create(value);
+            Assert.True(JsonNode.DeepEquals(node, node));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_EqualClonedValue<T>(T value, JsonValueKind _)
+        {
+            JsonNode node = JsonValue.Create(value);
+            JsonNode clone = node.DeepClone();
+
+            Assert.True(JsonNode.DeepEquals(clone, clone));
+            Assert.True(JsonNode.DeepEquals(node, clone));
+            Assert.True(JsonNode.DeepEquals(clone, node));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetPrimitiveTypes))]
+        public static void PrimitiveTypes_EqualDeserializedValue<T>(T value, JsonValueKind _)
+        {
+            JsonNode node = JsonValue.Create(value);
+            JsonNode clone = JsonSerializer.Deserialize<JsonNode>(node.ToJsonString());
+
+            Assert.True(JsonNode.DeepEquals(clone, clone));
+            Assert.True(JsonNode.DeepEquals(node, clone));
+            Assert.True(JsonNode.DeepEquals(clone, node));
+        }
+
+        public static IEnumerable<object[]> GetPrimitiveTypes()
+        {
+            yield return Wrap(false, JsonValueKind.False);
+            yield return Wrap(true, JsonValueKind.True);
+            yield return Wrap((bool?)false, JsonValueKind.False);
+            yield return Wrap((bool?)true, JsonValueKind.True);
+            yield return Wrap((byte)42, JsonValueKind.Number);
+            yield return Wrap((sbyte)42, JsonValueKind.Number);
+            yield return Wrap((short)42, JsonValueKind.Number);
+            yield return Wrap((ushort)42, JsonValueKind.Number);
+            yield return Wrap(42, JsonValueKind.Number);
+            yield return Wrap((int?)42, JsonValueKind.Number);
+            yield return Wrap((uint)42, JsonValueKind.Number);
+            yield return Wrap((long)42, JsonValueKind.Number);
+            yield return Wrap((ulong)42, JsonValueKind.Number);
+            yield return Wrap(42.0f, JsonValueKind.Number);
+            yield return Wrap(42.0, JsonValueKind.Number);
+            yield return Wrap(42.0m, JsonValueKind.Number);
+            yield return Wrap('A', JsonValueKind.String);
+            yield return Wrap((char?)'A', JsonValueKind.String);
+            yield return Wrap("A", JsonValueKind.String);
+            yield return Wrap(new byte[] { 1, 2, 3 }, JsonValueKind.String);
+            yield return Wrap(new DateTimeOffset(2024, 06, 20, 10, 29, 0, TimeSpan.Zero), JsonValueKind.String);
+            yield return Wrap(new DateTime(2024, 06, 20, 10, 29, 0), JsonValueKind.String);
+            yield return Wrap(Guid.Empty, JsonValueKind.String);
+            yield return Wrap((Guid?)Guid.Empty, JsonValueKind.String);
+            yield return Wrap(new Uri("http://example.com"), JsonValueKind.String);
+            yield return Wrap(new Version(1, 2, 3, 4), JsonValueKind.String);
+            yield return Wrap(BindingFlags.Public, JsonValueKind.Number);
+            yield return Wrap((BindingFlags?)BindingFlags.Public, JsonValueKind.Number);
+#if NET
+            yield return Wrap(Half.MaxValue, JsonValueKind.Number);
+            yield return Wrap((Int128)42, JsonValueKind.Number);
+            yield return Wrap((Int128)42, JsonValueKind.Number);
+            yield return Wrap((Memory<byte>)new byte[] { 1, 2, 3 }, JsonValueKind.String);
+            yield return Wrap((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3 }, JsonValueKind.String);
+            yield return Wrap(new DateOnly(2024, 06, 20), JsonValueKind.String);
+            yield return Wrap(new TimeOnly(10, 29), JsonValueKind.String);
+#endif
+            static object[] Wrap<T>(T value, JsonValueKind expectedKind) => [value, expectedKind];
         }
     }
 }

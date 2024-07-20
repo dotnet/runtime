@@ -21,9 +21,10 @@ namespace ILLink.Shared.DataFlow
 
 	public enum ConditionKind
 	{
-		None,
+		Unconditional,
 		WhenFalse,
 		WhenTrue,
+		Unknown
 	}
 
 	public interface IRegion<TRegion> : IEquatable<TRegion>
@@ -33,7 +34,6 @@ namespace ILLink.Shared.DataFlow
 
 	public interface IBlock<TBlock> : IEquatable<TBlock>
 	{
-		ConditionKind ConditionKind { get; }
 	}
 
 	public interface IControlFlowGraph<TBlock, TRegion>
@@ -45,7 +45,11 @@ namespace ILLink.Shared.DataFlow
 		public readonly struct ControlFlowBranch : IEquatable<ControlFlowBranch>
 		{
 			public readonly TBlock Source;
-			private readonly TBlock? Destination;
+
+			// Might be null in a 'throw' branch.
+			public readonly TBlock? Destination;
+
+			public readonly ConditionKind ConditionKind;
 
 			// The finally regions exited when control flows through this edge.
 			// For example:
@@ -62,13 +66,13 @@ namespace ILLink.Shared.DataFlow
 			// Source() to the block that calls Target(), which exits both
 			// finally regions.
 			public readonly ImmutableArray<TRegion> FinallyRegions;
-			public readonly bool IsConditional;
-			public ControlFlowBranch (TBlock source, TBlock? destination, ImmutableArray<TRegion> finallyRegions, bool isConditional)
+
+			public ControlFlowBranch (TBlock source, TBlock? destination, ImmutableArray<TRegion> finallyRegions, ConditionKind conditionKind)
 			{
 				Source = source;
 				Destination = destination;
 				FinallyRegions = finallyRegions;
-				IsConditional = isConditional;
+				ConditionKind = conditionKind;
 			}
 
 			public bool Equals (ControlFlowBranch other)
@@ -76,7 +80,7 @@ namespace ILLink.Shared.DataFlow
 				if (!Source.Equals (other.Source))
 					return false;
 
-				if (IsConditional != other.IsConditional)
+				if (ConditionKind != other.ConditionKind)
 					return false;
 
 				if (Destination == null)
@@ -95,7 +99,7 @@ namespace ILLink.Shared.DataFlow
 				return HashUtils.Combine (
 					Source.GetHashCode (),
 					Destination?.GetHashCode () ?? typeof (ControlFlowBranch).GetHashCode (),
-					IsConditional.GetHashCode ());
+					ConditionKind.GetHashCode ());
 			}
 		}
 
@@ -108,9 +112,7 @@ namespace ILLink.Shared.DataFlow
 		// control flow from try -> finally or from catch -> finally.
 		IEnumerable<ControlFlowBranch> GetPredecessors (TBlock block);
 
-		ControlFlowBranch? GetConditionalSuccessor (TBlock block);
-
-		ControlFlowBranch? GetFallThroughSuccessor (TBlock block);
+		IEnumerable<ControlFlowBranch> GetSuccessors (TBlock block);
 
 		bool TryGetEnclosingTryOrCatchOrFilter (TBlock block, [NotNullWhen (true)] out TRegion? tryOrCatchOrFilterRegion);
 

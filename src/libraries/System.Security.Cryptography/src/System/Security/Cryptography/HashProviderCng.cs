@@ -3,8 +3,10 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
+using Internal.Cryptography;
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
 using BCryptOpenAlgorithmProviderFlags = Interop.BCrypt.BCryptOpenAlgorithmProviderFlags;
 using NTSTATUS = Interop.BCrypt.NTSTATUS;
@@ -59,6 +61,22 @@ namespace System.Security.Cryptography
                     _reusable = true;
                 }
             }
+        }
+
+        private HashProviderCng(
+            SafeBCryptAlgorithmHandle algorithmHandle,
+            SafeBCryptHashHandle hashHandle,
+            byte[]? key,
+            bool reusable,
+            int hashSize,
+            bool running)
+        {
+            _hAlgorithm = algorithmHandle;
+            _hHash = hashHandle;
+            _key = key.CloneByteArray();
+            _reusable = reusable;
+            _hashSize = hashSize;
+            _running = running;
         }
 
         public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
@@ -118,11 +136,22 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override HashProviderCng Clone()
+        {
+            using (ConcurrencyBlock.Enter(ref _block))
+            {
+                SafeBCryptHashHandle clone = Interop.BCrypt.BCryptDuplicateHash(_hHash);
+                return new HashProviderCng(_hAlgorithm, clone, _key, _reusable, _hashSize, _running);
+            }
+        }
+
         public sealed override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                DestroyHash();
+                // Not disposing of _hAlgorithm as we got this from a cache. So it's not ours to Dispose().
+                _hHash.Dispose();
+
                 if (_key != null)
                 {
                     byte[] key = _key;
@@ -134,13 +163,17 @@ namespace System.Security.Cryptography
 
         public sealed override int HashSizeInBytes => _hashSize;
 
+        [MemberNotNull(nameof(_hHash))]
         public override void Reset()
         {
             // Reset does not need to use ConcurrencyBlock. It either no-ops, or creates an entirely new handle, exchanges
             // them, and disposes of the old handle. We don't need to block concurrency on the Dispose because SafeHandle
             // does that.
             if (_reusable && !_running)
+            {
+                Debug.Assert(_hHash is not null);
                 return;
+            }
 
             BCryptCreateHashFlags flags = _reusable ?
                 BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG :
@@ -159,20 +192,8 @@ namespace System.Security.Cryptography
             previousHash?.Dispose();
         }
 
-        private void DestroyHash()
-        {
-            SafeBCryptHashHandle? hHash = _hHash;
-            if (hHash != null)
-            {
-                _hHash = null;
-                hHash.Dispose();
-            }
-
-            // Not disposing of _hAlgorithm as we got this from a cache. So it's not ours to Dispose().
-        }
-
         private readonly SafeBCryptAlgorithmHandle _hAlgorithm;
-        private SafeBCryptHashHandle? _hHash;
+        private SafeBCryptHashHandle _hHash;
         private byte[]? _key;
         private readonly bool _reusable;
 

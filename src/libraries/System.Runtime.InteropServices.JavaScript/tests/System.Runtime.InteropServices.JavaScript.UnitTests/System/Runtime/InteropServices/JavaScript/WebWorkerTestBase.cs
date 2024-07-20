@@ -180,6 +180,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             new NamedCall { IsBlocking = false, Name = "new Timer", Call = delegate (CancellationToken ct) {
                 new Timer((_) => { }, null, 1, -1);
             }},
+            new NamedCall { IsBlocking = false, Name = "JSType.DiscardNoWait", Call = delegate (CancellationToken ct) {
+                WebWorkerTestHelper.Log("DiscardNoWait");
+            }},
 
             // things which should throw PNSE on sync JSExport and JSWebWorker
             new NamedCall { IsBlocking = true, Name = "Task.Wait", Call = delegate (CancellationToken ct) { Task.Delay(30, ct).Wait(ct); }},

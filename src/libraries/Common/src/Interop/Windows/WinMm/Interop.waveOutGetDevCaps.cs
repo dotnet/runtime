@@ -3,7 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-#if NET7_0_OR_GREATER
+#if NET
 using System.Runtime.InteropServices.Marshalling;
 #endif
 
@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class WinMM
     {
 #pragma warning disable CA1823 // unused fields
-#if NET7_0_OR_GREATER
+#if NET
         [NativeMarshalling(typeof(Marshaller))]
 #endif
         internal struct WAVEOUTCAPS
@@ -27,7 +27,7 @@ internal static partial class Interop
             private ushort wChannels;
             private ushort wReserved1;
             private ushort dwSupport;
-#if NET7_0_OR_GREATER
+#if NET
             [CustomMarshaller(typeof(WAVEOUTCAPS), MarshalMode.Default, typeof(Marshaller))]
             public static class Marshaller
             {

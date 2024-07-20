@@ -78,7 +78,7 @@ m_cbRec(0)
 HRESULT Target_CMiniTableDef::ReadFrom(DataTargetReader & reader)
 {
     HRESULT hr = S_OK;
-    CORDB_ADDRESS pColDefs = NULL;
+    CORDB_ADDRESS pColDefs = 0;
     IfFailRet(reader.ReadPointer(&pColDefs));
     IfFailRet(reader.Read8(&m_cCols));
     IfFailRet(reader.Read8(&m_iKey));

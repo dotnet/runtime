@@ -24,6 +24,8 @@ export const ENVIRONMENT_IS_SIDECAR = ENVIRONMENT_IS_WEB_WORKER && typeof dotnet
 export const ENVIRONMENT_IS_WORKER = ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_SIDECAR; // we redefine what ENVIRONMENT_IS_WORKER, we replace it in emscripten internals, so that sidecar works
 export const ENVIRONMENT_IS_WEB = typeof window == "object" || (ENVIRONMENT_IS_WEB_WORKER && !ENVIRONMENT_IS_NODE);
 export const ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE;
+export const isFirefox = !!(ENVIRONMENT_IS_WEB && navigator.userAgent.includes("Firefox"));
+export const isChromium = !!(ENVIRONMENT_IS_WEB && navigator.userAgentData && navigator.userAgentData.brands.some(b => b.brand === "Google Chrome" || b.brand === "Microsoft Edge" || b.brand === "Chromium"));
 
 if (ENVIRONMENT_IS_NODE && process.versions.node.split(".")[0] < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
@@ -51,8 +53,14 @@ if (!ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WEB && typeof globalThis.crypto === 
     }
 }
 
-if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER) {
-    console.log("Running '" + globalThis.navigator.userAgent + "' at: \n" + globalThis.location.href + "\n");
+if (ENVIRONMENT_IS_WEB && isFirefox) {
+    Error.stackTraceLimit = 1000;
+}
+
+// as soon as possible, see https://github.com/dotnet/runtime/issues/101169
+if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && !isFirefox) {
+    console.log("Running in: " + globalThis.navigator.userAgent);
+    console.log("Running at: " + globalThis.location.href);
 }
 
 let v8args;
@@ -179,22 +187,27 @@ function processArguments(incomingArguments, runArgs) {
     // cheap way to let the testing infrastructure know we're running in a browser context (or not)
     runArgs.environmentVariables["IsBrowserDomSupported"] = ENVIRONMENT_IS_WEB.toString().toLowerCase();
     runArgs.environmentVariables["IsNodeJS"] = ENVIRONMENT_IS_NODE.toString().toLowerCase();
+    runArgs.environmentVariables["IsFirefox"] = isFirefox.toString().toLowerCase();
+    runArgs.environmentVariables["IsChromium"] = isChromium.toString().toLowerCase();
 
     return runArgs;
 }
 
 // we may have dependencies on NPM packages, depending on the test case
 // some of them polyfill for browser built-in stuff
-function loadNodeModules(config, require, modulesToLoad) {
-    modulesToLoad.split(',').forEach(module => {
+async function loadNodeModules(config, modulesToLoad) {
+    await Promise.all(modulesToLoad.split(',').map(async module => {
         const { 0: moduleName, 1: globalAlias } = module.split(':');
 
-        let message = `Loading npm '${moduleName}'`;
-        let moduleExport = require(moduleName);
+        let message = `Loading npm '${moduleName} ${globalAlias}'`;
+        let moduleExport = await import(moduleName);
 
         if (globalAlias) {
             message += ` and attaching to global as '${globalAlias}'`;
             globalThis[globalAlias] = moduleExport;
+        } else if (moduleName == "ws") {
+            message += ' and attaching to global';
+            globalThis.WebSocket = moduleExport.WebSocket;
         } else if (moduleName == "node-fetch") {
             message += ' and attaching to global';
             globalThis.fetch = moduleExport.default;
@@ -207,7 +220,7 @@ function loadNodeModules(config, require, modulesToLoad) {
         }
 
         console.log(message);
-    });
+    }));
     // Must be after loading npm modules.
     config.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 }
@@ -264,8 +277,8 @@ function configureRuntime(dotnet, runArgs) {
         const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
         if (modulesToLoad) {
             dotnet.withModuleConfig({
-                onConfigLoaded: (config, { INTERNAL }) => {
-                    loadNodeModules(config, INTERNAL.require, modulesToLoad)
+                onConfigLoaded: async (config) => {
+                    await loadNodeModules(config, modulesToLoad)
                 }
             })
         }
@@ -312,6 +325,13 @@ async function run() {
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
 
+        // after console proxy was setup, see https://github.com/dotnet/runtime/issues/101169
+        if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_WORKER && isFirefox) {
+            console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
+            console.log("Running in: " + globalThis.navigator.userAgent);
+            console.log("Running at: " + globalThis.location.href);
+        }
+
         console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {
@@ -348,7 +368,7 @@ async function run() {
                 const main_assembly_name = runArgs.applicationArguments[1];
                 const app_args = runArgs.applicationArguments.slice(2);
                 const result = await App.runtime.runMain(main_assembly_name, app_args);
-                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result}`);
+                console.log(`test-main.js exiting ${app_args.length > 1 ? main_assembly_name + " " + app_args[0] : main_assembly_name} with result ${result} and linear memory ${App.runtime.Module.HEAPU8.length} bytes`);
                 mono_exit(result);
             } catch (error) {
                 if (error.name != "ExitStatus") {

@@ -371,7 +371,16 @@ namespace System.IO
         public static string Combine(params string[] paths)
         {
             ArgumentNullException.ThrowIfNull(paths);
+            return Combine((ReadOnlySpan<string>)paths);
+        }
 
+        /// <summary>
+        /// Combines a span of strings into a path.
+        /// </summary>
+        /// <param name="paths">A span of parts of the path.</param>
+        /// <returns>The combined paths.</returns>
+        public static string Combine(params ReadOnlySpan<string> paths)
+        {
             int maxSize = 0;
             int firstComponent = 0;
 
@@ -520,8 +529,17 @@ namespace System.IO
         public static string Join(params string?[] paths)
         {
             ArgumentNullException.ThrowIfNull(paths);
+            return Join((ReadOnlySpan<string?>)paths);
+        }
 
-            if (paths.Length == 0)
+        /// <summary>
+        /// Concatenates a span of paths into a single path.
+        /// </summary>
+        /// <param name="paths">A span of paths.</param>
+        /// <returns>The concatenated path.</returns>
+        public static string Join(params ReadOnlySpan<string?> paths)
+        {
+            if (paths.IsEmpty)
             {
                 return string.Empty;
             }
@@ -713,7 +731,6 @@ namespace System.IO
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             var state = new JoinInternalState
             {
                 ReadOnlySpanPtr1 = (IntPtr)(&first),
@@ -764,7 +781,6 @@ namespace System.IO
                     Debug.Assert(fourth.Length == destination.Length);
                     fourth.CopyTo(destination);
                 });
-#pragma warning restore CS8500
         }
 
         private struct JoinInternalState // used to avoid rooting ValueTuple`7

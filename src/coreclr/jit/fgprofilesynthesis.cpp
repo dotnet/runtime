@@ -146,9 +146,12 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
+
     if (m_approximate)
     {
         JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
+        m_comp->Metrics.ProfileInconsistentInitially++;
     }
 
 #ifdef DEBUG
@@ -811,7 +814,12 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 
                 for (FlowEdge* const edge : block->PredEdges())
                 {
-                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
+                    BasicBlock* const sourceBlock = edge->getSourceBlock();
+
+                    // Ignore flow across EH, or from preds not in the loop.
+                    // Latter can happen if there are unreachable blocks that flow into the loop.
+                    //
+                    if (BasicBlock::sameHndRegion(block, sourceBlock) && loop->ContainsBlock(sourceBlock))
                     {
                         newWeight += edge->getLikelyWeight();
                     }

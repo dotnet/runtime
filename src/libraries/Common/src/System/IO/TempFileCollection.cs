@@ -153,7 +153,7 @@ namespace System.IO.Internal
             }
         }
 
-#if NET7_0_OR_GREATER
+#if NET
         private string GetTempDirectory()
         {
             _createdTempDirectory = true;

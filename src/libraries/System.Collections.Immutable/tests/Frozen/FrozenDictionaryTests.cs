@@ -361,6 +361,35 @@ namespace System.Collections.Frozen.Tests
         }
 
         protected override string CreateTValue(int seed) => CreateTKey(seed);
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(25)]
+        [InlineData(50)]
+        [InlineData(75)]
+        [InlineData(100)]
+        public void ContainsKey_WithNonAscii(int percentageWithNonAscii)
+        {
+            Random rand = new(42);
+
+            Dictionary<string, string> expected = new(GetKeyIEqualityComparer());
+            for (int i = 0; i < 100; i++)
+            {
+                int stringLength = rand.Next(4, 30);
+                byte[] bytes = new byte[stringLength];
+                rand.NextBytes(bytes);
+                string value = Convert.ToBase64String(bytes);
+                if (rand.Next(100) < percentageWithNonAscii)
+                {
+                    value = value.Replace(value[rand.Next(value.Length)], '\u05D0');
+                }
+                expected.Add(value, value);
+            }
+
+            FrozenDictionary<string, string> actual = expected.ToFrozenDictionary(GetKeyIEqualityComparer());
+
+            Assert.All(expected, kvp => actual.ContainsKey(kvp.Key));
+        }
     }
 
     public class FrozenDictionary_Generic_Tests_string_string_Default : FrozenDictionary_Generic_Tests_string_string

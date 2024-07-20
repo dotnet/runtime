@@ -164,6 +164,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
+			// MyReflectOverType is not intrinsically understood by the analysis, so
+			// it doesn't satisfy the PublicFields | NonPublicFields requirement.
+			[ExpectedWarning ("IL2075")]
 			public static void Test ()
 			{
 				new MyReflectOverType (typeof (TestType)).GetFields (BindingFlags.Instance | BindingFlags.Public);
