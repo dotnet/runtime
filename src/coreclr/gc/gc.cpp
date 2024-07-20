@@ -21507,10 +21507,13 @@ int gc_heap::generation_to_condemn (int n_initial,
     }
 
 #ifdef USE_REGIONS
-    if (!try_get_new_free_region())
+    if (!check_only_p)
     {
-        dprintf (GTC_LOG, ("can't get an empty region -> full compacting"));
-        last_gc_before_oom = TRUE;
+        if (!try_get_new_free_region())
+        {
+            dprintf (GTC_LOG, ("can't get an empty region -> full compacting"));
+            last_gc_before_oom = TRUE;
+        }
     }
 #endif //USE_REGIONS
 
@@ -49370,7 +49373,6 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
     }                                                                                       \
 } while (false)
 
-#ifdef FEATURE_64BIT_ALIGNMENT
 // Allocate small object with an alignment requirement of 8-bytes.
 Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t flags)
 {
@@ -49436,7 +49438,6 @@ Object* AllocAlign8(alloc_context* acontext, gc_heap* hp, size_t size, uint32_t 
 
     return newAlloc;
 }
-#endif // FEATURE_64BIT_ALIGNMENT
 
 Object*
 GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_DCL)
@@ -49497,15 +49498,11 @@ GCHeap::Alloc(gc_alloc_context* context, size_t size, uint32_t flags REQD_ALIGN_
     }
     else
     {
-#ifdef FEATURE_64BIT_ALIGNMENT
         if (flags & GC_ALLOC_ALIGN8)
         {
             newAlloc = AllocAlign8 (acontext, hp, size, flags);
         }
         else
-#else
-        assert ((flags & GC_ALLOC_ALIGN8) == 0);
-#endif
         {
             newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext, flags);
         }

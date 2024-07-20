@@ -64,6 +64,10 @@ namespace ILCompiler.DependencyAnalysis
                     dependencies.Add(factory.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
                     dependencies.Add(factory.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
                 }
+                else
+                {
+                    dependencies.Add(factory.ExactMethodInstantiationsHashtableEntry(_method), "GVM Dependency - runtime lookups");
+                }
             }
 
             return dependencies;

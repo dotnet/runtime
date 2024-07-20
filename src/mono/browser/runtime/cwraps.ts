@@ -293,10 +293,10 @@ function cwrap (name: string, returnType: string | null, argTypes: string[] | un
             // Only attempt to do fast calls if all the args and the return type are either number or void
             (fastCwrapTypes.indexOf(returnType) >= 0) &&
             (!argTypes || argTypes.every(atype => fastCwrapTypes.indexOf(atype) >= 0)) &&
-            // Module["asm"] may not be defined yet if we are early enough in the startup process
+            // Module["wasmExports"] may not be defined yet if we are early enough in the startup process
             //  in that case, we need to rely on emscripten's lazy wrappers
-            Module["asm"]
-            ? <Function>((<any>Module["asm"])[name])
+            Module["wasmExports"]
+            ? <Function>((<any>Module["wasmExports"])[name])
             : undefined;
 
     // If the argument count for the wasm function doesn't match the signature, fall back to cwrap

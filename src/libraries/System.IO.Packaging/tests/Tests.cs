@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.IO.Packaging.Tests
 {
-    public class Tests : FileCleanupTestBase
+    public partial class Tests : FileCleanupTestBase
     {
         internal const string Mime_MediaTypeNames_Text_Xml = "text/xml";
         private const string Mime_MediaTypeNames_Image_Jpeg = "image/jpeg"; // System.Net.Mime.MediaTypeNames.Image.Jpeg
@@ -3958,6 +3958,23 @@ namespace System.IO.Packaging.Tests
 
                 Assert.Equal(expectedZipFileBitFlags, generalBitFlags);
                 Assert.Equal(expectedCompressionOption, part.CompressionOption);
+            }
+        }
+
+        [Fact]
+        public void Cannot_Modify_Package_On_Unseekable_Stream()
+        {
+            var ba = File.ReadAllBytes("plain.docx");
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                ms.Write(ba, 0, ba.Length);
+                ms.Seek(0, SeekOrigin.Begin);
+
+                using (WrappedStream ws = new WrappedStream(ms, true, true, false))
+                {
+                    Assert.Throws<ArgumentException>(() => Package.Open(ws, FileMode.Open, FileAccess.ReadWrite));
+                }
             }
         }
 

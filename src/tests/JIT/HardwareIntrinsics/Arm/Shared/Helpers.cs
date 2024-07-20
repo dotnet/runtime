@@ -4136,6 +4136,40 @@ namespace JIT.HardwareIntrinsics.Arm
             return ovf ? byte.MaxValue : result;
         }
 
+        public static double AddSequentialAcross(double[] op1, double[] op2, double[] mask = null)
+        {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<double>(1.0, op1.Length).ToArray();
+            double result = op1[0];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                if (mask[i] != 0.0)
+                {
+                    result += op2[i];
+                }
+            }
+
+            return result;
+        }
+
+        public static float AddSequentialAcross(float[] op1, float[] op2, float[] mask = null)
+        {
+            // If mask isn't provided, default to all true
+            mask = mask ?? Enumerable.Repeat<float>((float)1.0, op1.Length).ToArray();
+            float result = op1[0];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                if (mask[i] != 0.0)
+                {
+                    result += op2[i];
+                }
+            }
+
+            return result;
+        }
+
         public static sbyte NegateSaturate(sbyte op1) => SubtractSaturate((sbyte)0, op1);
 
         public static sbyte SubtractSaturate(sbyte op1, sbyte op2)
@@ -5200,6 +5234,51 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float MinNumberPairwise(float[] op1, float[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
+        public static float[] MultiplyAddRotateComplex(float[] op1, float[] op2, float[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (float ans1, float ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[real])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
+                    _ => (0.0f, 0.0f)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
+        public static float[] MultiplyAddRotateComplexBySelectedScalar(float[] op1, float[] op2, float[] op3, byte index, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (float op3Real, float op3Img) = (op3[index * 2], op3[(index * 2) + 1]);
+                (float ans1, float ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3Real), FusedMultiplyAdd(op1[img], op2[real], op3Img)),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3Img), FusedMultiplyAdd(op1[img], op2[img], op3Real)),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3Real), FusedMultiplySubtract(op1[img], op2[real], op3Img)),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3Img), FusedMultiplySubtract(op1[img], op2[img], op3Real)),
+                    _ => (0.0f, 0.0f)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static float MultiplyExtended(float op1, float op2)
         {
             bool inf1 = float.IsInfinity(op1);
@@ -5216,6 +5295,63 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 return op1 * op2;
             }
+        }
+
+        public static float TrigonometricMultiplyAddCoefficient(float op1, float op2, byte imm)
+        {
+            int index = (op2 < 0) ? (imm + 8) : imm;
+            uint coeff = index switch
+            {
+                 0 => 0x3f800000,
+                 1 => 0xbe2aaaab,
+                 2 => 0x3c088886,
+                 3 => 0xb95008b9,
+                 4 => 0x36369d6d,
+                 5 => 0x00000000,
+                 6 => 0x00000000,
+                 7 => 0x00000000,
+                 8 => 0x3f800000,
+                 9 => 0xbf000000,
+                10 => 0x3d2aaaa6,
+                11 => 0xbab60705,
+                12 => 0x37cd37cc,
+                13 => 0x00000000,
+                14 => 0x00000000,
+                15 => 0x00000000,
+                 _ => 0x00000000
+            };
+
+            return MathF.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt32BitsToSingle(coeff));
+        }
+
+        public static float TrigonometricSelectCoefficient(float op1, uint op2)
+        {
+            float result = ((op2 % 2) == 0) ? op1 : (float)1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static float TrigonometricStartingValue(float op1, uint op2)
+        {
+            float result = op1 * op1;
+
+            if (float.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
         }
 
         public static float FPExponentialAccelerator(uint op1)
@@ -5320,6 +5456,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static double MinNumberPairwise(double[] op1, double[] op2, int i) => Pairwise(MinNumber, op1, op2, i);
 
+        public static double[] MultiplyAddRotateComplex(double[] op1, double[] op2, double[] op3, byte imm)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+                (double ans1, double ans2) = imm switch
+                {
+                    0 => (FusedMultiplyAdd(op1[real], op2[real], op3[real]), FusedMultiplyAdd(op1[img], op2[real], op3[img])),
+                    1 => (FusedMultiplySubtract(op1[real], op2[img], op3[img]), FusedMultiplyAdd(op1[img], op2[img], op3[real])),
+                    2 => (FusedMultiplySubtract(op1[real], op2[real], op3[real]), FusedMultiplySubtract(op1[img], op2[real], op3[img])),
+                    3 => (FusedMultiplyAdd(op1[real], op2[img], op3[img]), FusedMultiplySubtract(op1[img], op2[img], op3[real])),
+                    _ => (0.0, 0.0)
+                };
+
+                op1[real] = ans1;
+                op1[img] = ans2;
+            }
+
+            return op1;
+        }
+
         public static double MultiplyExtended(double op1, double op2)
         {
             bool inf1 = double.IsInfinity(op1);
@@ -5338,6 +5496,63 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
+        public static double TrigonometricMultiplyAddCoefficient(double op1, double op2, byte imm)
+        {
+            int index = (op2 < 0) ? (imm + 8) : imm;
+            ulong coeff = index switch
+            {
+                 0 => 0x3ff0000000000000,
+                 1 => 0xbfc5555555555543,
+                 2 => 0x3f8111111110f30c,
+                 3 => 0xbf2a01a019b92fc6,
+                 4 => 0x3ec71de351f3d22b,
+                 5 => 0xbe5ae5e2b60f7b91,
+                 6 => 0x3de5d8408868552f,
+                 7 => 0x0000000000000000,
+                 8 => 0x3ff0000000000000,
+                 9 => 0xbfe0000000000000,
+                10 => 0x3fa5555555555536,
+                11 => 0xbf56c16c16c13a0b,
+                12 => 0x3efa01a019b1e8d8,
+                13 => 0xbe927e4f7282f468,
+                14 => 0x3e21ee96d2641b13,
+                15 => 0xbda8f76380fbb401,
+                 _ => 0x0000000000000000
+            };
+
+            return Math.FusedMultiplyAdd(op1, Math.Abs(op2), BitConverter.UInt64BitsToDouble(coeff));
+        }
+
+        public static double TrigonometricSelectCoefficient(double op1, ulong op2)
+        {
+            double result = ((op2 % 2) == 0) ? op1 : 1.0;
+            bool isNegative = (op2 & 0b10) == 0b10;
+            
+            if (isNegative != (result < 0))
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+
+        public static double TrigonometricStartingValue(double op1, ulong op2)
+        {
+            double result = op1 * op1;
+
+            if (double.IsNaN(result))
+            {
+                return result;
+            }
+
+            if ((op2 % 2) == 1)
+            {
+                result *= -1;
+            }
+
+            return result;
+        }
+        
         public static double FPExponentialAccelerator(ulong op1)
         {
             ulong index = op1 & 0b111111;
@@ -5936,6 +6151,28 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float AddPairwise(float[] op1, float[] op2, int i) => Pairwise(Add, op1, op2, i);
 
+        public static float[] AddRotateComplex(float[] op1, float[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
+                }
+                else
+                {
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
+                }
+            }
+
+            return op1;
+        }
+
         public static float Max(float op1, float op2) => Math.Max(op1, op2);
 
         public static float MaxPairwise(float[] op1, int i) => Pairwise(Max, op1, i);
@@ -5985,6 +6222,28 @@ namespace JIT.HardwareIntrinsics.Arm
         public static double AddPairwise(double[] op1, int i) => Pairwise(Add, op1, i);
 
         public static double AddPairwise(double[] op1, double[] op2, int i) => Pairwise(Add, op1, op2, i);
+
+        public static double[] AddRotateComplex(double[] op1, double[] op2, byte rot)
+        {
+            for (int i = 0; i < op1.Length; i += 2)
+            {
+                int real = i;
+                int img = i + 1;
+
+                if (rot == 0)
+                {
+                    op1[real] -= op2[img];
+                    op1[img] += op2[real];
+                }
+                else
+                {
+                    op1[real] += op2[img];
+                    op1[img] -= op2[real];
+                }
+            }
+
+            return op1;
+        }
 
         public static double Max(double op1, double op2) => Math.Max(op1, op2);
 
@@ -6845,21 +7104,75 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float RoundToZero(float op1) => MathF.Round(op1, MidpointRounding.ToZero);
 
-        public static int ConvertDoubleToInt32(double op1) => (int)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        private static int ConvertToInt32(double op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
 
-        public static int ConvertToInt32(float op1) => (int)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        public static int[] ConvertToInt32(double[] op1)
+        {
+            int[] result = new int[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                int index = i * 2;
+                result[index] = ConvertToInt32(op1[i]);
+                if (op1[i] < 0)
+                {
+                    // Sign-extend next lane with all ones
+                    result[index + 1] = -1;
+                }
+            }
+
+            return result;
+        }
+
+        public static int[] ConvertToInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToInt32(num));
+
+        private static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
         
-        public static long ConvertToInt64(double op1) => (long)Math.Clamp(op1, long.MinValue, long.MaxValue);
+        public static long[] ConvertToInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToInt64(num));
 
-        public static long ConvertFloatToInt64(float op1) => (long)Math.Clamp(op1, int.MinValue, int.MaxValue);
+        public static long[] ConvertToInt64(float[] op1)
+        {
+            long[] result = new long[op1.Length / 2];
 
-        public static uint ConvertDoubleToUInt32(double op1) => (uint)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = ConvertToInt64(op1[i * 2]);
+            }
 
-        public static uint ConvertToUInt32(float op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+            return result;
+        }
 
-        public static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+        private static uint ConvertToUInt32(double op1) => (uint)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
 
-        public static ulong ConvertFloatToUInt64(float op1) => (ulong)Math.Clamp(op1, uint.MinValue, uint.MaxValue);
+        public static uint[] ConvertToUInt32(double[] op1)
+        {
+            uint[] result = new uint[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = ConvertToUInt32(op1[i]);
+            }
+
+            return result;
+        }
+
+        public static uint[] ConvertToUInt32(float[] op1) => Array.ConvertAll(op1, num => ConvertToUInt32(num));
+
+        private static ulong ConvertToUInt64(double op1) => (ulong)Math.Clamp(op1, ulong.MinValue, ulong.MaxValue);
+
+        public static ulong[] ConvertToUInt64(double[] op1) => Array.ConvertAll(op1, num => ConvertToUInt64(num));
+
+        public static ulong[] ConvertToUInt64(float[] op1)
+        {
+            ulong[] result = new ulong[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = ConvertToUInt64(op1[i * 2]);
+            }
+
+            return result;
+        }
 
         public static Int32 ConvertToInt32RoundAwayFromZero(float op1) => ConvertToInt32(RoundAwayFromZero(op1));
 
@@ -6907,15 +7220,95 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static float ConvertToSingle(double op1) => (float)op1;
 
+        public static float[] ConvertToSingle(double[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
+        public static float[] ConvertToSingle(int[] op1) => Array.ConvertAll(op1, num => (float)num);
+
+        public static float[] ConvertToSingle(long[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
+        public static float[] ConvertToSingle(uint[] op1) => Array.ConvertAll(op1, num => (float)num);
+
+        public static float[] ConvertToSingle(ulong[] op1)
+        {
+            float[] result = new float[op1.Length * 2];
+
+            for (int i = 0; i < op1.Length; i++)
+            {
+                result[i * 2] = (float)op1[i];
+            }
+
+            return result;
+        }
+
         public static float ConvertToSingleUpper(float[] op1, double[] op2, int i) => i < op1.Length ? op1[i] : ConvertToSingle(op2[i - op1.Length]);
 
         public static double ConvertToDouble(float op1) => op1;
 
-        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
-
         public static double ConvertToDouble(long op1) => op1;
 
         public static double ConvertToDouble(ulong op1) => op1;
+
+        public static double[] ConvertToDouble(float[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(int[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(long[] op1) => Array.ConvertAll(op1, num => (double)num);
+
+        public static double[] ConvertToDouble(uint[] op1)
+        {
+            double[] result = new double[op1.Length / 2];
+
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = op1[i * 2];
+            }
+
+            return result;
+        }
+
+        public static double[] ConvertToDouble(ulong[] op1) => Array.ConvertAll(op1, num => (double)num);
+
+        public static double ConvertToDoubleUpper(float[] op1, int i) => ConvertToDouble(op1[i + op1.Length / 2]);
 
         public static short ReverseElement8(short val)
         {
@@ -8248,7 +8641,9 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
         }
 
-        private static bool CheckFirstFaultingBehaviorCore<T>(T[] result, Vector<T> faultResult, Func<int, bool> checkIter) where T : INumberBase<T>
+        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter) 
+                where T : INumberBase<T>
+                where TFault : INumberBase<TFault>
         {
             bool hitFault = false;
 
@@ -8256,14 +8651,14 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if (hitFault)
                 {
-                    if (faultResult[i] != T.Zero)
+                    if (faultResult[i] != TFault.Zero)
                     {
                         return false;
                     }
                 }
                 else
                 {
-                    if (faultResult[i] == T.Zero)
+                    if (faultResult[i] == TFault.Zero)
                     {
                         // There has to be a valid value for the first element, so check it.
                         if (i == 0)
@@ -8285,33 +8680,153 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckLoadVectorFirstFaultingBehavior<T>(T[] firstOp, T[] result, Vector<T> faultResult) where T : INumberBase<T>
+        private static bool CheckFaultResultHasAtLeastOneZero<T>(Vector<T> faultResult) where T : INumberBase<T>
         {
+            for (var i = 0; i < Vector<T>.Count; i++)
+            {
+                if (faultResult[i] == T.Zero)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool CheckLoadVectorFirstFaultingBehavior<T, TFault>(T[] firstOp, T[] result, Vector<TFault> faultResult) 
+                where T : INumberBase<T> 
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var validElementCount = firstOp.Length;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (i < validElementCount)
+                    {
+                        return TFault.One;
+                    }
+                    return TFault.Zero;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => firstOp[i] == result[i]);
         }
 
-        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<T> faultResult)
+        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T> 
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
                 where Index : IBinaryInteger<Index>
+                where TFault : INumberBase<TFault>
         {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    var index = int.CreateChecked(indices[i]);
+                    if (index < 0 || index >= data.Length)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByIndex(i, mask, data, indices) == result[i]);
         }
 
-        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Vector<T> faultResult)
+        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT, TFault>(T[] mask, AddressT[] data, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T> 
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where TFault : INumberBase<TFault>
         {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+                    
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    if (data[i] == AddressT.Zero)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
         }
-
-        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Vector<T> faultResult)
-                where T : INumberBase<T>
-                where AddressT : unmanaged, INumberBase<AddressT>
-                where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
+        
+        public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
         {
-            return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
+            var count = op1.Length;
+            var result = new T[count];
+
+            // embedded true mask
+            var mask = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                mask[i] = T.One;
+            }
+
+            if (LastActive(mask, op1) != T.Zero)
+            {
+                Array.Copy(op2, result, count);
+            }
+
+            return result;
         }
 
         private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)

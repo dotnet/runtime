@@ -404,11 +404,12 @@ inline BOOL MethodTable::HasLayout()
 }
 
 //==========================================================================================
+#ifndef DACCESS_COMPILE
 inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
@@ -418,6 +419,50 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 
     // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
     // for an interface virtual, since their slots usually point to stub.
+    if (IsInterface() && slot < GetNumVirtuals())
+    {
+        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+    }
+
+    return MethodTable::GetMethodDescForSlotAddress(pCode);
+}
+#endif // DACCESS_COMPILE
+
+//==========================================================================================
+inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    PCODE pCode = GetCanonicalMethodTable()->GetSlot(slot);
+
+    if (pCode == (PCODE)NULL)
+    {
+        // This code path should only be hit for methods which have not been overriden
+        MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
+        while (pMTToSearchForMethodDesc != NULL)
+        {
+            IntroducedMethodIterator it(pMTToSearchForMethodDesc);
+            for (; it.IsValid(); it.Next())
+            {
+                if (it.GetMethodDesc()->GetSlot() == slot)
+                {
+                    return it.GetMethodDesc();
+                }
+            }
+
+            pMTToSearchForMethodDesc = pMTToSearchForMethodDesc->GetParentMethodTable()->GetCanonicalMethodTable();
+        }
+        _ASSERTE(!"We should never reach here, as there should always be a MethodDesc for a slot");
+    }
+
+    // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
+    // for an interface virtual, since their slots point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
         return MethodDesc::GetMethodDescFromStubAddr(pCode);
@@ -435,8 +480,8 @@ inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSou
 
     MethodDesc *pMD = hSourceMTData->GetImplMethodDesc(slotNumber);
     _ASSERTE(CheckPointer(pMD));
-    _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot(slotNumber));
-    SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot());
+    _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot_NoThrow(slotNumber));
+    SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot(NULL, NULL));
 }
 
 //==========================================================================================
@@ -542,6 +587,12 @@ inline DispatchSlot MethodTable::MethodIterator::GetTarget() const {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsValid());
     return m_pMethodData->GetImplSlot(m_iCur);
+}
+
+inline bool MethodTable::MethodIterator::IsTargetNull() const {
+    LIMITED_METHOD_CONTRACT;
+    CONSISTENCY_CHECK(IsValid());
+    return m_pMethodData->IsImplSlotNull(m_iCur);
 }
 
 //==========================================================================================

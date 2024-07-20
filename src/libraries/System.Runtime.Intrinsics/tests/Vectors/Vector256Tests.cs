@@ -5841,6 +5841,22 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector256<double> actualResult = Vector256.Cos(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector256<float> actualResult = Vector256.Cos(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.ExpDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void ExpDoubleTest(double value, double expectedResult, double variance)
         {
@@ -6343,6 +6359,40 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector256<float> actualResult = Vector256.Round(Vector256.Create(value), MidpointRounding.ToEven);
             AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256<float>.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector256<double> actualResult = Vector256.Sin(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector256<float> actualResult = Vector256.Sin(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResult), actualResult, Vector256.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosDoubleTest(double value, double expectedResultSin, double expectedResultCos, double allowedVarianceSin, double allowedVarianceCos)
+        {
+            (Vector256<double> resultSin, Vector256<double> resultCos) = Vector256.SinCos(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResultSin), resultSin, Vector256.Create(allowedVarianceSin));
+            AssertEqual(Vector256.Create(expectedResultCos), resultCos, Vector256.Create(allowedVarianceCos));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosSingleTest(float value, float expectedResultSin, float expectedResultCos, float allowedVarianceSin, float allowedVarianceCos)
+        {
+            (Vector256<float> resultSin, Vector256<float> resultCos) = Vector256.SinCos(Vector256.Create(value));
+            AssertEqual(Vector256.Create(expectedResultSin), resultSin, Vector256.Create(allowedVarianceSin));
+            AssertEqual(Vector256.Create(expectedResultCos), resultCos, Vector256.Create(allowedVarianceCos));
         }
 
         [Theory]

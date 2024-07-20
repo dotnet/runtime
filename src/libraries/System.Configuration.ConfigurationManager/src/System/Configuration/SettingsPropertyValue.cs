@@ -95,11 +95,11 @@ namespace System.Configuration
                     {
                         value = GetObjectFromString(Property.PropertyType, Property.SerializeAs, (string)SerializedValue);
                     }
-                    else
+                    else if (SerializedValue is byte[] serializedBytes)
                     {
                         if (SettingsProperty.EnableUnsafeBinaryFormatterInPropertyValueSerialization)
                         {
-                            using (MemoryStream ms = new MemoryStream((byte[])SerializedValue))
+                            using (MemoryStream ms = new MemoryStream(serializedBytes))
                             {
 #pragma warning disable SYSLIB0011 // BinaryFormatter serialization is obsolete and should not be used.
                                 value = (new BinaryFormatter()).Deserialize(ms);

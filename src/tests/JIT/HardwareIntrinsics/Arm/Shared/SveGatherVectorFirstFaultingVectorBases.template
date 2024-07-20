@@ -35,6 +35,9 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates basic functionality works
                 test.RunBasicScenario_Load();
 
+                // Validates basic functionality of first-faulting behavior
+                test.RunBasicScenario_LoadFirstFaulting();
+
                 // Validates fully masked out load works.
                 test.RunBasicScenario_FalseMask();
 
@@ -91,66 +94,75 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             private byte[] inArray1;
             private byte[] inArray2;
-            private byte[] inArray3;
+            private byte[] inArray2Ffr;
             private byte[] baseArray;
             private byte[] outArray;
 
             private GCHandle inHandle1;
             private GCHandle inHandle2;
-            private GCHandle inHandle3;
+            private GCHandle inHandle2Ffr;
             private GCHandle baseHandle;
             private GCHandle outHandle;
 
             private ulong alignment;
 
-            public DataTable({Op1BaseType}[] inArray1, {Op2BaseType}[] inArray2, {Op2BaseType}[] inArray3, {RetBaseType}[] baseArray, {RetBaseType}[] outArray, int alignment)
+            public DataTable({Op1BaseType}[] inArray1, {Op2BaseType}[] inArray2, {RetBaseType}[] baseArray, {RetBaseType}[] outArray, int alignment)
             {
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
-                int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<{Op2BaseType}>();
                 int sizeOfBaseArray = baseArray.Length * Unsafe.SizeOf<{RetBaseType}>();
-                int sizeOfinBounded = new Random().Next(Unsafe.SizeOf<{Op2BaseType}>(), Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>() - 1);
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
 
-                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 3) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
+                if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
                 {
-                    throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfinArray2: {sizeOfinArray2}, sizeOfinArray3: {sizeOfinArray3}, sizeOfoutArray: {sizeOfoutArray}");
+                    throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}, sizeOfinArray2: {sizeOfinArray2}, sizeOfoutArray: {sizeOfoutArray}");
                 }
 
                 this.inArray1 = new byte[alignment * 2];
                 this.inArray2 = new byte[alignment * 2];
-                this.inArray3 = new byte[alignment * 2];
+                this.inArray2Ffr = new byte[alignment * 2];
                 this.baseArray = new byte[alignment + sizeOfBaseArray];
                 this.outArray = new byte[alignment * 2];
 
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
                 this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
-                this.inHandle3 = GCHandle.Alloc(this.inArray3, GCHandleType.Pinned);
+                this.inHandle2Ffr = GCHandle.Alloc(this.inArray2Ffr, GCHandleType.Pinned);
                 this.baseHandle = GCHandle.Alloc(this.baseArray, GCHandleType.Pinned);
                 this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
 
                 this.alignment = (ulong)alignment;
-                this.inBounded = BoundedMemory.Allocate<{Op2BaseType}>(sizeOfinBounded, PoisonPagePlacement.After);
 
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(baseArrayPtr), ref Unsafe.As<{RetBaseType}, byte>(ref baseArray[0]), (uint)sizeOfBaseArray);
 
-                // Add the base pointer of the span to the offsets within inArray3 to create complete pointers.
-                for (var i = 0; i < inArray3.Length; i++) { inArray3[i] = inArray3[i] + ({Op2BaseType})Unsafe.AsPointer(ref inBounded.Span.GetPinnableReference()); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray3Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray3[0]), (uint)sizeOfinArray3);
+                var inArray2Ffr = new {Op2BaseType}[inArray2.Length];
+                inArray2.CopyTo(inArray2Ffr, 0);
 
                 // Add the base pointer to the offsets within inArray2 to create complete pointers.
                 for (var i = 0; i < inArray2.Length; i++) { inArray2[i] += ({Op2BaseType})baseArrayPtr; }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
 
-                for (var i = 0; i < sizeOfinBounded; i++) { inBounded.Span[i] = ({Op2BaseType})(inArray2[i % inArray2.Length]); }
+                // Add the base pointer to the offsets within inArray2Ffr to create complete pointers.
+                var random = new Random();
+                for (var i = 0; i < inArray2Ffr.Length; i++) 
+                {
+                    // In order to test the first-faulting behavior, we need to put in null pointers after the first active element (element 0).
+                    // We will always cause a fault on the last element for testing.
+                    if (((i != 0) && (random.Next() % 2) == 0) || (i == (inArray2Ffr.Length - 1)))
+                    {
+                        inArray2Ffr[i] = default; // nullptr
+                    }
+                    else
+                    {
+                        inArray2Ffr[i] += ({Op2BaseType})baseArrayPtr;
+                    }
+                }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2FfrPtr), ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2Ffr[0]), (uint)sizeOfinArray2);
             }
-
-            public BoundedMemory<UInt64> inBounded;
 
             public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
             public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
-            public void* inArray3Ptr => Align((byte*)(inHandle3.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2FfrPtr => Align((byte*)(inHandle2Ffr.AddrOfPinnedObject().ToPointer()), alignment);
             public void* baseArrayPtr => Align((byte*)(baseHandle.AddrOfPinnedObject().ToPointer()), alignment);
             public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
 
@@ -158,7 +170,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 inHandle1.Free();
                 inHandle2.Free();
-                inHandle3.Free();
+                inHandle2Ffr.Free();
                 baseHandle.Free();
                 outHandle.Free();
             }
@@ -216,7 +228,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {Op1BaseType}[] _data1 = new {Op1BaseType}[Op1ElementCount];
         private static {Op2BaseType}[] _data2 = new {Op2BaseType}[Op2ElementCount];
-        private static {Op2BaseType}[] _data3 = new {Op2BaseType}[Op2ElementCount];
 
         private static {RetBaseType}[] _maskData = new {RetBaseType}[RetElementCount];
         private static {RetBaseType}[] _falseData = new {RetBaseType}[RetElementCount];
@@ -238,7 +249,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             // Fill full of offsets into the data buffer. They wil be expanded to full pointers inside the DataTable constructor.
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = {NextValueOp2} % ({Op2BaseType})BaseElementCount; }
-            for (var i = 0; i < Op2ElementCount; i++) { _data3[i] = {NextValueOp2} % ({Op2BaseType})BaseElementCount; }
 
             for (var i = 0; i < RetElementCount; i++) { _maskData[i] = ({RetBaseType})({NextValueOp1}); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _mask), ref Unsafe.As<{RetBaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
@@ -246,7 +256,7 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < RetElementCount; i++) { _falseData[i] = ({RetBaseType})({NextValueOp2}); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetVectorType}<{RetBaseType}>, byte>(ref _falseFld), ref Unsafe.As<{RetBaseType}, byte>(ref _falseData[0]), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
 
-            _dataTable = new DataTable(_data1, _data2, _data3, _datab, new {RetBaseType}[RetElementCount], LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, _datab, new {RetBaseType}[RetElementCount], LargestVectorSize);
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld2), ref Unsafe.As<{Op2BaseType}, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
@@ -292,34 +302,20 @@ namespace JIT.HardwareIntrinsics.Arm
             {Op1VectorType}<{Op1BaseType}> loadMask1 = Sve.CreateTrueMask{Op1BaseType}(SveMaskPattern.All);
             {Op2VectorType}<{Op2BaseType}> loadMask2 = Sve.CreateTrueMask{Op2BaseType}(SveMaskPattern.All);
 
-            var op1 = Sve.LoadVector(loadMask1, ({Op1BaseType}*)(_dataTable.inArray1Ptr));
-            var op2 = Sve.LoadVector(loadMask2, ({Op2BaseType}*)(_dataTable.inArray3Ptr));
+            var op1 = {LoadIsa}.Load{Op1VectorType}(loadMask1, ({Op1BaseType}*)(_dataTable.inArray1Ptr));
+            var op2 = {LoadIsa}.Load{Op2VectorType}(loadMask2, ({Op2BaseType}*)(_dataTable.inArray2FfrPtr));
 
-            ref var memRef = ref (_dataTable.inBounded.Span.GetPinnableReference());
-
-            // When testing first-faulting behavior, we need to make sure we can get the first element.
-            // So set the first active element of the index vector to 0.
-            for (var i = 0; i < Vector<{Op2BaseType}>.Count; i++)
-            {
-                // op1 is the mask for GatherVector.
-                if (op1[i] != 0)
-                {
-                    op2 = op2.WithElement<{Op2BaseType}>(i, ({Op2BaseType})(Unsafe.AsPointer(ref memRef)));
-                    break;
-                }
-            }
+            // Force op1 (mask) to have the first and last element to be active.
+            op1 = op1.WithElement<{Op1BaseType}>(0, 1).WithElement<{Op1BaseType}>(Vector<{Op1BaseType}>.Count - 1, 1);
 
             Sve.SetFfr(Sve.CreateTrueMaskByte(SveMaskPattern.All));
-            var result = {Isa}.{Method}(
-                op1,
-                op2
-            );
-
+            var result = {Isa}.{Method}(op1, op2);
             var faultResult = Sve.GetFfr{GetFfrType}();
 
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(_dataTable.inArray1Ptr, op2, _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
+            ref var op1Ref = ref op1;
 
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateFirstFaultingResult(Unsafe.AsPointer(ref op1Ref), _dataTable.inArray2FfrPtr, _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunBasicScenario_FalseMask()
@@ -418,19 +414,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in TrueValue");
             ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld2, _falseFld);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _falseFld);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _falseFld);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_mask - operation in FalseValue");
             ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld2, _falseFld);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_zero - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, _falseFld);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_FalseOp_all - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, _falseFld);
         }
@@ -439,19 +435,19 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in TrueValue");
             ConditionalSelectScenario_TrueValue(_mask, _fld1, _fld2, {Op1VectorType}<{RetBaseType}>.Zero);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in TrueValue");
             ConditionalSelectScenario_TrueValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
 
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_mask - operation in FalseValue");
             ConditionalSelectScenario_FalseValue(_mask, _fld1, _fld2, {Op1VectorType}<{RetBaseType}>.Zero);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_zero - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.Zero, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
-
+            
             TestLibrary.TestFramework.BeginScenario("ConditionalSelect_ZeroOp_all - operation in FalseValue");
             ConditionalSelectScenario_FalseValue({Op1VectorType}<{Op1BaseType}>.AllBitsSet, _fld1, _fld2, {Op1VectorType}<{Op1BaseType}>.Zero);
         }
@@ -490,70 +486,6 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateFirstFaultingResult(void* maskPtr, {Op2VectorType}<{Op2BaseType}> addresses, void* result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
-        {
-            {Op1BaseType}[] maskArray = new {Op1BaseType}[Op1ElementCount];
-            {Op2BaseType}[] addressArray = new {Op2BaseType}[Op2ElementCount];
-            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref maskArray[0]), ref Unsafe.AsRef<byte>(maskPtr), (uint)Unsafe.SizeOf<Vector<{Op1BaseType}>>());
-            Unsafe.WriteUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref addressArray[0]), addresses);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector<{RetBaseType}>>());
-
-            ValidateFirstFaultingResult(maskArray, addressArray, outArray, faultResult, method);
-        }
-
-        private void ValidateFirstFaultingResult({Op1BaseType}[] maskArray, {Op2BaseType}[] addressArray, {RetBaseType}[] result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
-        {
-            var succeeded = true;
-            bool hitFault = false;
-
-            for (var i = 0; i < result.Length; i++)
-            {
-                if (hitFault)
-                {
-                    if (faultResult[i] != 0)
-                    {
-                        succeeded = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    if (faultResult[i] == 0)
-                    {
-                        // There has to be a valid value for the first element, so check it.
-                        if (i == 0)
-                        {
-                            succeeded = false;
-                            break;
-                        }
-                        hitFault = true;
-                    }
-                    else
-                    {
-                        var expected = maskArray[i] == 0 ? 0 : *({ExtendedElementType}*)addressArray[i];
-                        if (expected != ({ExtendedElementType})result[i])
-                        {
-                            succeeded = false;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (!succeeded)
-            {
-                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"       firstOp: ({string.Join(", ", maskArray)})");
-                TestLibrary.TestFramework.LogInformation($"      secondOp: ({string.Join(", ", addressArray)})");
-                TestLibrary.TestFramework.LogInformation($"        result: ({string.Join(", ", result)})");
-                TestLibrary.TestFramework.LogInformation($"   faultResult: ({faultResult})");
-                TestLibrary.TestFramework.LogInformation(string.Empty);
-                Succeeded = false;
-            }
-        }
-
         private void ValidateResult({Op1VectorType}<{Op1BaseType}> op1, {Op2VectorType}<{Op2BaseType}> op2, void* result, [CallerMemberName] string method = "")
         {
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
@@ -568,7 +500,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private void ValidateResult(void* firstOp, void* secondOp, void* result, [CallerMemberName] string method = "")
-        {
+        {            
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -582,17 +514,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            var succeeded = true; // Helpers.CheckGatherVectorBasesBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(firstOp, secondOp, result);
-
-            for (var i = 0; i < firstOp.Length; i++)
-            {
-                var expected = firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)secondOp[i];
-                if (expected != ({ExtendedElementType})result[i])
-                {
-                    succeeded = false;
-                    break;
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(firstOp, secondOp, result);
 
             if (!succeeded)
             {
@@ -620,7 +542,7 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         private void ValidateZeroResult(void* firstOp, void* secondOp, void* result, [CallerMemberName] string method = "")
-        {
+        {            
             {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
             {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -676,17 +598,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_TrueValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] falseOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            var succeeded = true;
-
-            for (var i = 0; i < firstOp.Length; i++)
-            {
-                var expected = maskOp[i] == 0 ? ({ExtendedElementType})falseOp[i] : (firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)secondOp[i]);
-                if (expected != ({ExtendedElementType}) result[i])
-                {
-                    succeeded = false;
-                    break;
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, falseOp, result);
 
             if (!succeeded)
             {
@@ -721,17 +633,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateConditionalSelectResult_FalseValue({RetBaseType}[] maskOp, {Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] trueOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
         {
-            var succeeded = true;
-
-            for (var i = 0; i < firstOp.Length; i++)
-            {
-                var expected = maskOp[i] != 0 ? ({ExtendedElementType})trueOp[i] : (firstOp[i] == 0 ? 0 : *({ExtendedElementType}*)secondOp[i]);
-                if (expected != ({ExtendedElementType})result[i])
-                {
-                    succeeded = false;
-                    break;
-                }
-            }
+            var succeeded = Helpers.CheckGatherVectorBasesConditionalSelectTrueBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}>(maskOp, firstOp, secondOp, trueOp, result);
 
             if (!succeeded)
             {
@@ -741,6 +643,36 @@ namespace JIT.HardwareIntrinsics.Arm
                 TestLibrary.TestFramework.LogInformation($" secondOp: ({string.Join(", ", secondOp)})");
                 TestLibrary.TestFramework.LogInformation($"  trueOp: ({string.Join(", ", trueOp)})");
                 TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+
+        private void ValidateFirstFaultingResult(void* op1, void* op2, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray1 = new {Op1BaseType}[Op1ElementCount];
+            {Op2BaseType}[] inArray2 = new {Op2BaseType}[Op2ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2BaseType}, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<{RetVectorType}<{RetBaseType}>>());
+        
+            ValidateFirstFaultingResult(inArray1, inArray2, outArray, faultResult, method);
+        }
+
+        private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
+        {
+            var succeeded = Helpers.CheckGatherVectorBasesFirstFaultingBehavior<{Op1BaseType}, {Op2BaseType}, {ExtendedElementType}, {GetFfrType}>(firstOp, secondOp, result, faultResult);
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1BaseType}, {Op2BaseType}): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"       firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"      secondOp: ({string.Join(", ", secondOp)})");
+                TestLibrary.TestFramework.LogInformation($"        result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"   faultResult: ({faultResult})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

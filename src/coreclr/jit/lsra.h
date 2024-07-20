@@ -1989,10 +1989,10 @@ private:
                             RefPosition**    useRefPosition = nullptr);
     int  BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
     int  BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
-    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
 
     RefPosition* BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);
+    int          BuildCallArgUses(GenTreeCall* call);
     void         BuildCallDefs(GenTree* tree, int dstCount, regMaskTP dstCandidates);
     void         BuildKills(GenTree* tree, regMaskTP killMask);
 #if defined(TARGET_ARMARCH) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)

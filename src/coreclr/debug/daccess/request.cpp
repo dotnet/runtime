@@ -214,11 +214,15 @@ BOOL DacValidateMD(PTR_MethodDesc pMD)
 
         if (retval)
         {
-            MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
-
-            if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+            PCODE tempEntryPoint = pMD->GetTemporaryEntryPointIfExists();
+            if (tempEntryPoint != (PCODE)NULL)
             {
-                retval = FALSE;
+                MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(tempEntryPoint, TRUE);
+
+                if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+                {
+                    retval = FALSE;
+                }
             }
         }
 
@@ -419,7 +423,11 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     else if (slot < mTable->GetNumVtableSlots())
     {
         // Now get the slot:
-        *value = mTable->GetRestoredSlot(slot);
+        *value = mTable->GetSlot(slot);
+        if (*value == 0)
+        {
+            hr = S_FALSE;
+        }
     }
     else
     {
@@ -430,8 +438,16 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
             MethodDesc * pMD = it.GetMethodDesc();
             if (pMD->GetSlot() == slot)
             {
-                *value = pMD->GetMethodEntryPoint();
-                hr = S_OK;
+                *value = pMD->GetMethodEntryPointIfExists();
+                if (*value == 0)
+                {
+                    hr = S_FALSE;
+                }
+                else
+                {
+                    hr = S_OK;
+                }
+                break;
             }
         }
     }
@@ -440,6 +456,89 @@ ClrDataAccess::GetMethodTableSlot(CLRDATA_ADDRESS mt, unsigned int slot, CLRDATA
     return hr;
 }
 
+HRESULT
+ClrDataAccess::GetMethodTableSlotEnumerator(CLRDATA_ADDRESS mt, ISOSMethodEnum **enumerator)
+{
+    if (mt == 0 || enumerator == NULL)
+        return E_INVALIDARG;
+
+    SOSDacEnter();
+
+    PTR_MethodTable mTable = PTR_MethodTable(TO_TADDR(mt));
+    BOOL bIsFree = FALSE;
+    if (!DacValidateMethodTable(mTable, bIsFree))
+    {
+        hr = E_INVALIDARG;
+    }
+    else
+    {
+        DacMethodTableSlotEnumerator *methodTableSlotEnumerator = new (nothrow) DacMethodTableSlotEnumerator();
+        *enumerator = methodTableSlotEnumerator;
+        if (*enumerator == NULL)
+        {
+            hr = E_OUTOFMEMORY;
+        }
+        else
+        {
+            hr = methodTableSlotEnumerator->Init(mTable);
+        }
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
+{
+    unsigned int slot = 0;
+
+    WORD numVtableSlots = mTable->GetNumVtableSlots();
+    while (slot < numVtableSlots)
+    {
+        MethodDesc* pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        SOSMethodData methodData = {0};
+        methodData.MethodDesc = HOST_CDADDR(pMD);
+        methodData.Entrypoint = mTable->GetSlot(slot);
+        methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+        methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+        methodData.Token = pMD->GetMemberDef();
+
+        methodData.Slot = slot++;
+
+        if (!mMethods.Add(methodData))
+            return E_OUTOFMEMORY;
+    }
+
+    MethodTable::IntroducedMethodIterator it(mTable);
+    for (; it.IsValid(); it.Next())
+    {
+        MethodDesc* pMD = it.GetMethodDesc();
+        WORD slot = pMD->GetSlot();
+        if (slot >= numVtableSlots)
+        {
+            SOSMethodData methodData = {0};
+            methodData.MethodDesc = HOST_CDADDR(pMD);
+            methodData.Entrypoint = pMD->GetMethodEntryPointIfExists();
+            methodData.DefininingMethodTable = PTR_CDADDR(pMD->GetMethodTable());
+            methodData.DefiningModule = HOST_CDADDR(pMD->GetModule());
+            methodData.Token = pMD->GetMemberDef();
+
+            if (slot == MethodTable::NO_SLOT)
+            {
+                methodData.Slot = 0xFFFFFFFF;
+            }
+            else
+            {
+                methodData.Slot = slot;
+            }
+
+            if (!mMethods.Add(methodData))
+                return E_OUTOFMEMORY;
+        }
+    }
+
+    return S_OK;
+}
 
 HRESULT
 ClrDataAccess::GetCodeHeapList(CLRDATA_ADDRESS jitManager, unsigned int count, struct DacpJitCodeHeapInfo codeHeaps[], unsigned int *pNeeded)
@@ -1502,7 +1601,7 @@ ClrDataAccess::GetDomainFromContext(CLRDATA_ADDRESS contextAddr, CLRDATA_ADDRESS
 
 
 HRESULT
-ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded)
+ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR* stringData, unsigned int* pNeeded)
 {
     if (obj == 0)
         return E_INVALIDARG;
@@ -1512,44 +1611,73 @@ ClrDataAccess::GetObjectStringData(CLRDATA_ADDRESS obj, unsigned int count, _Ino
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetObjectStringData(obj, count, stringData, pNeeded);
+        if (FAILED(hr))
+        {
+            hr = GetObjectStringDataImpl(obj, count, stringData, pNeeded);
+        }
+#ifdef _DEBUG
+        else
+        {
+            unsigned int neededLocal;
+            SString stringDataLocal;
+            HRESULT hrLocal = GetObjectStringDataImpl(obj, count, stringDataLocal.OpenUnicodeBuffer(count), &neededLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(pNeeded == NULL || *pNeeded == neededLocal);
+            _ASSERTE(u16_strncmp(stringData, stringDataLocal, count) == 0);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetObjectStringDataImpl(obj, count, stringData, pNeeded);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetObjectStringDataImpl(CLRDATA_ADDRESS obj, unsigned int count, _Inout_updates_z_(count) WCHAR *stringData, unsigned int *pNeeded)
+{
     TADDR mtTADDR = DACGetMethodTableFromObjectPointer(TO_TADDR(obj), m_pTarget);
     PTR_MethodTable mt = PTR_MethodTable(mtTADDR);
 
     // Object must be a string
     BOOL bFree = FALSE;
     if (!DacValidateMethodTable(mt, bFree))
-        hr = E_INVALIDARG;
-    else if (HOST_CDADDR(mt) != HOST_CDADDR(g_pStringClass))
-        hr = E_INVALIDARG;
+        return E_INVALIDARG;
 
-    if (SUCCEEDED(hr))
+    if (HOST_CDADDR(mt) != HOST_CDADDR(g_pStringClass))
+        return E_INVALIDARG;
+
+    PTR_StringObject str(TO_TADDR(obj));
+    ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
+
+    HRESULT hr;
+    if (stringData && count > 0)
     {
-        PTR_StringObject str(TO_TADDR(obj));
-        ULONG32 needed = (ULONG32)str->GetStringLength() + 1;
+        if (count > needed)
+            count = needed;
 
-        if (stringData && count > 0)
-        {
-            if (count > needed)
-                count = needed;
+        TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
+        hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &needed);
 
-            TADDR pszStr = TO_TADDR(obj)+offsetof(StringObject, m_FirstChar);
-            hr = m_pTarget->ReadVirtual(pszStr, (PBYTE)stringData, count * sizeof(WCHAR), &needed);
-
-            if (SUCCEEDED(hr))
-                stringData[count - 1] = W('\0');
-            else
-                stringData[0] = W('\0');
-        }
+        if (SUCCEEDED(hr))
+            stringData[count - 1] = W('\0');
         else
-        {
-            hr = E_INVALIDARG;
-        }
-
-        if (pNeeded)
-            *pNeeded = needed;
+            stringData[0] = W('\0');
+    }
+    else
+    {
+        hr = E_INVALIDARG;
     }
 
-    SOSDacLeave();
+    if (pNeeded)
+        *pNeeded = needed;
+
     return hr;
 }
 
@@ -1916,7 +2044,47 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
         return E_INVALIDARG;
 
     SOSDacEnter();
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodTableName(mt, count, mtName, pNeeded);
+        if (FAILED(hr))
+        {
+            hr = GetMethodTableNameImpl(mt, count, mtName, pNeeded);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            NewArrayHolder<WCHAR> pwszNameLocal(new WCHAR[count]);
+            unsigned int neededLocal = 0;
+            HRESULT hrLocal = GetMethodTableNameImpl(mt, count, mtName != NULL ? (WCHAR *)pwszNameLocal : NULL, pNeeded != NULL ? &neededLocal : NULL);
+            _ASSERTE(hr == hrLocal);
 
+            if (mtName != NULL)
+            {
+                _ASSERTE(0 == u16_strncmp(mtName, (WCHAR *)pwszNameLocal, count));
+            }
+            if (pNeeded != NULL)
+            {
+                _ASSERTE(*pNeeded == neededLocal);
+            }
+        }
+#endif
+    }
+    else
+    {
+        hr = GetMethodTableNameImpl(mt, count, mtName, pNeeded);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetMethodTableNameImpl(CLRDATA_ADDRESS mt, unsigned int count, _Inout_updates_z_(count) WCHAR *mtName, unsigned int *pNeeded)
+{
+    HRESULT hr = S_OK;
     PTR_MethodTable pMT = PTR_MethodTable(TO_TADDR(mt));
     BOOL free = FALSE;
 
@@ -1987,7 +2155,6 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
         }
     }
 
-    SOSDacLeave();
     return hr;
 }
 
@@ -3293,13 +3460,47 @@ ClrDataAccess::GetHeapAnalyzeStaticData(struct DacpGcHeapAnalyzeData *analyzeDat
 }
 
 HRESULT
-ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
+ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData* globalsData)
 {
     if (globalsData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetUsefulGlobals(globalsData);
+        if (FAILED(hr))
+        {
+            hr = GetUsefulGlobals(globalsData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpUsefulGlobalsData globalsDataLocal;
+            HRESULT hrLocal = GetUsefulGlobalsImpl(&globalsDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(globalsData->ArrayMethodTable == globalsDataLocal.ArrayMethodTable);
+            _ASSERTE(globalsData->StringMethodTable == globalsDataLocal.StringMethodTable);
+            _ASSERTE(globalsData->ObjectMethodTable == globalsDataLocal.ObjectMethodTable);
+            _ASSERTE(globalsData->ExceptionMethodTable == globalsDataLocal.ExceptionMethodTable);
+            _ASSERTE(globalsData->FreeMethodTable == globalsDataLocal.FreeMethodTable);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetUsefulGlobals(globalsData);;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData)
+{
     TypeHandle objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
     if (objArray != NULL)
         globalsData->ArrayMethodTable = HOST_CDADDR(objArray.AsMethodTable());
@@ -3311,8 +3512,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
     globalsData->ExceptionMethodTable = HOST_CDADDR(g_pExceptionClass);
     globalsData->FreeMethodTable = HOST_CDADDR(g_pFreeObjectMethodTable);
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT
