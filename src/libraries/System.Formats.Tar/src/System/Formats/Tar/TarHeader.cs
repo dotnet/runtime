@@ -154,10 +154,7 @@ namespace System.Formats.Tar
 
         // Stores the archive stream's position where we know the current entry's data section begins,
         // if the archive stream is seekable. Otherwise, -1.
-        private static void SetDataOffset(TarHeader header, Stream archiveStream) => header._dataOffset =
-            archiveStream.CanSeek
-            // Add one because the last byte read is still part of the header
-            ? archiveStream.Position
-            : -1;
+        private static void SetDataOffset(TarHeader header, Stream archiveStream) =>
+            header._dataOffset = archiveStream.CanSeek ? archiveStream.Position : -1;
     }
 }
