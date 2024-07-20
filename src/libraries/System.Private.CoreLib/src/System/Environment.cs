@@ -20,7 +20,7 @@ namespace System
         public readonly struct ProcessCpuUsage
         {
             /// <summary>
-            /// Gets the amount of time the associated process has spent running code inside the application portion of the process (not the operating system core).
+            /// Gets the amount of time the associated process has spent running code inside the application portion of the process (not the operating system code).
             /// </summary>
             public TimeSpan UserTime { get; internal init; }
 
