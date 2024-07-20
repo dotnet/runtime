@@ -311,7 +311,6 @@ DEFINE_FIELD_U(_stackTrace,        ExceptionObject,    _stackTrace)
 DEFINE_FIELD_U(_watsonBuckets,     ExceptionObject,    _watsonBuckets)
 DEFINE_FIELD_U(_stackTraceString,  ExceptionObject,    _stackTraceString)
 DEFINE_FIELD_U(_remoteStackTraceString, ExceptionObject, _remoteStackTraceString)
-DEFINE_FIELD_U(_dynamicMethods,    ExceptionObject,    _dynamicMethods)
 DEFINE_FIELD_U(_source,            ExceptionObject,    _source)
 DEFINE_FIELD_U(_ipForWatsonBuckets,ExceptionObject,    _ipForWatsonBuckets)
 DEFINE_FIELD_U(_xptrs,             ExceptionObject,    _xptrs)
@@ -695,6 +694,10 @@ DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_MDARRAY, GetArrayDa
 DEFINE_CLASS(INTERLOCKED,           Threading,              Interlocked)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_T,     CompareExchange, GM_RefT_T_T_RetT)
 DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_OBJECT,CompareExchange, SM_RefObject_Object_Object_RetObject)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_BYTE,  CompareExchange, SM_RefByte_Byte_Byte_RetByte)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_USHRT, CompareExchange, SM_RefUShrt_UShrt_UShrt_RetUShrt)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_INT,   CompareExchange, SM_RefInt_Int_Int_RetInt)
+DEFINE_METHOD(INTERLOCKED,          COMPARE_EXCHANGE_LONG,  CompareExchange, SM_RefLong_Long_Long_RetLong)
 
 DEFINE_CLASS(RAW_DATA,              CompilerServices,       RawData)
 DEFINE_FIELD(RAW_DATA,              DATA,                   Data)
@@ -938,9 +941,7 @@ DEFINE_METHOD(STUBHELPERS,          PROFILER_BEGIN_TRANSITION_CALLBACK, Profiler
 DEFINE_METHOD(STUBHELPERS,          PROFILER_END_TRANSITION_CALLBACK,   ProfilerEndTransitionCallback,   SM_IntPtr_IntPtr_RetVoid)
 #endif
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 DEFINE_METHOD(STUBHELPERS,          MULTICAST_DEBUGGER_TRACE_HELPER,    MulticastDebuggerTraceHelper,    SM_Obj_Int_RetVoid)
-#endif
 
 DEFINE_CLASS(CLEANUP_WORK_LIST_ELEMENT,     StubHelpers,            CleanupWorkListElement)
 
@@ -1115,6 +1116,8 @@ DEFINE_METHOD(ICASTABLEHELPERS,        GETIMPLTYPE,        GetImplType, SM_ICast
 
 #endif // FEATURE_ICASTABLE
 
+DEFINE_CLASS(STACKALLOCATEDBOX,   CompilerServices,     StackAllocatedBox`1)
+
 DEFINE_CLASS(UTF8STRINGMARSHALLER, Marshalling, Utf8StringMarshaller)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_PtrByte_RetStr)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
@@ -1136,6 +1139,7 @@ DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
 
 // Classes referenced in EqualityComparer<T>.Default optimization
 
+DEFINE_CLASS(STRING_EQUALITYCOMPARER, CollectionsGeneric, StringEqualityComparer)
 DEFINE_CLASS(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1)
 DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)
 DEFINE_CLASS(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1)

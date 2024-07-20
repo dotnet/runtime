@@ -89,6 +89,10 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                         }
                                     }
+                                    else if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                    {
+                                        // This will always succeed thanks to the runtime type loader
+                                    }
                                     else
                                     {
                                         triggersWarning = true;
@@ -147,6 +151,10 @@ namespace ILLink.Shared.TrimAnalysis
                                                 _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
                                             }
                                         }
+                                    }
+                                    else if (methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                    {
+                                        // This will always succeed thanks to the runtime type loader
                                     }
                                     else
                                     {
@@ -675,5 +683,17 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
+    }
+
+    file static class Extensions
+    {
+        public static bool IsConstrainedToBeReferenceTypes(this Instantiation inst)
+        {
+            foreach (GenericParameterDesc param in inst)
+                if (!param.HasReferenceTypeConstraint)
+                    return false;
+
+            return true;
+        }
     }
 }

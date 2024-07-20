@@ -92,12 +92,14 @@ namespace System.Globalization
             int count;
 #if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             if (GlobalizationMode.Hybrid)
+            {
                 count = Interop.Globalization.GetCalendarsNative(localeName, calendars, calendars.Length);
+            }
             else
-                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
-#else
-            count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
 #endif
+            {
+                count = Interop.Globalization.GetCalendars(localeName, calendars, calendars.Length);
+            }
 
             // ensure there is at least 1 calendar returned
             if (count == 0 && calendars.Length > 0)
@@ -142,9 +144,7 @@ namespace System.Globalization
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
             callbackContext.DisallowDuplicates = true;
-#pragma warning disable CS8500 // takes address of managed type
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
-#pragma warning restore CS8500
             if (result)
             {
                 List<string> datePatternsList = callbackContext.Results;
@@ -370,9 +370,7 @@ namespace System.Globalization
 
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
-#pragma warning disable CS8500 // takes address of managed type
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
-#pragma warning restore CS8500
             if (result)
             {
                 // the month-name arrays are expected to have 13 elements.  If ICU only returns 12, add an
@@ -407,7 +405,7 @@ namespace System.Globalization
             // So for other calendars, only return the latest era.
             if (calendarId != CalendarId.JAPAN && calendarId != CalendarId.JAPANESELUNISOLAR && eraNames?.Length > 0)
             {
-                string[] latestEraName = new string[] { eraNames![eraNames.Length - 1] };
+                string[] latestEraName = [eraNames![eraNames.Length - 1]];
                 eraNames = latestEraName;
             }
 
@@ -420,9 +418,7 @@ namespace System.Globalization
 
             IcuEnumCalendarsData callbackContext = default;
             callbackContext.Results = new List<string>();
-#pragma warning disable CS8500 // takes address of managed type
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, &callbackContext);
-#pragma warning restore CS8500
             if (result)
             {
                 calendarData = callbackContext.Results.ToArray();
@@ -431,12 +427,15 @@ namespace System.Globalization
             return result;
         }
 
-#pragma warning disable CS8500 // takes address of managed type
         private static unsafe bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, IcuEnumCalendarsData* callbackContext)
         {
+#if TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            callbackContext->Results.AddRange(GetCalendarInfoNative(localeName, calendarId, dataType).Split("||"));
+            return callbackContext->Results.Count > 0;
+#else
             return Interop.Globalization.EnumCalendarInfo(&EnumCalendarInfoCallback, localeName, calendarId, dataType, (IntPtr)callbackContext);
+#endif
         }
-#pragma warning restore CS8500
 
         [UnmanagedCallersOnly]
         private static unsafe void EnumCalendarInfoCallback(char* calendarStringPtr, IntPtr context)
@@ -444,9 +443,7 @@ namespace System.Globalization
             try
             {
                 ReadOnlySpan<char> calendarStringSpan = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(calendarStringPtr);
-#pragma warning disable 8500
                 IcuEnumCalendarsData* callbackContext = (IcuEnumCalendarsData*)context;
-#pragma warning restore 8500
 
                 if (callbackContext->DisallowDuplicates)
                 {

@@ -14,9 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- TODO 103447: These tests all require BinaryFormatter, which won't work until there's a published NuGet package.
     <Compile Include="**\*.cs" />
-    -->
   </ItemGroup>
 
   <ItemGroup>
@@ -37,9 +35,9 @@
   
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataVersion)" />
-    <PackageReference Include="FluentAssertions" Version="$(FluentAssertionsVersion)" />
     <ProjectReference Include="..\..\src\System.Resources.Extensions.csproj" />
     <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="$(SystemRuntimeSerializationFormattersVersion)" />
   </ItemGroup>
 
   <ItemGroup>

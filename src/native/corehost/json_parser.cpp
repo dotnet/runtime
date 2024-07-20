@@ -10,7 +10,7 @@
 #define RAPIDJSON_ERROR_STRING(x) _X(x)
 
 #include <json_parser.h>
-#include <external/rapidjson/error/en.h>
+#include <rapidjson/error/en.h>
 #include "utils.h"
 #include <cassert>
 #include <cstdint>

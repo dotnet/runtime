@@ -105,7 +105,7 @@ namespace System.Reflection.Emit
         }
 
         private const string ConsoleTypeFullName = "System.Console, System.Console";
-        private static readonly Type[] s_parameterTypes = new Type[] { typeof(string) };
+        private static readonly Type[] s_parameterTypes = [typeof(string)];
 
         public virtual void EmitWriteLine(string value)
         {

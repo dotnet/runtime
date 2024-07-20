@@ -267,7 +267,7 @@ namespace System.Globalization
         // Map a Hebrew character from U+05D0 ~ U+05EA to its digit value.
         // The value is -1 if the Hebrew character does not have a associated value.
         //
-        private static readonly HebrewValue[] s_hebrewValues = {
+        private static readonly HebrewValue[] s_hebrewValues = [
             new HebrewValue(HebrewToken.Digit1, 1), // '\x05d0
             new HebrewValue(HebrewToken.Digit1, 2), // '\x05d1
             new HebrewValue(HebrewToken.Digit1, 3), // '\x05d2
@@ -295,7 +295,7 @@ namespace System.Globalization
             new HebrewValue(HebrewToken.Digit200_300, 200), // '\x05e8;
             new HebrewValue(HebrewToken.Digit200_300, 300), // '\x05e9;
             new HebrewValue(HebrewToken.Digit400, 400), // '\x05ea;
-        };
+        ];
 
         private const int minHebrewNumberCh = 0x05d0;
         private static readonly char s_maxHebrewNumberCh = (char)(minHebrewNumberCh + s_hebrewValues.Length - 1);
@@ -335,7 +335,7 @@ namespace System.Globalization
         // The state machine for Hebrew number passing.
         //
         private static readonly HS[] s_numberPassingState =
-        {
+        [
             // 400            300/200         100             90~10           8~1      6,       7,       9,          '           "
             /* 0 */
                              HS.S400,       HS.X00,         HS.X00,          HS.X0,          HS.X,    HS.X,    HS.X,    HS.S9,      HS._err,    HS._err,
@@ -371,7 +371,7 @@ namespace System.Globalization
                              HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS._err, HS._err, HS._err,    HS._err,    HS.S9_DQ,
             /* 16: S9_DQ */
                              HS._err,       HS._err,        HS._err,         HS._err,        HS._err, HS.END,  HS.END,  HS._err,    HS._err,    HS._err
-        };
+        ];
 
         // Count of valid HebrewToken, column count in the NumberPassingState array
         private const int HebrewTokenCount = 10;

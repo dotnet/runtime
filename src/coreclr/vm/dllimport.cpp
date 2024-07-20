@@ -1150,7 +1150,7 @@ public:
             NDIRECTSTUB_FL_FIELDGETTER              |
             NDIRECTSTUB_FL_FIELDSETTER              |
 #endif // FEATURE_COMINTEROP
-            NULL;
+            0;
 
         DWORD dwUnknownFlags = dwStubFlags & ~dwKnownMask;
         if (0 != dwUnknownFlags)
@@ -2272,15 +2272,7 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
         EmitLoadStubContext(pcsEmit, dwStubFlags);
     }
 
-    if (SF_IsForwardStub(dwStubFlags))
-    {
-        pcsEmit->EmitLDLOC(GetThreadLocalNum());
-    }
-    else
-    {
-        // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLoadNullPtr();
-    }
+    pcsEmit->EmitLDLOC(GetThreadLocalNum());
 
     // In the unmanaged delegate case, we need the "this" object to retrieve the MD
     // in StubHelpers::ProfilerEnterCallback().
@@ -3368,7 +3360,7 @@ BOOL NDirect::MarshalingRequired(
                 // as long as they aren't auto-layout and don't have any auto-layout fields.
                 if (!runtimeMarshallingEnabled &&
                     !hndArgType.IsEnum() &&
-                    (hndArgType.GetMethodTable()->ContainsPointers()
+                    (hndArgType.GetMethodTable()->ContainsGCPointers()
                         || hndArgType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField()))
                 {
                     return TRUE;

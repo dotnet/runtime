@@ -3743,6 +3743,84 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
     appendToCurIG(id);
 }
 
+//-----------------------------------------------------------------------------
+//  emitIns_Add_Add_Tls_Reloc: Generates pair of "add" instructions needed for TLS access
+//  on windows for NativeAOT.
+//          add reg, reg, #0, LSL #0xC
+//          add reg, reg, #0
+//
+//  Arguments:
+//      attr - Instruction attributes
+//      reg  - Register
+//      imm  - The handle of TLS variable
+//      gtFlags - DEBUG only gtFlags.
+//
+void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
+                                        regNumber   targetReg,
+                                        regNumber   reg,
+                                        ssize_t imm DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
+{
+    emitAttr size = EA_SIZE(attr);
+
+    assert(emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    assert(TargetOS::IsWindows);
+
+    assert(isValidGeneralDatasize(size));
+    assert(EA_IS_CNS_SEC_RELOC(attr));
+
+    insFormat fmt = IF_DI_2A;
+
+    instrDesc* id = emitNewInstrCns(attr, 0);
+
+    // add reg, reg, #0, LSL 0xC
+    id->idIns(INS_add);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_LSL12);
+    id->idAddr()->iiaAddr = (BYTE*)imm;
+
+    id->idReg1(targetReg);
+    id->idReg2(reg);
+
+    // Since this is relocation, set to 8 byte size.
+    id->idOpSize(EA_8BYTE);
+    id->idSetTlsGD();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = imm;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+
+    // add reg, reg, #0
+
+    // To differentiate from first add, instead of passing
+    // `attr`, we pass `size` so this instruction is not
+    // set as having "constant relocation" i.e EA_CNS_RELOC_FLG
+    // is not set.
+    id = emitNewInstrCns(size, 0);
+
+    id->idIns(INS_add);
+    id->idInsFmt(fmt);
+    id->idAddr()->iiaAddr = (BYTE*)imm;
+
+    id->idReg1(targetReg);
+    id->idReg2(reg);
+
+    // Since this is relocation, set to 8 byte size.
+    id->idOpSize(EA_8BYTE);
+    id->idSetTlsGD();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = imm;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
 /*****************************************************************************
  *
  *  Add an instruction referencing a register and a constant.
@@ -7884,7 +7962,22 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = isVectorRegister(reg1) ? IF_SVE_IE_2A : IF_SVE_ID_2A;
+            if (isPredicateRegister(reg1))
+            {
+                assert(offs == 0);
+                // For predicate, generate based off rsGetRsvdReg()
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt = IF_SVE_IE_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
@@ -7899,10 +7992,13 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
-            break;
         }
+        break;
 
         default:
             NYI("emitIns_R_S"); // FP locals?
@@ -8135,7 +8231,24 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             isSimple = false;
             size     = EA_SCALABLE;
             attr     = size;
-            fmt      = isVectorRegister(reg1) ? IF_SVE_JH_2A : IF_SVE_JG_2A;
+
+            if (isPredicateRegister(reg1))
+            {
+                assert(offs == 0);
+
+                // For predicate, generate based off rsGetRsvdReg()
+                regNumber rsvdReg = codeGen->rsGetRsvdReg();
+
+                // add rsvd, fp, #imm
+                emitIns_R_R_I(INS_add, EA_8BYTE, rsvdReg, reg2, imm);
+                // str p0, [rsvd, #0, mul vl]
+                emitIns_R_R_I(ins, attr, reg1, rsvdReg, 0);
+
+                return;
+            }
+
+            assert(isVectorRegister(reg1));
+            fmt = IF_SVE_JH_2A;
 
             // TODO-SVE: Don't assume 128bit vectors
             // Predicate size is vector length / 8
@@ -8150,9 +8263,11 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
             {
                 useRegForImm      = true;
                 regNumber rsvdReg = codeGen->rsGetRsvdReg();
-                codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, rsvdReg, imm);
+                // For larger imm values (> 9 bits), calculate base + imm in a reserved register first.
+                codeGen->instGen_Set_Reg_To_Base_Plus_Imm(EA_PTRSIZE, rsvdReg, reg2, imm);
+                reg2 = rsvdReg;
+                imm  = 0;
             }
-            break;
         }
         break;
 
@@ -11215,13 +11330,41 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeReg_Rn(id->idReg2());       // nnnnn
             dst += emitOutput_Instr(dst, code);
 
-            if (id->idIsReloc())
+            if (id->idIsReloc() && !emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
             {
                 assert(sz == sizeof(instrDesc));
                 assert(id->idAddr()->iiaAddr != nullptr);
-                emitRecordRelocation(odst, id->idAddr()->iiaAddr,
-                                     id->idIsTlsGD() ? IMAGE_REL_AARCH64_TLSDESC_ADD_LO12
-                                                     : IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+            }
+            else
+            {
+                if (id->idIsTlsGD())
+                {
+                    if (TargetOS::IsWindows)
+                    {
+                        if (id->idIsReloc())
+                        {
+                            // This is first "add" of "add/add" pair
+                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_HIGH12A);
+                        }
+                        else
+                        {
+                            // This is second "add" of "add/add" pair
+                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_LOW12A);
+                        }
+                    }
+                    else
+                    {
+                        // For unix/arm64 it is the "add" of "adrp/add" pair
+                        emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_AARCH64_TLSDESC_ADD_LO12);
+                    }
+                }
+                else if (id->idIsReloc())
+                {
+                    assert(sz == sizeof(instrDesc));
+                    assert(id->idAddr()->iiaAddr != nullptr);
+                    emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_PAGEOFFSET_12A);
+                }
             }
             break;
 
@@ -13397,13 +13540,32 @@ void emitter::emitDispInsHelp(
             if (id->idIsReloc())
             {
                 assert(ins == INS_add);
-                printf("[LOW RELOC ");
+
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && id->idIsTlsGD())
+                {
+                    printf("[HIGH RELOC ");
+                }
+                else
+                {
+                    printf("[LOW RELOC ");
+                }
+
                 emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                 printf("]");
             }
             else
             {
-                emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && id->idIsTlsGD())
+                {
+                    assert(ins == INS_add);
+                    printf("[LOW RELOC ");
+                    emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
+                    printf("]");
+                }
+                else
+                {
+                    emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+                }
             }
             break;
 

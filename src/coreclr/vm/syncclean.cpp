@@ -66,7 +66,7 @@ void SyncClean::CleanUp ()
     LIMITED_METHOD_CONTRACT;
 
     // Only GC thread can call this.
-    _ASSERTE (g_fProcessDetach ||
+    _ASSERTE (IsAtProcessExit() ||
               IsGCSpecialThread() ||
               (GCHeapUtilities::IsGCInProgress()  && GetThreadNULLOk() == ThreadSuspend::GetSuspensionThread()));
     if (m_HashMap)

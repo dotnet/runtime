@@ -569,9 +569,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             else
             {
                 eventData.DataPointer = (IntPtr)Unsafe.AsPointer(ref value);
-#pragma warning disable 8500 // sizeof of managed types
                 eventData.Size = sizeof(T);
-#pragma warning restore 8500
             }
         }
     }

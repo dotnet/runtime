@@ -15,6 +15,17 @@ static bool ElementsAreSame(T* array, size_t size)
     return true;
 }
 
+template <typename T>
+static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
+{
+    for (size_t i = 0; i < size; i++)
+    {
+        if (array[i] != static_cast<T>(0) && array[i] != static_cast<T>(~0))
+            return false;
+    }
+    return true;
+}
+
 struct simd8_t
 {
     union
@@ -418,6 +429,136 @@ TBase EvaluateUnaryScalar(genTreeOps oper, TBase arg0)
     }
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+template <typename TBase>
+void EvaluateUnaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0)
+{
+    uint32_t count = simdSize / sizeof(TBase);
+
+#if defined(TARGET_XARCH)
+    // For xarch we have count sequential bits, but an 8 count minimum
+
+    if (count < 8)
+    {
+        count = 8;
+    }
+    assert((count == 8) || (count == 16) || (count == 32) || (count == 64));
+
+    uint64_t bitMask = static_cast<uint64_t>((static_cast<int64_t>(1) << count) - 1);
+#elif defined(TARGET_ARM64)
+    // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits apart
+    uint64_t bitMask;
+
+    switch (sizeof(TBase))
+    {
+        case 1:
+        {
+            bitMask = 0xFFFFFFFFFFFFFFFF;
+            break;
+        }
+
+        case 2:
+        {
+            bitMask = 0x5555555555555555;
+            break;
+        }
+
+        case 4:
+        {
+            bitMask = 0x1111111111111111;
+            break;
+        }
+
+        case 8:
+        {
+            bitMask = 0x0101010101010101;
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+#else
+#error Unsupported platform
+#endif
+
+    uint64_t arg0Value;
+    memcpy(&arg0Value, &arg0.u64[0], sizeof(simdmask_t));
+
+    // We're only considering these bits
+    arg0Value &= bitMask;
+
+    uint64_t resultValue = 0;
+
+    switch (oper)
+    {
+        case GT_NOT:
+        {
+            resultValue = ~arg0Value;
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    resultValue &= bitMask;
+
+    if (resultValue == bitMask)
+    {
+        // Output is equivalent to AllBitsSet, so normalize
+        memset(&resultValue, 0xFF, sizeof(uint64_t));
+    }
+    memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
+}
+
+inline void EvaluateUnaryMask(
+    genTreeOps oper, bool scalar, var_types baseType, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            EvaluateUnaryMask<uint32_t>(oper, scalar, simdSize, result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            EvaluateUnaryMask<uint64_t>(oper, scalar, simdSize, result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            EvaluateUnaryMask<uint8_t>(oper, scalar, simdSize, result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            EvaluateUnaryMask<uint16_t>(oper, scalar, simdSize, result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
 template <typename TSimd, typename TBase>
 void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0)
 {
@@ -598,6 +739,21 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 & ~arg1;
         }
 
+        case GT_EQ:
+        {
+            return (arg0 == arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_GT:
+        {
+            return (arg0 > arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_GE:
+        {
+            return (arg0 >= arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
         case GT_LSH:
         {
 #if defined(TARGET_XARCH)
@@ -617,6 +773,21 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             arg1 &= shiftCountMask;
 #endif
             return arg0 << arg1;
+        }
+
+        case GT_LT:
+        {
+            return (arg0 < arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_LE:
+        {
+            return (arg0 <= arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
+        }
+
+        case GT_NE:
+        {
+            return (arg0 != arg1) ? static_cast<TBase>(~0) : static_cast<TBase>(0);
         }
 
         case GT_OR:
@@ -679,21 +850,93 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
 template <>
 inline float EvaluateBinaryScalarSpecialized<float>(genTreeOps oper, float arg0, float arg1)
 {
-    uint32_t arg0Bits = BitOperations::SingleToUInt32Bits(arg0);
-    uint32_t arg1Bits = BitOperations::SingleToUInt32Bits(arg1);
+    switch (oper)
+    {
+        case GT_EQ:
+        {
+            return (arg0 == arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
 
-    uint32_t resultBits = EvaluateBinaryScalarSpecialized<uint32_t>(oper, arg0Bits, arg1Bits);
-    return BitOperations::UInt32BitsToSingle(resultBits);
+        case GT_GT:
+        {
+            return (arg0 > arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_GE:
+        {
+            return (arg0 >= arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_LT:
+        {
+            return (arg0 < arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_LE:
+        {
+            return (arg0 <= arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        case GT_NE:
+        {
+            return (arg0 != arg1) ? BitOperations::UInt32BitsToSingle(0xFFFFFFFF) : 0;
+        }
+
+        default:
+        {
+            uint32_t arg0Bits = BitOperations::SingleToUInt32Bits(arg0);
+            uint32_t arg1Bits = BitOperations::SingleToUInt32Bits(arg1);
+
+            uint32_t resultBits = EvaluateBinaryScalarSpecialized<uint32_t>(oper, arg0Bits, arg1Bits);
+            return BitOperations::UInt32BitsToSingle(resultBits);
+        }
+    }
 }
 
 template <>
 inline double EvaluateBinaryScalarSpecialized<double>(genTreeOps oper, double arg0, double arg1)
 {
-    uint64_t arg0Bits = BitOperations::DoubleToUInt64Bits(arg0);
-    uint64_t arg1Bits = BitOperations::DoubleToUInt64Bits(arg1);
+    switch (oper)
+    {
+        case GT_EQ:
+        {
+            return (arg0 == arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
 
-    uint64_t resultBits = EvaluateBinaryScalarSpecialized<uint64_t>(oper, arg0Bits, arg1Bits);
-    return BitOperations::UInt64BitsToDouble(resultBits);
+        case GT_GT:
+        {
+            return (arg0 > arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_GE:
+        {
+            return (arg0 >= arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_LT:
+        {
+            return (arg0 < arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_LE:
+        {
+            return (arg0 <= arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        case GT_NE:
+        {
+            return (arg0 != arg1) ? BitOperations::UInt64BitsToDouble(0xFFFFFFFFFFFFFFFF) : 0;
+        }
+
+        default:
+        {
+            uint64_t arg0Bits = BitOperations::DoubleToUInt64Bits(arg0);
+            uint64_t arg1Bits = BitOperations::DoubleToUInt64Bits(arg1);
+
+            uint64_t resultBits = EvaluateBinaryScalarSpecialized<uint64_t>(oper, arg0Bits, arg1Bits);
+            return BitOperations::UInt64BitsToDouble(resultBits);
+        }
+    }
 }
 
 template <typename TBase>
@@ -727,6 +970,164 @@ TBase EvaluateBinaryScalar(genTreeOps oper, TBase arg0, TBase arg1)
         }
     }
 }
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+template <typename TBase>
+void EvaluateBinaryMask(
+    genTreeOps oper, bool scalar, unsigned simdSize, simdmask_t* result, const simdmask_t& arg0, const simdmask_t& arg1)
+{
+    uint32_t count = simdSize / sizeof(TBase);
+
+#if defined(TARGET_XARCH)
+    // For xarch we have count sequential bits, but an 8 count minimum
+
+    if (count < 8)
+    {
+        count = 8;
+    }
+    assert((count == 8) || (count == 16) || (count == 32) || (count == 64));
+
+    uint64_t bitMask = static_cast<uint64_t>((static_cast<int64_t>(1) << count) - 1);
+#elif defined(TARGET_ARM64)
+    // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits apart
+    uint64_t bitMask;
+
+    switch (sizeof(TBase))
+    {
+        case 1:
+        {
+            bitMask = 0xFFFFFFFFFFFFFFFF;
+            break;
+        }
+
+        case 2:
+        {
+            bitMask = 0x5555555555555555;
+            break;
+        }
+
+        case 4:
+        {
+            bitMask = 0x1111111111111111;
+            break;
+        }
+
+        case 8:
+        {
+            bitMask = 0x0101010101010101;
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+#else
+#error Unsupported platform
+#endif
+
+    uint64_t arg0Value;
+    memcpy(&arg0Value, &arg0.u64[0], sizeof(simdmask_t));
+
+    uint64_t arg1Value;
+    memcpy(&arg1Value, &arg1.u64[0], sizeof(simdmask_t));
+
+    // We're only considering these bits
+    arg0Value &= bitMask;
+    arg1Value &= bitMask;
+
+    uint64_t resultValue = 0;
+
+    switch (oper)
+    {
+        case GT_AND_NOT:
+        {
+            resultValue = arg0Value & ~arg1Value;
+            break;
+        }
+
+        case GT_AND:
+        {
+            resultValue = arg0Value & arg1Value;
+            break;
+        }
+
+        case GT_OR:
+        {
+            resultValue = arg0Value | arg1Value;
+            break;
+        }
+
+        case GT_XOR:
+        {
+            resultValue = arg0Value ^ arg1Value;
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+
+    resultValue &= bitMask;
+
+    if (resultValue == bitMask)
+    {
+        // Output is equivalent to AllBitsSet, so normalize
+        memset(&resultValue, 0xFF, sizeof(uint64_t));
+    }
+    memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
+}
+
+inline void EvaluateBinaryMask(genTreeOps        oper,
+                               bool              scalar,
+                               var_types         baseType,
+                               unsigned          simdSize,
+                               simdmask_t*       result,
+                               const simdmask_t& arg0,
+                               const simdmask_t& arg1)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            EvaluateBinaryMask<uint32_t>(oper, scalar, simdSize, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            EvaluateBinaryMask<uint64_t>(oper, scalar, simdSize, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            EvaluateBinaryMask<uint8_t>(oper, scalar, simdSize, result, arg0, arg1);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            EvaluateBinaryMask<uint16_t>(oper, scalar, simdSize, result, arg0, arg1);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
 void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0, const TSimd& arg1)
@@ -1008,6 +1409,173 @@ void BroadcastConstantToSimd(TSimd* result, TBase arg0)
     }
 }
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+template <typename TSimd, typename TBase>
+void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    uint64_t mask;
+    memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        bool isSet;
+
+#if defined(TARGET_XARCH)
+        // For xarch we have count sequential bits to read
+        // setting the result element to AllBitsSet or Zero
+        // depending on the corresponding mask bit
+
+        isSet = ((mask >> i) & 1) != 0;
+#elif defined(TARGET_ARM64)
+        // For Arm64 we have count total bits to read, but
+        // they are sizeof(TBase) bits apart. We still set
+        // the result element to AllBitsSet or Zero depending
+        // on the corresponding mask bit
+
+        isSet = ((mask >> (i * sizeof(TBase))) & 1) != 0;
+#else
+        unreached();
+#endif
+
+        TBase output;
+
+        if (isSet)
+        {
+            memset(&output, 0xFF, sizeof(TBase));
+        }
+        else
+        {
+            memset(&output, 0x00, sizeof(TBase));
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
+    }
+}
+
+template <typename TSimd>
+void EvaluateSimdCvtMaskToVector(var_types baseType, TSimd* result, simdmask_t arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            EvaluateSimdCvtMaskToVector<TSimd, uint32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            EvaluateSimdCvtMaskToVector<TSimd, uint64_t>(result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            EvaluateSimdCvtMaskToVector<TSimd, uint8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            EvaluateSimdCvtMaskToVector<TSimd, uint16_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+    uint64_t mask  = 0;
+
+    TBase mostSignificantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase input0;
+        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        if ((input0 & mostSignificantBit) != 0)
+        {
+#if defined(TARGET_XARCH)
+            // For xarch we have count sequential bits to write
+            // depending on if the corresponding the input element
+            // has its most significant bit set
+
+            mask |= static_cast<uint64_t>(1) << i;
+#elif defined(TARGET_ARM64)
+            // For Arm64 we have count total bits to write, but
+            // they are sizeof(TBase) bits apart. We still set
+            // depending on if the corresponding input element
+            // has its most significant bit set
+
+            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+#else
+            unreached();
+#endif
+        }
+    }
+
+    memcpy(&result->u8[0], &mask, sizeof(uint64_t));
+}
+
+template <typename TSimd>
+void EvaluateSimdCvtVectorToMask(var_types baseType, simdmask_t* result, TSimd arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            EvaluateSimdCvtVectorToMask<TSimd, uint32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            EvaluateSimdCvtVectorToMask<TSimd, uint64_t>(result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            EvaluateSimdCvtVectorToMask<TSimd, uint8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            EvaluateSimdCvtVectorToMask<TSimd, uint16_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
 #ifdef FEATURE_SIMD
 
 #ifdef TARGET_XARCH
@@ -1019,6 +1587,7 @@ void BroadcastConstantToSimd(TSimd* result, TBase arg0)
 #define SHUFFLE_XYZW 0x1B // 00 01 10 11
 #define SHUFFLE_YXYX 0x44 // 01 00 01 00
 #define SHUFFLE_YWXZ 0x72 // 01 11 00 10
+#define SHUFFLE_YWXW 0x73 // 01 11 00 11
 #define SHUFFLE_YYZZ 0x5A // 01 01 10 10
 #define SHUFFLE_ZXXX 0x80 // 10 00 00 00
 #define SHUFFLE_ZXXY 0x81 // 10 00 00 01

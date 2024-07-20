@@ -126,6 +126,9 @@
                                                 '$(IsTestProject)' != 'true' and
                                                 '$(IsTestSupportProject)' != 'true' and
                                                 '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
+
+    <!-- Make libraries packages use and require a package readme file. -->
+    <EnableDefaultPackageReadmeFile Condition="'$(EnableDefaultPackageReadmeFile)' == '' and '$(IsShipping)' == 'true'">true</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />

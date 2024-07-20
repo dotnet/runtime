@@ -6,12 +6,6 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
-#ifdef HAS_SYSTEM_YIELDPROCESSOR
-// YieldProcessor is defined to Dont_Use_YieldProcessor. Restore it to the system-default implementation for the GC.
-#undef YieldProcessor
-#define YieldProcessor System_YieldProcessor
-#endif
-
 #define NUMA_NODE_UNDEFINED UINT16_MAX
 
 bool ParseIndexOrRange(const char** config_string, size_t* start_index, size_t* end_index);
@@ -422,7 +416,7 @@ public:
     // Remarks:
     //  If a process runs with a restricted memory limit, it returns the limit. If there's no limit
     //  specified, it returns amount of actual physical memory.
-    static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL, bool refresh=false);
+    static uint64_t GetPhysicalMemoryLimit(bool* is_restricted=NULL);
 
     // Get memory status
     // Parameters:

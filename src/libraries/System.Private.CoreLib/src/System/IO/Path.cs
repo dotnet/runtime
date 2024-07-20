@@ -731,7 +731,6 @@ namespace System.IO
         {
             Debug.Assert(first.Length > 0 && second.Length > 0 && third.Length > 0 && fourth.Length > 0, "should have dealt with empty paths");
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type
             var state = new JoinInternalState
             {
                 ReadOnlySpanPtr1 = (IntPtr)(&first),
@@ -782,7 +781,6 @@ namespace System.IO
                     Debug.Assert(fourth.Length == destination.Length);
                     fourth.CopyTo(destination);
                 });
-#pragma warning restore CS8500
         }
 
         private struct JoinInternalState // used to avoid rooting ValueTuple`7

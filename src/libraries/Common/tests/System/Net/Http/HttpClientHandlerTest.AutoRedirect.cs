@@ -182,11 +182,13 @@ namespace System.Net.Http.Functional.Tests
             {
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
+                    Task redirectTask = null;
+
                     await LoopbackServer.CreateServerAsync(async (redirectServer, redirectUrl) =>
                     {
                         Task<HttpResponseMessage> getResponseTask = client.GetAsync(TestAsync, origUrl);
 
-                        Task redirectTask = redirectServer.AcceptConnectionSendResponseAndCloseAsync();
+                        redirectTask = redirectServer.AcceptConnectionSendResponseAndCloseAsync();
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(
                             getResponseTask,
@@ -199,6 +201,8 @@ namespace System.Net.Http.Functional.Tests
                             Assert.False(redirectTask.IsCompleted, "Should not have redirected to Location");
                         }
                     });
+
+                    await IgnoreExceptions(redirectTask);
                 });
             }
         }

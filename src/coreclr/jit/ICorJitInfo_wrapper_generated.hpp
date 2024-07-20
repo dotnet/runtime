@@ -79,6 +79,15 @@ bool WrapICorJitInfo::haveSameMethodDefinition(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getTypeDefinition);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeDefinition(type);
+    API_LEAVE(getTypeDefinition);
+    return temp;
+}
+
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)
@@ -256,15 +265,6 @@ void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
     API_ENTER(methodMustBeLoadedBeforeCodeIsRun);
     wrapHnd->methodMustBeLoadedBeforeCodeIsRun(method);
     API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(mapMethodDeclToMethodImpl);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->mapMethodDeclToMethodImpl(method);
-    API_LEAVE(mapMethodDeclToMethodImpl);
-    return temp;
 }
 
 void WrapICorJitInfo::getGSCookie(
@@ -632,6 +632,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBox(
     API_ENTER(getTypeForBox);
     CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBox(cls);
     API_LEAVE(getTypeForBox);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getTypeForBoxOnStack);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBoxOnStack(cls);
+    API_LEAVE(getTypeForBoxOnStack);
     return temp;
 }
 

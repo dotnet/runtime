@@ -162,111 +162,6 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
     return changed;
 }
 
-//------------------------------------------------------------------------
-// fgRemoveDeadBlocks: Identify all the unreachable blocks and remove them.
-//
-bool Compiler::fgRemoveDeadBlocks()
-{
-    JITDUMP("\n*************** In fgRemoveDeadBlocks()");
-
-    unsigned prevFgCurBBEpoch = fgCurBBEpoch;
-    EnsureBasicBlockEpoch();
-
-    BlockSet visitedBlocks(BlockSetOps::MakeEmpty(this));
-
-    jitstd::list<BasicBlock*> worklist(jitstd::allocator<void>(getAllocator(CMK_Reachability)));
-    worklist.push_back(fgFirstBB);
-
-    // Visit all the reachable blocks, everything else can be removed
-    while (!worklist.empty())
-    {
-        BasicBlock* block = *(worklist.begin());
-        worklist.pop_front();
-
-        if (BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
-        {
-            continue;
-        }
-
-        BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
-
-        for (BasicBlock* succ : block->Succs(this))
-        {
-            worklist.push_back(succ);
-        }
-
-        // Add all the "EH" successors. For every `try`, add its handler (including filter) to the worklist.
-        if (bbIsTryBeg(block))
-        {
-            // Due to EH normalization, a block can only be the start of a single `try` region, with the exception
-            // of mutually-protect regions.
-            assert(block->hasTryIndex());
-            unsigned  tryIndex = block->getTryIndex();
-            EHblkDsc* ehDsc    = ehGetDsc(tryIndex);
-            for (;;)
-            {
-                worklist.push_back(ehDsc->ebdHndBeg);
-                if (ehDsc->HasFilter())
-                {
-                    worklist.push_back(ehDsc->ebdFilter);
-                }
-                tryIndex = ehDsc->ebdEnclosingTryIndex;
-                if (tryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-                {
-                    break;
-                }
-                ehDsc = ehGetDsc(tryIndex);
-                if (ehDsc->ebdTryBeg != block)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    // Track if there is any unreachable block. Even if it is marked with
-    // BBF_DONT_REMOVE, fgRemoveUnreachableBlocks() still removes the code
-    // inside the block. So this variable tracks if we ever found such blocks
-    // or not.
-    bool hasUnreachableBlock = false;
-
-    auto isBlockRemovable = [&](BasicBlock* block) -> bool {
-        const bool isVisited   = BlockSetOps::IsMember(this, visitedBlocks, block->bbNum);
-        const bool isRemovable = !isVisited || (block->bbRefs == 0);
-
-        hasUnreachableBlock |= isRemovable;
-        return isRemovable;
-    };
-
-    bool     changed        = false;
-    unsigned iterationCount = 1;
-    do
-    {
-        JITDUMP("\nRemoving unreachable blocks for fgRemoveDeadBlocks iteration #%u\n", iterationCount);
-
-        // Just to be paranoid, avoid infinite loops; fall back to minopts.
-        if (iterationCount++ > 10)
-        {
-            noway_assert(!"Too many unreachable block removal loops");
-        }
-        changed = fgRemoveUnreachableBlocks(isBlockRemovable);
-    } while (changed);
-
-#ifdef DEBUG
-    if (verbose && hasUnreachableBlock)
-    {
-        printf("\nAfter dead block removal:\n");
-        fgDispBasicBlocks(verboseTrees);
-        printf("\n");
-    }
-
-    fgVerifyHandlerTab();
-    fgDebugCheckBBlist(false);
-#endif // DEBUG
-
-    return hasUnreachableBlock;
-}
-
 //-------------------------------------------------------------
 // fgComputeDominators: Compute dominators
 //
@@ -537,15 +432,15 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 //
                 BasicBlock* const oldTryEntry  = HBtab->ebdTryBeg;
                 BasicBlock*       tryEntryPrev = oldTryEntry->Prev();
-                while ((tryEntryPrev != nullptr) && tryEntryPrev->HasFlag(BBF_REMOVED))
+                assert(tryEntryPrev != nullptr);
+                while (tryEntryPrev->HasFlag(BBF_REMOVED))
                 {
                     tryEntryPrev = tryEntryPrev->Prev();
+                    // Because we've added an unremovable scratch block as
+                    // fgFirstBB, this backwards walk should always find
+                    // some block.
+                    assert(tryEntryPrev != nullptr);
                 }
-
-                // Because we've added an unremovable scratch block as
-                // fgFirstBB, this backwards walk should always find
-                // some block.
-                assert(tryEntryPrev != nullptr);
 
                 // If there is a next block of this prev block, and that block is
                 // contained in the current try, we'd like to make that block
@@ -2071,6 +1966,12 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
+    // No point duplicating this block if it would not remove (part of) the join.
+    if (target->TrueTargetIs(target) || target->FalseTargetIs(target))
+    {
+        return false;
+    }
+
     Statement* const lastStmt  = target->lastStmt();
     Statement* const firstStmt = target->FirstNonPhiDef();
 
@@ -2368,6 +2269,108 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     }
 
     return true;
+}
+
+//-------------------------------------------------------------
+// fgFoldSimpleCondByForwardSub:
+//   Try to refine the flow of a block that may have just been tail duplicated
+//   or compacted.
+//
+// Arguments:
+//   block - block that was tail duplicated or compacted
+//
+// Returns Value:
+//   true if control flow was changed
+//
+bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
+{
+    assert(block->KindIs(BBJ_COND));
+    GenTree* jtrue = block->lastStmt()->GetRootNode();
+    assert(jtrue->OperIs(GT_JTRUE));
+
+    GenTree* relop = jtrue->gtGetOp1();
+    if (!relop->OperIsCompare())
+    {
+        return false;
+    }
+
+    GenTree* op1 = relop->gtGetOp1();
+    GenTree* op2 = relop->gtGetOp2();
+
+    GenTree**            lclUse;
+    GenTreeLclVarCommon* lcl;
+
+    if (op1->OperIs(GT_LCL_VAR) && op2->IsIntegralConst())
+    {
+        lclUse = &relop->AsOp()->gtOp1;
+        lcl    = op1->AsLclVarCommon();
+    }
+    else if (op2->OperIs(GT_LCL_VAR) && op1->IsIntegralConst())
+    {
+        lclUse = &relop->AsOp()->gtOp2;
+        lcl    = op2->AsLclVarCommon();
+    }
+    else
+    {
+        return false;
+    }
+
+    Statement* secondLastStmt = block->lastStmt()->GetPrevStmt();
+    if ((secondLastStmt == nullptr) || (secondLastStmt == block->lastStmt()))
+    {
+        return false;
+    }
+
+    GenTree* prevTree = secondLastStmt->GetRootNode();
+    if (!prevTree->OperIs(GT_STORE_LCL_VAR))
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* store = prevTree->AsLclVarCommon();
+    if (store->GetLclNum() != lcl->GetLclNum())
+    {
+        return false;
+    }
+
+    if (!store->Data()->IsIntegralConst())
+    {
+        return false;
+    }
+
+    if (genActualType(store) != genActualType(store->Data()) || (genActualType(store) != genActualType(lcl)))
+    {
+        return false;
+    }
+
+    JITDUMP("Forward substituting local after jump threading. Before:\n");
+    DISPSTMT(block->lastStmt());
+
+    JITDUMP("\nAfter:\n");
+
+    LclVarDsc* varDsc  = lvaGetDesc(lcl);
+    GenTree*   newData = gtCloneExpr(store->Data());
+    if (varTypeIsSmall(varDsc) && fgCastNeeded(store->Data(), varDsc->TypeGet()))
+    {
+        newData = gtNewCastNode(TYP_INT, newData, false, varDsc->TypeGet());
+        newData = gtFoldExpr(newData);
+    }
+
+    *lclUse = newData;
+    DISPSTMT(block->lastStmt());
+
+    JITDUMP("\nNow trying to fold...\n");
+    jtrue->AsUnOp()->gtOp1 = gtFoldExpr(relop);
+    DISPSTMT(block->lastStmt());
+
+    Compiler::FoldResult result = fgFoldConditional(block);
+    if (result != Compiler::FoldResult::FOLD_DID_NOTHING)
+    {
+        assert(block->KindIs(BBJ_ALWAYS));
+        return true;
+    }
+
+    return false;
 }
 
 //-------------------------------------------------------------
@@ -4533,6 +4536,13 @@ void Compiler::fgMoveHotJumps()
                 targetEdge   = block->GetFalseEdge();
                 unlikelyEdge = block->GetTrueEdge();
             }
+
+            // If we aren't sure which successor is hotter, and we already fall into one of them,
+            // do nothing
+            if ((unlikelyEdge->getLikelihood() == 0.5) && block->NextIs(unlikelyEdge->getDestinationBlock()))
+            {
+                continue;
+            }
         }
         else
         {
@@ -5281,10 +5291,35 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
                 {
                     assert(block->KindIs(BBJ_COND));
                     assert(bNext == block->Next());
-                    change     = true;
-                    modified   = true;
-                    bDest      = block->GetTrueTarget();
-                    bFalseDest = block->GetFalseTarget();
+                    change   = true;
+                    modified = true;
+
+                    if (fgFoldSimpleCondByForwardSub(block))
+                    {
+                        // It is likely another pred of the target now can
+                        // similarly have its control flow straightened out.
+                        // Try to compact it and repeat the optimization for
+                        // it.
+                        if (bDest->bbRefs == 1)
+                        {
+                            BasicBlock* otherPred = bDest->bbPreds->getSourceBlock();
+                            JITDUMP("Trying to compact last pred " FMT_BB " of " FMT_BB " that we now bypass\n",
+                                    otherPred->bbNum, bDest->bbNum);
+                            if (fgCanCompactBlock(otherPred))
+                            {
+                                fgCompactBlock(otherPred);
+                                fgFoldSimpleCondByForwardSub(otherPred);
+                            }
+                        }
+
+                        assert(block->KindIs(BBJ_ALWAYS));
+                        bDest = block->GetTarget();
+                    }
+                    else
+                    {
+                        bDest      = block->GetTrueTarget();
+                        bFalseDest = block->GetFalseTarget();
+                    }
                 }
             }
 
@@ -5691,7 +5726,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */,
         fgVerifyHandlerTab();
         // Make sure that the predecessor lists are accurate
         fgDebugCheckBBlist();
-        fgDebugCheckUpdate();
+        fgDebugCheckUpdate(doAggressiveCompaction);
     }
 #endif // DEBUG
 

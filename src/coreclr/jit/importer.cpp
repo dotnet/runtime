@@ -233,6 +233,7 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
                     case GT_CNS_VEC:
+                    case GT_CNS_MSK:
                     case GT_LCL_VAR:
                         table->val = gtCloneExpr(tree);
                         break;
@@ -430,7 +431,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         {
             GenTree* call = expr->OperIs(GT_RET_EXPR) ? expr->AsRetExpr()->gtInlineCandidate : expr;
 
-            if (call->TypeIs(TYP_VOID) && call->AsCall()->TreatAsShouldHaveRetBufArg())
+            if (call->TypeIs(TYP_VOID) && call->AsCall()->ShouldHaveRetBufArg())
             {
                 GenTree* retBuf;
                 if (call->AsCall()->ShouldHaveRetBufArg())
@@ -836,7 +837,7 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
     if (src->IsCall())
     {
         GenTreeCall* srcCall = src->AsCall();
-        if (srcCall->TreatAsShouldHaveRetBufArg())
+        if (srcCall->ShouldHaveRetBufArg())
         {
             // Case of call returning a struct via hidden retbuf arg.
             // Some calls have an "out buffer" that is not actually a ret buff
@@ -850,6 +851,12 @@ GenTree* Compiler::impStoreStruct(GenTree*         store,
             GenTreeFlags indirFlags = GTF_EMPTY;
             GenTree*     destAddr   = impGetNodeAddr(store, CHECK_SPILL_ALL, &indirFlags);
             NewCallArg   newArg     = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+
+            if (destAddr->OperIs(GT_LCL_ADDR))
+            {
+                lvaSetVarDoNotEnregister(destAddr->AsLclVarCommon()->GetLclNum()
+                                             DEBUGARG(DoNotEnregisterReason::HiddenBufferStructArg));
+            }
 
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
@@ -2483,6 +2490,42 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impGetGenericTypeDefinition: gets the generic type definition from a 'typeof' expression.
+//
+// Arguments:
+//    type - The 'GenTree' node to inspect.
+//
+// Notes:
+//    If successful, this method will call 'impPopStack()' before returning.
+//
+GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
+{
+    // This intrinsic requires the first arg to be some `typeof()` expression,
+    // ie. it applies to cases such as `typeof(...).GetGenericTypeDefinition()`.
+    CORINFO_CLASS_HANDLE hClassType = NO_CLASS_HANDLE;
+    if (gtIsTypeof(type, &hClassType))
+    {
+        // Check that the 'typeof()' expression is being used on a type that is in fact generic.
+        // If that is not the case, we don't expand the intrinsic. This will end up using
+        // the usual Type.GetGenericTypeDefinition() at runtime, which will throw in this case.
+        if (info.compCompHnd->getTypeInstantiationArgument(hClassType, 0) != NO_CLASS_HANDLE)
+        {
+            CORINFO_CLASS_HANDLE hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
+
+            GenTree* handle  = gtNewIconEmbClsHndNode(hClassResult);
+            GenTree* retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+
+            // Drop the typeof(T) node
+            impPopStack();
+
+            return retNode;
+        }
+    }
+
+    return nullptr;
+}
+
 /*****************************************************************************
  * 'logMsg' is true if a log message needs to be logged. false if the caller has
  *   already logged it (presumably in a more detailed fashion than done here)
@@ -2672,8 +2715,7 @@ bool Compiler::verCheckTailCallConstraint(OPCODE                  opcode,
         }
 
         // Check that the argument is not a byref-like for tailcalls.
-        if ((ciType == CORINFO_TYPE_VALUECLASS) &&
-            ((info.compCompHnd->getClassAttribs(classHandle) & CORINFO_FLG_BYREF_LIKE) != 0))
+        if ((ciType == CORINFO_TYPE_VALUECLASS) && eeIsByrefLike(classHandle))
         {
             return false;
         }
@@ -2827,6 +2869,195 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
+// impInlineUnboxNullable: Generate code for unboxing Nullable<T> from an object (obj)
+//     We either inline the unbox operation (if profitable) or call the helper.
+//     The inline expansion is as follows:
+//
+//     Nullable<T> result;
+//     if (obj == null)
+//     {
+//         result = default;
+//     }
+//     else if (obj->pMT == <real-boxed-type>)
+//     {
+//         result._hasValue = true;
+//         result._value = *(T*)(obj + sizeof(void*));
+//     }
+//     else
+//     {
+//         result = CORINFO_HELP_UNBOX_NULLABLE(&result, nullableCls, obj);
+//     }
+//
+// Arguments:
+//     nullableCls     - class handle representing the Nullable<T> type
+//     nullableClsNode - tree node representing the Nullable<T> type (can be a runtime lookup tree)
+//     obj             - object to unbox
+//
+// Return Value:
+//     A local node representing the unboxed value (Nullable<T>)
+//
+GenTree* Compiler::impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* nullableClsNode, GenTree* obj)
+{
+    assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
+
+    unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
+    lvaSetStruct(resultTmp, nullableCls, false);
+    lvaGetDesc(resultTmp)->lvHasLdAddrOp = true;
+    GenTreeLclFld* resultAddr            = gtNewLclAddrNode(resultTmp, 0);
+
+    // Check profitability of inlining the unbox operation
+    bool shouldExpandInline = !compCurBB->isRunRarely() && opts.OptimizationEnabled() && !eeIsSharedInst(nullableCls);
+
+    // It's less profitable to inline the unbox operation if the underlying type is too large
+    CORINFO_CLASS_HANDLE unboxType = NO_CLASS_HANDLE;
+    if (shouldExpandInline)
+    {
+        // The underlying type of the nullable:
+        unboxType          = info.compCompHnd->getTypeForBox(nullableCls);
+        shouldExpandInline = info.compCompHnd->getClassSize(unboxType) <= getUnrollThreshold(Memcpy);
+    }
+
+    if (!shouldExpandInline)
+    {
+        // No expansion needed, just call the helper
+        GenTreeCall* call =
+            gtNewHelperCallNode(CORINFO_HELP_UNBOX_NULLABLE, TYP_VOID, resultAddr, nullableClsNode, obj);
+        impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
+        return gtNewLclvNode(resultTmp, TYP_STRUCT);
+    }
+
+    // Clone the object (and spill side effects)
+    GenTree* objClone;
+    obj = impCloneExpr(obj, &objClone, CHECK_SPILL_ALL, nullptr DEBUGARG("op1 spilled for Nullable unbox"));
+
+    // Unbox the object to the result local:
+    //
+    //  result._hasValue = true;
+    //  result._value = MethodTableLookup(obj);
+    //
+    CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+    CORINFO_CLASS_HANDLE valueStructCls;
+    var_types            valueType = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
+    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
+    unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
+
+    GenTree* boxedContentAddr =
+        gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(objClone), gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL));
+    // Load the boxed content from the object (op1):
+    GenTree* boxedContent = valueType == TYP_STRUCT ? gtNewBlkIndir(typGetObjLayout(valueStructCls), boxedContentAddr)
+                                                    : gtNewIndir(valueType, boxedContentAddr);
+    // Now do two stores via a comma:
+    GenTree* setHasValue = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
+    GenTree* setValue    = gtNewStoreLclFldNode(resultTmp, valueType, valueOffset, boxedContent);
+    GenTree* unboxTree   = gtNewOperNode(GT_COMMA, TYP_VOID, setHasValue, setValue);
+
+    // Fallback helper call
+    // TODO: Mark as no-return when appropriate
+    GenTreeCall* helperCall =
+        gtNewHelperCallNode(CORINFO_HELP_UNBOX_NULLABLE, TYP_VOID, resultAddr, nullableClsNode, gtCloneExpr(objClone));
+
+    // Nested QMARK - "obj->pMT == <boxed-type> ? unboxTree : helperCall"
+    assert(unboxType != NO_CLASS_HANDLE);
+    GenTree*      unboxTypeNode = gtNewIconEmbClsHndNode(unboxType);
+    GenTree*      objMT         = gtNewMethodTableLookup(objClone);
+    GenTree*      mtLookupCond  = gtNewOperNode(GT_NE, TYP_INT, objMT, unboxTypeNode);
+    GenTreeColon* mtCheckColon  = gtNewColonNode(TYP_VOID, helperCall, unboxTree);
+    GenTreeQmark* mtCheckQmark  = gtNewQmarkNode(TYP_VOID, mtLookupCond, mtCheckColon);
+    mtCheckQmark->SetThenNodeLikelihood(0);
+
+    // Zero initialize the result in case of "obj == null"
+    GenTreeLclVar* zeroInitResultNode = gtNewStoreLclVarNode(resultTmp, gtNewIconNode(0));
+
+    // Root condition - "obj == null ? zeroInitResultNode : mtCheckQmark"
+    GenTree*      nullcheck      = gtNewOperNode(GT_NE, TYP_INT, obj, gtNewNull());
+    GenTreeColon* nullCheckColon = gtNewColonNode(TYP_VOID, mtCheckQmark, zeroInitResultNode);
+    GenTreeQmark* nullCheckQmark = gtNewQmarkNode(TYP_VOID, nullcheck, nullCheckColon);
+
+    // Spill the root QMARK and return the result local
+    impAppendTree(nullCheckQmark, CHECK_SPILL_ALL, impCurStmtDI);
+    return gtNewLclvNode(resultTmp, TYP_STRUCT);
+}
+
+//------------------------------------------------------------------------
+// impStoreNullableFields: create a Nullable<T> object and store
+//    'hasValue' (always true) and the given value for 'value' field
+//
+// Arguments:
+//    nullableCls - class handle for the Nullable<T> class
+//    value       - value to store in 'value' field
+//
+// Return Value:
+//    A local node representing the created Nullable<T> object
+//
+GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenTree* value)
+{
+    assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
+
+    CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+    CORINFO_CLASS_HANDLE valueStructCls;
+    var_types            valueType = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
+
+    // We still make some assumptions about the layout of Nullable<T> in JIT
+    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
+    unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
+
+    // Define the resulting Nullable<T> local
+    unsigned resultTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
+    lvaSetStruct(resultTmp, nullableCls, false);
+
+    // Now do two stores:
+    GenTree*     hasValueStore = gtNewStoreLclFldNode(resultTmp, TYP_UBYTE, hasValOffset, gtNewIconNode(1));
+    ClassLayout* layout        = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
+    GenTree*     valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
+
+    impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
+    impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);
+    return gtNewLclvNode(resultTmp, TYP_STRUCT);
+}
+
+//------------------------------------------------------------------------
+// impLoadNullableFields: get 'hasValue' and 'value' field loads for Nullable<T> object
+//
+// Arguments:
+//    nullableObj - tree representing the Nullable<T> object
+//    nullableCls - class handle for the Nullable<T> class
+//    hasValueFld - pointer to store the 'hasValue' field load tree
+//    valueFld    - pointer to store the 'value' field load tree
+//
+void Compiler::impLoadNullableFields(GenTree*             nullableObj,
+                                     CORINFO_CLASS_HANDLE nullableCls,
+                                     GenTree**            hasValueFld,
+                                     GenTree**            valueFld)
+{
+    assert(info.compCompHnd->isNullableType(nullableCls) == TypeCompareState::Must);
+
+    CORINFO_FIELD_HANDLE valueFldHnd = info.compCompHnd->getFieldInClass(nullableCls, 1);
+    CORINFO_CLASS_HANDLE valueStructCls;
+    var_types            valueType   = JITtype2varType(info.compCompHnd->getFieldType(valueFldHnd, &valueStructCls));
+    ClassLayout*         valueLayout = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
+
+    static_assert_no_msg(OFFSETOF__CORINFO_NullableOfT__hasValue == 0);
+    unsigned hasValOffset = OFFSETOF__CORINFO_NullableOfT__hasValue;
+    unsigned valueOffset  = info.compCompHnd->getFieldOffset(valueFldHnd);
+
+    unsigned objTmp;
+    if (!nullableObj->OperIs(GT_LCL_VAR))
+    {
+        objTmp = lvaGrabTemp(true DEBUGARG("Nullable<T> tmp"));
+        impStoreToTemp(objTmp, nullableObj, CHECK_SPILL_ALL);
+    }
+    else
+    {
+        objTmp = nullableObj->AsLclVarCommon()->GetLclNum();
+    }
+
+    *hasValueFld = gtNewLclFldNode(objTmp, TYP_UBYTE, hasValOffset);
+    *valueFld    = gtNewLclFldNode(objTmp, valueType, valueOffset, valueLayout);
+}
+
+//------------------------------------------------------------------------
 // impBoxPatternMatch: match and import common box idioms
 //
 // Arguments:
@@ -2889,6 +3120,40 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     if ((typ >= CORINFO_TYPE_BYTE) && (typ <= CORINFO_TYPE_ULONG) &&
                         (info.compCompHnd->getTypeForPrimitiveValueClass(pResolvedToken->hClass) == typ))
                     {
+                        optimize = true;
+                    }
+                    //
+                    // Also, try to optimize (T)(object)nullableT
+                    //
+                    else if (!eeIsSharedInst(unboxResolvedToken.hClass) &&
+                             (info.compCompHnd->isNullableType(pResolvedToken->hClass) == TypeCompareState::Must) &&
+                             (info.compCompHnd->getTypeForBox(pResolvedToken->hClass) == unboxResolvedToken.hClass))
+                    {
+                        GenTree* hasValueFldTree;
+                        GenTree* valueFldTree;
+                        impLoadNullableFields(impPopStack().val, pResolvedToken->hClass, &hasValueFldTree,
+                                              &valueFldTree);
+
+                        // Push "hasValue == 0 ? throw new NullReferenceException() : NOP" qmark
+                        GenTree*      fallback = gtNewHelperCallNode(CORINFO_HELP_THROWNULLREF, TYP_VOID);
+                        GenTree*      cond     = gtNewOperNode(GT_EQ, TYP_INT, hasValueFldTree, gtNewIconNode(0));
+                        GenTreeColon* colon    = gtNewColonNode(TYP_VOID, fallback, gtNewNothingNode());
+                        GenTree*      qmark    = gtNewQmarkNode(TYP_VOID, cond, colon);
+                        impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+
+                        // Now push the value field
+                        impPushOnStack(valueFldTree, typeInfo(valueFldTree->TypeGet()));
+                        optimize = true;
+                    }
+                    //
+                    // Vice versa, try to optimize (T?)(object)nonNullableT
+                    //
+                    else if (!eeIsSharedInst(pResolvedToken->hClass) &&
+                             (info.compCompHnd->isNullableType(unboxResolvedToken.hClass) == TypeCompareState::Must) &&
+                             (info.compCompHnd->getTypeForBox(unboxResolvedToken.hClass) == pResolvedToken->hClass))
+                    {
+                        GenTree* result = impStoreNullableFields(unboxResolvedToken.hClass, impPopStack().val);
+                        impPushOnStack(result, typeInfo(result->TypeGet()));
                         optimize = true;
                     }
                 }
@@ -4227,7 +4492,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
 
-    if (op->IsCall() && op->AsCall()->TreatAsShouldHaveRetBufArg())
+    if (op->IsCall() && op->AsCall()->ShouldHaveRetBufArg())
     {
         // This must be one of those 'special' helpers that don't really have a return buffer, but instead
         // use it as a way to keep the trees cleaner with fewer address-taken temps. Well now we have to
@@ -5549,7 +5814,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     // We can convert constant-ish tokens of nullable to its underlying type.
     // However, when the type is shared generic parameter like Nullable<Struct<__Canon>>, the actual type will require
     // runtime lookup. It's too complex to add another level of indirection in op2, fallback to the cast helper instead.
-    if (isClassExact && !(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST))
+    if (isClassExact && !eeIsSharedInst(pResolvedToken->hClass))
     {
         CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
         if (hClass != pResolvedToken->hClass)
@@ -5595,7 +5860,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
             !compCurBB->isRunRarely())
         {
             // It doesn't make sense to instrument "x is T" or "(T)x" for shared T
-            if ((info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST) == 0)
+            if (!eeIsSharedInst(pResolvedToken->hClass))
             {
                 HandleHistogramProfileCandidateInfo* pInfo =
                     new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
@@ -9471,8 +9736,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             CORINFO_FIELD_INFO fi;
                             eeGetFieldInfo(&fldToken, CORINFO_ACCESS_SET, &fi);
                             unsigned flagsToCheck = CORINFO_FLG_FIELD_STATIC | CORINFO_FLG_FIELD_FINAL;
-                            if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) &&
-                                ((info.compCompHnd->getClassAttribs(info.compClassHnd) & CORINFO_FLG_SHAREDINST) == 0))
+                            if (((fi.fieldFlags & flagsToCheck) == flagsToCheck) && !eeIsSharedInst(info.compClassHnd))
                             {
 #ifdef FEATURE_READYTORUN
                                 if (opts.IsReadyToRun())
@@ -9981,24 +10245,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op2 = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                     op1 = gtNewOperNode(GT_ADD, TYP_BYREF, cloneOperand, op2);
                 }
+                else if (helper == CORINFO_HELP_UNBOX_NULLABLE)
+                {
+                    // op1 is the object being unboxed
+                    // op2 is either a class handle node or a runtime lookup node (it's fine to reorder)
+                    op1 = impInlineUnboxNullable(resolvedToken.hClass, op2, op1);
+                }
                 else
                 {
+                    // Don't optimize, just call the helper and be done with it
                     JITDUMP("\n Importing %s as helper call because %s\n", opcode == CEE_UNBOX ? "UNBOX" : "UNBOX.ANY",
                             canExpandInline ? "want smaller code or faster jitting" : "inline expansion not legal");
 
-                    // Don't optimize, just call the helper and be done with it
-                    op1 = gtNewHelperCallNode(helper,
-                                              (var_types)((helper == CORINFO_HELP_UNBOX) ? TYP_BYREF : TYP_STRUCT), op2,
-                                              op1);
-                    if (op1->gtType == TYP_STRUCT)
-                    {
-                        op1->AsCall()->gtRetClsHnd = resolvedToken.hClass;
-                    }
+                    assert(helper == CORINFO_HELP_UNBOX);
+                    op1 = gtNewHelperCallNode(helper, TYP_BYREF, op2, op1);
                 }
 
-                assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) ||   // Unbox helper returns a byref.
-                       (helper == CORINFO_HELP_UNBOX_NULLABLE && varTypeIsStruct(op1)) // UnboxNullable helper returns a
-                                                                                       // struct.
+                assert((helper == CORINFO_HELP_UNBOX && op1->gtType == TYP_BYREF) || // Unbox helper returns a byref.
+                       (helper == CORINFO_HELP_UNBOX_NULLABLE && op1->TypeIs(TYP_STRUCT)) // UnboxNullable helper
+                                                                                          // returns a struct.
                 );
 
                 /*
@@ -10012,12 +10277,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                   | UNBOX     | push the BYREF          | spill the STRUCT to a local, |
                   |           |                         | push the BYREF to this local |
                   |---------------------------------------------------------------------
-                  | UNBOX_ANY | push a GT_BLK of        | push the STRUCT              |
-                  |           | the BYREF               | For Linux when the           |
-                  |           |                         |  struct is returned in two   |
-                  |           |                         |  registers create a temp     |
-                  |           |                         |  which address is passed to  |
-                  |           |                         |  the unbox_nullable helper.  |
+                  | UNBOX_ANY | push a GT_BLK of        | push the STRUCT local        |
+                  |           | the BYREF               |                              |
                   |---------------------------------------------------------------------
                 */
 
@@ -10025,23 +10286,18 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     if (helper == CORINFO_HELP_UNBOX_NULLABLE)
                     {
+                        // NOTE: what we do here doesn't comply with the ECMA spec, see
+                        // https://github.com/dotnet/runtime/issues/86203#issuecomment-1546709542
+                        // Although, now with escape analysis being enabled we can afford a temp GC alloc here?
+
                         // Unbox nullable helper returns a struct type.
                         // We need to spill it to a temp so than can take the address of it.
                         // Here we need unsafe value cls check, since the address of struct is taken to be used
                         // further along and potetially be exploitable.
 
-                        unsigned tmp = lvaGrabTemp(true DEBUGARG("UNBOXing a nullable"));
-                        lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
-
-                        op1 = gtNewStoreLclVarNode(tmp, op1);
-                        op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
-                        assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
-
-                        op2 = gtNewLclVarAddrNode(tmp, TYP_BYREF);
-                        op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
+                        // op1 is always a local, see code above for CORINFO_HELP_UNBOX_NULLABLE
+                        op1 = gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), TYP_I_IMPL);
                     }
-
-                    assert(op1->gtType == TYP_BYREF);
                 }
                 else
                 {
@@ -10056,42 +10312,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     assert(helper == CORINFO_HELP_UNBOX_NULLABLE && "Make sure the helper is nullable!");
 
-#if FEATURE_MULTIREG_RET
-
-                    if (varTypeIsStruct(op1) &&
-                        IsMultiRegReturnedType(resolvedToken.hClass, CorInfoCallConvExtension::Managed))
-                    {
-                        // Unbox nullable helper returns a TYP_STRUCT.
-                        // For the multi-reg case we need to spill it to a temp so that
-                        // we can pass the address to the unbox_nullable jit helper.
-
-                        unsigned tmp = lvaGrabTemp(true DEBUGARG("UNBOXing a register returnable nullable"));
-                        lvaTable[tmp].lvIsMultiRegArg = true;
-                        lvaSetStruct(tmp, resolvedToken.hClass, true /* unsafe value cls check */);
-
-                        op1 = gtNewStoreLclVarNode(tmp, op1);
-                        op1 = impStoreStruct(op1, CHECK_SPILL_ALL);
-                        assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
-
-                        op2 = gtNewLclVarAddrNode(tmp, TYP_BYREF);
-                        op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
-
-                        // In this case the return value of the unbox helper is TYP_BYREF.
-                        // Make sure the right type is placed on the operand type stack.
-                        impPushOnStack(op1, tiRetVal);
-
-                        assert(op1->gtType == TYP_BYREF);
-                        goto OBJ;
-                    }
-                    else
-
-#endif // !FEATURE_MULTIREG_RET
-
-                    {
-                        // If non register passable struct we have it materialized in the RetBuf.
-                        assert(op1->gtType == TYP_STRUCT);
-                        tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
-                    }
+                    // If non register passable struct we have it materialized in the RetBuf.
+                    assert(op1->TypeIs(TYP_STRUCT));
+                    tiRetVal = verMakeTypeInfo(resolvedToken.hClass);
                 }
 
                 impPushOnStack(op1, tiRetVal);
@@ -10121,8 +10344,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
                 }
 
-                bool isByRefLike =
-                    (info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BYREF_LIKE) != 0;
+                bool isByRefLike = eeIsByrefLike(resolvedToken.hClass);
                 if (isByRefLike)
                 {
                     // For ByRefLike types we are required to either fold the
