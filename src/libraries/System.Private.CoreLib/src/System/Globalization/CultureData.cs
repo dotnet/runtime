@@ -536,7 +536,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
             {
                 // in invariant mode we always return invariant culture only from the enumeration
-                return new CultureInfo[] { new CultureInfo("") };
+                return [new CultureInfo("")];
             }
 
 #pragma warning restore 618
@@ -585,7 +585,7 @@ namespace System.Globalization
             invariant._sNegativeSign = "-";                    // negative sign
             invariant._iDigits = 2;                      // number of fractional digits
             invariant._iNegativeNumber = 1;                      // negative number format
-            invariant._waGrouping = new int[] { 3 };          // grouping of digits
+            invariant._waGrouping = [3];          // grouping of digits
             invariant._sDecimalSeparator = ".";                    // decimal separator
             invariant._sThousandSeparator = ",";                    // thousands separator
             invariant._sNaN = "NaN";                  // Not a Number
@@ -606,7 +606,7 @@ namespace System.Globalization
             invariant._iCurrencyDigits = 2;                      // # local monetary fractional digits
             invariant._iCurrency = 0;                      // positive currency format
             invariant._iNegativeCurrency = 0;                      // negative currency format
-            invariant._waMonetaryGrouping = new int[] { 3 };          // monetary grouping of digits
+            invariant._waMonetaryGrouping = [3];          // monetary grouping of digits
             invariant._sMonetaryDecimal = ".";                    // monetary decimal separator
             invariant._sMonetaryThousand = ",";                    // monetary thousands separator
 
@@ -618,15 +618,15 @@ namespace System.Globalization
             invariant._sTimeSeparator = ":";
             invariant._sAM1159 = "AM";                   // AM designator
             invariant._sPM2359 = "PM";                   // PM designator
-            invariant._saLongTimes = new string[] { "HH:mm:ss" };                             // time format
-            invariant._saShortTimes = new string[] { "HH:mm", "hh:mm tt", "H:mm", "h:mm tt" }; // short time format
+            invariant._saLongTimes = ["HH:mm:ss"];                             // time format
+            invariant._saShortTimes = ["HH:mm", "hh:mm tt", "H:mm", "h:mm tt"]; // short time format
 
             // Calendar specific data
             invariant._iFirstDayOfWeek = 0;                      // first day of week
             invariant._iFirstWeekOfYear = 0;                      // first week of year
 
             // all available calendar type(s).  The first one is the default calendar
-            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };
+            invariant._waCalendars = [CalendarId.GREGORIAN];
 
             if (!GlobalizationMode.InvariantNoLoad)
             {

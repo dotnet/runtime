@@ -14,6 +14,12 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
+function countChars(str) {
+    const length = str.length;
+    testOutput(`JS received str of ${length} length`);
+    return length;
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -159,13 +165,22 @@ try {
                     }
                 }
             });
-            const iterationCount = params.get("iterationCount") ?? "70";
-            exports.InterpPgoTest.TryToTier(parseInt(iterationCount));
+            const iterationCount = params.get("iterationCount") ?? 70;
+            for (let i = 0; i < iterationCount; i++) {
+                exports.InterpPgoTest.Greeting();
+            };
             await INTERNAL.interp_pgo_save_data();
             exit(0);
             break;
         case "DownloadThenInit":
         case "MaxParallelDownloads":
+            exit(0);
+            break;
+        case "AllocateLargeHeapThenInterop":
+            setModuleImports('main.js', {
+                countChars
+            });
+            exports.MemoryTest.Run();
             exit(0);
             break;
         default:

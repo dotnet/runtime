@@ -3,8 +3,10 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -15,6 +17,9 @@ namespace System.Net.Security.Tests
 {
     public class TelemetryTest
     {
+        private const string ActivitySourceName = "Experimental.System.Net.Security";
+        private const string ActivityName = ActivitySourceName + ".TlsHandshake";
+
         [Fact]
         public static void EventSource_ExistsWithCorrectId()
         {
@@ -25,6 +30,88 @@ namespace System.Net.Security.Tests
             Assert.Equal(Guid.Parse("7beee6b1-e3fa-5ddb-34be-1404ad0e2520"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SuccessfulHandshake_ActivityRecorded(bool synchronousApi)
+        {
+            await RemoteExecutor.Invoke(async synchronousApiStr =>
+            {
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
+
+                SslStreamStreamToStreamTest test = bool.Parse(synchronousApiStr)
+                    ? new SslStreamStreamToStreamTest_SyncParameters()
+                    : new SslStreamStreamToStreamTest_Async();
+                await test.SslStream_StreamToStream_Authentication_Success();
+
+                recorder.VerifyActivityRecorded(2); // client + server
+                Activity clientActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
+                Activity serverActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS server"));
+                Assert.True(Enum.GetValues(typeof(SslProtocols)).Length == 8, "We need to extend the mapping in case new values are added to SslProtocols.");
+#pragma warning disable 0618, SYSLIB0039
+                (string protocolName, string protocolVersion) = test.SslProtocol switch
+                {
+                    SslProtocols.Ssl2 => ("ssl", "2"),
+                    SslProtocols.Ssl3 => ("ssl", "3"),
+                    SslProtocols.Tls => ("tls", "1"),
+                    SslProtocols.Tls11 => ("tls", "1.1"),
+                    SslProtocols.Tls12 => ("tls", "1.2"),
+                    SslProtocols.Tls13 => ("tls", "1.3"),
+                    _ => throw new Exception("unknown protocol")
+                };
+#pragma warning restore 0618, SYSLIB0039
+
+                Assert.Equal(ActivityKind.Internal, clientActivity.Kind);
+                Assert.True(clientActivity.Duration > TimeSpan.Zero);
+                Assert.Equal(ActivityName, clientActivity.OperationName);
+                Assert.Equal($"TLS client handshake {test.Name}", clientActivity.DisplayName);
+                ActivityAssert.HasTag(clientActivity, "server.address", test.Name);
+                ActivityAssert.HasTag(clientActivity, "tls.protocol.name", protocolName);
+                ActivityAssert.HasTag(clientActivity, "tls.protocol.version", protocolVersion);
+                ActivityAssert.HasNoTag(clientActivity, "error.type");
+
+                Assert.Equal(ActivityKind.Internal, serverActivity.Kind);
+                Assert.True(serverActivity.Duration > TimeSpan.Zero);
+                Assert.Equal(ActivityName, serverActivity.OperationName);
+                Assert.StartsWith($"TLS server handshake", serverActivity.DisplayName);
+                ActivityAssert.HasTag(serverActivity, "tls.protocol.name", protocolName);
+                ActivityAssert.HasTag(serverActivity, "tls.protocol.version", protocolVersion);
+                ActivityAssert.HasNoTag(serverActivity, "error.type");
+
+            }, synchronousApi.ToString()).DisposeAsync();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task FailingHandshake_ActivityRecorded()
+        {
+            await RemoteExecutor.Invoke(async () =>
+            {
+                using ActivityRecorder recorder = new ActivityRecorder(ActivitySourceName, ActivityName);
+
+                var test = new SslStreamStreamToStreamTest_Async();
+                await test.SslStream_StreamToStream_Authentication_IncorrectServerName_Fail();
+
+                recorder.VerifyActivityRecorded(2); // client + server
+
+                Activity clientActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS client"));
+                Activity serverActivity = recorder.FinishedActivities.Single(a => a.DisplayName.StartsWith("TLS server"));
+
+                Assert.Equal(ActivityKind.Internal, clientActivity.Kind);
+                Assert.Equal(ActivityStatusCode.Error, clientActivity.Status);
+                Assert.True(clientActivity.Duration > TimeSpan.Zero);
+                Assert.Equal(ActivityName, clientActivity.OperationName);
+                Assert.Equal($"TLS client handshake {test.Name}", clientActivity.DisplayName);
+                ActivityAssert.HasTag(clientActivity, "server.address", test.Name);
+                ActivityAssert.HasTag(clientActivity, "error.type", typeof(AuthenticationException).FullName);
+
+                Assert.Equal(ActivityKind.Internal, serverActivity.Kind);
+                Assert.True(serverActivity.Duration > TimeSpan.Zero);
+                Assert.Equal(ActivityName, serverActivity.OperationName);
+                Assert.StartsWith($"TLS server handshake", serverActivity.DisplayName);
+            }).DisposeAsync();
         }
 
         [OuterLoop]

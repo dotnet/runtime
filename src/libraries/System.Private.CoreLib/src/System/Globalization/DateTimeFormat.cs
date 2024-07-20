@@ -144,7 +144,7 @@ namespace System
         private static readonly string[] s_invariantAbbreviatedMonthNames = InvariantFormatInfo.AbbreviatedMonthNames;
         private static readonly string[] s_invariantAbbreviatedDayNames = InvariantFormatInfo.AbbreviatedDayNames;
 
-        internal static string[] fixedNumberFormats = new string[] {
+        internal static readonly string[] fixedNumberFormats = [
             "0",
             "00",
             "000",
@@ -152,7 +152,7 @@ namespace System
             "00000",
             "000000",
             "0000000",
-        };
+        ];
 
         /// <summary>Format the positive integer value to a string and prefix with assigned length of leading zero.</summary>
         /// <typeparam name="TChar">The type of the character.</typeparam>
@@ -1759,7 +1759,7 @@ namespace System
                 case 'O':
                 case 's':
                 case 'u':
-                    results = new string[] { Format(dateTime, char.ToString(format), dtfi) };
+                    results = [Format(dateTime, char.ToString(format), dtfi)];
                     break;
                 default:
                     throw new FormatException(SR.Format_InvalidString);

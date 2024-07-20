@@ -525,7 +525,6 @@ namespace System.Security.Cryptography
 
             int encodedSize = GetEncodedSize(label.Length, data.Length);
 
-#pragma warning disable CS8500 // takes address of managed type
             return string.Create(
                 encodedSize,
                 (LabelPointer: (IntPtr)(&label), DataPointer: (IntPtr)(&data)),
@@ -542,7 +541,6 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                     }
                 });
-#pragma warning restore CS8500
         }
     }
 }

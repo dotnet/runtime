@@ -31,7 +31,7 @@ namespace BasicEventSourceTests
         /// ETW only works with elevated process
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97255", typeof(PlatformDetection), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88027")]
         public void Test_EventSource_EtwManifestGeneration()
         {
             var pid = Process.GetCurrentProcess().Id;
@@ -72,7 +72,7 @@ namespace BasicEventSourceTests
 
         [ConditionalFact(nameof(IsProcessElevatedAndNotWindowsNanoServerAndRemoteExecutorSupported))]
         [SkipOnCoreClr("Test should only be run in non-stress modes", ~RuntimeTestModes.RegularRun)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97255", typeof(PlatformDetection), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88027")]
         public void Test_EventSource_EtwManifestGenerationRollover()
         {
             var pid = Process.GetCurrentProcess().Id;

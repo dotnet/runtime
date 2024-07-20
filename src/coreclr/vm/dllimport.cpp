@@ -2272,15 +2272,7 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
         EmitLoadStubContext(pcsEmit, dwStubFlags);
     }
 
-    if (SF_IsForwardStub(dwStubFlags))
-    {
-        pcsEmit->EmitLDLOC(GetThreadLocalNum());
-    }
-    else
-    {
-        // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLoadNullPtr();
-    }
+    pcsEmit->EmitLDLOC(GetThreadLocalNum());
 
     // In the unmanaged delegate case, we need the "this" object to retrieve the MD
     // in StubHelpers::ProfilerEnterCallback().
