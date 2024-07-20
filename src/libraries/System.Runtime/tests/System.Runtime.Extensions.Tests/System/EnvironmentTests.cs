@@ -577,15 +577,8 @@ namespace System.Tests
         [Fact]
         public void TestCpuUsage()
         {
-            Process currentProcess = Process.GetCurrentProcess();
-
             if ((OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || PlatformDetection.IstvOS || PlatformDetection.IsBrowser)
             {
-                TimeSpan temp;
-                Assert.Throws<PlatformNotSupportedException>(() => temp = currentProcess.UserProcessorTime);
-                Assert.Throws<PlatformNotSupportedException>(() => temp = currentProcess.PrivilegedProcessorTime);
-                Assert.Throws<PlatformNotSupportedException>(() => temp = currentProcess.TotalProcessorTime);
-
                 // Environment should return 0 for all values
                 Environment.ProcessCpuUsage usage = Environment.CpuUsage;
                 Assert.Equal(TimeSpan.Zero, usage.UserTime);
@@ -594,6 +587,8 @@ namespace System.Tests
             }
             else
             {
+                Process currentProcess = Process.GetCurrentProcess();
+
                 TimeSpan userTime = currentProcess.UserProcessorTime;
                 TimeSpan privilegedTime = currentProcess.PrivilegedProcessorTime;
                 TimeSpan totalTime = currentProcess.TotalProcessorTime;
