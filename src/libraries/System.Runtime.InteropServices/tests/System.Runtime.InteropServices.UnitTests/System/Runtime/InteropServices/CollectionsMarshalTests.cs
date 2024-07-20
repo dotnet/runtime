@@ -145,6 +145,122 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public void NullListAsMemory()
+        {
+            List<int> list = null!;
+            Assert.Throws<ArgumentNullException>(() => CollectionsMarshal.AsMemory(list));
+        }
+        
+        [Fact]
+        public void ListAsMemoryValueType()
+        {
+            var list = new List<int>();
+            foreach (int length in Enumerable.Range(0, 36))
+            {
+                list.Clear();
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+
+                for (int i = 0; i < length; i++)
+                {
+                    list.Add(i);
+                }
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+
+                list.TrimExcess();
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+
+                list.Add(length + 1);
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+            }
+
+            static void ValidateContentEquality(List<int> list, Memory<int> memory)
+            {
+                Assert.Equal(list.Count, memory.Length);
+
+                for (int i = 0; i < memory.Length; i++)
+                {
+                    Assert.Equal(list[i], memory.Span[i]);
+                }
+            }
+        }
+
+        [Fact]
+        public void ListAsMemoryClass()
+        {
+            var list = new List<IntAsObject>();
+            foreach (int length in Enumerable.Range(0, 36))
+            {
+                list.Clear();
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+
+                for (var i = 0; i < length; i++)
+                {
+                    list.Add(new IntAsObject { Value = i });
+                }
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+
+                list.TrimExcess();
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+
+                list.Add(new IntAsObject { Value = length + 1 });
+                ValidateContentEquality(list, CollectionsMarshal.AsMemory(list));
+            }
+
+            static void ValidateContentEquality(List<IntAsObject> list, Memory<IntAsObject> memory)
+            {
+                Assert.Equal(list.Count, memory.Length);
+
+                for (int i = 0; i < memory.Length; i++)
+                {
+                    Assert.Equal(list[i].Value, memory.Span[i].Value);
+                }
+            }
+        }
+
+        [Fact]
+        public void ListAsMemoryLinkBreaksOnResize()
+        {
+            var list = new List<int>(capacity: 10);
+
+            for (int i = 0; i < 10; i++)
+            {
+                list.Add(i);
+            }
+            list.TrimExcess();
+            Memory<int> memory = CollectionsMarshal.AsMemory(list);
+
+            int startCapacity = list.Capacity;
+            int startCount = list.Count;
+            Assert.Equal(startCount, startCapacity);
+            Assert.Equal(startCount, memory.Length);
+
+            for (int i = 0; i < memory.Length; i++)
+            {
+                memory.Span[i]++;
+                Assert.Equal(list[i], memory[i]);
+
+                list[i]++;
+                Assert.Equal(list[i], memory[i]);
+            }
+
+            // Resize to break link between Memory and List
+            list.Add(11);
+
+            Assert.NotEqual(startCapacity, list.Capacity);
+            Assert.NotEqual(startCount, list.Count);
+            Assert.Equal(startCount, memory.Length);
+
+            for (int i = 0; i < memory.Length; i++)
+            {
+                memory.Span[i] += 2;
+                Assert.NotEqual(list[i], memory.Span[i]);
+
+                list[i] += 3;
+                Assert.NotEqual(list[i], memory.Span[i]);
+            }
+        }
+        
+        [Fact]
         public void GetValueRefOrNullRefValueType()
         {
             var dict = new Dictionary<int, Struct>

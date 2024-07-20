@@ -12,6 +12,18 @@ namespace System.Runtime.InteropServices
     public static class CollectionsMarshal
     {
         /// <summary>
+        /// Get a <see cref="Memory{T}"/> view over a <see cref="List{T}"/>'s data.
+        /// Items should not be added or removed from the <see cref="List{T}"/> while the <see cref="Memory{T}"/> is in use.
+        /// </summary>
+        /// <param name="list">The list to get the data view over.</param>
+        /// <typeparam name="T">The type of the elements in the list.</typeparam>
+        public static Memory<T> AsMemory<T>(List<T>? list)
+        {
+            ArgumentNullException.ThrowIfNull(list);
+            return new Memory<T>(list._items, 0, list._size);
+        }
+        
+        /// <summary>
         /// Get a <see cref="Span{T}"/> view over a <see cref="List{T}"/>'s data.
         /// Items should not be added or removed from the <see cref="List{T}"/> while the <see cref="Span{T}"/> is in use.
         /// </summary>
