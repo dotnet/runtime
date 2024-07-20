@@ -146,11 +146,14 @@ namespace System.Diagnostics.Metrics
             unit: "{cpu}",
             description: "The number of processors available to the process.");
 
-        private static readonly ObservableCounter<double> s_processCpuTime = s_meter.CreateObservableCounter(
-           "dotnet.process.cpu.time",
-           GetCpuTime,
-           unit: "s",
-           description: "CPU time used by the process as reported by the CLR.");
+        private static readonly ObservableCounter<double>? s_processCpuTime =
+                                    OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) ?
+                                    null :
+                                    s_meter.CreateObservableCounter(
+                                        "dotnet.process.cpu.time",
+                                        GetCpuTime,
+                                        unit: "s",
+                                        description: "CPU time used by the process.");
 
         public static bool IsEnabled()
         {
@@ -172,7 +175,7 @@ namespace System.Diagnostics.Metrics
                 || s_assembliesCount.Enabled
                 || s_exceptions.Enabled
                 || s_processCpuCount.Enabled
-                || s_processCpuTime.Enabled;
+                || (s_processCpuTime is not null && s_processCpuTime.Enabled);
         }
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
@@ -189,13 +192,15 @@ namespace System.Diagnostics.Metrics
 
         private static IEnumerable<Measurement<double>> GetCpuTime()
         {
-           if (OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || OperatingSystem.IsIOS())
-               yield break;
+            Debug.Assert(s_processCpuTime is not null);
+            Debug.Assert(!OperatingSystem.IsBrowser() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()));
 
-           Environment.ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
+            #pragma warning disable CA1416 // This call site is reachable on all platforms. 'Environment.CpuUsage' is unsupported on: 'ios', 'tvos'
+            Environment.ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
+            #pragma warning restore CA1416
 
-           yield return new(processCpuUsage.UserTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
-           yield return new(processCpuUsage.PrivilegedTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
+            yield return new(processCpuUsage.UserTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
+            yield return new(processCpuUsage.PrivilegedTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
         }
 
         private static IEnumerable<Measurement<long>> GetHeapSizes()
