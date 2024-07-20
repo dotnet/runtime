@@ -86,7 +86,6 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             internal TargetPointer MethodTable => _target.ReadPointer(Address + (ulong)_type.Fields[nameof(MethodTable)].Offset);
         }
 
-
         internal struct MethodDesc
         {
             private readonly Target _target;
@@ -223,7 +222,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         {
             throw new InvalidOperationException("Target has no definite MethodDescChunk size");
         }
-        // The runtime allocates a contiguous block of memory for a MethodDescChunk followedd by MethodDescAlignment * Size bytes of space
+        // The runtime allocates a contiguous block of memory for a MethodDescChunk followed by MethodDescAlignment * Size bytes of space
         // that is filled with MethodDesc (or its subclasses) instances.  Each MethodDesc has a ChunkIndex that indicates its
         // offset from the end of the MethodDescChunk.
         ulong chunkAddress = (ulong)methodDescPointer - methodDescChunkSize.Value - umd.ChunkIndex * MethodDescAlignment;

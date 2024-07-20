@@ -95,9 +95,9 @@ struct MethodDescHandle
 ```csharp
 partial interface IRuntimeTypeSystem : IContract
 {
-    public virtual MethodDescHandle GetMethodDescHandle (TargetPointer methodDescPointer);
+    public virtual MethodDescHandle GetMethodDescHandle(TargetPointer methodDescPointer);
 
-    public virtual TargetPointer GetMethodTable (MethodDescHandle methodDesc);
+    public virtual TargetPointer GetMethodTable(MethodDescHandle methodDesc);
 }
 ```
 
