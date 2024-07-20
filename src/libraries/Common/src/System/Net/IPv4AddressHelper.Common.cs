@@ -33,7 +33,7 @@ namespace System.Net
 
                 for (; (start < end) && (ch = int.CreateTruncating(str[start])) != '.' && ch != ':'; ++start)
                 {
-                    b = unchecked((b * 10) + ch - '0');
+                    b = (b * 10) + ch - '0';
                 }
 
                 numbers[i] = (byte)b;
@@ -128,8 +128,8 @@ namespace System.Net
 
                 if (allowIPv6)
                 {
-                    // For an IPv4 address nested inside an IPv6, the terminator is either ScopeId ('%'), prefix ('/') or ipv6 address terminator (']')
-                    if (ch == TChar.CreateTruncating('%') || ch == TChar.CreateTruncating('/') || ch == TChar.CreateTruncating(']'))
+                    // For an IPv4 address nested inside an IPv6 address, the terminator is either the IPv6 address terminator (']'), prefix ('/') or ScopeId ('%')
+                    if (ch == TChar.CreateTruncating(']') || ch == TChar.CreateTruncating('/') || ch == TChar.CreateTruncating('%'))
                     {
                         break;
                     }
@@ -143,9 +143,10 @@ namespace System.Net
                     break;
                 }
 
-                int parsedCharacter = int.CreateTruncating(ch) - '0';
+                // An explicit cast to an unsigned integer forces character values preceding '0' to underflow, eliminating one comparison below.
+                uint parsedCharacter = uint.CreateTruncating(ch - TChar.CreateTruncating('0'));
 
-                if (parsedCharacter >= 0 && parsedCharacter <= 9)
+                if (parsedCharacter < IPv4AddressHelper.Decimal)
                 {
                     // A number starting with zero should be interpreted in base 8 / octal
                     if (!haveNumber && parsedCharacter == 0)
@@ -160,7 +161,7 @@ namespace System.Net
                     }
 
                     haveNumber = true;
-                    number = number * Decimal + parsedCharacter;
+                    number = number * IPv4AddressHelper.Decimal + (int)parsedCharacter;
                     if (number > byte.MaxValue)
                     {
                         return false;
@@ -215,7 +216,6 @@ namespace System.Net
             for (; current < end; current++)
             {
                 TChar ch = name[current];
-                int maxCharacterValue = '9';
                 currentValue = 0;
 
                 // Figure out what base this section is in, default to base 10.
@@ -241,7 +241,6 @@ namespace System.Net
                         else
                         {
                             numberBase = IPv4AddressHelper.Octal;
-                            maxCharacterValue = '7';
                         }
                     }
                 }
@@ -251,33 +250,13 @@ namespace System.Net
                 {
                     ch = name[current];
                     int characterValue = int.CreateTruncating(ch);
-                    int digitValue;
+                    int digitValue = HexConverter.FromChar(characterValue);
 
-                    if (characterValue >= '0' && characterValue <= maxCharacterValue)
-                    {
-                        digitValue = characterValue - '0';
-                    }
-                    else if (numberBase == IPv4AddressHelper.Hex)
-                    {
-                        if (characterValue is >= 'a' and <= 'f')
-                        {
-                            digitValue = characterValue - 'a' + 10;
-                        }
-                        else if (characterValue is >= 'A' and <= 'F')
-                        {
-                            digitValue = characterValue - 'A' + 10;
-                        }
-                        else
-                        {
-                            break; // Invalid/terminator
-                        }
-                    }
-                    else
+                    if (digitValue >= numberBase)
                     {
                         break; // Invalid/terminator
                     }
-
-                    currentValue = unchecked((currentValue * numberBase) + digitValue);
+                    currentValue = (currentValue * numberBase) + digitValue;
 
                     if (currentValue > MaxIPv4Value) // Overflow
                     {
@@ -296,7 +275,7 @@ namespace System.Net
                     {
                         return Invalid;
                     }
-                    parts[dotCount] = unchecked((uint)currentValue);
+                    parts[dotCount] = (uint)currentValue;
                     dotCount++;
                     atLeastOneChar = false;
                     continue;
@@ -328,7 +307,7 @@ namespace System.Net
                 return Invalid;
             }
 
-            parts[dotCount] = unchecked((uint)currentValue);
+            parts[dotCount] = (uint)currentValue;
 
             // Parsed, reassemble and check for overflows in the last part. Previous parts have already been checked in the loop
             switch (dotCount)

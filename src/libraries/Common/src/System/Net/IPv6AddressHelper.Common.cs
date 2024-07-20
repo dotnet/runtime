@@ -8,6 +8,7 @@ namespace System.Net
 {
     internal static partial class IPv6AddressHelper
     {
+        private const int Decimal = 10;
         private const int Hex = 16;
         private const int NumberOfLabels = 8;
 
@@ -135,10 +136,8 @@ namespace System.Net
             for (i = start; i < end; ++i)
             {
                 int currentCh = int.CreateTruncating(name[i]);
-                int lowercaseCh = currentCh | 0x20;
 
-                if ((lowercaseCh >= '0' && lowercaseCh <= '9')
-                    || (lowercaseCh >= 'a' && lowercaseCh <= 'f'))
+                if (HexConverter.IsHexChar(currentCh))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -199,7 +198,7 @@ namespace System.Net
                                 {
                                     int ch = int.CreateTruncating(name[i]);
 
-                                    if (ch is not (>= '0' and <= '9' or >= 'a' and <= 'f' or >= 'A' and <= 'F'))
+                                    if (!HexConverter.IsHexChar(ch))
                                     {
                                         return false;
                                     }
@@ -210,7 +209,7 @@ namespace System.Net
                                 i += 2;
                                 for (; i < end; i++)
                                 {
-                                    if (name[i] < TChar.CreateTruncating('0') || name[i] > TChar.CreateTruncating('9'))
+                                    if (uint.CreateTruncating(name[i] - TChar.CreateTruncating('0')) >= IPv6AddressHelper.Decimal)
                                     {
                                         return false;
                                     }
@@ -355,7 +354,7 @@ namespace System.Net
                         number = 0;
                         // Two sequential colons form a compressor ('::').
                         ++i;
-                        if (i < address.Length && address[i] == TChar.CreateTruncating(':'))
+                        if (address[i] == TChar.CreateTruncating(':'))
                         {
                             compressorIndex = index;
                             ++i;
@@ -392,8 +391,8 @@ namespace System.Net
                                 }
                                 int ipv4Address = IPv4AddressHelper.ParseHostNumber(address, i, j);
 
-                                numbers[index++] = unchecked((ushort)(ipv4Address >> 16));
-                                numbers[index++] = unchecked((ushort)(ipv4Address & 0xFFFF));
+                                numbers[index++] = (ushort)(ipv4Address >> 16);
+                                numbers[index++] = (ushort)(ipv4Address & 0xFFFF);
                                 i = j;
 
                                 // Set this to avoid adding another number to
@@ -421,15 +420,9 @@ namespace System.Net
                     default:
                         TChar ch = address[i++];
                         int castCharacter = int.CreateTruncating(ch);
-                        int characterValue = castCharacter switch
-                        {
-                            >= '0' and <= '9' => castCharacter - '0',
-                            >= 'a' and <= 'f' => castCharacter - 'a' + 10,
-                            >= 'A' and <= 'F' => castCharacter - 'A' + 10,
-                            _ => 0x0
-                        };
+                        int characterValue = HexConverter.FromChar(castCharacter);
 
-                        number = unchecked((ushort)(number * IPv6AddressHelper.Hex + characterValue));
+                        number = (ushort)(number * IPv6AddressHelper.Hex + characterValue);
                         break;
                 }
             }

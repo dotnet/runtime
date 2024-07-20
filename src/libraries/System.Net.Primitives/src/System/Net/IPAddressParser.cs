@@ -81,6 +81,7 @@ namespace System.Net
             {
                 isValid = IPv6AddressHelper.IsValidStrict(ipStringPtr, 0, ref end);
             }
+
             scope = 0;
             if (isValid || (end != ipSpan.Length))
             {
@@ -103,8 +104,7 @@ namespace System.Net
 
                         interfaceName = System.Text.Encoding.UTF8.GetString(castScopeIdSpan);
                     }
-
-                    if (typeof(TChar) == typeof(char))
+                    else if (typeof(TChar) == typeof(char))
                     {
                         ReadOnlySpan<char> castScopeIdSpan = MemoryMarshal.Cast<TChar, char>(scopeIdSpan);
 
