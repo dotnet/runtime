@@ -579,7 +579,7 @@ namespace System.Tests
         {
             Process currentProcess = Process.GetCurrentProcess();
 
-            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS || PlatformDetection.IsBrowser)
+            if ((OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) || PlatformDetection.IstvOS || PlatformDetection.IsBrowser)
             {
                 TimeSpan temp;
                 Assert.Throws<PlatformNotSupportedException>(() => temp = currentProcess.UserProcessorTime);
