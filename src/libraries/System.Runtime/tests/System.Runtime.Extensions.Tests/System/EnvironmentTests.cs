@@ -577,38 +577,44 @@ namespace System.Tests
         [Fact]
         public void TestCpuUsage()
         {
-            if (PlatformDetection.IsiOS && PlatformDetection.IstvOS)
+            Process currentProcess = Process.GetCurrentProcess();
+
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS || PlatformDetection.IsBrowser)
             {
-                Assert.Throws<PlatformNotSupportedException>(() => Environment.CpuUsage);
+                TimeSpan temp;
+                Assert.Throws<PlatformNotSupportedException>(() => temp = currentProcess.UserProcessorTime);
+                Assert.Throws<PlatformNotSupportedException>(() => temp = currentProcess.PrivilegedProcessorTime);
+                Assert.Throws<PlatformNotSupportedException>(() => temp = currentProcess.TotalProcessorTime);
+
+                // Environment should return 0 for all values
+                Environment.ProcessCpuUsage usage = Environment.CpuUsage;
+                Assert.Equal(TimeSpan.Zero, usage.UserTime);
+                Assert.Equal(TimeSpan.Zero, usage.PrivilegedTime);
+                Assert.Equal(TimeSpan.Zero, usage.TotalTime);
             }
             else
             {
+                TimeSpan userTime = currentProcess.UserProcessorTime;
+                TimeSpan privilegedTime = currentProcess.PrivilegedProcessorTime;
+                TimeSpan totalTime = currentProcess.TotalProcessorTime;
+
+                Environment.ProcessCpuUsage usage = Environment.CpuUsage;
+                Assert.True(usage.UserTime.TotalMilliseconds >= 0);
+                Assert.True(usage.PrivilegedTime.TotalMilliseconds >= 0);
+                Assert.True(usage.TotalTime.TotalMilliseconds >= 0);
+                Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
+
+                Assert.True(usage.UserTime >= userTime);
+                Assert.True(usage.PrivilegedTime >= privilegedTime);
+                Assert.True(usage.TotalTime >= totalTime);
+
                 TimeSpan delta = TimeSpan.FromMinutes(1);
 
-                for (int i = 0; i < 10; i++)
-                {
-                    Process currentProcess = Process.GetCurrentProcess();
+                Assert.True(usage.UserTime - userTime < delta);
+                Assert.True(usage.PrivilegedTime - privilegedTime < delta);
+                Assert.True(usage.TotalTime - totalTime < delta);
 
-                    TimeSpan userTime = currentProcess.UserProcessorTime;
-                    TimeSpan privilegedTime = currentProcess.PrivilegedProcessorTime;
-                    TimeSpan totalTime = currentProcess.TotalProcessorTime;
-
-                    Environment.ProcessCpuUsage usage = Environment.CpuUsage;
-                    Assert.True(usage.UserTime.TotalMilliseconds >= 0);
-                    Assert.True(usage.PrivilegedTime.TotalMilliseconds >= 0);
-                    Assert.True(usage.TotalTime.TotalMilliseconds >= 0);
-                    Assert.Equal(usage.TotalTime, usage.UserTime + usage.PrivilegedTime);
-
-                    Assert.True(usage.UserTime >= userTime);
-                    Assert.True(usage.PrivilegedTime >= privilegedTime);
-                    Assert.True(usage.TotalTime >= totalTime);
-
-                    Assert.True(usage.UserTime - userTime < delta);
-                    Assert.True(usage.PrivilegedTime - privilegedTime < delta);
-                    Assert.True(usage.TotalTime - totalTime < delta);
-
-                    Thread.Sleep(100);
-                }
+                Thread.Sleep(100);
             }
         }
 

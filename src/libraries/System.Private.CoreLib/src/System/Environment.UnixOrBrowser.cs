@@ -69,5 +69,35 @@ namespace System
             }
             return (int)result;
         }
+
+        /// <summary>
+        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
+        /// and the total time spent running both the application and operating system code.
+        /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static ProcessCpuUsage CpuUsage
+        {
+            get
+            {
+                Interop.Sys.ProcessCpuInformation cpuInfo = default;
+                Interop.Sys.GetCpuUtilization(ref cpuInfo);
+
+                ulong userTime100Nanoseconds = cpuInfo.lastRecordedUserTime / 100; // nanoseconds to 100-nanoseconds
+                if (userTime100Nanoseconds > long.MaxValue)
+                {
+                    userTime100Nanoseconds = long.MaxValue;
+                }
+
+                ulong kernelTime100Nanoseconds = cpuInfo.lastRecordedKernelTime / 100; // nanoseconds to 100-nanoseconds
+                if (kernelTime100Nanoseconds > long.MaxValue)
+                {
+                    kernelTime100Nanoseconds = long.MaxValue;
+                }
+
+                return new ProcessCpuUsage { UserTime = new TimeSpan((long)userTime100Nanoseconds), PrivilegedTime = new TimeSpan((long)kernelTime100Nanoseconds) };
+            }
+        }
     }
 }

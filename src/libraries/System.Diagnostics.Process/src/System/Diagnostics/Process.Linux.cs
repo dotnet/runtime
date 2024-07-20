@@ -131,7 +131,7 @@ namespace System.Diagnostics
             {
                 if (IsCurrentProcess)
                 {
-                    Environment.CpuUsage.TotalTime;
+                    return Environment.CpuUsage.TotalTime;
                 }
 
                 Interop.procfs.ParsedStat stat = GetStat();

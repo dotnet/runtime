@@ -10,25 +10,6 @@ using NSSearchPathDirectory = Interop.Sys.NSSearchPathDirectory;
 
 namespace System
 {
-    public static partial class Environment
-    {
-#if !TARGET_MACCATALYST
-        // iOS/tvOS aren't allowed to call libproc APIs so return 0 here, this also matches what we returned in earlier releases
-        public static long WorkingSet => 0;
-
-        /// <summary>
-        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
-        /// and the total time spent running both the application and operating system code.
-        /// </summary>
-        [SupportedOSPlatform("maccatalyst")]
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        public static ProcessCpuUsage CpuUsage
-        {
-            get => new ProcessCpuUsage { UserTime = TimeSpan.Zero, PrivilegedTime = TimeSpan.Zero };
-        }
-#endif
-
         private static Dictionary<SpecialFolder, string>? s_specialFolders;
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption _ /*option*/)

@@ -112,7 +112,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void CpuTime()
         {
            using InstrumentRecorder<double> instrumentRecorder = new("dotnet.process.cpu.time");

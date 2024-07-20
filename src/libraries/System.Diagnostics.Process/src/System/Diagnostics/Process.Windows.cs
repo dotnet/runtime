@@ -232,7 +232,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
-            get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : GetProcessTimes().TotalProcessorTime;
+            get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : GetProcessTimes().PrivilegedProcessorTime;
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
