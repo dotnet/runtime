@@ -190,8 +190,8 @@ namespace System.Net
                             }
 
                             // If there is a port, it must either be a hexadecimal or decimal number.
-                            // If the next two characters are '0x' or '0X' then it's a hexadecimal number. Skip the prefix.
-                            if (i + 3 < end && name[i + 2] == TChar.CreateTruncating('0') && (name[i + 3] == TChar.CreateTruncating('x') || name[i + 3] == TChar.CreateTruncating('X')))
+                            // If the next two characters are '0x' then it's a hexadecimal number. Skip the prefix.
+                            if (i + 3 < end && name[i + 2] == TChar.CreateTruncating('0') && name[i + 3] == TChar.CreateTruncating('x'))
                             {
                                 i += 4;
                                 for (; i < end; i++)
