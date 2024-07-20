@@ -17219,8 +17219,6 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
     regNumber loadStoreDataReg = emitLastIns->idReg1();
     if (loadStoreDataReg == reg)
     {
-        // TODO-CQ: Why isn't this ok for stores? They do not modify the
-        // register.
         return false;
     }
 
