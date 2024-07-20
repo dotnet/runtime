@@ -2174,18 +2174,6 @@
     <Compile Include="$(CommonPath)System\Threading\AsyncOverSyncWithIoCancellation.cs">
       <Link>Common\System\Threading\AsyncOverSyncWithIoCancellation.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OpenProcess.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.OpenProcess.cs"</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ProcessOptions.cs">
-      <Link>Common\Interop\Windows\Advapi32\Interop.ProcessOptions.cs"</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeProcessHandle.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeProcessHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeProcessHandle.Windows.cs</Link>
-    </Compile>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
@@ -2574,8 +2562,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
     <Compile Include="$(CommonPath)Interop\BSD\System.Native\Interop.Sysctl.cs" Condition="'$(TargetsFreeBSD)' == 'true'" Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" Link="Common\Interop\OSX\Interop.libproc.cs" />
-    <Compile Include="$(CommonPath)Interop\OSX\Interop.libSystem.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" Link="Interop\OSX\Interop.libSystem.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs" Condition="'$(TargetsLinux)' == 'true'" Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true'" Link="Common\Interop\OSX\Interop.libproc.GetProcessInfoById.cs" />

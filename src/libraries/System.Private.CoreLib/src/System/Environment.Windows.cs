@@ -370,33 +370,9 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static ProcessCpuUsage CpuUsage
         {
-            get
-            {
-                using (SafeProcessHandle handle = GetProcessHandle())
-                {
-                    Debug.Assert(!handle.IsInvalid);
-
-                    if (!Interop.Kernel32.GetProcessTimes(handle.DangerousGetHandle(), out long create, out long exit, out long kernel, out long user))
-                    {
-                        throw new Win32Exception();
-                    }
-
-                    return new ProcessCpuUsage { UserTime = new TimeSpan(user), PrivilegedTime = new TimeSpan(kernel) };
-                }
-            }
-        }
-
-        private static SafeProcessHandle GetProcessHandle()
-        {
-            SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, false, ProcessId);
-            if (processHandle.IsInvalid)
-            {
-                int result = Marshal.GetLastWin32Error();
-                processHandle.Dispose();
-                throw new Win32Exception(result);
-            }
-
-            return processHandle;
+            get => Interop.Kernel32.GetProcessTimes(Interop.Kernel32.GetCurrentProcess(), out _, out _, out long procKernelTime, out long procUserTime) ?
+                    new ProcessCpuUsage { UserTime = new TimeSpan(procUserTime), PrivilegedTime = new TimeSpan(procKernelTime) } :
+                    new ProcessCpuUsage { UserTime = TimeSpan.Zero, PrivilegedTime = TimeSpan.Zero };
         }
     }
 }

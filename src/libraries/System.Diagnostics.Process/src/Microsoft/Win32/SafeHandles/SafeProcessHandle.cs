@@ -15,12 +15,7 @@ using System.Diagnostics;
 
 namespace Microsoft.Win32.SafeHandles
 {
-#if SYSTEM_DIAGNOSTICS_PROCESS
-    public
-#else
-    internal
-#endif // SYSTEM_DIAGNOSTICS_PROCESS
-    sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
+    public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         internal static readonly SafeProcessHandle InvalidHandle = new SafeProcessHandle();
 

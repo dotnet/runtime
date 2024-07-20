@@ -4337,10 +4337,4 @@
   <data name="Argument_BadArrayForInitializeArray" xml:space="preserve">
     <value>Only array or span of primitive or enum types can be initialized from static data.</value>
   </data>
-  <data name="CantGetAllPids" xml:space="preserve">
-    <value>Could not get all running Process IDs.</value>
-  </data>
-  <data name="RUsageFailure" xml:space="preserve">
-    <value>Failed to set or retrieve rusage information. See the error code for OS-specific error information.</value>
-  </data>
 </root>

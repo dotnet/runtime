@@ -44,7 +44,7 @@ namespace System
             return Array.Empty<string>();
         }
 
-#if !TARGET_OSX && !TARGET_IOS && !TARGET_TVOS && !TARGET_MACCATALYST
+#if !TARGET_IOS && !TARGET_TVOS
         /// <summary>
         /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
         /// and the total time spent running both the application and operating system code.
