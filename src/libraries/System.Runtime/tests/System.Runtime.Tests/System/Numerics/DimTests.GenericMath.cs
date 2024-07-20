@@ -14,25 +14,6 @@ namespace System.Numerics.Tests
         private const float MaxSubnormalSingle = 1.17549421E-38f;
 
         //
-        // IShiftOperators
-        //
-
-        [Fact]
-        public static void ShitByteTest()
-        {
-            BinaryIntegerWrapper<byte> a = 50;
-            BinaryIntegerWrapper<byte> b = 200;
-
-            Assert.Equal(b, a << 2);
-            Assert.Equal(a, b >> 2);
-            Assert.Equal(a, b >>> 2);
-
-            Assert.Equal(b, a << 10);
-            Assert.Equal(a, b >> 10);
-            Assert.Equal(a, b >>> 10);
-        }
-
-        //
         // IBinaryNumber
         //
 

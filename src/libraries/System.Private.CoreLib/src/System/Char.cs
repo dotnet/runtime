@@ -1943,13 +1943,13 @@ namespace System
         //
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
-        static char IShiftOperators<char, int, char>.operator <<(char value, int shiftAmount) => (char)(value << shiftAmount);
+        static char IShiftOperators<char, int, char>.operator <<(char value, int shiftAmount) => (char)(value << (shiftAmount & 15));
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
-        static char IShiftOperators<char, int, char>.operator >>(char value, int shiftAmount) => (char)(value >> shiftAmount);
+        static char IShiftOperators<char, int, char>.operator >>(char value, int shiftAmount) => (char)(value >> (shiftAmount & 15));
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
-        static char IShiftOperators<char, int, char>.operator >>>(char value, int shiftAmount) => (char)(value >>> shiftAmount);
+        static char IShiftOperators<char, int, char>.operator >>>(char value, int shiftAmount) => (char)(value >>> (shiftAmount & 15));
 
         //
         // ISpanParsable
