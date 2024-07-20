@@ -447,7 +447,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
-    internal ushort GetNumVtableSlots(TypeHandle typeHandle)
+    private ushort GetNumVtableSlots(TypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
             return 0;
