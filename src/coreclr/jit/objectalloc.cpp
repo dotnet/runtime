@@ -950,11 +950,17 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
                 {
-                    switch (parent->AsIndir()->Addr()->OperGet())
+                    GenTree* target = parent->AsIndir()->Addr();
+                    while (target->OperIs(GT_ADD, GT_SUB))
+                    {
+                        target = target->AsOp()->gtGetOp1();
+                    }
+
+                    switch (target->OperGet())
                     {
                         case GT_FIELD_ADDR:
                         {
-                            GenTree* fieldObj = parent->AsIndir()->Addr()->AsFieldAddr()->GetFldObj();
+                            GenTree* fieldObj = target->AsFieldAddr()->GetFldObj();
                             if (fieldObj != nullptr && fieldObj->IsAnyLocal())
                             {
                                 const unsigned int dstLclNum = fieldObj->AsLclVarCommon()->GetLclNum();
@@ -987,9 +993,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                         }
                         default:
                         {
-                            if (parent->AsIndir()->Addr()->IsAnyLocal())
+                            if (target->IsAnyLocal())
                             {
-                                const unsigned int dstLclNum = parent->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum();
+                                const unsigned int dstLclNum = target->AsLclVarCommon()->GetLclNum();
                                 const unsigned int srcLclNum = lclNum;
 
                                 if (comp->lvaGetDesc(dstLclNum)->TypeGet() != TYP_REF)
