@@ -66,11 +66,7 @@ inline uint32_t ee_alloc_context::ComputeGeometricRandom()
 inline double ee_alloc_context::PerThreadRandom::NextDouble()
 {
     uint32_t value = minipal_xoshiro128pp_next(&random_state);
-    if(value == UINT32_MAX)
-    {
-        value--;
-    }
-    return value * (1.0/UINT32_MAX);
+    return value * (1.0/(UINT32_MAX+1.0));
 }
 
 // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame

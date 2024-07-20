@@ -121,11 +121,7 @@ struct ee_alloc_context
         double NextDouble()
         {
             uint32_t value = minipal_xoshiro128pp_next(&random_state);
-            if(value == UINT32_MAX)
-            {
-                value--;
-            }
-            return value * (1.0/UINT32_MAX);
+            return value * (1.0/(UINT32_MAX+1.0));
         }
     };
 
