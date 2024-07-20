@@ -14998,3 +14998,39 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
 
     return NO_CLASS_HANDLE;
 }
+
+//--------------------------------------------------------------------------------
+// PeelOffsets: Peel all additions with a constant offset away from the
+// specified VN.
+//
+// Arguments:
+//    vn     - [in, out] The VN. Will be modified to the base VN that the offsets are added to.
+//    offset - [out] The offsets peeled out of the VNF_ADD funcs.
+//
+void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
+{
+#ifdef DEBUG
+    var_types vnType = TypeOfVN(*vn);
+    assert((vnType == TYP_I_IMPL) || (vnType == TYP_REF) || (vnType == TYP_BYREF));
+#endif
+
+    *offset = 0;
+    VNFuncApp app;
+    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    {
+        if (IsVNConstantNonHandle(app.m_args[0]))
+        {
+            *offset += ConstantValue<target_ssize_t>(app.m_args[0]);
+            *vn = app.m_args[1];
+        }
+        else if (IsVNConstantNonHandle(app.m_args[1]))
+        {
+            *offset += ConstantValue<target_ssize_t>(app.m_args[1]);
+            *vn = app.m_args[0];
+        }
+        else
+        {
+            break;
+        }
+    }
+}
