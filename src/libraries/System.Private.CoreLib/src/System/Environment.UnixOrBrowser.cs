@@ -77,6 +77,7 @@ namespace System
         [SupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static ProcessCpuUsage CpuUsage
         {
             get
