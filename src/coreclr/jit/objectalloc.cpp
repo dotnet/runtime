@@ -228,22 +228,12 @@ void ObjectAllocator::MarkEscapingVarsAndBuildConnGraph()
 
     for (unsigned int lclNum = 0; lclNum < comp->lvaCount; ++lclNum)
     {
-        var_types type = comp->lvaTable[lclNum].TypeGet();
+        m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
 
-        if (type == TYP_REF || genActualType(type) == TYP_I_IMPL || type == TYP_BYREF || type == TYP_STRUCT)
+        if (comp->lvaTable[lclNum].IsAddressExposed())
         {
-            m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::MakeEmpty(&m_bitVecTraits);
-
-            if (comp->lvaTable[lclNum].IsAddressExposed())
-            {
-                JITDUMP("   V%02u is address exposed\n", lclNum);
-                MarkLclVarAsEscaping(lclNum);
-            }
-        }
-        else
-        {
-            // Variable that may not point to objects will not participate in our analysis.
-            m_ConnGraphAdjacencyMatrix[lclNum] = BitVecOps::UninitVal();
+            JITDUMP("   V%02u is address exposed\n", lclNum);
+            MarkLclVarAsEscaping(lclNum);
         }
     }
 
@@ -272,7 +262,21 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
 
     unsigned int lclNum;
 
+    BitVecOps::Iter lclStoreIterator(bitVecTraits, m_IndirectRefStoredPointers);
+    while (lclStoreIterator.NextElem(&lclNum))
+    {
+        BitSetShortLongRep lclStoreToProcess = BitVecOps::MakeCopy(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
+        BitVecOps::Iter    targetLclIter(bitVecTraits, lclStoreToProcess);
+        unsigned int       targetLclNum;
+        while (targetLclIter.NextElem(&targetLclNum))
+        {
+            JITDUMP("V%02u may point to objects that V%02u points to\n", lclNum, targetLclNum);
+            BitVecOps::AddElemD(bitVecTraits, m_ConnGraphAdjacencyMatrix[targetLclNum], lclNum);
+        }
+    }
+
     bool doOneMoreIteration = true;
+
     while (doOneMoreIteration)
     {
         BitVecOps::Iter iterator(bitVecTraits, escapingNodesToProcess);
@@ -903,10 +907,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 }
                 else
                 {
-                    // A local may be assigned to a field of another local.
-                    // Add an inverse edge to the connection graph too.
-                    // For example, this.Foo = foo ?? new Foo();
-                    AddConnGraphEdge(srcLclNum, dstLclNum);
                     ++parentIndex;
                     keepChecking = true;
                 }
@@ -957,7 +957,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                             GenTree* fieldObj = parent->AsIndir()->Addr()->AsFieldAddr()->GetFldObj();
                             if (fieldObj != nullptr && fieldObj->IsAnyLocal())
                             {
-                                // Add an edge to the connection graph.
                                 const unsigned int dstLclNum = fieldObj->AsLclVarCommon()->GetLclNum();
                                 const unsigned int srcLclNum = lclNum;
                                 if (dstLclNum == 0 && !comp->info.compIsStatic)
@@ -977,7 +976,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                                     break;
                                 }
 
+                                // Add an edge to the connection graph.
                                 AddConnGraphEdge(dstLclNum, srcLclNum);
+                                BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
                                 ++parentIndex;
                                 keepChecking = true;
                                 break;
@@ -988,7 +989,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                         {
                             if (parent->AsIndir()->Addr()->IsAnyLocal())
                             {
-                                // Add an edge to the connection graph.
                                 const unsigned int dstLclNum = parent->AsIndir()->Addr()->AsLclVarCommon()->GetLclNum();
                                 const unsigned int srcLclNum = lclNum;
 
@@ -997,7 +997,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                                     break;
                                 }
 
+                                // Add an edge to the connection graph.
                                 AddConnGraphEdge(dstLclNum, srcLclNum);
+                                BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
                                 canLclVarEscapeViaParentStack = false;
                             }
                         }
@@ -1024,24 +1026,20 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                 if (call->IsHelperCall())
                 {
-                    if (call->IsHelperCall(comp, CORINFO_HELP_VIRTUAL_FUNC_PTR))
-                    {
-                        break;
-                    }
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(call->gtCallMethHnd));
                 }
-                //else if (call->gtCallType == CT_USER_FUNC)
-                //{
-                //    // Delegate invoke won't escape the delegate which is passed as "this"
-                //    // And gets expanded inline later.
-                //    //
-                //    if ((call->gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0)
-                //    {
-                //        GenTree* const thisArg        = call->gtArgs.GetThisArg()->GetNode();
-                //        canLclVarEscapeViaParentStack = thisArg != tree;
-                //    }
-                //}
+                else if (call->gtCallType == CT_USER_FUNC)
+                {
+                    // Delegate invoke won't escape the delegate which is passed as "this"
+                    // And gets expanded inline later.
+                    //
+                    if ((call->gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0)
+                    {
+                        GenTree* const thisArg        = call->gtArgs.GetThisArg()->GetNode();
+                        canLclVarEscapeViaParentStack = thisArg != tree;
+                    }
+                }
                 break;
             }
 

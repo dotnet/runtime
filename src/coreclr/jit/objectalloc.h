@@ -35,6 +35,7 @@ class ObjectAllocator final : public Phase
     bool         m_AnalysisDone;
     BitVecTraits m_bitVecTraits;
     BitVec       m_EscapingPointers;
+    BitVec       m_IndirectRefStoredPointers;
     // We keep the set of possibly-stack-pointing pointers as a superset of the set of
     // definitely-stack-pointing pointers. All definitely-stack-pointing pointers are in both sets.
     BitVec              m_PossiblyStackPointingPointers;
@@ -100,6 +101,7 @@ inline ObjectAllocator::ObjectAllocator(Compiler* comp)
     m_EscapingPointers                = BitVecOps::UninitVal();
     m_PossiblyStackPointingPointers   = BitVecOps::UninitVal();
     m_DefinitelyStackPointingPointers = BitVecOps::UninitVal();
+    m_IndirectRefStoredPointers       = BitVecOps::MakeEmpty(&m_bitVecTraits);
     m_ConnGraphAdjacencyMatrix        = nullptr;
 }
 
@@ -148,7 +150,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 
     bool enableBoxedValueClasses = true;
     bool enableRefClasses        = true;
-    bool enableArrays            = false;
+    bool enableArrays            = true;
     *reason                      = "[ok]";
 
 #ifdef DEBUG
