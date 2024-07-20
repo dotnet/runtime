@@ -367,6 +367,7 @@ namespace System
         [SupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static ProcessCpuUsage CpuUsage
         {
             get => Interop.Kernel32.GetProcessTimes(Interop.Kernel32.GetCurrentProcess(), out _, out _, out long procKernelTime, out long procUserTime) ?

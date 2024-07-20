@@ -2689,6 +2689,7 @@ namespace System
         [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
         [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static ProcessCpuUsage CpuUsage { get { throw null; } }
         public static string? ProcessPath { get { throw null; } }
         public static string StackTrace { get { throw null; } }
