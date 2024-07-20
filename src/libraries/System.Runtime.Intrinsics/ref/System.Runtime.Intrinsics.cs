@@ -5531,7 +5531,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe void SetFfr(System.Numerics.Vector<sbyte> value) { throw null; }
         public static unsafe void SetFfr(System.Numerics.Vector<ushort> value) { throw null; }
         public static unsafe void SetFfr(System.Numerics.Vector<uint> value) { throw null; }
-        public static unsafe void SetFfr(System.Numerics.Vector<ulong> value) { throw null; 
+        public static unsafe void SetFfr(System.Numerics.Vector<ulong> value) { throw null; }
 
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<byte> ShiftLeftLogical(System.Numerics.Vector<byte> left, System.Numerics.Vector<ulong> right) { throw null; }
