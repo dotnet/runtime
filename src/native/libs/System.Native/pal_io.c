@@ -369,6 +369,48 @@ int32_t SystemNative_Unlink(const char* path)
     return result;
 }
 
+int32_t SystemNative_MemfdSupported(void)
+{
+#if HAVE_MEMFD_CREATE
+#ifdef TARGET_LINUX
+    struct utsname uts;
+    int32_t major, minor;
+
+    // memfd_create is only known to work properly on kernel version > 3.17 and throws SIGSEGV instead of ENOTSUP
+    if (uname(&uts) == 0 && sscanf(uts.release, "%d.%d", &major, &minor) == 2 && (major < 3 || (major == 3 && minor < 17)))
+    {
+        return 0;
+    }
+#endif
+
+    int32_t fd = memfd_create("test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (fd < 0) return 0;
+
+    close(fd);
+    return 1;
+#else
+    errno = ENOTSUP;
+    return 0;
+#endif
+}
+
+intptr_t SystemNative_MemfdCreate(const char* name)
+{
+#if HAVE_MEMFD_CREATE
+#if defined(SHM_NAME_MAX) // macOS
+    assert(strlen(name) <= SHM_NAME_MAX);
+#elif defined(PATH_MAX) // other Unixes
+    assert(strlen(name) <= PATH_MAX);
+#endif
+
+    return memfd_create(name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+#else
+    (void)name;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
 intptr_t SystemNative_ShmOpen(const char* name, int32_t flags, int32_t mode)
 {
 #if defined(SHM_NAME_MAX) // macOS

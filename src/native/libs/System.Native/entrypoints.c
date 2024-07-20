@@ -62,6 +62,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_Close)
     DllImportEntry(SystemNative_Dup)
     DllImportEntry(SystemNative_Unlink)
+    DllImportEntry(SystemNative_MemfdSupported)
+    DllImportEntry(SystemNative_MemfdCreate)
     DllImportEntry(SystemNative_ShmOpen)
     DllImportEntry(SystemNative_ShmUnlink)
     DllImportEntry(SystemNative_GetReadDirRBufferSize)

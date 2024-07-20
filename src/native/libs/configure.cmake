@@ -138,6 +138,10 @@ check_symbol_exists(
     HAVE_F_FULLFSYNC)
 
 check_function_exists(
+    memfd_create
+    HAVE_MEMFD_CREATE)
+
+check_function_exists(
     getifaddrs
     HAVE_GETIFADDRS)
 
