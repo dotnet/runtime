@@ -949,13 +949,8 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_STORE_BLK:
             case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
-                {
-                    GenTree* target = parent->AsIndir()->Addr();
-                    while (target->OperIs(GT_ADD, GT_SUB) && target->TypeIs(TYP_BYREF))
                     {
-                        target = target->AsOp()->gtGetOp1();
-                    }
-
+                    GenTree* target = parent->AsIndir()->Addr();
                     switch (target->OperGet())
                     {
                         case GT_FIELD_ADDR:
