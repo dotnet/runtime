@@ -1014,17 +1014,17 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(call->gtCallMethHnd));
                 }
-                else if (call->gtCallType == CT_USER_FUNC)
-                {
-                    // Delegate invoke won't escape the delegate which is passed as "this"
-                    // And gets expanded inline later.
-                    //
-                    if ((call->gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0)
-                    {
-                        GenTree* const thisArg        = call->gtArgs.GetThisArg()->GetNode();
-                        canLclVarEscapeViaParentStack = thisArg != tree;
-                    }
-                }
+                //else if (call->gtCallType == CT_USER_FUNC)
+                //{
+                //    // Delegate invoke won't escape the delegate which is passed as "this"
+                //    // And gets expanded inline later.
+                //    //
+                //    if ((call->gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0)
+                //    {
+                //        GenTree* const thisArg        = call->gtArgs.GetThisArg()->GetNode();
+                //        canLclVarEscapeViaParentStack = thisArg != tree;
+                //    }
+                //}
                 break;
             }
 

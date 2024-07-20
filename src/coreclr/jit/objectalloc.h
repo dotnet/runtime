@@ -148,7 +148,7 @@ inline bool ObjectAllocator::CanAllocateLclVarOnStack(unsigned int         lclNu
 
     bool enableBoxedValueClasses = true;
     bool enableRefClasses        = true;
-    bool enableArrays            = true;
+    bool enableArrays            = false;
     *reason                      = "[ok]";
 
 #ifdef DEBUG
