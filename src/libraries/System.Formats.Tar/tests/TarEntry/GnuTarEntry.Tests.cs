@@ -100,13 +100,12 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void DataOffset_RegularFile(bool canSeek)
         {
-            byte expectedData = 5;
             using MemoryStream ms = new();
             using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 writer.WriteEntry(entry);
             }
@@ -128,7 +127,7 @@ namespace System.Formats.Tar.Tests
             {
                 ms.Position = actualEntry.DataOffset;
                 byte actualData = (byte)ms.ReadByte();
-                Assert.Equal(expectedData, actualData);
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
             }
         }
 
@@ -137,13 +136,12 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public async Task DataOffset_RegularFile_Async(bool canSeek)
         {
-            byte expectedData = 5;
             await using MemoryStream ms = new();
             await using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry);
             }
@@ -165,7 +163,7 @@ namespace System.Formats.Tar.Tests
             {
                 ms.Position = actualEntry.DataOffset;
                 byte actualData = (byte)ms.ReadByte();
-                Assert.Equal(expectedData, actualData);
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
             }
         }
 
@@ -180,7 +178,7 @@ namespace System.Formats.Tar.Tests
                 string veryLongName = new string('a', 1234); // Forces using a GNU LongPath entry
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, veryLongName);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 writer.WriteEntry(entry);
             }
@@ -214,7 +212,7 @@ namespace System.Formats.Tar.Tests
                 string veryLongName = new string('a', 1234); // Forces using a GNU LongPath entry
                 GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, veryLongName);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry);
             }
@@ -374,7 +372,7 @@ namespace System.Formats.Tar.Tests
             GnuTarEntry entry = new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName);
             Assert.Equal(-1, entry.DataOffset);
             entry.DataStream = new MemoryStream();
-            entry.DataStream.WriteByte(5);
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
             entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             using MemoryStream ms = new();
@@ -397,7 +395,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(-1, entry.DataOffset);
 
             entry.DataStream = new MemoryStream();
-            entry.DataStream.WriteByte(5);
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
             entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             await using MemoryStream ms = new();
@@ -423,7 +421,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(-1, entry.DataOffset);
 
                 using MemoryStream dataStream = new();
-                dataStream.WriteByte(5);
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 dataStream.Position = 0;
                 using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
                 entry.DataStream = wds;
@@ -449,7 +447,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(-1, entry.DataOffset);
 
                 await using MemoryStream dataStream = new();
-                dataStream.WriteByte(5);
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 dataStream.Position = 0;
                 await using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
                 entry.DataStream = wds;

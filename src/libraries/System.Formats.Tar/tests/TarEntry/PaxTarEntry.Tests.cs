@@ -122,14 +122,13 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void DataOffset_RegularFile(bool canSeek)
         {
-            byte expectedData = 5;
             using MemoryStream ms = new();
             using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry.DataOffset);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 writer.WriteEntry(entry);
             }
@@ -154,7 +153,7 @@ namespace System.Formats.Tar.Tests
             {
                 ms.Position = actualEntry.DataOffset;
                 byte actualData = (byte)ms.ReadByte();
-                Assert.Equal(expectedData, actualData);
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
             }
         }
 
@@ -163,14 +162,13 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public async Task DataOffset_RegularFile_Async(bool canSeek)
         {
-            byte expectedData = 5;
             await using MemoryStream ms = new();
             await using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 PaxTarEntry entry = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry.DataOffset);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(5);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry);
             }
@@ -195,7 +193,7 @@ namespace System.Formats.Tar.Tests
             {
                 ms.Position = actualEntry.DataOffset;
                 byte actualData = (byte)ms.ReadByte();
-                Assert.Equal(expectedData, actualData);
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
             }
         }
 
@@ -254,7 +252,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(-1, entry.DataOffset);
 
             entry.DataStream = new MemoryStream();
-            entry.DataStream.WriteByte(5);
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
             entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             using MemoryStream ms = new();
@@ -285,7 +283,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(-1, entry.DataOffset);
 
             entry.DataStream = new MemoryStream();
-            entry.DataStream.WriteByte(5);
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
             entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             await using MemoryStream ms = new();
@@ -319,7 +317,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(-1, entry.DataOffset);
 
                 using MemoryStream dataStream = new();
-                dataStream.WriteByte(5);
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 dataStream.Position = 0;
                 using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
                 entry.DataStream = wds;
@@ -352,7 +350,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(-1, entry.DataOffset);
 
                 await using MemoryStream dataStream = new();
-                dataStream.WriteByte(5);
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 dataStream.Position = 0;
                 await using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
                 entry.DataStream = wds;
@@ -378,7 +376,7 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public void DataOffset_RegularFile_SecondEntry(bool canSeek)
+        public void DataOffset_RegularFile_SecondEntry_MultiByte(bool canSeek)
         {
             using MemoryStream ms = new();
             using (TarWriter writer = new(ms, leaveOpen: true))
@@ -386,14 +384,14 @@ namespace System.Formats.Tar.Tests
                 PaxTarEntry entry1 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry1.DataOffset);
                 entry1.DataStream = new MemoryStream();
-                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.Write(ExpectedOffsetDataMultiByte);
                 entry1.DataStream.Position = 0;
                 writer.WriteEntry(entry1);
                 
                 PaxTarEntry entry2 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry2.DataOffset);
                 entry2.DataStream = new MemoryStream();
-                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.Write(ExpectedOffsetDataMultiByte);
                 entry2.DataStream.Position = 0;
                 writer.WriteEntry(entry2);
             }
@@ -414,9 +412,18 @@ namespace System.Formats.Tar.Tests
             long firstExpectedDataOffset = canSeek ? 1536 : -1;
             Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
             
+            if (canSeek)
+            {
+                byte[] actualData = new byte[ExpectedOffsetDataMultiByte.Length];
+                ms.Position = firstEntry.DataOffset; // Reposition the archive stream to confirm the reader will autorestore its position later
+                ms.ReadExactly(actualData);
+                AssertExtensions.SequenceEqual(ExpectedOffsetDataMultiByte, actualData);
+            }
+
+            // If the archive stream is seekable, this should autorestore archive stream position internally
             TarEntry secondEntry = reader.GetNextEntry();
             Assert.NotNull(secondEntry);
-            // The first entry (including its extended attribute entry) end at 1536 + 1 (data) + 511 (padding) = 2048
+            // The first entry (including its extended attribute entry) end at 1536 + 4 (data) + 508 (padding) = 2048
             // Second entry's data also starts one byte after the 1536 bytes after the beginning of its header, so 2048 + 1536 = 3584
             long secondExpectedDataOffset = canSeek ? 3584 : -1;
             Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);
@@ -425,7 +432,7 @@ namespace System.Formats.Tar.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task DataOffset_RegularFile_SecondEntry_Async(bool canSeek)
+        public async Task DataOffset_RegularFile_SecondEntry_MultiByte_Async(bool canSeek)
         {
             await using MemoryStream ms = new();
             await using (TarWriter writer = new(ms, leaveOpen: true))
@@ -433,14 +440,14 @@ namespace System.Formats.Tar.Tests
                 PaxTarEntry entry1 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry1.DataOffset);
                 entry1.DataStream = new MemoryStream();
-                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.Write(ExpectedOffsetDataMultiByte);
                 entry1.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry1);
                 
                 PaxTarEntry entry2 = new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry2.DataOffset);
                 entry2.DataStream = new MemoryStream();
-                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.Write(ExpectedOffsetDataMultiByte);
                 entry2.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry2);
             }
@@ -461,9 +468,18 @@ namespace System.Formats.Tar.Tests
             long firstExpectedDataOffset = canSeek ? 1536 : -1;
             Assert.Equal(firstExpectedDataOffset, firstEntry.DataOffset);
             
+            if (canSeek)
+            {
+                byte[] actualData = new byte[ExpectedOffsetDataMultiByte.Length];
+                ms.Position = firstEntry.DataOffset; // Reposition the archive stream to confirm the reader will autorestore its position later
+                await ms.ReadExactlyAsync(actualData);
+                AssertExtensions.SequenceEqual(ExpectedOffsetDataMultiByte, actualData);
+            }
+
+            // If the archive stream is seekable, this should autorestore archive stream position internally
             TarEntry secondEntry = await reader.GetNextEntryAsync();
             Assert.NotNull(secondEntry);
-            // The first entry (including its extended attribute entry) end at 1536 + 1 (data) + 511 (padding) = 2048
+            // The first entry (including its extended attribute entry) end at 1536 + 4 (data) + 508 (padding) = 2048
             // Second entry's data also starts one byte after the 1536 bytes after the beginning of its header, so 2048 + 1536 = 3584
             long secondExpectedDataOffset = canSeek ? 3584 : -1;
             Assert.Equal(secondExpectedDataOffset, secondEntry.DataOffset);

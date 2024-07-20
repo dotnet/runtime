@@ -76,14 +76,13 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public void DataOffset_RegularFile(bool canSeek)
         {
-            byte expectedData = 5;
             using MemoryStream ms = new();
             using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry.DataOffset);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(expectedData);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 writer.WriteEntry(entry);
             }
@@ -101,7 +100,7 @@ namespace System.Formats.Tar.Tests
             {
                 ms.Position = actualEntry.DataOffset;
                 byte actualData = (byte)ms.ReadByte();
-                Assert.Equal(expectedData, actualData);
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
             }
         }
 
@@ -110,14 +109,13 @@ namespace System.Formats.Tar.Tests
         [InlineData(true)]
         public async Task DataOffset_RegularFile_Async(bool canSeek)
         {
-            byte expectedData = 5;
             await using MemoryStream ms = new();
             await using (TarWriter writer = new(ms, leaveOpen: true))
             {
                 V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry.DataOffset);
                 entry.DataStream = new MemoryStream();
-                entry.DataStream.WriteByte(expectedData);
+                entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry);
             }
@@ -135,7 +133,7 @@ namespace System.Formats.Tar.Tests
             {
                 ms.Position = actualEntry.DataOffset;
                 byte actualData = (byte)ms.ReadByte();
-                Assert.Equal(expectedData, actualData);
+                Assert.Equal(ExpectedOffsetDataSingleByte, actualData);
             }
         }
 
@@ -145,7 +143,7 @@ namespace System.Formats.Tar.Tests
             V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
             Assert.Equal(-1, entry.DataOffset);
             entry.DataStream = new MemoryStream();
-            entry.DataStream.WriteByte(5);
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
             entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             using MemoryStream ms = new();
@@ -167,7 +165,7 @@ namespace System.Formats.Tar.Tests
             V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
             Assert.Equal(-1, entry.DataOffset);
             entry.DataStream = new MemoryStream();
-            entry.DataStream.WriteByte(5);
+            entry.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
             entry.DataStream.Position = 0; // The data stream is written to the archive from the current position
 
             await using MemoryStream ms = new();
@@ -193,7 +191,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(-1, entry.DataOffset);
 
                 using MemoryStream dataStream = new();
-                dataStream.WriteByte(5);
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 dataStream.Position = 0;
                 using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
                 entry.DataStream = wds;
@@ -217,7 +215,7 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(-1, entry.DataOffset);
 
                 await using MemoryStream dataStream = new();
-                dataStream.WriteByte(5);
+                dataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 dataStream.Position = 0;
                 await using WrappedStream wds = new(dataStream, canWrite: true, canRead: true, canSeek: false);
                 entry.DataStream = wds;
@@ -244,14 +242,14 @@ namespace System.Formats.Tar.Tests
                 V7TarEntry entry1 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry1.DataOffset);
                 entry1.DataStream = new MemoryStream();
-                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry1.DataStream.Position = 0;
                 writer.WriteEntry(entry1);
                 
                 V7TarEntry entry2 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry2.DataOffset);
                 entry2.DataStream = new MemoryStream();
-                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry2.DataStream.Position = 0;
                 writer.WriteEntry(entry2);
             }
@@ -284,14 +282,14 @@ namespace System.Formats.Tar.Tests
                 V7TarEntry entry1 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry1.DataOffset);
                 entry1.DataStream = new MemoryStream();
-                entry1.DataStream.WriteByte(5);
+                entry1.DataStream.Write(ExpectedOffsetDataMultiByte);
                 entry1.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry1);
                 
                 V7TarEntry entry2 = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
                 Assert.Equal(-1, entry2.DataOffset);
                 entry2.DataStream = new MemoryStream();
-                entry2.DataStream.WriteByte(5);
+                entry2.DataStream.WriteByte(ExpectedOffsetDataSingleByte);
                 entry2.DataStream.Position = 0;
                 await writer.WriteEntryAsync(entry2);
             }
