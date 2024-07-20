@@ -26722,7 +26722,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
 #ifdef TARGET_ARM64
         static_assert_no_msg(
             AreContiguous(NI_Sve_GatherVector, NI_Sve_GatherVectorByteZeroExtend,
-                          NI_Sve_GatherVectorFirstFaulting, NI_Sve_GatherVectorByteZeroExtendFirstFaulting,
+                          NI_Sve_GatherVectorByteZeroExtendFirstFaulting, NI_Sve_GatherVectorFirstFaulting,
                           NI_Sve_GatherVectorInt16SignExtend, NI_Sve_GatherVectorInt16SignExtendFirstFaulting,
                           NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend,
                           NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting,
