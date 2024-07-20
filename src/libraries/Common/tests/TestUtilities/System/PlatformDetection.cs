@@ -47,6 +47,7 @@ namespace System
         public static bool IsNotMacCatalyst => !IsMacCatalyst;
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
+        public static bool IsSunOS => Isillumos || IsSolaris;
         public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
         public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
         public static bool IsNotBrowser => !IsBrowser;

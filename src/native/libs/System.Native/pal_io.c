@@ -1812,9 +1812,57 @@ int32_t SystemNative_CanGetHiddenFlag(void)
 #endif
 }
 
-int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStatus)
+int32_t SystemNative_ReadProcessLwpInfo(int32_t pid, int32_t tid, ThreadStatus* threadStatus)
 {
 #ifdef __sun
+    char statusFilename[64];
+    snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/lwp/%d/lwpsinfo", pid, tid);
+
+    intptr_t fd;
+    while ((fd = open(statusFilename, O_RDONLY)) < 0 && errno == EINTR);
+    if (fd < 0)
+    {
+        return 0;
+    }
+
+    lwpsinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
+    close(fd);
+    if (result < sizeof (pr))
+    {
+        errno = EIO;
+        return -1;
+    }
+
+    threadStatus->Tid = pr.pr_lwpid;
+    threadStatus->Priority = pr.pr_pri;
+    threadStatus->NiceVal = pr.pr_nice;
+    // Status code, a char: ...
+    threadStatus->StatusCode = (char)pr.pr_sname;
+    // Thread start time and CPU time
+    threadStatus->StartTime = pr.pr_start.tv_sec;
+    threadStatus->StartTimeNsec = pr.pr_start.tv_nsec;
+    threadStatus->CpuTotalTime = pr.pr_time.tv_sec;
+    threadStatus->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    return 0;
+#else
+    (void)pid, (void)tid, (void)threadStatus;
+    errno = ENOTSUP;
+    return -1;
+#endif // __sun
+}
+
+// The struct passing is limited, so the args string is handled separately here.
+int32_t SystemNative_ReadProcessStatusInfo(int32_t pid, ProcessStatus* processStatus, uint8_t *argBuf, int32_t argBufSize)
+{
+#ifdef __sun
+    if (argBufSize != 0 && argBufSize < PRARGSZ)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
     char statusFilename[64];
     snprintf(statusFilename, sizeof(statusFilename), "/proc/%d/psinfo", pid);
 
@@ -1825,13 +1873,31 @@ int32_t SystemNative_ReadProcessStatusInfo(pid_t pid, ProcessStatus* processStat
         return 0;
     }
 
-    psinfo_t status;
-    int result = Common_Read(fd, &status, sizeof(psinfo_t));
+    psinfo_t pr;
+    int result = Common_Read(fd, &pr, sizeof(pr));
     close(fd);
-    if (result >= 0)
+    if (result < sizeof (pr))
     {
-        processStatus->ResidentSetSize = status.pr_rssize * 1024; // pr_rssize is in Kbytes
-        return 1;
+        errno = EIO;
+        return -1;
+    }
+
+    processStatus->Pid = pr.pr_pid;
+    processStatus->ParentPid = pr.pr_ppid;
+    processStatus->SessionId = pr.pr_sid;
+    processStatus->Priority = pr.pr_lwp.pr_pri;
+    processStatus->NiceVal = pr.pr_lwp.pr_nice;
+    // pr_size and pr_rsize are in Kbytes.
+    processStatus->VirtualSize = (uint64_t)pr.pr_size * 1024;
+    processStatus->ResidentSetSize = (uint64_t)pr.pr_rssize * 1024;
+    processStatus->StartTime = pr.pr_start.tv_sec;
+    processStatus->StartTimeNsec = pr.pr_start.tv_nsec;
+    processStatus->CpuTotalTime = pr.pr_time.tv_sec;
+    processStatus->CpuTotalTimeNsec = pr.pr_time.tv_nsec;
+
+    if (argBuf != NULL && argBufSize != 0)
+    {
+        SafeStringCopy((char*)argBuf, PRARGSZ, pr.pr_psargs);
     }
 
     return 0;
