@@ -2082,6 +2082,22 @@ public:
         CORINFO_METHOD_HANDLE meth1Hnd,
         CORINFO_METHOD_HANDLE meth2Hnd) = 0;
 
+    //------------------------------------------------------------------------------
+    // getTypeDefinition: Get the (unconstructed) type definition from a given type handle.
+    //
+    // Arguments:
+    //    type - The input type handle
+    //
+    // Return Value:
+    //   The type handle for the (unconstructed) type definition from type.
+    //
+    // Remarks:
+    //   This is equivalent of Type.GetGenericTypeDefinition(). Given a generic type handle, it will
+    //   return the original type definition (eg. for Foo<int> it will return Foo<>). If called with
+    //   an unconstructed generic type, the method returns the same type as the input. This method
+    //   should only be called when the input type is in fact a generic type.
+    virtual CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) = 0;
+
     // Decides if you have any limitations for inlining. If everything's OK, it will return
     // INLINE_PASS.
     //

@@ -752,6 +752,77 @@ void Compiler::optBestEffortReplaceNarrowIVUses(
 }
 
 //------------------------------------------------------------------------
+// optWidenIVs: Widen IVs of the specified loop.
+//
+// Parameters:
+//   scevContext - Context for scalar evolution
+//   loop        - The loop
+//   loopLocals  - Data structure for locals occurrences
+//
+// Returns:
+//   True if any primary IV was widened.
+//
+bool Compiler::optWidenIVs(ScalarEvolutionContext& scevContext,
+                           FlowGraphNaturalLoop*   loop,
+                           LoopLocalOccurrences*   loopLocals)
+{
+    JITDUMP("Considering primary IVs of " FMT_LP " for widening\n", loop->GetIndex());
+
+    unsigned numWidened = 0;
+    for (Statement* stmt : loop->GetHeader()->Statements())
+    {
+        if (!stmt->IsPhiDefnStmt())
+        {
+            break;
+        }
+
+        JITDUMP("\n");
+        DISPSTMT(stmt);
+
+        Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
+        if (scev == nullptr)
+        {
+            JITDUMP("  Could not analyze header PHI\n");
+            continue;
+        }
+
+        JITDUMP("  => ");
+        DBEXEC(verbose, scev->Dump(this));
+        JITDUMP("\n");
+        if (!scev->OperIs(ScevOper::AddRec))
+        {
+            JITDUMP("  Not an addrec\n");
+            continue;
+        }
+
+        ScevAddRec* addRec = (ScevAddRec*)scev;
+
+        unsigned   lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* lclDsc = lvaGetDesc(lclNum);
+        JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lclNum, loop->GetIndex());
+
+        assert(!lclDsc->lvPromoted);
+
+        // For a struct field with occurrences of the parent local we won't
+        // be able to do much.
+        if (lclDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, lclDsc->lvParentLcl))
+        {
+            JITDUMP("  V%02u is a struct field whose parent local V%02u has occurrences inside the loop\n", lclNum,
+                    lclDsc->lvParentLcl);
+            continue;
+        }
+
+        if (optWidenPrimaryIV(loop, lclNum, addRec, loopLocals))
+        {
+            numWidened++;
+        }
+    }
+
+    Metrics.WidenedIVs += numWidened;
+    return numWidened > 0;
+}
+
+//------------------------------------------------------------------------
 // optWidenPrimaryIV: Attempt to widen a primary IV.
 //
 // Parameters:
@@ -903,6 +974,7 @@ bool Compiler::optWidenPrimaryIV(FlowGraphNaturalLoop* loop,
     loopLocals->VisitStatementsWithOccurrences(loop, lclNum, replace);
 
     optSinkWidenedIV(lclNum, newLclNum, loop);
+    loopLocals->Invalidate(loop);
     return true;
 }
 
@@ -1036,29 +1108,12 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
                 return true;
             }
 
-            GenTree* rootNode = stmt->GetRootNode();
-            if (!rootNode->OperIsLocalStore())
+            if (optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), candidateLclNum))
             {
-                // Cannot reason about this use of the local, cannot remove
-                // TODO-CQ: In some cases it may be profitable to compute the
-                // value in terms of the down-counting IV.
-                return false;
+                return true;
             }
 
-            if (rootNode->AsLclVarCommon()->GetLclNum() != candidateLclNum)
-            {
-                // Used to compute a value stored to some other local, cannot remove
-                return false;
-            }
-
-            if ((rootNode->AsLclVarCommon()->Data()->gtFlags & GTF_SIDE_EFFECT) != 0)
-            {
-                // May be used inside the data node for something that has side effects, cannot remove
-                return false;
-            }
-
-            // Can remove this store
-            return true;
+            return false;
         };
 
         if (!loopLocals->VisitStatementsWithOccurrences(loop, candidateLclNum, checkRemovableUse))
@@ -1152,26 +1207,9 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
 
     JITDUMP("\n  Updated exit test:\n");
     DISPSTMT(jtrueStmt);
-
-    JITDUMP("\n  Now removing uses of old IVs\n");
-
-    for (int i = 0; i < removableLocals.Height(); i++)
-    {
-        unsigned removableLcl = removableLocals.Bottom(i);
-        JITDUMP("  Removing uses of V%02u\n", removableLcl);
-        auto deleteStatement = [=](BasicBlock* block, Statement* stmt) {
-            if (stmt != jtrueStmt)
-            {
-                fgRemoveStmt(block, stmt);
-            }
-
-            return true;
-        };
-
-        loopLocals->VisitStatementsWithOccurrences(loop, removableLcl, deleteStatement);
-    }
-
     JITDUMP("\n");
+
+    loopLocals->Invalidate(loop);
     return true;
 }
 
@@ -1627,18 +1665,10 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 bool StrengthReductionContext::IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree)
 {
     unsigned primaryIVLclNum = tree->GetLclNum();
-    if (stmt->GetRootNode()->OperIsLocalStore())
+    if (m_comp->optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), tree->GetLclNum()))
     {
-        GenTreeLclVarCommon* lcl = stmt->GetRootNode()->AsLclVarCommon();
-        if ((lcl->GetLclNum() == primaryIVLclNum) && ((lcl->Data()->gtFlags & GTF_SIDE_EFFECT) == 0))
-        {
-            // Store to the primary IV without side effects; if we end
-            // up strength reducing, then this store is expected to be
-            // removed by making the loop downwards counted.
-            return true;
-        }
-
-        return false;
+        // Removal of unused IVs will get rid of this.
+        return true;
     }
 
     bool isInsideExitTest =
@@ -1815,21 +1845,38 @@ bool StrengthReductionContext::CheckAdvancedCursors(ArrayStack<CursorInfo>* curs
 //
 bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec)
 {
-    int64_t offset;
-    Scev*   baseScev = addRec->Start->PeelAdditions(&offset);
-    offset           = static_cast<target_ssize_t>(offset);
-
-    // We only support arrays here. To strength reduce Span<T> accesses we need
-    // additional properies on the range designated by a Span<T> that we
-    // currently do not specify, or we need to prove that the byref we may form
-    // in the IV update would have been formed anyway by the loop.
-    if (!baseScev->OperIs(ScevOper::Local) || !baseScev->TypeIs(TYP_REF))
+    ValueNumPair addRecStartVNP = m_scevContext.MaterializeVN(addRec->Start);
+    if (!addRecStartVNP.BothDefined())
     {
         return false;
     }
 
-    // Now use the fact that we keep ARR_ADDRs in the IR when we have array
-    // accesses.
+    ValueNumPair   addRecStartBase    = addRecStartVNP;
+    target_ssize_t offsetLiberal      = 0;
+    target_ssize_t offsetConservative = 0;
+    m_comp->vnStore->PeelOffsets(addRecStartBase.GetLiberalAddr(), &offsetLiberal);
+    m_comp->vnStore->PeelOffsets(addRecStartBase.GetConservativeAddr(), &offsetConservative);
+
+    if (offsetLiberal != offsetConservative)
+    {
+        return false;
+    }
+
+    target_ssize_t offset = offsetLiberal;
+
+    // We only support objects here (targeting array/strings). To strength
+    // reduce Span<T> accesses we need additional properties on the range
+    // designated by a Span<T> that we currently do not specify, or we need to
+    // prove that the byref we may form in the IV update would have been formed
+    // anyway by the loop.
+    if ((m_comp->vnStore->TypeOfVN(addRecStartBase.GetConservative()) != TYP_REF) ||
+        (m_comp->vnStore->TypeOfVN(addRecStartBase.GetLiberal()) != TYP_REF))
+    {
+        return false;
+    }
+
+    // Now use the fact that we keep ARR_ADDRs in the IR when we have
+    // array/string accesses.
     GenTreeArrAddr* arrAddr = nullptr;
     for (int i = 0; i < cursors->Height(); i++)
     {
@@ -1857,46 +1904,55 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
         return false;
     }
 
-    ScevLocal* local = (ScevLocal*)baseScev;
-
-    ValueNumPair vnp = m_scevContext.MaterializeVN(baseScev);
-    if (vnp.GetConservative() == ValueNumStore::NoVN)
-    {
-        return false;
-    }
-
     BasicBlock* preheader = m_loop->EntryEdge(0)->getSourceBlock();
-    if (!m_comp->optAssertionVNIsNonNull(vnp.GetConservative(), preheader->bbAssertionOut))
+    if (!m_comp->optAssertionVNIsNonNull(addRecStartBase.GetConservative(), preheader->bbAssertionOut))
     {
         return false;
     }
 
-    // We have a non-null array. Check that the 'start' offset looks fine.
-    // TODO: We could also use assertions on the length of the array. E.g. if
-    // we know the length of the array is > 3, then we can allow the add rec to
-    // have a later start. Maybe range check can be used?
-    if ((offset < 0) || (offset > (int64_t)OFFSETOF__CORINFO_Array__data))
+    // We have a non-null object as the base. Check that the 'start' offset
+    // looks fine. TODO: We could also use assertions on the length of the
+    // array/string. E.g. if we know the length of the array is > 3, then we
+    // can allow the add rec to have a later start. Maybe range check can be
+    // used?
+    if ((offset < 0) || (offset > arrAddr->GetFirstElemOffset()))
     {
         return false;
     }
 
-    // Now see if we have a bound that guarantees that we iterate less than the
-    // array length's times.
+    // Now see if we have a bound that guarantees that we iterate fewer times
+    // than the array/string's length.
+    ValueNum arrLengthVN = m_comp->vnStore->VNForFunc(TYP_INT, VNF_ARR_LENGTH, addRecStartBase.GetLiberal());
+
     for (int i = 0; i < m_backEdgeBounds.Height(); i++)
     {
-        // TODO: EvaluateRelop ought to be powerful enough to prove something
-        // like bound < ARR_LENGTH(vn), but it is not able to prove that
-        // currently, even for bound = ARR_LENGTH(vn) - 1 (common case).
         Scev* bound = m_backEdgeBounds.Bottom(i);
+        if (!bound->TypeIs(TYP_INT))
+        {
+            // Currently cannot handle bounds that aren't 32 bit.
+            continue;
+        }
 
+        // In some cases VN is powerful enough to evaluate bound <
+        // ARR_LENGTH(vn) directly.
+        ValueNumPair boundVN = m_scevContext.MaterializeVN(bound);
+        if (boundVN.GetLiberal() != ValueNumStore::NoVN)
+        {
+            ValueNum relop = m_comp->vnStore->VNForFunc(TYP_INT, VNF_LT_UN, boundVN.GetLiberal(), arrLengthVN);
+            if (m_scevContext.EvaluateRelop(relop) == RelopEvaluationResult::True)
+            {
+                return true;
+            }
+        }
+
+        // In common cases VN cannot prove the above, so try a little bit
+        // harder. In this case we know the bound doesn't overflow
+        // (conceptually the bound is an arbitrary precision integer and a
+        // negative bound does not make sense).
         int64_t boundOffset;
         Scev*   boundBase = bound->PeelAdditions(&boundOffset);
 
-        if (bound->TypeIs(TYP_INT))
-        {
-            boundOffset = static_cast<int32_t>(boundOffset);
-        }
-
+        boundOffset = static_cast<int32_t>(boundOffset);
         if (boundOffset >= 0)
         {
             // If we take the backedge >= the array length times, then we would
@@ -1904,20 +1960,18 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
             continue;
         }
 
+        // Now try to prove that boundBase <= ARR_LENGTH(vn). Commonly
+        // boundBase == ARR_LENGTH(vn) exactly, but it may also have a
+        // dominating subsuming compare before the loop due to loop cloning.
         ValueNumPair boundBaseVN = m_scevContext.MaterializeVN(boundBase);
-
-        VNFuncApp vnf;
-        if (!m_comp->vnStore->GetVNFunc(boundBaseVN.GetConservative(), &vnf))
+        if (boundBaseVN.GetLiberal() != ValueNumStore::NoVN)
         {
-            continue;
+            ValueNum relop = m_comp->vnStore->VNForFunc(TYP_INT, VNF_LE, boundBaseVN.GetLiberal(), arrLengthVN);
+            if (m_scevContext.EvaluateRelop(relop) == RelopEvaluationResult::True)
+            {
+                return true;
+            }
         }
-
-        if ((vnf.m_func != VNF_ARR_LENGTH) || (vnf.m_args[0] != vnp.GetConservative()))
-        {
-            continue;
-        }
-
-        return true;
     }
 
     return false;
@@ -2093,6 +2147,92 @@ BasicBlock* StrengthReductionContext::FindUpdateInsertionPoint(ArrayStack<Cursor
 }
 
 //------------------------------------------------------------------------
+// optRemoveUnusedIVs: Remove IVs that are only used for self-updates.
+//
+// Parameters:
+//   loop       - The loop
+//   loopLocals - Locals of the loop
+//
+// Returns:
+//   True if any primary IV was removed.
+//
+bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals)
+{
+    JITDUMP("  Now looking for unnecessary primary IVs\n");
+
+    unsigned numRemoved = 0;
+    for (Statement* stmt : loop->GetHeader()->Statements())
+    {
+        if (!stmt->IsPhiDefnStmt())
+        {
+            break;
+        }
+
+        unsigned lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
+        JITDUMP("  V%02u", lclNum);
+        if (optPrimaryIVHasNonLoopUses(lclNum, loop, loopLocals))
+        {
+            JITDUMP(" has non-loop uses, cannot remove\n");
+            continue;
+        }
+
+        auto visit = [=](BasicBlock* block, Statement* stmt) {
+            return optIsUpdateOfIVWithoutSideEffects(stmt->GetRootNode(), lclNum);
+        };
+
+        if (!loopLocals->VisitStatementsWithOccurrences(loop, lclNum, visit))
+        {
+            JITDUMP(" has essential uses, cannot remove\n");
+            continue;
+        }
+
+        JITDUMP(" has no essential uses and will be removed\n", lclNum);
+        auto remove = [=](BasicBlock* block, Statement* stmt) {
+            JITDUMP("  Removing " FMT_STMT "\n", stmt->GetID());
+            fgRemoveStmt(block, stmt);
+            return true;
+        };
+
+        loopLocals->VisitStatementsWithOccurrences(loop, lclNum, remove);
+        numRemoved++;
+        loopLocals->Invalidate(loop);
+    }
+
+    Metrics.UnusedIVsRemoved += numRemoved;
+    return numRemoved > 0;
+}
+
+//------------------------------------------------------------------------
+// optIsUpdateOfIVWithoutSideEffects: Check if a tree is an update of a
+// specific local with no other side effects.
+//
+// Returns:
+//   True if so.
+//
+bool Compiler::optIsUpdateOfIVWithoutSideEffects(GenTree* tree, unsigned lclNum)
+{
+    if (!tree->OperIsLocalStore())
+    {
+        return false;
+    }
+
+    GenTreeLclVarCommon* store = tree->AsLclVarCommon();
+    if (store->GetLclNum() != lclNum)
+    {
+        // Store that uses the local as a source; this primary IV is used
+        return false;
+    }
+
+    if ((store->Data()->gtFlags & GTF_SIDE_EFFECT) != 0)
+    {
+        // Primary IV may be used inside a side effect
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // optInductionVariables: Try and optimize induction variables in the method.
 //
 // Returns:
@@ -2162,66 +2302,17 @@ PhaseStatus Compiler::optInductionVariables()
         // addressing modes can include the zero/sign-extension of the index
         // for free.
 #if defined(TARGET_XARCH) && defined(TARGET_64BIT)
-        int numWidened = 0;
-
-        JITDUMP("Considering primary IVs of " FMT_LP " for widening\n", loop->GetIndex());
-
-        for (Statement* stmt : loop->GetHeader()->Statements())
-        {
-            if (!stmt->IsPhiDefnStmt())
-            {
-                break;
-            }
-
-            JITDUMP("\n");
-            DISPSTMT(stmt);
-
-            Scev* scev = scevContext.Analyze(loop->GetHeader(), stmt->GetRootNode());
-            if (scev == nullptr)
-            {
-                JITDUMP("  Could not analyze header PHI\n");
-                continue;
-            }
-
-            JITDUMP("  => ");
-            DBEXEC(verbose, scev->Dump(this));
-            JITDUMP("\n");
-            if (!scev->OperIs(ScevOper::AddRec))
-            {
-                JITDUMP("  Not an addrec\n");
-                continue;
-            }
-
-            ScevAddRec* addRec = (ScevAddRec*)scev;
-
-            unsigned   lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* lclDsc = lvaGetDesc(lclNum);
-            JITDUMP("  V%02u is a primary induction variable in " FMT_LP "\n", lclNum, loop->GetIndex());
-
-            assert(!lclDsc->lvPromoted);
-
-            // For a struct field with occurrences of the parent local we won't
-            // be able to do much.
-            if (lclDsc->lvIsStructField && loopLocals.HasAnyOccurrences(loop, lclDsc->lvParentLcl))
-            {
-                JITDUMP("  V%02u is a struct field whose parent local V%02u has occurrences inside the loop\n", lclNum,
-                        lclDsc->lvParentLcl);
-                continue;
-            }
-
-            if (optWidenPrimaryIV(loop, lclNum, addRec, &loopLocals))
-            {
-                numWidened++;
-                changed = true;
-            }
-        }
-
-        Metrics.WidenedIVs += numWidened;
-        if (numWidened > 0)
+        if (optWidenIVs(scevContext, loop, &loopLocals))
         {
             Metrics.LoopsIVWidened++;
+            changed = true;
         }
 #endif
+
+        if (optRemoveUnusedIVs(loop, &loopLocals))
+        {
+            changed = true;
+        }
     }
 
     fgInvalidateDfsTree();

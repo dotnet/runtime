@@ -3094,6 +3094,29 @@ bool MethodContext::repHaveSameMethodDefinition(CORINFO_METHOD_HANDLE methHnd1, 
     return value != 0;
 }
 
+void MethodContext::recGetTypeDefinition(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result)
+{
+    if (GetTypeDefinition == nullptr)
+        GetTypeDefinition = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = CastHandle(result);
+    GetTypeDefinition->Add(key, value);
+    DEBUG_REC(dmpGetTypeDefinition(key, value));
+}
+void MethodContext::dmpGetTypeDefinition(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetTypeDefinition key cls-%016" PRIX64 ", value cls-%016" PRIX64 "", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetTypeDefinition(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = LookupByKeyOrMiss(GetTypeDefinition, key, ": key %016" PRIX64 "", key);
+    DEBUG_REP(dmpGetTypeDefinition(key, value));
+    CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value;
+    return result;
+}
+
 void MethodContext::recGetNewHelper(CORINFO_CLASS_HANDLE  classHandle,
                                     bool                  hasSideEffects,
                                     CorInfoHelpFunc       result,

@@ -3756,6 +3756,7 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg, insOpts o
 //      gtFlags - DEBUG only gtFlags.
 //
 void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
+                                        regNumber   targetReg,
                                         regNumber   reg,
                                         ssize_t imm DEBUGARG(GenTreeFlags gtFlags /* = GTF_EMPTY */))
 {
@@ -3777,7 +3778,7 @@ void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
     id->idInsOpt(INS_OPTS_LSL12);
     id->idAddr()->iiaAddr = (BYTE*)imm;
 
-    id->idReg1(reg);
+    id->idReg1(targetReg);
     id->idReg2(reg);
 
     // Since this is relocation, set to 8 byte size.
@@ -3804,7 +3805,7 @@ void emitter::emitIns_Add_Add_Tls_Reloc(emitAttr    attr,
     id->idInsFmt(fmt);
     id->idAddr()->iiaAddr = (BYTE*)imm;
 
-    id->idReg1(reg);
+    id->idReg1(targetReg);
     id->idReg2(reg);
 
     // Since this is relocation, set to 8 byte size.
@@ -11349,7 +11350,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                         else
                         {
                             // This is second "add" of "add/add" pair
-                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_LOW12L);
+                            emitRecordRelocation(odst, id->idAddr()->iiaAddr, IMAGE_REL_ARM64_SECREL_LOW12A);
                         }
                     }
                     else
@@ -13539,13 +13540,32 @@ void emitter::emitDispInsHelp(
             if (id->idIsReloc())
             {
                 assert(ins == INS_add);
-                printf("[LOW RELOC ");
+
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && id->idIsTlsGD())
+                {
+                    printf("[HIGH RELOC ");
+                }
+                else
+                {
+                    printf("[LOW RELOC ");
+                }
+
                 emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
                 printf("]");
             }
             else
             {
-                emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+                if (emitComp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) && TargetOS::IsWindows && id->idIsTlsGD())
+                {
+                    assert(ins == INS_add);
+                    printf("[LOW RELOC ");
+                    emitDispImm((ssize_t)id->idAddr()->iiaAddr, false);
+                    printf("]");
+                }
+                else
+                {
+                    emitDispImmOptsLSL(emitGetInsSC(id), insOptsLSL12(id->idInsOpt()), 12);
+                }
             }
             break;
 

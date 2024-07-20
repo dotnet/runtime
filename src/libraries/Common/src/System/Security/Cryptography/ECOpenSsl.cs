@@ -15,9 +15,9 @@ namespace System.Security.Cryptography
             GenerateKey(curve);
         }
 
-        public ECOpenSsl(AsymmetricAlgorithm owner)
+        public ECOpenSsl(int keySizeBits)
         {
-            _key = new Lazy<SafeEcKeyHandle>(() => GenerateKeyLazy(owner));
+            _key = new Lazy<SafeEcKeyHandle>(() => GenerateKeyByKeySize(keySizeBits));
         }
 
         public ECOpenSsl(ECParameters ecParameters)
@@ -25,15 +25,13 @@ namespace System.Security.Cryptography
             ImportParameters(ecParameters);
         }
 
+        // Takes ownership of the key
         public ECOpenSsl(SafeEcKeyHandle key)
         {
             _key = new Lazy<SafeEcKeyHandle>(key);
         }
 
         internal SafeEcKeyHandle Value => _key.Value;
-
-        private static SafeEcKeyHandle GenerateKeyLazy(AsymmetricAlgorithm owner) =>
-            GenerateKeyByKeySize(owner.KeySize);
 
         public void Dispose()
         {
@@ -42,33 +40,15 @@ namespace System.Security.Cryptography
 
         internal int KeySize => Interop.Crypto.EcKeyGetSize(_key.Value);
 
-        internal SafeEvpPKeyHandle UpRefKeyHandle()
+        internal SafeEvpPKeyHandle CreateEvpPKeyHandle()
         {
             SafeEcKeyHandle currentKey = _key.Value;
-            Debug.Assert(currentKey != null, "null TODO");
+            Debug.Assert(currentKey != null, "key is null");
 
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return Interop.Crypto.CreateEvpPkeyFromEcKey(currentKey);
         }
 
-        internal void SetKey(SafeEcKeyHandle key)
+        private void SetKey(SafeEcKeyHandle key)
         {
             Debug.Assert(key != null, "key != null");
             Debug.Assert(!key.IsInvalid, "!key.IsInvalid");
@@ -132,6 +112,34 @@ namespace System.Security.Cryptography
                 }
 
                 _key = null!;
+            }
+        }
+
+        internal static SafeEvpPKeyHandle GenerateECKey(int keySize)
+        {
+            SafeEvpPKeyHandle ret = ImportECKeyCore(new ECOpenSsl(keySize), out int createdKeySize);
+            Debug.Assert(keySize == createdKeySize);
+            return ret;
+        }
+
+        internal static SafeEvpPKeyHandle GenerateECKey(ECCurve curve, out int keySize)
+        {
+            return  ImportECKeyCore(new ECOpenSsl(curve), out keySize);
+        }
+
+        internal static SafeEvpPKeyHandle ImportECKey(ECParameters parameters, out int keySize)
+        {
+            return ImportECKeyCore(new ECOpenSsl(parameters), out keySize);
+        }
+
+        // Note: This method takes ownership of ecOpenSsl and disposes it
+        private static SafeEvpPKeyHandle ImportECKeyCore(ECOpenSsl ecOpenSsl, out int keySize)
+        {
+            using (ECOpenSsl ec = ecOpenSsl)
+            {
+                SafeEvpPKeyHandle handle = Interop.Crypto.CreateEvpPkeyFromEcKey(ec.Value);
+                keySize = ec.KeySize;
+                return handle;
             }
         }
     }
