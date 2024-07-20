@@ -896,7 +896,20 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 const unsigned int srcLclNum = lclNum;
 
                 AddConnGraphEdge(dstLclNum, srcLclNum);
-                canLclVarEscapeViaParentStack = false;
+
+                if (!parent->AsLclVar()->TypeIs(TYP_REF))
+                {
+                    canLclVarEscapeViaParentStack = false;
+                }
+                else
+                {
+                    // A local may be assigned to a field of another local.
+                    // Add an inverse edge to the connection graph too.
+                    // For example, this.Foo = foo ?? new Foo();
+                    AddConnGraphEdge(srcLclNum, dstLclNum);
+                    ++parentIndex;
+                    keepChecking = true;
+                }
             }
             break;
 
@@ -1011,6 +1024,10 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                 if (call->IsHelperCall())
                 {
+                    if (call->IsHelperCall(comp, CORINFO_HELP_VIRTUAL_FUNC_PTR))
+                    {
+                        break;
+                    }
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(call->gtCallMethHnd));
                 }
