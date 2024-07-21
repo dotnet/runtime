@@ -1920,41 +1920,28 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 
             ILCodeStream *pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-            // Store the function pointer into local variable to avoid unnecessary register usage by JIT
-            DWORD numMethodPtr = pCode->NewLocal(ELEMENT_TYPE_I);
-            
-            // Load the method pointer
-            pCode->EmitLoadThis();
-            pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR)));
-            pCode->EmitSTLOC(numMethodPtr);
+            // This stub is only used for rare indirect cases, for example
+            // when Delegate.Invoke method is wrapped into another delegate.
+            // Direct invocation of delegate is expanded by JIT.
+            // Emit a recursive call here to let JIT handle complex cases like
+            // virtual dispatch and GC safety.
 
-            // Load the target object
+            // Load the delegate object
             pCode->EmitLoadThis();
-            pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
 
             // Load the arguments
             for (UINT paramCount = 0; paramCount < sig.NumFixedArgs(); paramCount++)
                 pCode->EmitLDARG(paramCount);
 
-            PCCOR_SIGNATURE pSig;
-            DWORD cbSig;
-            pMD->GetSig(&pSig,&cbSig);
-
-            // call the delegate
-            pCode->EmitLDLOC(numMethodPtr);
-            pCode->EmitCALLI(pCode->GetSigToken(pSig, cbSig), sig.NumFixedArgs() + 1, fReturnVal); // NumFixedArgs doesn't include "this"
-
-            // Keep the delegate object alive.
-            // If the delegate points to collectible code (dynamic method or collectible assembly),
-            // the underlying code may be collected before the function pointer is invoked. See https://github.com/dotnet/runtime/issues/105082
-
-            // TODO: remove the explicit KeepAlive once we get a solution to track the underlying code with GC.
-            // It impacts code quality significantly.
-            pCode->EmitLoadThis();
-            pCode->EmitCALL(pCode->GetToken(CoreLibBinder::GetMethod(METHOD__GC__KEEP_ALIVE)), 1, 0);
+            // recursively call the delegate itself
+            pCode->EmitCALL(pCode->GetToken(pMD), sig.NumFixedArgs(), fReturnVal);
 
             // return
             pCode->EmitRET();
+
+            PCCOR_SIGNATURE pSig;
+            DWORD cbSig;
+            pMD->GetSig(&pSig,&cbSig);
 
             MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(pMD->GetLoaderAllocator(),
                                                                    pMD->GetMethodTable(),
