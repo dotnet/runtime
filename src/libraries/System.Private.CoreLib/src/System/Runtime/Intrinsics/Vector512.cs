@@ -16,7 +16,7 @@ namespace System.Runtime.Intrinsics
     // that most of the code-paths will be optimized away as "dead code".
     //
     // We then manually inline cases (such as certain intrinsic code-paths) that
-    // will generate code small enough to make the AgressiveInlining profitable. The
+    // will generate code small enough to make the AggressiveInlining profitable. The
     // other cases (such as the software fallback) are placed in their own method.
     // This ensures we get good codegen for the "fast-path" and allows the JIT to
     // determine inline profitability of the other paths as it would normally.

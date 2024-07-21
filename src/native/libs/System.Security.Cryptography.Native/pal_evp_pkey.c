@@ -3,6 +3,43 @@
 
 #include <assert.h>
 #include "pal_evp_pkey.h"
+#include "pal_utilities.h"
+#include "pal_atomic.h"
+
+#ifdef NEED_OPENSSL_3_0
+c_static_assert(OSSL_STORE_INFO_PKEY == 4);
+c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
+
+struct EvpPKeyExtraHandle_st
+{
+    atomic_int refCount;
+    OSSL_LIB_CTX* libCtx;
+    OSSL_PROVIDER* prov;
+};
+
+typedef struct EvpPKeyExtraHandle_st EvpPKeyExtraHandle;
+
+#pragma clang diagnostic push
+// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
+#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
+static void CryptoNative_EvpPkeyExtraHandleDestroy(EvpPKeyExtraHandle* handle)
+{
+    int count = --handle->refCount;
+    assert(count >= 0);
+
+    if (count == 0)
+    {
+        assert(handle->prov != NULL);
+        assert(handle->libCtx != NULL);
+
+        OSSL_PROVIDER_unload(handle->prov);
+        OSSL_LIB_CTX_free(handle->libCtx);
+        free(handle);
+    }
+}
+#pragma clang diagnostic pop
+
+#endif
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
 {
@@ -10,83 +47,76 @@ EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
     return EVP_PKEY_new();
 }
 
-EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId)
-{
-    assert(currentKey != NULL);
-
-    ERR_clear_error();
-
-    int currentAlgId = EVP_PKEY_get_base_id(currentKey);
-
-    if (algId != NID_undef && algId != currentAlgId)
-    {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_DIFFERENT_KEY_TYPES, __FILE__, __LINE__);
-        return NULL;
-    }
-
-    EVP_PKEY* newKey = EVP_PKEY_new();
-
-    if (newKey == NULL)
-    {
-        return NULL;
-    }
-
-    bool success = true;
-
-    if (currentAlgId == EVP_PKEY_RSA)
-    {
-        const RSA* rsa = EVP_PKEY_get0_RSA(currentKey);
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-        if (rsa == NULL || !EVP_PKEY_set1_RSA(newKey, (RSA*)rsa))
-#pragma clang diagnostic pop
-        {
-            success = false;
-        }
-    }
-    else
-    {
-        ERR_put_error(ERR_LIB_EVP, 0, EVP_R_UNSUPPORTED_ALGORITHM, __FILE__, __LINE__);
-        success = false;
-    }
-
-    if (!success)
-    {
-        EVP_PKEY_free(newKey);
-        newKey = NULL;
-    }
-
-    return newKey;
-}
-
-void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey)
+void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle)
 {
     if (pkey != NULL)
     {
         EVP_PKEY_free(pkey);
     }
+
+#ifdef NEED_OPENSSL_3_0
+    if (extraHandle != NULL)
+    {
+        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
+        CryptoNative_EvpPkeyExtraHandleDestroy(extra);
+    }
+#else
+    (void)extraHandle;
+    assert(extraHandle == NULL);
+#endif
 }
 
-int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey)
+int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey)
 {
     // This function is not expected to populate the error queue with
     // any errors, but it's technically possible that an external
     // ENGINE or OSSL_PROVIDER populate the queue in their implementation,
     // but the calling code does not check for one.
     assert(pkey != NULL);
-    return EVP_PKEY_get_size(pkey);
+    return EVP_PKEY_get_bits(pkey);
 }
 
-int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey)
+#pragma clang diagnostic push
+// There's no way to specify explicit memory ordering for increment/decrement with C atomics.
+#pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
+int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle)
 {
     if (!pkey)
     {
         return 0;
     }
 
+#ifdef NEED_OPENSSL_3_0
+    EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)extraHandle;
+
+    if (extra != NULL)
+    {
+        extra->refCount++;
+    }
+#else
+    (void)extraHandle;
+    assert(extraHandle == NULL);
+#endif
+
     // No error queue impact.
     return EVP_PKEY_up_ref(pkey);
+}
+#pragma clang diagnostic pop
+
+int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key)
+{
+    int32_t base_id = EVP_PKEY_get_base_id(key);
+    switch (base_id)
+    {
+        case EVP_PKEY_RSA:
+        case EVP_PKEY_EC:
+        case EVP_PKEY_DSA:
+            return base_id;
+        case EVP_PKEY_RSA_PSS:
+            return EVP_PKEY_RSA;
+        default:
+            return 0;
+    }
 }
 
 static bool Lcm(const BIGNUM* num1, const BIGNUM* num2, BN_CTX* ctx, BIGNUM* result)
@@ -579,4 +609,148 @@ EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const cha
     (void)haveEngine;
     *haveEngine = 0;
     return NULL;
+}
+
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle)
+{
+    ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(OSSL_PROVIDER_load))
+    {
+        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+        return NULL;
+    }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
+    EVP_PKEY* ret = NULL;
+    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
+    OSSL_PROVIDER* prov = NULL;
+    OSSL_STORE_CTX* store = NULL;
+    OSSL_STORE_INFO* firstPubKey = NULL;
+
+    if (libCtx == NULL)
+    {
+        goto end;
+    }
+
+    prov = OSSL_PROVIDER_load(libCtx, providerName);
+
+    if (prov == NULL)
+    {
+        goto end;
+    }
+
+    store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (store == NULL)
+    {
+        goto end;
+    }
+
+    // Quite similar to loading a single certificate from a PFX, if we find a private key that wins.
+    // Otherwise, the first public key wins.
+    // Otherwise, we'll push a keyload error
+    while (ret == NULL && !OSSL_STORE_eof(store))
+    {
+        OSSL_STORE_INFO* info = OSSL_STORE_load(store);
+
+        if (info == NULL)
+        {
+            continue;
+        }
+
+        int type = OSSL_STORE_INFO_get_type(info);
+
+        if (type == OSSL_STORE_INFO_PKEY)
+        {
+            ret = OSSL_STORE_INFO_get1_PKEY(info);
+            break;
+        }
+        else if (type == OSSL_STORE_INFO_PUBKEY && firstPubKey == NULL)
+        {
+            firstPubKey = info;
+            // skip the free
+            continue;
+        }
+
+        OSSL_STORE_INFO_free(info);
+    }
+
+    if (ret == NULL && firstPubKey != NULL)
+    {
+        ret = OSSL_STORE_INFO_get1_PUBKEY(firstPubKey);
+    }
+
+    if (ret == NULL)
+    {
+        ERR_clear_error();
+        ERR_put_error(ERR_LIB_NONE, 0, EVP_R_NO_KEY_SET, __FILE__, __LINE__);
+    }
+
+end:
+    if (firstPubKey != NULL)
+    {
+        OSSL_STORE_INFO_free(firstPubKey);
+    }
+
+    if (store != NULL)
+    {
+        OSSL_STORE_close(store);
+    }
+
+    if (ret == NULL)
+    {
+        if (prov != NULL)
+        {
+            assert(libCtx != NULL);
+            // we still want a separate check for libCtx as only prov could be NULL
+            OSSL_PROVIDER_unload(prov);
+        }
+
+        if (libCtx != NULL)
+        {
+            OSSL_LIB_CTX_free(libCtx);
+        }
+
+        *extraHandle = NULL;
+    }
+    else
+    {
+        EvpPKeyExtraHandle* extra = (EvpPKeyExtraHandle*)malloc(sizeof(EvpPKeyExtraHandle));
+        extra->prov = prov;
+        extra->libCtx = libCtx;
+        atomic_init(&extra->refCount, 1);
+        *extraHandle = extra;
+    }
+
+    return ret;
+#else
+    (void)providerName;
+    (void)keyUri;
+    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+    *extraHandle = NULL;
+    return NULL;
+#endif
+}
+
+EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle)
+{
+    assert(pkey != NULL);
+
+#ifdef NEED_OPENSSL_3_0
+    if (API_EXISTS(EVP_PKEY_CTX_new_from_pkey))
+    {
+        EvpPKeyExtraHandle* handle = (EvpPKeyExtraHandle*)extraHandle;
+        OSSL_LIB_CTX* libCtx = (handle != NULL) ? handle->libCtx : NULL;
+        return EVP_PKEY_CTX_new_from_pkey(libCtx, pkey, NULL);
+    }
+    else
+#endif
+    {
+#ifndef NEED_OPENSSL_3_0
+        (void)extraHandle;
+#endif
+        return EVP_PKEY_CTX_new(pkey, NULL);
+    }
 }
