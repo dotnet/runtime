@@ -37,6 +37,11 @@ namespace System.Diagnostics
 
         internal static string FormatTags(KeyValuePair<string, string>[] labels)
         {
+            if (labels is null || labels.Length == 0)
+            {
+                return string.Empty;
+            }
+
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < labels.Length; i++)
             {

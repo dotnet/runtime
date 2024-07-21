@@ -120,10 +120,9 @@ namespace System.Diagnostics.Metrics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
-        public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value,
-                                    string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
+        public void CounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value, int instrumentId)
         {
-            WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
+            WriteEvent(4, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentId);
         }
 
         [Event(5, Keywords = Keywords.TimeSeriesValues, Version = 2)]
@@ -131,10 +130,9 @@ namespace System.Diagnostics.Metrics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
-        public void GaugeValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string lastValue,
-                                    string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
+        public void GaugeValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string lastValue, int instrumentId)
         {
-            WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
+            WriteEvent(5, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, lastValue, instrumentId);
         }
 
         [Event(6, Keywords = Keywords.TimeSeriesValues, Version = 2)]
@@ -142,10 +140,9 @@ namespace System.Diagnostics.Metrics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
-        public void HistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string quantiles, int count, double sum,
-                                        string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
+        public void HistogramValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string quantiles, int count, double sum, int instrumentId)
         {
-            WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles, count, sum, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
+            WriteEvent(6, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, quantiles, count, sum, instrumentId);
         }
 
         // Sent when we begin to monitor the value of a instrument, either because new session filter arguments changed subscriptions
@@ -167,11 +164,10 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentHash,
-                        int meterHash)
+                        int instrumentId)
         {
             WriteEvent(7, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentHash, meterHash);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId);
         }
 
         // Sent when we stop monitoring the value of a instrument, either because new session filter arguments changed subscriptions
@@ -192,11 +188,10 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentHash,
-                        int meterHash)
+                        int instrumentId)
         {
             WriteEvent(8, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentHash, meterHash);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId);
         }
 
         [Event(9, Keywords = Keywords.TimeSeriesValues | Keywords.Messages | Keywords.InstrumentPublishing)]
@@ -227,11 +222,10 @@ namespace System.Diagnostics.Metrics
                         string instrumentTags,
                         string meterTags,
                         string meterScopeHash,
-                        int instrumentHash,
-                        int meterHash)
+                        int instrumentId)
         {
             WriteEvent(11, sessionId, meterName, meterVersion ?? "", instrumentName, instrumentType, unit ?? "", description ?? "",
-                    instrumentTags, meterTags, meterScopeHash, instrumentHash, meterHash);
+                    instrumentTags, meterTags, meterScopeHash, instrumentId);
         }
 
         [Event(12, Keywords = Keywords.TimeSeriesValues)]
@@ -263,10 +257,9 @@ namespace System.Diagnostics.Metrics
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                                       Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
 #endif
-        public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value,
-                                    string instrumentTags, int instrumentHash, string meterTags, int meterHash, string scopeHash)
+        public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate, string value, int instrumentId)
         {
-            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentTags, instrumentHash, meterTags, meterHash, scopeHash);
+            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate, value, instrumentId);
         }
 
         [Event(17, Keywords = Keywords.TimeSeriesValues)]
@@ -442,22 +435,22 @@ namespace System.Diagnostics.Metrics
 
                         string sessionId = _sessionId;
                         _aggregationManager = new AggregationManager(
-                            maxTimeSeries,
-                            maxHistograms,
-                            (i, s) => TransmitMetricValue(i, s, sessionId),
-                            (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
-                            (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
-                            i => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, RuntimeHelpers.GetHashCode(i), RuntimeHelpers.GetHashCode(i.Meter)),
-                            i => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, RuntimeHelpers.GetHashCode(i), RuntimeHelpers.GetHashCode(i.Meter)),
-                            i => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
-                                    i.FormattedTags, i.Meter.FormattedTags, i.Meter.FormattedScopeHash, RuntimeHelpers.GetHashCode(i), RuntimeHelpers.GetHashCode(i.Meter)),
-                            () => Parent.InitialInstrumentEnumerationComplete(sessionId),
-                            e => Parent.Error(sessionId, e.ToString()),
-                            () => Parent.TimeSeriesLimitReached(sessionId),
-                            () => Parent.HistogramLimitReached(sessionId),
-                            e => Parent.ObservableInstrumentCallbackError(sessionId, e.ToString()));
+                            maxTimeSeries: maxTimeSeries,
+                            maxHistograms: maxHistograms,
+                            collectMeasurement: (i, s, state) => TransmitMetricValue(i, s, sessionId, state),
+                            beginCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
+                            endCollection: (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
+                            beginInstrumentMeasurements: (i, state) => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                            endInstrumentMeasurements: (i, state) => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state.ID),
+                            instrumentPublished: (i, state) => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description,
+                                    Helpers.FormatTags(i.Tags), Helpers.FormatTags(i.Meter.Tags), Helpers.FormatObjectHash(i.Meter.Scope), state is null ? 0 : state.ID),
+                            initialInstrumentEnumerationComplete: () => Parent.InitialInstrumentEnumerationComplete(sessionId),
+                            collectionError: e => Parent.Error(sessionId, e.ToString()),
+                            timeSeriesLimitReached: () => Parent.TimeSeriesLimitReached(sessionId),
+                            histogramLimitReached: () => Parent.HistogramLimitReached(sessionId),
+                            observableInstrumentCallbackError: e => Parent.ObservableInstrumentCallbackError(sessionId, e.ToString()));
 
                         _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
 
@@ -667,33 +660,31 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-            private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId)
+            private static void TransmitMetricValue(Instrument instrument, LabeledAggregationStatistics stats, string sessionId, InstrumentState? instrumentState)
             {
+                int instrumentId = instrumentState?.ID ?? 0;
                 if (stats.AggregationStatistics is CounterStatistics rateStats)
                 {
                     if (rateStats.IsMonotonic)
                     {
                         Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
-                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "", rateStats.Value.ToString(CultureInfo.InvariantCulture),
-                            instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "", rateStats.Value.ToString(CultureInfo.InvariantCulture), instrumentId);
                     }
                     else
                     {
                         Log.UpDownCounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
-                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "", rateStats.Value.ToString(CultureInfo.InvariantCulture),
-                            instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "", rateStats.Value.ToString(CultureInfo.InvariantCulture), instrumentId);
                     }
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)
                 {
                     Log.GaugeValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels),
-                        lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "",
-                        instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
+                        lastValueStats.LastValue.HasValue ? lastValueStats.LastValue.Value.ToString(CultureInfo.InvariantCulture) : "", instrumentId);
                 }
                 else if (stats.AggregationStatistics is HistogramStatistics histogramStats)
                 {
                     Log.HistogramValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, Helpers.FormatTags(stats.Labels), FormatQuantiles(histogramStats.Quantiles),
-                        histogramStats.Count, histogramStats.Sum, instrument.FormattedTags, RuntimeHelpers.GetHashCode(instrument), instrument.Meter.FormattedTags, RuntimeHelpers.GetHashCode(instrument.Meter), instrument.Meter.FormattedScopeHash);
+                        histogramStats.Count, histogramStats.Sum, instrumentId);
                 }
             }
 

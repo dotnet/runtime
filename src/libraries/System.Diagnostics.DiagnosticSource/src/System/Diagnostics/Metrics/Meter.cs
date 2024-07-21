@@ -18,15 +18,9 @@ namespace System.Diagnostics.Metrics
         private List<Instrument> _instruments = new List<Instrument>();
         private Dictionary<string, List<Instrument>> _nonObservableInstrumentsCache = new();
 
-        private string? _formattedTags;
-        private string? _formattedScopeHash;
-
         internal bool Disposed { get; private set; }
 
         internal static bool IsSupported { get; } = InitializeIsSupported();
-
-        internal string FormattedTags => _formattedTags ??= Helpers.FormatTags(Tags);
-        internal string FormattedScopeHash => _formattedScopeHash ??= Helpers.FormatObjectHash(Scope);
 
         private static bool InitializeIsSupported() =>
             AppContext.TryGetSwitch("System.Diagnostics.Metrics.Meter.IsSupported", out bool isSupported) ? isSupported : true;
