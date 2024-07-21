@@ -901,16 +901,13 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
                 AddConnGraphEdge(dstLclNum, srcLclNum);
 
-                if (!parent->AsLclVar()->TypeIs(TYP_REF))
+                if (parent->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT))
                 {
+                    BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
+                }
+
                     canLclVarEscapeViaParentStack = false;
                 }
-                else
-                {
-                    ++parentIndex;
-                    keepChecking = true;
-                }
-            }
             break;
 
             case GT_EQ:
@@ -1017,17 +1014,19 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     canLclVarEscapeViaParentStack =
                         !Compiler::s_helperCallProperties.IsNoEscape(comp->eeGetHelperNum(call->gtCallMethHnd));
                 }
-                // else if (call->gtCallType == CT_USER_FUNC)
-                //{
-                //     // Delegate invoke won't escape the delegate which is passed as "this"
-                //     // And gets expanded inline later.
-                //     //
-                //     if ((call->gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0)
-                //     {
-                //         GenTree* const thisArg        = call->gtArgs.GetThisArg()->GetNode();
-                //         canLclVarEscapeViaParentStack = thisArg != tree;
-                //     }
-                // }
+                else if (call->gtCallType == CT_USER_FUNC)
+                {
+                    // Delegate invoke won't escape the delegate which is passed as "this"
+                    // And gets expanded inline later.
+                    //
+                    if ((call->gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) != 0)
+                    {
+                        GenTree* const thisArg        = call->gtArgs.GetThisArg()->GetNode();
+                        canLclVarEscapeViaParentStack = thisArg != tree;
+                        ++parentIndex;
+                        keepChecking = true;
+                    }
+                }
                 break;
             }
 
@@ -1216,6 +1215,9 @@ void ObjectAllocator::RewriteUses()
             if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
                 m_allocator->MayLclVarPointToStack(lclNum))
             {
+                // Analysis does not handle indirect access to pointer locals.
+                assert(tree->OperIsScalarLocal());
+
                 var_types newType;
                 if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
                 {
