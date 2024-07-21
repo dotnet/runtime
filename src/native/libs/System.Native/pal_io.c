@@ -383,7 +383,7 @@ int32_t SystemNative_MemfdSupported(void)
     }
 #endif
 
-    int32_t fd = memfd_create("test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    int32_t fd = memfd_create("test", MFD_CLOEXEC);
     if (fd < 0) return 0;
 
     close(fd);
@@ -403,7 +403,7 @@ intptr_t SystemNative_MemfdCreate(const char* name)
     assert(strlen(name) <= PATH_MAX);
 #endif
 
-    return memfd_create(name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    return memfd_create(name, MFD_CLOEXEC);
 #else
     (void)name;
     errno = ENOTSUP;
