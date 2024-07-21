@@ -148,7 +148,7 @@ namespace System.Net.Sockets
                 return errorCode;
             }
 
-            if (Volatile.Read(ref _disposed) != 0)
+            if (Volatile.Read(ref _disposed))
             {
                 _handle.Dispose();
                 throw new ObjectDisposedException(GetType().FullName);

@@ -1517,29 +1517,6 @@ void CodeGen::genExitCode(BasicBlock* block)
     if (compiler->getNeedsGSSecurityCookie())
     {
         genEmitGSCookieCheck(jmpEpilog);
-
-        if (jmpEpilog)
-        {
-            // Dev10 642944 -
-            // The GS cookie check created a temp label that has no live
-            // incoming GC registers, we need to fix that
-
-            unsigned   varNum;
-            LclVarDsc* varDsc;
-
-            /* Figure out which register parameters hold pointers */
-
-            for (varNum = 0, varDsc = compiler->lvaTable; varNum < compiler->lvaCount && varDsc->lvIsRegArg;
-                 varNum++, varDsc++)
-            {
-                noway_assert(varDsc->lvIsParam);
-
-                gcInfo.gcMarkRegPtrVal(varDsc->GetArgReg(), varDsc->TypeGet());
-            }
-
-            GetEmitter()->emitThisGCrefRegs = GetEmitter()->emitInitGCrefRegs = gcInfo.gcRegGCrefSetCur;
-            GetEmitter()->emitThisByrefRegs = GetEmitter()->emitInitByrefRegs = gcInfo.gcRegByrefSetCur;
-        }
     }
 
     genReserveEpilog(block);
@@ -8327,7 +8304,7 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
     assert(treeNode->IsReuseRegVal());
 
     // For now, this is only used for constant nodes.
-    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
+    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK));
     JITDUMP("  TreeNode is marked ReuseReg\n");
 
     if (treeNode->IsIntegralConst(0) && GetEmitter()->emitCurIGnonEmpty())

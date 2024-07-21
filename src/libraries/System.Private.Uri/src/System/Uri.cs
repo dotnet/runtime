@@ -2396,16 +2396,13 @@ namespace System
         Done:
             cF |= Flags.MinimalUriInfoSet;
 
-            Debug.Assert(sizeof(Flags) == sizeof(ulong));
-
             Interlocked.CompareExchange(ref _info, info, null!);
 
             Flags current = _flags;
             while ((current & Flags.MinimalUriInfoSet) == 0)
             {
-                Flags newValue = (current & ~Flags.IndexMask) | cF;
-                ulong oldValue = Interlocked.CompareExchange(ref Unsafe.As<Flags, ulong>(ref _flags), (ulong)newValue, (ulong)current);
-                if (oldValue == (ulong)current)
+                Flags oldValue = Interlocked.CompareExchange(ref _flags, (current & ~Flags.IndexMask) | cF, current);
+                if (oldValue == current)
                 {
                     return;
                 }

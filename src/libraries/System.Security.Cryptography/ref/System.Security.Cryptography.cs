@@ -427,6 +427,9 @@ namespace System.Security.Cryptography
         None = 0,
         MachineKey = 32,
         OverwriteExistingKey = 128,
+        PreferVbs = 65536,
+        RequireVbs = 131072,
+        UsePerBootKey = 262144,
     }
     public sealed partial class CngKeyCreationParameters
     {
@@ -2356,6 +2359,12 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static long OpenSslVersion { get { throw null; } }
         public System.Security.Cryptography.SafeEvpPKeyHandle DuplicateHandle() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]

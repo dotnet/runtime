@@ -78,11 +78,12 @@ namespace System.Diagnostics
             WriteLine(string.Format(null, format, args));
 
         [Conditional("DEBUG")]
+        [OverloadResolutionPriority(-1)] // lower priority than (bool, string) overload so that the compiler prefers using CallerArgumentExpression
         public static void Assert([DoesNotReturnIf(false)] bool condition) =>
             Assert(condition, string.Empty, string.Empty);
 
         [Conditional("DEBUG")]
-        public static void Assert([DoesNotReturnIf(false)] bool condition, string? message) =>
+        public static void Assert([DoesNotReturnIf(false)] bool condition, [CallerArgumentExpression(nameof(condition))] string? message = null) =>
             Assert(condition, message, string.Empty);
 
         [Conditional("DEBUG")]
