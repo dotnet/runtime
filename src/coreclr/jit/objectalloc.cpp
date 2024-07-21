@@ -54,12 +54,12 @@ PhaseStatus ObjectAllocator::DoPhase()
 
     if (enabled)
     {
-        JITDUMP("enabled, analyzing...\n");
+        JITDUMP("Enabled, analyzing...\n");
         DoAnalysis();
     }
     else
     {
-        JITDUMP("disabled%s, punting\n", IsObjectStackAllocationEnabled() ? disableReason : "");
+        JITDUMP("Disabled%s, punting\n", IsObjectStackAllocationEnabled() ? disableReason : "");
         m_IsObjectStackAllocationEnabled = false;
     }
 
@@ -887,7 +887,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
         GenTree* parent               = parentStack->Top(parentIndex);
         keepChecking                  = false;
 
-        JITDUMP("... L%02u ... checking [%06u]\n", lclNum, comp->dspTreeID(parent));
+        JITDUMP("... V%02u ... checking [%06u]\n", lclNum, comp->dspTreeID(parent));
 
         switch (parent->OperGet())
         {
@@ -947,7 +947,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
 
             case GT_STOREIND:
             case GT_STORE_BLK:
-            case GT_BLK:
                 if (tree != parent->AsIndir()->Addr())
                     {
                     GenTree* target = parent->AsIndir()->Addr();
@@ -965,21 +964,11 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                                     break;
                                 }
 
-                                if (fieldObj->IsLocal())
-                                {
-                                    if (comp->lvaGetDesc(dstLclNum)->TypeGet() != TYP_REF)
-                                    {
-                                        break;
-                                    }
-                                }
-                                else if (comp->lvaGetDesc(dstLclNum)->TypeGet() != TYP_STRUCT)
-                                {
-                                    break;
-                                }
-
                                 // Add an edge to the connection graph.
                                 AddConnGraphEdge(dstLclNum, srcLclNum);
                                 BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
+                                JITDUMP("    V%02u is indirect accessed via field at [%06u]\n", dstLclNum,
+                                        comp->dspTreeID(target));
                                 ++parentIndex;
                                 keepChecking = true;
                                 break;
@@ -993,14 +982,11 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                                 const unsigned int dstLclNum = target->AsLclVarCommon()->GetLclNum();
                                 const unsigned int srcLclNum = lclNum;
 
-                                if (comp->lvaGetDesc(dstLclNum)->TypeGet() != TYP_REF)
-                                {
-                                    break;
-                                }
-
                                 // Add an edge to the connection graph.
                                 AddConnGraphEdge(dstLclNum, srcLclNum);
                                 BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
+                                JITDUMP("    V%02u is indirect accessed at [%06u]\n", dstLclNum,
+                                        comp->dspTreeID(target));
                                 canLclVarEscapeViaParentStack = false;
                             }
                         }
@@ -1008,8 +994,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     break;
                 }
                 FALLTHROUGH;
+            case GT_BLK:
             case GT_IND:
-                if (parent->OperIs(GT_IND) && parent->TypeIs(TYP_REF))
+                if (parent->OperIs(GT_IND, GT_BLK) && parent->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT))
                 {
                     ++parentIndex;
                     keepChecking = true;
