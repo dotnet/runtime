@@ -893,12 +893,6 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 const unsigned int srcLclNum = lclNum;
 
                 AddConnGraphEdge(dstLclNum, srcLclNum);
-
-                if (parent->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT))
-                {
-                    BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
-                }
-
                 canLclVarEscapeViaParentStack = false;
                 break;
             }
