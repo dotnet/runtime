@@ -156,56 +156,59 @@ namespace System
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if (_methodBase is null or not MethodInfo)
+            if (_methodBase is MethodInfo methodInfo)
             {
-                IRuntimeMethodInfo method = FindMethodHandle();
-                RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
-                // need a proper declaring type instance method on a generic type
-                if (declaringType.IsGenericType)
-                {
-                    bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != (MethodAttributes)0;
-                    if (!isStatic)
-                    {
-                        if (_methodPtrAux == IntPtr.Zero)
-                        {
-                            // The target may be of a derived type that doesn't have visibility onto the
-                            // target method. We don't want to call RuntimeType.GetMethodBase below with that
-                            // or reflection can end up generating a MethodInfo where the ReflectedType cannot
-                            // see the MethodInfo itself and that breaks an important invariant. But the
-                            // target type could include important generic type information we need in order
-                            // to work out what the exact instantiation of the method's declaring type is. So
-                            // we'll walk up the inheritance chain (which will yield exactly instantiated
-                            // types at each step) until we find the declaring type. Since the declaring type
-                            // we get from the method is probably shared and those in the hierarchy we're
-                            // walking won't be we compare using the generic type definition forms instead.
-                            Type? currentType = _target!.GetType();
-                            Type targetType = declaringType.GetGenericTypeDefinition();
-                            while (currentType != null)
-                            {
-                                if (currentType.IsGenericType &&
-                                    currentType.GetGenericTypeDefinition() == targetType)
-                                {
-                                    declaringType = currentType as RuntimeType;
-                                    break;
-                                }
-                                currentType = currentType.BaseType;
-                            }
+                return methodInfo;
+            }
 
-                            // RCWs don't need to be "strongly-typed" in which case we don't find a base type
-                            // that matches the declaring type of the method. This is fine because interop needs
-                            // to work with exact methods anyway so declaringType is never shared at this point.
-                            Debug.Assert(currentType != null || _target.GetType().IsCOMObject, "The class hierarchy should declare the method");
-                        }
-                        else
+            IRuntimeMethodInfo method = FindMethodHandle();
+            RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
+            // need a proper declaring type instance method on a generic type
+            if (declaringType.IsGenericType)
+            {
+                bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != (MethodAttributes)0;
+                if (!isStatic)
+                {
+                    if (_methodPtrAux == IntPtr.Zero)
+                    {
+                        // The target may be of a derived type that doesn't have visibility onto the
+                        // target method. We don't want to call RuntimeType.GetMethodBase below with that
+                        // or reflection can end up generating a MethodInfo where the ReflectedType cannot
+                        // see the MethodInfo itself and that breaks an important invariant. But the
+                        // target type could include important generic type information we need in order
+                        // to work out what the exact instantiation of the method's declaring type is. So
+                        // we'll walk up the inheritance chain (which will yield exactly instantiated
+                        // types at each step) until we find the declaring type. Since the declaring type
+                        // we get from the method is probably shared and those in the hierarchy we're
+                        // walking won't be we compare using the generic type definition forms instead.
+                        Type? currentType = _target!.GetType();
+                        Type targetType = declaringType.GetGenericTypeDefinition();
+                        while (currentType != null)
                         {
-                            // it's an open one, need to fetch the first arg of the instantiation
-                            MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
-                            declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
+                            if (currentType.IsGenericType &&
+                                currentType.GetGenericTypeDefinition() == targetType)
+                            {
+                                declaringType = currentType as RuntimeType;
+                                break;
+                            }
+                            currentType = currentType.BaseType;
                         }
+
+                        // RCWs don't need to be "strongly-typed" in which case we don't find a base type
+                        // that matches the declaring type of the method. This is fine because interop needs
+                        // to work with exact methods anyway so declaringType is never shared at this point.
+                        Debug.Assert(currentType != null || _target.GetType().IsCOMObject, "The class hierarchy should declare the method");
+                    }
+                    else
+                    {
+                        // it's an open one, need to fetch the first arg of the instantiation
+                        MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
+                        declaringType = (RuntimeType)invoke.GetParametersAsSpan()[0].ParameterType;
                     }
                 }
-                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
             }
+
+            _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
             return (MethodInfo)_methodBase;
         }
 

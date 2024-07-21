@@ -79,7 +79,7 @@ namespace System.IO
             if (string.IsNullOrEmpty(path))
                 return false;
 
-            char c = path[^1];
+            char c = path[path.Length - 1];
             return c == ' ' || c == '.';
         }
 

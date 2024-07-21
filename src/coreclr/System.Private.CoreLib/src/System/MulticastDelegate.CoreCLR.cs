@@ -515,20 +515,23 @@ namespace System
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                if (_methodBase is null or not MethodInfo)
+                if (_methodBase is MethodInfo methodInfo)
                 {
-                    IRuntimeMethodInfo method = FindMethodHandle();
-                    RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
-
-                    // need a proper declaring type instance method on a generic type
-                    if (declaringType.IsGenericType)
-                    {
-                        // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
-                        RuntimeType reflectedType = (RuntimeType)GetType();
-                        declaringType = reflectedType;
-                    }
-                    _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
+                    return methodInfo;
                 }
+
+                IRuntimeMethodInfo method = FindMethodHandle();
+                RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
+
+                // need a proper declaring type instance method on a generic type
+                if (declaringType.IsGenericType)
+                {
+                    // we are returning the 'Invoke' method of this delegate so use this.GetType() for the exact type
+                    RuntimeType reflectedType = (RuntimeType)GetType();
+                    declaringType = reflectedType;
+                }
+
+                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
                 return (MethodInfo)_methodBase;
             }
 

@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata
                 result.Append(']');
                 result.Append(',');
             }
-            result[^1] = ']'; // replace ',' with ']'
+            result[result.Length - 1] = ']'; // replace ',' with ']'
 
             return result.ToString();
         }
