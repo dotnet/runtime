@@ -1080,6 +1080,70 @@ HRESULT ClrDataAccess::GetMethodDescData(
     }
 
     SOSDacEnter();
+    if (m_cdacSos != NULL)
+    {
+        // Try the cDAC first - it will return E_NOTIMPL if it doesn't support this method yet. Fall back to the DAC.
+        hr = m_cdacSos->GetMethodDescData(methodDesc, ip, methodDescData, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData);
+        if (FAILED(hr))
+        {
+            hr = GetMethodDescDataImpl(methodDesc, ip, methodDescData, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpMethodDescData mdDataLocal;
+            NewArrayHolder<DacpReJitData> rgRevertedRejitDataLocal{};
+            if (rgRevertedRejitData != nullptr)
+            {
+                rgRevertedRejitDataLocal = new DacpReJitData[cRevertedRejitVersions];
+            }
+            ULONG cNeededRevertedRejitDataLocal = 0;
+            ULONG *pcNeededRevertedRejitDataLocal = NULL;
+            if (pcNeededRevertedRejitData != NULL)
+            {
+                pcNeededRevertedRejitDataLocal = &cNeededRevertedRejitDataLocal;
+            }
+            HRESULT hrLocal = GetMethodDescDataImpl(methodDesc, ip,&mdDataLocal, cRevertedRejitVersions, rgRevertedRejitDataLocal, pcNeededRevertedRejitDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(methodDescData->bHasNativeCode == mdDataLocal.bHasNativeCode);
+            _ASSERTE(methodDescData->bIsDynamic == mdDataLocal.bIsDynamic);
+            _ASSERTE(methodDescData->wSlotNumber == mdDataLocal.wSlotNumber);
+            _ASSERTE(methodDescData->NativeCodeAddr == mdDataLocal.NativeCodeAddr);
+            _ASSERTE(methodDescData->AddressOfNativeCodeSlot == mdDataLocal.AddressOfNativeCodeSlot);
+            //TODO[cdac]: assert the rest of mdDataLocal contains the same info as methodDescData
+            if (rgRevertedRejitData != NULL)
+            {
+                _ASSERTE (cNeededRevertedRejitDataLocal == *pcNeededRevertedRejitData);
+                for (ULONG i = 0; i < cNeededRevertedRejitDataLocal; i++)
+                {
+                    _ASSERTE(rgRevertedRejitData[i].rejitID == rgRevertedRejitDataLocal[i].rejitID);
+                    _ASSERTE(rgRevertedRejitData[i].NativeCodeAddr == rgRevertedRejitDataLocal[i].NativeCodeAddr);
+                    _ASSERTE(rgRevertedRejitData[i].flags == rgRevertedRejitDataLocal[i].flags);
+                }
+            }
+        }
+#endif
+    }
+    else
+    {
+        hr = GetMethodDescDataImpl(methodDesc, ip, methodDescData, cRevertedRejitVersions, rgRevertedRejitData, pcNeededRevertedRejitData);
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetMethodDescDataImpl(
+    CLRDATA_ADDRESS methodDesc,
+    CLRDATA_ADDRESS ip,
+    struct DacpMethodDescData *methodDescData,
+    ULONG cRevertedRejitVersions,
+    DacpReJitData * rgRevertedRejitData,
+    ULONG * pcNeededRevertedRejitData)
+{
+
+    HRESULT hr = S_OK;
 
     PTR_MethodDesc pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
 
@@ -1275,7 +1339,6 @@ HRESULT ClrDataAccess::GetMethodDescData(
         }
     }
 
-    SOSDacLeave();
     return hr;
 }
 
@@ -3499,13 +3562,47 @@ ClrDataAccess::GetHeapAnalyzeStaticData(struct DacpGcHeapAnalyzeData *analyzeDat
 }
 
 HRESULT
-ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
+ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData* globalsData)
 {
     if (globalsData == NULL)
         return E_INVALIDARG;
 
     SOSDacEnter();
 
+    if (m_cdacSos != NULL)
+    {
+        hr = m_cdacSos->GetUsefulGlobals(globalsData);
+        if (FAILED(hr))
+        {
+            hr = GetUsefulGlobals(globalsData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            // Assert that the data is the same as what we get from the DAC.
+            DacpUsefulGlobalsData globalsDataLocal;
+            HRESULT hrLocal = GetUsefulGlobalsImpl(&globalsDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(globalsData->ArrayMethodTable == globalsDataLocal.ArrayMethodTable);
+            _ASSERTE(globalsData->StringMethodTable == globalsDataLocal.StringMethodTable);
+            _ASSERTE(globalsData->ObjectMethodTable == globalsDataLocal.ObjectMethodTable);
+            _ASSERTE(globalsData->ExceptionMethodTable == globalsDataLocal.ExceptionMethodTable);
+            _ASSERTE(globalsData->FreeMethodTable == globalsDataLocal.FreeMethodTable);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetUsefulGlobals(globalsData);;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetUsefulGlobalsImpl(struct DacpUsefulGlobalsData *globalsData)
+{
     TypeHandle objArray = g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT];
     if (objArray != NULL)
         globalsData->ArrayMethodTable = HOST_CDADDR(objArray.AsMethodTable());
@@ -3517,8 +3614,7 @@ ClrDataAccess::GetUsefulGlobals(struct DacpUsefulGlobalsData *globalsData)
     globalsData->ExceptionMethodTable = HOST_CDADDR(g_pExceptionClass);
     globalsData->FreeMethodTable = HOST_CDADDR(g_pFreeObjectMethodTable);
 
-    SOSDacLeave();
-    return hr;
+    return S_OK;
 }
 
 HRESULT

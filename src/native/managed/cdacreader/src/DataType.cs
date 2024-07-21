@@ -46,4 +46,6 @@ public enum DataType
     StressMsgHeader,
     Object,
     String,
+    MethodDesc,
+    MethodDescChunk,
 }

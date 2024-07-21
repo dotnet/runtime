@@ -3321,6 +3321,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
 
+            // This allows folding "typeof(...).GetGenericTypeDefinition() == typeof(...)"
+            case NI_System_Type_GetGenericTypeDefinition:
+
             // These may lead to early dead code elimination
             case NI_System_Type_get_IsValueType:
             case NI_System_Type_get_IsPrimitive:
@@ -3853,6 +3856,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // We'll try to expand it later.
                     isSpecial = true;
                 }
+                break;
+            }
+
+            case NI_System_Type_GetGenericTypeDefinition:
+            {
+                GenTree* type = impStackTop(0).val;
+
+                retNode = impGetGenericTypeDefinition(type);
                 break;
             }
 
@@ -10219,6 +10230,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "GetTypeFromHandle") == 0)
                         {
                             result = NI_System_Type_GetTypeFromHandle;
+                        }
+                        else if (strcmp(methodName, "GetGenericTypeDefinition") == 0)
+                        {
+                            result = NI_System_Type_GetGenericTypeDefinition;
                         }
                         else if (strcmp(methodName, "IsAssignableFrom") == 0)
                         {

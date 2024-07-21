@@ -17,7 +17,10 @@ internal static class Constants
         internal const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 
+        internal const string ExceptionMethodTable = nameof(ExceptionMethodTable);
         internal const string FreeObjectMethodTable = nameof(FreeObjectMethodTable);
+        internal const string ObjectMethodTable = nameof(ObjectMethodTable);
+        internal const string ObjectArrayMethodTable = nameof(ObjectArrayMethodTable);
         internal const string StringMethodTable = nameof(StringMethodTable);
 
         internal const string MiniMetaDataBuffAddress = nameof(MiniMetaDataBuffAddress);
@@ -30,5 +33,7 @@ internal static class Constants
         internal const string StressLogChunkMaxSize = nameof(StressLogChunkMaxSize);
         internal const string StressLogMaxMessageSize = nameof(StressLogMaxMessageSize);
         internal const string StressLogChunkSize = nameof(StressLogChunkSize);
+
+        internal const string MethodDescAlignment = nameof(MethodDescAlignment);
     }
 }

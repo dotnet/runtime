@@ -773,7 +773,7 @@ RELEASE_CONFIG_INTEGER(JitEnableCrossBlockLocalAssertionProp, W("JitEnableCrossB
 RELEASE_CONFIG_INTEGER(JitDoReversePostOrderLayout, W("JitDoReversePostOrderLayout"), 1);
 
 // Enable strength reduction
-RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, W("JitEnableStrengthReduction"), 0)
+RELEASE_CONFIG_INTEGER(JitEnableStrengthReduction, W("JitEnableStrengthReduction"), 1)
 
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the
 // file, certain other JIT config variables will be active. If the currently compiled function is not in the file,
