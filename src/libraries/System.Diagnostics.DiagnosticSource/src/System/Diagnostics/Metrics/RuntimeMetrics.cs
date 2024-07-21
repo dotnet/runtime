@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Diagnostics.Metrics
@@ -175,7 +176,7 @@ namespace System.Diagnostics.Metrics
                 || s_assembliesCount.Enabled
                 || s_exceptions.Enabled
                 || s_processCpuCount.Enabled
-                || (s_processCpuTime is not null && s_processCpuTime.Enabled);
+                || s_processCpuTime?.Enabled is true;
         }
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
@@ -190,14 +191,16 @@ namespace System.Diagnostics.Metrics
             }
         }
 
+        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         private static IEnumerable<Measurement<double>> GetCpuTime()
         {
             Debug.Assert(s_processCpuTime is not null);
             Debug.Assert(!OperatingSystem.IsBrowser() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()));
 
-            #pragma warning disable CA1416 // This call site is reachable on all platforms. 'Environment.CpuUsage' is unsupported on: 'ios', 'tvos'
             Environment.ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
-            #pragma warning restore CA1416
 
             yield return new(processCpuUsage.UserTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
             yield return new(processCpuUsage.PrivilegedTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);

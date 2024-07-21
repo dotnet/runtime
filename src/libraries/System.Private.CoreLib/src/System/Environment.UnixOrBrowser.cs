@@ -86,17 +86,9 @@ namespace System
                 Interop.Sys.ProcessCpuInformation cpuInfo = default;
                 Interop.Sys.GetCpuUtilization(ref cpuInfo);
 
-                ulong userTime100Nanoseconds = cpuInfo.lastRecordedUserTime / 100; // nanoseconds to 100-nanoseconds
-                if (userTime100Nanoseconds > long.MaxValue)
-                {
-                    userTime100Nanoseconds = long.MaxValue;
-                }
-
-                ulong kernelTime100Nanoseconds = cpuInfo.lastRecordedKernelTime / 100; // nanoseconds to 100-nanoseconds
-                if (kernelTime100Nanoseconds > long.MaxValue)
-                {
-                    kernelTime100Nanoseconds = long.MaxValue;
-                }
+                // Division by 100 is to convert the nanoseconds to 100-nanoseconds to match .NET time units (100-nanoseconds).
+                ulong userTime100Nanoseconds = Math.Min(cpuInfo.lastRecordedUserTime / 100, (ulong)long.MaxValue);
+                ulong kernelTime100Nanoseconds = Math.Min(cpuInfo.lastRecordedKernelTime / 100, (ulong)long.MaxValue);
 
                 return new ProcessCpuUsage { UserTime = new TimeSpan((long)userTime100Nanoseconds), PrivilegedTime = new TimeSpan((long)kernelTime100Nanoseconds) };
             }

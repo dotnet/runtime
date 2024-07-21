@@ -608,8 +608,6 @@ namespace System.Tests
                 Assert.True(usage.UserTime - userTime < delta);
                 Assert.True(usage.PrivilegedTime - privilegedTime < delta);
                 Assert.True(usage.TotalTime - totalTime < delta);
-
-                Thread.Sleep(100);
             }
         }
 
