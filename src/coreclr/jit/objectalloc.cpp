@@ -258,9 +258,8 @@ void ObjectAllocator::ComputeEscapingNodes(BitVecTraits* bitVecTraits, BitVec& e
     BitVecOps::Iter lclStoreIterator(bitVecTraits, m_IndirectRefStoredPointers);
     while (lclStoreIterator.NextElem(&lclNum))
     {
-        BitSetShortLongRep lclStoreToProcess = BitVecOps::MakeCopy(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
-        BitVecOps::Iter    targetLclIter(bitVecTraits, lclStoreToProcess);
-        unsigned int       targetLclNum;
+        BitVecOps::Iter targetLclIter(bitVecTraits, m_ConnGraphAdjacencyMatrix[lclNum]);
+        unsigned int    targetLclNum;
         while (targetLclIter.NextElem(&targetLclNum))
         {
             JITDUMP("V%02u may point to objects that V%02u points to\n", lclNum, targetLclNum);
@@ -893,6 +892,12 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                 const unsigned int srcLclNum = lclNum;
 
                 AddConnGraphEdge(dstLclNum, srcLclNum);
+
+                if (parent->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT))
+                {
+                    AddConnGraphEdge(srcLclNum, dstLclNum);
+                }
+
                 canLclVarEscapeViaParentStack = false;
                 break;
             }
@@ -924,6 +929,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_FIELD_ADDR:
             case GT_INDEX_ADDR:
             case GT_LCL_ADDR:
+            case GT_CAST:
+            case GT_BLK:
+            case GT_IND:
                 // Check whether the local escapes via its grandparent.
                 ++parentIndex;
                 keepChecking = true;
@@ -943,7 +951,10 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                             {
                                 const unsigned int dstLclNum = fieldObj->AsLclVarCommon()->GetLclNum();
                                 const unsigned int srcLclNum = lclNum;
-                                if (dstLclNum == 0 && !comp->info.compIsStatic)
+                                LclVarDsc*         lclVarDsc = comp->lvaGetDesc(dstLclNum);
+
+                                // Escapes through 'this' pointer
+                                if (!comp->info.compIsStatic && dstLclNum == comp->info.compThisArg)
                                 {
                                     break;
                                 }
@@ -965,10 +976,24 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                             {
                                 const unsigned int dstLclNum = target->AsLclVarCommon()->GetLclNum();
                                 const unsigned int srcLclNum = lclNum;
+                                LclVarDsc*         lclVarDsc = comp->lvaGetDesc(dstLclNum);
+
+                                BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
+
+                                // Escapes through 'this' pointer
+                                if (dstLclNum == 0 && !comp->info.compIsStatic)
+                                {
+                                    break;
+                                }
+
+                                // Escapes through a byref parameter
+                                if (lclVarDsc->lvIsParam && lclVarDsc->TypeGet() == TYP_BYREF)
+                                {
+                                    break;
+                                }
 
                                 // Add an edge to the connection graph.
                                 AddConnGraphEdge(dstLclNum, srcLclNum);
-                                BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
                                 JITDUMP("    V%02u is indirect accessed at [%06u]\n", dstLclNum,
                                         comp->dspTreeID(target));
                                 canLclVarEscapeViaParentStack = false;
@@ -977,19 +1002,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     }
                     break;
                 }
-                FALLTHROUGH;
-            case GT_BLK:
-            case GT_IND:
-                if (parent->OperIs(GT_IND, GT_BLK) && parent->TypeIs(TYP_REF, TYP_BYREF, TYP_I_IMPL, TYP_STRUCT))
-                {
-                    ++parentIndex;
-                    keepChecking = true;
-                }
-                else
-                {
-                    // Address of the field/ind is not taken so the local doesn't escape.
-                    canLclVarEscapeViaParentStack = false;
-                }
+
+                // Address of the field/ind is not taken so the local doesn't escape.
+                canLclVarEscapeViaParentStack = false;
                 break;
 
             case GT_CALL:
@@ -1202,9 +1217,6 @@ void ObjectAllocator::RewriteUses()
             if ((lclNum < BitVecTraits::GetSize(&m_allocator->m_bitVecTraits)) &&
                 m_allocator->MayLclVarPointToStack(lclNum))
             {
-                // Analysis does not handle indirect access to pointer locals.
-                assert(tree->OperIsScalarLocal());
-
                 var_types newType;
                 if (m_allocator->m_HeapLocalToStackLocalMap.TryGetValue(lclNum, &newLclNum))
                 {
@@ -1216,7 +1228,7 @@ void ObjectAllocator::RewriteUses()
                 else
                 {
                     newType = m_allocator->DoesLclVarPointToStack(lclNum) ? TYP_I_IMPL : TYP_BYREF;
-                    if (tree->TypeGet() == TYP_REF)
+                    if (tree->TypeIs(TYP_REF, TYP_I_IMPL))
                     {
                         tree->ChangeType(newType);
                     }
