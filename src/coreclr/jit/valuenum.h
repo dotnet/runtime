@@ -527,7 +527,21 @@ public:
         HitLimitations,
     };
     template <typename TPhiArgVisitorFunc>
-    PhiDefWalkResult VNWalkPhis(VNFuncApp phiDefFunc, TPhiArgVisitorFunc walkPhiVnsFn, int maxDepth = 2);
+    PhiDefWalkResult VNWalkPhis(ValueNum           phiDefVN,
+                                VNFuncApp          phiDefFunc,
+                                TPhiArgVisitorFunc walkPhiVnsFn,
+                                ValueNumKind       vnKind   = VNK_Conservative,
+                                int                maxDepth = -1);
+
+private:
+    template <typename TPhiArgVisitorFunc>
+    PhiDefWalkResult VNWalkPhisInternal(ValueNum                phiDefVN,
+                                        VNFuncApp               phiDefFunc,
+                                        TPhiArgVisitorFunc      walkPhiVnsFn,
+                                        ValueNumKind            vnKind,
+                                        int                     maxDepth,
+                                        class SmallValueNumSet& hashSet);
+public:
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
