@@ -6499,15 +6499,16 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
             case VNF_PhiDef:
             {
                 // Inspect all PHI args (call IsVNNeverNegative for them)
-                return VNWalkPhis(funcApp, [](Compiler* comp, ValueNum phiVN) -> PhiWalkResult {
+                PhiDefWalkResult walkResult = VNWalkPhis(funcApp, [this](ValueNum phiVN) -> PhiArgWalkResult {
                     // Bail out if the type is not integral
-                    if (!varTypeIsIntegral(comp->vnStore->TypeOfVN(phiVN)))
+                    if (!varTypeIsIntegral(TypeOfVN(phiVN)))
                     {
-                        return PhiWalkResult::Abort;
+                        return PhiArgWalkResult::Abort;
                     }
 
-                    return comp->vnStore->IsVNNeverNegative(phiVN) ? PhiWalkResult::Continue : PhiWalkResult::Abort;
+                    return IsVNNeverNegative(phiVN) ? PhiArgWalkResult::Continue : PhiArgWalkResult::Abort;
                 });
+                return walkResult == PhiDefWalkResult::Success;
             }
 
             default:
@@ -15066,25 +15067,32 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 // VNWalkPhis: Walk the given PhiDef and call a callback on each Phi argument (its VN).
 //
 // Arguments:
-//    phiDefFunc   - VNF_PhiDef function
-//    walkPhiVnsFn - The callback function to call on each Phi argument.
-//    maxDepth     - Maximum depth to handle recursive PhiDef chains.
+//    phiDefFunc    - VNF_PhiDef function
+//    phiArgVisitor - The callback function to call on each Phi argument.
+//    maxDepth      - Maximum depth to handle recursive PhiDef chains.
 //
 // Return Value:
 //    true if the walk was successful, false if the walk was aborted.
 //
-bool ValueNumStore::VNWalkPhis(VNFuncApp phiDefFunc, WalkPhiVnsFn walkPhiVnsFn, int maxDepth)
+template <typename TPhiArgVisitorFunc>
+ValueNumStore::PhiDefWalkResult ValueNumStore::VNWalkPhis(VNFuncApp          phiDefFunc,
+                                                          TPhiArgVisitorFunc phiArgVisitor,
+                                                          int                maxDepth)
 {
     assert(maxDepth > 0);
     assert(phiDefFunc.m_func == VNF_PhiDef);
+    // TODO: Consider enabling for VNF_PhiMemoryDef as well.
 
     // VNF_PhiDef(LclNum, SsaNum, VNF_Phi)
     unsigned lclNum     = phiDefFunc.m_args[0];
     ValueNum nextPhiArg = phiDefFunc.m_args[2];
 
-    if ((lclNum == static_cast<unsigned>(-1)) || (nextPhiArg == NoVN))
+    INDEBUG(int visited = 0);
+
+    if ((lclNum == BAD_VAR_NUM) || (nextPhiArg == NoVN))
     {
-        return false;
+        JITDUMP("We can't process this PhiDef - bail out.\n")
+        return PhiDefWalkResult::InvalidPhiDef;
     }
 
     // Now we iterate over Phi arguments, e.g.
@@ -15097,8 +15105,11 @@ bool ValueNumStore::VNWalkPhis(VNFuncApp phiDefFunc, WalkPhiVnsFn walkPhiVnsFn, 
     {
         ValueNum  current = nextPhiArg;
         VNFuncApp phiArgFuncApp;
-        if (GetVNFunc(nextPhiArg, &phiArgFuncApp) && phiArgFuncApp.m_func == VNF_Phi)
+
+        // nextPhiArg is either VNF_Phi or SSA num (last)
+        if (GetVNFunc(nextPhiArg, &phiArgFuncApp))
         {
+            assert(phiArgFuncApp.m_func == VNF_Phi);
             current    = phiArgFuncApp.m_args[0];
             nextPhiArg = phiArgFuncApp.m_args[1];
         }
@@ -15107,6 +15118,9 @@ bool ValueNumStore::VNWalkPhis(VNFuncApp phiDefFunc, WalkPhiVnsFn walkPhiVnsFn, 
             // Ok this was the last Phi arg
             nextPhiArg = NoVN;
         }
+
+        // We expect a constant VN here representing the SSA number
+        assert(IsVNConstant(current));
 
         // Extract the real VN from the Phi arg
         unsigned phiArgSsaNum = ConstantValue<unsigned>(current);
@@ -15119,24 +15133,30 @@ bool ValueNumStore::VNWalkPhis(VNFuncApp phiDefFunc, WalkPhiVnsFn walkPhiVnsFn, 
             if (maxDepth == 1)
             {
                 JITDUMP("optWalkPhiVNs: maxDepth reached - bail out.\n");
-                return false;
+                return PhiDefWalkResult::HitLimitations;
             }
 
             // Call recursively.
             // NOTE: it's possible for PhiDef to be cyclic, we don't try to detect them here and
             // just rely on the maxDepth check to bail out (the max depth is usually small).
-            if (!VNWalkPhis(argFuncApp, walkPhiVnsFn, maxDepth - 1))
+            PhiDefWalkResult result = VNWalkPhis(argFuncApp, phiArgVisitor, maxDepth - 1);
+            if (result != PhiDefWalkResult::Success)
             {
-                return false;
+                return result;
             }
         }
-        else if (walkPhiVnsFn(m_pComp, phiArgVN) == PhiWalkResult::Abort)
+        else
         {
-            // Caller realized that it doesn't make sense to continue any further
-            JITDUMP("optWalkPhiVNs: aborted by callback.\n");
-            return false;
+            if (phiArgVisitor(phiArgVN) == PhiArgWalkResult::Abort)
+            {
+                // Caller realized that it doesn't make sense to continue any further
+                JITDUMP("optWalkPhiVNs: aborted by callback.\n");
+                return PhiDefWalkResult::Aborted;
+            }
+            INDEBUG(visited++);
         }
     }
 
-    return true;
+    assert(visited > 0);
+    return PhiDefWalkResult::Success;
 }

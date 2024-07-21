@@ -514,13 +514,20 @@ public:
 
     void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
 
-    enum class PhiWalkResult
+    enum class PhiArgWalkResult
     {
         Continue,
-        Abort
+        Abort,
     };
-    typedef PhiWalkResult(WalkPhiVnsFn)(Compiler* comp, ValueNum vn);
-    bool VNWalkPhis(VNFuncApp phiDefFunc, WalkPhiVnsFn walkPhiVnsFn, int maxDepth = 2);
+    enum class PhiDefWalkResult
+    {
+        Success,
+        Aborted,
+        InvalidPhiDef,
+        HitLimitations,
+    };
+    template <typename TPhiArgVisitorFunc>
+    PhiDefWalkResult VNWalkPhis(VNFuncApp phiDefFunc, TPhiArgVisitorFunc walkPhiVnsFn, int maxDepth = 2);
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
