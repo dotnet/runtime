@@ -1277,69 +1277,6 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
     return helper;
 }
 
-static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS_FLAGS flags)
-{
-    STANDARD_VM_CONTRACT;
-
-    int helper;
-
-    CorElementType type = pField->GetFieldType();
-
-    if (CorTypeInfo::IsObjRef(type))
-        helper = CORINFO_HELP_GETFIELDOBJ;
-    else
-    switch (type)
-    {
-    case ELEMENT_TYPE_VALUETYPE:
-        helper = CORINFO_HELP_GETFIELDSTRUCT;
-        break;
-    case ELEMENT_TYPE_I1:
-    case ELEMENT_TYPE_BOOLEAN:
-    case ELEMENT_TYPE_U1:
-        helper = CORINFO_HELP_GETFIELD8;
-        break;
-    case ELEMENT_TYPE_I2:
-    case ELEMENT_TYPE_CHAR:
-    case ELEMENT_TYPE_U2:
-        helper = CORINFO_HELP_GETFIELD16;
-        break;
-    case ELEMENT_TYPE_I4:
-    case ELEMENT_TYPE_U4:
-    IN_TARGET_32BIT(default:)
-        helper = CORINFO_HELP_GETFIELD32;
-        break;
-    case ELEMENT_TYPE_I8:
-    case ELEMENT_TYPE_U8:
-    IN_TARGET_64BIT(default:)
-        helper = CORINFO_HELP_GETFIELD64;
-        break;
-    case ELEMENT_TYPE_R4:
-        helper = CORINFO_HELP_GETFIELDFLOAT;
-        break;
-    case ELEMENT_TYPE_R8:
-        helper = CORINFO_HELP_GETFIELDDOUBLE;
-        break;
-    }
-
-    if (flags & CORINFO_ACCESS_SET)
-    {
-        const int delta = CORINFO_HELP_SETFIELDOBJ - CORINFO_HELP_GETFIELDOBJ;
-
-        static_assert_no_msg(CORINFO_HELP_SETFIELD8 == CORINFO_HELP_GETFIELD8 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELD16 == CORINFO_HELP_GETFIELD16 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELD32 == CORINFO_HELP_GETFIELD32 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELD64 == CORINFO_HELP_GETFIELD64 + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELDSTRUCT == CORINFO_HELP_GETFIELDSTRUCT + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELDFLOAT == CORINFO_HELP_GETFIELDFLOAT + delta);
-        static_assert_no_msg(CORINFO_HELP_SETFIELDDOUBLE == CORINFO_HELP_GETFIELDDOUBLE + delta);
-
-        helper += delta;
-    }
-
-    return (CorInfoHelpFunc)helper;
-}
-
-
 
 /*********************************************************************/
 
@@ -4037,28 +3974,6 @@ void CEEInfo::methodMustBeLoadedBeforeCodeIsRun (CORINFO_METHOD_HANDLE methHnd)
     _ASSERTE(pMD->GetMethodTable()->IsFullyLoaded());
 
     EE_TO_JIT_TRANSITION_LEAF();
-}
-
-/*********************************************************************/
-CORINFO_METHOD_HANDLE CEEInfo::mapMethodDeclToMethodImpl(CORINFO_METHOD_HANDLE methHnd)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    CORINFO_METHOD_HANDLE result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc *pMD = GetMethod(methHnd);
-    pMD = MethodTable::MapMethodDeclToMethodImpl(pMD);
-    result = (CORINFO_METHOD_HANDLE) pMD;
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
 }
 
 /*********************************************************************/
@@ -7239,28 +7154,79 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     if (ftn->GetMemberDef() != CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_T)->GetMemberDef())
         return false;
 
-    // Get MethodDesc for non-generic System.Threading.Interlocked.CompareExchange()
-    MethodDesc* cmpxchgObject = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);
+    // Determine the type of the generic T method parameter
+    _ASSERTE(ftn->HasMethodInstantiation());
+    _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+    TypeHandle typeHandle = ftn->GetMethodInstantiation()[0];
 
-    // Setup up the body of the method
-    static BYTE il[] = {
-                          CEE_LDARG_0,
-                          CEE_LDARG_1,
-                          CEE_LDARG_2,
-                          CEE_CALL,0,0,0,0,
-                          CEE_RET
-                        };
+    // Setup up the body of the CompareExchange methods; the method token will be patched on first use.
+    static BYTE il[5][9] =
+    {
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // object
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // byte
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // ushort
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // int
+        { CEE_LDARG_0, CEE_LDARG_1, CEE_LDARG_2, CEE_CALL, 0, 0, 0, 0, CEE_RET }, // long
+    };
 
-    // Get the token for non-generic System.Threading.Interlocked.CompareExchange(), and patch [target]
-    mdMethodDef cmpxchgObjectToken = cmpxchgObject->GetMemberDef();
-    il[4] = (BYTE)((int)cmpxchgObjectToken >> 0);
-    il[5] = (BYTE)((int)cmpxchgObjectToken >> 8);
-    il[6] = (BYTE)((int)cmpxchgObjectToken >> 16);
-    il[7] = (BYTE)((int)cmpxchgObjectToken >> 24);
+    // Based on the generic method parameter, determine which overload of CompareExchange
+    // to delegate to, or if we can't handle the type at all.
+    int ilIndex;
+    MethodDesc* cmpxchgMethod;
+    if (!typeHandle.IsValueType())
+    {
+        ilIndex = 0;
+        cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_OBJECT);
+    }
+    else
+    {
+        CorElementType elementType = typeHandle.GetVerifierCorElementType();
+        if (!CorTypeInfo::IsPrimitiveType(elementType) ||
+            elementType == ELEMENT_TYPE_R4 ||
+            elementType == ELEMENT_TYPE_R8)
+        {
+            return false;
+        }
+        else
+        {
+            switch (typeHandle.GetSize())
+            {
+                case 1:
+                    ilIndex = 1;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_BYTE);
+                    break;
+
+                case 2:
+                    ilIndex = 2;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_USHRT);
+                    break;
+
+                case 4:
+                    ilIndex = 3;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_INT);
+                    break;
+
+                case 8:
+                    ilIndex = 4;
+                    cmpxchgMethod = CoreLibBinder::GetMethod(METHOD__INTERLOCKED__COMPARE_EXCHANGE_LONG);
+                    break;
+
+                default:
+                    _ASSERT(!"Unexpected primitive type size");
+                    return false;
+            }
+        }
+    }
+
+    mdMethodDef cmpxchgToken = cmpxchgMethod->GetMemberDef();
+    il[ilIndex][4] = (BYTE)((int)cmpxchgToken >> 0);
+    il[ilIndex][5] = (BYTE)((int)cmpxchgToken >> 8);
+    il[ilIndex][6] = (BYTE)((int)cmpxchgToken >> 16);
+    il[ilIndex][7] = (BYTE)((int)cmpxchgToken >> 24);
 
     // Initialize methInfo
-    methInfo->ILCode = const_cast<BYTE*>(il);
-    methInfo->ILCodeSize = sizeof(il);
+    methInfo->ILCode = const_cast<BYTE*>(il[ilIndex]);
+    methInfo->ILCodeSize = sizeof(il[ilIndex]);
     methInfo->maxStack = 3;
     methInfo->EHcount = 0;
     methInfo->options = (CorInfoOptions)0;
@@ -7850,6 +7816,40 @@ bool CEEInfo::haveSameMethodDefinition(
     result = meth1->HasSameMethodDefAs(meth2);
 
     EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(type);
+
+    if (th.HasInstantiation() && !th.IsGenericTypeDefinition())
+    {
+        th = ClassLoader::LoadTypeDefThrowing(
+            th.GetModule(),
+            th.GetMethodTable()->GetCl(),
+            ClassLoader::ThrowIfNotFound,
+            ClassLoader::PermitUninstDefOrRef);
+
+        _ASSERTE(th.IsGenericTypeDefinition());
+    }
+
+    result = CORINFO_CLASS_HANDLE(th.AsPtr());
+
+    EE_TO_JIT_TRANSITION();    
+
+    _ASSERTE(result != NULL);
 
     return result;
 }
