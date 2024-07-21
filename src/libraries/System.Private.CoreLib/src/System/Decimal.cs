@@ -578,7 +578,7 @@ namespace System
         //
         public static int[] GetBits(decimal d)
         {
-            return new int[] { (int)d.Low, (int)d.Mid, (int)d.High, d._flags };
+            return [(int)d.Low, (int)d.Mid, (int)d.High, d._flags];
         }
 
         /// <summary>

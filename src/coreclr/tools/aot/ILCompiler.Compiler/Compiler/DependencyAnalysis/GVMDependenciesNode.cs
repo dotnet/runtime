@@ -149,7 +149,8 @@ namespace ILCompiler.DependencyAnalysis
                                 else
                                     dynamicDependencies.Add(new CombinedDependencyListEntry(factory.GVMDependencies(implementingMethodInstantiation.GetCanonMethodTarget(CanonicalFormKind.Specific)), null, "ImplementingMethodInstantiation"));
 
-                                factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation);
+                                TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
+                                factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
                             }
                         }
                     }

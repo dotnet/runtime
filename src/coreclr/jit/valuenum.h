@@ -512,6 +512,8 @@ public:
 
     CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
 
+    void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -1065,6 +1067,13 @@ public:
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
+
+    // Returns true iff the VN is a phi definition
+    bool IsVNPhiDef(ValueNum vn);
+
+    // Returns true if the two VNs represent the same value
+    // despite being different VNs. Useful for phi def VNs.
+    bool AreVNsEquivalent(ValueNum vn1, ValueNum vn2);
 
     enum class VN_RELATION_KIND
     {

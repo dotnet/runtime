@@ -494,6 +494,13 @@ if(NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
+if (CLR_CMAKE_TARGET_ANDROID)
+    # Google requires all the native libraries to be aligned to 16 bytes (for 16k memory page size)
+    # This applies only to 64-bit binaries
+    if(CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+        add_link_options(LINKER:-z,max-page-size=16384)
+    endif()
+endif()
 string(TOLOWER "${CMAKE_BUILD_TYPE}" LOWERCASE_CMAKE_BUILD_TYPE)
 if(LOWERCASE_CMAKE_BUILD_TYPE STREQUAL debug)
     # Clear _FORTIFY_SOURCE=2, if set
