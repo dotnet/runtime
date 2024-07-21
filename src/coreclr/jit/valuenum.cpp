@@ -6515,20 +6515,19 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
             case VNF_PhiDef:
             case VNF_PhiMemoryDef:
             {
-                // Inspect all PHI args (call IsVNNeverNegative for them)
-                PhiDefWalkResult walkResult = VNWalkPhis(
-                    vn, funcApp,
-                    [this](ValueNum phiVN) -> PhiArgWalkResult {
+                // Inspect all PHI args - if all of them are non-negative,
+                // then the PHI itself is non-negative too (even if it has cycles).
+                auto phiVisitor = [this](ValueNum phiVN) -> PhiArgWalkResult {
                     // Bail out if the type is not integral
                     if (!varTypeIsIntegral(TypeOfVN(phiVN)))
                     {
                         return PhiArgWalkResult::Abort;
                     }
-
                     return IsVNNeverNegative(phiVN) ? PhiArgWalkResult::Continue : PhiArgWalkResult::Abort;
-                },
-                    /* maxDepth */ 2);
-                return walkResult == PhiDefWalkResult::Completed;
+                };
+
+                // maxDepth is set to 2 to improve JIT TP
+                return VNWalkPhis(vn, funcApp, phiVisitor, /* maxDepth */ 2) == PhiDefWalkResult::Completed;
             }
 
             default:
@@ -15084,7 +15083,7 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 }
 
 //--------------------------------------------------------------------------------
-// VNWalkPhis: Walk the given PhiDef/PhiMemoryDef and call a callback on each Phi argument (its VN).
+// VNWalkPhis: Walk the given PhiDef/PhiMemoryDef and call phiArgVisitor on each real VN.
 //
 // Arguments:
 //    phiDefVN      - The VN of the PhiDef
@@ -15094,7 +15093,11 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 //    vnKind        - The kind of VN to use (Conservative or Liberal)
 //
 // Return Value:
-//    true if the walk was successful, false if the walk was aborted.
+//    PhiDefWalkResult::InvalidPhiDef  if any PhiDef didn't allow us to make any assumptions
+//    PhiDefWalkResult::HitLimitations if we hit the maxDepth limit (for TP reasons)
+//    PhiDefWalkResult::Aborted        if any phiArgVisitor returned PhiArgWalkResult::Abort
+//    PhiDefWalkResult::Completed      if the walk was successful (all phiArgVisitors returned
+//                                     PhiArgWalkResult::Continue) and the phiArgVisitor was called at least once
 //
 template <typename TPhiArgVisitorFunc>
 ValueNumStore::PhiDefWalkResult ValueNumStore::VNWalkPhis(
