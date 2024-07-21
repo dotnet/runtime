@@ -15044,24 +15044,6 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
         return m_pComp->info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
     }
 
-    if (func == VNF_PhiDef || func == VNF_PhiMemoryDef)
-    {
-        // Inspect all PHI args (call IsVNNeverNegative for them)
-        PhiDefWalkResult walkResult = VNWalkPhis(
-            vn, funcApp,
-            [this](ValueNum phiVN) -> PhiArgWalkResult {
-            // Bail out if the type is not integral
-            if (!varTypeIsIntegral(TypeOfVN(phiVN)))
-            {
-                return PhiArgWalkResult::Abort;
-            }
-
-            return IsVNNeverNegative(phiVN) ? PhiArgWalkResult::Continue : PhiArgWalkResult::Abort;
-        },
-            /* maxDepth */ 2);
-        return walkResult == PhiDefWalkResult::Completed;
-    }
-
     return NO_CLASS_HANDLE;
 }
 
