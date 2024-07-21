@@ -5065,7 +5065,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
-        doOptimizeIVs             = doValueNum && (JitConfig.JitDoOptimizeIVs() != 0);
+        doOptimizeIVs             = doAssertionProp && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 #endif // defined(OPT_CONFIG)
 

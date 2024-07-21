@@ -1323,18 +1323,18 @@ namespace System.Globalization
                     break;
                 case 'm':
                 case 'M':
-                    result = new string[] { MonthDayPattern };
+                    result = [MonthDayPattern];
                     break;
                 case 'o':
                 case 'O':
-                    result = new string[] { RoundtripFormat };
+                    result = [RoundtripFormat];
                     break;
                 case 'r':
                 case 'R':
-                    result = new string[] { rfc1123Pattern };
+                    result = [rfc1123Pattern];
                     break;
                 case 's':
-                    result = new string[] { sortableDateTimePattern };
+                    result = [sortableDateTimePattern];
                     break;
                 case 't':
                     result = AllShortTimePatterns;
@@ -1343,7 +1343,7 @@ namespace System.Globalization
                     result = AllLongTimePatterns;
                     break;
                 case 'u':
-                    result = new string[] { UniversalSortableDateTimePattern };
+                    result = [UniversalSortableDateTimePattern];
                     break;
                 case 'y':
                 case 'Y':

@@ -2577,7 +2577,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     CorInfoType maskBaseJitType = simdBaseJitType;
     var_types   maskBaseType    = simdBaseType;
 
-    if (op1Msk->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
+    if (op1Msk->OperIsConvertMaskToVector())
     {
         GenTreeHWIntrinsic* cvtMaskToVector = op1Msk->AsHWIntrinsic();
 
@@ -2588,122 +2588,131 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         maskBaseType    = cvtMaskToVector->GetSimdBaseType();
     }
 
-    if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) && op2->IsVectorZero() &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_SSE41) && !varTypeIsMask(op1Msk))
+    if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) && !varTypeIsMask(op1Msk))
     {
-        // On SSE4.1 or higher we can optimize comparisons against zero to
-        // just use PTEST. We can't support it for floating-point, however,
-        // as it has both +0.0 and -0.0 where +0.0 == -0.0
+        bool isOp2VectorZero = op2->IsVectorZero();
 
-        bool skipReplaceOperands = false;
-
-        if (op1->OperIsHWIntrinsic())
+        if ((isOp2VectorZero || op2->IsVectorAllBitsSet()) &&
+            comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
         {
-            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
-            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
+            // On SSE4.1 or higher we can optimize comparisons against Zero or AllBitsSet to
+            // just use PTEST. We can't support it for floating-point, however, as it has
+            // both +0.0 and -0.0 where +0.0 == -0.0
 
-            GenTree* nestedOp1           = nullptr;
-            GenTree* nestedOp2           = nullptr;
-            bool     isEmbeddedBroadcast = false;
+            bool skipReplaceOperands = false;
 
-            if (op1Intrinsic->GetOperandCount() == 2)
+            if (!isOp2VectorZero)
             {
-                nestedOp1 = op1Intrinsic->Op(1);
-                nestedOp2 = op1Intrinsic->Op(2);
+                // We can optimize to TestC(op1, allbitsset)
+                //
+                // This works out because TestC sets CF if (~x & y) == 0, so:
+                //   ~00 & 11 = 11;  11 & 11 = 11;  NC
+                //   ~01 & 11 = 01;  10 & 11 = 10;  NC
+                //   ~10 & 11 = 10;  01 & 11 = 01;  NC
+                //   ~11 & 11 = 11;  00 & 11 = 00;  C
 
-                assert(!nestedOp1->isContained());
-                isEmbeddedBroadcast = nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic();
+                assert(op2->IsVectorAllBitsSet());
+                cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
+
+                skipReplaceOperands = true;
+            }
+            else if (op1->OperIsHWIntrinsic())
+            {
+                assert(op2->IsVectorZero());
+
+                GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
+
+                if (op1Intrinsic->GetOperandCount() == 2)
+                {
+                    GenTree* nestedOp1 = op1Intrinsic->Op(1);
+                    GenTree* nestedOp2 = op1Intrinsic->Op(2);
+
+                    assert(!nestedOp1->isContained());
+                    bool isEmbeddedBroadcast = nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic();
+
+                    bool       isScalar = false;
+                    genTreeOps oper     = op1Intrinsic->GetOperForHWIntrinsicId(&isScalar);
+
+                    switch (oper)
+                    {
+                        case GT_AND:
+                        {
+                            // We can optimize to TestZ(op1.op1, op1.op2)
+
+                            if (isEmbeddedBroadcast)
+                            {
+                                // PTEST doesn't support embedded broadcast
+                                break;
+                            }
+
+                            node->Op(1) = nestedOp1;
+                            node->Op(2) = nestedOp2;
+
+                            BlockRange().Remove(op1);
+                            BlockRange().Remove(op2);
+
+                            skipReplaceOperands = true;
+                            break;
+                        }
+
+                        case GT_AND_NOT:
+                        {
+                            // We can optimize to TestC(op1.op1, op1.op2)
+
+                            if (isEmbeddedBroadcast)
+                            {
+                                // PTEST doesn't support embedded broadcast
+                                break;
+                            }
+
+                            cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
+
+                            node->Op(1) = nestedOp1;
+                            node->Op(2) = nestedOp2;
+
+                            BlockRange().Remove(op1);
+                            BlockRange().Remove(op2);
+
+                            skipReplaceOperands = true;
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+                }
             }
 
-            switch (op1IntrinsicId)
+            if (!skipReplaceOperands)
             {
-                case NI_SSE_And:
-                case NI_SSE2_And:
-                case NI_AVX_And:
-                case NI_AVX2_And:
-                {
-                    // We can optimize to TestZ(op1.op1, op1.op2)
+                // Default handler, emit a TestZ(op1, op1)
+                assert(op2->IsVectorZero());
 
-                    if (isEmbeddedBroadcast)
-                    {
-                        // PTEST doesn't support embedded broadcast
-                        break;
-                    }
+                node->Op(1) = op1;
+                BlockRange().Remove(op2);
 
-                    node->Op(1) = nestedOp1;
-                    node->Op(2) = nestedOp2;
+                LIR::Use op1Use(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(op1Use);
+                op1 = node->Op(1);
 
-                    BlockRange().Remove(op1);
-                    BlockRange().Remove(op2);
-
-                    skipReplaceOperands = true;
-                    break;
-                }
-
-                case NI_SSE_AndNot:
-                case NI_SSE2_AndNot:
-                case NI_AVX_AndNot:
-                case NI_AVX2_AndNot:
-                {
-                    // We can optimize to TestC(op1.op1, op1.op2)
-
-                    if (isEmbeddedBroadcast)
-                    {
-                        // PTEST doesn't support embedded broadcast
-                        break;
-                    }
-
-                    cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
-
-                    node->Op(1) = nestedOp1;
-                    node->Op(2) = nestedOp2;
-
-                    BlockRange().Remove(op1);
-                    BlockRange().Remove(op2);
-
-                    skipReplaceOperands = true;
-                    break;
-                }
-
-                default:
-                {
-                    break;
-                }
+                op2 = comp->gtClone(op1);
+                BlockRange().InsertAfter(op1, op2);
+                node->Op(2) = op2;
             }
+
+            if (simdSize == 32)
+            {
+                LowerHWIntrinsicCC(node, NI_AVX_PTEST, cmpCnd);
+            }
+            else
+            {
+                assert(simdSize == 16);
+                LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
+            }
+            return LowerNode(node);
         }
-
-        if (!skipReplaceOperands)
-        {
-            // Default handler, emit a TestZ(op1, op1)
-
-            node->Op(1) = op1;
-            BlockRange().Remove(op2);
-
-            LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-            ReplaceWithLclVar(op1Use);
-            op1 = node->Op(1);
-
-            op2 = comp->gtClone(op1);
-            BlockRange().InsertAfter(op1, op2);
-            node->Op(2) = op2;
-        }
-
-        if (simdSize == 32)
-        {
-            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
-            node->ChangeHWIntrinsicId(NI_AVX_TestZ);
-            LowerHWIntrinsicCC(node, NI_AVX_PTEST, cmpCnd);
-        }
-        else
-        {
-            assert(simdSize == 16);
-
-            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
-            node->ChangeHWIntrinsicId(NI_SSE41_TestZ);
-            LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
-        }
-
-        return LowerNode(node);
     }
 
     // TODO-XARCH-AVX512: We should handle TYP_SIMD12 here under the EVEX path, but doing
@@ -3579,7 +3588,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     }
                 }
 
-                if (condition->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
+                if (condition->OperIsConvertMaskToVector())
                 {
                     GenTree* tmp = condition->AsHWIntrinsic()->Op(1);
                     BlockRange().Remove(condition);

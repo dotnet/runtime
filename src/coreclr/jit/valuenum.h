@@ -512,6 +512,8 @@ public:
 
     CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
 
+    void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
