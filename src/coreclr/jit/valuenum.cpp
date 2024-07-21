@@ -1635,7 +1635,20 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
+    {
+        return true;
+    }
+
+    // TODO: we can recognize more non-null idioms here, e.g.
+    // ADD(IsKnownNonNull(op1), smallCns), etc.
+
+    return false;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -6482,6 +6495,20 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 return true;
 #endif
 #endif // FEATURE_HW_INTRINSICS
+
+            case VNF_PhiDef:
+            {
+                // Inspect all PHI args (call IsVNNeverNegative for them)
+                return VNWalkPhis(funcApp, [](Compiler* comp, ValueNum phiVN) -> PhiWalkResult {
+                    // Bail out if the type is not integral
+                    if (!varTypeIsIntegral(comp->vnStore->TypeOfVN(phiVN)))
+                    {
+                        return PhiWalkResult::Abort;
+                    }
+
+                    return comp->vnStore->IsVNNeverNegative(phiVN) ? PhiWalkResult::Continue : PhiWalkResult::Abort;
+                });
+            }
 
             default:
                 break;
@@ -15033,4 +15060,83 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
             break;
         }
     }
+}
+
+//--------------------------------------------------------------------------------
+// VNWalkPhis: Walk the given PhiDef and call a callback on each Phi argument (its VN).
+//
+// Arguments:
+//    phiDefFunc   - VNF_PhiDef function
+//    walkPhiVnsFn - The callback function to call on each Phi argument.
+//    maxDepth     - Maximum depth to handle recursive PhiDef chains.
+//
+// Return Value:
+//    true if the walk was successful, false if the walk was aborted.
+//
+bool ValueNumStore::VNWalkPhis(VNFuncApp phiDefFunc, WalkPhiVnsFn walkPhiVnsFn, int maxDepth)
+{
+    assert(maxDepth > 0);
+    assert(phiDefFunc.m_func == VNF_PhiDef);
+
+    // VNF_PhiDef(LclNum, SsaNum, VNF_Phi)
+    unsigned lclNum     = phiDefFunc.m_args[0];
+    ValueNum nextPhiArg = phiDefFunc.m_args[2];
+
+    if ((lclNum == static_cast<unsigned>(-1)) || (nextPhiArg == NoVN))
+    {
+        return false;
+    }
+
+    // Now we iterate over Phi arguments, e.g.
+    //  2 args: VNF_Phi(SSA1, SSA2)
+    //  3 args: VNF_Phi(SSA1, VNF_Phi(SSA2, SSA3))
+    //  4 args: VNF_Phi(SSA1, VNF_Phi(SSA2, VNF_Phi(SSA3, SSA4)))
+    // etc.
+    //
+    while (nextPhiArg != NoVN)
+    {
+        ValueNum  current = nextPhiArg;
+        VNFuncApp phiArgFuncApp;
+        if (GetVNFunc(nextPhiArg, &phiArgFuncApp) && phiArgFuncApp.m_func == VNF_Phi)
+        {
+            current    = phiArgFuncApp.m_args[0];
+            nextPhiArg = phiArgFuncApp.m_args[1];
+        }
+        else
+        {
+            // Ok this was the last Phi arg
+            nextPhiArg = NoVN;
+        }
+
+        // Extract the real VN from the Phi arg
+        unsigned phiArgSsaNum = ConstantValue<unsigned>(current);
+        ValueNum phiArgVN     = m_pComp->lvaTable[lclNum].GetPerSsaData(phiArgSsaNum)->m_vnPair.Get(VNK_Conservative);
+
+        // Now check the actual VN arg, if it's yet another PhiDef, walk it recursively
+        VNFuncApp argFuncApp;
+        if (GetVNFunc(phiArgVN, &argFuncApp) && (argFuncApp.m_func == VNF_PhiDef))
+        {
+            if (maxDepth == 1)
+            {
+                JITDUMP("optWalkPhiVNs: maxDepth reached - bail out.\n");
+                return false;
+            }
+
+            // Call recursively.
+            // NOTE: it's possible for PhiDef to be cyclic, we don't try to detect them here and
+            // just rely on the maxDepth check to bail out (the max depth is usually small).
+            if (!VNWalkPhis(argFuncApp, walkPhiVnsFn, maxDepth - 1))
+            {
+                return false;
+            }
+        }
+        else if (walkPhiVnsFn(m_pComp, phiArgVN) == PhiWalkResult::Abort)
+        {
+            // Caller realized that it doesn't make sense to continue any further
+            JITDUMP("optWalkPhiVNs: aborted by callback.\n");
+            return false;
+        }
+    }
+
+    return true;
 }
