@@ -906,9 +906,9 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
                     BitVecOps::AddElemD(&m_bitVecTraits, m_IndirectRefStoredPointers, dstLclNum);
                 }
 
-                    canLclVarEscapeViaParentStack = false;
-                }
-            break;
+                canLclVarEscapeViaParentStack = false;
+                break;
+            }
 
             case GT_EQ:
             case GT_NE:
@@ -945,7 +945,7 @@ bool ObjectAllocator::CanLclVarEscapeViaParentStack(ArrayStack<GenTree*>* parent
             case GT_STOREIND:
             case GT_STORE_BLK:
                 if (tree != parent->AsIndir()->Addr())
-                    {
+                {
                     GenTree* target = parent->AsIndir()->Addr();
                     switch (target->OperGet())
                     {
