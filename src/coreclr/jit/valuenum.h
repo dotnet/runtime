@@ -521,7 +521,7 @@ public:
     };
     enum class PhiDefWalkResult
     {
-        Success,
+        Completed,
         Aborted,
         InvalidPhiDef,
         HitLimitations,
@@ -530,16 +530,17 @@ public:
     PhiDefWalkResult VNWalkPhis(ValueNum           phiDefVN,
                                 VNFuncApp          phiDefFunc,
                                 TPhiArgVisitorFunc walkPhiVnsFn,
-                                ValueNumKind       vnKind   = VNK_Conservative,
-                                int                maxDepth = -1);
+                                int                maxDepth = -1,
+                                ValueNumKind       vnKind   = VNK_Conservative);
 
 private:
     template <typename TPhiArgVisitorFunc>
     PhiDefWalkResult VNWalkPhisInternal(ValueNum                phiDefVN,
                                         VNFuncApp               phiDefFunc,
                                         TPhiArgVisitorFunc      walkPhiVnsFn,
-                                        ValueNumKind            vnKind,
                                         int                     maxDepth,
+                                        ValueNumKind            vnKind,
+                                        int&                    realVNsVisited,
                                         class SmallValueNumSet& hashSet);
 public:
 
