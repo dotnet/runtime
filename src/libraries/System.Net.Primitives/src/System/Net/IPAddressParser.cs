@@ -89,7 +89,7 @@ namespace System.Net
 
                 if (scopeIdSpan.Length > 1)
                 {
-                    string interfaceName = string.Empty;
+                    uint interfaceIndex;
                     scopeIdSpan = scopeIdSpan.Slice(1);
 
                     // scopeId is a numeric value
@@ -102,7 +102,7 @@ namespace System.Net
                             return true;
                         }
 
-                        interfaceName = System.Text.Encoding.UTF8.GetString(castScopeIdSpan);
+                        interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(castScopeIdSpan);
                     }
                     else if (typeof(TChar) == typeof(char))
                     {
@@ -113,10 +113,13 @@ namespace System.Net
                             return true;
                         }
 
-                        interfaceName = new string(castScopeIdSpan);
+                        interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(castScopeIdSpan);
+                    }
+                    else
+                    {
+                        interfaceIndex = 0;
                     }
 
-                    uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(interfaceName);
                     if (interfaceIndex > 0)
                     {
                         scope = interfaceIndex;

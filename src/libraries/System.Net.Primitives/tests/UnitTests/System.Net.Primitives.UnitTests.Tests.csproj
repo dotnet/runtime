@@ -85,6 +85,10 @@
              Link="ProductionCode\System\Net\SocketException.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs"
              Link="ProductionCode\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs"

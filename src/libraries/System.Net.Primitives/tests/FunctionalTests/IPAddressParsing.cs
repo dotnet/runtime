@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
 
@@ -486,16 +487,29 @@ namespace System.Net.Primitives.Functional.Tests
             }
         }
 
-        public static readonly object[][] ScopeIds =
+        public static IEnumerable<object[]> ScopeIds()
         {
-            new object[] { "Fe08::1%123", 123},
-            new object[] { "Fe08::1%12345678", 12345678},
-            new object[] { "fe80::e8b0:63ff:fee8:6b3b%9", 9},
-            new object[] { "fe80::e8b0:63ff:fee8:6b3b", 0},
-            new object[] { "fe80::e8b0:63ff:fee8:6b3b%abcd0", 0},
-            new object[] { "::%unknownInterface", 0},
-            new object[] { "::%0", 0},
-        };
+            yield return new object[] { "Fe08::1%123", 123 };
+            yield return new object[] { "Fe08::1%12345678", 12345678 };
+            yield return new object[] { "fe80::e8b0:63ff:fee8:6b3b%9", 9 };
+            yield return new object[] { "fe80::e8b0:63ff:fee8:6b3b", 0 };
+            yield return new object[] { "fe80::e8b0:63ff:fee8:6b3b%abcd0", 0 };
+            yield return new object[] { "::%unknownInterface", 0 };
+            yield return new object[] { "::%0", 0 };
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                yield return new object[] { "::%loopback_0", System.Net.NetworkInformation.NetworkInterface.IPv6LoopbackInterfaceIndex };
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+            {
+                yield return new object[] { "::%lo0", System.Net.NetworkInformation.NetworkInterface.IPv6LoopbackInterfaceIndex };
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                yield return new object[] { "::%lo", System.Net.NetworkInformation.NetworkInterface.IPv6LoopbackInterfaceIndex };
+            }
+        }
 
         [Theory]
         [MemberData(nameof(ScopeIds))]

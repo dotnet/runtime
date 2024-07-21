@@ -67,6 +67,8 @@
              Link="Common\System\Net\SocketAddressPal.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\HostInformationPal.Windows.cs"
              Link="Common\System\Net\NetworkInformation\HostInformationPal.Windows.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs"
+             Link="Common\Interop\Windows\Interop.BOOL.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs"
              Link="Common\Interop\Windows\IpHlpApi\Interop.ErrorCodes.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\IpHlpApi\Interop.FIXED_INFO.cs"
@@ -77,6 +79,8 @@
              Link="Common\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtStatus.cs"
              Link="ProductionCode\Common\Interop\Windows\NtDll\Interop.NtStatus.cs" />
     <Compile Include="$(CommonPath)System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs"

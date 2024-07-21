@@ -10,5 +10,8 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_InterfaceNameToIndex", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         public static partial uint InterfaceNameToIndex(string name);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_InterfaceNameToIndex", SetLastError = true)]
+        public static partial uint InterfaceNameToIndex(ReadOnlySpan<byte> utf8NullTerminatedName);
     }
 }

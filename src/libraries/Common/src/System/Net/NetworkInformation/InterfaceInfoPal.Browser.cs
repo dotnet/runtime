@@ -10,5 +10,17 @@ namespace System.Net.NetworkInformation
             // zero means "unknown"
             return 0;
         }
+
+        public static uint InterfaceNameToIndex(ReadOnlySpan<char> _/*interfaceName*/)
+        {
+            // zero means "unknown"
+            return 0;
+        }
+
+        public static uint InterfaceNameToIndex(ReadOnlySpan<byte> _/*interfaceName*/)
+        {
+            // zero means "unknown"
+            return 0;
+        }
     }
 }
