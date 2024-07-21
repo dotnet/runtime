@@ -193,6 +193,8 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
                                 int         varx     = -1,
                                 int         offs     = -1 DEBUG_ARG(bool useRsvdReg = false));
 
+bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr);
+
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
     assert(id->idIsLclVarPair());
