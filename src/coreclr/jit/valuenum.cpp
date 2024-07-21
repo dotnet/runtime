@@ -11236,11 +11236,30 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
         // a reason to have the phi -- just pass on that value.
         newSsaDefVNP = sameVNP;
     }
-    else if (!isUpdate)
+    else
     {
         // They were not the same; we need to create a phi definition.
-        newSsaDefVNP.SetBoth(
-            vnStore->VNForPhiDef(newSsaDef->TypeGet(), newSsaDef->GetLclNum(), newSsaDef->GetSsaNum(), phiArgSsaNums));
+
+        bool newPhiDef = true;
+        if (isUpdate)
+        {
+            // For an update, the phi-def usually does not have any new
+            // information -- it is still just the list of SSA args from preds.
+            // The exception is if we were now able to prove that the block is
+            // unreachable from one of the preds.
+            VNPhiDef prevPhiDef;
+            if (vnStore->GetPhiDef(newSsaDefDsc->m_vnPair.GetLiberal(), &prevPhiDef) &&
+                (prevPhiDef.NumArgs == (unsigned)phiArgSsaNums.Height()))
+            {
+                newPhiDef = false;
+            }
+        }
+
+        if (newPhiDef)
+        {
+            newSsaDefVNP.SetBoth(vnStore->VNForPhiDef(newSsaDef->TypeGet(), newSsaDef->GetLclNum(),
+                                                      newSsaDef->GetSsaNum(), phiArgSsaNums));
+        }
     }
 
 #ifdef DEBUG
