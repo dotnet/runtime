@@ -1,0 +1,9 @@
+v1.3.1
+(51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf)
+
+https://github.com/madler/zlib/releases/tag/v1.3.1
+
+We have removed zlib.3.pdf from our local copy, as it is a binary file which is
+not needed for our compilation.
+
+We have also applied the custom patches under the patches/zlib folder.
