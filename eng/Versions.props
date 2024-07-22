@@ -104,10 +104,10 @@
     <!-- NuGet dependencies -->
     <NuGetBuildTasksPackVersion>6.0.0-preview.1.102</NuGetBuildTasksPackVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppRuntimewinx64Version>9.0.0-preview.7.24365.1</MicrosoftNETCoreAppRuntimewinx64Version>
+    <MicrosoftNETCoreAppRuntimewinx64Version>9.0.0-preview.7.24371.6</MicrosoftNETCoreAppRuntimewinx64Version>
     <MicrosoftExtensionsDependencyModelVersion>6.0.0</MicrosoftExtensionsDependencyModelVersion>
     <!-- ILAsm dependencies -->
-    <MicrosoftNETCoreILAsmVersion>9.0.0-preview.7.24365.1</MicrosoftNETCoreILAsmVersion>
+    <MicrosoftNETCoreILAsmVersion>9.0.0-preview.7.24371.6</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
     <MicrosoftBclAsyncInterfacesVersion>6.0.0</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftBclHashCodeVersion>1.1.1</MicrosoftBclHashCodeVersion>
@@ -119,19 +119,19 @@
     <SystemDrawingCommonVersion>8.0.0</SystemDrawingCommonVersion>
     <SystemIOFileSystemAccessControlVersion>5.0.0</SystemIOFileSystemAccessControlVersion>
     <SystemMemoryVersion>4.5.5</SystemMemoryVersion>
-    <SystemReflectionMetadataVersion>9.0.0-preview.7.24365.1</SystemReflectionMetadataVersion>
-    <SystemReflectionMetadataLoadContextVersion>9.0.0-preview.7.24365.1</SystemReflectionMetadataLoadContextVersion>
+    <SystemReflectionMetadataVersion>9.0.0-preview.7.24371.6</SystemReflectionMetadataVersion>
+    <SystemReflectionMetadataLoadContextVersion>9.0.0-preview.7.24371.6</SystemReflectionMetadataLoadContextVersion>
     <SystemSecurityAccessControlVersion>6.0.0</SystemSecurityAccessControlVersion>
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
     <SystemSecurityPermissionsVersion>7.0.0</SystemSecurityPermissionsVersion>
-    <SystemTextJsonVersion>9.0.0-preview.7.24365.1</SystemTextJsonVersion>
+    <SystemTextJsonVersion>9.0.0-preview.7.24371.6</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingAccessControlVersion>7.0.0</SystemThreadingAccessControlVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
-    <runtimenativeSystemIOPortsVersion>9.0.0-preview.7.24365.1</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>9.0.0-preview.7.24371.6</runtimenativeSystemIOPortsVersion>
     <!-- Keep toolset versions in sync with dotnet/msbuild and dotnet/sdk -->
     <SystemCollectionsImmutableToolsetVersion>8.0.0</SystemCollectionsImmutableToolsetVersion>
     <SystemTextJsonToolsetVersion>8.0.0</SystemTextJsonToolsetVersion>
@@ -214,7 +214,7 @@
     <!-- Mono Cecil -->
     <MicrosoftDotNetCecilVersion>0.11.5-alpha.24365.1</MicrosoftDotNetCecilVersion>
     <!-- ILCompiler -->
-    <MicrosoftDotNetILCompilerVersion>9.0.0-preview.7.24365.1</MicrosoftDotNetILCompilerVersion>
+    <MicrosoftDotNetILCompilerVersion>9.0.0-preview.7.24371.6</MicrosoftDotNetILCompilerVersion>
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-preview.7.24365.2</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
