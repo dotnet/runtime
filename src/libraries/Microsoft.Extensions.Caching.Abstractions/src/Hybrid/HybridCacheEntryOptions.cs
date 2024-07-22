@@ -17,19 +17,16 @@ public sealed class HybridCacheEntryOptions
     /// <summary>
     /// Gets or set the overall cache duration of this entry, passed to the backend distributed cache.
     /// </summary>
-    public TimeSpan? Expiration { get; init; } // overall cache duration
+    public TimeSpan? Expiration { get; init; }
 
-    /// <summary>
-    /// Gets or sets the cache duration in the local cache.
-    /// </summary>
     /// <remarks>
     /// When retrieving a cached value from an external cache store, this value will be used to calculate the local
     /// cache expiration, not exceeding the remaining overall cache lifetime.
     /// </remarks>
-    public TimeSpan? LocalCacheExpiration { get; init; } // TTL in L1
+    public TimeSpan? LocalCacheExpiration { get; init; }
 
     /// <summary>
-    /// Additional flags that apply to this usage.
+    /// Gets or sets additional flags that apply to the requested operation.
     /// </summary>
     public HybridCacheEntryFlags? Flags { get; init; }
 

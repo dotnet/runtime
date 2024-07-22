@@ -77,7 +77,7 @@ public abstract class HybridCache
         {
             // for consistency with GetOrCreate/Set: interpret null as "none"
             null or ICollection<string> { Count: 0 } => default,
-            ICollection<string> { Count: 1 } => RemoveAsync(keys.Single(), cancellationToken),
+            ICollection<string> { Count: 1 } => RemoveAsync(keys.First(), cancellationToken),
             _ => ForEachAsync(this, keys, cancellationToken),
         };
 
