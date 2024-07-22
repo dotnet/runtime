@@ -309,7 +309,7 @@ public class TestFilter
         {
             "FullyQualifiedName" => TermKind.FullyQualifiedName,
             "DisplayName" => TermKind.DisplayName,
-            _ => throw new ArgumentException("Test filtering not supported with property" + termName, argName),
+            _ => throw new ArgumentException("Test filtering not supported with property " + termName, argName),
         };
 
         return new NameClause(termKind, testName, substring: isSubstring);
