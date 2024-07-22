@@ -52,6 +52,11 @@ namespace Microsoft.Interop.Analyzers
                             return;
                         }
                     }
+
+                    if (type.BaseType.GetAttributes().Any(attr => generatedComClassAttributeType.Equals(attr.AttributeClass, SymbolEqualityComparer.Default)))
+                    {
+                        context.ReportDiagnostic(type.CreateDiagnostic(AddGeneratedComClassAttribute, type.Name));
+                    }
                 }, SymbolKind.NamedType);
             });
         }
