@@ -69,17 +69,14 @@ namespace System.Linq
                         count++;
                     }
                 }
-
-                return count;
             }
-
-            foreach (TSource element in source)
+            else
             {
-                checked
+                foreach (TSource element in source)
                 {
                     if (predicate(element))
                     {
-                        count++;
+                        checked { count++; }
                     }
                 }
             }
@@ -149,15 +146,15 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            // TryGetSpan isn't used here because if it's expected that there are more than int.MaxValue elements,
+            // the source can't possibly be something from which we can extract a span.
+
             long count = 0;
             using (IEnumerator<TSource> e = source.GetEnumerator())
             {
-                checked
+                while (e.MoveNext())
                 {
-                    while (e.MoveNext())
-                    {
-                        count++;
-                    }
+                    checked { count++; }
                 }
             }
 
@@ -176,15 +173,15 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
+            // TryGetSpan isn't used here because if it's expected that there are more than int.MaxValue elements,
+            // the source can't possibly be something from which we can extract a span.
+
             long count = 0;
             foreach (TSource element in source)
             {
-                checked
+                if (predicate(element))
                 {
-                    if (predicate(element))
-                    {
-                        count++;
-                    }
+                    checked { count++; }
                 }
             }
 
