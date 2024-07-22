@@ -386,7 +386,7 @@ int32_t SystemNative_MemfdSupported(void)
 
     // Note that the name has no affect on file descriptor behavior. From linux manpage: 
     //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
-    int32_t fd = memfd_create("test", MFD_CLOEXEC);
+    int32_t fd = memfd_create("test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (fd < 0) return 0;
 
     close(fd);
@@ -406,7 +406,7 @@ intptr_t SystemNative_MemfdCreate(const char* name)
     assert(strlen(name) <= PATH_MAX);
 #endif
 
-    return memfd_create(name, MFD_CLOEXEC);
+    return memfd_create(name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
 #else
     (void)name;
     errno = ENOTSUP;
@@ -663,6 +663,13 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #else /* HAVE_PIPE */
     result = -1;
 #endif /* HAVE_PIPE */
+    return result;
+}
+
+int32_t SystemNative_FcntlSetSealWrite(intptr_t fd)
+{
+    int result;
+    while ((result = fcntl(ToFileDescriptor(fd), F_ADD_SEALS, F_SEAL_WRITE)) < 0 && errno == EINTR);
     return result;
 }
 

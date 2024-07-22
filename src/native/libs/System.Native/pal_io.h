@@ -433,6 +433,13 @@ PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets 
 // complexity around converting command codes.
 
 /**
+ * Sets the write seal on memfd_create file descriptor.
+ *
+ * Returns 0 for success; -1 for failure. Sets errno for failure.
+ */
+PALEXPORT int32_t SystemNative_FcntlSetSealWrite(intptr_t fd);
+
+/**
  * Sets the O_CLOEXEC flag on a file descriptor.
  *
  * Returns 0 for success; -1 for failure. Sets errno for failure.

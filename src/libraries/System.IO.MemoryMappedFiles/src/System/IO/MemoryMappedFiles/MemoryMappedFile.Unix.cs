@@ -162,11 +162,117 @@ namespace System.IO.MemoryMappedFiles
 
         private static SafeFileHandle CreateSharedBackingObject(Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            return CreateSharedBackingObjectUsingMemory(protections, capacity, inheritability)
-                ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
+            SafeFileHandle? handle = Interop.Sys.IsMemfdSupported ?
+                CreateSharedBackingObjectUsingMemoryMemfdCreate(protections, capacity, inheritability) :
+                CreateSharedBackingObjectUsingMemoryShmOpen(protections, capacity, inheritability);
+
+            return handle ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
         }
 
-        private static SafeFileHandle? CreateSharedBackingObjectUsingMemory(
+        private static SafeFileHandle? CreateSharedBackingObjectUsingMemoryShmOpen(
+           Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
+        {
+            // Determine the flags to use when creating the shared memory object
+            Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
+                Interop.Sys.OpenFlags.O_RDWR :
+                Interop.Sys.OpenFlags.O_RDONLY;
+            flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
+
+            // Determine the permissions with which to create the file
+            var perms = UnixFileMode.None;
+            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0)
+                perms |= UnixFileMode.UserRead;
+            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0)
+                perms |= UnixFileMode.UserWrite;
+            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
+                perms |= UnixFileMode.UserExecute;
+
+            string mapName;
+            SafeFileHandle fd;
+
+            do
+            {
+                mapName = GenerateMapName();
+                fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms); // Create the shared memory object.
+
+                if (fd.IsInvalid)
+                {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                    fd.Dispose();
+
+                    if (errorInfo.Error == Interop.Error.ENOTSUP)
+                    {
+                        // If ShmOpen is not supported, fall back to file backing object.
+                        // Note that the System.Native shim will force this failure on platforms where
+                        // the result of native shm_open does not work well with our subsequent call to mmap.
+                        return null;
+                    }
+                    else if (errorInfo.Error == Interop.Error.ENAMETOOLONG)
+                    {
+                        Debug.Fail($"shm_open failed with ENAMETOOLONG for {Encoding.UTF8.GetByteCount(mapName)} byte long name.");
+                        // in theory it should not happen anymore, but just to be extra safe we use the fallback
+                        return null;
+                    }
+                    else if (errorInfo.Error != Interop.Error.EEXIST) // map with same name already existed
+                    {
+                        throw Interop.GetExceptionForIoErrno(errorInfo);
+                    }
+                }
+            } while (fd.IsInvalid);
+
+            try
+            {
+                // Unlink the shared memory object immediately so that it'll go away once all handles
+                // to it are closed (as with opened then unlinked files, it'll remain usable via
+                // the open handles even though it's unlinked and can't be opened anew via its name).
+                Interop.CheckIo(Interop.Sys.ShmUnlink(mapName));
+
+                // Give it the right capacity.  We do this directly with ftruncate rather
+                // than via FileStream.SetLength after the FileStream is created because, on some systems,
+                // lseek fails on shared memory objects, causing the FileStream to think it's unseekable,
+                // causing it to preemptively throw from SetLength.
+                Interop.CheckIo(Interop.Sys.FTruncate(fd, capacity));
+
+                // shm_open sets CLOEXEC implicitly.  If the inheritability requested is Inheritable, remove CLOEXEC.
+                if (inheritability == HandleInheritability.Inheritable &&
+                    Interop.Sys.Fcntl.SetFD(fd, 0) == -1)
+                {
+                    fd.Dispose();
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                }
+
+                return fd;
+            }
+            catch
+            {
+                fd.Dispose();
+                throw;
+            }
+        }
+
+        private static string GenerateMapName()
+        {
+            // macOS shm_open documentation says that the sys-call can fail with ENAMETOOLONG if the name exceeds SHM_NAME_MAX characters.
+            // The problem is that SHM_NAME_MAX is not defined anywhere and is not consistent amongst macOS versions (arm64 vs x64 for example).
+            // It was reported in 2008 (https://lists.apple.com/archives/xcode-users/2008/Apr/msg00523.html),
+            // but considered to be by design (http://web.archive.org/web/20140109200632/http://lists.apple.com/archives/darwin-development/2003/Mar/msg00244.html).
+            // According to https://github.com/qt/qtbase/blob/1ed449e168af133184633d174fd7339a13d1d595/src/corelib/kernel/qsharedmemory.cpp#L53-L56 the actual value is 30.
+            // Some other OSS libs use 32 (we did as well, but it was not enough) or 31, but we prefer 30 just to be extra safe.
+            const int MaxNameLength = 30;
+            // The POSIX shared memory object name must begin with '/'.  After that we just want something short (30) and unique.
+            const string NamePrefix = "/dotnet_";
+            return string.Create(MaxNameLength, 0, (span, state) =>
+            {
+                Span<char> guid = stackalloc char[32];
+                Guid.NewGuid().TryFormat(guid, out int charsWritten, "N");
+                Debug.Assert(charsWritten == 32);
+                NamePrefix.CopyTo(span);
+                guid.Slice(0, MaxNameLength - NamePrefix.Length).CopyTo(span.Slice(NamePrefix.Length));
+                Debug.Assert(Encoding.UTF8.GetByteCount(span) <= MaxNameLength); // the standard uses Utf8
+            });
+        }
+
+        private static SafeFileHandle? CreateSharedBackingObjectUsingMemoryMemfdCreate(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
             string mapName;
@@ -175,57 +281,12 @@ namespace System.IO.MemoryMappedFiles
             do
             {
                 mapName = GenerateMapName();
-                if (Interop.Sys.IsMemfdSupported)
-                {
-                    fd = Interop.Sys.MemfdCreate(mapName);
-                }
-                else
-                {
-                    // Determine the flags to use when creating the shared memory object
-                    Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
-                        Interop.Sys.OpenFlags.O_RDWR :
-                        Interop.Sys.OpenFlags.O_RDONLY;
-                    flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
-
-                    // Determine the permissions with which to create the file
-                    UnixFileMode perms = UnixFileMode.None;
-                    if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0)
-                        perms |= UnixFileMode.UserRead;
-                    if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0)
-                        perms |= UnixFileMode.UserWrite;
-                    if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
-                        perms |= UnixFileMode.UserExecute;
-
-                    fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms); // Create the shared memory object.
-                }
+                fd = Interop.Sys.MemfdCreate(mapName);
 
                 if (fd.IsInvalid)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     fd.Dispose();
-
-                    if (!Interop.Sys.IsMemfdSupported)
-                    {
-                        if (errorInfo.Error == Interop.Error.ENOTSUP)
-                        {
-                            Debug.Assert(!Interop.Sys.IsMemfdSupported);
-
-                            // If ShmOpen is not supported, fall back to file backing object.
-                            // Note that the System.Native shim will force this failure on platforms where
-                            // the result of native shm_open does not work well with our subsequent call to mmap.
-                            return null;
-                        }
-                        else if (errorInfo.Error == Interop.Error.ENAMETOOLONG)
-                        {
-                            Debug.Fail($"shm_open failed with ENAMETOOLONG for {Encoding.UTF8.GetByteCount(mapName)} byte long name.");
-                            // in theory it should not happen anymore, but just to be extra safe we use the fallback
-                            return null;
-                        }
-                        else if (errorInfo.Error == Interop.Error.EEXIST) // map with same name already existed
-                        {
-                            continue;
-                        }
-                    }
 
                     throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
@@ -233,12 +294,14 @@ namespace System.IO.MemoryMappedFiles
 
             try
             {
-                if (!Interop.Sys.IsMemfdSupported)
+                // Add a writeseal for readonly case when eadonly protection requested
+                if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0 &&
+                    (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) == 0 &&
+                    // seal write failed
+                    Interop.Sys.Fcntl.SetSealWrite(fd) == -1)
                 {
-                    // Unlink the shared memory object immediately so that it'll go away once all handles
-                    // to it are closed (as with opened then unlinked files, it'll remain usable via
-                    // the open handles even though it's unlinked and can't be opened anew via its name).
-                    Interop.CheckIo(Interop.Sys.ShmUnlink(mapName));
+                    fd.Dispose();
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
 
                 // Give it the right capacity.  We do this directly with ftruncate rather
@@ -251,6 +314,7 @@ namespace System.IO.MemoryMappedFiles
                 if (inheritability == HandleInheritability.Inheritable &&
                     Interop.Sys.Fcntl.SetFD(fd, 0) == -1)
                 {
+                    fd.Dispose();
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
 
@@ -260,28 +324,6 @@ namespace System.IO.MemoryMappedFiles
             {
                 fd.Dispose();
                 throw;
-            }
-
-            static string GenerateMapName()
-            {
-                // macOS shm_open documentation says that the sys-call can fail with ENAMETOOLONG if the name exceeds SHM_NAME_MAX characters.
-                // The problem is that SHM_NAME_MAX is not defined anywhere and is not consistent amongst macOS versions (arm64 vs x64 for example).
-                // It was reported in 2008 (https://lists.apple.com/archives/xcode-users/2008/Apr/msg00523.html),
-                // but considered to be by design (http://web.archive.org/web/20140109200632/http://lists.apple.com/archives/darwin-development/2003/Mar/msg00244.html).
-                // According to https://github.com/qt/qtbase/blob/1ed449e168af133184633d174fd7339a13d1d595/src/corelib/kernel/qsharedmemory.cpp#L53-L56 the actual value is 30.
-                // Some other OSS libs use 32 (we did as well, but it was not enough) or 31, but we prefer 30 just to be extra safe.
-                const int MaxNameLength = 30;
-                // The POSIX shared memory object name must begin with '/'.  After that we just want something short (30) and unique.
-                const string NamePrefix = "/dotnet_";
-                return string.Create(MaxNameLength, 0, (span, state) =>
-                {
-                    Span<char> guid = stackalloc char[32];
-                    Guid.NewGuid().TryFormat(guid, out int charsWritten, "N");
-                    Debug.Assert(charsWritten == 32);
-                    NamePrefix.CopyTo(span);
-                    guid.Slice(0, MaxNameLength - NamePrefix.Length).CopyTo(span.Slice(NamePrefix.Length));
-                    Debug.Assert(Encoding.UTF8.GetByteCount(span) <= MaxNameLength); // the standard uses Utf8
-                });
             }
         }
 

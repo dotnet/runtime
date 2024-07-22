@@ -71,6 +71,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_OpenDir)
     DllImportEntry(SystemNative_CloseDir)
     DllImportEntry(SystemNative_Pipe)
+    DllImportEntry(SystemNative_FcntlSetSealWrite)
     DllImportEntry(SystemNative_FcntlSetFD)
     DllImportEntry(SystemNative_FcntlGetFD)
     DllImportEntry(SystemNative_FcntlCanGetSetPipeSz)
