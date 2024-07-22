@@ -11,7 +11,7 @@ public class Runtime_105255_A
 {
     private static Vector512<uint> s_v512_uint_62 = Vector512<uint>.Zero;
 
-    public void Method0()
+    private void Method0()
     {
         s_v512_uint_62 = Vector512.LessThan<uint>(s_v512_uint_62, Vector512<uint>.Zero);
         try
