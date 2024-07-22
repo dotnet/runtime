@@ -174,7 +174,7 @@ namespace System.Reflection
                 "GetAssemblyName",
                 BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
                 null,
-                new Type[] { typeof(string) },
+                [typeof(string)],
                 null);
 
             if (getAssemblyNameMethod == null)

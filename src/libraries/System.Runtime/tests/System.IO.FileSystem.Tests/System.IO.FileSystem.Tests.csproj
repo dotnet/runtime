@@ -6,6 +6,10 @@
 
     <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(WasmEnableThreads)' == 'true'">
+    <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
+    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
+  </PropertyGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" TargetDir="test-dir" />
   </ItemGroup>

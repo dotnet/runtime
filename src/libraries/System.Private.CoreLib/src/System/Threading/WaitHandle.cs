@@ -137,7 +137,7 @@ namespace System.Threading
                     if (context != null && context.IsWaitNotificationRequired())
                     {
                         usedSyncContextWait = true;
-                        waitResult = context.Wait(new[] { waitHandle.DangerousGetHandle() }, false, millisecondsTimeout);
+                        waitResult = context.Wait([waitHandle.DangerousGetHandle()], false, millisecondsTimeout);
                     }
                 }
 
