@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Caching.Hybrid;
 public sealed class HybridCacheEntryOptions
 {
     /// <summary>
-    /// Overall cache duration of this entry, passed to the backend distributed cache.
+    /// Gets or set the overall cache duration of this entry, passed to the backend distributed cache.
     /// </summary>
     public TimeSpan? Expiration { get; init; } // overall cache duration
 
