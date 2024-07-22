@@ -218,23 +218,23 @@
     <!-- ICU -->
     <MicrosoftNETCoreRuntimeICUTransportVersion>9.0.0-preview.7.24365.2</MicrosoftNETCoreRuntimeICUTransportVersion>
     <!-- MsQuic -->
-    <MicrosoftNativeQuicMsQuicSchannelVersion>2.3.5</MicrosoftNativeQuicMsQuicSchannelVersion>
+    <MicrosoftNativeQuicMsQuicSchannelVersion>2.3.6</MicrosoftNativeQuicMsQuicSchannelVersion>
     <SystemNetMsQuicTransportVersion>9.0.0-alpha.1.24167.3</SystemNetMsQuicTransportVersion>
     <!-- Mono LLVM -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24359.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24359.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24359.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24359.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24359.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24359.1</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24359.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24359.1</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24359.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24359.1</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24370.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24370.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24370.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24370.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24370.2</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24370.2</runtimewinx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24370.2</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24370.2</runtimeosxarm64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>19.0.0-alpha.1.24370.2</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>19.0.0-alpha.1.24370.2</runtimeosxx64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node
          Note: when the name is updated, make sure to update dependency name in eng/pipelines/common/xplat-setup.yml
                like - DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-9_0_100_Transport
@@ -246,14 +246,14 @@
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <!-- JIT Tools -->
-    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
-    <runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24359.1</runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimeosxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>19.0.0-alpha.1.24370.2</runtimeosxx64MicrosoftNETCoreRuntimeJITToolsVersion>
     <!-- BrowserDebugProxy libs -->
     <MicrosoftExtensionsLoggingVersion>3.1.7</MicrosoftExtensionsLoggingVersion>
     <MicrosoftSymbolStoreVersion>1.0.406601</MicrosoftSymbolStoreVersion>

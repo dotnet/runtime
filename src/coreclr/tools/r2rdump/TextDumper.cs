@@ -549,7 +549,7 @@ namespace R2RDump
                         if (curMethod != (countMethods + 1))
                         {
                             Program.WriteWarning("MethodIsGenericMap malformed");
-                            System.Diagnostics.Debug.Assert(false, "MethodIsGenericMap malformed");
+                            System.Diagnostics.Debug.Fail("MethodIsGenericMap malformed");
                         }
                         break;
                     }
@@ -561,7 +561,7 @@ namespace R2RDump
                         if (countTypes != NativeReader.ReadUInt16(_r2r.Image, ref mapOffset))
                         {
                             Program.WriteWarning("EnclosingTypeMap malformed");
-                            System.Diagnostics.Debug.Assert(false, "EnclosingTypeMap malformed");
+                            System.Diagnostics.Debug.Fail("EnclosingTypeMap malformed");
                         }
                         int curType = 1;
                         while (curType <= (countTypes + 1))
@@ -594,7 +594,7 @@ namespace R2RDump
                         if (curType != (countTypes + 1))
                         {
                             Program.WriteWarning("TypeGenericInfoMap malformed");
-                            System.Diagnostics.Debug.Assert(false, "TypeGenericInfoMap malformed");
+                            System.Diagnostics.Debug.Fail("TypeGenericInfoMap malformed");
                         }
                         break;
                     }

@@ -490,7 +490,7 @@ namespace System.Threading.Tasks
             if (s_activeTaskSchedulers == null)
             {
                 // No schedulers were tracked.  Just give back the default.
-                return new TaskScheduler[] { s_defaultTaskScheduler };
+                return [s_defaultTaskScheduler];
             }
 
             List<TaskScheduler> schedulers = new List<TaskScheduler>();

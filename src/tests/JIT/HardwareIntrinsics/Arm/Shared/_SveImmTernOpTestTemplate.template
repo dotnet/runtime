@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -65,6 +66,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
                 // Validates executing the test inside conditional, with op3 as zero
                 test.ConditionalSelect_ZeroOp();
+
+                // Validates basic functionality fails with an invalid imm, using Unsafe.ReadUnaligned
+                test.RunBasicScenario_UnsafeRead_InvalidImm();
             }
             else
             {
@@ -194,7 +198,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueOp1} % 2); }
+            for (var i = 0; i < Op1ElementCount; i++) { _maskData[i] = ({Op1BaseType})({NextValueMask} % 2); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _mask), ref Unsafe.As<{Op1BaseType}, byte>(ref _maskData[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1VectorType}<{Op1BaseType}>, byte>(ref _fld1), ref Unsafe.As<{Op1BaseType}, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<{Op1VectorType}<{Op1BaseType}>>());
@@ -227,6 +231,32 @@ namespace JIT.HardwareIntrinsics.Arm
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, _dataTable.inArray3Ptr, _dataTable.outArrayPtr);
+        }
+
+        public void RunBasicScenario_UnsafeRead_InvalidImm()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead_InvalidImm));
+
+            bool succeeded = false;
+            try
+            {
+                var result = {Isa}.{Method}(
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
+                    Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray3Ptr),
+                    {InvalidImm}
+                );
+                Console.WriteLine(result);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
         }
 
         public void RunBasicScenario_Load()
