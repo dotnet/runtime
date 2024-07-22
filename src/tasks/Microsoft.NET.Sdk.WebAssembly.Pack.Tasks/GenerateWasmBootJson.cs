@@ -176,7 +176,7 @@ public class GenerateWasmBootJson : Task
         {
             var endpointByAsset = Endpoints.ToDictionary(e => e.GetMetadata("AssetFile"));
 
-            var lazyLoadAssembliesWithoutExtension = LazyLoadedAssemblies.ToDictionary(l =>
+            var lazyLoadAssembliesWithoutExtension = (LazyLoadedAssemblies ?? Array.Empty<ITaskItem>()).ToDictionary(l =>
             {
                 var extension = Path.GetExtension(l.ItemSpec);
                 if (extension == ".dll" || extension == Utils.WebcilInWasmExtension)
