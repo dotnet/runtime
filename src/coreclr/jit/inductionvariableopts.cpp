@@ -2002,7 +2002,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree* cur = cursor.Tree;
+        GenTree*    cur    = cursor.Tree;
         while ((cur != nullptr) && !cur->OperIs(GT_ARR_ADDR))
         {
             cur = cur->gtGetParent(nullptr);
