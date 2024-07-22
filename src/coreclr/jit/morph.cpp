@@ -8328,10 +8328,7 @@ DONE_MORPHING_CHILDREN:
     }
 
     // Try to fold it, maybe we get lucky,
-    if (opts.OptimizationEnabled())
-    {
-        tree = gtFoldExpr(tree);
-    }
+    tree = gtFoldExpr(tree);
 
     if (oldTree != tree)
     {
