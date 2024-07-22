@@ -478,7 +478,7 @@ namespace System.Formats.Tar
                 case TarEntryType.GlobalExtendedAttributes:
                 case TarEntryType.LongPath:
                 case TarEntryType.LongLink:
-                    Debug.Assert(false, $"Metadata entry type should not be visible: '{EntryType}'");
+                    Debug.Fail($"Metadata entry type should not be visible: '{EntryType}'");
                     break;
 
                 case TarEntryType.MultiVolume:
