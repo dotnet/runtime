@@ -415,13 +415,17 @@ namespace System
         public static bool TryWrite<TArg0, TArg1, TArg2>(this System.Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, TArg0 arg0, TArg1 arg1, TArg2 arg2) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params object?[] args) { throw null; }
         public static bool TryWrite(this Span<char> destination, System.IFormatProvider? provider, System.Text.CompositeFormat format, out int charsWritten, params System.ReadOnlySpan<object?> args) { throw null; }
-        public ref struct SpanSplitEnumerator<T> where T : System.IEquatable<T>
+        public ref struct SpanSplitEnumerator<T> : System.Collections.Generic.IEnumerator<System.Range> where T : System.IEquatable<T>
         {
             private object _dummy;
             private int _dummyPrimitive;
             public readonly System.Range Current { get { throw null; } }
             public System.MemoryExtensions.SpanSplitEnumerator<T> GetEnumerator() { throw null; }
             public bool MoveNext() { throw null; }
+            object System.Collections.IEnumerator.Current { get { throw null; } }
+            void System.Collections.IEnumerator.Reset() { }
+            void System.IDisposable.Dispose() { }
+
         }
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
@@ -735,20 +739,26 @@ namespace System.Runtime.InteropServices
 }
 namespace System.Text
 {
-    public ref partial struct SpanLineEnumerator
+    public ref partial struct SpanLineEnumerator : System.Collections.Generic.IEnumerator<ReadOnlySpan<char>>
     {
         private object _dummy;
         private int _dummyPrimitive;
         public System.ReadOnlySpan<char> Current { get { throw null; } }
         public System.Text.SpanLineEnumerator GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        void System.Collections.IEnumerator.Reset() { }
+        void System.IDisposable.Dispose() { }
     }
-    public ref partial struct SpanRuneEnumerator
+    public ref partial struct SpanRuneEnumerator : System.Collections.Generic.IEnumerator<Rune>
     {
         private object _dummy;
         private int _dummyPrimitive;
         public System.Text.Rune Current { get { throw null; } }
         public System.Text.SpanRuneEnumerator GetEnumerator() { throw null; }
         public bool MoveNext() { throw null; }
+        object System.Collections.IEnumerator.Current { get { throw null; } }
+        void System.Collections.IEnumerator.Reset() { }
+        void System.IDisposable.Dispose() { }
     }
 }

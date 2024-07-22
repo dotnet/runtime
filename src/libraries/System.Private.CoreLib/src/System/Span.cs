@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -222,7 +224,7 @@ namespace System
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>Enumerates the elements of a <see cref="Span{T}"/>.</summary>
-        public ref struct Enumerator
+        public ref struct Enumerator : IEnumerator<T>
         {
             /// <summary>The span being enumerated.</summary>
             private readonly Span<T> _span;
@@ -258,6 +260,18 @@ namespace System
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => ref _span[_index];
             }
+
+            /// <inheritdoc/>
+            T IEnumerator<T>.Current => Current;
+
+            /// <inheritdoc/>
+            object? IEnumerator.Current => Current;
+
+            /// <inheritdoc/>
+            void IEnumerator.Reset() => _index = -1;
+
+            /// <inheritdoc/>
+            void IDisposable.Dispose() { }
         }
 
         /// <summary>

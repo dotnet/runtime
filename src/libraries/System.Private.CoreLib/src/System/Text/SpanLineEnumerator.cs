@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+
 namespace System.Text
 {
     /// <summary>
@@ -9,7 +12,7 @@ namespace System.Text
     /// <remarks>
     /// To get an instance of this type, use <see cref="MemoryExtensions.EnumerateLines(ReadOnlySpan{char})"/>.
     /// </remarks>
-    public ref struct SpanLineEnumerator
+    public ref struct SpanLineEnumerator : IEnumerator<ReadOnlySpan<char>>
     {
         private ReadOnlySpan<char> _remaining;
         private ReadOnlySpan<char> _current;
@@ -26,6 +29,15 @@ namespace System.Text
         /// Gets the line at the current position of the enumerator.
         /// </summary>
         public ReadOnlySpan<char> Current => _current;
+
+        /// <inheritdoc/>
+        object IEnumerator.Current => throw new NotSupportedException();
+
+        /// <inheritdoc/>
+        void IEnumerator.Reset() => throw new NotSupportedException();
+
+        /// <inheritdoc/>
+        void IDisposable.Dispose() { }
 
         /// <summary>
         /// Returns this instance as an enumerator.

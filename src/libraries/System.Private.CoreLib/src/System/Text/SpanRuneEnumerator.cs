@@ -1,11 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+
 namespace System.Text
 {
     // An enumerator for retrieving System.Text.Rune instances from a ROS<char>.
     // Methods are pattern-matched by compiler to allow using foreach pattern.
-    public ref struct SpanRuneEnumerator
+    public ref struct SpanRuneEnumerator : IEnumerator<Rune>
     {
         private ReadOnlySpan<char> _remaining;
         private Rune _current;
@@ -17,6 +20,15 @@ namespace System.Text
         }
 
         public Rune Current => _current;
+
+        /// <inheritdoc/>
+        object IEnumerator.Current => Current;
+
+        /// <inheritdoc/>
+        void IEnumerator.Reset() => throw new NotSupportedException();
+
+        /// <inheritdoc/>
+        void IDisposable.Dispose() { }
 
         public SpanRuneEnumerator GetEnumerator() => this;
 

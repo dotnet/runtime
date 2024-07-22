@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -449,7 +451,7 @@ namespace System.Numerics.Tensors
         public Enumerator GetEnumerator() => new Enumerator(this);
 
         /// <summary>Enumerates the elements of a <see cref="ReadOnlyTensorSpan{T}"/>.</summary>
-        public ref struct Enumerator
+        public ref struct Enumerator : IEnumerator<T>
         {
             /// <summary>The span being enumerated.</summary>
             private readonly ReadOnlyTensorSpan<T> _span;
@@ -487,6 +489,23 @@ namespace System.Numerics.Tensors
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get => ref _span[_curIndexes];
             }
+
+            /// <inheritdoc/>
+            T IEnumerator<T>.Current => Current;
+
+            /// <inheritdoc/>
+            object? IEnumerator.Current => Current;
+
+            /// <inheritdoc/>
+            void IEnumerator.Reset()
+            {
+                _items = -1;
+                _curIndexes = new nint[_span.Rank];
+                _curIndexes[_span.Rank - 1] = -1;
+            }
+
+            /// <inheritdoc/>
+            void IDisposable.Dispose() { }
         }
 
         /// <summary>
