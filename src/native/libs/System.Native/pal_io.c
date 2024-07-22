@@ -376,7 +376,8 @@ int32_t SystemNative_MemfdSupported(void)
     struct utsname uts;
     int32_t major, minor;
 
-    // memfd_create is only known to work properly on kernel version > 3.17 and throws SIGSEGV instead of ENOTSUP
+    // memfd_create is known to only work properly on kernel version > 3.17.
+    // On earlier versions, it may raise SIGSEGV instead of returning ENOTSUP.
     if (uname(&uts) == 0 && sscanf(uts.release, "%d.%d", &major, &minor) == 2 && (major < 3 || (major == 3 && minor < 17)))
     {
         return 0;
