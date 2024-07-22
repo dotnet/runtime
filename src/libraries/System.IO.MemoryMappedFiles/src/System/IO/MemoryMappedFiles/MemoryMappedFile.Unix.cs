@@ -162,11 +162,10 @@ namespace System.IO.MemoryMappedFiles
 
         private static SafeFileHandle CreateSharedBackingObject(Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            SafeFileHandle? handle = Interop.Sys.IsMemfdSupported ?
+            return Interop.Sys.IsMemfdSupported ?
                 CreateSharedBackingObjectUsingMemoryMemfdCreate(protections, capacity, inheritability) :
-                CreateSharedBackingObjectUsingMemoryShmOpen(protections, capacity, inheritability);
-
-            return handle ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
+                CreateSharedBackingObjectUsingMemoryShmOpen(protections, capacity, inheritability)
+                    ?? CreateSharedBackingObjectUsingFile(protections, capacity, inheritability);
         }
 
         private static SafeFileHandle? CreateSharedBackingObjectUsingMemoryShmOpen(
@@ -237,7 +236,6 @@ namespace System.IO.MemoryMappedFiles
                 if (inheritability == HandleInheritability.Inheritable &&
                     Interop.Sys.Fcntl.SetFD(fd, 0) == -1)
                 {
-                    fd.Dispose();
                     throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
 
@@ -272,25 +270,17 @@ namespace System.IO.MemoryMappedFiles
             });
         }
 
-        private static SafeFileHandle? CreateSharedBackingObjectUsingMemoryMemfdCreate(
+        private static SafeFileHandle CreateSharedBackingObjectUsingMemoryMemfdCreate(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            string mapName;
-            SafeFileHandle fd;
-
-            do
+            SafeFileHandle fd = Interop.Sys.MemfdCreate(GenerateMapName());
+            if (fd.IsInvalid)
             {
-                mapName = GenerateMapName();
-                fd = Interop.Sys.MemfdCreate(mapName);
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                fd.Dispose();
 
-                if (fd.IsInvalid)
-                {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    fd.Dispose();
-
-                    throw Interop.GetExceptionForIoErrno(errorInfo);
-                }
-            } while (fd.IsInvalid);
+                throw Interop.GetExceptionForIoErrno(errorInfo);
+            }
 
             try
             {
@@ -315,9 +305,7 @@ namespace System.IO.MemoryMappedFiles
                 if (inheritability == HandleInheritability.Inheritable &&
                     Interop.Sys.Fcntl.SetFD(fd, 0) == -1)
                 {
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    fd.Dispose();
-                    throw Interop.GetExceptionForIoErrno(errorInfo);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
 
                 return fd;
