@@ -28,7 +28,7 @@ case "$os" in
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
         elif [ "$ID" = "fedora" ]; then
-            dnf install -y cmake llvm lld lldb clang python curl libicu-devel openssl-devel krb5-devel zlib-devel lttng-ust-devel
+            dnf install -y cmake llvm lld lldb clang python curl libicu-devel openssl-devel krb5-devel lttng-ust-devel
         elif [ "$ID" = "alpine" ]; then
             apk add build-base cmake bash curl clang llvm-dev krb5-dev lttng-ust-dev icu-dev openssl-dev
         else
