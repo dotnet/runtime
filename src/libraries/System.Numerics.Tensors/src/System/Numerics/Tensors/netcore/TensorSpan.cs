@@ -21,6 +21,7 @@ namespace System.Numerics.Tensors
     /// </summary>
     [DebuggerTypeProxy(typeof(TensorSpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
+    [Experimental("SNTEXP0001")]
     public readonly ref struct TensorSpan<T>
     {
         /// <summary>A byref or a native ptr.</summary>
