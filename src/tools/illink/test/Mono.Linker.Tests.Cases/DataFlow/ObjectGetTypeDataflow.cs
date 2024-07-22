@@ -97,6 +97,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class EnumTypeSatisfiesPublicFields
 		{
 			[Kept]
+			[ExpectedWarning ("IL2072")]
 			static void ParameterType (Enum instance)
 			{
 				instance.GetType ().RequiresPublicFields ();
@@ -112,6 +113,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public FieldType (Enum instance) => field = instance;
 
 				[Kept]
+				[ExpectedWarning ("IL2072")]
 				public void Test ()
 				{
 					field.GetType ().RequiresPublicFields ();
@@ -132,6 +134,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
+			[ExpectedWarning ("IL2072")]
 			static void TestReturnType ()
 			{
 				ReturnType ().GetType ().RequiresPublicFields ();
@@ -150,24 +153,58 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class EnumConstraintSatisfiesPublicFields
 		{
 			[Kept]
-			static void ConstrainedParameterType<T> (T instance) where T : Enum
+			static void MethodGenericParameterAsParameter<T> (T instance) where T : Enum
 			{
 				instance.GetType ().RequiresPublicFields ();
 			}
 
 			[Kept]
-			class ConstrainedFieldType<T> where T : Enum
+			class TypeGenericParameterAsField<T> where T : Enum
 			{
 				[Kept]
-				T field;
+				static T field;
 
 				[Kept]
-				public ConstrainedFieldType (T instance) => field = instance;
-
-				[Kept]
-				public void Test ()
+				[ExpectedWarning ("IL2072", Tool.NativeAot, "nativeaot tracks field type as EcmaGenericParameter")]
+				// TODO: the field type is EcmaGenericParameter 'T', which is not a signature variable.
+				// (It's not a def type, so goes to the first case, but doesn't get the enum special handling.)
+				// Why is this EcmaGenericParameter while the method parameter is a signature variable?
+				public static void Test ()
 				{
 					field.GetType ().RequiresPublicFields ();
+				}
+			}
+
+			[Kept]
+			class TypeGenericParameterAsParameter<T> where T : Enum
+			{
+				[Kept]
+				static void Method (T instance)
+				{
+					instance.GetType ().RequiresPublicFields ();
+				}
+
+				[Kept]
+				public static void Test ()
+				{
+					Method (default);
+				}
+			}
+
+			[Kept]
+			class TypeGenericParameterAsReturnType<T> where T : Enum
+			{
+				[Kept]
+				static T Method ()
+				{
+					return default;
+				}
+
+				[Kept]
+				[ExpectedWarning ("IL2072", Tool.NativeAot, "nativeaot tracks return type as EcmaGenericParameter")]
+				public static void Test ()
+				{
+					Method ().GetType ().RequiresPublicFields ();
 				}
 			}
 
@@ -179,23 +216,30 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			static T ConstrainedReturnType<T> () where T : Enum
+			static T MethodGenericParameterAsReturnType<T> () where T : Enum
 			{
 				return default;
 			}
 
 			[Kept]
-			static void TestConstrainedReturnType ()
+			// ILC tracks the static type of the return value as System.Enum,
+			// which doesn't get special handling for GetType.
+			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "nativeaot tracks instantiated return type. analyzer does same.")]
+			// ILLink's handling of this sees a return type of 'T', which
+			// gets the new handling because T has an Enum constraint.
+			static void TestMethodGenericParameterAsReturnType ()
 			{
-				ConstrainedReturnType<Enum> ().GetType ().RequiresPublicFields ();
+				MethodGenericParameterAsReturnType<Enum> ().GetType ().RequiresPublicFields ();
 			}
 
 			[Kept]
 			public static void Test ()
 			{
-				ConstrainedParameterType<Enum> (EnumType.Value);
-				new ConstrainedFieldType<Enum> (EnumType.Value).Test ();
-				TestConstrainedReturnType ();
+				TypeGenericParameterAsParameter<Enum>.Test ();
+				TypeGenericParameterAsReturnType<Enum>.Test ();
+				TypeGenericParameterAsField<Enum>.Test ();
+				MethodGenericParameterAsParameter<Enum> (EnumType.Value);
+				TestMethodGenericParameterAsReturnType ();
 			}
 		}
 	}
