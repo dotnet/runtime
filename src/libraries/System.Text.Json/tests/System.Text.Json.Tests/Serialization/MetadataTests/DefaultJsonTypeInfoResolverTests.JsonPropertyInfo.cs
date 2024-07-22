@@ -908,6 +908,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(JsonIgnoreCondition.Never, ModifyJsonIgnore.DontModify)]
         [InlineData(JsonIgnoreCondition.WhenWritingDefault, ModifyJsonIgnore.NeverSerialize)]
         [InlineData(JsonIgnoreCondition.WhenWritingNull, ModifyJsonIgnore.NeverSerialize)]
+        [InlineData(JsonIgnoreCondition.WhenWriting, ModifyJsonIgnore.NeverSerialize)]
         [InlineData(JsonIgnoreCondition.Never, ModifyJsonIgnore.NeverSerialize)]
         [InlineData(JsonIgnoreCondition.WhenWritingDefault, ModifyJsonIgnore.AlwaysSerialize)]
         [InlineData(JsonIgnoreCondition.WhenWritingNull, ModifyJsonIgnore.AlwaysSerialize)]
