@@ -65,28 +65,11 @@ namespace StressLogAnalyzer
 
         private readonly ConcurrentDictionary<ulong, (bool isInteresting, WellKnownString? wellKnown)> _addressCache = [];
 
-        private unsafe string ReadZeroTerminatedString(TargetPointer pointer, int maxLength)
-        {
-            StringBuilder sb = new();
-            for (byte ch = target.Read<byte>(pointer);
-                ch != 0;
-                ch = target.Read<byte>(pointer = new TargetPointer((ulong)pointer + 1)))
-            {
-                if (sb.Length > maxLength)
-                {
-                    break;
-                }
-
-                sb.Append((char)ch);
-            }
-            return sb.ToString();
-        }
-
         public bool IsInteresting(TargetPointer formatStringPointer, out WellKnownString? wellKnownStringKind)
         {
             (bool isInteresting, WellKnownString? wellKnown) = _addressCache.GetOrAdd(formatStringPointer.Value, (address) =>
             {
-                string formatString = ReadZeroTerminatedString(formatStringPointer, 1024);
+                string formatString = target.ReadZeroTerminatedAsciiString(formatStringPointer, 1024);
                 WellKnownString? wellKnownId = null;
                 bool defaultInteresting = false;
                 if (_knownStrings.TryGetValue(formatString, out WellKnownString wellKnown))
@@ -120,7 +103,7 @@ namespace StressLogAnalyzer
 
         public bool IsWellKnown(TargetPointer formatStringPointer, out WellKnownString wellKnownString)
         {
-            return _knownStrings.TryGetValue(ReadZeroTerminatedString(formatStringPointer, 1024), out wellKnownString);
+            return _knownStrings.TryGetValue(target.ReadZeroTerminatedAsciiString(formatStringPointer, 1024), out wellKnownString);
         }
     }
 }

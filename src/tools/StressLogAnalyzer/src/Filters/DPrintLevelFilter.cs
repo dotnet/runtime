@@ -9,7 +9,7 @@ internal sealed class DPrintLevelFilter(IMessageFilter innerFilter, IReadOnlyLis
 {
     private static uint GcLogLevel(uint facility)
     {
-        if ((facility & ((uint)LogFacility.LF_ALWAYS | 0xfffeu | (uint)LogFacility.LF_GC)) == (uint)(LogFacility.LF_ALWAYS | LogFacility.LF_GC))
+        if ((facility & ((uint)LogFacility.ALWAYS | 0xfffeu | (uint)LogFacility.GC)) == (uint)(LogFacility.ALWAYS | LogFacility.GC))
         {
             return (facility >> 16) & 0x7fff;
         }

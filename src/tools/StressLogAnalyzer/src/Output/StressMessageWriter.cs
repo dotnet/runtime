@@ -16,52 +16,35 @@ internal sealed class StressMessageWriter(IThreadNameOutput threadOutput, TimeTr
     public async Task OutputMessageAsync(ThreadStressLogData thread, StressMsgData message)
     {
         await output.WriteAsync(threadOutput.GetThreadName(thread.ThreadId)).ConfigureAwait(false);
-        await output.WriteAsync($" {timeTracker.TicksToSecondsFromStart(message.Timestamp):0000.000000000} : ").ConfigureAwait(false);
+        await output.WriteAsync($"  {timeTracker.TicksToSecondsFromStart(message.Timestamp):####.000000000} : ").ConfigureAwait(false);
 
-        await WriteFacility((LogFacility)message.Facility).ConfigureAwait(false);
+        await output.WriteAsync(GetFacility((LogFacility)message.Facility).PadRight(20)).ConfigureAwait(false);
 
         await output.WriteAsync($" ").ConfigureAwait(false);
 
         if (writeFormatString)
         {
-            string format = ReadZeroTerminatedString(message.FormatString, 256);
+            string format = target.ReadZeroTerminatedAsciiString(message.FormatString, 1024);
             await output.WriteAsync($"***|\"{format}\"|*** ").ConfigureAwait(false);
         }
 
         await output.WriteLineAsync(formatter.GetFormattedMessage(message)).ConfigureAwait(false);
     }
 
-    private async Task WriteFacility(LogFacility facility)
+    private static string GetFacility(LogFacility facility)
     {
         if (facility == unchecked((LogFacility)(-1)))
         {
-            await output.WriteAsync("LF_ALL").ConfigureAwait(false);
+            return "`LF_ALL`";
         }
-        else if ((facility & (LogFacility.LF_ALWAYS | (LogFacility)0xfffe | LogFacility.LF_GC)) == (LogFacility.LF_ALWAYS | LogFacility.LF_GC))
+        else if ((facility & (LogFacility.ALWAYS | (LogFacility)0xfffe | LogFacility.GC)) == (LogFacility.ALWAYS | LogFacility.GC))
         {
             // specially encoded GC message including dprintf level
-            await output.WriteAsync($"`GC l={((uint)facility >> 16) & 0x7fff}`").ConfigureAwait(false);
+            return $"`GC l={((uint)facility >> 16) & 0x7fff}`";
         }
         else
         {
-            await output.WriteAsync(facility.ToString()).ConfigureAwait(false);
+            return $"`{facility}`";
         }
-    }
-
-    private unsafe string ReadZeroTerminatedString(TargetPointer pointer, int maxLength)
-    {
-        StringBuilder sb = new();
-        for (byte ch = target.Read<byte>(pointer);
-        ch != 0;
-            ch = target.Read<byte>(pointer = new TargetPointer((ulong)pointer + 1)))
-        {
-            if (sb.Length > maxLength)
-            {
-                break;
-            }
-
-            sb.Append((char)ch);
-        }
-        return sb.ToString();
     }
 }

@@ -90,7 +90,7 @@ public sealed class StressMessageFormatter
         }
         catch (InvalidOperationException)
         {
-            builder.Append($"(#Could not read address of string at 0x{ptr:x}#)");
+            builder.Append($"(#Could not read address of string at 0x{ptr.Value:x}#)");
         }
     }
 
@@ -102,7 +102,7 @@ public sealed class StressMessageFormatter
         }
         catch (InvalidOperationException)
         {
-            builder.Append($"(#Could not read address of string at 0x{ptr:x}#)");
+            builder.Append($"(#Could not read address of string at 0x{ptr.Value:x}#)");
         }
     }
 

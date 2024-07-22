@@ -17,10 +17,10 @@ internal sealed class FacilityMessageFilter(IMessageFilter inner, ulong ignoreFa
         // Filter out messages by log facility immediately.
         if (ignoreFacility != 0)
         {
-            if ((message.Facility & ((uint)LogFacility.LF_ALWAYS | 0xfffe | (uint)LogFacility.LF_GC)) == ((uint)LogFacility.LF_ALWAYS | (uint)LogFacility.LF_GC))
+            if ((message.Facility & ((uint)LogFacility.ALWAYS | 0xfffe | (uint)LogFacility.GC)) == ((uint)LogFacility.ALWAYS | (uint)LogFacility.GC))
             {
                 // specially encoded GC message including dprintf level
-                if ((ignoreFacility & (uint)LogFacility.LF_GC) != 0)
+                if ((ignoreFacility & (uint)LogFacility.GC) != 0)
                 {
                     return false;
                 }

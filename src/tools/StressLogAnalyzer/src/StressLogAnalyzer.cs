@@ -122,7 +122,7 @@ internal sealed class StressLogAnalyzer(
         messages = messages.Where(message => timeTracker.IsInInterestingGCTimeRange(message.message.Timestamp));
 
         // Order by timestamp and then by thread id
-        messages = messages.OrderBy(message => (message.message.Timestamp, message.thread.ThreadId));
+        messages = messages.OrderByDescending(message => (message.message.Timestamp, message.thread.ThreadId));
 
         foreach (var message in messages)
         {
