@@ -58,7 +58,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(innerException);
 
-            _innerExceptions = new[] { innerException };
+            _innerExceptions = [innerException];
         }
 
         /// <summary>

@@ -1087,8 +1087,9 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         // In "fgMorphMultiRegStructArg" we will expand the arg into a GT_FIELD_LIST with multiple indirections, so
         // here we consider spilling it into a local. We also need to spill it in case we have a node that we do not
         // currently handle in multi-reg morphing.
+        // This logic can be skipped when the arg is already in the right multireg arg shape.
         //
-        if (varTypeIsStruct(argx) && !arg.m_needTmp)
+        if (varTypeIsStruct(argx) && !arg.m_needTmp && !argx->OperIs(GT_FIELD_LIST))
         {
             if ((arg.AbiInfo.NumRegs > 0) && ((arg.AbiInfo.NumRegs + arg.AbiInfo.GetStackSlotsNumber()) > 1))
             {
@@ -1650,36 +1651,64 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             noway_assert(argx->gtType != TYP_STRUCT);
 #endif
 
-            unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
-
-            setupArg = comp->gtNewTempStore(tmpVarNum, argx);
-
-            LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
-            var_types  lclVarType = genActualType(argx->gtType);
-            var_types  scalarType = TYP_UNKNOWN;
-
-            if (setupArg->OperIsCopyBlkOp())
+            if (argx->OperIs(GT_FIELD_LIST))
             {
-                setupArg = comp->fgMorphCopyBlock(setupArg);
-#if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-                if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.ArgType != TYP_STRUCT))
+                GenTreeFieldList* fieldList = argx->AsFieldList();
+                fieldList->gtFlags &= ~GTF_ALL_EFFECT;
+                for (GenTreeFieldList::Use& use : fieldList->Uses())
                 {
-                    scalarType = arg.AbiInfo.ArgType;
-                }
-#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            }
+                    unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
+                    GenTree* store     = comp->gtNewTempStore(tmpVarNum, use.GetNode());
 
-            // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
-            // 8)
-            if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
-            {
-                // Create a GT_LCL_FLD using the wider type to go to the late argument list
-                defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+                    if (setupArg == nullptr)
+                    {
+                        setupArg = store;
+                    }
+                    else
+                    {
+                        setupArg = comp->gtNewOperNode(GT_COMMA, TYP_VOID, setupArg, store);
+                    }
+
+                    use.SetNode(comp->gtNewLclvNode(tmpVarNum, genActualType(use.GetNode())));
+                    fieldList->AddAllEffectsFlags(use.GetNode());
+                }
+
+                // Keep the field list in the late list
+                defArg = fieldList;
             }
             else
             {
-                // Create a copy of the temp to go to the late argument list
-                defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
+                unsigned tmpVarNum = comp->lvaGrabTemp(true DEBUGARG("argument with side effect"));
+
+                setupArg = comp->gtNewTempStore(tmpVarNum, argx);
+
+                LclVarDsc* varDsc     = comp->lvaGetDesc(tmpVarNum);
+                var_types  lclVarType = genActualType(argx->gtType);
+                var_types  scalarType = TYP_UNKNOWN;
+
+                if (setupArg->OperIsCopyBlkOp())
+                {
+                    setupArg = comp->fgMorphCopyBlock(setupArg);
+#if defined(TARGET_ARMARCH) || defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                    if ((lclVarType == TYP_STRUCT) && (arg.AbiInfo.ArgType != TYP_STRUCT))
+                    {
+                        scalarType = arg.AbiInfo.ArgType;
+                    }
+#endif // TARGET_ARMARCH || defined (UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+                }
+
+                // scalarType can be set to a wider type for ARM or unix amd64 architectures: (3 => 4)  or (5,6,7 =>
+                // 8)
+                if ((scalarType != TYP_UNKNOWN) && (scalarType != lclVarType))
+                {
+                    // Create a GT_LCL_FLD using the wider type to go to the late argument list
+                    defArg = comp->gtNewLclFldNode(tmpVarNum, scalarType, 0);
+                }
+                else
+                {
+                    // Create a copy of the temp to go to the late argument list
+                    defArg = comp->gtNewLclvNode(tmpVarNum, lclVarType);
+                }
             }
 
 #ifdef DEBUG
@@ -2270,7 +2299,54 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     }
 #endif
 
-    m_abiInformationDetermined = true;
+    m_abiInformationDetermined    = true;
+    m_newAbiInformationDetermined = true;
+}
+
+//------------------------------------------------------------------------
+// DetermineNewABIInfo:
+//   Determine the new ABI info for all call args without making any IR
+//   changes.
+//
+// Parameters:
+//   comp - The compiler object.
+//   call - The call to which the CallArgs belongs.
+//
+void CallArgs::DetermineNewABIInfo(Compiler* comp, GenTreeCall* call)
+{
+    ClassifierInfo info;
+    info.CallConv = call->GetUnmanagedCallConv();
+    // X86 tailcall helper is considered varargs, but not for ABI classification purposes.
+    info.IsVarArgs  = call->IsVarargs() && !call->IsTailCallViaJitHelper();
+    info.HasThis    = call->gtArgs.HasThisPointer();
+    info.HasRetBuff = call->gtArgs.HasRetBuffer();
+    PlatformClassifier classifier(info);
+
+    for (CallArg& arg : Args())
+    {
+        const var_types            argSigType  = arg.GetSignatureType();
+        const CORINFO_CLASS_HANDLE argSigClass = arg.GetSignatureClassHandle();
+        ClassLayout* argLayout = argSigClass == NO_CLASS_HANDLE ? nullptr : comp->typGetObjLayout(argSigClass);
+
+        // Some well known args have custom register assignment.
+        // These should not affect the placement of any other args or stack space required.
+        // Example: on AMD64 R10 and R11 are used for indirect VSD (generic interface) and cookie calls.
+        // TODO-Cleanup: Integrate this into the new style ABI classifiers.
+        regNumber nonStdRegNum = GetCustomRegister(comp, call->GetUnmanagedCallConv(), arg.GetWellKnownArg());
+
+        if (nonStdRegNum == REG_NA)
+        {
+            arg.NewAbiInfo = classifier.Classify(comp, argSigType, argLayout, arg.GetWellKnownArg());
+        }
+        else
+        {
+            ABIPassingSegment segment = ABIPassingSegment::InRegister(nonStdRegNum, 0, TARGET_POINTER_SIZE);
+            arg.NewAbiInfo            = ABIPassingInformation::FromSegment(comp, segment);
+        }
+    }
+
+    m_argsStackSize               = classifier.StackSize();
+    m_newAbiInformationDetermined = true;
 }
 
 //------------------------------------------------------------------------
@@ -2436,10 +2512,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         GenTree* argObj         = argx->gtEffectiveVal();
         bool     makeOutArgCopy = false;
 
-        if (isStructArg && !reMorphing)
+        if (isStructArg && !reMorphing && !argObj->OperIs(GT_FIELD_LIST))
         {
             unsigned originalSize;
-            if (argObj->TypeGet() == TYP_STRUCT)
+            if (argObj->TypeIs(TYP_STRUCT))
             {
                 assert(argObj->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 originalSize = argObj->GetLayout(this)->GetSize();
@@ -2763,12 +2839,12 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
     {
         if ((arg.AbiInfo.ArgType == TYP_STRUCT) && !arg.AbiInfo.PassedByRef)
         {
+            foundStructArg = true;
             GenTree*& argx = (arg.GetLateNode() != nullptr) ? arg.LateNodeRef() : arg.EarlyNodeRef();
 
             if (!argx->OperIs(GT_FIELD_LIST))
             {
-                argx           = fgMorphMultiregStructArg(&arg);
-                foundStructArg = true;
+                argx = fgMorphMultiregStructArg(&arg);
             }
         }
     }
@@ -7952,10 +8028,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
             GenTree* oldTree = tree;
 
-            if (opts.OptimizationEnabled())
-            {
-                tree = gtFoldExpr(tree);
-            }
+            tree = gtFoldExpr(tree);
 
             // Were we able to fold it ?
             // Note that gtFoldExpr may return a non-leaf even if successful
@@ -8254,11 +8327,8 @@ DONE_MORPHING_CHILDREN:
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
     }
 
-    if (opts.OptimizationEnabled())
-    {
-        // Try to fold it, maybe we get lucky,
-        tree = gtFoldExpr(tree);
-    }
+    // Try to fold it, maybe we get lucky,
+    tree = gtFoldExpr(tree);
 
     if (oldTree != tree)
     {
@@ -8679,9 +8749,17 @@ DONE_MORPHING_CHILDREN:
 
         case GT_IND:
         {
-            if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
+            if (op1->IsIconHandle())
             {
-                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+                // All indirections with (handle) constant addresses are
+                // nonfaulting.
+                tree->gtFlags |= GTF_IND_NONFAULTING;
+
+                // We know some handle types always point to invariant data.
+                if (GenTree::HandleKindDataIsInvariant(op1->GetIconHandleFlag()))
+                {
+                    tree->gtFlags |= GTF_IND_INVARIANT;
+                }
             }
 
             GenTree* optimizedTree = fgMorphFinalizeIndir(tree->AsIndir());
@@ -12276,11 +12354,8 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags |= tree->AsConditional()->gtOp1->gtFlags & GTF_ALL_EFFECT;
             tree->gtFlags |= tree->AsConditional()->gtOp2->gtFlags & GTF_ALL_EFFECT;
 
-            if (opts.OptimizationEnabled())
-            {
-                // Try to fold away any constants etc.
-                tree = gtFoldExpr(tree);
-            }
+            // Try to fold away any constants etc.
+            tree = gtFoldExpr(tree);
 
             break;
 

@@ -317,10 +317,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 result.Should().Fail()
                     .And.HaveStdErrContaining($"https://aka.ms/dotnet-core-applaunch?{expectedUrlQuery}")
                     .And.HaveStdErrContaining($"&rid={TestContext.BuildRID}")
-                    .And.HaveStdErrContaining(expectedStdErr);
-
-                // Some Unix systems will have 8 bit exit codes.
-                Assert.True(result.ExitCode == expectedErrorCode || result.ExitCode == (expectedErrorCode & 0xFF));
+                    .And.HaveStdErrContaining(expectedStdErr)
+                    .And.ExitWith(expectedErrorCode);
             }
         }
 
