@@ -2036,31 +2036,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public void JsonIgnoreCondition_WhenWriting()
-        {
-            var json = JsonSerializer.Serialize(new JsonIgnoreCondition_WhenReadingWritingTestModel{ Age = 10, Name="Mike" });
-            Assert.Equal("""{"Age":10}""", json);
-        }
-
-        [Fact]
-        public void JsonIgnoreCondition_WhenReading()
-        {
-            var json = """{"Age":10, "Name":"Mike"}""";
-            var model = JsonSerializer.Deserialize<JsonIgnoreCondition_WhenReadingWritingTestModel>(json);
-            Assert.Equal("Mike", model.Name);
-            Assert.Equal(0, model.Age);
-        }
-
-        public class JsonIgnoreCondition_WhenReadingWritingTestModel
-        {  
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
-            public int Age { get; set; }
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
-            public string Name { get; set; }
-        }
-
-
-        [Fact]
         public async Task ClassWithComplexObjectsUsingIgnoreWhenWritingDefaultAttribute()
         {
             string json = @"{""Class"":{""MyInt16"":18}, ""Dictionary"":null}";
@@ -2188,6 +2163,30 @@ namespace System.Text.Json.Serialization.Tests
 
             json = await Serializer.SerializeWrapper(new ClassWithReadOnlyStringField_IgnoreWhenWritingDefault(null), options);
             Assert.Equal(@"{}", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_WhenWriting()
+        {
+            var json = await Serializer.SerializeWrapper(new JsonIgnoreCondition_WhenReadingWritingTestModel{ Age = 10, Name = "Mike" });
+            Assert.Equal("""{"Age":10}""", json);
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_WhenReading()
+        {
+            var json = """{"Age":10, "Name":"Mike"}""";
+            var model = await Serializer.DeserializeWrapper<JsonIgnoreCondition_WhenReadingWritingTestModel>(json);
+            Assert.Equal("Mike", model.Name);
+            Assert.Equal(0, model.Age);
+        }
+
+        public class JsonIgnoreCondition_WhenReadingWritingTestModel
+        {  
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenReading)]
+            public int Age { get; set; }
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWriting)]
+            public string? Name { get; set; }
         }
 
         public class ClassWithReadOnlyStringProperty
