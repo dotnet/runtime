@@ -10427,9 +10427,9 @@ regMaskTP emitter::emitGetGCRegsKilledByNoGCCall(CorInfoHelpFunc helper)
 //    of the last instruction in the region makes GC safe again.
 //    In particular - once the IP is on the first instruction, but not executed it yet,
 //    it is still safe to do GC.
-//    The only special case is when NoGC region is used for prologs.
-//    In such case the GC info could be incorrect until the prolog completes, so the first
-//    instruction cannot have GC.
+//    The only special case is when NoGC region is used for prologs/epilogs.
+//    In such case the GC info could be incorrect until the prolog completes and epilogs
+//    may have unwindability restrictions, so the first instruction cannot have GC.
 
 void emitter::emitDisableGC()
 {
