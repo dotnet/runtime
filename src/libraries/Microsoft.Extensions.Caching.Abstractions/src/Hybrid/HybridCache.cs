@@ -28,7 +28,6 @@ public abstract class HybridCache
     /// <param name="tags">The tags to associate with this cache item.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
     /// <returns>The data, either from cache or the underlying data service.</returns>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Delegate differences make this unambiguous")]
     public abstract ValueTask<T> GetOrCreateAsync<TState, T>(string key, TState state, Func<TState, CancellationToken, ValueTask<T>> factory,
         HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default);
 
@@ -42,7 +41,6 @@ public abstract class HybridCache
     /// <param name="tags">The tags to associate with this cache item.</param>
     /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
     /// <returns>The data, either from cache or the underlying data service.</returns>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Delegate differences make this unambiguous")]
     public ValueTask<T> GetOrCreateAsync<T>(string key, Func<CancellationToken, ValueTask<T>> factory,
         HybridCacheEntryOptions? options = null, IEnumerable<string>? tags = null, CancellationToken cancellationToken = default)
         => GetOrCreateAsync(key, factory, WrappedCallbackCache<T>.Instance, options, tags, cancellationToken);
@@ -67,14 +65,12 @@ public abstract class HybridCache
     /// <summary>
     /// Asynchronously removes the value associated with the key if it exists.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
     public abstract ValueTask RemoveAsync(string key, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Asynchronously removes the value associated with the key if it exists.
     /// </summary>
     /// <remarks>Implementors should treat <c>null</c> as empty</remarks>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
     public virtual ValueTask RemoveAsync(IEnumerable<string> keys, CancellationToken cancellationToken = default)
     {
         return keys switch
@@ -99,7 +95,6 @@ public abstract class HybridCache
     /// Asynchronously removes all values associated with the specified tags.
     /// </summary>
     /// <remarks>Implementors should treat <c>null</c> as empty</remarks>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
     public virtual ValueTask RemoveByTagAsync(IEnumerable<string> tags, CancellationToken cancellationToken = default)
     {
         return tags switch
@@ -123,6 +118,5 @@ public abstract class HybridCache
     /// <summary>
     /// Asynchronously removes all values associated with the specified tag.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "Not ambiguous in context")]
     public abstract ValueTask RemoveByTagAsync(string tag, CancellationToken cancellationToken = default);
 }
