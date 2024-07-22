@@ -727,16 +727,22 @@ namespace Wasm.Build.Tests
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.ComTypes;
 
-                public static int Main(string[] args)
+                public class Test
                 {
-                    var s = new STGMEDIUM();
-                    ReleaseStgMedium(ref s);
-                    return 42;
+                    public static int Main(string[] args)
+                    {
+                        var s = new STGMEDIUM();
+                        ReleaseStgMedium(ref s);
+                        return 42;
+                    }
+
+                    [DllImport(""ole32.dll"")]
+                    internal static extern void ReleaseStgMedium(ref STGMEDIUM medium);
                 }
 
-                [DllImport(""ole32.dll"")]
-                internal static extern void ReleaseStgMedium(ref STGMEDIUM medium);
             ";
+
+            buildArgs = ExpandBuildArgs(buildArgs);
 
             (string libraryDir, string output) = BuildProject(buildArgs,
                                         id: id,
@@ -746,7 +752,6 @@ namespace Wasm.Build.Tests
                                                 File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
                                             },
                                             Publish: buildArgs.AOT,
-                                            // Verbosity: "diagnostic",
                                             DotnetWasmFromRuntimePack: true));
 
             Assert.Contains("Generated app bundle at " + libraryDir, output);
