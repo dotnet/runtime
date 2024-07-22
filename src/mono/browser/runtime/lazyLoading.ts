@@ -7,7 +7,6 @@ import { AssetEntry } from "./types";
 
 export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boolean> {
     const resources = loaderHelpers.config.resources!;
-    const originalAssemblyName = assemblyNameToLoad;
     const lazyAssemblies = resources.lazyAssembly;
     if (!lazyAssemblies) {
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
@@ -52,7 +51,7 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
         return false;
     }
 
-    let pdbNameToLoad = changeExtension(originalAssemblyName, ".pdb");
+    let pdbNameToLoad = assemblyNameWithoutExtension + ".pdb";
     let shouldLoadPdb = false;
     if (loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
         shouldLoadPdb = Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
@@ -94,13 +93,4 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
 
     load_lazy_assembly(dll, pdb);
     return true;
-}
-
-function changeExtension (filename: string, newExtensionWithLeadingDot: string) {
-    const lastDotIndex = filename.lastIndexOf(".");
-    if (lastDotIndex < 0) {
-        throw new Error(`No extension to replace in '${filename}'`);
-    }
-
-    return filename.substring(0, lastDotIndex) + newExtensionWithLeadingDot;
 }
