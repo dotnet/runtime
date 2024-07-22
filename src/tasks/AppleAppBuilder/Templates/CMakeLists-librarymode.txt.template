@@ -62,11 +62,14 @@ target_link_libraries(
     PRIVATE
     "-framework Foundation"
     "-framework Security"
+    "-framework CryptoKit"
     "-framework UIKit"
     "-lz"
     "-lc++"
     "-liconv"
     "-licucore"
+    "-lswiftCore"
+    "-lswiftFoundation"
     %NativeLibrariesToLink%
     %APP_LINK_LIBRARIES%
 )
@@ -74,5 +77,5 @@ target_link_libraries(
 set_target_properties(
     %ProjectName% 
     PROPERTIES LINK_FLAGS
-    %EXTRA_LINKER_ARGS%
+    %EXTRA_LINKER_ARGS% -L/usr/lib/swift
 )

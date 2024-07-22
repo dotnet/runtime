@@ -43,11 +43,14 @@ elseif(TARGETS_APPLE_MOBILE)
     set(MOBILE_SYSTEM_LIBS
         "-framework Foundation"
         "-framework Security"
+        "-framework CryptoKit"
         "-framework UIKit"
         "-lz"
         "-lc++"
         "-licucore"
         "-liconv"
+        "-lswiftCore"
+        "-lswiftFoundation"
     )
     add_definitions(-DHOST_APPLE_MOBILE=1)
     add_definitions(-fPIC)
@@ -63,3 +66,11 @@ target_link_libraries(
     aot_library
     ${MOBILE_SYSTEM_LIBS}
 %LIBRARY_LINKER_ARGS%)
+
+if(TARGETS_APPLE_MOBILE)
+    set_target_properties(
+        %LIBRARY_NAME% 
+        PROPERTIES LINK_FLAGS
+        -L/usr/lib/swift
+    )
+endif()
