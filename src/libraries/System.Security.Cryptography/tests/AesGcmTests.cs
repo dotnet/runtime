@@ -987,11 +987,6 @@ namespace System.Security.Cryptography.Tests
         {
             bool expectedIsSupported = !PlatformDetection.IsBrowser;
 
-            if (PlatformDetection.IsOSX || PlatformDetection.UsesMobileAppleCrypto)
-            {
-                expectedIsSupported = true;
-            }
-
             Assert.Equal(expectedIsSupported, AesGcm.IsSupported);
         }
     }
