@@ -13340,10 +13340,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
@@ -13406,7 +13403,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
             // special operator that can use only one constant
             // to fold - e.g. booleans
 
-            if (tier0opts && opts.OptimizationDisabled())
+            if (opts.OptimizationDisabled())
             {
                 // Too heavy for tier0
                 return tree;
@@ -15197,10 +15194,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2IfPresent();
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
