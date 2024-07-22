@@ -127,13 +127,17 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), nameof(d));
             }
 
-            Unsafe.SkipInit(out this);
-
             _a = a;
             _b = b;
             _c = c;
-
-            Unsafe.CopyBlockUnaligned(ref _d, ref MemoryMarshal.GetArrayDataReference(d), 8);
+            _d = d[0];
+            _e = d[1];
+            _f = d[2];
+            _g = d[3];
+            _h = d[4];
+            _i = d[5];
+            _j = d[6];
+            _k = d[7];
         }
 
         // Creates a new GUID initialized to the value represented by the
