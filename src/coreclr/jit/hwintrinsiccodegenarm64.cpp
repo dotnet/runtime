@@ -2092,7 +2092,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         // Index is sign or zero extended to 64bits, then multiplied.
                         assert(baseSize == EA_4BYTE);
                         opt  = varTypeIsUnsigned(node->GetAuxiliaryType()) ? INS_OPTS_SCALABLE_S_UXTW
-                                                                            : INS_OPTS_SCALABLE_S_SXTW;
+                                                                           : INS_OPTS_SCALABLE_S_SXTW;
                         sopt = isLoadingBytes ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_MOD_N;
                     }
 
