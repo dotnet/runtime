@@ -1333,11 +1333,13 @@ class StrengthReductionContext
     SimplificationAssumptions m_simplAssumptions;
     ArrayStack<CursorInfo>    m_cursors1;
     ArrayStack<CursorInfo>    m_cursors2;
+    ArrayStack<CursorInfo>    m_storesToRemove;
 
     void        InitializeSimplificationAssumptions();
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
     bool        IsUseExpectedToBeRemoved(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree);
     void        AdvanceCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* nextCursors);
+    void        ExpandStoredCursors(ArrayStack<CursorInfo>* cursors, ArrayStack<CursorInfo>* otherCursors);
     bool        CheckAdvancedCursors(ArrayStack<CursorInfo>* cursors, ScevAddRec** nextIV);
     bool        StaysWithinManagedObject(ArrayStack<CursorInfo>* cursors, ScevAddRec* addRec);
     bool        TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorInfo>* cursors, ScevAddRec* iv);
@@ -1360,6 +1362,7 @@ public:
         , m_backEdgeBounds(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors1(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors2(comp->getAllocator(CMK_LoopIVOpts))
+        , m_storesToRemove(comp->getAllocator(CMK_LoopIVOpts))
     {
     }
 
@@ -1465,6 +1468,9 @@ bool StrengthReductionContext::TryStrengthReduce()
             {
                 break;
             }
+
+            ExpandStoredCursors(nextCursors, cursors);
+
             assert(nextIV != nullptr);
 
             if (varTypeIsGC(nextIV->Type) && !StaysWithinManagedObject(nextCursors, nextIV))
@@ -1632,6 +1638,8 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
         return false;
     }
 
+    ExpandStoredCursors(&m_cursors1, &m_cursors2);
+
     JITDUMP("  Found %d cursors using primary IV V%02u\n", m_cursors1.Height(), primaryIVLcl->GetLclNum());
 
 #ifdef DEBUG
@@ -1795,6 +1803,113 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 }
 
 //------------------------------------------------------------------------
+// ExpandStoredCursors: For every cursor that is the source to a store, expand
+// the sets of cursors to contain the destination local's uses if possible.
+//
+// Parameters:
+//   cursors      - [in, out] List of current cursors to expand.
+//   otherCursors - [in, out] List of next cursors.
+//
+void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* cursors,
+                                                   ArrayStack<CursorInfo>* otherCursors)
+{
+    for (int i = 0; i < cursors->Height(); i++)
+    {
+        while (true)
+        {
+            CursorInfo* cursor = &cursors->BottomRef(i);
+            GenTree*    cur    = cursor->Tree;
+
+            GenTree* parent = cur->gtGetParent(nullptr);
+            if ((parent == nullptr) || (parent->OperIs(GT_COMMA) && (parent->gtGetOp1() == cur)))
+            {
+                break;
+            }
+
+            if (parent->OperIs(GT_STORE_LCL_VAR) && (parent->AsLclVarCommon()->Data() == cur) &&
+                ((cur->gtFlags & GTF_SIDE_EFFECT) == 0))
+            {
+                GenTreeLclVarCommon* storedLcl = parent->AsLclVarCommon();
+                if (storedLcl->HasSsaIdentity() &&
+                    !m_comp->optPrimaryIVHasNonLoopUses(storedLcl->GetLclNum(), m_loop, &m_loopLocals))
+                {
+                    int         numCreated  = 0;
+                    ScevAddRec* cursorIV    = cursor->IV;
+                    BasicBlock* cursorBlock = cursor->Block;
+                    Statement*  cursorStmt  = cursor->Stmt;
+                    cursor = nullptr; // Cannot use this below since we may add elements to "cursors" here.
+
+                    auto createExtraCursor = [=, &numCreated](BasicBlock* block, Statement* stmt,
+                                                              GenTreeLclVarCommon* use) {
+                        if (use == parent)
+                        {
+                            return true;
+                        }
+
+                        if (!use->OperIs(GT_LCL_VAR) || (use->GetSsaNum() != storedLcl->GetSsaNum()))
+                        {
+                            return false;
+                        }
+
+                        Scev* iv = m_scevContext.Analyze(block, use);
+                        if (iv == nullptr)
+                        {
+                            return false;
+                        }
+
+                        iv = m_scevContext.Simplify(iv, m_simplAssumptions);
+                        assert(iv != nullptr);
+                        if (!Scev::Equals(iv, cursorIV))
+                        {
+                            return false;
+                        }
+
+                        // Note: cannot use "cursor" after this point.
+                        cursors->Emplace(block, stmt, use, cursorIV);
+                        otherCursors->Emplace(block, stmt, use, cursorIV);
+                        numCreated++;
+                        return true;
+                    };
+
+                    if (m_loopLocals.VisitOccurrences(m_loop, storedLcl->GetLclNum(), createExtraCursor))
+                    {
+                        // We created cursors for all uses. Remove the IV that
+                        // was feeding into the store from the list.
+                        m_storesToRemove.Emplace(cursorBlock, cursorStmt, parent, nullptr);
+                        std::swap(cursors->BottomRef(i), cursors->TopRef(0));
+                        std::swap(otherCursors->BottomRef(i), otherCursors->TopRef(0));
+                        cursors->Pop();
+                        otherCursors->Pop();
+                        i--;
+                        break;
+                    }
+
+                    cursors->Pop(numCreated);
+                    otherCursors->Pop(numCreated);
+                }
+
+                break;
+            }
+
+            Scev* parentIV = m_scevContext.Analyze(cursor->Block, parent);
+            if (parentIV == nullptr)
+            {
+                break;
+            }
+
+            parentIV = m_scevContext.Simplify(parentIV, m_simplAssumptions);
+            assert(parentIV != nullptr);
+            if (!Scev::Equals(parentIV, cursor->IV))
+            {
+                break;
+            }
+
+            cursor->Tree = parent;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // CheckAdvancedCursors: Check whether the specified advanced cursors still
 // represent a valid set of cursors to introduce a new primary IV for.
 //
@@ -1881,10 +1996,9 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree*    parent = cursor.Tree->gtGetParent(nullptr);
-        if ((parent != nullptr) && parent->OperIs(GT_ARR_ADDR))
+        if (cursor.Tree->gtEffectiveVal()->OperIs(GT_ARR_ADDR))
         {
-            arrAddr = parent->AsArrAddr();
+            arrAddr = cursor.Tree->gtEffectiveVal()->AsArrAddr();
             break;
         }
     }
@@ -2074,6 +2188,21 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         m_comp->gtSetStmtInfo(cursor.Stmt);
         m_comp->fgSetStmtSeq(cursor.Stmt);
         m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
+    }
+
+    if (m_storesToRemove.Height() > 0)
+    {
+        JITDUMP("    Removing useless stores\n");
+        for (int i = 0; i < m_storesToRemove.Height(); i++)
+        {
+            CursorInfo& toRemove = m_storesToRemove.BottomRef(i);
+            JITDUMP("      Removing [%06u]\n", Compiler::dspTreeID(toRemove.Tree));
+            toRemove.Tree->AsLclVarCommon()->Data() =
+                m_comp->gtNewZeroConNode(genActualType(toRemove.Tree->AsLclVarCommon()->Data()->TypeGet()));
+            m_comp->gtSetStmtInfo(toRemove.Stmt);
+            m_comp->fgSetStmtSeq(toRemove.Stmt);
+            m_comp->gtUpdateStmtSideEffects(toRemove.Stmt);
+        }
     }
 
     return true;
