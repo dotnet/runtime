@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Text;
 using System.Runtime.InteropServices.JavaScript;
 
-public partial class MemoryTest // ?test=AllocateLargeHeapThenInterop
+public partial class MemoryTest
 {
     [JSImport("countChars", "main.js")]
     internal static partial int CountChars(string testArray);

@@ -19,12 +19,17 @@ public class MemoryTests : AppTestBase
     {
     }
 
+    // ActiveIssue: https://github.com/dotnet/runtime/issues/104618
+    [Fact, TestCategory("no-workload")]
+    public async Task AllocateLargeHeapThenRepeatedlyInterop_NoWorkload() =>
+        await AllocateLargeHeapThenRepeatedlyInterop();
+
     [Fact]
     public async Task AllocateLargeHeapThenRepeatedlyInterop()
     {
         string config = "Release";
         CopyTestAsset("WasmBasicTestApp", "MemoryTests", "App");
-        string extraArgs = $"-p:EmccMaximumHeapSize=4294901760";
+        string extraArgs = BuildTestBase.IsUsingWorkloads ? "-p:EmccMaximumHeapSize=4294901760" : "-p:EmccMaximumHeapSize=4294901760 -p:LazyLoad=false"; 
         BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
 
         int expectedCode = BuildTestBase.IsUsingWorkloads ? 0 : 1;

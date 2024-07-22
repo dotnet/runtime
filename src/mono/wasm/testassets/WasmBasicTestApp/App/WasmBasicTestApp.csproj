@@ -10,7 +10,7 @@
     <ProjectReference Include="..\Library\Json.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(LazyLoad)' != 'false'">
     <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
   </ItemGroup>
 </Project>
