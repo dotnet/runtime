@@ -319,9 +319,9 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-            if (section != null && TryConvertThroughTypeConvertValue(type, section, section.Path, out object? convertedValue2, out Exception? error2))
+            if (section != null && !isParentCollection && TryConvertThroughTypeConvertValue(type, section, section.Path, out object? convertedValue2, out Exception? error2))
             {
-                if(error2 != null)
+                if (error2 != null)
                 {
                     throw error2;
                 }

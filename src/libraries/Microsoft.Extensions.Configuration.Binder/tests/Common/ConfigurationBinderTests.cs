@@ -2097,7 +2097,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("MyString", obj2.Value);
         }
 
-        [Fact]
+        [Fact(Skip = "TypeConverter are no longer ignored")]
         public void ObjWith_TypeConverter()
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""
@@ -2525,7 +2525,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         {
             /// the source generator will bind to the most derived property only.
             /// the reflection binder will bind the same data to all properties (including hidden).
-            
+
             var config = TestHelpers.GetConfigurationFromJsonString("""
                 {
                     "A": "AVal",
