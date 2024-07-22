@@ -369,9 +369,25 @@ int32_t SystemNative_Unlink(const char* path)
     return result;
 }
 
+#ifndef MFD_CLOEXEC
+#define MFD_CLOEXEC		0x0001U
+#endif
+
+#ifndef MFD_ALLOW_SEALING
+#define MFD_ALLOW_SEALING	0x0002U
+#endif
+
+#ifndef F_ADD_SEALS
+#define F_ADD_SEALS	(1024 + 9)
+#endif
+
+#ifndef F_SEAL_WRITE
+#define F_SEAL_WRITE	0x0008
+#endif
+
 int32_t SystemNative_IsMemfdSupported(void)
 {
-#if HAVE_MEMFD_CREATE
+#ifdef __NR_memfd_create
 #ifdef TARGET_LINUX
     struct utsname uts;
     int32_t major, minor;
@@ -386,7 +402,7 @@ int32_t SystemNative_IsMemfdSupported(void)
 
     // Note that the name has no affect on file descriptor behavior. From linux manpage: 
     //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
-    int32_t fd = memfd_create("test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, "test", MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (fd < 0) return 0;
 
     close(fd);
@@ -399,14 +415,14 @@ int32_t SystemNative_IsMemfdSupported(void)
 
 intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly)
 {
-#if HAVE_MEMFD_CREATE
+#ifdef __NR_memfd_create
 #if defined(SHM_NAME_MAX) // macOS
     assert(strlen(name) <= SHM_NAME_MAX);
 #elif defined(PATH_MAX) // other Unixes
     assert(strlen(name) <= PATH_MAX);
 #endif
 
-    int32_t fd = memfd_create(name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    int32_t fd = (int32_t)syscall(__NR_memfd_create, name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
     if (!isReadonly || fd < 0) return fd;
 
     // Add a write seal when readonly protection requested

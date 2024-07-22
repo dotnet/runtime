@@ -11,7 +11,6 @@
 #cmakedefine01 HAVE_F_DUPFD
 #cmakedefine01 HAVE_F_FULLFSYNC
 #cmakedefine01 HAVE_O_CLOEXEC
-#cmakedefine01 HAVE_MEMFD_CREATE
 #cmakedefine01 HAVE_GETIFADDRS
 #cmakedefine01 HAVE_UTSNAME_DOMAINNAME
 #cmakedefine01 HAVE_STAT64
