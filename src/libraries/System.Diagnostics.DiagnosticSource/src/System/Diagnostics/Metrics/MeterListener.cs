@@ -293,7 +293,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        // Publish is called from Instrument.Publish
+        // GetAllListeners is called from Instrument.Publish inside Instrument.SyncObject lock.
         internal static List<MeterListener>? GetAllListeners() => s_allStartedListeners.Count == 0 ? null : new List<MeterListener>(s_allStartedListeners);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
