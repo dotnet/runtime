@@ -1758,7 +1758,8 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
             nextCursor.Tree = cur->gtGetParent(nullptr);
 
             if ((nextCursor.Tree == nullptr) ||
-                (nextCursor.Tree->OperIs(GT_COMMA) && (nextCursor.Tree->gtGetOp1() == cur)))
+                (nextCursor.Tree->OperIs(GT_COMMA) && (nextCursor.Tree->gtGetOp1() == cur)) ||
+                (nextCursor.Tree->OperIs(GT_STORE_LCL_VAR)))
             {
                 nextCursor.IV = nullptr;
                 break;
@@ -1828,11 +1829,11 @@ void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* curso
                 break;
             }
 
-            if (parent->OperIs(GT_STORE_LCL_VAR) && (parent->AsLclVarCommon()->Data() == cur) &&
-                ((cur->gtFlags & GTF_SIDE_EFFECT) == 0))
+            if (parent->OperIs(GT_STORE_LCL_VAR))
             {
                 GenTreeLclVarCommon* storedLcl = parent->AsLclVarCommon();
-                if (storedLcl->HasSsaIdentity() &&
+                if ((storedLcl->Data() == cur) && ((cur->gtFlags & GTF_SIDE_EFFECT) == 0) &&
+                    storedLcl->HasSsaIdentity() &&
                     !m_comp->optLocalHasNonLoopUses(storedLcl->GetLclNum(), m_loop, &m_loopLocals))
                 {
                     int         numCreated  = 0;
@@ -1875,6 +1876,9 @@ void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* curso
 
                     if (m_loopLocals.VisitOccurrences(m_loop, storedLcl->GetLclNum(), createExtraCursor))
                     {
+                        JITDUMP(
+                            "  [%06u] was the data of store [%06u]; expanded to %d new cursors, and will replace with a store of 0\n",
+                            Compiler::dspTreeID(cur), Compiler::dspTreeID(parent), numCreated);
                         // We created cursors for all uses. Remove the IV that
                         // was feeding into the store from the list.
                         m_intermediateIVStores.Emplace(cursorBlock, cursorStmt, parent, nullptr);
