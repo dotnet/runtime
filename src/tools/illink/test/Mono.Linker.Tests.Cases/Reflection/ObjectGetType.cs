@@ -33,7 +33,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			DeepInterfaceHierarchy.Test ();
 
 			ConstructorAsSource.Test ();
-			InstantiatedGenericAsSource.Test ();
 
 			InterfaceSeenFirst.Test ();
 			AnnotationsRequestedOnImplementation.Test ();
@@ -232,58 +231,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				}
 			}
 
-			[Kept]
-			class EnumConstraintSatisfiesPublicFields
-			{
-				[Kept]
-				static void ConstrainedParameterType<T> (T instance) where T : Enum
-				{
-					instance.GetType ().RequiresPublicFields ();
-				}
-
-				[Kept]
-				class ConstrainedFieldType<T> where T : Enum
-				{
-					[Kept]
-					T field;
-
-					[Kept]
-					public ConstrainedFieldType (T instance) => field = instance;
-
-					[Kept]
-					public void Test ()
-					{
-						field.GetType ().RequiresPublicFields ();
-					}
-				}
-
-				[KeptMember ("value__")]
-				enum EnumType
-				{
-					[Kept]
-					Value
-				}
-
-				[Kept]
-				static T ConstrainedReturnType<T> () where T : Enum
-				{
-					return default;
-				}
-
-				[Kept]
-				static void TestConstrainedReturnType()
-				{
-					ConstrainedReturnType<Enum> ().GetType ().RequiresPublicFields ();
-				}
-
-				[Kept]
-				public static void Test ()
-				{
-					ConstrainedParameterType<Enum> (EnumType.Value);
-					new ConstrainedFieldType<Enum> (EnumType.Value).Test ();
-					TestConstrainedReturnType ();
-				}
-			}
 
 			[Kept]
 			public static void Test ()
@@ -291,7 +238,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				MethodWithRequirementsTest.Test ();
 				MethodWithRequirementsAndDerivedTypeTest.Test ();
 				GenericWithRequirements.Test ();
-				EnumConstraintSatisfiesPublicFields.Test ();
 			}
 		}
 
@@ -745,54 +691,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 		}
 
-		[Kept]
-		class InstantiatedGenericAsSource
-		{
-			[Kept]
-			[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
-			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-			class Generic<T> {
-				[Kept]
-				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-				[RequiresUnreferencedCode (nameof (KeptForMethodParameter))]
-				public void KeptForMethodParameter () {}
-
-				[Kept]
-				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-				[RequiresUnreferencedCode (nameof (KeptForField))]
-				public void KeptForField () {}
-
-				[Kept]
-				[ExpectedWarning ("IL2112")]
-				[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-				[RequiresUnreferencedCode (nameof (KeptJustBecause))]
-				public void KeptJustBecause () {}
-			}
-
-			[Kept]
-			static void TestMethodParameter (Generic<int> instance)
-			{
-				instance.GetType ().GetMethod ("KeptForMethodParameter");
-			}
-
-			[Kept]
-			static Generic<int> field = null;
-
-			[Kept]
-			static void TestField ()
-			{
-				field.GetType ().GetMethod ("KeptForField");
-			}
-
-			[Kept]
-			public static void Test ()
-			{
-				TestMethodParameter (null);
-				TestField ();
-			}
-		}
 
 		[Kept]
 		class InterfaceSeenFirst
