@@ -4263,6 +4263,81 @@ namespace System.Runtime.Intrinsics.Arm
         public static unsafe Vector<ulong> GatherVectorUInt32ZeroExtend(Vector<ulong> mask, uint* address, Vector<ulong> indices) { throw new PlatformNotSupportedException(); }
 
 
+        ///  Unextended load, first-faulting
+
+        /// <summary>
+        /// svfloat64_t svldff1_gather_[s64]offset[_f64](svbool_t pg, const float64_t *base, svint64_t offsets)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorWithByteOffsetFirstFaulting(Vector<double> mask, double* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat64_t svldff1_gather_[u64]offset[_f64](svbool_t pg, const float64_t *base, svuint64_t offsets)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<double> GatherVectorWithByteOffsetFirstFaulting(Vector<double> mask, double* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1_gather_[s32]offset[_s32](svbool_t pg, const int32_t *base, svint32_t offsets)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorWithByteOffsetFirstFaulting(Vector<int> mask, int* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint32_t svldff1_gather_[u32]offset[_s32](svbool_t pg, const int32_t *base, svuint32_t offsets)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<int> GatherVectorWithByteOffsetFirstFaulting(Vector<int> mask, int* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1_gather_[s64]offset[_s64](svbool_t pg, const int64_t *base, svint64_t offsets)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorWithByteOffsetFirstFaulting(Vector<long> mask, long* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svint64_t svldff1_gather_[u64]offset[_s64](svbool_t pg, const int64_t *base, svuint64_t offsets)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<long> GatherVectorWithByteOffsetFirstFaulting(Vector<long> mask, long* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svldff1_gather_[s32]offset[_f32](svbool_t pg, const float32_t *base, svint32_t offsets)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorWithByteOffsetFirstFaulting(Vector<float> mask, float* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svfloat32_t svldff1_gather_[u32]offset[_f32](svbool_t pg, const float32_t *base, svuint32_t offsets)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<float> GatherVectorWithByteOffsetFirstFaulting(Vector<float> mask, float* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1_gather_[s32]offset[_u32](svbool_t pg, const uint32_t *base, svint32_t offsets)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, SXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorWithByteOffsetFirstFaulting(Vector<uint> mask, uint* address, Vector<int> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint32_t svldff1_gather_[u32]offset[_u32](svbool_t pg, const uint32_t *base, svuint32_t offsets)
+        ///   LDFF1W Zresult.S, Pg/Z, [Xbase, Zoffsets.S, UXTW]
+        /// </summary>
+        public static unsafe Vector<uint> GatherVectorWithByteOffsetFirstFaulting(Vector<uint> mask, uint* address, Vector<uint> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1_gather_[s64]offset[_u64](svbool_t pg, const uint64_t *base, svint64_t offsets)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorWithByteOffsetFirstFaulting(Vector<ulong> mask, ulong* address, Vector<long> offsets) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        /// svuint64_t svldff1_gather_[u64]offset[_u64](svbool_t pg, const uint64_t *base, svuint64_t offsets)
+        ///   LDFF1D Zresult.D, Pg/Z, [Xbase, Zoffsets.D]
+        /// </summary>
+        public static unsafe Vector<ulong> GatherVectorWithByteOffsetFirstFaulting(Vector<ulong> mask, ulong* address, Vector<ulong> offsets) { throw new PlatformNotSupportedException(); }
+
+
         ///  Unextended load
 
         /// <summary>

@@ -26548,6 +26548,7 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 break;
 
             case NI_Sve_GatherVectorWithByteOffsets:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
             case NI_Sve_LoadVector128AndReplicateToVector:

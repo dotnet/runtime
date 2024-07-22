@@ -2101,6 +2101,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Sve_GatherVectorWithByteOffsets:
+            case NI_Sve_GatherVectorWithByteOffsetFirstFaulting:
             {
                 assert(!varTypeIsSIMD(intrin.op2->gtType));
                 assert(intrin.numOperands == 3);
