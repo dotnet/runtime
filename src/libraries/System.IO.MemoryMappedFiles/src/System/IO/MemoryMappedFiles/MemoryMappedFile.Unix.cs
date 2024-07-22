@@ -294,14 +294,15 @@ namespace System.IO.MemoryMappedFiles
 
             try
             {
-                // Add a writeseal for readonly case when eadonly protection requested
+                // Add a write seal for readonly case when readonly protection requested
                 if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0 &&
                     (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) == 0 &&
-                    // seal write failed
                     Interop.Sys.Fcntl.SetSealWrite(fd) == -1)
                 {
+                    // seal write failed
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     fd.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
 
                 // Give it the right capacity.  We do this directly with ftruncate rather
@@ -310,12 +311,13 @@ namespace System.IO.MemoryMappedFiles
                 // causing it to preemptively throw from SetLength.
                 Interop.CheckIo(Interop.Sys.FTruncate(fd, capacity));
 
-                // shm_open sets CLOEXEC implicitly.  If the inheritability requested is Inheritable, remove CLOEXEC.
+                // SystemNative_MemfdCreate sets CLOEXEC implicitly.  If the inheritability requested is Inheritable, remove CLOEXEC.
                 if (inheritability == HandleInheritability.Inheritable &&
                     Interop.Sys.Fcntl.SetFD(fd, 0) == -1)
                 {
+                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     fd.Dispose();
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
 
                 return fd;
