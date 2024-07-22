@@ -269,9 +269,9 @@ A StressLog message, represented by a `StressMsgData` struct, can be formatted a
 
 | Format Specifier | Argument Type | Description |
 | --- | --- | --- |
-| `%pT` | pointer | A `MethodTableHandle` |
-| `%pM` | pointer | A `MethodDesc` |
-| `%pV` | pointer | A pointer to a virtual method table in the image. |
+| `%pT` | pointer | A `TypeHandle`, accessible through the `GetTypeHandle` API in the [RuntimeTypeSystem contract](./RuntimeTypeSystem.md), possibly with bits of the `ObjectToMethodTableUnmask` data contract global variable set. |
+| `%pM` | pointer | A `MethodDescHandle`, accessible through the `GetMethodDescHandle` API in the [RuntimeTypeSystem contract](./RuntimeTypeSystem.md) |
+| `%pV` | pointer | A pointer to an unmanaged symbol in the image. |
 | `%pK` | pointer | A pointer to an offset from a symbol in the image, generally representing an IP in a stack trace. |
 
 ## Version 0
