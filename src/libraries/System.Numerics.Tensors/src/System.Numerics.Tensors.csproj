@@ -7,7 +7,7 @@
     <PackageDescription>Provides support for operating over tensors.</PackageDescription>
     <GenAPIExcludeApiList>ReferenceAssemblyExclusions.txt</GenAPIExcludeApiList>
     <ApiCompatValidateAssemblies>true</ApiCompatValidateAssemblies>
-    <!-- Tensor<T> is Experimental -->
+    <!-- SYSLIB5001: Tensor<T> and related APIs are Experimental in .NET 9 -->
     <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
   </PropertyGroup>
 

@@ -30,7 +30,7 @@ namespace System.Buffers
         public System.Index ToIndexUnchecked() { throw null; }
         public override string ToString() { throw null; }
     }
-    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001")]
+    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public readonly partial struct NRange : System.IEquatable<System.Buffers.NRange>
     {
         private readonly int _dummyPrimitive;
@@ -55,7 +55,7 @@ namespace System.Buffers
 }
 namespace System.Numerics.Tensors
 {
-    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001")]
+    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IReadOnlyTensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable where TSelf : System.Numerics.Tensors.IReadOnlyTensor<TSelf, T>
     {
         static abstract TSelf? Empty { get; }
@@ -83,7 +83,7 @@ namespace System.Numerics.Tensors
         bool TryCopyTo(scoped System.Numerics.Tensors.TensorSpan<T> destination);
         bool TryFlattenTo(scoped System.Span<T> destination);
     }
-    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001")]
+    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface ITensor<TSelf, T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Numerics.Tensors.IReadOnlyTensor<TSelf, T> where TSelf : System.Numerics.Tensors.ITensor<TSelf, T>
     {
         bool IsReadOnly { get; }
@@ -102,7 +102,7 @@ namespace System.Numerics.Tensors
         void Fill(T value);
         new ref T GetPinnableReference();
     }
-    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001")]
+    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public readonly ref partial struct ReadOnlyTensorSpan<T>
     {
         private readonly object _dummy;
@@ -162,7 +162,7 @@ namespace System.Numerics.Tensors
             public bool MoveNext() { throw null; }
         }
     }
-    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001")]
+    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public static partial class Tensor
     {
         public static System.Numerics.Tensors.Tensor<T> Abs<T>(in System.Numerics.Tensors.ReadOnlyTensorSpan<T> x) where T : System.Numerics.INumberBase<T> { throw null; }
@@ -680,7 +680,7 @@ namespace System.Numerics.Tensors
         public static void Xor<T>(System.ReadOnlySpan<T> x, System.ReadOnlySpan<T> y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
         public static void Xor<T>(System.ReadOnlySpan<T> x, T y, System.Span<T> destination) where T : System.Numerics.IBitwiseOperators<T, T, T> { }
     }
-    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001")]
+    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public readonly ref partial struct TensorSpan<T>
     {
         private readonly object _dummy;
@@ -742,7 +742,7 @@ namespace System.Numerics.Tensors
             public bool MoveNext() { throw null; }
         }
     }
-    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001")]
+    [System.Diagnostics.CodeAnalysis.Experimental("SYSLIB5001", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class Tensor<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Numerics.Tensors.IReadOnlyTensor<System.Numerics.Tensors.Tensor<T>, T>, System.Numerics.Tensors.ITensor<System.Numerics.Tensors.Tensor<T>, T>
     {
         internal Tensor() { }
