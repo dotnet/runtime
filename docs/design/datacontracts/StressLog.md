@@ -218,6 +218,9 @@ IEnumerable<StressMsgData> GetStressMessages(ThreadStressLog threadLog, uint for
                 // This can occur when the chunk was allocated, but no messages were written before dumping the log.
                 break;
             }
+
+            // If we found a non-null value, then that's the start of the first message of the chunk.
+            readPointer = p;
         }
 
         // Check if we've read all messages in this thread log.
