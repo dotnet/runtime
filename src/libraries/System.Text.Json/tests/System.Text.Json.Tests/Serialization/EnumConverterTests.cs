@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -1025,6 +1026,36 @@ namespace System.Text.Json.Serialization.Tests
             Value1 = 1,
             [JsonStringEnumMemberName("Value3")]
             Value2 = 2,
+            Value3 = 3,
+        }
+
+        [Theory]
+        [InlineData(EnumWithConflictingCaseNames.ValueWithConflictingCase, "\"ValueWithConflictingCase\"")]
+        [InlineData(EnumWithConflictingCaseNames.VALUEwithCONFLICTINGcase, "\"VALUEwithCONFLICTINGcase\"")]
+        [InlineData(EnumWithConflictingCaseNames.Value3, "\"VALUEWITHCONFLICTINGCASE\"")]
+        public static void EnumWithConflictingCaseNames_SerializesAsExpected(EnumWithConflictingCaseNames value, string expectedJson)
+        {
+            string json = JsonSerializer.Serialize(value);
+            Assert.Equal(expectedJson, json);
+            EnumWithConflictingCaseNames deserializedValue = JsonSerializer.Deserialize<EnumWithConflictingCaseNames>(json);
+            Assert.Equal(value, deserializedValue);
+        }
+
+        [Theory]
+        [InlineData("\"valuewithconflictingcase\"")]
+        [InlineData("\"vALUEwITHcONFLICTINGcASE\"")]
+        public static void EnumWithConflictingCaseNames_DeserializingMismatchingCaseDefaultsToFirstValue(string json)
+        {
+            EnumWithConflictingCaseNames value = JsonSerializer.Deserialize<EnumWithConflictingCaseNames>(json);
+            Assert.Equal(EnumWithConflictingCaseNames.ValueWithConflictingCase, value);
+        }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public enum EnumWithConflictingCaseNames
+        {
+            ValueWithConflictingCase = 1,
+            VALUEwithCONFLICTINGcase = 2,
+            [JsonStringEnumMemberName("VALUEWITHCONFLICTINGCASE")]
             Value3 = 3,
         }
 
