@@ -570,52 +570,5 @@ namespace System.Text.Json
                 }
             }
         }
-
-#if !NET
-        // Polyfill for MemoryExtensions.Trim
-        public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> source)
-        {
-            int start = 0;
-            int end = source.Length - 1;
-
-            while (start <= end && char.IsWhiteSpace(source[start]))
-            {
-                start++;
-            }
-
-            while (end >= start && char.IsWhiteSpace(source[end]))
-            {
-                end--;
-            }
-
-            return source.Slice(start, end - start + 1);
-        }
-
-        public static ReadOnlySpan<char> TrimStart(this ReadOnlySpan<char> source)
-        {
-            int start = 0;
-            int end = source.Length - 1;
-
-            while (start <= end && char.IsWhiteSpace(source[start]))
-            {
-                start++;
-            }
-
-            return source.Slice(start, end - start + 1);
-        }
-
-        public static ReadOnlySpan<char> TrimEnd(this ReadOnlySpan<char> source)
-        {
-            int start = 0;
-            int end = source.Length - 1;
-
-            while (end >= start && char.IsWhiteSpace(source[end]))
-            {
-                end--;
-            }
-
-            return source.Slice(start, end - start + 1);
-        }
-#endif
     }
 }
