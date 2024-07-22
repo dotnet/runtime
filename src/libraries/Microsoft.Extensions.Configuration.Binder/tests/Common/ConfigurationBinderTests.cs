@@ -2581,5 +2581,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(53, obj.X);
             Assert.Equal(53, obj.XBase);
         }
+
+        [Fact]
+        public void CanBindToClassWithTypeConverter()
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>()
+                {
+                    { "Test:0", "Hello"},
+                    { "Test:1", "world"},
+                })
+                .Build();
+
+            try
+            {
+                var item = configuration.GetSection("Test").Get<ConvertingItem>();
+                Assert.Equal("Hello", item.Zero);
+                Assert.Equal("world", item.One);
+            }
+            catch (Exception e)
+            {
+                Assert.Fail(e.Message);
+            }
+        }
     }
 }

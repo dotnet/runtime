@@ -307,7 +307,7 @@ namespace Microsoft.Extensions.Configuration
 
             var section = config as IConfigurationSection;
             string? configValue = section?.Value;
-            if (configValue != null && TryConvertValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
+            if (configValue != null && TryConvertStringValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
             {
                 if (error != null)
                 {
@@ -316,6 +316,17 @@ namespace Microsoft.Extensions.Configuration
 
                 // Leaf nodes are always reinitialized
                 bindingPoint.TrySetValue(convertedValue);
+                return;
+            }
+
+            if (section != null && TryConvertThroughTypeConvertValue(type, section, section.Path, out object? convertedValue2, out Exception? error2))
+            {
+                if(error2 != null)
+                {
+                    throw error2;
+                }
+
+                bindingPoint.TrySetValue(convertedValue2);
                 return;
             }
 
@@ -861,7 +872,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        private static bool TryConvertValue(
+        private static bool TryConvertStringValue(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             string value, string? path, out object? result, out Exception? error)
@@ -880,7 +891,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     return true;
                 }
-                return TryConvertValue(Nullable.GetUnderlyingType(type)!, value, path, out result, out error);
+                return TryConvertStringValue(Nullable.GetUnderlyingType(type)!, value, path, out result, out error);
             }
 
             TypeConverter converter = TypeDescriptor.GetConverter(type);
@@ -914,12 +925,38 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
+        private static bool TryConvertThroughTypeConvertValue(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+            Type type,
+            IConfigurationSection value, string? path, out object? result, out Exception? error)
+        {
+            error = null;
+            result = null;
+
+            TypeConverter converter = TypeDescriptor.GetConverter(type);
+            if (converter.CanConvertFrom(typeof(IConfigurationSection)))
+            {
+                try
+                {
+                    result = converter.ConvertFrom(value);
+                }
+                catch (Exception ex)
+                {
+                    error = new InvalidOperationException(SR.Format(SR.Error_FailedBinding, path, type), ex);
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static object? ConvertValue(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
             string value, string? path)
         {
-            TryConvertValue(type, value, path, out object? result, out Exception? error);
+            TryConvertStringValue(type, value, path, out object? result, out Exception? error);
             if (error != null)
             {
                 throw error;

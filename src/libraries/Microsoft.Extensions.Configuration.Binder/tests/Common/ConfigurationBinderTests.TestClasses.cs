@@ -1065,5 +1065,32 @@ namespace Microsoft.Extensions
             public override int X { set => base.X = value + 1; }
         }
 
+        [TypeConverter(typeof(ConvertingItemConverter))]
+        class ConvertingItem
+        {
+            public string Zero;
+            public string One;
+
+            public ConvertingItem(string firstParameter, string secondParameter)
+            {
+                Zero = firstParameter;
+                One = secondParameter;
+            }
+        }
+
+        class ConvertingItemConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
+            {
+                return sourceType == typeof(IConfigurationSection);
+            }
+
+            public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
+            {
+                var section = (IConfigurationSection)value;
+                return new ConvertingItem(section.GetValue<string>("0"), section.GetValue<string>("1"));
+            }
+        }
+
     }
 }
