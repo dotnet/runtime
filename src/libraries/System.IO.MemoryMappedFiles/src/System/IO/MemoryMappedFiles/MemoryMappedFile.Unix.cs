@@ -290,9 +290,7 @@ namespace System.IO.MemoryMappedFiles
                     Interop.Sys.Fcntl.SetSealWrite(fd) == -1)
                 {
                     // seal write failed
-                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                    fd.Dispose();
-                    throw Interop.GetExceptionForIoErrno(errorInfo);
+                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
                 }
 
                 // Give it the right capacity.  We do this directly with ftruncate rather
