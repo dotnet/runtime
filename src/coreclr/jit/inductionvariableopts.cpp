@@ -2194,17 +2194,17 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         JITDUMP("    Deleting stores of intermediate IVs\n");
         for (int i = 0; i < m_intermediateIVStores.Height(); i++)
         {
-            CursorInfo&          toRemove = m_intermediateIVStores.BottomRef(i);
-            GenTreeLclVarCommon* lcl      = toRemove.Tree->AsLclVarCommon();
+            CursorInfo&          cursor = m_intermediateIVStores.BottomRef(i);
+            GenTreeLclVarCommon* lcl      = cursor.Tree->AsLclVarCommon();
             JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(lcl->Data()));
             // We cannot remove these stores entirely as that will break
             // downstream phases looking for SSA defs.. instead just replace
             // the data with a zero and leave it up to backend liveness to
             // remove that.
             lcl->Data() = m_comp->gtNewZeroConNode(genActualType(lcl->Data()));
-            m_comp->gtSetStmtInfo(toRemove.Stmt);
-            m_comp->fgSetStmtSeq(toRemove.Stmt);
-            m_comp->gtUpdateStmtSideEffects(toRemove.Stmt);
+            m_comp->gtSetStmtInfo(cursor.Stmt);
+            m_comp->fgSetStmtSeq(cursor.Stmt);
+            m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
         }
     }
 
