@@ -1093,7 +1093,7 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
 
         unsigned candidateLclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
 
-        if (optPrimaryIVHasNonLoopUses(candidateLclNum, loop, loopLocals))
+        if (optLocalHasNonLoopUses(candidateLclNum, loop, loopLocals))
         {
             continue;
         }
@@ -1258,20 +1258,19 @@ bool Compiler::optCanAndShouldChangeExitTest(GenTree* cond, bool dump)
 }
 
 //------------------------------------------------------------------------
-// optPrimaryIVHasNonLoopUses:
-//   Check if a primary IV may have uses of the primary IV that we do not
-//   reason about.
+// optLocalHasNonLoopUses:
+//   Check if a loop may have uses of a local that we do not reason about.
 //
 // Parameters:
-//   lclNum     - The primary IV
+//   lclNum     - The local
 //   loop       - The loop
 //   loopLocals - Data structure tracking local uses
 //
 // Returns:
-//   True if the primary IV may have non-loop uses (or if it is a field with
-//   uses of the parent struct).
+//   True if the local may have non-loop uses (or if it is a field with uses of
+//   the parent struct).
 //
-bool Compiler::optPrimaryIVHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals)
+bool Compiler::optLocalHasNonLoopUses(unsigned lclNum, FlowGraphNaturalLoop* loop, LoopLocalOccurrences* loopLocals)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
     if (varDsc->lvIsStructField && loopLocals->HasAnyOccurrences(loop, varDsc->lvParentLcl))
@@ -1435,7 +1434,7 @@ bool StrengthReductionContext::TryStrengthReduce()
             continue;
         }
 
-        if (m_comp->optPrimaryIVHasNonLoopUses(primaryIVLcl->GetLclNum(), m_loop, &m_loopLocals))
+        if (m_comp->optLocalHasNonLoopUses(primaryIVLcl->GetLclNum(), m_loop, &m_loopLocals))
         {
             // We won't be able to remove this primary IV
             JITDUMP("  Has non-loop uses\n");
@@ -1829,7 +1828,7 @@ void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* curso
             {
                 GenTreeLclVarCommon* storedLcl = parent->AsLclVarCommon();
                 if (storedLcl->HasSsaIdentity() &&
-                    !m_comp->optPrimaryIVHasNonLoopUses(storedLcl->GetLclNum(), m_loop, &m_loopLocals))
+                    !m_comp->optLocalHasNonLoopUses(storedLcl->GetLclNum(), m_loop, &m_loopLocals))
                 {
                     int         numCreated  = 0;
                     ScevAddRec* cursorIV    = cursor->IV;
@@ -2195,13 +2194,13 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         for (int i = 0; i < m_intermediateIVStores.Height(); i++)
         {
             CursorInfo&          cursor = m_intermediateIVStores.BottomRef(i);
-            GenTreeLclVarCommon* lcl      = cursor.Tree->AsLclVarCommon();
-            JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(lcl->Data()));
+            GenTreeLclVarCommon* store  = cursor.Tree->AsLclVarCommon();
+            JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(store->Data()));
             // We cannot remove these stores entirely as that will break
             // downstream phases looking for SSA defs.. instead just replace
             // the data with a zero and leave it up to backend liveness to
             // remove that.
-            lcl->Data() = m_comp->gtNewZeroConNode(genActualType(lcl->Data()));
+            store->Data() = m_comp->gtNewZeroConNode(genActualType(store->Data()));
             m_comp->gtSetStmtInfo(cursor.Stmt);
             m_comp->fgSetStmtSeq(cursor.Stmt);
             m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
@@ -2302,7 +2301,7 @@ bool Compiler::optRemoveUnusedIVs(FlowGraphNaturalLoop* loop, LoopLocalOccurrenc
 
         unsigned lclNum = stmt->GetRootNode()->AsLclVarCommon()->GetLclNum();
         JITDUMP("  V%02u", lclNum);
-        if (optPrimaryIVHasNonLoopUses(lclNum, loop, loopLocals))
+        if (optLocalHasNonLoopUses(lclNum, loop, loopLocals))
         {
             JITDUMP(" has non-loop uses, cannot remove\n");
             continue;
