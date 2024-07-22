@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics.Tensors
 {
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface ITensor<TSelf, T>
         : IReadOnlyTensor<TSelf, T>
         where TSelf : ITensor<TSelf, T>

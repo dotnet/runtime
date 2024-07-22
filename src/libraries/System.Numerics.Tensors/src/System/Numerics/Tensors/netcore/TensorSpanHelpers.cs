@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 namespace System.Numerics.Tensors
 {
 
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal static partial class TensorSpanHelpers
     {
         internal static bool AreShapesTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)

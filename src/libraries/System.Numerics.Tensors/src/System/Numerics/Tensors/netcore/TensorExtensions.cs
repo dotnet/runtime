@@ -18,7 +18,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics.Tensors
 {
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public static partial class Tensor
     {
         #region AsReadOnlySpan

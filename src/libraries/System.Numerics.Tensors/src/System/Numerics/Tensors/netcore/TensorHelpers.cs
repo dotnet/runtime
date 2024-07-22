@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors
 {
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal static class TensorHelpers
     {
 

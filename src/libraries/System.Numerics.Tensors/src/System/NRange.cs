@@ -15,7 +15,7 @@ namespace System.Buffers
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public readonly struct NRange : IEquatable<NRange>
     {
         /// <summary>Represent the inclusive start NIndex of the NRange.</summary>
