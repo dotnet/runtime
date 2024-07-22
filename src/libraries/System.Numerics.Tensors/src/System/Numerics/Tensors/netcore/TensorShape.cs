@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Numerics.Tensors
 {
+
+    [Experimental("SNTEXP0001")]
     internal readonly struct TensorShape
     {
         // Used to determine when we need to allocate a metadata array
