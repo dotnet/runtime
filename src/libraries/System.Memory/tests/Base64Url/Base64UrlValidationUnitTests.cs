@@ -39,6 +39,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
+                source[numBytes - 1] = 65; // make sure unused bits set 0
 
                 Assert.True(Base64Url.IsValid(source));
                 Assert.True(Base64Url.IsValid(source, out int decodedLength));
@@ -60,6 +61,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<byte> source = new byte[numBytes];
                 Base64TestHelper.InitializeUrlDecodableBytes(source, numBytes);
+                source[numBytes - 1] = 65; // make sure unused bits set 0
                 Span<char> chars = source
                     .ToArray()
                     .Select(Convert.ToChar)
@@ -259,8 +261,8 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("YWJ", true, 2)]
-        [InlineData("YW", true, 1)]
+        [InlineData("YWI", true, 2)]
+        [InlineData("YQ", true, 1)]
         [InlineData("Y", false, 0)]
         public void SmallSizeBytes(string utf8Text, bool isValid, int expectedDecodedLength)
         {
@@ -272,8 +274,8 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
-        [InlineData("YWJ", true, 2)]
-        [InlineData("YW", true, 1)]
+        [InlineData("YWI", true, 2)]
+        [InlineData("YQ", true, 1)]
         [InlineData("Y", false, 0)]
         public void SmallSizeChars(string utf8Text, bool isValid, int expectedDecodedLength)
         {

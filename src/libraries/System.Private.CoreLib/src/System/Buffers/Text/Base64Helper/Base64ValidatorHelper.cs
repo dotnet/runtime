@@ -108,20 +108,11 @@ namespace System.Buffers.Text
                         }
                     }
 
-                    int decoded = validatable.DecodeValue(lastChar);
-                    if (paddingCount == 1 && (decoded & 0x03) != 0 ||
-                        paddingCount == 2 && (decoded & 0x0F) != 0)
-                    {
-                        // unused lower bits are not 0, reject input
-                        decodedLength = 0;
-                        return false;
-                    }
-
                     length += paddingCount;
                     break;
                 }
 
-                if (!validatable.ValidateAndDecodeLength(length, paddingCount, out decodedLength))
+                if (!validatable.ValidateAndDecodeLength(lastChar, length, paddingCount, out decodedLength))
                 {
                     goto Fail;
                 }
@@ -141,19 +132,21 @@ namespace System.Buffers.Text
         {
 #if NET
             int IndexOfAnyExcept(ReadOnlySpan<T> span);
-#endif
+#else
             int DecodeValue(T value);
+#endif
             bool IsWhiteSpace(T value);
             bool IsEncodingPad(T value);
-            bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength);
+            bool ValidateAndDecodeLength(T lastChar, int length, int paddingCount, out int decodedLength);
         }
 
         internal readonly struct Base64CharValidatable : IBase64Validatable<char>
         {
 #if NET
             private static readonly SearchValues<char> s_validBase64Chars = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64Chars);
-#endif
+#else
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int DecodeValue(char value)
             {
@@ -165,26 +158,38 @@ namespace System.Buffers.Text
 
                 return default(Base64DecoderByte).DecodingMap[value];
             }
+#endif
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == EncodingPad;
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength) =>
-                default(Base64ByteValidatable).ValidateAndDecodeLength(length, paddingCount, out decodedLength);
+            public bool ValidateAndDecodeLength(char lastChar, int length, int paddingCount, out int decodedLength) =>
+                default(Base64ByteValidatable).ValidateAndDecodeLength((byte)lastChar, length, paddingCount, out decodedLength);
         }
 
         internal readonly struct Base64ByteValidatable : IBase64Validatable<byte>
         {
 #if NET
             private static readonly SearchValues<byte> s_validBase64Chars = SearchValues.Create(default(Base64EncoderByte).EncodingMap);
+
             public int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64Chars);
-#endif
+#else
             public int DecodeValue(byte value) => default(Base64DecoderByte).DecodingMap[value];
+#endif
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == EncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool ValidateAndDecodeLength(int length, int paddingCount, out int decodedLength)
+            public bool ValidateAndDecodeLength(byte lastChar, int length, int paddingCount, out int decodedLength)
             {
                 if (length % 4 == 0)
                 {
+                    int decoded = default(Base64DecoderByte).DecodingMap[lastChar];
+                    if (paddingCount == 1 && (decoded & 0x03) != 0 ||
+                        paddingCount == 2 && (decoded & 0x0F) != 0)
+                    {
+                        // unused lower bits are not 0, reject input
+                        decodedLength = 0;
+                        return false;
+                    }
+
                     // Remove padding to get exact length.
                     decodedLength = (int)((uint)length / 4 * 3) - paddingCount;
                     return true;

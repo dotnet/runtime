@@ -285,7 +285,8 @@ namespace System.Buffers.Text.Tests
             Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
 
             Assert.False(Base64.IsValid(inputString));
-            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int _));
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int _, out int _));
+            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8InPlace(source, out int _));
         }
 
         [Theory]

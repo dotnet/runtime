@@ -300,11 +300,12 @@ namespace System.Buffers.Text.Tests
         [InlineData("AQIDBAUHCAkKCwwNDxD")]
         public void BasicDecodingWithNonZeroUnusedBits(string inputString)
         {
-            Span<byte> source = Encoding.ASCII.GetBytes(inputString);
-            Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
+            byte[] source = Encoding.ASCII.GetBytes(inputString);
+            Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
 
-            Assert.False(Base64.IsValid(inputString));
-            Assert.Equal(OperationStatus.InvalidData, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int _));
+            Assert.False(Base64Url.IsValid(inputString));
+            Assert.Equal(OperationStatus.InvalidData, Base64Url.DecodeFromUtf8(source, decodedBytes, out int _, out int _));
+            Assert.Throws<FormatException>(() => Base64Url.DecodeFromUtf8InPlace(source));
         }
 
         [Theory]
