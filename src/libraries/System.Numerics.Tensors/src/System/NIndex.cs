@@ -14,6 +14,7 @@ namespace System.Buffers
     /// int lastElement = someArray[^1]; // lastElement = 5
     /// </code>
     /// </remarks>
+    [Experimental("SNTEXP0001")]
     public readonly struct NIndex : IEquatable<NIndex>
     {
         private readonly nint _value;

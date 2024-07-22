@@ -11,12 +11,14 @@ using System.Buffers;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using System.Security.Cryptography;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 #pragma warning disable CS8601 // Possible null reference assignment.
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
 namespace System.Numerics.Tensors
 {
+    [Experimental("SNTEXP0001")]
     public static partial class Tensor
     {
         #region AsReadOnlySpan
