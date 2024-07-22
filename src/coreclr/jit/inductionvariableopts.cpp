@@ -1473,8 +1473,6 @@ bool StrengthReductionContext::TryStrengthReduce()
                 break;
             }
 
-            ExpandStoredCursors(nextCursors, cursors);
-
             assert(nextIV != nullptr);
 
             if (varTypeIsGC(nextIV->Type) && !StaysWithinManagedObject(nextCursors, nextIV))
@@ -1484,6 +1482,8 @@ bool StrengthReductionContext::TryStrengthReduce()
                     varTypeName(nextIV->Type));
                 break;
             }
+
+            ExpandStoredCursors(nextCursors, cursors);
 
             derivedLevel++;
             std::swap(cursors, nextCursors);
@@ -1810,7 +1810,7 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
 //
 // Parameters:
 //   cursors      - [in, out] List of current cursors to expand.
-//   otherCursors - [in, out] List of next cursors.
+//   otherCursors - [in, out] The other list of cursors.
 //
 void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* cursors,
                                                    ArrayStack<CursorInfo>* otherCursors)
