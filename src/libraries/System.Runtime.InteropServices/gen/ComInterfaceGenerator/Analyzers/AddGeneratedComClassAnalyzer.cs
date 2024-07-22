@@ -53,7 +53,8 @@ namespace Microsoft.Interop.Analyzers
                         }
                     }
 
-                    if (type.BaseType.GetAttributes().Any(attr => generatedComClassAttributeType.Equals(attr.AttributeClass, SymbolEqualityComparer.Default)))
+                    if (type.BaseType is not null
+                        && type.BaseType.GetAttributes().Any(attr => generatedComClassAttributeType.Equals(attr.AttributeClass, SymbolEqualityComparer.Default)))
                     {
                         context.ReportDiagnostic(type.CreateDiagnostic(AddGeneratedComClassAttribute, type.Name));
                     }
