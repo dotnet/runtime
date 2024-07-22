@@ -7,7 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Numerics.Tensors
 {
 
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal sealed class TensorSpanDebugView<T>
     {
         private readonly T[] _array;

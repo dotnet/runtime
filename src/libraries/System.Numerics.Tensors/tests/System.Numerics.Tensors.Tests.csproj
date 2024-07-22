@@ -3,7 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);SNTEXP0001</NoWarn>
+    <!-- Tensor<T> is Experimental -->
+    <NoWarn>$(NoWarn);SYSLIB5001</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>

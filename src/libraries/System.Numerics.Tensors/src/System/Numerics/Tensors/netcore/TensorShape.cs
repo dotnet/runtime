@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 namespace System.Numerics.Tensors
 {
 
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal readonly struct TensorShape
     {
         // Used to determine when we need to allocate a metadata array

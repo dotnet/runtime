@@ -18,7 +18,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace System.Numerics.Tensors
 {
-    [Experimental("SNTEXP0001")]
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public sealed class Tensor<T>
         : ITensor<Tensor<T>, T>
     {
