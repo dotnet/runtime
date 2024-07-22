@@ -17,6 +17,7 @@
     <Compile Include="System\Net\WebSockets\Compression\WebSocketDeflater.cs" />
     <Compile Include="System\Net\WebSockets\Compression\WebSocketInflater.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
+    <Compile Include="System\Net\WebSockets\ManagedWebSocket.KeepAlive.cs" />
     <Compile Include="System\Net\WebSockets\ValueWebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocket.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketCloseStatus.cs" />
@@ -39,6 +40,10 @@
              Link="Common\Interop\Interop.zlib.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="Common\System\Net\ArrayBuffer.cs"/>
+    <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs"
+             Link="Common\System\Net\MultiArrayBuffer.cs"/>
   </ItemGroup>
 
   <!-- Windows specific files -->

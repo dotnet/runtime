@@ -87,6 +87,9 @@ namespace System.Net.WebSockets
             get { return TimeSpan.FromSeconds(30); }
         }
 
+        // By default, we use unsolicited PONGs as a keep-alive heartbeat, so we don't wait for any response and a timeout is not applicable.
+        internal static TimeSpan DefaultKeepAliveTimeout => Timeout.InfiniteTimeSpan;
+
         protected static void ThrowOnInvalidState(WebSocketState state, params WebSocketState[] validStates)
         {
             string validStatesText = string.Empty;
@@ -150,7 +153,7 @@ namespace System.Net.WebSockets
                     0));
             }
 
-            return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(stream, isServer, subProtocol, keepAliveInterval, DefaultKeepAliveTimeout);
         }
 
         /// <summary>Creates a <see cref="WebSocket"/> that operates on a <see cref="Stream"/> representing a web socket connection.</summary>
@@ -209,7 +212,7 @@ namespace System.Net.WebSockets
 
             // Ignore useZeroMaskingKey. ManagedWebSocket doesn't currently support that debugging option.
             // Ignore internalBuffer. ManagedWebSocket uses its own small buffer for headers/control messages.
-            return new ManagedWebSocket(innerStream, false, subProtocol, keepAliveInterval);
+            return new ManagedWebSocket(innerStream, false, subProtocol, keepAliveInterval, DefaultKeepAliveTimeout);
         }
     }
 }
