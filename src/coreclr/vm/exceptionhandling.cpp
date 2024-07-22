@@ -7673,27 +7673,23 @@ UINT_PTR GetEstablisherFrame(REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 #endif
 }
 
-size_t GetSSPForFrameOnCurrentStack(CONTEXT *pContext)
-{
-    size_t *targetSSP = 0;
-
 #if defined(HOST_AMD64) && defined(HOST_WINDOWS)
-    targetSSP = (size_t *)_rdsspq();
-    // Find the shadow stack pointer for the frame we are going to restore to.
+size_t GetSSPForFrameOnCurrentStack(TADDR ip)
+{
+    size_t *targetSSP = (size_t *)_rdsspq();
     // The SSP we search is pointing to the return address of the frame represented
-    // by the passed in context. So we search for the instruction pointer from 
+    // by the passed in IP. So we search for the instruction pointer from 
     // the context and return one slot up from there.
     if (targetSSP != NULL)
     {
-        size_t ip = GetIP(pContext);
         while (*targetSSP++ != ip)
         {
         }
     }
-#endif // HOST_AMD64 && HOST_WINDOWS
 
     return (size_t)targetSSP;
 }
+#endif // HOST_AMD64 && HOST_WINDOWS
 
 extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo)
 {
@@ -7711,7 +7707,12 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
     DWORD_PTR dwResumePC = 0;
     UINT_PTR callerTargetSp = 0;
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(pvRegDisplay->pCurrentContext);
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    size_t targetSSP = exInfo->m_frameIter.m_crawl.GetRegisterSet()->SSP;
+    _ASSERTE(targetSSP == 0 || (*(size_t*)(targetSSP-8) == exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC));
+#else
+    size_t targetSSP = 0;
+#endif
 
     if (pHandlerIP != NULL)
     {
@@ -7929,6 +7930,12 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 
     pThread->GetExceptionState()->GetDebuggerState()->GetDebuggerInterceptInfo(&pInterceptMD, NULL, (PBYTE*)&(sfInterceptStackFrame.SP), &ulRelOffset, NULL);
 
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+    TADDR targetSSP = pExInfo->m_frameIter.m_crawl.GetRegisterSet()->SSP;
+#else
+    TADDR targetSSP = 0;
+#endif
+
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
     PCODE pStartAddress = pInterceptMD->GetNativeCode();
@@ -7940,8 +7947,6 @@ extern "C" void QCALLTYPE ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
     // so we need to adjust it to get the actual IP.
     _ASSERTE(FitsIn<DWORD>(ulRelOffset));
     uResumePC = codeInfo.GetJitManager()->GetCodeAddressForRelOffset(codeInfo.GetMethodToken(), static_cast<DWORD>(ulRelOffset));
-
-    size_t targetSSP = GetSSPForFrameOnCurrentStack(pvRegDisplay->pCurrentContext);
 
     SetIP(pvRegDisplay->pCurrentContext, uResumePC);
     ClrRestoreNonvolatileContext(pvRegDisplay->pCurrentContext, targetSSP);
@@ -8416,6 +8421,14 @@ extern "C" bool QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalk
     if (result)
     {
         TADDR controlPC = pThis->m_crawl.GetRegisterSet()->ControlPC;
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+        // Get the SSP for the first managed frame. It is incremented during the stack walk so that
+        // when we reach the handling frame, it contains correct SSP to set when resuming after
+        // the catch handler.
+        pThis->m_crawl.GetRegisterSet()->SSP = GetSSPForFrameOnCurrentStack(controlPC);
+#endif
+
         if (!pThis->m_crawl.HasFaulted() && !pThis->m_crawl.IsIPadjusted())
         {
             controlPC -= STACKWALK_CONTROLPC_ADJUST_OFFSET;

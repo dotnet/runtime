@@ -74,6 +74,7 @@ namespace System.IO.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("A little slow")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_InternalBufferSize_SynchronizingObject()
         {
             ManualResetEvent unblockHandler = new ManualResetEvent(false);

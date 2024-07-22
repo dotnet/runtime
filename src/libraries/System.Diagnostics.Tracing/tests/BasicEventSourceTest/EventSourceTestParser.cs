@@ -658,7 +658,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return x;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -715,7 +715,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return x;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -772,7 +772,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return x;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -829,7 +829,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return x;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -886,7 +886,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return arg1;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -947,7 +947,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return arg2;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1012,7 +1012,7 @@ using Address = System.UInt64;
 //                case 2:
 //                    return arg3;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1069,7 +1069,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return arg1;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1130,7 +1130,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return arg2;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1195,7 +1195,7 @@ using Address = System.UInt64;
 //                case 2:
 //                    return arg3;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1252,7 +1252,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return s;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1309,7 +1309,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return arg1;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1370,7 +1370,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return arg2;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1435,7 +1435,7 @@ using Address = System.UInt64;
 //                case 2:
 //                    return arg3;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1496,7 +1496,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return arg2;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1557,7 +1557,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return arg2;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1622,7 +1622,7 @@ using Address = System.UInt64;
 //                case 2:
 //                    return arg3;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1703,7 +1703,7 @@ using Address = System.UInt64;
 //                case 6:
 //                    return s6;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1792,7 +1792,7 @@ using Address = System.UInt64;
 //                case 8:
 //                    return s8;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1855,7 +1855,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return n;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1918,7 +1918,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return n;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -1979,7 +1979,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return n;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2080,7 +2080,7 @@ using Address = System.UInt64;
 //                case 11:
 //                    return guid;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2141,7 +2141,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return percentage;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2206,7 +2206,7 @@ using Address = System.UInt64;
 //                case 2:
 //                    return le;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2263,7 +2263,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return arg1;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2324,7 +2324,7 @@ using Address = System.UInt64;
 //                case 1:
 //                    return arg2;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2381,7 +2381,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return dt;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2438,7 +2438,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return message;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2495,7 +2495,7 @@ using Address = System.UInt64;
 //                case 0:
 //                    return message;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2592,7 +2592,7 @@ using Address = System.UInt64;
 //                case 10:
 //                    return guid;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
@@ -2657,7 +2657,7 @@ using Address = System.UInt64;
 //                case 2:
 //                    return le;
 //                default:
-//                    Debug.Assert(false, "Bad field index");
+//                    Debug.Fail("Bad field index");
 //                    return null;
 //            }
 //        }
