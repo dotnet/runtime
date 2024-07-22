@@ -1248,6 +1248,11 @@ namespace Internal.JitInterface
             return meth1.GetTypicalMethodDefinition() == meth2.GetTypicalMethodDefinition();
         }
 
+        private CORINFO_CLASS_STRUCT_* getTypeDefinition(CORINFO_CLASS_STRUCT_* type)
+        {
+            return ObjectToHandle(HandleToObject(type).GetTypeDefinition());
+        }
+
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
@@ -3915,8 +3920,8 @@ namespace Internal.JitInterface
                     const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
                     const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
                     const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+                    const ushort IMAGE_REL_ARM64_SECREL_LOW12A = 9;
                     const ushort IMAGE_REL_ARM64_SECREL_HIGH12A = 0xA;
-                    const ushort IMAGE_REL_ARM64_SECREL_LOW12L = 0xB;
                     const ushort IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21 = 0x107;
                     const ushort IMAGE_REL_ARM64_TLSDESC_LD64_LO12 = 0x108;
                     const ushort IMAGE_REL_ARM64_TLSDESC_ADD_LO12 = 0x109;
@@ -3941,8 +3946,8 @@ namespace Internal.JitInterface
                             return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
                         case IMAGE_REL_ARM64_SECREL_HIGH12A:
                             return RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A;
-                        case IMAGE_REL_ARM64_SECREL_LOW12L:
-                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12L;
+                        case IMAGE_REL_ARM64_SECREL_LOW12A:
+                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;

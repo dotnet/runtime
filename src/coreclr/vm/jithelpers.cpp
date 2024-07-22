@@ -3078,7 +3078,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.InsureInit(false, NULL);
+    __helperframe.InsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 

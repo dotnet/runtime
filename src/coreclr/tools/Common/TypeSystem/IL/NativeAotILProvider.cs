@@ -46,12 +46,6 @@ namespace Internal.IL
 
             switch (owningType.Name)
             {
-                case "Interlocked":
-                    {
-                        if (owningType.Namespace == "System.Threading")
-                            return InterlockedIntrinsics.EmitIL(method);
-                    }
-                    break;
                 case "Unsafe":
                     {
                         if (owningType.Namespace == "System.Runtime.CompilerServices")
@@ -108,6 +102,12 @@ namespace Internal.IL
 
             switch (owningType.Name)
             {
+                case "Interlocked":
+                    {
+                        if (owningType.Namespace == "System.Threading")
+                            return InterlockedIntrinsics.EmitIL(method);
+                    }
+                    break;
                 case "Activator":
                     {
                         TypeSystemContext context = owningType.Context;
