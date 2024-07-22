@@ -10,11 +10,6 @@ namespace System.Net.NetworkInformation
     {
         private const int StackAllocationThreshold = 512;
 
-        public static uint InterfaceNameToIndex(string interfaceName)
-        {
-            return Interop.IpHlpApi.if_nametoindex(interfaceName);
-        }
-
         public static unsafe uint InterfaceNameToIndex(ReadOnlySpan<char> interfaceName)
         {
             // Includes null terminator.

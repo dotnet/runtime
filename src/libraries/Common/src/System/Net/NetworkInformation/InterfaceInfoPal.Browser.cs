@@ -5,12 +5,6 @@ namespace System.Net.NetworkInformation
 {
     internal static class InterfaceInfoPal
     {
-        public static uint InterfaceNameToIndex(string _/*interfaceName*/)
-        {
-            // zero means "unknown"
-            return 0;
-        }
-
         public static uint InterfaceNameToIndex(ReadOnlySpan<char> _/*interfaceName*/)
         {
             // zero means "unknown"
