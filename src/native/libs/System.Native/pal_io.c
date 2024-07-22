@@ -369,6 +369,7 @@ int32_t SystemNative_Unlink(const char* path)
     return result;
 }
 
+#ifdef __NR_memfd_create
 #ifndef MFD_CLOEXEC
 #define MFD_CLOEXEC 0x0001U
 #endif
@@ -380,6 +381,7 @@ int32_t SystemNative_Unlink(const char* path)
 #endif
 #ifndef F_SEAL_WRITE
 #define F_SEAL_WRITE 0x0008
+#endif
 #endif
 
 int32_t SystemNative_IsMemfdSupported(void)
