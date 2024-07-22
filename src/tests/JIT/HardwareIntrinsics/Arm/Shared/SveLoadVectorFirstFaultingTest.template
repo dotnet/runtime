@@ -206,7 +206,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var faultResult = Sve.GetFfr{GetFfrType}();
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(ref op2Ref, Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>(), _dataTable.outArrayPtr, faultResult);
+            ValidateFirstFaultingResult(ref op2Ref, _dataTable.inBounded.Span.Length, _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunReflectionScenario_Load()

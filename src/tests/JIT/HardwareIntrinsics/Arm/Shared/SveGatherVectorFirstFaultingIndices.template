@@ -336,7 +336,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ref var op3Ref = ref op3;
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(Unsafe.AsPointer(ref op1Ref), ref op2Ref, Op2ElementCount * Unsafe.SizeOf<{Op2BaseType}>(), Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult);
+            ValidateFirstFaultingResult(Unsafe.AsPointer(ref op1Ref), ref op2Ref, _dataTable.inBounded.Span.Length, Unsafe.AsPointer(ref op3Ref), _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunBasicScenario_FalseMask()
