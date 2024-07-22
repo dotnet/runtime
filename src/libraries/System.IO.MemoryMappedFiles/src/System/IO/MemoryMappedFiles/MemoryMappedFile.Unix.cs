@@ -273,7 +273,10 @@ namespace System.IO.MemoryMappedFiles
         private static SafeFileHandle CreateSharedBackingObjectUsingMemoryMemfdCreate(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            SafeFileHandle fd = Interop.Sys.MemfdCreate(GenerateMapName());
+            int isReadonly = ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0 &&
+                    (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) == 0) ? 1 : 0;
+
+            SafeFileHandle fd = Interop.Sys.MemfdCreate(GenerateMapName(), isReadonly);
             if (fd.IsInvalid)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -284,15 +287,6 @@ namespace System.IO.MemoryMappedFiles
 
             try
             {
-                // Add a write seal for readonly case when readonly protection requested
-                if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0 &&
-                    (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) == 0 &&
-                    Interop.Sys.Fcntl.SetSealWrite(fd) == -1)
-                {
-                    // seal write failed
-                    throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo());
-                }
-
                 // Give it the right capacity.  We do this directly with ftruncate rather
                 // than via FileStream.SetLength after the FileStream is created because, on some systems,
                 // lseek fails on shared memory objects, causing the FileStream to think it's unseekable,

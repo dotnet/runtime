@@ -374,14 +374,14 @@ PALEXPORT int32_t SystemNative_Unlink(const char* path);
  * 
  * Returns 1 if memfd_create is supported, 0 if not supported, or -1 on failure. Sets errno on failure.
  */
-PALEXPORT int32_t SystemNative_MemfdSupported(void);
+PALEXPORT int32_t SystemNative_IsMemfdSupported(void);
 
 /**
  * Create an anonymous file descriptor. Implemented as shim to memfd_create(2).
  *
  * Returns file descriptor or -1 on failure. Sets errno on failure.
  */
-PALEXPORT intptr_t SystemNative_MemfdCreate(const char* name);
+PALEXPORT intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly);
 
 /**
  * Open or create a shared memory object. Implemented as shim to shm_open(3).
@@ -431,13 +431,6 @@ PALEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets 
 // NOTE: Rather than a general fcntl shim, we opt to export separate functions
 // for each command. This allows use to have strongly typed arguments and saves
 // complexity around converting command codes.
-
-/**
- * Sets the write seal on memfd_create file descriptor.
- *
- * Returns 0 for success; -1 for failure. Sets errno for failure.
- */
-PALEXPORT int32_t SystemNative_FcntlSetSealWrite(intptr_t fd);
 
 /**
  * Sets the O_CLOEXEC flag on a file descriptor.

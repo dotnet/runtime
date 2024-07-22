@@ -10,6 +10,7 @@
 #include "pal_types.h"
 
 #include <assert.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fnmatch.h>
@@ -369,7 +370,7 @@ int32_t SystemNative_Unlink(const char* path)
     return result;
 }
 
-int32_t SystemNative_MemfdSupported(void)
+int32_t SystemNative_IsMemfdSupported(void)
 {
 #if HAVE_MEMFD_CREATE
 #ifdef TARGET_LINUX
@@ -397,7 +398,7 @@ int32_t SystemNative_MemfdSupported(void)
 #endif
 }
 
-intptr_t SystemNative_MemfdCreate(const char* name)
+intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly)
 {
 #if HAVE_MEMFD_CREATE
 #if defined(SHM_NAME_MAX) // macOS
@@ -406,7 +407,12 @@ intptr_t SystemNative_MemfdCreate(const char* name)
     assert(strlen(name) <= PATH_MAX);
 #endif
 
-    return memfd_create(name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    int32_t fd = memfd_create(name, MFD_CLOEXEC | MFD_ALLOW_SEALING);
+    if (!isReadonly || fd < 0) return fd;
+
+    // Add a write seal when readonly protection requested
+    while (fcntl(fd, F_ADD_SEALS, F_SEAL_WRITE) < 0 && errno == EINTR);
+    return fd;
 #else
     (void)name;
     errno = ENOTSUP;
@@ -663,13 +669,6 @@ int32_t SystemNative_Pipe(int32_t pipeFds[2], int32_t flags)
 #else /* HAVE_PIPE */
     result = -1;
 #endif /* HAVE_PIPE */
-    return result;
-}
-
-int32_t SystemNative_FcntlSetSealWrite(intptr_t fd)
-{
-    int result;
-    while ((result = fcntl(ToFileDescriptor(fd), F_ADD_SEALS, F_SEAL_WRITE)) < 0 && errno == EINTR);
     return result;
 }
 

@@ -22,9 +22,6 @@ internal static partial class Interop
             [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetFD", SetLastError = true)]
             internal static partial int SetFD(SafeHandle fd, int flags);
 
-            [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetSealWrite", SetLastError = true)]
-            internal static partial int SetSealWrite(SafeHandle fd);
-
             [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlGetFD", SetLastError = true)]
             internal static partial int GetFD(SafeHandle fd);
 

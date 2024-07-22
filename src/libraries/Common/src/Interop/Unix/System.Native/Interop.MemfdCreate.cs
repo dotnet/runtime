@@ -10,9 +10,9 @@ internal static partial class Interop
     internal static partial class Sys
     {
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MemfdCreate", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        internal static partial SafeFileHandle MemfdCreate(string name);
+        internal static partial SafeFileHandle MemfdCreate(string name, int isReadonly);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_MemfdSupported", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsMemfdSupported", SetLastError = true)]
         private static partial int MemfdSupportedImpl();
 
         private static volatile sbyte s_memfdSupported;
