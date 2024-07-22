@@ -139,6 +139,7 @@ check_symbol_exists(
 
 check_function_exists(
     memfd_create
+    fcntl.h
     HAVE_MEMFD_CREATE)
 
 check_function_exists(

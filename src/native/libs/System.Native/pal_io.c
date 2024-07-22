@@ -12,7 +12,6 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -415,6 +414,7 @@ intptr_t SystemNative_MemfdCreate(const char* name, int32_t isReadonly)
     return fd;
 #else
     (void)name;
+    (void)isReadonly;
     errno = ENOTSUP;
     return -1;
 #endif
