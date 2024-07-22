@@ -598,7 +598,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     // Get the name, and determine its length.
     pszName = pAssembly->GetSimpleName();
     cbName=(ULONG)strlen(pszName);
-    cchName = WszMultiByteToWideChar(CP_ACP,0, pszName,cbName+1, 0,0);
+    cchName = MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, 0,0);
 
     // See if there is a public key.
     EX_TRY
@@ -663,7 +663,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     IfFailGo(rDef.ReSizeNoThrow(cbCur + cchName*sizeof(WCHAR) + sizeof(szTypeLibKeyName)-1 + cbSN + sizeof(ver)+sizeof(USHORT)));
 
     // Put it all together.  Name first.
-    WszMultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]),cchName);
+    MultiByteToWideChar(CP_ACP,0, pszName,cbName+1, (LPWSTR)(&rDef[cbCur]),cchName);
     pName = (LPWSTR)(&rDef[cbCur]);
     for (pch=pName; *pch; ++pch)
         if (*pch == '.' || *pch == ' ')
@@ -907,7 +907,7 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
     if (fThrowOnUnmappableChar)
     {
         BOOL DefaultCharUsed = FALSE;
-        retval = WszWideCharToMultiByte(CP_ACP,
+        retval = WideCharToMultiByte(CP_ACP,
                                     flags,
                                     szWideString,
                                     iNumWideChars,
@@ -940,7 +940,7 @@ int InternalWideToAnsi(_In_reads_(iNumWideChars) LPCWSTR szWideString, int iNumW
     }
     else
     {
-        retval = WszWideCharToMultiByte(CP_ACP,
+        retval = WideCharToMultiByte(CP_ACP,
                                     flags,
                                     szWideString,
                                     iNumWideChars,
@@ -1196,7 +1196,7 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION( GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && g_fProcessDetach ) );
+        PRECONDITION( GCHeapUtilities::IsGCInProgress() || ( (g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() ) );
     }
     CONTRACTL_END;
 
@@ -1225,7 +1225,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
     CONTRACTL_END;
 
-    if ((g_fEEShutDown & ShutDown_SyncBlock) && g_fProcessDetach )
+    if ((g_fEEShutDown & ShutDown_SyncBlock) && IsAtProcessExit() )
         MinorCleanupSyncBlockComData(pInteropInfo);
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -2509,7 +2509,7 @@ HRESULT GetTypeLibVersionForAssembly(
     // Check to see if the TypeLibVersionAttribute is set.
     IfFailRet(pAssembly->GetMDImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_TYPELIBVERSION_TYPE, (const void**)&pbData, &cbData));
 
-    // For attribute contents, see https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
+    // For attribute contents, see https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.typelibversionattribute
     if (cbData >= (2 + 2 * sizeof(UINT32)))
     {
         CustomAttributeParser cap(pbData, cbData);
@@ -3026,11 +3026,11 @@ FORCEINLINE void DispParamHolderRelease(VARIANT* value)
     }
 }
 
-class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>
+class DispParamHolder : public Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>
 {
 public:
     DispParamHolder(VARIANT* p = NULL)
-        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>(p)
+        : Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>(p)
     {
         WRAPPER_NO_CONTRACT;
     }
@@ -3038,7 +3038,7 @@ public:
     FORCEINLINE void operator=(VARIANT* p)
     {
         WRAPPER_NO_CONTRACT;
-        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, NULL>::operator=(p);
+        Wrapper<VARIANT*, DispParamHolderDoNothing, DispParamHolderRelease, 0>::operator=(p);
     }
 };
 
@@ -3082,6 +3082,7 @@ void IUInvokeDispMethod(
     DISPID              MemberID            = 0;
     ByrefArgumentInfo*  aByrefArgInfos      = NULL;
     BOOL                bSomeArgsAreByref   = FALSE;
+    SafeComHolder<IUnknown> pUnk            = NULL;
     SafeComHolder<IDispatch> pDisp          = NULL;
     SafeComHolder<IDispatchEx> pDispEx      = NULL;
     VariantPtrHolder    pVarResult          = NULL;
@@ -3121,7 +3122,7 @@ void IUInvokeDispMethod(
     {
         CorIfaceAttr ifaceType = pInvokedMT->GetComInterfaceType();
         if (!IsDispatchBasedItf(ifaceType))
-            COMPlusThrow(kTargetInvocationException, IDS_EE_INTERFACE_NOT_DISPATCH_BASED);
+            COMPlusThrow(kTargetException, W("TargetInvocation_InterfaceNotIDispatch"));
     }
 
     // Validate that the target is a COM object.
@@ -3156,7 +3157,10 @@ void IUInvokeDispMethod(
     {
         // The invoked type is a dispatch or dual interface so we will make the
         // invocation on it.
-        pDisp = (IDispatch *)ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        pUnk = ComObject::GetComIPFromRCWThrowing(pTarget, pInvokedMT);
+        hr = SafeQueryInterface(pUnk, IID_IDispatch, (IUnknown**)&pDisp);
+        if (FAILED(hr))
+            COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
     }
     else
     {
@@ -3167,9 +3171,9 @@ void IUInvokeDispMethod(
         RCWPROTECT_BEGIN(pRCW, *pTarget);
 
         // Retrieve the IDispatch pointer from the wrapper.
-        pDisp = (IDispatch*)pRCW->GetIDispatch();
+        pDisp = pRCW->GetIDispatch();
         if (!pDisp)
-            COMPlusThrow(kTargetInvocationException, IDS_EE_NO_IDISPATCH_ON_TARGET);
+            COMPlusThrow(kTargetException, W("TargetInvocation_TargetDoesNotImplementIDispatch"));
 
         // If we aren't ignoring case, then we need to try and QI for IDispatchEx to
         // be able to use IDispatchEx::GetDispID() which has a flag to control case
@@ -3715,7 +3719,7 @@ void InitializeComInterop()
     InitializeSListHead(&RCW::s_RCWStandbyList);
     ComCall::Init();
 #ifdef TARGET_X86
-    ComPlusCall::Init();
+    CLRToCOMCall::Init();
 #endif
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();

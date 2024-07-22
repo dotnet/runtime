@@ -12,6 +12,17 @@ using Xunit;
 public class Validate
 {
     [Fact]
+    public static void Validate_Activation()
+    {
+        Console.WriteLine($"{nameof(Validate_Activation)}...");
+
+        Assert.Equal("System.Span<Int32>[0]", Activator.CreateInstance<Span<int>>().ToString());
+        Assert.Equal("System.Span<String>[0]", Activator.CreateInstance<Span<string>>().ToString());
+        Assert.Equal("System.ReadOnlySpan<Int32>[0]", Activator.CreateInstance<ReadOnlySpan<int>>().ToString());
+        Assert.Equal("System.ReadOnlySpan<String>[0]", Activator.CreateInstance<ReadOnlySpan<string>>().ToString());
+    }
+
+    [Fact]
     public static void Validate_TypeLoad()
     {
         Console.WriteLine($"{nameof(Validate_TypeLoad)}...");
@@ -21,6 +32,7 @@ public class Validate
         Console.WriteLine($" -- Instantiate: {Exec.GenericValueType()}");
         Console.WriteLine($" -- Instantiate: {Exec.GenericByRefLike()}");
         Console.WriteLine($" -- Instantiate: {Exec.GenericByRefLike_ConstraintsAreIndependent_Int32_Int32()}");
+        Console.WriteLine($" -- Create: {Exec.CreateDefaultInstance()}");
 
         Assert.Throws<TypeLoadException>(() => { Exec.GenericClass_Invalid(); });
         Assert.Throws<TypeLoadException>(() => { Exec.GenericInterface_Invalid(); });
@@ -53,6 +65,16 @@ public class Validate
         Assert.True(Exec.BoxBranch());
         Assert.True(Exec.BoxIsinstUnboxAny());
         Assert.True(Exec.BoxIsinstBranch());
+    }
+
+    [Fact]
+    public static void Validate_RecognizedOpCodeSequences_Mismatch()
+    {
+        Console.WriteLine($"{nameof(Validate_RecognizedOpCodeSequences_Mismatch)}...");
+
+        // box !T ; isinst S ; unbox.any S should always be guarded by a box !T ; isinst S;
+        // brtrue/brfalse branch, so if it's ever executed and the types aren't equal that's invalid
+        Assert.Throws<InvalidProgramException>(() => { Exec.BoxIsinstUnboxAny_Mismatch(); });
     }
 
     [Fact]

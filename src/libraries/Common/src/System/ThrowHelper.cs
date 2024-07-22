@@ -15,7 +15,7 @@ namespace System
         /// <param name="argument">The reference type argument to validate as non-null.</param>
         /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
         internal static void ThrowIfNull(
-#if NETCOREAPP3_0_OR_GREATER
+#if NET
             [NotNull]
 #endif
             object? argument,
@@ -27,7 +27,7 @@ namespace System
             }
         }
 
-#if NETCOREAPP3_0_OR_GREATER
+#if NET
         [DoesNotReturn]
 #endif
         private static void Throw(string? paramName) => throw new ArgumentNullException(paramName);
@@ -40,17 +40,17 @@ namespace System
         /// <param name="paramName">The name of the parameter being checked.</param>
         /// <returns>The original value of <paramref name="argument"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#if NETCOREAPP3_0_OR_GREATER
+#if NET
         [return: NotNull]
 #endif
         public static string IfNullOrWhitespace(
-#if NETCOREAPP3_0_OR_GREATER
+#if NET
             [NotNull]
 #endif
             string? argument,
             [CallerArgumentExpression(nameof(argument))] string paramName = "")
         {
-#if !NETCOREAPP3_1_OR_GREATER
+#if !NET
             if (argument == null)
             {
                 throw new ArgumentNullException(paramName);
@@ -74,7 +74,7 @@ namespace System
     }
 }
 
-#if !NETCOREAPP3_0_OR_GREATER
+#if !NET
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Parameter, AllowMultiple = false, Inherited = false)]

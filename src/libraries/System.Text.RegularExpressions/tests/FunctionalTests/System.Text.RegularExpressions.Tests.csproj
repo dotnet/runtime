@@ -56,6 +56,7 @@
     <Compile Include="RegexAssert.netcoreapp.cs" />
     <Compile Include="RegexParserTests.netcoreapp.cs" />
     <Compile Include="Regex.EnumerateMatches.Tests.cs" />
+    <Compile Include="Regex.EnumerateSplits.Tests.cs" />
     <Compile Include="RegexIgnoreCaseTests.cs" />
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
+    <!-- declare types in namespaces; ConfigureAwait; Prefer 'static readonly' fields; trim warnings -->
+    <NoWarn>$(NoWarn);CA1050;CA2007;CA1861;IL2104</NoWarn>
+    <WasmEnableThreads>true</WasmEnableThreads>
+    <StaticWebAssetBasePath>wasmclient</StaticWebAssetBasePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+</Project>

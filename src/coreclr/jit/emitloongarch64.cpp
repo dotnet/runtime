@@ -2058,10 +2058,10 @@ void emitter::emitIns_R_AI(instruction  ins,
 
     // INS_OPTS_RELOC: placeholders.  2-ins:
     //  case:EA_HANDLE_CNS_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   addi_d  reg, reg, off-lo-12bits
     //  case:EA_PTR_DSP_RELOC
-    //   pcaddu12i  reg, off-hi-20bits
+    //   pcalau12i  reg, off-hi-20bits
     //   ld_d  reg, reg, off-lo-12bits
 
     instrDesc* id = emitNewInstr(attr);
@@ -2202,11 +2202,6 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
     id->idInsOpt(INS_OPTS_J);
     emitCounts_INS_OPTS_J++;
     id->idAddr()->iiaBBlabel = dst;
-
-    if (emitComp->opts.compReloc)
-    {
-        id->idSetIsDspReloc();
-    }
 
     id->idjShort = false;
 
@@ -2375,6 +2370,8 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
  *
  * For LOONGARCH xreg, xmul and disp are never used and should always be 0/REG_NA.
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
@@ -2392,7 +2389,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -2464,11 +2462,32 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark RBM_INTRET appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET;
+    }
+
+    // If is a multi-register return method is called, mark RBM_INTRET_1 appropriately
+    if (secondRetSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_INTRET_1;
+    }
+    else if (secondRetSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_INTRET_1;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -3212,21 +3231,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_OPTS_RELOC:
         {
             //  case:EA_HANDLE_CNS_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   addi_d  reg, reg, off-lo-12bits
             //  case:EA_PTR_DSP_RELOC
-            //   pcaddu12i  reg, off-hi-20bits
+            //   pcalau12i  reg, off-hi-20bits
             //   ld_d  reg, reg, off-lo-12bits
 
             regNumber reg1 = id->idReg1();
 
-            *(code_t*)dstRW = 0x1c000000 | (code_t)reg1;
+            *(code_t*)dstRW = 0x1a000000 | (code_t)reg1;
 
             dstRW += 4;
 
 #ifdef DEBUG
-            code = emitInsCode(INS_pcaddu12i);
-            assert(code == 0x1c000000);
+            code = emitInsCode(INS_pcalau12i);
+            assert(code == 0x1a000000);
             code = emitInsCode(INS_addi_d);
             assert(code == 0x02c00000);
             code = emitInsCode(INS_ld_d);
@@ -3848,8 +3867,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
     }
 
-#ifdef DEBUG
-    if (emitComp->opts.disAsm || emitComp->verbose)
+    if (emitComp->opts.disAsm INDEBUG(|| emitComp->verbose))
     {
         code_t* cp = (code_t*)(*dp + writeableOffset);
         while ((BYTE*)cp != dstRW)
@@ -3859,6 +3877,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         }
     }
 
+#ifdef DEBUG
     if (emitComp->compDebugBreak)
     {
         // For example, set JitBreakEmitOutputInstr=a6 will break when this method is called for
@@ -3881,8 +3900,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
 /*****************************************************************************/
 /*****************************************************************************/
-
-#ifdef DEBUG
 
 // clang-format off
 static const char* const RegNames[] =
@@ -3964,19 +3981,21 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 {
     const BYTE* insAdr = addr - writeableOffset;
 
-    bool disOpcode = !emitComp->opts.disDiffable;
-    bool disAddr   = emitComp->opts.disAddr;
-    if (disAddr)
+#ifdef DEBUG
+    if (emitComp->opts.disAddr)
     {
         printf("  0x%llx", insAdr);
     }
 
     printf("  ");
 
-    if (disOpcode)
+    if (!emitComp->opts.disDiffable)
     {
         printf("%08X  ", code);
     }
+#else
+    printf("            ");
+#endif
 
     const int regd = code & 0x1f;
     const int regj = (code >> 5) & 0x1f;
@@ -4190,8 +4209,9 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             return;
         case DF_F_RG12I:
         {
-            tmp = ((code >> 10) & 0xfff);
-            printf("%s, %s, 0x%x\n", RegNames[regd + 32], RegNames[regj], tmp);
+            tmp = code << 10;
+            tmp >>= 20;
+            printf("%s, %s, %d\n", RegNames[regd + 32], RegNames[regj], tmp);
             return;
         }
         case DF_F_FG:
@@ -4539,51 +4559,16 @@ void emitter::emitDispIns(
     }
 }
 
+#ifdef DEBUG
 /*****************************************************************************
  *
  *  Display a stack frame reference.
  */
-
 void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 {
-    printf("[");
-
-    if (varx < 0)
-        printf("TEMP_%02u", -varx);
-    else
-        emitComp->gtDispLclVar(+varx, false);
-
-    if (disp < 0)
-        printf("-0x%02x", -disp);
-    else if (disp > 0)
-        printf("+0x%02x", +disp);
-
-    printf("]");
-
-    if (varx >= 0 && emitComp->opts.varNames)
-    {
-        LclVarDsc*  varDsc;
-        const char* varName;
-
-        assert((unsigned)varx < emitComp->lvaCount);
-        varDsc  = emitComp->lvaTable + varx;
-        varName = emitComp->compLocalVarName(varx, offs);
-
-        if (varName)
-        {
-            printf("'%s", varName);
-
-            if (disp < 0)
-                printf("-%d", -disp);
-            else if (disp > 0)
-                printf("+%d", +disp);
-
-            printf("'");
-        }
-    }
+    NYI_LOONGARCH64("emitDispFrameRef-----unused on LoongArch64.");
 }
-
-#endif // DEBUG
+#endif
 
 // Generate code for a load or store operation with a potentially complex addressing mode
 // This method handles the case of a GT_IND with contained GT_LEA op1 of the x86 form [base + index*sccale + offset]
@@ -4620,7 +4605,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 if (isValidSimm12(offset))
                 {
@@ -4761,7 +4746,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 emitIns_I_la(EA_PTRSIZE, tmpReg, offset);
@@ -5092,7 +5077,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
 
             if ((dst->gtFlags & GTF_UNSIGNED) == 0)
             {
-                saveOperReg2 = dst->GetSingleTempReg();
+                saveOperReg2 = codeGen->internalRegisters.GetSingle(dst);
                 assert((saveOperReg2 != REG_RA) && (saveOperReg2 != REG_R21));
                 assert(REG_RA != regOp1);
                 assert(saveOperReg2 != regOp2);

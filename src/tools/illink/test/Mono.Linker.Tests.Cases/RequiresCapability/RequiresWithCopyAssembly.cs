@@ -29,11 +29,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	class RequiresWithCopyAssembly
 	{
 		[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--")]
-		[ExpectedWarning ("IL3002", "--IDerivedInterface.MethodInDerivedInterface--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "--IDerivedInterface.MethodInDerivedInterface--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "--IDerivedInterface.MethodInDerivedInterface--", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3050", "--IDerivedInterface.MethodInDerivedInterface--", Tool.NativeAot, "")]
 		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--")]
-		[ExpectedWarning ("IL3002", "--IBaseInterface.MethodInBaseInterface--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "--IBaseInterface.MethodInBaseInterface--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "--IBaseInterface.MethodInBaseInterface--", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3050", "--IBaseInterface.MethodInBaseInterface--", Tool.NativeAot, "")]
 		public static void Main ()
 		{
 			TestRequiresInMethodFromCopiedAssembly ();
@@ -42,8 +42,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--Method--")]
-		[ExpectedWarning ("IL3002", "--Method--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "--Method--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "--Method--", Tool.Analyzer | Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3050", "--Method--", Tool.Analyzer | Tool.NativeAot, "")]
 		static void TestRequiresInMethodFromCopiedAssembly ()
 		{
 			var tmp = new RequiresInCopyAssembly ();
@@ -51,8 +51,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		}
 
 		[ExpectedWarning ("IL2026", "--MethodCalledThroughReflection--")]
-		[ExpectedWarning ("IL3002", "--MethodCalledThroughReflection--", ProducedBy = Tool.NativeAot)]
-		[ExpectedWarning ("IL3050", "--MethodCalledThroughReflection--", ProducedBy = Tool.NativeAot)]
+		[ExpectedWarning ("IL3002", "--MethodCalledThroughReflection--", Tool.NativeAot, "")]
+		[ExpectedWarning ("IL3050", "--MethodCalledThroughReflection--", Tool.NativeAot, "")]
 		static void TestRequiresThroughReflectionInMethodFromCopiedAssembly ()
 		{
 			typeof (RequiresInCopyAssembly)

@@ -3,7 +3,7 @@
   <Import Project="..\..\Directory.Build.props" />
   <UsingTask AssemblyFile="$(WasmBuildTasksAssemblyPath)" TaskName="Microsoft.WebAssembly.Build.Tasks.UpdateChromeVersions" />
   <PropertyGroup>
-    <ChromeVersionsPath>$(RepositoryEngineeringDir)testing\ChromeVersions.props</ChromeVersionsPath>
+    <ChromeVersionsPath>$(RepositoryEngineeringDir)testing\BrowserVersions.props</ChromeVersionsPath>
     <EnvVarsForPRPath>$(RepositoryEngineeringDir)testing\bump-chrome-pr.env</EnvVarsForPRPath>
   </PropertyGroup>
 

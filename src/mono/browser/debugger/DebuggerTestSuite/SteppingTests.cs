@@ -1167,60 +1167,6 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        [InlineData("https://symbols.nuget.org/download/symbols", "")]
-        // Symbols are already loaded, so setting urls = [] won't affect it
-        [InlineData]
-        [InlineData("", "https://microsoft.com/non-existant/symbols")]
-        public async Task SteppingIntoLibrarySymbolsLoadedFromSymbolServerRemoveSymbolServerAndStepAgain(params string[] secondServers)
-        {
-            string cachePath = _env.CreateTempDirectory("symbols-cache");
-            _testOutput.WriteLine($"Using cachePath: {cachePath}");
-            var searchPaths = new JArray
-            {
-                "https://symbols.nuget.org/download/symbols",
-                "https://msdl.microsoft.com/download/bad-non-existant",
-                "https://msdl.microsoft.com/download/symbols"
-            };
-            var waitForScript = WaitForScriptParsedEventsAsync(new string [] { "JArray.cs" });
-            var symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
-            await SetJustMyCode(false);
-            await SetSymbolOptions(symbolOptions);
-
-            await EvaluateAndCheck(
-                "window.setTimeout(function() { invoke_static_method ('[debugger-test] TestLoadSymbols:Run'); invoke_static_method ('[debugger-test] TestLoadSymbols:Run'); }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1572, 8,
-                "TestLoadSymbols.Run"
-            );
-
-            await waitForScript;
-
-            await StepAndCheck(StepKind.Into, "dotnet://Newtonsoft.Json.dll/JArray.cs", 350, 12, "Newtonsoft.Json.Linq.JArray.Add",
-                locals_fn: async (locals) =>
-                {
-                    await CheckObject(locals, "this", "Newtonsoft.Json.Linq.JArray", description: "[]");
-                }, times: 2
-            );
-            searchPaths.Clear();
-            foreach (string secondServer in secondServers)
-                searchPaths.Add(secondServer);
-
-            symbolOptions = JObject.FromObject(new { symbolOptions = JObject.FromObject(new { cachePath, searchPaths })});
-            await SetSymbolOptions(symbolOptions);
-
-            await SendCommandAndCheck(null, "Debugger.resume",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1572, 8,
-                "TestLoadSymbols.Run"
-            );
-
-            await StepAndCheck(StepKind.Into, "dotnet://Newtonsoft.Json.dll/JArray.cs", 350, 12, "Newtonsoft.Json.Linq.JArray.Add",
-                locals_fn: async (locals) =>
-                {
-                    await CheckObject(locals, "this", "Newtonsoft.Json.Linq.JArray", description: "[]");
-                }, times: 2
-            );
-        }
-
-        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SkipWasmFunctionsAccordinglyJustMyCode(bool justMyCode)

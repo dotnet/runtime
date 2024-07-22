@@ -9,9 +9,7 @@
     <WorkloadIntermediateOutputPath>$(ArtifactsObjDir)workloads/</WorkloadIntermediateOutputPath>
     <VSTemp>$(WorkloadIntermediateOutputPath)VS/</VSTemp>
     <WorkloadOutputPath>$(ArtifactsBinDir)workloads/</WorkloadOutputPath>
-    <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
-    <PackageSource Condition="'$(workloadPackagesPath)' != ''">$(workloadPackagesPath)/</PackageSource>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
@@ -42,32 +40,32 @@
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
-      <_ComponentResources Include="microsoft-net-runtime-mono-tooling" Title=".NET Shared Mobile Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-mono-tooling" Title=".NET 8.0 Shared Mobile Build Tools"
                           Description="Shared build tasks for mobile platform development."/>
-      <_ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
+      <_ComponentResources Include="wasm-tools" Title=".NET 8.0 WebAssembly Build Tools"
                           Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
-      <_ComponentResources Include="wasm-experimental" Title=".NET WebAssembly Experimental Tools"
-                          Description=".NET WebAssembly experimental tooling"/>
-      <_ComponentResources Include="wasi-experimental" Title=".NET Wasi Experimental"
-                          Description=".NET Experimental SDK and tooling for WASI"/>
-      <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
+      <_ComponentResources Include="wasm-experimental" Title=".NET 8.0 WebAssembly Experimental Tools"
+                          Description=".NET 8.0 WebAssembly experimental tooling"/>
+      <_ComponentResources Include="wasi-experimental" Title=".NET 8.0 Wasi Experimental"
+                          Description=".NET 8.0 Experimental SDK and tooling for WASI"/>
+      <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET 8.0 Android Build Tools"
                           Description="Build tools for Android compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
+      <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET 8.0 Android Build Tools (AoT)"
                           Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-ios" Title=".NET iOS Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-ios" Title=".NET 8.0 iOS Build Tools"
                           Description="Build tools for iOS compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET tvOS Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET 8.0 tvOS Build Tools"
                           Description="Build tools for tvOS compilation and native linking."/>
-      <_ComponentResources Include="microsoft-net-runtime-maccatalyst" Title=".NET Mac Catalyst Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-maccatalyst" Title=".NET 8.0 Mac Catalyst Build Tools"
                           Description="Build tools for Mac Catalyst compilation and native linking."/>
-      <_ComponentResources Include="runtimes-ios" Title=".NET iOS Runtimes"
-                          Description=".NET runtime components for iOS execution."/>
-      <_ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
-                          Description=".NET runtime components for tvOS execution."/>
-      <_ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
-                          Description=".NET runtime components for Mac Catalyst execution."/>
-      <_ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
-                          Description=".NET runtime components for Windows execution."/>
+      <_ComponentResources Include="runtimes-ios" Title=".NET 8.0 iOS Runtimes"
+                          Description=".NET 8.0 runtime components for iOS execution."/>
+      <_ComponentResources Include="runtimes-tvos" Title=".NET 8.0 tvOS Build Tools"
+                          Description=".NET 8.0 runtime components for tvOS execution."/>
+      <_ComponentResources Include="runtimes-maccatalyst" Title=".NET 8.0 Mac Catalyst Build Tools"
+                          Description=".NET 8.0 runtime components for Mac Catalyst execution."/>
+      <_ComponentResources Include="runtimes-windows" Title=".NET 8.0 Windows Runtimes"
+                          Description=".NET 8.0 runtime components for Windows execution."/>
 
       <_ComponentResources Include="microsoft-net-runtime-mono-tooling-net7" Title=".NET 7.0 Shared Mobile Build Tools"
                           Description="Shared build tasks for mobile platform development."/>
@@ -132,7 +130,7 @@
       <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.Current.">
         <Replacement>Mono.</Replacement>
       </ShortNames>
-      <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
+      <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime;Microsoft.NET.Sdk">
         <Replacement>Microsoft</Replacement>
       </ShortNames>
       <ShortNames Include="Microsoft.NET.Workload;microsoft.net.workload">
@@ -141,7 +139,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg"
+      <ManifestPackages Include="$(PackageSource)/Microsoft.NET.Workload.Mono.ToolChain.*Manifest-%(WorkloadSdkBandVersions.Identity)*.*.nupkg"
                         MsiVersion="$(MsiVersion)"
                         SupportsMachineArch="%(SupportsMachineArch)" />
     </ItemGroup>

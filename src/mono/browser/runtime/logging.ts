@@ -15,9 +15,13 @@ export function set_thread_prefix (threadPrefix: string) {
 }
 
 /* eslint-disable no-console */
-export function mono_log_debug (msg: string, ...data: any) {
+
+export function mono_log_debug (messageFactory: string | (() => string)) {
     if (runtimeHelpers.diagnosticTracing) {
-        console.debug(prefix + msg, ...data);
+        const message = (typeof messageFactory === "function"
+            ? messageFactory()
+            : messageFactory);
+        console.debug(prefix + message);
     }
 }
 
@@ -46,21 +50,6 @@ export function mono_log_error (msg: string, ...data: any) {
 export const wasm_func_map = new Map<number, string>();
 let wasm_pending_symbol_table: string | undefined;
 const regexes: any[] = [];
-
-// V8
-//   at <anonymous>:wasm-function[1900]:0x83f63
-//   at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
-regexes.push(/at (?<replaceSection>[^:()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)((?![^)a-fA-F\d])|$)/);
-
-//# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
-regexes.push(/(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))/);
-
-//# chrome
-//# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
-regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
-
-//# <?>.wasm-function[8962]
-regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
 export function mono_wasm_symbolicate_string (message: string): string {
     try {
@@ -179,12 +168,27 @@ export function parseSymbolMapFile (text: string) {
     //  may be never
     mono_assert(!wasm_pending_symbol_table, "Another symbol map was already loaded");
     wasm_pending_symbol_table = text;
-    mono_log_debug(`Deferred loading of ${text.length}ch symbol map`);
+    mono_log_debug(() => `Deferred loading of ${text.length}ch symbol map`);
 }
 
 function performDeferredSymbolMapParsing () {
     if (!wasm_pending_symbol_table)
         return;
+
+    // V8
+    //   at <anonymous>:wasm-function[1900]:0x83f63
+    //   at dlfree (<anonymous>:wasm-function[18739]:0x2328ef)
+    regexes.push(/at (?<replaceSection>[^:()]+:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)((?![^)a-fA-F\d])|$)/);
+
+    //# 5: WASM [009712b2], function #111 (''), pc=0x7c16595c973 (+0x53), pos=38740 (+11)
+    regexes.push(/(?:WASM \[[\da-zA-Z]+\], (?<replaceSection>function #(?<funcNum>[\d]+) \(''\)))/);
+
+    //# chrome
+    //# at http://127.0.0.1:63817/dotnet.wasm:wasm-function[8963]:0x1e23f4
+    regexes.push(/(?<replaceSection>[a-z]+:\/\/[^ )]*:wasm-function\[(?<funcNum>\d+)\]:0x[a-fA-F\d]+)/);
+
+    //# <?>.wasm-function[8962]
+    regexes.push(/(?<replaceSection><[^ >]+>[.:]wasm-function\[(?<funcNum>[0-9]+)\])/);
 
     const text = wasm_pending_symbol_table!;
     wasm_pending_symbol_table = undefined;
@@ -197,7 +201,7 @@ function performDeferredSymbolMapParsing () {
             parts[1] = parts.splice(1).join(":");
             wasm_func_map.set(Number(parts[0]), parts[1]);
         });
-        mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
+        mono_log_debug(() => `Loaded ${wasm_func_map.size} symbols`);
     } catch (exc) {
         mono_log_warn(`Failed to load symbol map: ${exc}`);
     }

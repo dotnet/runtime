@@ -12,6 +12,7 @@ namespace System.IO.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected WatcherChangeTypes are different based on OS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void Windows_File_Move_To_Same_Directory()
         {
             FileMove_SameDirectory(WatcherChangeTypes.Renamed);
@@ -126,6 +127,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void File_Move_SynchronizingObject()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");

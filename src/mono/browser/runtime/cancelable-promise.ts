@@ -111,9 +111,12 @@ export class PromiseHolder extends ManagedObject {
             mono_log_debug("This promise rejection can't be propagated to managed code, mono runtime already exited.");
             return;
         }
+        if (!reason) {
+            reason = new Error() as any;
+        }
         mono_assert(!this.isResolved, "reject could be called only once");
         mono_assert(!this.isDisposed, "resolve is already disposed.");
-        const isCancelation = reason && reason[promise_holder_symbol] === this;
+        const isCancelation = reason[promise_holder_symbol] === this;
         if (WasmEnableThreads && !isCancelation && !this.setIsResolving()) {
             // we know that cancelation is in flight
             // because we need to keep the GCHandle alive until until the cancelation arrives
@@ -166,9 +169,7 @@ export class PromiseHolder extends ManagedObject {
         try {
             mono_assert(!this.isPosted, "Promise is already posted to managed.");
             this.isPosted = true;
-            if (WasmEnableThreads) {
-                forceThreadMemoryViewRefresh();
-            }
+            forceThreadMemoryViewRefresh();
 
             // we can unregister the GC handle just on JS side
             teardown_managed_proxy(this, this.gc_handle, /*skipManaged: */ true);

@@ -68,6 +68,13 @@ function onAbort (reason: any) {
     if (originalOnAbort) {
         originalOnAbort(reason || loaderHelpers.exitReason);
     }
+    if (WasmEnableThreads && loaderHelpers.config?.dumpThreadsOnNonZeroExit && runtimeHelpers.mono_wasm_print_thread_dump && loaderHelpers.exitCode === undefined) {
+        try {
+            runtimeHelpers.mono_wasm_print_thread_dump();
+        } catch (e) {
+            // ignore
+        }
+    }
     mono_exit(1, reason || loaderHelpers.exitReason);
 }
 
@@ -95,9 +102,13 @@ export function mono_exit (exit_code: number, reason?: any): void {
 
     // force stack property to be generated before we shut down managed code, or create current stack if it doesn't exist
     const stack = "" + (reason.stack || (new Error().stack));
-    Object.defineProperty(reason, "stack", {
-        get: () => stack
-    });
+    try {
+        Object.defineProperty(reason, "stack", {
+            get: () => stack
+        });
+    } catch (e) {
+        // ignore
+    }
 
     // don't report this error twice
     const alreadySilent = !!reason.silent;
@@ -108,7 +119,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
             unregisterEmscriptenExitHandlers();
             uninstallUnhandledErrorHandler();
             if (!runtimeHelpers.runtimeReady) {
-                mono_log_debug("abort_startup, reason: " + reason);
+                mono_log_debug(() => `abort_startup, reason: ${reason}`);
                 abort_promises(reason);
             } else {
                 if (runtimeHelpers.jiterpreter_dump_stats) {
@@ -122,7 +133,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
                 }
             }
         } catch (err) {
-            mono_log_warn("mono_exit failed", err);
+            mono_log_warn("mono_exit A failed", err);
             // don't propagate any failures
         }
 
@@ -132,7 +143,7 @@ export function mono_exit (exit_code: number, reason?: any): void {
                 appendElementOnExit(exit_code);
             }
         } catch (err) {
-            mono_log_warn("mono_exit failed", err);
+            mono_log_warn("mono_exit B failed", err);
             // don't propagate any failures
         }
 
@@ -177,7 +188,7 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
             runtimeHelpers.nativeExit(exit_code);
         } catch (error: any) {
             if (runtimeHelpers.ExitStatus && !(error instanceof runtimeHelpers.ExitStatus)) {
-                mono_log_warn("mono_wasm_exit failed: " + error.toString());
+                mono_log_warn("set_exit_code_and_quit_now failed: " + error.toString());
             }
         }
     }
@@ -218,6 +229,7 @@ async function flush_node_streams () {
 
 function abort_promises (reason: any) {
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
+    loaderHelpers.allDownloadsFinished.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmCompilePromise.promise_control.reject(reason);
     loaderHelpers.runtimeModuleLoaded.promise_control.reject(reason);

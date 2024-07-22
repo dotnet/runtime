@@ -363,14 +363,14 @@ GcInfoDecoder::GcInfoDecoder(
     }
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-    if(flags & (DECODE_GC_LIFETIMES))
+    if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
     {
         if(m_NumSafePoints)
         {
             m_SafePointIndex = FindSafePoint(m_InstructionOffset);
         }
     }
-    else if(flags & (DECODE_FOR_RANGES_CALLBACK | DECODE_INTERRUPTIBILITY))
+    else if(flags & DECODE_FOR_RANGES_CALLBACK)
     {
         // Note that normalization as a code offset can be different than
         //  normalization as code length
@@ -381,7 +381,13 @@ GcInfoDecoder::GcInfoDecoder(
     }
 #endif
 
-    if(!m_IsInterruptible && (flags & DECODE_INTERRUPTIBILITY))
+    // we do not support both DECODE_INTERRUPTIBILITY and DECODE_FOR_RANGES_CALLBACK at the same time
+    // as both will enumerate and consume interruptible ranges.
+    _ASSERTE((flags & (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK)) !=
+        (DECODE_INTERRUPTIBILITY | DECODE_FOR_RANGES_CALLBACK));
+
+    _ASSERTE(!m_IsInterruptible);
+    if(flags & DECODE_INTERRUPTIBILITY)
     {
         EnumerateInterruptibleRanges(&SetIsInterruptibleCB, this);
     }
@@ -391,6 +397,38 @@ bool GcInfoDecoder::IsInterruptible()
 {
     _ASSERTE( m_Flags & DECODE_INTERRUPTIBILITY );
     return m_IsInterruptible;
+}
+
+bool GcInfoDecoder::HasInterruptibleRanges()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_NumInterruptibleRanges > 0;
+}
+
+bool GcInfoDecoder::IsSafePoint()
+{
+    _ASSERTE(m_Flags & (DECODE_INTERRUPTIBILITY | DECODE_GC_LIFETIMES));
+    return m_SafePointIndex != m_NumSafePoints;
+}
+
+bool GcInfoDecoder::AreSafePointsInterruptible()
+{
+    return m_Version >= 3;
+}
+
+bool GcInfoDecoder::IsInterruptibleSafePoint()
+{
+    return IsSafePoint() && AreSafePointsInterruptible();
+}
+
+bool GcInfoDecoder::CouldBeInterruptibleSafePoint()
+{
+    // This is used in asserts. Ideally it would return false
+    // if current location canot possibly be a safepoint.
+    // However in some cases we optimize away "boring" callsites when no variables are tracked.
+    // So there is no way to tell precisely that a point is indeed not a safe point.
+    // Thus we do what we can here, but this could be better if we could have more data
+    return AreSafePointsInterruptible() && m_NumInterruptibleRanges == 0;
 }
 
 bool GcInfoDecoder::HasMethodDescGenericsInstContext()
@@ -415,10 +453,6 @@ bool GcInfoDecoder::IsSafePoint(UINT32 codeOffset)
     if(m_NumSafePoints == 0)
         return false;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Safepoints are encoded with a -1 adjustment
-    codeOffset--;
-#endif
     size_t savedPos = m_Reader.GetCurrentPos();
     UINT32 safePointIndex = FindSafePoint(codeOffset);
     m_Reader.SetCurrentPos(savedPos);
@@ -465,36 +499,33 @@ UINT32 GcInfoDecoder::FindSafePoint(UINT32 breakOffset)
     const size_t savedPos = m_Reader.GetCurrentPos();
     const UINT32 numBitsPerOffset = CeilOfLog2(NORMALIZE_CODE_OFFSET(m_CodeLength));
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-    // Safepoints are encoded with a -1 adjustment
-    if ((breakOffset & 1) != 0)
-#endif
+    const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
+    UINT32 linearSearchStart = 0;
+    UINT32 linearSearchEnd = m_NumSafePoints;
+    if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
     {
-        const UINT32 normBreakOffset = NORMALIZE_CODE_OFFSET(breakOffset);
-        UINT32 linearSearchStart = 0;
-        UINT32 linearSearchEnd = m_NumSafePoints;
-        if (linearSearchEnd - linearSearchStart > MAX_LINEAR_SEARCH)
+        linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
+    }
+
+    for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+    {
+        UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
+        if (spOffset == normBreakOffset)
         {
-            linearSearchStart = NarrowSafePointSearch(savedPos, normBreakOffset, &linearSearchEnd);
+            result = i;
+            break;
         }
 
-        for (UINT32 i = linearSearchStart; i < linearSearchEnd; i++)
+        if (spOffset > normBreakOffset)
         {
-            UINT32 spOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-            if (spOffset == normBreakOffset)
-            {
-                result = i;
-                break;
-            }
-
-            if (spOffset > normBreakOffset)
-            {
-                break;
-            }
+            break;
         }
     }
 
-    m_Reader.SetCurrentPos(savedPos + m_NumSafePoints * numBitsPerOffset);
+    // Cannot just set the "savedPos + m_NumSafePoints * numBitsPerOffset" as
+    // there could be no more data if method tracks no variables of any kind.
+    // Must use Skip, which handles potential stream end.
+    m_Reader.Skip(savedPos + m_NumSafePoints * numBitsPerOffset - m_Reader.GetCurrentPos());
     return result;
 }
 
@@ -508,14 +539,8 @@ void GcInfoDecoder::EnumerateSafePoints(EnumerateSafePointsCallback *pCallback, 
     for(UINT32 i = 0; i < m_NumSafePoints; i++)
     {
         UINT32 normOffset = (UINT32)m_Reader.Read(numBitsPerOffset);
-        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset) + 2;
-
-#if defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        // Safepoints are encoded with a -1 adjustment
-        offset--;
-#endif
-
-        pCallback(offset, hCallback);
+        UINT32 offset = DENORMALIZE_CODE_OFFSET(normOffset);
+        pCallback(this, offset, hCallback);
     }
 }
 #endif
@@ -683,15 +708,6 @@ bool GcInfoDecoder::EnumerateLiveSlots(
         LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it was already reported via another funclet.\n"));
         return true;
     }
-
-    //
-    // If this is a non-leaf frame and we are executing a call, the unwinder has given us the PC
-    //  of the call instruction. We should adjust it to the PC of the instruction after the call in order to
-    //  obtain transition information for scratch slots. However, we always assume scratch slots to be
-    //  dead for non-leaf frames (except for ResumableFrames), so we don't need to adjust the PC.
-    // If this is a non-leaf frame and we are not executing a call (i.e.: a fault occurred in the function),
-    //  then it would be incorrect to adjust the PC
-    //
 
     _ASSERTE(GC_SLOT_INTERIOR == GC_CALL_INTERIOR);
     _ASSERTE(GC_SLOT_PINNED == GC_CALL_PINNED);

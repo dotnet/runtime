@@ -3995,7 +3995,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
     }
 
     int     doff = Compiler::eeGetJitDataOffs(fldHnd);
-    ssize_t addr = NULL;
+    ssize_t addr = 0;
 
     if (doff >= 0)
     {
@@ -4660,6 +4660,8 @@ void emitter::emitIns_J_R(instruction ins, emitAttr attr, BasicBlock* dst, regNu
  *
  * For ARM xreg, xmul and disp are never used and should always be 0/REG_NA.
  *
+ * noSafePoint - force not making this call a safe point in partially interruptible code
+ *
  *  Please consult the "debugger team notification" comment in genFnProlog().
  */
 
@@ -4677,7 +4679,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
                            regNumber        xreg /* = REG_NA */,
                            unsigned         xmul /* = 0     */,
                            ssize_t          disp /* = 0     */,
-                           bool             isJump /* = false */)
+                           bool             isJump /* = false */,
+                           bool             noSafePoint /* = false */)
 {
     /* Sanity check the arguments depending on callType */
 
@@ -4754,11 +4757,22 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     /* Update the emitter's live GC ref sets */
 
+    // If the method returns a GC ref, mark R0 appropriately
+    if (retSize == EA_GCREF)
+    {
+        gcrefRegs |= RBM_R0;
+    }
+    else if (retSize == EA_BYREF)
+    {
+        byrefRegs |= RBM_R0;
+    }
+
     VarSetOps::Assign(emitComp, emitThisGCrefVars, ptrVars);
     emitThisGCrefRegs = gcrefRegs;
     emitThisByrefRegs = byrefRegs;
 
-    id->idSetIsNoGC(emitNoGChelper(methHnd));
+    // for the purpose of GC safepointing tail-calls are not real calls
+    id->idSetIsNoGC(isJump || noSafePoint || emitNoGChelper(methHnd));
 
     /* Set the instruction - special case jumping a function */
     instruction ins;
@@ -5757,15 +5771,15 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(REG_NA == (int)REG_NA);
 
     VARSET_TP GCvars(VarSetOps::UninitVal());
+    regMaskTP gcrefRegs;
+    regMaskTP byrefRegs;
 
     /* What instruction format have we got? */
 
     switch (fmt)
     {
-        int       imm;
-        BYTE*     addr;
-        regMaskTP gcrefRegs;
-        regMaskTP byrefRegs;
+        int   imm;
+        BYTE* addr;
 
         case IF_T1_A: // T1_A    ................
             sz   = SMALL_IDSC_SIZE;
@@ -6853,9 +6867,9 @@ void emitter::emitDispRegmask(int imm, bool encodedPC_LR)
     }
     else
     {
-        hasPC = (imm & RBM_PC) != 0;
-        hasLR = (imm & RBM_LR) != 0;
-        imm &= ~(RBM_PC | RBM_LR);
+        hasPC = (imm & SRBM_PC) != 0;
+        hasLR = (imm & SRBM_LR) != 0;
+        imm &= ~(SRBM_PC | SRBM_LR);
     }
 
     regNumber reg = REG_R0;
@@ -7869,15 +7883,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             var_types type = indir->AsStoreInd()->Data()->TypeGet();
             if (type == TYP_FLOAT)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
                 emitIns_Mov(INS_vmov_f2i, EA_4BYTE, tmpReg, dataReg, /* canSkip */ false);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg, indir, 0);
                 return;
             }
             else if (type == TYP_DOUBLE)
             {
-                regNumber tmpReg1 = indir->ExtractTempReg();
-                regNumber tmpReg2 = indir->GetSingleTempReg();
+                regNumber tmpReg1 = codeGen->internalRegisters.Extract(indir);
+                regNumber tmpReg2 = codeGen->internalRegisters.GetSingle(indir);
                 emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, tmpReg1, tmpReg2, dataReg);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg1, indir, 0);
                 emitInsLoadStoreOp(INS_str, EA_4BYTE, tmpReg2, indir, 4);
@@ -7889,15 +7903,15 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             var_types type = indir->TypeGet();
             if (type == TYP_FLOAT)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg, indir, 0);
                 emitIns_Mov(INS_vmov_i2f, EA_4BYTE, dataReg, tmpReg, /* canSkip */ false);
                 return;
             }
             else if (type == TYP_DOUBLE)
             {
-                regNumber tmpReg1 = indir->ExtractTempReg();
-                regNumber tmpReg2 = indir->GetSingleTempReg();
+                regNumber tmpReg1 = codeGen->internalRegisters.Extract(indir);
+                regNumber tmpReg2 = codeGen->internalRegisters.GetSingle(indir);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg1, indir, 0);
                 emitInsLoadStoreOp(INS_ldr, EA_4BYTE, tmpReg2, indir, 4);
                 emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, dataReg, tmpReg1, tmpReg2);
@@ -7940,7 +7954,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
             if (offset != 0)
             {
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // If the LEA produces a GCREF or BYREF, we need to be careful to mark any temp register
                 // computed with the base register as a BYREF.
@@ -8023,7 +8037,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
             else
             {
                 // We require a tmpReg to hold the offset
-                regNumber tmpReg = indir->GetSingleTempReg();
+                regNumber tmpReg = codeGen->internalRegisters.GetSingle(indir);
 
                 // First load/store tmpReg with the large offset constant
                 codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
@@ -8175,7 +8189,7 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     {
         if (isMulOverflow)
         {
-            regNumber extraReg = dst->GetSingleTempReg();
+            regNumber extraReg = codeGen->internalRegisters.GetSingle(dst);
             assert(extraReg != dst->GetRegNum());
 
             if ((dst->gtFlags & GTF_UNSIGNED) != 0)

@@ -1092,7 +1092,7 @@ UINT_PTR EEToProfInterfaceImpl::EEFunctionIDMapper(FunctionID funcId, BOOL * pbH
     // which means either m_pProfilersFuncIDMapper or m_pProfilersFuncIDMapper2 should not be NULL;
     _ASSERTE((m_pProfilersFuncIDMapper != NULL) || (m_pProfilersFuncIDMapper2 != NULL));
 
-    UINT_PTR clientId = NULL;
+    UINT_PTR clientId = 0;
 
     if (m_pProfilersFuncIDMapper2 != NULL)
     {
@@ -5762,7 +5762,7 @@ HRESULT EEToProfInterfaceImpl::HandleCreated(UINT_PTR handleId, ObjectID initial
         // switch to preemptive (as we normally do in callbacks) and must not trigger,
         // as this would really tick off some of our callers (as well as invalidating
         // initialObjectId).
-        if (initialObjectId != NULL)
+        if (initialObjectId != 0)
         {
             MODE_COOPERATIVE;
         }
@@ -6080,6 +6080,47 @@ HRESULT EEToProfInterfaceImpl::LoadAsNotificationOnly(BOOL *pbNotificationOnly)
     }
 
     return m_pCallback11->LoadAsNotificationOnly(pbNotificationOnly);
+}
+
+// Helper method for ProfToEEInterfaceImpl::EnumerateGCHeapObjects to properly set callback state flags
+// and avoid performance cost of invoking an ICorProfilerCallback API per GC Heap object.
+HRESULT EEToProfInterfaceImpl::EnumerateGCHeapObjectsCallback(ObjectCallback callback, void* callbackState)
+{
+    CONTRACTL
+    {
+        // Yay!
+        NOTHROW;
+
+        // Don't allow a GC while we're enumerating the heap
+        GC_NOTRIGGER;
+
+        // Called from EnumerateGCHeapObjects
+        MODE_ANY;
+
+        // Yay!
+        CAN_TAKE_LOCK;
+
+        // As EE should be suspended when walking the GC heap,
+        // the Thread store lock is normally held during this call.
+    }
+    CONTRACTL_END;
+
+    CLR_TO_PROFILER_ENTRYPOINT_EX(kEE2PNoTrigger,
+                                (LF_CORPROF,
+                                LL_INFO10,
+                                "**PROF: EnumerateGCHeapObjectsCallback.\n"
+                                ));
+
+    if (callback == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    IGCHeap *hp = GCHeapUtilities::GetGCHeap();
+    unsigned max_generation = hp->GetMaxGeneration();
+    hp->DiagWalkHeapWithACHandling((walk_fn)callback, callbackState, max_generation, TRUE);
+
+    return S_OK;
 }
 
 #endif // PROFILING_SUPPORTED

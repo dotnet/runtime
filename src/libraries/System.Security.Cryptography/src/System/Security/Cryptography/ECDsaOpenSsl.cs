@@ -30,16 +30,14 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
             ThrowIfNotSupported();
-            // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
-            SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
-            if (key.IsInvalid)
+
+            if (Interop.Crypto.EvpPKeyType(pkeyHandle) != Interop.Crypto.EvpAlgorithmId.ECC)
             {
-                key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
 
-            _key = new ECOpenSsl(key);
-            KeySizeValue = _key.KeySize;
+            _key = new Lazy<SafeEvpPKeyHandle>(pkeyHandle.DuplicateHandle());
+            ForceSetKeySize(Interop.Crypto.EvpPKeyBits(pkeyHandle));
         }
 
         /// <summary>
@@ -63,9 +61,14 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
             ThrowIfNotSupported();
-            SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
-            _key = new ECOpenSsl(ecKeyHandle);
-            KeySizeValue = _key.KeySize;
+
+            using (SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle))
+            {
+                // CreateEvpPkeyFromEcKey already uprefs so nothing else to do
+                _key = new Lazy<SafeEvpPKeyHandle>(Interop.Crypto.CreateEvpPkeyFromEcKey(ecKeyHandle));
+            }
+
+            ForceSetKeySize(Interop.Crypto.EvpPKeyBits(_key.Value));
         }
 
         /// <summary>
@@ -76,26 +79,7 @@ namespace System.Security.Cryptography
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
             ThrowIfDisposed();
-            SafeEcKeyHandle currentKey = _key.Value;
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetEcKey(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return _key.Value.DuplicateHandle();
         }
 
         static partial void ThrowIfNotSupported()

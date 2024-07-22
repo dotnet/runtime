@@ -314,6 +314,7 @@ namespace System.Tests
             }
 
             Validate(string.Concat(values));
+            Validate(string.Concat((ReadOnlySpan<string?>)values));
             Validate(string.Concat((IEnumerable<string>)values));
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
         }
@@ -418,6 +419,7 @@ namespace System.Tests
                 Assert.Equal(expected, string.Concat(values[0], values[1], values[2], values[3]));
             }
             Assert.Equal(expected, string.Concat(values));
+            Assert.Equal(expected, string.Concat((ReadOnlySpan<object?>)values));
             Assert.Equal(expected, string.Concat((IEnumerable<object>)values));
         }
 
@@ -1285,7 +1287,6 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/95338", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ContainsNoMatch_StringComparison()
         {
             for (int length = 1; length < 150; length++)
@@ -2730,9 +2731,11 @@ namespace System.Tests
         public static void Format_Valid(IFormatProvider provider, string format, object[] values, string expected)
         {
             Assert.Equal(expected, string.Format(provider, format, values));
+            Assert.Equal(expected, string.Format(provider, format, (ReadOnlySpan<object?>)values));
             if (provider is null)
             {
                 Assert.Equal(expected, string.Format(format, values));
+                Assert.Equal(expected, string.Format(format, (ReadOnlySpan<object?>)values));
             }
 
             switch (values.Length)
@@ -3967,6 +3970,7 @@ namespace System.Tests
             if (startIndex + count == values.Length && count != 0)
             {
                 Assert.Equal(expected, string.Join(separator, values));
+                Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<string>)values));
 
                 var iEnumerableStringOptimized = new List<string>(values);
                 Assert.Equal(expected, string.Join(separator, iEnumerableStringOptimized));
@@ -3984,6 +3988,44 @@ namespace System.Tests
                 {
                     var arrayOfObjects = (object[])values;
                     Assert.Equal(expected, string.Join(separator, arrayOfObjects));
+                    Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)arrayOfObjects));
+                }
+            }
+            Assert.Equal(expected, string.Join(separator, values, startIndex, count));
+        }
+
+        [Theory]
+        [InlineData('$', new string[] { }, 0, 0, "")]
+        [InlineData('$', new string[] { null }, 0, 1, "")]
+        [InlineData('$', new string[] { null, "Bar", null }, 0, 3, "$Bar$")]
+        [InlineData('$', new string[] { "", "", "" }, 0, 3, "$$")]
+        [InlineData('$', new string[] { "Foo", "Bar", "Baz" }, 0, 3, "Foo$Bar$Baz")]
+        [InlineData('$', new string[] { "Foo", "Bar", "Baz" }, 3, 0, "")]
+        [InlineData('$', new string[] { "Foo", "Bar", "Baz" }, 1, 1, "Bar")]
+        public static void Join_CharSeparator_StringArray(char separator, string[] values, int startIndex, int count, string expected)
+        {
+            if (startIndex + count == values.Length && count != 0)
+            {
+                Assert.Equal(expected, string.Join(separator, values));
+                Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<string>)values));
+
+                var iEnumerableStringOptimized = new List<string>(values);
+                Assert.Equal(expected, string.Join(separator, iEnumerableStringOptimized));
+                Assert.Equal(expected, string.Join<string>(separator, iEnumerableStringOptimized)); // Call the generic IEnumerable<T>-based overload
+
+                var iEnumerableStringNotOptimized = new Queue<string>(values);
+                Assert.Equal(expected, string.Join(separator, iEnumerableStringNotOptimized));
+                Assert.Equal(expected, string.Join<string>(separator, iEnumerableStringNotOptimized));
+
+                var iEnumerableObject = new List<object>(values);
+                Assert.Equal(expected, string.Join(separator, iEnumerableObject));
+
+                // Bug/Documented behavior: Join(string, object[]) returns "" when the first item in the array is null
+                if (values.Length == 0 || values[0] != null)
+                {
+                    var arrayOfObjects = (object[])values;
+                    Assert.Equal(expected, string.Join(separator, arrayOfObjects));
+                    Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)arrayOfObjects));
                 }
             }
             Assert.Equal(expected, string.Join(separator, values, startIndex, count));
@@ -4038,6 +4080,31 @@ namespace System.Tests
         {
             Assert.Equal(expected, string.Join(separator, values));
             Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
+            Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)values));
+        }
+
+        public static IEnumerable<object[]> Join_CharSeparator_ObjectArray_TestData()
+        {
+            yield return new object[] { '$', new object[] { }, "" };
+            yield return new object[] { '$', new object[] { new ObjectWithNullToString() }, "" };
+            yield return new object[] { '$', new object[] { "Foo" }, "Foo" };
+            yield return new object[] { '$', new object[] { "Foo", "Bar", "Baz" }, "Foo$Bar$Baz" };
+            yield return new object[] { '$', new object[] { "Foo", null, "Baz" }, "Foo$$Baz" };
+
+            // Test join when first value is null
+            yield return new object[] { '$', new object[] { null, "Bar", "Baz" }, "$Bar$Baz" };
+
+            // Join should ignore objects that have a null ToString() value
+            yield return new object[] { "|", new object[] { new ObjectWithNullToString(), "Foo", new ObjectWithNullToString(), "Bar", new ObjectWithNullToString() }, "|Foo||Bar|" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Join_CharSeparator_ObjectArray_TestData))]
+        public static void Join_CharSeparator_ObjectArray(char separator, object[] values, string expected)
+        {
+            Assert.Equal(expected, string.Join(separator, values));
+            Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
+            Assert.Equal(expected, string.Join(separator, (ReadOnlySpan<object>)values));
         }
 
         [Fact]
@@ -5973,7 +6040,6 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization), nameof(PlatformDetection.IsNotHybridGlobalizationOnApplePlatform))]
         [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95471", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
@@ -6098,6 +6164,7 @@ namespace System.Tests
             }
 
             Assert.Equal(expected, s.Trim(trimChars));
+            Assert.Equal(expected, s.Trim((ReadOnlySpan<char>)trimChars));
             Assert.Equal(expected, s.AsSpan().Trim(trimChars).ToString());
         }
 
@@ -6128,6 +6195,7 @@ namespace System.Tests
             }
 
             Assert.Equal(expected, s.TrimEnd(trimChars));
+            Assert.Equal(expected, s.TrimEnd((ReadOnlySpan<char>)trimChars));
             Assert.Equal(expected, s.AsSpan().TrimEnd(trimChars).ToString());
         }
 
@@ -6158,6 +6226,7 @@ namespace System.Tests
             }
 
             Assert.Equal(expected, s.TrimStart(trimChars));
+            Assert.Equal(expected, s.TrimStart((ReadOnlySpan<char>)trimChars));
             Assert.Equal(expected, s.AsSpan().TrimStart(trimChars).ToString());
         }
 
@@ -6388,18 +6457,27 @@ namespace System.Tests
             Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)trimCharsString)));
 
             char[] chars = { 'a', 'b', 'c', 'd', 'e' };
             trimCharsString = chars;
             Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
             Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)trimCharsString)));
+            Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)trimCharsString)));
 
             string emptyString = string.Empty;
             char[] trimCharsArrayFromString = "abcde".ToCharArray();
             Assert.True(emptyString.SequenceEqual(emptyString.Trim(trimCharsArrayFromString)));
             Assert.True(emptyString.SequenceEqual(emptyString.TrimStart(trimCharsArrayFromString)));
             Assert.True(emptyString.SequenceEqual(emptyString.TrimEnd(trimCharsArrayFromString)));
+            Assert.True(emptyString.SequenceEqual(emptyString.Trim((ReadOnlySpan<char>)trimCharsArrayFromString)));
+            Assert.True(emptyString.SequenceEqual(emptyString.TrimStart((ReadOnlySpan<char>)trimCharsArrayFromString)));
+            Assert.True(emptyString.SequenceEqual(emptyString.TrimEnd((ReadOnlySpan<char>)trimCharsArrayFromString)));
 
             ReadOnlySpan<char> span = s1.AsSpan();
             ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
@@ -6435,6 +6513,9 @@ namespace System.Tests
                 Assert.True(s1.SequenceEqual(s1.Trim(trimCharsString)));
                 Assert.True(s1.SequenceEqual(s1.TrimStart(trimCharsString)));
                 Assert.True(s1.SequenceEqual(s1.TrimEnd(trimCharsString)));
+                Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)trimCharsString)));
+                Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)trimCharsString)));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)trimCharsString)));
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.SequenceEqual(span.Trim(trimChars)));
@@ -6454,6 +6535,9 @@ namespace System.Tests
                 Assert.True(s2.SequenceEqual(s2.Trim(chars)));
                 Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
                 Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
+                Assert.True(s2.SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
+                Assert.True(s2.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
+                Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = s2.AsSpan();
                 Assert.True(span.SequenceEqual(span.Trim(chars)));
@@ -6466,6 +6550,9 @@ namespace System.Tests
             Assert.True(s3.SequenceEqual(s3.Trim(trimCharsFromString)));
             Assert.True(s3.SequenceEqual(s3.TrimStart(trimCharsFromString)));
             Assert.True(s3.SequenceEqual(s3.TrimEnd(trimCharsFromString)));
+            Assert.True(s3.SequenceEqual(s3.Trim((ReadOnlySpan<char>)trimCharsFromString)));
+            Assert.True(s3.SequenceEqual(s3.TrimStart((ReadOnlySpan<char>)trimCharsFromString)));
+            Assert.True(s3.SequenceEqual(s3.TrimEnd((ReadOnlySpan<char>)trimCharsFromString)));
 
             ReadOnlySpan<char> stringSpan = s3.AsSpan();
             ReadOnlySpan<char> trimCharsFromStringSpan = trimCharsFromString.AsSpan();
@@ -6490,6 +6577,9 @@ namespace System.Tests
                 Assert.True(string.Empty.SequenceEqual(s1.Trim(chars)), "G: " + length);
                 Assert.True(string.Empty.SequenceEqual(s1.TrimStart(chars)), "H: " + length);
                 Assert.True(string.Empty.SequenceEqual(s1.TrimEnd(chars)), "I: " + length);
+                Assert.True(string.Empty.SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)), "G: " + length);
+                Assert.True(string.Empty.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)), "H: " + length);
+                Assert.True(string.Empty.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)), "I: " + length);
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(ReadOnlySpan<char>.Empty.SequenceEqual(span.Trim(chars)), "G: " + length);
@@ -6502,6 +6592,9 @@ namespace System.Tests
             Assert.True(string.Empty.SequenceEqual(s2.Trim(trimCharsString)), "J");
             Assert.True(string.Empty.SequenceEqual(s2.TrimStart(trimCharsString)), "K");
             Assert.True(string.Empty.SequenceEqual(s2.TrimEnd(trimCharsString)), "L");
+            Assert.True(string.Empty.SequenceEqual(s2.Trim((ReadOnlySpan<char>)trimCharsString)), "J");
+            Assert.True(string.Empty.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)trimCharsString)), "K");
+            Assert.True(string.Empty.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)trimCharsString)), "L");
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
@@ -6526,6 +6619,9 @@ namespace System.Tests
                 Assert.True(s1.Substring(1).SequenceEqual(s1.Trim(chars)), "A: " + length);
                 Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart(chars)), "B: " + length);
                 Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)), "C: " + length);
+                Assert.True(s1.Substring(1).SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)), "A: " + length);
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)), "B: " + length);
+                Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)), "C: " + length);
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.Slice(1).SequenceEqual(span.Trim(chars)), "A: " + length);
@@ -6538,6 +6634,9 @@ namespace System.Tests
             Assert.True(s2.Substring(3).SequenceEqual(s2.Trim(trimCharsString)), "D");
             Assert.True(s2.Substring(3).SequenceEqual(s2.TrimStart(trimCharsString)), "E");
             Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)), "F");
+            Assert.True(s2.Substring(3).SequenceEqual(s2.Trim((ReadOnlySpan<char>)trimCharsString)), "D");
+            Assert.True(s2.Substring(3).SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)trimCharsString)), "E");
+            Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)trimCharsString)), "F");
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
             ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
@@ -6563,6 +6662,9 @@ namespace System.Tests
                 Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.Trim(chars)));
                 Assert.True(s1.SequenceEqual(s1.TrimStart(chars)));
                 Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd(chars)));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)));
+                Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = new ReadOnlySpan<char>(a);
                 Assert.True(span.Slice(0, length - 1).SequenceEqual(span.Trim(chars)));
@@ -6600,6 +6702,9 @@ namespace System.Tests
                 Assert.True(s1.Substring(1, length - 2).SequenceEqual(s1.Trim(chars)));
                 Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart(chars)));
                 Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd(chars)));
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)));
+                Assert.True(s1.Substring(1).SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.Slice(1, length - 2).SequenceEqual(span.Trim(chars)));
@@ -6608,13 +6713,15 @@ namespace System.Tests
             }
 
             string s2 = "ccedafffffbdaa";
-            char[] trimCharsString = "abcde".ToCharArray();
-            Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim(trimCharsString)));
-            Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart(trimCharsString)));
-            Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd(trimCharsString)));
+            Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim(chars)));
+            Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart(chars)));
+            Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd(chars)));
+            Assert.True(s2.Substring(5, 5).SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
+            Assert.True(s2.Substring(5).SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
+            Assert.True(s2.Substring(0, 10).SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
             Assert.True(stringSpan.Slice(5, 5).SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.Slice(5).SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.Slice(0, 10).SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -6637,6 +6744,9 @@ namespace System.Tests
                 Assert.True(s1.SequenceEqual(s1.Trim(chars)));
                 Assert.True(s1.SequenceEqual(s1.TrimStart(chars)));
                 Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)));
+                Assert.True(s1.SequenceEqual(s1.Trim((ReadOnlySpan<char>)chars)));
+                Assert.True(s1.SequenceEqual(s1.TrimStart((ReadOnlySpan<char>)chars)));
+                Assert.True(s1.SequenceEqual(s1.TrimEnd((ReadOnlySpan<char>)chars)));
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.True(span.SequenceEqual(span.Trim(chars)));
@@ -6645,13 +6755,15 @@ namespace System.Tests
             }
 
             string s2 = "fabbacddeeddef";
-            char[] trimCharsString = "abcde".ToCharArray();
-            Assert.True(s2.SequenceEqual(s2.Trim(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimStart(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.Trim(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
+            Assert.True(s2.SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));
@@ -6684,6 +6796,19 @@ namespace System.Tests
                 Assert.True(trimStartResultString.SequenceEqual(trimStartResultString.TrimStart(chars)));
                 Assert.True(trimEndResultString.SequenceEqual(trimEndResultString.TrimEnd(chars)));
 
+                s1 = new string(a);
+                trimResultString = s1.Trim((ReadOnlySpan<char>)chars);
+                trimStartResultString = s1.TrimStart((ReadOnlySpan<char>)chars);
+                trimEndResultString = s1.TrimEnd((ReadOnlySpan<char>)chars);
+                Assert.True(s1.Substring(1, length - 2).SequenceEqual(trimResultString));
+                Assert.True(s1.Substring(1).SequenceEqual(trimStartResultString));
+                Assert.True(s1.Substring(0, length - 1).SequenceEqual(trimEndResultString));
+
+                // 2nd attempt should do nothing
+                Assert.True(trimResultString.SequenceEqual(trimResultString.Trim((ReadOnlySpan<char>)chars)));
+                Assert.True(trimStartResultString.SequenceEqual(trimStartResultString.TrimStart((ReadOnlySpan<char>)chars)));
+                Assert.True(trimEndResultString.SequenceEqual(trimEndResultString.TrimEnd((ReadOnlySpan<char>)chars)));
+
                 ReadOnlySpan<char> span = s1.AsSpan();
                 ReadOnlySpan<char> trimResult = span.Trim(chars);
                 ReadOnlySpan<char> trimStartResult = span.TrimStart(chars);
@@ -6699,21 +6824,33 @@ namespace System.Tests
             }
 
             string s2 = "ccedafffffbdaa";
-            char[] trimCharsString = "abcde".ToCharArray();
-            string trimStringResultString = s2.Trim(trimCharsString);
-            string trimStartStringResultString = s2.TrimStart(trimCharsString);
-            string trimEndStringResultString = s2.TrimEnd(trimCharsString);
+            string trimStringResultString = s2.Trim(chars);
+            string trimStartStringResultString = s2.TrimStart(chars);
+            string trimEndStringResultString = s2.TrimEnd(chars);
             Assert.True(s2.Substring(5, 5).SequenceEqual(trimStringResultString));
             Assert.True(s2.Substring(5).SequenceEqual(trimStartStringResultString));
             Assert.True(s2.Substring(0, 10).SequenceEqual(trimEndStringResultString));
 
             // 2nd attempt should do nothing
-            Assert.True(trimStringResultString.SequenceEqual(trimStringResultString.Trim(trimCharsString)));
-            Assert.True(trimStartStringResultString.SequenceEqual(trimStartStringResultString.TrimStart(trimCharsString)));
-            Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd(trimCharsString)));
+            Assert.True(trimStringResultString.SequenceEqual(trimStringResultString.Trim(chars)));
+            Assert.True(trimStartStringResultString.SequenceEqual(trimStartStringResultString.TrimStart(chars)));
+            Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd(chars)));
+
+            s2 = "ccedafffffbdaa";
+            trimStringResultString = s2.Trim((ReadOnlySpan<char>)chars);
+            trimStartStringResultString = s2.TrimStart((ReadOnlySpan<char>)chars);
+            trimEndStringResultString = s2.TrimEnd((ReadOnlySpan<char>)chars);
+            Assert.True(s2.Substring(5, 5).SequenceEqual(trimStringResultString));
+            Assert.True(s2.Substring(5).SequenceEqual(trimStartStringResultString));
+            Assert.True(s2.Substring(0, 10).SequenceEqual(trimEndStringResultString));
+
+            // 2nd attempt should do nothing
+            Assert.True(trimStringResultString.SequenceEqual(trimStringResultString.Trim((ReadOnlySpan<char>)chars)));
+            Assert.True(trimStartStringResultString.SequenceEqual(trimStartStringResultString.TrimStart((ReadOnlySpan<char>)chars)));
+            Assert.True(trimEndStringResultString.SequenceEqual(trimEndStringResultString.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
 
             ReadOnlySpan<char> trimStringResult = stringSpan.Trim(trimChars);
             ReadOnlySpan<char> trimStartStringResult = stringSpan.TrimStart(trimChars);
@@ -6739,27 +6876,31 @@ namespace System.Tests
                 first[length - 1] = 'f';
                 string s1 = new string(first, 1, length - 2);
                 Assert.Equal(s1.ToArray().Length, s1.Trim(chars).ToArray().Length);
-                Assert.True(s1.SequenceEqual(s1.Trim(chars)), "A : " + s1.Length);
-                Assert.True(s1.SequenceEqual(s1.TrimStart(chars)), "B :" + s1.Length);
-                Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)));
+                Assert.True(s1.SequenceEqual(s1.Trim(chars)), "A: " + s1.Length);
+                Assert.True(s1.SequenceEqual(s1.TrimStart(chars)), "B: " + s1.Length);
+                Assert.True(s1.SequenceEqual(s1.TrimEnd(chars)), "C: " + s1.Length);
 
                 ReadOnlySpan<char> span = s1.AsSpan();
                 Assert.Equal(span.ToArray().Length, span.Trim(chars).ToArray().Length);
-                Assert.True(span.SequenceEqual(span.Trim(chars)), "A : " + span.Length);
-                Assert.True(span.SequenceEqual(span.TrimStart(chars)), "B :" + span.Length);
-                Assert.True(span.SequenceEqual(span.TrimEnd(chars)));
+                Assert.True(span.SequenceEqual(span.Trim(chars)), "A: " + span.Length);
+                Assert.True(span.SequenceEqual(span.TrimStart(chars)), "B: " + span.Length);
+                Assert.True(span.SequenceEqual(span.TrimEnd(chars)), "C: " + s1.Length);
             }
 
             string testString = "afghijklmnopqrstfe";
 
             string s2 = testString.Substring(1, testString.Length - 2);
-            char[] trimCharsString = "abcde".ToCharArray();
-            Assert.True(s2.SequenceEqual(s2.Trim(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimStart(trimCharsString)));
-            Assert.True(s2.SequenceEqual(s2.TrimEnd(trimCharsString)));
+            Assert.True(s2.SequenceEqual(s2.Trim(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart(chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd(chars)));
+
+            s2 = testString.Substring(1, testString.Length - 2);
+            Assert.True(s2.SequenceEqual(s2.Trim((ReadOnlySpan<char>)chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimStart((ReadOnlySpan<char>)chars)));
+            Assert.True(s2.SequenceEqual(s2.TrimEnd((ReadOnlySpan<char>)chars)));
 
             ReadOnlySpan<char> stringSpan = s2.AsSpan();
-            ReadOnlySpan<char> trimChars = trimCharsString.AsSpan();
+            ReadOnlySpan<char> trimChars = chars.AsSpan();
             Assert.True(stringSpan.SequenceEqual(stringSpan.Trim(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimStart(trimChars)));
             Assert.True(stringSpan.SequenceEqual(stringSpan.TrimEnd(trimChars)));

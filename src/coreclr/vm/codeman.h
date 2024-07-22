@@ -2210,9 +2210,9 @@ private:
 #endif
         }
 
-        static const element_t Null() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = NULL; e.m_jumpStub = NULL; return e; }
-        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == NULL; }
-        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = (PCODE)-1; e.m_jumpStub = NULL; return e; }
+        static const element_t Null() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = 0; e.m_jumpStub = 0; return e; }
+        static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == 0; }
+        static const element_t Deleted() { LIMITED_METHOD_CONTRACT; JumpStubEntry e; e.m_target = (PCODE)-1; e.m_jumpStub = 0; return e; }
         static bool IsDeleted(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.m_target == (PCODE)-1; }
     };
     typedef SHash<JumpStubTraits> JumpStubTable;
@@ -2258,7 +2258,7 @@ inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)
 inline CodeHeader * EEJitManager::GetCodeHeaderFromStartAddress(TADDR methodStartAddress)
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    _ASSERTE(methodStartAddress != NULL);
+    _ASSERTE(methodStartAddress != (TADDR)NULL);
     ARM_ONLY(_ASSERTE((methodStartAddress & THUMB_CODE) == 0));
     return dac_cast<PTR_CodeHeader>(methodStartAddress - sizeof(CodeHeader));
 }

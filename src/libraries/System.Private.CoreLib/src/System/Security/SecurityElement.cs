@@ -19,15 +19,15 @@ namespace System.Security
         private const int ChildrenTypical = 1;
 
         private const string EscapeChars = "<>\"'&";
-        private static readonly string[] s_escapeStringPairs = new string[]
-        {
+        private static readonly string[] s_escapeStringPairs =
+        [
             // these must be all once character escape sequences or a new escaping algorithm is needed
             "<", "&lt;",
             ">", "&gt;",
             "\"", "&quot;",
             "\'", "&apos;",
             "&", "&amp;"
-        };
+        ];
 
         //-------------------------- Constructors ---------------------------
 

@@ -25,8 +25,6 @@ parameters:
   useContinueOnErrorDuringBuild: false
   shouldContinueOnError: false
   isOfficialBuild: false
-  isSourceBuild: false
-  isNonPortableSourceBuild: false
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   helixQueues: ''
@@ -34,12 +32,9 @@ parameters:
   testResultsFormat: ''
   postBuildSteps: []
   extraVariablesTemplates: []
-  isManualCodeQLBuild: false
   preBuildSteps: []
-  enableRichCodeNavigation: false
-  richCodeNavigationLanguage: 'csharp'
-  disableComponentGovernance: ''
   templatePath: 'templates'
+  templateContext: ''
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -57,8 +52,8 @@ jobs:
     enablePublishTestResults: ${{ parameters.enablePublishTestResults }}
     testResultsFormat: ${{ parameters.testResultsFormat }}
 
-    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
-    richCodeNavigationLanguage: ${{ parameters.richCodeNavigationLanguage }}
+    ${{ if ne(parameters.templateContext, '') }}:
+      templateContext: ${{ parameters.templateContext }}
 
     artifacts:
       publish:
@@ -104,10 +99,26 @@ jobs:
         - name: crossArg
           value: '-cross'
 
-      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
-        # This is only required for cross builds.
-        - name: ROOTFS_DIR
-          value: ${{ parameters.jobParameters.crossrootfsDir }}
+      - name: CxxStandardLibraryArg
+        value: ''
+      - ${{ if ne(parameters.cxxStandardLibrary, '') }}:
+        - name: CxxStandardLibraryArg
+          value: /p:TargetCxxStandardLibrary=${{ parameters.cxxStandardLibrary }}
+
+      - name: CxxStandardLibraryStaticArg
+        value: ''
+      - ${{ if ne(parameters.cxxStandardLibraryStatic, '') }}:
+        - name: CxxStandardLibraryStaticArg
+          value: /p:TargetCxxStandardLibraryStatic=${{ parameters.cxxStandardLibraryStatic }}
+
+      - name: CxxAbiLibraryArg
+        value: ''
+      - ${{ if ne(parameters.cxxAbiLibrary, '') }}:
+        - name: CxxAbiLibraryArg
+          value: /p:TargetCxxAbiLibrary=${{ parameters.cxxAbiLibrary }}
+      
+      - name: TargetCxxLibraryConfigurationArgs
+        value: $(CxxStandardLibraryArg) $(CxxStandardLibraryStaticArg) $(CxxAbiLibraryArg)
 
       - name: _officialBuildParameter
         ${{ if eq(parameters.isOfficialBuild, true) }}:
@@ -154,10 +165,7 @@ jobs:
 
     - checkout: self
       clean: true
-      # If running in source build mode, a git stash will be used for the inner clone. Avoid setting a fetch depth,
-      # as a stash of a shallow cloned repo is not currently supported.
-      ${{ if ne(parameters.isSourceBuild, true) }}:
-        fetchDepth: $(checkoutFetchDepth)
+      fetchDepth: $(checkoutFetchDepth)
 
     - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
@@ -179,6 +187,10 @@ jobs:
             arguments: -ConfigFile $(Build.SourcesDirectory)/NuGet.config -Password $Env:Token
           env:
             Token: $(dn-bot-dnceng-artifact-feeds-rw)
+        # Run the NuGetAuthenticate task after the internal feeds are added to the nuget.config
+        # This ensures that creds are set appropriately for all feeds in the config, and that the
+        # credential provider is installed.
+        - task: NuGetAuthenticate@1
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
@@ -186,16 +198,6 @@ jobs:
         inputs:
           artifact: Mono_Offsets_${{monoCrossAOTTargetOS}}
           path: '$(Build.SourcesDirectory)/artifacts/obj/mono/offsetfiles'
-
-    - ${{ if eq(parameters.isSourceBuild, true) }}:
-      - template: /eng/common/${{ parameters.templatePath }}/steps/source-build.yml
-        parameters:
-          platform:
-            baseOS: ${{ parameters.baseOS }}
-            buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-            nonPortable: ${{ parameters.isNonPortableSourceBuild }}
-            targetRID: ${{ parameters.targetRid }}
-            name: ${{ parameters.platform }}
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
@@ -228,7 +230,6 @@ jobs:
               targetRid: ${{ parameters.targetRid }}
               nameSuffix: ${{ parameters.nameSuffix }}
               platform: ${{ parameters.platform }}
-              pgoType: ${{ parameters.pgoType }}
               shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
               ${{ if ne(preBuildStep.forwardedParameters, '') }}:
                 ${{ each parameter in preBuildStep.forwardedParameters }}:
@@ -239,21 +240,11 @@ jobs:
           - ${{ preBuildStep }}
 
     # Build
-    - ${{ if eq(parameters.isSourceBuild, false) }}:
-      - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
-        - task: CodeQL3000Init@0
-          displayName: Initialize CodeQL (manually-injected)
-
-      - template: /eng/pipelines/common/templates/global-build-step.yml
-        parameters:
-          buildArgs: ${{ parameters.buildArgs }}
-          useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
-          shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-
-      - ${{ if eq(parameters.isManualCodeQLBuild, true) }}:
-        - task: CodeQL3000Finalize@0
-          displayName: Finalize CodeQL (manually-injected)
-    #endif isSourceBuild
+    - template: /eng/pipelines/common/templates/global-build-step.yml
+      parameters:
+        buildArgs: ${{ parameters.buildArgs }}
+        useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:
       - script: |

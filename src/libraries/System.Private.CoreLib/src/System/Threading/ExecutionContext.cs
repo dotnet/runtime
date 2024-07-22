@@ -20,7 +20,7 @@ namespace System.Threading
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext();
-        private static volatile ExecutionContext? s_defaultFlowSuppressed;
+        private static ExecutionContext? s_defaultFlowSuppressed;
 
         private readonly IAsyncLocalValueMap? m_localValues;
         private readonly IAsyncLocal[]? m_localChangeNotifications;
@@ -85,11 +85,11 @@ namespace System.Threading
 
             if (m_localValues == null || AsyncLocalValueMap.IsEmpty(m_localValues))
             {
-#pragma warning disable CA1825 // Avoid unnecessary zero-length array allocations
+#pragma warning disable CA1825, IDE0300 // Avoid unnecessary zero-length array allocations
                 return isFlowSuppressed ?
                     (s_defaultFlowSuppressed ??= new ExecutionContext(AsyncLocalValueMap.Empty, new IAsyncLocal[0], isFlowSuppressed: true)) :
                     null; // implies the default context
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
             }
 
             return new ExecutionContext(m_localValues, m_localChangeNotifications, isFlowSuppressed);
@@ -515,7 +515,7 @@ namespace System.Threading
                 }
                 else if (newChangeNotifications == null)
                 {
-                    newChangeNotifications = new IAsyncLocal[1] { local };
+                    newChangeNotifications = [local];
                 }
                 else
                 {

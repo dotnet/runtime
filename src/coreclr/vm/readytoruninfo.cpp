@@ -1019,7 +1019,7 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
 {
     STANDARD_VM_CONTRACT;
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1092,7 +1092,7 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     bool printedStart = false;
 #endif
 
-    PCODE pEntryPoint = NULL;
+    PCODE pEntryPoint = (PCODE)NULL;
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
@@ -1396,7 +1396,7 @@ PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
     STANDARD_VM_CONTRACT;
 
     PCODE ret = m_pInfo->GetEntryPoint(GetMethodDesc(), NULL, FALSE);
-    _ASSERTE(ret != NULL);
+    _ASSERTE(ret != (PCODE)NULL);
     return ret;
 }
 

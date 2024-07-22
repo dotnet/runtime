@@ -14,6 +14,9 @@ public class Repro
     private const int FibSeriesMin = 20;
 
     [Fact]
+    [SkipOnCoreClr("This test is not compatible with GCStress.", RuntimeTestModes.AnyGCStress)]
+    [SkipOnCoreClr("This test is not compatible with HeapVerify.", RuntimeTestModes.HeapVerify)]
+    [OuterLoop]
     public static int TestEntrypoint()
     {
         // Compute the expected value for a single thread

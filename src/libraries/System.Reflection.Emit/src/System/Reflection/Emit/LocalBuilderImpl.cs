@@ -10,6 +10,7 @@ namespace System.Reflection.Emit
         private readonly Type _localType;
         private readonly MethodInfo _method;
         private readonly bool _isPinned;
+        private string? _name;
         #endregion
 
         #region Constructor
@@ -24,6 +25,19 @@ namespace System.Reflection.Emit
 
         #region Internal Members
         internal MethodInfo GetMethodBuilder() => _method;
+        internal string? Name => _name;
+        #endregion
+
+        #region LocalBuilder Override
+        protected override void SetLocalSymInfoCore(string name)
+        {
+            if (_method.DeclaringType is TypeBuilder typeBuilder && typeBuilder.IsCreated())
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
+            }
+
+            _name = name;
+        }
         #endregion
 
         #region LocalVariableInfo Override

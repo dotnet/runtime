@@ -1,113 +1,105 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString, utf16ToString } from "../strings";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { Int32Ptr } from "../types/emscripten";
-import { wrap_error_root, wrap_no_error_root } from "./helpers";
+import { VoidPtrNull } from "../types/internal";
+import { runtimeHelpers } from "./module-exports";
+import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { GraphemeSegmenter } from "./grapheme-segmenter";
 
 const COMPARISON_ERROR = -2;
 const INDEXING_ERROR = -1;
 let graphemeSegmenterCached: GraphemeSegmenter | null;
 
-export function mono_wasm_compare_string (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
+export function mono_wasm_compare_string (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
-        const string1 = utf16ToString(<any>str1, <any>(str1 + 2 * str1Length));
-        const string2 = utf16ToString(<any>str2, <any>(str2 + 2 * str2Length));
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
+        const string1 = runtimeHelpers.utf16ToString(<any>str1, <any>(str1 + 2 * str1Length));
+        const string2 = runtimeHelpers.utf16ToString(<any>str2, <any>(str2 + 2 * str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
-        wrap_no_error_root(is_exception, exceptionRoot);
-        return compareStrings(string1, string2, locale, casePicker);
+        const result = compareStrings(string1, string2, locale, casePicker);
+        runtimeHelpers.setI32(resultPtr, result);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(is_exception, ex, exceptionRoot);
-        return COMPARISON_ERROR;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        runtimeHelpers.setI32(resultPtr, COMPARISON_ERROR);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 
-export function mono_wasm_starts_with (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
+export function mono_wasm_starts_with (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const prefix = decodeToCleanString(str2, str2Length);
         // no need to look for an empty string
-        if (prefix.length == 0)
-            return 1; // true
+        if (prefix.length == 0) {
+            runtimeHelpers.setI32(resultPtr, 1); // true
+            return VoidPtrNull;
+        }
 
         const source = decodeToCleanString(str1, str1Length);
-        if (source.length < prefix.length)
-            return 0; //false
+        if (source.length < prefix.length) {
+            runtimeHelpers.setI32(resultPtr, 0); // false
+            return VoidPtrNull;
+        }
         const sourceOfPrefixLength = source.slice(0, prefix.length);
 
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
-        const result = compareStrings(sourceOfPrefixLength, prefix, locale, casePicker);
-        wrap_no_error_root(is_exception, exceptionRoot);
-        return result === 0 ? 1 : 0; // equals ? true : false
+        const cmpResult = compareStrings(sourceOfPrefixLength, prefix, locale, casePicker);
+        const result = cmpResult === 0 ? 1 : 0; // equals ? true : false
+        runtimeHelpers.setI32(resultPtr, result);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(is_exception, ex, exceptionRoot);
-        return INDEXING_ERROR;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        runtimeHelpers.setI32(resultPtr, INDEXING_ERROR);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 
-export function mono_wasm_ends_with (culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
+export function mono_wasm_ends_with (culture: number, cultureLength: number, str1: number, str1Length: number, str2: number, str2Length: number, options: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const suffix = decodeToCleanString(str2, str2Length);
-        if (suffix.length == 0)
-            return 1; // true
+        if (suffix.length == 0) {
+            runtimeHelpers.setI32(resultPtr, 1); // true
+            return VoidPtrNull;
+        }
 
         const source = decodeToCleanString(str1, str1Length);
         const diff = source.length - suffix.length;
-        if (diff < 0)
-            return 0; //false
+        if (diff < 0) {
+            runtimeHelpers.setI32(resultPtr, 0); // false
+            return VoidPtrNull;
+        }
         const sourceOfSuffixLength = source.slice(diff, source.length);
 
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
-        const result = compareStrings(sourceOfSuffixLength, suffix, locale, casePicker);
-        wrap_no_error_root(is_exception, exceptionRoot);
-        return result === 0 ? 1 : 0; // equals ? true : false
+        const cmpResult = compareStrings(sourceOfSuffixLength, suffix, locale, casePicker);
+        const result = cmpResult === 0 ? 1 : 0; // equals ? true : false
+        runtimeHelpers.setI32(resultPtr, result);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(is_exception, ex, exceptionRoot);
-        return INDEXING_ERROR;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        runtimeHelpers.setI32(resultPtr, INDEXING_ERROR);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 }
 
-export function mono_wasm_index_of (culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
+export function mono_wasm_index_of (culture: number, cultureLength: number, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, resultPtr: Int32Ptr): VoidPtr {
     try {
-        const needle = utf16ToString(<any>needlePtr, <any>(needlePtr + 2 * needleLength));
+        const needle = runtimeHelpers.utf16ToString(<any>needlePtr, <any>(needlePtr + 2 * needleLength));
         // no need to look for an empty string
         if (cleanString(needle).length == 0) {
-            wrap_no_error_root(is_exception, exceptionRoot);
-            return fromBeginning ? 0 : srcLength;
+            runtimeHelpers.setI32(resultPtr, fromBeginning ? 0 : srcLength);
+            return VoidPtrNull;
         }
 
-        const source = utf16ToString(<any>srcPtr, <any>(srcPtr + 2 * srcLength));
+        const source = runtimeHelpers.utf16ToString(<any>srcPtr, <any>(srcPtr + 2 * srcLength));
         // no need to look in an empty string
         if (cleanString(source).length == 0) {
-            wrap_no_error_root(is_exception, exceptionRoot);
-            return fromBeginning ? 0 : srcLength;
+            runtimeHelpers.setI32(resultPtr, fromBeginning ? 0 : srcLength);
+            return VoidPtrNull;
         }
-        const cultureName = monoStringToString(cultureRoot);
+        const cultureName = runtimeHelpers.utf16ToString(<any>culture, <any>(culture + 2 * cultureLength));
         const locale = cultureName ? cultureName : undefined;
         const casePicker = (options & 0x1f);
         let result = -1;
@@ -148,14 +140,11 @@ export function mono_wasm_index_of (culture: MonoStringRef, needlePtr: number, n
                     break;
             }
         }
-        wrap_no_error_root(is_exception, exceptionRoot);
-        return result;
+        runtimeHelpers.setI32(resultPtr, result);
+        return VoidPtrNull;
     } catch (ex: any) {
-        wrap_error_root(is_exception, ex, exceptionRoot);
-        return INDEXING_ERROR;
-    } finally {
-        cultureRoot.release();
-        exceptionRoot.release();
+        runtimeHelpers.setI32(resultPtr, INDEXING_ERROR);
+        return runtimeHelpers.stringToUTF16Ptr(ex.toString());
     }
 
     function checkMatchFound (str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {
@@ -256,7 +245,7 @@ function compareStrings (string1: string, string2: string, locale: string | unde
 }
 
 function decodeToCleanString (strPtr: number, strLen: number) {
-    const str = utf16ToString(<any>strPtr, <any>(strPtr + 2 * strLen));
+    const str = runtimeHelpers.utf16ToString(<any>strPtr, <any>(strPtr + 2 * strLen));
     return cleanString(str);
 }
 

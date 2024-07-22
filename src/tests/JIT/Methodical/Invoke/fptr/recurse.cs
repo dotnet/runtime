@@ -20,6 +20,7 @@ namespace TestCase_recurse_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             int arg = 6;

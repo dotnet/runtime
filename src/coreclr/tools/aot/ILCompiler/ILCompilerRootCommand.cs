@@ -286,7 +286,7 @@ namespace ILCompiler
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
                             inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
-                            outputOptions : new[] { "-o", "--out", "--exportsfile" });
+                            outputOptions : new[] { "-o", "--out", "--exportsfile", "--dgmllog", "--scandgmllog", "--mstat" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 

@@ -22,9 +22,7 @@ namespace System.IO
         private protected SemaphoreSlim EnsureAsyncActiveSemaphoreInitialized() =>
             // Lazily-initialize _asyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
             // WaitHandle, we don't need to worry about Disposing it in the case of a race condition.
-#pragma warning disable CS8774 // We lack a NullIffNull annotation for Volatile.Read
-            Volatile.Read(ref _asyncActiveSemaphore) ??
-#pragma warning restore CS8774
+            _asyncActiveSemaphore ??
             Interlocked.CompareExchange(ref _asyncActiveSemaphore, new SemaphoreSlim(1, 1), null) ??
             _asyncActiveSemaphore;
 
@@ -933,7 +931,7 @@ namespace System.IO
             }
         }
 
-        public virtual void WriteByte(byte value) => Write(new byte[1] { value }, 0, 1);
+        public virtual void WriteByte(byte value) => Write([value], 0, 1);
 
         public static Stream Synchronized(Stream stream)
         {

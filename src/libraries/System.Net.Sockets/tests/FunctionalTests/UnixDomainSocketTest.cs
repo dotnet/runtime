@@ -467,13 +467,13 @@ namespace System.Net.Sockets.Tests
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
-        public void UnixDomainSocketEndPoint_RelativePathDeletesFile()
+        public async Task UnixDomainSocketEndPoint_RelativePathDeletesFile()
         {
             if (!Socket.OSSupportsUnixDomainSockets)
             {
                 return;
             }
-            RemoteExecutor.Invoke(() =>
+            await RemoteExecutor.Invoke(() =>
             {
                 using (Socket socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
                 {
@@ -501,7 +501,7 @@ namespace System.Net.Sockets.Tests
                         Directory.Delete(otherDir);
                     }
                 }
-            }).Dispose();
+            }).DisposeAsync();
         }
 
         [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
@@ -586,7 +586,57 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static string GetRandomNonExistingFilePath()
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsUnixDomainSockets))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52124", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public async Task UnixDomainSocket_Receive_GetsCanceledByDispose()
+        {
+            string path = GetRandomNonExistingFilePath();
+            var endPoint = new UnixDomainSocketEndPoint(path);
+
+            using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+            {
+                server.Bind(endPoint);
+                server.Listen(1);
+
+                client.Connect(endPoint);
+                int msDelay = 100;
+                bool readFailed = false;
+                byte[] buffer = new byte[100];
+                using (Socket accepted = server.Accept())
+                {
+                    while (msDelay < 10_000)
+                    {
+                        Task disposeTask = Task.Run(() =>
+                        {
+                            Thread.Sleep(msDelay);
+                            client.Dispose();
+                        });
+
+                        try
+                        {
+                            client.Receive(buffer);
+                        }
+                        catch (SocketException)
+                        {
+                            await disposeTask;
+                            readFailed = true;
+                            break;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            await disposeTask;
+                            // Dispose happened before the operation, retry.
+                            msDelay *= 2;
+                            continue;
+                        }
+                    }
+                }
+                Assert.True(readFailed);
+            }
+        }
+
+        internal static string GetRandomNonExistingFilePath()
         {
             string result;
             do

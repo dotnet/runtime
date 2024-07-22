@@ -193,7 +193,13 @@ bool UnixNativeCodeManager::IsSafePoint(PTR_VOID pvAddress)
         codeOffset
     );
 
-    return decoder.IsInterruptible();
+    if (decoder.IsInterruptible())
+        return true;
+
+    if (decoder.IsInterruptibleSafePoint())
+        return true;
+
+    return false;
 }
 
 void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
@@ -207,18 +213,9 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
 
 #ifdef TARGET_ARM
     // Ensure that code offset doesn't have the Thumb bit set. We need
-    // it to be aligned to instruction start to make the !isActiveStackFrame
-    // branch below work.
+    // it to be aligned to instruction start
     ASSERT(((uintptr_t)codeOffset & 1) == 0);
 #endif
-
-    bool executionAborted = ((UnixNativeMethodInfo*)pMethodInfo)->executionAborted;
-
-    if (!isActiveStackFrame && !executionAborted)
-    {
-        // the reasons for this adjustment are explained in EECodeManager::EnumGcRefs
-        codeOffset--;
-    }
 
     GcInfoDecoder decoder(
         GCInfoToken(gcInfo),
@@ -227,6 +224,7 @@ void UnixNativeCodeManager::EnumGcRefs(MethodInfo *    pMethodInfo,
     );
 
     ICodeManagerFlags flags = (ICodeManagerFlags)0;
+    bool executionAborted = ((UnixNativeMethodInfo*)pMethodInfo)->executionAborted;
     if (executionAborted)
         flags = ICodeManagerFlags::ExecutionAborted;
 
@@ -375,7 +373,7 @@ bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
     ASSERT(((uintptr_t)pvAddress & 1) == 0);
 #endif
 
-#if defined(TARGET_ARM64) || defined(TARGET_ARM)
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
     MethodInfo methodInfo;
     FindMethodInfo(pvAddress, &methodInfo);
     pMethodInfo = &methodInfo;
@@ -642,6 +640,61 @@ int UnixNativeCodeManager::IsInProlog(MethodInfo * pMethodInfo, PTR_VOID pvAddre
     }
 
     return 0;
+
+#elif defined(TARGET_LOONGARCH64)
+
+// 0010 1001 11xx xxxx xxxx xxxx xxxx xxxx
+#define ST_BITS 0x29C00000
+#define ST_MASK 0xFFC00000
+
+// addi.d  $fp, $sp, x
+// ori  $fp, $sp, 0
+// 0000 0010 11xx xxxx xxxx xx00 0111 0110
+#define ADDI_FP_SP_BITS 0x02C00076
+#define ADDI_FP_SP_MASK 0xFFC003FF
+
+#define ST_RJ_MASK    0x3E0
+#define ST_RJ_FP      0x2C0
+#define ST_RJ_RA      0x20
+#define ST_RD_MASK    0x1F
+#define ST_RD_SP      0x3
+#define ST_RD_FP      0x16
+
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    ASSERT(pNativeMethodInfo != NULL);
+
+    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
+    bool savedFp = false;
+    bool savedRa = false;
+    bool establishedFp = false;
+
+    for (uint32_t* pInstr = (uint32_t*)start; pInstr < pvAddress && !(savedFp && savedRa && establishedFp); pInstr++)
+    {
+        uint32_t instr = *pInstr;
+
+        if (((instr & ST_MASK) == ST_BITS) &&
+            ((instr & ST_RD_MASK) == ST_RD_SP || (instr & ST_RD_MASK) == ST_RD_FP))
+        {
+            // SP/FP-relative store of pair of registers
+            savedFp |= (instr & ST_RJ_MASK) == ST_RJ_FP;
+            savedRa |= (instr & ST_RJ_MASK) == ST_RJ_RA;
+        }
+        else if ((instr & ADDI_FP_SP_MASK) == ADDI_FP_SP_BITS)
+        {
+            establishedFp = true;
+        }
+        else
+        {
+            // JIT generates other patterns into the prolog that we currently don't
+            // recognize (saving unpaired register, stack pointer adjustments). We
+            // don't need to recognize these patterns unless a compact unwinding code
+            // is generated for them in ILC.
+            // https://github.com/dotnet/runtime/issues/76371
+            return -1;
+        }
+    }
+
+    return savedFp && savedRa && establishedFp ? 0 : 1;
 
 #else
 
@@ -1019,6 +1072,60 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMetho
         return 0;
     }
 
+#elif defined(TARGET_LOONGARCH64)
+
+// ld.d
+// 0010 1000 11xx xxxx xxxx xxxx xxxx xxxx
+#define LD_BITS 0xB9400000
+#define LD_MASK 0xBF400000
+
+// ldx.d with register offset
+// 0011 1000 0000 1100 0xxx xxxx xxxx xxxx
+#define LDX_BITS 0x380C0000
+#define LDX_MASK 0xFFFF7000
+
+// Branches, Exception Generating and System instruction group
+// 01xx xxxx xxxx xxxx xxxx xxxx xxxx xxxx
+#define BEGS_BITS 0x40000000
+#define BEGS_MASK 0xC0000000
+
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    ASSERT(pNativeMethodInfo != NULL);
+
+    uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
+
+    // Since we stop on branches, the search is roughly limited by the containing basic block.
+    // We typically examine just 1-5 instructions and in rare cases up to 30.
+    //
+    // TODO: we can also limit the search by the longest possible epilogue length, but
+    // we must be sure the longest length considers all possibilities,
+    // which is somewhat nontrivial to derive/prove.
+    // It does not seem urgent, but it could be nice to have a constant upper bound.
+    for (uint32_t* pInstr = (uint32_t*)pvAddress - 1; pInstr > start; pInstr--)
+    {
+        uint32_t instr = *pInstr;
+
+        // check for Branches, Exception Generating and System instruction group.
+        // If we see such instruction before seeing FP or RA restored, we are not in an epilog.
+        // Note: this includes RET, BRK, branches, calls, tailcalls, fences, etc...
+        if ((instr & BEGS_MASK) == BEGS_BITS)
+        {
+            // not in an epilogue
+            break;
+        }
+
+        // check for restoring FP or RA with ld.d or ldx.d
+        int operand = (instr >> 5) & 0x1f;
+        if (operand == 22 || operand == 1)
+        {
+            if ((instr & LD_MASK) == LD_BITS ||
+                (instr & LDX_MASK) == LDX_BITS)
+            {
+                return -1;
+            }
+        }
+    }
+
 #endif
 
     return 0;
@@ -1061,9 +1168,9 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     // Decode the GC info for the current method to determine its return type
     GcInfoDecoderFlags flags = DECODE_RETURN_KIND;
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     flags = (GcInfoDecoderFlags)(flags | DECODE_HAS_TAILCALLS);
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
     GcInfoDecoder decoder(GCInfoToken(p), flags);
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
@@ -1147,6 +1254,41 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     }
 
     *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pLR;
+    return true;
+
+#elif defined(TARGET_LOONGARCH64)
+
+    if (decoder.HasTailCalls())
+    {
+        // Do not hijack functions that have tail calls, since there are two problems:
+        // 1. When a function that tail calls another one is hijacked, the RA may be
+        //    stored at a different location in the stack frame of the tail call target.
+        //    So just by performing tail call, the hijacked location becomes invalid and
+        //    unhijacking would corrupt stack by writing to that location.
+        // 2. There is a small window after the caller pops RA from the stack in its
+        //    epilog and before the tail called function pushes RA in its prolog when
+        //    the hijacked return address would not be not on the stack and so we would
+        //    not be able to unhijack.
+        return false;
+    }
+
+    PTR_uintptr_t pRA = pRegisterSet->pRA;
+    if (!VirtualUnwind(pMethodInfo, pRegisterSet))
+    {
+        return false;
+    }
+
+    if (pRegisterSet->pRA == pRA)
+    {
+        // This is the case when we are either:
+        //
+        // 1) In a leaf method that does not push RA on stack, OR
+        // 2) In the prolog/epilog of a non-leaf method that has not yet pushed RA on stack
+        //    or has RA already popped off.
+        return false;
+    }
+
+    *ppvRetAddrLocation = (PTR_PTR_VOID)pRegisterSet->pRA;
     return true;
 #else
     return false;

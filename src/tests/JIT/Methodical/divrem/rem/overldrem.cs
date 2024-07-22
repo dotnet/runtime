@@ -236,6 +236,7 @@ public class overldrem
     }
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
         bool passed = true;

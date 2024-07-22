@@ -28,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix);
-            sb.Append("__ReadyToRunAttributePresenceFilter__");
+            sb.Append("__ReadyToRunAttributePresenceFilter__"u8);
             sb.Append(_module.Assembly.GetName().Name);
         }
 
@@ -383,7 +383,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 return;
                             }
                         }
-                        Debug.Assert(false, "Not possible to reach here");
+                        Debug.Fail("Not possible to reach here");
                     };
                     // Scan for pre-existing fingerprint entry in buckets
                     if (hasEntryInBucket(bucketAIndex, fingerprint) || hasEntryInBucket(bucketBIndex, fingerprint))

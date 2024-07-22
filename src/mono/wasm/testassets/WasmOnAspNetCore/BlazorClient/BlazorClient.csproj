@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <WasmEnableThreads>true</WasmEnableThreads>
+    <!-- nullablility warning, async warning -->
+    <NoWarn>$(NoWarn);CS8604;CS4014</NoWarn>
+    <StaticWebAssetBasePath>blazorclient</StaticWebAssetBasePath>
+  </PropertyGroup>
+
+  <!-- versions are pinned but when run from WBT level, it's taking in-tree runtime -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.0-preview.5.24306.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.0-preview.5.24306.11" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
+</Project>

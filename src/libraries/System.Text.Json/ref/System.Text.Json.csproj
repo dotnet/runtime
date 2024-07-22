@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipelines\ref\System.IO.Pipelines.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">

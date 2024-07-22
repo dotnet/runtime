@@ -33,6 +33,8 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs"
              Link="Common\System\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs"
+             Link="Common\System\IO\MemoryMappedFiles\MemoryMappedFileMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs"
              Link="Common\System\Memory\PointerMemoryManager.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\X509ResourceClient.cs"
@@ -295,8 +297,6 @@
              Link="Common\System\Security\Cryptography\EccKeyFormatHelper.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Helpers.cs"
              Link="Common\System\Security\Cryptography\Helpers.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\KdfWorkLimiter.cs"
-             Link="Common\System\Security\Cryptography\KdfWorkLimiter.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\KeyBlobHelpers.cs"
              Link="Common\System\Security\Cryptography\KeyBlobHelpers.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\IRuntimeAlgorithm.cs"
@@ -329,8 +329,14 @@
              Link="Common\System\Security\Cryptography\SP800108HmacCounterKdfImplementationBase.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Utf8DataEncoding.cs"
              Link="Common\System\Security\Cryptography\Utf8DataEncoding.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\X509IterationCountExceededException.cs"
-             Link="Common\System\Security\Cryptography\X509IterationCountExceededException.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoaderLimits.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\Pkcs12LoadLimitExceededException.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs"
+             Link="Common\System\Security\Cryptography\X509Certificates\X509CertificateLoader.Pkcs12.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
@@ -371,6 +377,8 @@
     <Compile Include="System\Security\Cryptography\CngProvider.cs" />
     <Compile Include="System\Security\Cryptography\CngUIPolicy.cs" />
     <Compile Include="System\Security\Cryptography\CngUIProtectionLevels.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrencyBlock.cs" />
+    <Compile Include="System\Security\Cryptography\ConcurrentSafeKmac.cs" />
     <Compile Include="System\Security\Cryptography\CryptoConfigForwarder.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicOperations.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicUnexpectedOperationException.cs" />
@@ -545,11 +553,13 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\X509AuthorityKeyIdentifierExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509BasicConstraintsExtension.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate.LegacyLimits.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2Collection.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Certificate2Enumerator.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateCollection.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateEnumerator.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.netcore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Chain.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainElement.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509ChainElementCollection.cs" />
@@ -681,6 +691,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ChainPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\FindPal.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.NotSupported.cs" />
   </ItemGroup>
 
@@ -718,8 +729,6 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Crypto.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"
@@ -740,6 +749,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.RAND.cs"
@@ -786,8 +797,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeEvpMacHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpMacCtxHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeEvpMacCtxHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpPkeyCtxHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeEvpPkeyCtxHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeHmacCtxHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs"
@@ -897,7 +906,6 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslDirectoryBasedStoreProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslExportProvider.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslPkcsFormatReader.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslSingleCertLoader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509CertificateReader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenSslX509ChainEventSource.cs" />
@@ -906,10 +914,11 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixChainVerifier.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Persistence.cs" />
   </ItemGroup>
@@ -1015,7 +1024,7 @@
     <Compile Include="System\Security\Cryptography\OpenSslCipher.cs" />
     <Compile Include="System\Security\Cryptography\OpenSslCipherLite.cs" />
     <Compile Include="System\Security\Cryptography\PasswordDeriveBytes.NotSupported.cs" />
-    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\Pbkdf2Implementation.Android.cs" />
     <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
     <Compile Include="System\Security\Cryptography\RandomNumberGeneratorImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\RC2CryptoServiceProvider.Unix.cs" />
@@ -1027,7 +1036,6 @@
     <Compile Include="System\Security\Cryptography\TripleDESCryptoServiceProvider.Wrap.cs" />
     <Compile Include="System\Security\Cryptography\TripleDesImplementation.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AndroidCertificatePal.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\AndroidPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificateData.ManagedDecode.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePal.Android.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertificatePolicy.cs" />
@@ -1044,10 +1052,11 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.Android.TrustedStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixChainVerifier.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Android.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Android.cs" />
   </ItemGroup>
 
@@ -1160,9 +1169,9 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\ManagedX509ExtensionProcessor.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixChainVerifier.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnixExportProvider.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\UnixPkcs12Reader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X500NameEncoder.ManagedDecode.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Unix.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.ECKey.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Apple.X500Name.cs" />
   </ItemGroup>
@@ -1176,8 +1185,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeDsaHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeEcKeyHandle.Unix.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeEvpPkeyCtxHandle.Unix.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeEvpPkeyCtxHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeInteriorHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs"
@@ -1190,8 +1197,6 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Dsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcKey.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs"
-             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EcDsa.ImportExport.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EVP.DigestAlgs.cs"
@@ -1202,12 +1207,16 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Dsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Ecdh.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs"
+             Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcDsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.EcKey.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.EvpPkey.Rsa.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
+    <Compile Include="$(CommonPath)Interop\OSX\Swift.Runtime\UnsafeBufferPointer.cs"
+             Link="Common\Interop\OSX\Swift.Runtime\UnsafeBufferPointer.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Aead.cs"
              Link="Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Aead.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.macOS.cs"
@@ -1253,12 +1262,12 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.ImportExport.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pkcs12.macOS.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ApplePkcs12Reader.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.AppleKeychainStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.AppleTrustStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.ExportPal.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.macOS.LoaderPal.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.macOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.macOS.cs" />
   </ItemGroup>
 
@@ -1282,12 +1291,11 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Keys.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pem.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\AppleCertificatePal.Pkcs12.iOS.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ApplePkcs12CertLoader.iOS.cs" />
-    <Compile Include="System\Security\Cryptography\X509Certificates\ApplePkcs12Reader.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\CertCollectionLoader.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\StorePal.iOS.AppleKeychainStore.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\UnsupportedDisallowedStore.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.iOS.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.iOS.cs" />
   </ItemGroup>
 
@@ -1772,6 +1780,7 @@
     <Compile Include="System\Security\Cryptography\X509Certificates\WindowsHelpers.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\WindowsInterop.crypt32.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\WindowsStructs.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\X509CertificateLoader.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.CustomExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\X509Pal.Windows.GetCertContentType.cs" />
@@ -1786,6 +1795,7 @@
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Diagnostics.StackTrace" />
     <Reference Include="System.Formats.Asn1" />
+    <Reference Include="System.IO.MemoryMappedFiles" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />

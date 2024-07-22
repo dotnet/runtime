@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
@@ -245,7 +246,7 @@ namespace System
             // character is simply accepted. Fancier handling is not required
             // because the program name must be a legal NTFS/HPFS file name.
             // Note that the double-quote characters are not copied, nor do they
-            // contribyte to character_count.
+            // contribute to character_count.
 
             bool inQuotes = false;
             stringBuilder = new ValueStringBuilder(stringBuffer);
@@ -357,6 +358,21 @@ namespace System
             }
 
             return arrayBuilder.ToArray();
+        }
+
+        /// <summary>
+        /// Get the CPU usage, including the process time spent running the application code, the process time spent running the operating system code,
+        /// and the total time spent running both the application and operating system code.
+        /// </summary>
+        [SupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
+        public static ProcessCpuUsage CpuUsage
+        {
+            get => Interop.Kernel32.GetProcessTimes(Interop.Kernel32.GetCurrentProcess(), out _, out _, out long procKernelTime, out long procUserTime) ?
+                    new ProcessCpuUsage { UserTime = new TimeSpan(procUserTime), PrivilegedTime = new TimeSpan(procKernelTime) } :
+                    new ProcessCpuUsage { UserTime = TimeSpan.Zero, PrivilegedTime = TimeSpan.Zero };
         }
     }
 }

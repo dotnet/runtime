@@ -948,6 +948,5 @@ namespace System.Tests
                 Assert.Equal(-9670, int.Parse("-9670", NumberStyles.Integer, nfi));
             }
         }
-
     }
 }

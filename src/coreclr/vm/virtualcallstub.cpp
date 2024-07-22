@@ -769,9 +769,7 @@ void VirtualCallStubManager::InitStatic()
     VirtualCallStubManagerManager::InitStatic();
 }
 
-// Static shutdown code.
-// At the moment, this doesn't do anything more than log statistics.
-void VirtualCallStubManager::UninitStatic()
+void VirtualCallStubManager::LogFinalStats()
 {
     CONTRACTL
     {
@@ -987,6 +985,7 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, DWORD slot)
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
     MethodTable * pMT = ownerType.GetMethodTable();
+    pMT->GetRestoredSlot(slot);
 
     DispatchToken token;
     if (pMT->IsInterface())
@@ -1188,7 +1187,7 @@ size_t VirtualCallStubManager::GetTokenFromStub(PCODE stub)
     }
     CONTRACTL_END
 
-    _ASSERTE(stub != NULL);
+    _ASSERTE(stub != (PCODE)NULL);
     StubCodeBlockKind         stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *  pMgr     = FindStubManager(stub, &stubKind);
 
@@ -1206,7 +1205,7 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
     CONTRACTL_END
 
     _ASSERTE(pMgr != NULL);
-    _ASSERTE(stub != NULL);
+    _ASSERTE(stub != (PCODE)NULL);
     _ASSERTE(kind != STUB_CODE_BLOCK_UNKNOWN);
 
 #ifndef DACCESS_COMPILE
@@ -1311,7 +1310,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     _ASSERTE(protectedObj != NULL);
     OBJECTREF pObj = *protectedObj;
 
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
 
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
@@ -1349,7 +1348,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     MethodTable * pRepresentativeMT = pObj->GetMethodTable();
     if (representativeToken.IsTypedToken())
     {
-        pRepresentativeMT = CURRENT_THREAD->GetDomain()->LookupType(representativeToken.GetTypeID());
+        pRepresentativeMT = AppDomain::GetCurrentDomain()->LookupType(representativeToken.GetTypeID());
         CONSISTENCY_CHECK(CheckPointer(pRepresentativeMT));
     }
 
@@ -1366,7 +1365,7 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
-    CONSISTENCY_CHECK(callSiteTarget != NULL);
+    CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     StubCodeBlockKind   stubKind = STUB_CODE_BLOCK_UNKNOWN;
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget, &stubKind);
@@ -1412,7 +1411,7 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     StubCallSite callSite(siteAddrForRegisterIndirect, returnAddress);
 
     PCODE callSiteTarget = callSite.GetSiteTarget();
-    CONSISTENCY_CHECK(callSiteTarget != NULL);
+    CONSISTENCY_CHECK(callSiteTarget != (PCODE)NULL);
 
     VirtualCallStubManager *pMgr = VirtualCallStubManager::FindStubManager(callSiteTarget);
     PREFIX_ASSUME(pMgr != NULL);
@@ -1506,7 +1505,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
          bCallToShorterLivedTarget ? "bCallToShorterLivedTarget" : "" ));
 
     PCODE stub = CALL_STUB_EMPTY_ENTRY;
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
     BOOL patch = FALSE;
 
     // This code can throw an OOM, but we do not want to fail in this case because
@@ -1539,7 +1538,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         /////////////////////////////////////////////////////////////////////////////////////
         // Second see if we can find a ResolveCacheElem for this token and type.
         // If a match is found, use the target stored in the entry.
-        if (target == NULL)
+        if (target == (PCODE)NULL)
         {
             ResolveCacheElem * elem = NULL;
             ResolveCacheEntry entryRC;
@@ -1564,7 +1563,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     // If we failed to find a target in either the resolver or cache entry hash tables,
     // we need to perform a full resolution of the token and type.
     //@TODO: Would be nice to add assertion code to ensure we only ever call Resolver once per <token,type>.
-    if (target == NULL)
+    if (target == (PCODE)NULL)
     {
         CONSISTENCY_CHECK(stub == CALL_STUB_EMPTY_ENTRY);
         patch = Resolver(objectType, token, protectedObj, &target, TRUE /* throwOnConflict */);
@@ -1579,7 +1578,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #endif // _DEBUG
     }
 
-    CONSISTENCY_CHECK(target != NULL);
+    CONSISTENCY_CHECK(target != (PCODE)NULL);
 
     // Now that we've successfully determined the target, we will wrap the remaining logic in a giant
     // TRY/CATCH statement because it is there purely to emit stubs and cache entries. In the event
@@ -1610,7 +1609,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
         DispatchCache::InsertKind insertKind = DispatchCache::IK_NONE;
 
-        if (target != NULL)
+        if (target != (PCODE)NULL)
         {
             if (patch)
             {
@@ -1630,7 +1629,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                     // Only X86 implementation needs a BackPatch function
                     pBackPatchFcn = (PCODE) GetEEFuncEntryPoint(BackPatchWorkerAsmStub);
 #else // !TARGET_X86
-                    pBackPatchFcn = NULL;
+                    pBackPatchFcn = (PCODE)NULL;
 #endif // !TARGET_X86
 
 #ifdef CHAIN_LOOKUP
@@ -1674,7 +1673,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                         }
                         CONSISTENCY_CHECK(CheckPointer(pResolveHolder));
                         stub = pResolveHolder->stub()->resolveEntryPoint();
-                        CONSISTENCY_CHECK(stub != NULL);
+                        CONSISTENCY_CHECK(stub != (PCODE)NULL);
                     }
 
                     // Only create a dispatch stub if:
@@ -1716,7 +1715,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             // Now assign the entrypoint to stub
                             CONSISTENCY_CHECK(CheckPointer(pDispatchHolder));
                             stub = pDispatchHolder->stub()->entryPoint();
-                            CONSISTENCY_CHECK(stub != NULL);
+                            CONSISTENCY_CHECK(stub != (PCODE)NULL);
                         }
                         else
                         {
@@ -1854,7 +1853,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
     EX_END_CATCH (SwallowAllExceptions);
 
     // Target can be NULL only if we can't resolve to an address
-    _ASSERTE(target != NULL);
+    _ASSERTE(target != (PCODE)NULL);
 
     return target;
 }
@@ -1886,7 +1885,7 @@ VirtualCallStubManager::Resolver(
     MethodDesc *  dbg_pTokenMD = NULL;
     if (token.IsTypedToken())
     {
-        dbg_pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+        dbg_pTokenMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
         dbg_pTokenMD = dbg_pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
     }
 #endif // _DEBUG
@@ -1932,7 +1931,7 @@ VirtualCallStubManager::Resolver(
         {
             // Skip fixup precode jump for better perf
             PCODE pDirectTarget = Precode::TryToSkipFixupPrecode(implSlot.GetTarget());
-            if (pDirectTarget != NULL)
+            if (pDirectTarget != (PCODE)NULL)
                 implSlot = DispatchSlot(pDirectTarget);
 
             // Only patch to a target if it's not going to call the prestub.
@@ -2042,7 +2041,7 @@ VirtualCallStubManager::Resolver(
         MethodDesc *  pTokenMD = NULL;
         if (token.IsTypedToken())
         {
-            pTokenMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+            pTokenMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
             pTokenMD = pTokenMT->FindDispatchSlot(TYPE_ID_THIS_CLASS, token.GetSlotNumber(), throwOnConflict).GetMethodDesc();
         }
 
@@ -2060,7 +2059,7 @@ VirtualCallStubManager::Resolver(
         if (!throwOnConflict)
         {
             // Assume we got null because there was a default interface method conflict
-            *ppTarget = NULL;
+            *ppTarget = (PCODE)NULL;
             return FALSE;
         }
         else
@@ -2101,8 +2100,8 @@ BOOL VirtualCallStubManager::IsInterfaceToken(DispatchToken token)
     } CONTRACT_END;
     BOOL ret = token.IsTypedToken();
     // For now, only interfaces have typed dispatch tokens.
-    CONSISTENCY_CHECK(!ret || CheckPointer(GetThread()->GetDomain()->LookupType(token.GetTypeID())));
-    CONSISTENCY_CHECK(!ret || GetThread()->GetDomain()->LookupType(token.GetTypeID())->IsInterface());
+    CONSISTENCY_CHECK(!ret || CheckPointer(AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())));
+    CONSISTENCY_CHECK(!ret || AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())->IsInterface());
     RETURN (ret);
 }
 
@@ -2128,12 +2127,12 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
 
     if (token.IsTypedToken())
     {
-        pMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+        pMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
         CONSISTENCY_CHECK(CheckPointer(pMT));
         token = DispatchToken::CreateDispatchToken(token.GetSlotNumber());
     }
     CONSISTENCY_CHECK(token.IsThisToken());
-    RETURN (pMT->GetMethodDescForSlot(token.GetSlotNumber()));
+    RETURN (pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber()));
 }
 
 //----------------------------------------------------------------------------
@@ -2143,7 +2142,7 @@ MethodTable *VirtualCallStubManager::GetTypeFromToken(DispatchToken token)
         NOTHROW;
         WRAPPER(GC_TRIGGERS);
     } CONTRACTL_END;
-    MethodTable *pMT = GetThread()->GetDomain()->LookupType(token.GetTypeID());
+    MethodTable *pMT = AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID());
     _ASSERTE(pMT != NULL);
     _ASSERTE(pMT->LookupTypeID() == token.GetTypeID());
     return pMT;
@@ -2165,7 +2164,7 @@ MethodDesc *VirtualCallStubManager::GetInterfaceMethodDescFromToken(DispatchToke
     MethodTable * pMT = GetTypeFromToken(token);
     PREFIX_ASSUME(pMT != NULL);
     CONSISTENCY_CHECK(CheckPointer(pMT));
-    return pMT->GetMethodDescForSlot(token.GetSlotNumber());
+    return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 
 #else // DACCESS_COMPILE
 
@@ -2220,11 +2219,11 @@ VirtualCallStubManager::GetTarget(
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
 
 #ifndef STUB_DISPATCH_PORTABLE
     target = CacheLookup(token.To_SIZE_T(), DispatchCache::INVALID_HASH, pMT);
-    if (target != NULL)
+    if (target != (PCODE)NULL)
         return target;
 #endif // !STUB_DISPATCH_PORTABLE
 
@@ -2234,7 +2233,7 @@ VirtualCallStubManager::GetTarget(
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
     // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
     fPatch = Resolver(pMT, token, NULL, &target, throwOnConflict);
-    _ASSERTE(!throwOnConflict || target != NULL);
+    _ASSERTE(!throwOnConflict || target != (PCODE)NULL);
 
 #ifndef STUB_DISPATCH_PORTABLE
     if (fPatch)
@@ -3810,7 +3809,7 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     // Do the full resolve
     DispatchToken token(VirtualCallStubManager::GetTokenFromStubQuick(pMgr, stubStartAddress, sk));
 
-    PCODE target = NULL;
+    PCODE target = (PCODE)NULL;
     // TODO: passing NULL as protectedObj here can lead to incorrect behavior for ICastable objects
     // We need to review if this is the case and refactor this code if we want ICastable to become officially supported
     VirtualCallStubManager::Resolver(pMT, token, NULL, &target, TRUE /* throwOnConflict */);

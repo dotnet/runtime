@@ -12,8 +12,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-
-#pragma warning disable 8500 // Allow taking address of managed types
+using System.Runtime.InteropServices;
 
 namespace System
 {
@@ -171,7 +170,7 @@ namespace System
         /// <param name="value">The underlying value for which we're searching.</param>
         /// <returns>The name of the value if found; otherwise, <see langword="null"/>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static string? GetNameInlined<TStorage>(EnumInfo<TStorage> enumInfo, TStorage value)
+        private static unsafe string? GetNameInlined<TStorage>(EnumInfo<TStorage> enumInfo, TStorage value)
             where TStorage : struct, INumber<TStorage>
         {
             string[] names = enumInfo.Names;
@@ -181,7 +180,7 @@ namespace System
             // in the array is where the corresponding name is stored.
             if (enumInfo.ValuesAreSequentialFromZero)
             {
-                if (Unsafe.SizeOf<TStorage>() <= sizeof(uint))
+                if (sizeof(TStorage) <= sizeof(uint))
                 {
                     // Special-case types types that are <= sizeof(int), as we can then eliminate a bounds check on the array.
                     uint uint32Value = uint.CreateTruncating(value);
@@ -768,7 +767,7 @@ namespace System
                     break;
             }
 
-            result = parsed ? InternalBoxEnum(rt, longScratch) : null;
+            result = parsed ? InternalBoxEnum(rt.TypeHandle, longScratch) : null;
             return parsed;
 
             [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1540,20 +1539,20 @@ namespace System
         {
             fixed (byte* ptr = &data)
             {
-                return string.Create(Unsafe.SizeOf<TStorage>() * 2, (IntPtr)ptr, (destination, intptr) =>
+                return string.Create(sizeof(TStorage) * 2, (IntPtr)ptr, (destination, intptr) =>
                 {
                     bool success = TryFormatNumberAsHex<TStorage>(ref *(byte*)intptr, destination, out int charsWritten);
                     Debug.Assert(success);
-                    Debug.Assert(charsWritten == Unsafe.SizeOf<TStorage>() * 2);
+                    Debug.Assert(charsWritten == sizeof(TStorage) * 2);
                 });
             }
         }
 
         /// <summary>Tries to format the data for the underlying value as hex into the destination span.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryFormatNumberAsHex<TStorage>(ref byte data, Span<char> destination, out int charsWritten) where TStorage : struct
+        private static unsafe bool TryFormatNumberAsHex<TStorage>(ref byte data, Span<char> destination, out int charsWritten) where TStorage : struct
         {
-            if (Unsafe.SizeOf<TStorage>() * 2 <= destination.Length)
+            if (sizeof(TStorage) * 2 <= destination.Length)
             {
                 if (typeof(TStorage) == typeof(byte) ||
                     typeof(TStorage) == typeof(sbyte))
@@ -1603,7 +1602,7 @@ namespace System
                     throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
                 }
 
-                charsWritten = Unsafe.SizeOf<TStorage>() * 2;
+                charsWritten = sizeof(TStorage) * 2;
                 return true;
             }
 
@@ -1745,7 +1744,7 @@ namespace System
         /// <param name="format">A span containing the character that represents the standard format string that defines the acceptable format of destination. This may be empty, or "g", "d", "f", or "x".</param>
         /// <returns><see langword="true"/> if the formatting was successful; otherwise, <see langword="false"/> if the destination span wasn't large enough to contain the formatted value.</returns>
         /// <exception cref="FormatException">The format parameter contains an invalid value.</exception>
-        public static unsafe bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default) where TEnum : struct, Enum
+        public static unsafe bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.EnumFormat)] ReadOnlySpan<char> format = default) where TEnum : struct
         {
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
@@ -2205,8 +2204,6 @@ namespace System
                 case TypeCode.Byte: return ToObject(enumType, (byte)value);
                 case TypeCode.UInt16: return ToObject(enumType, (ushort)value);
                 case TypeCode.UInt64: return ToObject(enumType, (ulong)value);
-                case TypeCode.Single: return ToObject(enumType, BitConverter.SingleToInt32Bits((float)value));
-                case TypeCode.Double: return ToObject(enumType, BitConverter.DoubleToInt64Bits((double)value));
                 case TypeCode.Char: return ToObject(enumType, (char)value);
                 case TypeCode.Boolean: return ToObject(enumType, (bool)value ? 1L : 0L);
             };
@@ -2225,31 +2222,47 @@ namespace System
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, sbyte value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, short value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, int value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, byte value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, ushort value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, uint value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         public static object ToObject(Type enumType, long value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), value);
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, value);
 
         [CLSCompliant(false)]
         public static object ToObject(Type enumType, ulong value) =>
-            InternalBoxEnum(ValidateRuntimeType(enumType), unchecked((long)value));
+            InternalBoxEnum(ValidateRuntimeType(enumType).TypeHandle, unchecked((long)value));
+
+        private static object InternalBoxEnum(RuntimeTypeHandle type, long value)
+        {
+            ReadOnlySpan<byte> rawData = MemoryMarshal.AsBytes(new ReadOnlySpan<long>(ref value));
+            // On little-endian systems, we can always use the pointer to the start of the scratch space
+            // as memory layout since the least-significant bit is at the lowest address.
+            // For big-endian systems, the least-significant bit is at the highest address, so we need to adjust
+            // our starting ref to the correct offset from the end of the scratch space to get the value to box.
+            if (!BitConverter.IsLittleEndian)
+            {
+                int size = RuntimeHelpers.SizeOf(type);
+                rawData = rawData.Slice(sizeof(long) - size);
+            }
+
+            return RuntimeHelpers.Box(ref MemoryMarshal.GetReference(rawData), type)!;
+        }
 
         internal static bool AreSequentialFromZero<TStorage>(TStorage[] values) where TStorage : struct, INumber<TStorage>
         {

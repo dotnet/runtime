@@ -50,7 +50,8 @@ class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
 
 typedef TADDR LOADERHANDLE;
-typedef TADDR RUNTIMETYPEHANDLE;
+typedef Object* RUNTIMETYPEHANDLE;
+typedef DPTR(LOADERHANDLE) PTR_LOADERHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
@@ -163,6 +164,26 @@ class OBJECTREF {
         //-------------------------------------------------------------
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
+        
+        // We use this delayed check to avoid ambiguous overload issues with TADDR
+        // on platforms where NULL is defined as anything other than a uintptr_t constant
+        // or nullptr_t exactly.
+        // Without this, any valid "null pointer constant" that is not directly either type
+        // will be implicitly convertible to both TADDR and std::nullptr_t, causing ambiguity.
+        // With this, this constructor (and all similarly declared operators) drop out of
+        // consideration when used with NULL (and not nullptr_t).
+        // With this workaround, we get identical behavior between the Checked OBJECTREF builds
+        // and the release builds.
+        template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+        OBJECTREF(T)
+            : OBJECTREF(TADDR(0))
+        {
+        }
+        template<typename T, typename = typename std::enable_if<std::is_same<T, std::nullptr_t>::value>::type>
+        OBJECTREF& operator=(T)
+        {
+            return *this = TADDR(0);
+        }
 
             // allow explicit casts
         explicit OBJECTREF(Object *pObject);
@@ -183,17 +204,8 @@ template <class T>
 class REF : public OBJECTREF
 {
     public:
-
-        //-------------------------------------------------------------
-        // Default constructor, for non-initializing declarations:
-        //
-        //      OBJECTREF or;
-        //-------------------------------------------------------------
-      REF() :OBJECTREF ()
-        {
-            LIMITED_METHOD_CONTRACT;
-            // no op
-        }
+        REF() = default;
+        using OBJECTREF::OBJECTREF;
 
         //-------------------------------------------------------------
         // Copy constructor, for passing OBJECTREF's as function arguments.
@@ -202,16 +214,6 @@ class REF : public OBJECTREF
         {
             LIMITED_METHOD_CONTRACT;
             //no op
-        }
-
-
-        //-------------------------------------------------------------
-        // To allow NULL to be used as an OBJECTREF.
-        //-------------------------------------------------------------
-      REF(TADDR nul) : OBJECTREF (nul)
-        {
-            LIMITED_METHOD_CONTRACT;
-            // no op
         }
 
       explicit REF(T* pObject) : OBJECTREF(pObject)
@@ -294,7 +296,18 @@ class Module;
 // For [<I1, etc. up to and including [Object
 GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
-extern "C" Volatile<int32_t>   g_TrapReturningThreads;
+// g_TrapReturningThreads == 0 disables thread polling/traping.
+// This allows to short-circuit further examining of thread states in the most
+// common scenario - when we are not interested in trapping anything.
+// 
+// The bit #1 is reserved for controlling thread suspension.
+// Setting bit #1 allows to atomically indicate/check that EE suspension is in progress.
+// There could be only one EE suspension in progress at a time. (it requires holding ThreadStore lock)
+// .
+// Other bits are used as a counter to enable thread trapping for other reasons, such as ThreadAbort.
+// There could be several active reasons for thread trapping at a time, like aborting multiple threads,
+// thus g_TrapReturningThreads value could be > 3.
+extern "C" volatile int32_t g_TrapReturningThreads;
 
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
@@ -446,20 +459,25 @@ GVAL_DECL(bool, g_metadataUpdatesApplied);
 #endif
 EXTERN bool g_fManagedAttach;
 
+#ifdef HOST_WINDOWS
+typedef BOOLEAN (WINAPI* PRTLDLLSHUTDOWNINPROGRESS)();
+EXTERN PRTLDLLSHUTDOWNINPROGRESS g_pfnRtlDllShutdownInProgress;
+#endif
+
 // Indicates whether we're executing shut down as a result of DllMain
 // (DLL_PROCESS_DETACH). See comments at code:EEShutDown for details.
-inline BOOL    IsAtProcessExit()
+inline bool IsAtProcessExit()
 {
     SUPPORTS_DAC;
+#if defined(DACCESS_COMPILE) || !defined(HOST_WINDOWS)
     return g_fProcessDetach;
+#else
+    // RtlDllShutdownInProgress provides more accurate information about whether the process is shutting down.
+    // Use it if it is available to avoid shutdown deadlocks.
+    // https://learn.microsoft.com/windows/win32/devnotes/rtldllshutdowninprogress
+    return g_pfnRtlDllShutdownInProgress();
+#endif
 }
-
-enum FWStatus
-{
-    FWS_WaitInterrupt = 0x00000001,
-};
-
-EXTERN DWORD g_FinalizerWaiterStatus;
 
 #if defined(TARGET_UNIX) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
@@ -578,34 +596,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #ifndef MAXULONGLONG
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
-
-// Every Module is assigned a ModuleIndex, regardless of whether the Module is domain
-// neutral or domain specific. When a domain specific Module is unloaded, its ModuleIndex
-// can be reused.
-
-// ModuleIndexes are not the same as ModuleIDs. The main purpose of a ModuleIndex is
-// to have a compact way to refer to any Module (domain neutral or domain specific).
-// The main purpose of a ModuleID is to facilitate looking up the DomainLocalModule
-// that corresponds to a given Module in a given AppDomain.
-
-struct ModuleIndex
-{
-    SIZE_T m_dwIndex;
-    ModuleIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit ModuleIndex (SIZE_T id)
-    : m_dwIndex(id)
-    { LIMITED_METHOD_DAC_CONTRACT; }
-    BOOL operator==(const ModuleIndex& ad) const
-    {
-        return m_dwIndex == ad.m_dwIndex;
-    }
-    BOOL operator!=(const ModuleIndex& ad) const
-    {
-        return m_dwIndex != ad.m_dwIndex;
-    }
-};
 
 //-----------------------------------------------------------------------------
 // GSCookies (guard-stack cookies) for detecting buffer overruns

@@ -136,7 +136,7 @@ static u_char   tcp_outflags[TCP_NSTATES] = {
 #endif
 #endif /* KERNEL_PRIVATE */
 
-#if KPROF
+#ifdef KPROF
 #ifdef KERNEL_PRIVATE
 int     tcp_acounts[TCP_NSTATES][PRU_NREQ];
 #endif /* KERNEL_PRIVATE */

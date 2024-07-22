@@ -45,7 +45,7 @@ private:
     {
     }
 
-    static constexpr weight_t exceptionScale        = 0.001;
+    static constexpr weight_t exceptionWeight       = 0.00001;
     static constexpr weight_t initialBlendFactor    = 0.05;
     static constexpr weight_t blendFactorGrowthRate = 3;
     static constexpr weight_t cappedLikelihood      = 0.999;

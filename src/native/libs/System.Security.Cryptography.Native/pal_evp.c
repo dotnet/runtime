@@ -143,7 +143,7 @@ int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t le
     return 0;
 }
 
-static EVP_MD_CTX* EvpDup(const EVP_MD_CTX* ctx)
+EVP_MD_CTX* CryptoNative_EvpMdCtxCopyEx(const EVP_MD_CTX* ctx)
 {
     if (ctx == NULL)
     {
@@ -174,7 +174,7 @@ int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32
 {
     ERR_clear_error();
 
-    EVP_MD_CTX* dup = EvpDup(ctx);
+    EVP_MD_CTX* dup = CryptoNative_EvpMdCtxCopyEx(ctx);
 
     if (dup != NULL)
     {
@@ -190,7 +190,7 @@ int32_t CryptoNative_EvpDigestCurrentXOF(const EVP_MD_CTX* ctx, uint8_t* md, uin
 {
     ERR_clear_error();
 
-    EVP_MD_CTX* dup = EvpDup(ctx);
+    EVP_MD_CTX* dup = CryptoNative_EvpMdCtxCopyEx(ctx);
 
     if (dup != NULL)
     {
@@ -259,6 +259,29 @@ int32_t CryptoNative_EvpDigestXOFOneShot(const EVP_MD* type, const void* source,
     ret = CryptoNative_EvpDigestFinalXOF(ctx, md, len);
 
     CryptoNative_EvpMdCtxDestroy(ctx);
+    return ret;
+}
+
+int32_t CryptoNative_EvpDigestSqueeze(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len, int32_t* haveFeature)
+{
+    ERR_clear_error();
+
+    if (ctx == NULL || haveFeature == NULL || (md == NULL && len > 0))
+    {
+        return 0;
+    }
+
+    *haveFeature = 0;
+    int32_t ret = 0;
+
+#if HAVE_OPENSSL_SHA3_SQUEEZE
+    if (API_EXISTS(EVP_DigestSqueeze))
+    {
+        *haveFeature = 1;
+        ret = EVP_DigestSqueeze(ctx, md, (size_t)len);
+    }
+#endif
+
     return ret;
 }
 

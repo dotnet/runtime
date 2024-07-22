@@ -189,7 +189,7 @@ void DynamicMethodTable::AddMethodsToList()
         pResolver->m_DynamicMethodTable = this;
         pNewMD->m_pResolver = pResolver;
 
-        pNewMD->SetTemporaryEntryPoint(m_pDomain->GetLoaderAllocator(), &amt);
+        pNewMD->SetTemporaryEntryPoint(&amt);
 
 #ifdef _DEBUG
         pNewMD->m_pDebugMethodTable = m_pMethodTable;
@@ -898,7 +898,7 @@ void DynamicMethodDesc::Destroy()
         delete[] pszMethodName;
     }
 
-    if (pSig != NULL)
+    if (pSig != (PCODE)NULL)
     {
         delete[] (BYTE*)pSig;
     }

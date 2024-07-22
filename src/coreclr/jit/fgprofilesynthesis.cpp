@@ -146,9 +146,12 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
     m_comp->fgPgoSynthesized = true;
     m_comp->fgPgoConsistent  = !m_approximate;
 
+    m_comp->Metrics.ProfileSynthesizedBlendedOrRepaired++;
+
     if (m_approximate)
     {
         JITDUMP("Profile is inconsistent. Bypassing post-phase consistency checks.\n");
+        m_comp->Metrics.ProfileInconsistentInitially++;
     }
 
 #ifdef DEBUG
@@ -811,7 +814,12 @@ void ProfileSynthesis::ComputeCyclicProbabilities(FlowGraphNaturalLoop* loop)
 
                 for (FlowEdge* const edge : block->PredEdges())
                 {
-                    if (BasicBlock::sameHndRegion(block, edge->getSourceBlock()))
+                    BasicBlock* const sourceBlock = edge->getSourceBlock();
+
+                    // Ignore flow across EH, or from preds not in the loop.
+                    // Latter can happen if there are unreachable blocks that flow into the loop.
+                    //
+                    if (BasicBlock::sameHndRegion(block, sourceBlock) && loop->ContainsBlock(sourceBlock))
                     {
                         newWeight += edge->getLikelyWeight();
                     }
@@ -1039,29 +1047,28 @@ void ProfileSynthesis::AssignInputWeights(ProfileSynthesisOption option)
 
     // Determine input weight for EH regions, if any.
     //
-    weight_t exceptionScaleFactor = exceptionScale;
+    weight_t ehWeight = exceptionWeight;
 
 #ifdef DEBUG
-    if (JitConfig.JitSynthesisExceptionScale() != nullptr)
+    if (JitConfig.JitSynthesisExceptionWeight() != nullptr)
     {
-        ConfigDoubleArray JitSynthesisExceptionScaleArray;
-        JitSynthesisExceptionScaleArray.EnsureInit(JitConfig.JitSynthesisExceptionScale());
-        weight_t newFactor = JitSynthesisExceptionScaleArray.GetData()[0];
+        ConfigDoubleArray JitSynthesisExceptionWeightArray;
+        JitSynthesisExceptionWeightArray.EnsureInit(JitConfig.JitSynthesisExceptionWeight());
+        weight_t newFactor = JitSynthesisExceptionWeightArray.GetData()[0];
 
         if ((newFactor >= 0) && (newFactor <= 1.0))
         {
-            exceptionScaleFactor = newFactor;
+            ehWeight = newFactor;
         }
     }
 #endif
 
-    JITDUMP("Synthesis: exception scale factor " FMT_WT "\n", exceptionScaleFactor);
-    const weight_t ehWeight = entryWeight * exceptionScaleFactor;
+    JITDUMP("Synthesis: exception weight " FMT_WT "\n", ehWeight);
 
     if (ehWeight != 0)
     {
-        // We can't inline methods with EH, also inlinees share the parent
-        // EH tab, so we can't rely on this being empty.
+        // We can't inline methods with EH. Inlinees share the parent
+        // EH tab, so we can't rely on the EH table being empty.
         //
         if (!m_comp->compIsForInlining())
         {

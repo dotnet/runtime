@@ -1869,7 +1869,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // more exceptions (NullRef) so we abandon this CSE.
             // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
             // to use GT_IND(x) in [2] as a CSE def.
-            if ((call->gtCallType == CT_HELPER) &&
+            if (call->IsHelperCall() &&
                 Compiler::s_helperCallProperties.IsAllocator(m_pCompiler->eeGetHelperNum(call->gtCallMethHnd)))
             {
                 return false;
@@ -1878,7 +1878,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // If we have a simple helper call with no other persistent side-effects
             // then we allow this tree to be a CSE candidate
             //
-            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE))
+            if (m_pCompiler->gtTreeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
             {
                 return false;
             }
@@ -1906,6 +1906,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         case GT_CNS_DBL:
         case GT_CNS_STR:
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
             break;
 
         case GT_ARR_ELEM:
@@ -2972,6 +2973,298 @@ void CSE_HeuristicParameterized::DumpChoices(ArrayStack<Choice>& choices, CSEdsc
 #endif // DEBUG
 
 #ifdef DEBUG
+
+//------------------------------------------------------------------------
+// CSE_HeuristicRLHook: a generic 'hook' for driving CSE decisions out of
+//                      process using reinforcement learning
+//
+// Arguments;
+//  pCompiler - compiler instance
+//
+// Notes:
+//  This creates a hook to control CSE decisions from an external process
+//  when JitRLHook=1 is set.  This will cause the JIT to emit a series of
+//  feature building blocks for each CSE in the method.  Feature names for
+//  these values can be found by setting JitRLHookEmitFeatureNames=1. To
+//  control the CSE decisions, set JitRLHookCSEDecisions with a sequence
+//  of CSE indices to apply.
+//
+//  This hook is only available in debug/checked builds, and does not
+//  contain any machine learning code.
+//
+CSE_HeuristicRLHook::CSE_HeuristicRLHook(Compiler* pCompiler)
+    : CSE_HeuristicCommon(pCompiler)
+{
+}
+
+//------------------------------------------------------------------------
+// ConsiderTree: check if this tree can be a CSE candidate
+//
+// Arguments:
+//   tree - tree in question
+//   isReturn - true if tree is part of a return statement
+//
+// Returns:
+//    true if this tree can be a CSE
+bool CSE_HeuristicRLHook::ConsiderTree(GenTree* tree, bool isReturn)
+{
+    return CanConsiderTree(tree, isReturn);
+}
+
+//------------------------------------------------------------------------
+// ConsiderCandidates: examine candidates and perform CSEs.
+// This simply defers to the JitRLHookCSEDecisions config value.
+//
+void CSE_HeuristicRLHook::ConsiderCandidates()
+{
+    if (JitConfig.JitRLHookCSEDecisions() != nullptr)
+    {
+        ConfigIntArray JitRLHookCSEDecisions;
+        JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
+
+        unsigned cnt = m_pCompiler->optCSECandidateCount;
+        for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
+        {
+            const int index = JitRLHookCSEDecisions.GetData()[i];
+            if ((index < 0) || (index >= (int)cnt))
+            {
+                JITDUMP("Invalid candidate number %d\n", index + 1);
+                continue;
+            }
+
+            CSEdsc* const dsc = m_pCompiler->optCSEtab[index];
+            if (!dsc->IsViable())
+            {
+                JITDUMP("Abandoned " FMT_CSE " -- not viable\n", dsc->csdIndex);
+                continue;
+            }
+
+            const int     attempt = m_pCompiler->optCSEattempt++;
+            CSE_Candidate candidate(this, dsc);
+
+            JITDUMP("\nRLHook attempting " FMT_CSE "\n", candidate.CseIndex());
+            JITDUMP("CSE Expression : \n");
+            JITDUMPEXEC(m_pCompiler->gtDispTree(candidate.Expr()));
+            JITDUMP("\n");
+
+            PerformCSE(&candidate);
+            madeChanges = true;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// DumpMetrics: write out features for each CSE candidate
+// Format:
+//   featureNames <comma separated list of feature names>
+//   features #<CSE index>,<comma separated list of feature values>
+//   seq <comma separated list of CSE indices>
+//
+// Notes:
+//   featureNames are emitted only if JitRLHookEmitFeatureNames is set.
+//   features are 0 indexed, and the index is the first value, following #.
+//   seq is a comma separated list of CSE indices that were applied, or
+//      omitted if none were selected
+//
+void CSE_HeuristicRLHook::DumpMetrics()
+{
+    // Feature names, if requested
+    if (JitConfig.JitRLHookEmitFeatureNames() > 0)
+    {
+        printf(" featureNames ");
+        for (int i = 0; i < maxFeatures; i++)
+        {
+            printf("%s%s", (i == 0) ? "" : ",", s_featureNameAndType[i]);
+        }
+    }
+
+    // features
+    for (unsigned i = 0; i < m_pCompiler->optCSECandidateCount; i++)
+    {
+        CSEdsc* const cse = m_pCompiler->optCSEtab[i];
+
+        int features[maxFeatures];
+        GetFeatures(cse, features);
+
+        printf(" features #%i", cse->csdIndex);
+        for (int j = 0; j < maxFeatures; j++)
+        {
+            printf(",%d", features[j]);
+        }
+    }
+
+    // The selected sequence of CSEs that were applied
+    if (JitConfig.JitRLHookCSEDecisions() != nullptr)
+    {
+        ConfigIntArray JitRLHookCSEDecisions;
+        JitRLHookCSEDecisions.EnsureInit(JitConfig.JitRLHookCSEDecisions());
+
+        if (JitRLHookCSEDecisions.GetLength() > 0)
+        {
+            printf(" seq ");
+            for (unsigned i = 0; i < JitRLHookCSEDecisions.GetLength(); i++)
+            {
+                printf("%s%d", (i == 0) ? "" : ",", JitRLHookCSEDecisions.GetData()[i]);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// GetFeatures: extract features for this CSE
+// Arguments:
+//   cse - cse descriptor
+//   features - array to fill in with feature values, this must be of length
+//              maxFeatures or greater
+//
+// Notes:
+//   Features are intended to be building blocks of "real" features that
+//   are further defined and refined in the machine learning model.  That
+//   means that each "feature" here is a simple value and not a composite
+//   of multiple values.
+//
+//   Features do not need to be stable across builds, they can be changed,
+//   added, or removed.  However, the corresponding code needs to be updated
+//   to match: src/coreclr/scripts/cse_ml/jitml/method_context.py
+//   See src/coreclr/scripts/cse_ml/README.md for more information.
+//
+void CSE_HeuristicRLHook::GetFeatures(CSEdsc* cse, int* features)
+{
+    assert(cse != nullptr);
+    assert(features != nullptr);
+    CSE_Candidate candidate(this, cse);
+
+    int enregCount = 0;
+    for (unsigned trackedIndex = 0; trackedIndex < m_pCompiler->lvaTrackedCount; trackedIndex++)
+    {
+        LclVarDsc* varDsc = m_pCompiler->lvaGetDescByTrackedIndex(trackedIndex);
+        var_types  varTyp = varDsc->TypeGet();
+
+        // Locals with no references aren't enregistered
+        if (varDsc->lvRefCnt() == 0)
+        {
+            continue;
+        }
+
+        // Some LclVars always have stack homes
+        if (varDsc->lvDoNotEnregister)
+        {
+            continue;
+        }
+
+        if (!varTypeIsFloating(varTyp))
+        {
+            enregCount++; // The primitive types, including TYP_SIMD types use one register
+
+#ifndef TARGET_64BIT
+            if (varTyp == TYP_LONG)
+            {
+                enregCount++; // on 32-bit targets longs use two registers
+            }
+#endif
+        }
+    }
+
+    const unsigned numBBs            = m_pCompiler->fgBBcount;
+    bool           isMakeCse         = false;
+    unsigned       minPostorderNum   = numBBs;
+    unsigned       maxPostorderNum   = 0;
+    BasicBlock*    minPostorderBlock = nullptr;
+    BasicBlock*    maxPostorderBlock = nullptr;
+    for (treeStmtLst* treeList = cse->csdTreeList; treeList != nullptr; treeList = treeList->tslNext)
+    {
+        BasicBlock* const treeBlock    = treeList->tslBlock;
+        unsigned          postorderNum = treeBlock->bbPostorderNum;
+        if (postorderNum < minPostorderNum)
+        {
+            minPostorderNum   = postorderNum;
+            minPostorderBlock = treeBlock;
+        }
+
+        if (postorderNum > maxPostorderNum)
+        {
+            maxPostorderNum   = postorderNum;
+            maxPostorderBlock = treeBlock;
+        }
+
+        isMakeCse |= ((treeList->tslTree->gtFlags & GTF_MAKE_CSE) != 0);
+    }
+
+    const unsigned blockSpread = maxPostorderNum - minPostorderNum;
+
+    int type = rlHookTypeOther;
+    if (candidate.Expr()->TypeIs(TYP_INT))
+    {
+        type = rlHookTypeInt;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_LONG))
+    {
+        type = rlHookTypeLong;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_FLOAT))
+    {
+        type = rlHookTypeFloat;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_DOUBLE))
+    {
+        type = rlHookTypeDouble;
+    }
+    else if (candidate.Expr()->TypeIs(TYP_STRUCT))
+    {
+        type = rlHookTypeStruct;
+    }
+
+#ifdef FEATURE_SIMD
+    else if (varTypeIsSIMD(candidate.Expr()->TypeGet()))
+    {
+        type = rlHookTypeSimd;
+    }
+#ifdef TARGET_XARCH
+    else if (candidate.Expr()->TypeIs(TYP_SIMD32, TYP_SIMD64))
+    {
+        type = rlHookTypeSimd;
+    }
+#endif
+#endif
+
+    int i         = 0;
+    features[i++] = type;
+    features[i++] = cse->IsViable() ? 1 : 0;
+    features[i++] = cse->csdLiveAcrossCall ? 1 : 0;
+    features[i++] = cse->csdTree->OperIsConst() ? 1 : 0;
+    features[i++] = cse->csdIsSharedConst ? 1 : 0;
+    features[i++] = isMakeCse ? 1 : 0;
+    features[i++] = ((cse->csdTree->gtFlags & GTF_CALL) != 0) ? 1 : 0;
+    features[i++] = cse->csdTree->OperIs(GT_ADD, GT_NOT, GT_MUL, GT_LSH) ? 1 : 0;
+    features[i++] = cse->csdTree->GetCostEx();
+    features[i++] = cse->csdTree->GetCostSz();
+    features[i++] = cse->csdUseCount;
+    features[i++] = cse->csdDefCount;
+    features[i++] = (int)cse->csdUseWtCnt;
+    features[i++] = (int)cse->csdDefWtCnt;
+    features[i++] = cse->numDistinctLocals;
+    features[i++] = cse->numLocalOccurrences;
+    features[i++] = numBBs;
+    features[i++] = blockSpread;
+    features[i++] = enregCount;
+
+    assert(i <= maxFeatures);
+
+    for (; i < maxFeatures; i++)
+    {
+        features[i] = 0;
+    }
+}
+
+// These need to match the features above, and match the field name of MethodContext
+// in src/coreclr/scripts/cse_ml/jitml/method_context.py
+const char* const CSE_HeuristicRLHook::s_featureNameAndType[] = {
+    "type",         "viable",       "live_across_call", "const",
+    "shared_const", "make_cse",     "has_call",         "containable",
+    "cost_ex",      "cost_sz",      "use_count",        "def_count",
+    "use_wt_cnt",   "def_wt_cnt",   "distinct_locals",  "local_occurrences",
+    "bb_count",     "block_spread", "enreg_count",
+};
 
 //------------------------------------------------------------------------
 // CSE_HeuristicRL: construct RL CSE heuristic
@@ -4813,8 +5106,12 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
 
                             assert(vnStore->IsVNCompareCheckedBoundArith(oldCmpVN));
                             vnStore->GetCompareCheckedBoundArithInfo(oldCmpVN, &info);
-                            newCmpArgVN = vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper,
-                                                             info.arrOp, theConservativeVN);
+
+                            ValueNum arrOp1 = info.arrOpLHS ? info.arrOp : theConservativeVN;
+                            ValueNum arrOp2 = info.arrOpLHS ? theConservativeVN : info.arrOp;
+
+                            newCmpArgVN =
+                                vnStore->VNForFunc(vnStore->TypeOfVN(info.arrOp), (VNFunc)info.arrOper, arrOp1, arrOp2);
                         }
                         ValueNum newCmpVN = vnStore->VNForFunc(vnStore->TypeOfVN(oldCmpVN), (VNFunc)info.cmpOper,
                                                                info.cmpOp, newCmpArgVN);
@@ -4835,8 +5132,7 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
             //
             exp->gtCSEnum = NO_CSE; // clear the gtCSEnum field
 
-            GenTree* sideEffList = nullptr;
-            m_pCompiler->gtExtractSideEffList(exp, &sideEffList, GTF_PERSISTENT_SIDE_EFFECTS | GTF_IS_IN_CSE);
+            GenTree* sideEffList = m_pCompiler->optExtractSideEffectsForCSE(exp);
 
             // If we have any side effects or extracted CSE defs then we need to create a GT_COMMA tree instead
             //
@@ -5119,6 +5415,113 @@ void CSE_HeuristicCommon::ConsiderCandidates()
 }
 
 //------------------------------------------------------------------------
+// optExtractSideEffectsForCSE: Extract side effects from a tree that is going
+// to be CSE'd. This requires unmarking CSE uses and preserving CSE defs as if
+// they were side effects.
+//
+// Parameters:
+//   tree        - The tree containing side effects
+//
+// Return Value:
+//   Tree of side effects.
+//
+// Remarks:
+//   Unlike gtExtractSideEffList, this considers CSE defs to be side effects
+//   and also unmarks CSE uses as it proceeds. Additionally, for CSE we are ok
+//   with not treating cctor invocations as side effects because we have
+//   already handled those specially during CSE.
+//
+GenTree* Compiler::optExtractSideEffectsForCSE(GenTree* tree)
+{
+    class Extractor final : public GenTreeVisitor<Extractor>
+    {
+        GenTree* m_result = nullptr;
+
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true
+        };
+
+        GenTree* GetResult()
+        {
+            return m_result;
+        }
+
+        Extractor(Compiler* compiler)
+            : GenTreeVisitor(compiler)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* node = *use;
+
+            if (m_compiler->gtTreeHasSideEffects(node, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
+            {
+                if (m_compiler->gtNodeHasSideEffects(node, GTF_PERSISTENT_SIDE_EFFECTS, /* ignoreCctors */ true))
+                {
+                    Append(node);
+                    return Compiler::WALK_SKIP_SUBTREES;
+                }
+
+                // Generally all GT_CALL nodes are considered to have side-effects.
+                // So if we get here it must be a helper call that we decided it does
+                // not have side effects that we needed to keep.
+                assert(!node->OperIs(GT_CALL) || node->AsCall()->IsHelperCall());
+            }
+
+            // We also need to unmark CSE nodes. This will fail for CSE defs,
+            // those need to be extracted as if they're side effects.
+            if (m_compiler->optUnmarkCSE(node))
+            {
+                // The call to optUnmarkCSE(node) should have cleared any CSE info.
+                assert(!IS_CSE_INDEX(node->gtCSEnum));
+                return Compiler::WALK_CONTINUE;
+            }
+
+            assert(IS_CSE_DEF(node->gtCSEnum));
+#ifdef DEBUG
+            if (m_compiler->verbose)
+            {
+                printf("Preserving the CSE def #%02d at ", GET_CSE_INDEX(node->gtCSEnum));
+                m_compiler->printTreeID(node);
+            }
+#endif
+            Append(node);
+            return Compiler::WALK_SKIP_SUBTREES;
+        }
+
+        void Append(GenTree* node)
+        {
+            if (m_result == nullptr)
+            {
+                m_result = node;
+                return;
+            }
+
+            GenTree* comma = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, m_result, node);
+
+            // Set the ValueNumber 'gtVNPair' for the new GT_COMMA node
+            //
+            if ((m_compiler->vnStore != nullptr) && m_result->gtVNPair.BothDefined() && node->gtVNPair.BothDefined())
+            {
+                ValueNumPair op1Exceptions = m_compiler->vnStore->VNPExceptionSet(m_result->gtVNPair);
+                comma->gtVNPair            = m_compiler->vnStore->VNPWithExc(node->gtVNPair, op1Exceptions);
+            }
+
+            m_result = comma;
+        }
+    };
+
+    Extractor extractor(this);
+    extractor.WalkTree(&tree, nullptr);
+
+    return extractor.GetResult();
+}
+
+//------------------------------------------------------------------------
 // optValnumCSE_Heuristic: Perform common sub-expression elimination
 //    based on profitabiliy heuristic
 //
@@ -5161,8 +5564,19 @@ CSE_HeuristicCommon* Compiler::optGetCSEheuristic()
 
     // Enable optional policies
     //
-    // RL takes precedence
+    // RL hook takes precedence
     //
+    if (optCSEheuristic == nullptr)
+    {
+        bool useRLHook = (JitConfig.JitRLHook() > 0);
+
+        if (useRLHook)
+        {
+            optCSEheuristic = new (this, CMK_CSE) CSE_HeuristicRLHook(this);
+        }
+    }
+
+    // then RL
     if (optCSEheuristic == nullptr)
     {
         bool useRLHeuristic = (JitConfig.JitRLCSE() != nullptr);

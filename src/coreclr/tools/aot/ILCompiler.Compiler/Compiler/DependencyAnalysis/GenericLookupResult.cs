@@ -187,7 +187,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("TypeHandle_");
+            sb.Append("TypeHandle_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
@@ -245,7 +245,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("UnwrapNullable_");
+            sb.Append("UnwrapNullable_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
@@ -296,7 +296,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("MethodHandle_");
+            sb.Append("MethodHandle_"u8);
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
@@ -346,7 +346,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("FieldHandle_");
+            sb.Append("FieldHandle_"u8);
             sb.Append(nameMangler.GetMangledFieldName(_field));
         }
 
@@ -399,7 +399,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("MethodDictionary_");
+            sb.Append("MethodDictionary_"u8);
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
@@ -447,15 +447,16 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary)
         {
             MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
-            return factory.FatFunctionPointer(instantiatedMethod, _isUnboxingThunk);
+            // TODO-SIZE: this is address taken only in the delegate target case
+            return factory.FatAddressTakenFunctionPointer(instantiatedMethod, _isUnboxingThunk);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             if (!_isUnboxingThunk)
-                sb.Append("MethodEntry_");
+                sb.Append("MethodEntry_"u8);
             else
-                sb.Append("UnboxMethodEntry_");
+                sb.Append("UnboxMethodEntry_"u8);
 
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
@@ -473,10 +474,11 @@ namespace ILCompiler.DependencyAnalysis
             //
             bool getUnboxingStubNode = _isUnboxingThunk && !canonMethod.IsCanonicalMethod(CanonicalFormKind.Universal);
 
+            // TODO-SIZE: this is address taken only in the delegate target case
             return factory.NativeLayout.MethodEntrypointDictionarySlot(
                 _method,
                 _isUnboxingThunk,
-                factory.MethodEntrypoint(canonMethod, getUnboxingStubNode));
+                factory.AddressTakenMethodEntrypoint(canonMethod, getUnboxingStubNode));
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
@@ -534,7 +536,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("DispatchCell_");
+            sb.Append("DispatchCell_"u8);
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
@@ -585,7 +587,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("NonGCStaticBase_");
+            sb.Append("NonGCStaticBase_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
@@ -636,7 +638,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("ThreadStaticBase_");
+            sb.Append("ThreadStaticBase_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
@@ -687,7 +689,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("GCStaticBase_");
+            sb.Append("GCStaticBase_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
@@ -738,7 +740,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("AllocObject_");
+            sb.Append("AllocObject_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
@@ -781,12 +783,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             MethodDesc defaultCtor = Compilation.GetConstructorForCreateInstanceIntrinsic(instantiatedType);
-            return factory.CanonicalEntrypoint(defaultCtor);
+            return instantiatedType.IsValueType ? factory.ExactCallableAddress(defaultCtor) : factory.CanonicalEntrypoint(defaultCtor);
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("DefaultCtor_");
+            sb.Append("DefaultCtor_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_type));
         }
 
@@ -884,30 +886,31 @@ namespace ILCompiler.DependencyAnalysis
 
             factory.MetadataManager.NoteOverridingMethod(_constrainedMethod, implMethod);
 
+            // TODO-SIZE: this is address taken only in the delegate target case
             if (implMethod.Signature.IsStatic)
             {
                 if (implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific).IsSharedByGenericInstantiations)
-                    return factory.ExactCallableAddress(implMethod);
+                    return factory.ExactCallableAddressTakenAddress(implMethod);
                 else
-                    return factory.MethodEntrypoint(implMethod);
+                    return factory.AddressTakenMethodEntrypoint(implMethod);
             }
             else if (implMethod.HasInstantiation)
             {
-                return factory.ExactCallableAddress(implMethod);
+                return factory.ExactCallableAddressTakenAddress(implMethod);
             }
             else
             {
-                return factory.CanonicalEntrypoint(implMethod);
+                return factory.AddressTakenMethodEntrypoint(implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
             }
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("ConstrainedMethodUseLookupResult_");
+            sb.Append("ConstrainedMethodUseLookupResult_"u8);
             sb.Append(nameMangler.GetMangledTypeName(_constraintType));
             sb.Append(nameMangler.GetMangledMethodName(_constrainedMethod));
             if (_directCall)
-                sb.Append("Direct");
+                sb.Append("Direct"u8);
         }
 
         public override string ToString() => $"ConstrainedMethodUseLookupResult: {_constraintType} {_constrainedMethod} {_directCall}";

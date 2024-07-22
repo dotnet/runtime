@@ -44,7 +44,7 @@ public class PatchNuGetConfig : Task
      *    <package pattern="Foo*" />
      *  </packageSource>
      *
-     * This is useful when using Central Package Management (https://learn.microsoft.com/en-us/nuget/consume-packages/central-package-management)
+     * This is useful when using Central Package Management (https://learn.microsoft.com/nuget/consume-packages/central-package-management)
     */
     public string[] NuGetConfigPackageSourceMappings { get; set; } = Array.Empty<string>();
 

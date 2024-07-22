@@ -440,7 +440,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         // Check that whichever field holds the inst. got setup correctly
         _ASSERTE((PVOID)pNewMD->GetMethodInstantiation().GetRawArgs() == (PVOID)pInstOrPerInstInfo);
 
-        pNewMD->SetTemporaryEntryPoint(pAllocator, &amt);
+        pNewMD->SetTemporaryEntryPoint(&amt);
 
         {
             // The canonical instantiation is exempt from constraint checks. It's used as the basis
@@ -903,9 +903,9 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                     // Indicate that this is a stub method which takes a BOXed this pointer.
                     // An BoxedEntryPointStub may still be an InstantiatedMethodDesc
                     pResultMD->SetIsUnboxingStub();
-                    pResultMD->AsInstantiatedMethodDesc()->SetupWrapperStubWithInstantiations(pMDescInCanonMT, NULL, NULL);
+                    pResultMD->AsInstantiatedMethodDesc()->SetupWrapperStubWithInstantiations(pMDescInCanonMT, 0, NULL);
 
-                    pResultMD->SetTemporaryEntryPoint(pAllocator, &amt);
+                    pResultMD->SetTemporaryEntryPoint(&amt);
 
                     amt.SuppressRelease();
 
@@ -986,7 +986,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                                               pNonUnboxingStub->GetNumGenericMethodArgs(),
                                                                                               (TypeHandle *)pNonUnboxingStub->GetMethodInstantiation().GetRawArgs());
 
-                    pResultMD->SetTemporaryEntryPoint(pAllocator, &amt);
+                    pResultMD->SetTemporaryEntryPoint(&amt);
 
                     amt.SuppressRelease();
 
