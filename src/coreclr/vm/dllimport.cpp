@@ -688,16 +688,6 @@ public:
             pcsDispatch->EmitCALL(METHOD__STUBHELPERS__SET_LAST_ERROR, 0, 0);
         }
 
-#if defined(TARGET_X86)
-        if (SF_IsForwardDelegateStub(m_dwStubFlags))
-        {
-            // the delegate may have an intercept stub attached to its sync block so we should
-            // prevent it from being garbage collected when the call is in progress
-            pcsDispatch->EmitLoadThis();
-            pcsDispatch->EmitCALL(METHOD__GC__KEEP_ALIVE, 1, 0);
-        }
-#endif // defined(TARGET_X86)
-
 #ifdef VERIFY_HEAP
         if (SF_IsForwardStub(m_dwStubFlags) && g_pConfig->InteropValidatePinnedObjects())
         {
@@ -5143,8 +5133,6 @@ namespace
             // copy the stack arg byte count from the stub MD to the target MD - this number is computed
             // during stub generation and is copied to all target MDs that share the stub
             // (we don't set it for varargs - the number is call site specific)
-            // also copy the "takes parameters with copy constructors" flag which is needed to generate
-            // appropriate intercept stub
 
             WORD cbStackArgSize = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
             if (pTargetMD->IsNDirect())
