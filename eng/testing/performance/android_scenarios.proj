@@ -16,10 +16,10 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
-    <ScenarioDirectory>%HELIX_CORRELATION_PAYLOAD%\performance\src\scenarios\</ScenarioDirectory>
+    <ScenarioDirectory>%HELIX_WORKITEM_ROOT%\performance\src\scenarios\</ScenarioDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
-    <ScenarioDirectory>$HELIX_CORRELATION_PAYLOAD/performance/src/scenarios/</ScenarioDirectory>
+    <ScenarioDirectory>$HELIX_WORKITEM_ROOT/performance/src/scenarios/</ScenarioDirectory>
   </PropertyGroup>
 
   <ItemGroup>
