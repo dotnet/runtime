@@ -139,8 +139,6 @@ class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
-class     CRWLock;
-struct    LockEntry;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
 
