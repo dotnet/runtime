@@ -103,7 +103,7 @@ namespace System.Net.Sockets
             Scheduled
         }
 
-        private int _eventQueueProcessingStage;
+        private EventQueueProcessingStage _eventQueueProcessingStage;
 
         //
         // Registers the Socket with a SocketAsyncEngine, and returns the associated engine.
@@ -206,7 +206,7 @@ namespace System.Net.Sockets
                     if (handler.HandleSocketEvents(numEvents) &&
                         Interlocked.Exchange(
                             ref _eventQueueProcessingStage,
-                            (int)EventQueueProcessingStage.Scheduled) == (int)EventQueueProcessingStage.NotScheduled)
+                            EventQueueProcessingStage.Scheduled) == EventQueueProcessingStage.NotScheduled)
                     {
                         ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
                     }
@@ -223,20 +223,20 @@ namespace System.Net.Sockets
             if (!isEventQueueEmpty)
             {
                 // There are more events to process, set stage to Scheduled and enqueue a work item.
-                _eventQueueProcessingStage = (int)EventQueueProcessingStage.Scheduled;
+                _eventQueueProcessingStage = EventQueueProcessingStage.Scheduled;
             }
             else
             {
                 // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
                 // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
                 // would not have scheduled a work item to process the work, so schedule one now.
-                int stageBeforeUpdate =
+                EventQueueProcessingStage stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _eventQueueProcessingStage,
-                        (int)EventQueueProcessingStage.NotScheduled,
-                        (int)EventQueueProcessingStage.Determining);
-                Debug.Assert(stageBeforeUpdate != (int)EventQueueProcessingStage.NotScheduled);
-                if (stageBeforeUpdate == (int)EventQueueProcessingStage.Determining)
+                        EventQueueProcessingStage.NotScheduled,
+                        EventQueueProcessingStage.Determining);
+                Debug.Assert(stageBeforeUpdate != EventQueueProcessingStage.NotScheduled);
+                if (stageBeforeUpdate == EventQueueProcessingStage.Determining)
                 {
                     return;
                 }
@@ -251,14 +251,14 @@ namespace System.Net.Sockets
             SocketIOEvent ev;
             while (true)
             {
-                Debug.Assert(_eventQueueProcessingStage == (int)EventQueueProcessingStage.Scheduled);
+                Debug.Assert(_eventQueueProcessingStage == EventQueueProcessingStage.Scheduled);
 
                 // The change needs to be visible to other threads that may request a worker thread before a work item is attempted
                 // to be dequeued by the current thread. In particular, if an enqueuer queues a work item and does not request a
                 // thread because it sees a Determining or Scheduled stage, and the current thread is the last thread processing
                 // work items, the current thread must either see the work item queued by the enqueuer, or it must see a stage of
                 // Scheduled, and try to dequeue again or request another thread.
-                _eventQueueProcessingStage = (int)EventQueueProcessingStage.Determining;
+                _eventQueueProcessingStage = EventQueueProcessingStage.Determining;
                 Interlocked.MemoryBarrier();
 
                 if (eventQueue.TryDequeue(out ev))
@@ -269,13 +269,13 @@ namespace System.Net.Sockets
                 // The stage here would be Scheduled if an enqueuer has enqueued work and changed the stage, or Determining
                 // otherwise. If the stage is Determining, there's no more work to do. If the stage is Scheduled, the enqueuer
                 // would not have scheduled a work item to process the work, so try to dequeue a work item again.
-                int stageBeforeUpdate =
+                EventQueueProcessingStage stageBeforeUpdate =
                     Interlocked.CompareExchange(
                         ref _eventQueueProcessingStage,
-                        (int)EventQueueProcessingStage.NotScheduled,
-                        (int)EventQueueProcessingStage.Determining);
-                Debug.Assert(stageBeforeUpdate != (int)EventQueueProcessingStage.NotScheduled);
-                if (stageBeforeUpdate == (int)EventQueueProcessingStage.Determining)
+                        EventQueueProcessingStage.NotScheduled,
+                        EventQueueProcessingStage.Determining);
+                Debug.Assert(stageBeforeUpdate != EventQueueProcessingStage.NotScheduled);
+                if (stageBeforeUpdate == EventQueueProcessingStage.Determining)
                 {
                     return;
                 }

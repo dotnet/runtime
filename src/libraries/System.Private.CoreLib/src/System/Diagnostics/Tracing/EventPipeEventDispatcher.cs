@@ -96,10 +96,10 @@ namespace System.Diagnostics.Tracing
             }
 
             // Enable the EventPipe session.
-            EventPipeProviderConfiguration[] providerConfiguration = new EventPipeProviderConfiguration[]
-            {
+            EventPipeProviderConfiguration[] providerConfiguration =
+            [
                 new EventPipeProviderConfiguration(NativeRuntimeEventSource.EventSourceName, (ulong)aggregatedKeywords, (uint)enableLevel, null)
-            };
+            ];
 
             ulong sessionID = EventPipeInternal.Enable(null, EventPipeSerializationFormat.NetTrace, DefaultEventListenerCircularMBSize, providerConfiguration);
             if (sessionID == 0)

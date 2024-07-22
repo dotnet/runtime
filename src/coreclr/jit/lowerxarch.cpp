@@ -43,7 +43,10 @@ void Lowering::LowerRotate(GenTree* tree)
 //    - Handling of contained immediates.
 //    - Widening some small stores.
 //
-void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+// Returns:
+//   Next tree to lower.
+//
+GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     // Most small locals (the exception is dependently promoted fields) have 4 byte wide stack slots, so
     // we can widen the store, if profitable. The widening is only (largely) profitable for 2 byte stores.
@@ -64,6 +67,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 
     ContainCheckStoreLoc(storeLoc);
+    return storeLoc->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -1471,9 +1475,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                             op2 = userIntrin->Op(1);
                         }
 
-                        NamedIntrinsic intrinsic =
-                            GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2, simdBaseType,
-                                                                         simdSize, false);
+                        NamedIntrinsic intrinsic = NI_Illegal;
+
+                        if (comp->IsBaselineSimdIsaSupported())
+                        {
+                            intrinsic = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(comp, GT_AND_NOT, op1, op2,
+                                                                                     simdBaseType, simdSize, false);
+                        }
+                        else
+                        {
+                            // We need to ensure we optimize even if SSE2 is disabled
+
+                            assert(simdBaseType == TYP_FLOAT);
+                            assert(simdSize <= 16);
+
+                            intrinsic = NI_SSE_AndNot;
+                        }
+
                         userIntrin->ResetHWIntrinsicId(intrinsic, comp, op1, op2);
 
                         return nextNode;
@@ -1487,24 +1505,55 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         BlockRange().Remove(node);
                         op3 = userIntrin->Op(2);
 
+                        // Tracks which two operands get used first
+                        TernaryLogicUseFlags firstOpUseFlags = TernaryLogicUseFlags::AB;
+
                         if (op3 == node)
                         {
-                            op3 = userIntrin->Op(1);
+                            if (userOper == GT_AND_NOT)
+                            {
+                                op3 = op2;
+                                op2 = op1;
+                                op1 = userIntrin->Op(1);
+
+                                // AND_NOT isn't commutative so we need to shift parameters down
+                                firstOpUseFlags = TernaryLogicUseFlags::BC;
+                            }
+                            else
+                            {
+                                op3 = userIntrin->Op(1);
+                            }
                         }
 
                         uint8_t controlByte = 0x00;
 
                         if ((userOper == GT_XOR) && op3->IsVectorAllBitsSet())
                         {
-                            // We're being used by what is actually GT_NOT, so we
-                            // need to shift parameters down so that A is unused
+                            // We have XOR(OP(A, B), AllBitsSet)
+                            //   A: op1
+                            //   B: op2
+                            //   C: op3 (AllBitsSet)
+                            //
+                            // We want A to be the unused parameter so swap it around
+                            //   A: op3 (AllBitsSet)
+                            //   B: op1
+                            //   C: op2
+                            //
+                            // This gives us NOT(OP(B, C))
+
+                            assert(firstOpUseFlags == TernaryLogicUseFlags::AB);
 
                             std::swap(op2, op3);
                             std::swap(op1, op2);
 
                             if (isOperNot)
                             {
-                                // We have what is actually a double not, so just return op2
+                                // We have NOT(XOR(B, AllBitsSet))
+                                //   A: op3 (AllBitsSet)
+                                //   B: op1
+                                //   C: op2 (AllBitsSet)
+                                //
+                                // This represents a double not, so so just return op2
                                 // which is the only actual value now that the parameters
                                 // were shifted around
 
@@ -1538,19 +1587,63 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                         }
                         else if (isOperNot)
                         {
-                            // A is unused, so we just want OP(NOT(B), C)
+                            if (firstOpUseFlags == TernaryLogicUseFlags::AB)
+                            {
+                                // We have OP(XOR(A, AllBitsSet), C)
+                                //   A: op1
+                                //   B: op2 (AllBitsSet)
+                                //   C: op3
+                                //
+                                // We want A to be the unused parameter so swap it around
+                                //   A: op2 (AllBitsSet)
+                                //   B: op1
+                                //   C: op3
+                                //
+                                // This gives us OP(NOT(B), C)
 
-                            assert(op2->IsVectorAllBitsSet());
-                            std::swap(op1, op2);
+                                assert(op2->IsVectorAllBitsSet());
+                                std::swap(op1, op2);
 
-                            controlByte = static_cast<uint8_t>(~B);
-                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
+                                controlByte = static_cast<uint8_t>(~B);
+                                controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
+                            }
+                            else
+                            {
+                                // We have OP(A, XOR(B, AllBitsSet))
+                                //   A: op1
+                                //   B: op2
+                                //   C: op3 (AllBitsSet)
+                                //
+                                // We want A to be the unused parameter so swap it around
+                                //   A: op3 (AllBitsSet)
+                                //   B: op1
+                                //   C: op2
+                                //
+                                // This gives us OP(B, NOT(C))
+
+                                assert(firstOpUseFlags == TernaryLogicUseFlags::BC);
+
+                                assert(op3->IsVectorAllBitsSet());
+                                std::swap(op2, op3);
+                                std::swap(op1, op2);
+
+                                controlByte = static_cast<uint8_t>(~C);
+                                controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, B, controlByte);
+                            }
                         }
-                        else
+                        else if (firstOpUseFlags == TernaryLogicUseFlags::AB)
                         {
                             // We have OP2(OP1(A, B), C)
                             controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, A, B);
                             controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, controlByte, C);
+                        }
+                        else
+                        {
+                            // We have OP2(A, OP1(B, C))
+                            assert(firstOpUseFlags == TernaryLogicUseFlags::BC);
+
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(oper, B, C);
+                            controlByte = TernaryLogicInfo::GetTernaryControlByte(userOper, A, controlByte);
                         }
 
                         NamedIntrinsic ternaryLogicId = NI_AVX512F_TernaryLogic;
@@ -2488,7 +2581,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     CorInfoType maskBaseJitType = simdBaseJitType;
     var_types   maskBaseType    = simdBaseType;
 
-    if (op1Msk->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
+    if (op1Msk->OperIsConvertMaskToVector())
     {
         GenTreeHWIntrinsic* cvtMaskToVector = op1Msk->AsHWIntrinsic();
 
@@ -2499,122 +2592,131 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         maskBaseType    = cvtMaskToVector->GetSimdBaseType();
     }
 
-    if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) && op2->IsVectorZero() &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_SSE41) && !varTypeIsMask(op1Msk))
+    if (!varTypeIsFloating(simdBaseType) && (simdSize != 64) && !varTypeIsMask(op1Msk))
     {
-        // On SSE4.1 or higher we can optimize comparisons against zero to
-        // just use PTEST. We can't support it for floating-point, however,
-        // as it has both +0.0 and -0.0 where +0.0 == -0.0
+        bool isOp2VectorZero = op2->IsVectorZero();
 
-        bool skipReplaceOperands = false;
-
-        if (op1->OperIsHWIntrinsic())
+        if ((isOp2VectorZero || op2->IsVectorAllBitsSet()) &&
+            comp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
         {
-            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
-            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
+            // On SSE4.1 or higher we can optimize comparisons against Zero or AllBitsSet to
+            // just use PTEST. We can't support it for floating-point, however, as it has
+            // both +0.0 and -0.0 where +0.0 == -0.0
 
-            GenTree* nestedOp1           = nullptr;
-            GenTree* nestedOp2           = nullptr;
-            bool     isEmbeddedBroadcast = false;
+            bool skipReplaceOperands = false;
 
-            if (op1Intrinsic->GetOperandCount() == 2)
+            if (!isOp2VectorZero)
             {
-                nestedOp1 = op1Intrinsic->Op(1);
-                nestedOp2 = op1Intrinsic->Op(2);
+                // We can optimize to TestC(op1, allbitsset)
+                //
+                // This works out because TestC sets CF if (~x & y) == 0, so:
+                //   ~00 & 11 = 11;  11 & 11 = 11;  NC
+                //   ~01 & 11 = 01;  10 & 11 = 10;  NC
+                //   ~10 & 11 = 10;  01 & 11 = 01;  NC
+                //   ~11 & 11 = 11;  00 & 11 = 00;  C
 
-                assert(!nestedOp1->isContained());
-                isEmbeddedBroadcast = nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic();
+                assert(op2->IsVectorAllBitsSet());
+                cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
+
+                skipReplaceOperands = true;
+            }
+            else if (op1->OperIsHWIntrinsic())
+            {
+                assert(op2->IsVectorZero());
+
+                GenTreeHWIntrinsic* op1Intrinsic = op1->AsHWIntrinsic();
+
+                if (op1Intrinsic->GetOperandCount() == 2)
+                {
+                    GenTree* nestedOp1 = op1Intrinsic->Op(1);
+                    GenTree* nestedOp2 = op1Intrinsic->Op(2);
+
+                    assert(!nestedOp1->isContained());
+                    bool isEmbeddedBroadcast = nestedOp2->isContained() && nestedOp2->OperIsHWIntrinsic();
+
+                    bool       isScalar = false;
+                    genTreeOps oper     = op1Intrinsic->GetOperForHWIntrinsicId(&isScalar);
+
+                    switch (oper)
+                    {
+                        case GT_AND:
+                        {
+                            // We can optimize to TestZ(op1.op1, op1.op2)
+
+                            if (isEmbeddedBroadcast)
+                            {
+                                // PTEST doesn't support embedded broadcast
+                                break;
+                            }
+
+                            node->Op(1) = nestedOp1;
+                            node->Op(2) = nestedOp2;
+
+                            BlockRange().Remove(op1);
+                            BlockRange().Remove(op2);
+
+                            skipReplaceOperands = true;
+                            break;
+                        }
+
+                        case GT_AND_NOT:
+                        {
+                            // We can optimize to TestC(op1.op1, op1.op2)
+
+                            if (isEmbeddedBroadcast)
+                            {
+                                // PTEST doesn't support embedded broadcast
+                                break;
+                            }
+
+                            cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
+
+                            node->Op(1) = nestedOp1;
+                            node->Op(2) = nestedOp2;
+
+                            BlockRange().Remove(op1);
+                            BlockRange().Remove(op2);
+
+                            skipReplaceOperands = true;
+                            break;
+                        }
+
+                        default:
+                        {
+                            break;
+                        }
+                    }
+                }
             }
 
-            switch (op1IntrinsicId)
+            if (!skipReplaceOperands)
             {
-                case NI_SSE_And:
-                case NI_SSE2_And:
-                case NI_AVX_And:
-                case NI_AVX2_And:
-                {
-                    // We can optimize to TestZ(op1.op1, op1.op2)
+                // Default handler, emit a TestZ(op1, op1)
+                assert(op2->IsVectorZero());
 
-                    if (isEmbeddedBroadcast)
-                    {
-                        // PTEST doesn't support embedded broadcast
-                        break;
-                    }
+                node->Op(1) = op1;
+                BlockRange().Remove(op2);
 
-                    node->Op(1) = nestedOp1;
-                    node->Op(2) = nestedOp2;
+                LIR::Use op1Use(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(op1Use);
+                op1 = node->Op(1);
 
-                    BlockRange().Remove(op1);
-                    BlockRange().Remove(op2);
-
-                    skipReplaceOperands = true;
-                    break;
-                }
-
-                case NI_SSE_AndNot:
-                case NI_SSE2_AndNot:
-                case NI_AVX_AndNot:
-                case NI_AVX2_AndNot:
-                {
-                    // We can optimize to TestC(op1.op1, op1.op2)
-
-                    if (isEmbeddedBroadcast)
-                    {
-                        // PTEST doesn't support embedded broadcast
-                        break;
-                    }
-
-                    cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
-
-                    node->Op(1) = nestedOp1;
-                    node->Op(2) = nestedOp2;
-
-                    BlockRange().Remove(op1);
-                    BlockRange().Remove(op2);
-
-                    skipReplaceOperands = true;
-                    break;
-                }
-
-                default:
-                {
-                    break;
-                }
+                op2 = comp->gtClone(op1);
+                BlockRange().InsertAfter(op1, op2);
+                node->Op(2) = op2;
             }
+
+            if (simdSize == 32)
+            {
+                LowerHWIntrinsicCC(node, NI_AVX_PTEST, cmpCnd);
+            }
+            else
+            {
+                assert(simdSize == 16);
+                LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
+            }
+            return LowerNode(node);
         }
-
-        if (!skipReplaceOperands)
-        {
-            // Default handler, emit a TestZ(op1, op1)
-
-            node->Op(1) = op1;
-            BlockRange().Remove(op2);
-
-            LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-            ReplaceWithLclVar(op1Use);
-            op1 = node->Op(1);
-
-            op2 = comp->gtClone(op1);
-            BlockRange().InsertAfter(op1, op2);
-            node->Op(2) = op2;
-        }
-
-        if (simdSize == 32)
-        {
-            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
-            node->ChangeHWIntrinsicId(NI_AVX_TestZ);
-            LowerHWIntrinsicCC(node, NI_AVX_PTEST, cmpCnd);
-        }
-        else
-        {
-            assert(simdSize == 16);
-
-            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
-            node->ChangeHWIntrinsicId(NI_SSE41_TestZ);
-            LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
-        }
-
-        return LowerNode(node);
     }
 
     // TODO-XARCH-AVX512: We should handle TYP_SIMD12 here under the EVEX path, but doing
@@ -3490,7 +3592,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                     }
                 }
 
-                if (condition->OperIsHWIntrinsic(NI_EVEX_ConvertMaskToVector))
+                if (condition->OperIsConvertMaskToVector())
                 {
                     GenTree* tmp = condition->AsHWIntrinsic()->Op(1);
                     BlockRange().Remove(condition);
@@ -5074,8 +5176,43 @@ GenTree* Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
         uint32_t newScale;
         int32_t  newOffset;
 
-        GenTreeIndir* indir = op1->AsIndir();
-        GenTree*      addr  = indir->Addr();
+        // Normally we'd evaluate op1 (indir), then op2 (element index).
+        // We like to be able to reorder these to fold op2 into the indir.
+
+        GenTreeIndir* indir                = op1->AsIndir();
+        GenTree*      addr                 = indir->Addr();
+        bool const    canMoveTheIndirLater = IsInvariantInRange(indir, node);
+
+        // If we can't move the indir, force evaluation of its side effects.
+        //
+        if (!canMoveTheIndirLater)
+        {
+            // Force evaluation of the address, if it is complex
+            //
+            if (!(addr->IsInvariant() || addr->OperIsLocal()))
+            {
+                addr->ClearContained();
+                LIR::Use addrUse(BlockRange(), &indir->Addr(), indir);
+                addrUse.ReplaceWithLclVar(comp);
+                addr = indir->Addr();
+            }
+
+            // If the indir can fault, do a null check.
+            //
+            if (indir->OperMayThrow(comp))
+            {
+                GenTree* addrClone = comp->gtCloneExpr(addr);
+                GenTree* nullcheck = comp->gtNewNullCheck(addrClone, comp->compCurBB);
+                BlockRange().InsertBefore(indir, addrClone, nullcheck);
+                LowerNode(nullcheck);
+
+                indir->gtFlags |= GTF_IND_NONFAULTING;
+            }
+
+            // We should now be able to move the indir
+            //
+            indir->gtFlags &= ~GTF_EXCEPT;
+        }
 
         if (addr->OperIsAddrMode())
         {
