@@ -383,6 +383,8 @@ int32_t SystemNative_MemfdSupported(void)
     }
 #endif
 
+    // Note that the name has no affect on file descriptor behavior. From linux manpage: 
+    //   Names do not affect the behavior of the file descriptor, and as such multiple files can have the same name without any side effects.
     int32_t fd = memfd_create("test", MFD_CLOEXEC);
     if (fd < 0) return 0;
 

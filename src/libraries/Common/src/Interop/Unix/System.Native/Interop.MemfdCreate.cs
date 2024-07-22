@@ -17,7 +17,7 @@ internal static partial class Interop
 
         private static volatile sbyte s_memfdSupported;
 
-        internal static bool MemfdSupported
+        internal static bool IsMemfdSupported
         {
             get
             {

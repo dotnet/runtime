@@ -169,33 +169,33 @@ namespace System.IO.MemoryMappedFiles
         private static SafeFileHandle? CreateSharedBackingObjectUsingMemory(
            Interop.Sys.MemoryMappedProtections protections, long capacity, HandleInheritability inheritability)
         {
-            // Determine the flags to use when creating the shared memory object
-            Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
-                Interop.Sys.OpenFlags.O_RDWR :
-                Interop.Sys.OpenFlags.O_RDONLY;
-            flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
-
-            // Determine the permissions with which to create the file
-            var perms = UnixFileMode.None;
-            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0)
-                perms |= UnixFileMode.UserRead;
-            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0)
-                perms |= UnixFileMode.UserWrite;
-            if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
-                perms |= UnixFileMode.UserExecute;
-
             string mapName;
             SafeFileHandle fd;
 
             do
             {
                 mapName = GenerateMapName();
-                if (Interop.Sys.MemfdSupported)
+                if (Interop.Sys.IsMemfdSupported)
                 {
                     fd = Interop.Sys.MemfdCreate(mapName);
                 }
                 else
                 {
+                    // Determine the flags to use when creating the shared memory object
+                    Interop.Sys.OpenFlags flags = (protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0 ?
+                        Interop.Sys.OpenFlags.O_RDWR :
+                        Interop.Sys.OpenFlags.O_RDONLY;
+                    flags |= Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL; // CreateNew
+
+                    // Determine the permissions with which to create the file
+                    UnixFileMode perms = UnixFileMode.None;
+                    if ((protections & Interop.Sys.MemoryMappedProtections.PROT_READ) != 0)
+                        perms |= UnixFileMode.UserRead;
+                    if ((protections & Interop.Sys.MemoryMappedProtections.PROT_WRITE) != 0)
+                        perms |= UnixFileMode.UserWrite;
+                    if ((protections & Interop.Sys.MemoryMappedProtections.PROT_EXEC) != 0)
+                        perms |= UnixFileMode.UserExecute;
+
                     fd = Interop.Sys.ShmOpen(mapName, flags, (int)perms); // Create the shared memory object.
                 }
 
@@ -204,29 +204,36 @@ namespace System.IO.MemoryMappedFiles
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                     fd.Dispose();
 
-                    if (errorInfo.Error == Interop.Error.ENOTSUP)
+                    if (!Interop.Sys.IsMemfdSupported)
                     {
-                        // If ShmOpen is not supported, fall back to file backing object.
-                        // Note that the System.Native shim will force this failure on platforms where
-                        // the result of native shm_open does not work well with our subsequent call to mmap.
-                        return null;
+                        if (errorInfo.Error == Interop.Error.ENOTSUP)
+                        {
+                            Debug.Assert(!Interop.Sys.IsMemfdSupported);
+
+                            // If ShmOpen is not supported, fall back to file backing object.
+                            // Note that the System.Native shim will force this failure on platforms where
+                            // the result of native shm_open does not work well with our subsequent call to mmap.
+                            return null;
+                        }
+                        else if (errorInfo.Error == Interop.Error.ENAMETOOLONG)
+                        {
+                            Debug.Fail($"shm_open failed with ENAMETOOLONG for {Encoding.UTF8.GetByteCount(mapName)} byte long name.");
+                            // in theory it should not happen anymore, but just to be extra safe we use the fallback
+                            return null;
+                        }
+                        else if (errorInfo.Error == Interop.Error.EEXIST) // map with same name already existed
+                        {
+                            continue;
+                        }
                     }
-                    else if (!Interop.Sys.MemfdSupported && errorInfo.Error == Interop.Error.ENAMETOOLONG)
-                    {
-                        Debug.Fail($"shm_open failed with ENAMETOOLONG for {Encoding.UTF8.GetByteCount(mapName)} byte long name.");
-                        // in theory it should not happen anymore, but just to be extra safe we use the fallback
-                        return null;
-                    }
-                    else if (errorInfo.Error != Interop.Error.EEXIST) // map with same name already existed
-                    {
-                        throw Interop.GetExceptionForIoErrno(errorInfo);
-                    }
+
+                    throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
             } while (fd.IsInvalid);
 
             try
             {
-                if (!Interop.Sys.MemfdSupported)
+                if (!Interop.Sys.IsMemfdSupported)
                 {
                     // Unlink the shared memory object immediately so that it'll go away once all handles
                     // to it are closed (as with opened then unlinked files, it'll remain usable via
