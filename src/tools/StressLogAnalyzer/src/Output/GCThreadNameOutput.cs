@@ -16,7 +16,7 @@ internal sealed class GCThreadNameOutput(GCThreadMap threadMap) : IThreadNameOut
     {
         if (!threadMap.ThreadHasHeap(threadId))
         {
-            return $"{threadId:x4}";
+            return $"{threadId:x}".PadLeft(4);
         }
         (ulong heap, bool isBackground) = threadMap.GetThreadHeap(threadId);
         string threadName = isBackground ? "BG" : "GC";

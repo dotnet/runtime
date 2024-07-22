@@ -33,9 +33,9 @@ public sealed class StressMessageFormatter
             { "hs", FormatAsciiString },
             { "S", FormatUtf16String },
             { "ls", FormatUtf16String },
-            { "p", FormatHexWithPrefix },
-            { "d", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
-            { "i", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
+            { "p", FormatPointer },
+            { "d", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<int>(ptr, 'd', paddingFormat)) },
+            { "i", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<int>(ptr, 'd', paddingFormat)) },
             { "u", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "x", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
             { "X", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat)) },
@@ -52,7 +52,7 @@ public sealed class StressMessageFormatter
             { "zX", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat)) },
             { "I64u", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
             { "Ix", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
-            { "I64p", FormatHexWithPrefix },
+            { "I64p", FormatPointer },
         };
 
         _alternateActions = new()
@@ -60,6 +60,18 @@ public sealed class StressMessageFormatter
             { "X", FormatHexWithPrefix },
             { "x", FormatHexWithPrefix },
         };
+    }
+
+    private void FormatPointer(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
+    {
+        // Default formatting for pointers is to format as "padded to full byte width with 0s in hex".
+        // Allow custom printf formatting to override this if desired.
+        if (paddingFormat == new PaddingFormat(0, ' '))
+        {
+            builder.Append(ptr.Value.ToString($"X{_target.PointerSize * 2}"));
+            return;
+        }
+        builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat));
     }
 
     private void FormatMethodDesc(TargetPointer ptr, PaddingFormat paddingFormat, StringBuilder builder)
@@ -112,7 +124,12 @@ public sealed class StressMessageFormatter
         {
             // We need to subtract 2 from the width to account for the "0x" prefix.
             string format = $"x{Math.Max(paddingFormat.Width - 2, 0)}";
-            builder.Append($"0x{ptr.Value.ToString(format)}");
+            ReadOnlySpan<char> value = ptr.Value.ToString(format);
+            if (value.Length > paddingFormat.Width)
+            {
+                value = value[^paddingFormat.Width..];
+            }
+            builder.Append($"0x{value}");
         }
         else
         {

@@ -47,13 +47,28 @@ public unsafe class StressMessageFormatterTests
         Assert.Throws<InvalidOperationException>(() => formatter.GetFormattedMessage(message));
     }
 
-    public static IEnumerable<object?[]> SignedIntegerSpecifierTestCases()
+    public static IEnumerable<object?[]> IntegerSpecifier32BitWidthCases()
     {
-        foreach (string specifier in new[] { "d", "i", "lld", "lli", "zd", "zi" })
+        foreach (string specifier in new[] { "d", "i" })
         {
             foreach (int? width in new int?[] { null, 4, 40 })
             {
-                foreach (long value in new[] { 0, int.MaxValue, long.MaxValue, long.MaxValue - 1, long.MinValue, int.MinValue, 42 })
+                foreach (long value in new[] { 0, int.MaxValue, 42, -24, int.MinValue, -1 })
+                {
+                    yield return [$"%0{width?.ToString() ?? ""}{specifier}", value, width, '0'];
+                    yield return [$"%{width?.ToString() ?? ""}{specifier}", value, width, ' '];
+                }
+            }
+        }
+    }
+
+    public static IEnumerable<object?[]> IntegerSpecifier64BitWidthCases()
+    {
+        foreach (string specifier in new[] {  "lld", "lli", "zd", "zi" })
+        {
+            foreach (int? width in new int?[] { null, 4, 40 })
+            {
+                foreach (long value in new[] { 0, long.MaxValue, 42, -24, long.MinValue, -1 })
                 {
                     yield return [$"%0{width?.ToString() ?? ""}{specifier}", value, width, '0'];
                     yield return [$"%{width?.ToString() ?? ""}{specifier}", value, width, ' '];
@@ -63,7 +78,8 @@ public unsafe class StressMessageFormatterTests
     }
 
     [Theory]
-    [MemberData(nameof(SignedIntegerSpecifierTestCases))]
+    [MemberData(nameof(IntegerSpecifier32BitWidthCases))]
+    [MemberData(nameof(IntegerSpecifier64BitWidthCases))]
     public void SignedIntegerSpecifier(string specifier, long value, int? width, char paddingChar)
     {
         var (target, message) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.SignedInteger(value));
@@ -123,7 +139,7 @@ public unsafe class StressMessageFormatterTests
 
     public static IEnumerable<object[]> HexWithPrefixIntegerSpecifierTestCases()
     {
-        foreach (string specifier in new[] { "%#x", "%#X", "%p", "%I64p" })
+        foreach (string specifier in new[] { "%#x", "%#X" })
         {
             foreach (ulong value in new[] { 0ul, uint.MaxValue, ulong.MaxValue, ulong.MaxValue - 1, 42ul })
             {
@@ -141,6 +157,29 @@ public unsafe class StressMessageFormatterTests
         StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Equal($"The answer is 0x{value:x}", formatter.GetFormattedMessage(message));
     }
+
+    public static IEnumerable<object[]> PointerSpecifierTestCases()
+    {
+        foreach (string specifier in new[] { "%p", "%I64p" })
+        {
+            foreach (ulong value in new[] { 0ul, uint.MaxValue, ulong.MaxValue, ulong.MaxValue - 1, 42ul })
+            {
+                yield return [specifier, value];
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(PointerSpecifierTestCases))]
+    public void PointerSpecifier(string specifier, ulong value)
+    {
+        var (target, message) = CreateFixture($"The answer is {specifier}", new StressMessageArgument.UnsignedInteger(value));
+
+        StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
+        Assert.Equal($"The answer is {value:X16}", formatter.GetFormattedMessage(message));
+    }
+
+
 
     [Fact]
     public void HexWithPrefixIntegerSpecifierWithPadding()

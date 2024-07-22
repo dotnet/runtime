@@ -12,8 +12,8 @@ namespace StressLogAnalyzer;
 
 internal sealed class DefaultSpecialPointerFormatter : ISpecialPointerFormatter
 {
-    public string FormatMethodDesc(TargetPointer pointer) => $"(MethodDesc: 0x{pointer.Value:X})";
-    public string FormatMethodTable(TargetPointer pointer) => $"(MethodTable: 0x{pointer.Value:X})";
+    public string FormatMethodDesc(TargetPointer pointer) => $"(MethodDesc: {pointer.Value:X16})";
+    public string FormatMethodTable(TargetPointer pointer) => $"(MethodTable: {pointer.Value:X16})";
     public string FormatStackTrace(TargetPointer pointer) => "(Unknown function)";
     public string FormatVTable(TargetPointer pointer) => "(Unknown VTable)";
 }

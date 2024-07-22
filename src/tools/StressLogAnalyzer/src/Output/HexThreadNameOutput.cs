@@ -11,5 +11,5 @@ namespace StressLogAnalyzer.Output;
 
 internal sealed class HexThreadNameOutput : IThreadNameOutput
 {
-    public string GetThreadName(ulong threadId) => $"{threadId:x4}";
+    public string GetThreadName(ulong threadId) => $"{threadId:x}".PadLeft(4);
 }

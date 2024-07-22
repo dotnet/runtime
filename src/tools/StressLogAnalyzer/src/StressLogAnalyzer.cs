@@ -43,12 +43,13 @@ internal sealed class StressLogAnalyzer(
         }
 
         ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> earliestMessages = [];
-        ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> allMessages = [];
+        ConcurrentBag<(ThreadStressLogData thread, StressMsgData message, ulong numMessageOnThread)> allMessages = [];
 
         var parallelOptions = new ParallelOptions { CancellationToken = token, MaxDegreeOfParallelism = Debugger.IsAttached ? 1 : Environment.ProcessorCount };
 
         await Parallel.ForEachAsync(logs, parallelOptions, (log, ct) =>
         {
+            ulong numMessageOnThread = 0;
             // Stress logs are traversed from newest message to oldest, so the last message we see is the earliest one.
             StressMsgData? earliestMessage = null;
             foreach (StressMsgData message in stressLogContract.GetStressMessages(log))
@@ -75,7 +76,7 @@ internal sealed class StressLogAnalyzer(
 
                 if (messageFilter.IncludeMessage(message))
                 {
-                    allMessages.Add((log, message));
+                    allMessages.Add((log, message, numMessageOnThread++));
                 }
 
                 if (stringFinder.IsWellKnown(message.FormatString, out WellKnownString wellKnown))
@@ -110,7 +111,7 @@ internal sealed class StressLogAnalyzer(
             return ValueTask.CompletedTask;
         }).ConfigureAwait(false);
 
-        IEnumerable<(ThreadStressLogData thread, StressMsgData message)> messages = allMessages;
+        IEnumerable<(ThreadStressLogData thread, StressMsgData message, ulong numMessageOnThread)> messages = allMessages;
 
         if (threadFilter.HasAnyGCThreadFilter)
         {
@@ -122,19 +123,23 @@ internal sealed class StressLogAnalyzer(
         messages = messages.Where(message => timeTracker.IsInInterestingGCTimeRange(message.message.Timestamp));
 
         // Order by timestamp and then by thread id
-        messages = messages.OrderByDescending(message => (message.message.Timestamp, message.thread.ThreadId));
+        messages = messages.OrderByDescending(message => (message.message.Timestamp, message.thread.ThreadId))
+            .ThenBy(message => message.numMessageOnThread);
 
         foreach (var message in messages)
         {
             await messageOutput.OutputMessageAsync(message.thread, message.message).ConfigureAwait(false);
         }
 
-        await messageOutput.OutputLineAsync("\nEarliest messages:").ConfigureAwait(false);
-
-        // TODO: Sort messages by timestamp
-        foreach ((ThreadStressLogData thread, StressMsgData message) in earliestMessages.OrderBy(message => (message.message.Timestamp, message.thread.ThreadId)))
+        if (earliestMessageFilter is not null)
         {
-            await messageOutput.OutputMessageAsync(thread, message).ConfigureAwait(false);
+            await messageOutput.OutputLineAsync("\nEarliest messages:").ConfigureAwait(false);
+
+            // TODO: Sort messages by timestamp
+            foreach ((ThreadStressLogData thread, StressMsgData message) in earliestMessages.OrderBy(message => (message.message.Timestamp, message.thread.ThreadId)))
+            {
+                await messageOutput.OutputMessageAsync(thread, message).ConfigureAwait(false);
+            }
         }
     }
 }

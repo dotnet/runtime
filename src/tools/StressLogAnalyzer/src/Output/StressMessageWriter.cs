@@ -16,7 +16,8 @@ internal sealed class StressMessageWriter(IThreadNameOutput threadOutput, TimeTr
     public async Task OutputMessageAsync(ThreadStressLogData thread, StressMsgData message)
     {
         await output.WriteAsync(threadOutput.GetThreadName(thread.ThreadId)).ConfigureAwait(false);
-        await output.WriteAsync($"  {timeTracker.TicksToSecondsFromStart(message.Timestamp):####.000000000} : ").ConfigureAwait(false);
+        string timeOutput = timeTracker.TicksToSecondsFromStart(message.Timestamp).ToString("###0.000000000").PadLeft(13);
+        await output.WriteAsync($" {timeOutput} : ").ConfigureAwait(false);
 
         await output.WriteAsync(GetFacility((LogFacility)message.Facility).PadRight(20)).ConfigureAwait(false);
 
@@ -44,7 +45,7 @@ internal sealed class StressMessageWriter(IThreadNameOutput threadOutput, TimeTr
         }
         else
         {
-            return $"`{facility}`";
+            return $"`{facility}`".Replace(", ", "`");
         }
     }
 }
