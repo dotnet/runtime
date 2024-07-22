@@ -906,7 +906,10 @@ namespace System.Threading
             // thread because it sees a Determining or Scheduled stage, and the current thread is the last thread processing
             // work items, the current thread must either see the work item queued by the enqueuer, or it must see a stage of
             // Scheduled, and try to dequeue again or request another thread.
+#if !TARGET_WASI
+            // TODO https://github.com/dotnet/runtime/issues/104803
             Debug.Assert(workQueue._separated.queueProcessingStage == QueueProcessingStage.Scheduled);
+#endif
             workQueue._separated.queueProcessingStage = QueueProcessingStage.Determining;
             Interlocked.MemoryBarrier();
 

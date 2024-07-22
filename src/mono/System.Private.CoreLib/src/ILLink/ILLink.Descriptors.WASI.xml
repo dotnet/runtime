@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+	<assembly fullname="System.Private.CoreLib">
+		<!-- these methods are temporarily accessed via UnsafeAccessor from generated code until we have it in public API, probably in WASI preview3 and promises -->
+		<type fullname="System.Threading.Thread">
+			<method name="RegisterWasiPollable" />
+			<method name="DispatchWasiEventLoop" />
+		</type>
+	</assembly>
+</linker>

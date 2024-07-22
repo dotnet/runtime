@@ -270,6 +270,7 @@
     <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
     <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
+    <PlatformManifestFileEntry Include="WasiHttpWorld_component_type.wit" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />
