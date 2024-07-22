@@ -370,19 +370,16 @@ int32_t SystemNative_Unlink(const char* path)
 }
 
 #ifndef MFD_CLOEXEC
-#define MFD_CLOEXEC		0x0001U
+#define MFD_CLOEXEC 0x0001U
 #endif
-
 #ifndef MFD_ALLOW_SEALING
-#define MFD_ALLOW_SEALING	0x0002U
+#define MFD_ALLOW_SEALING 0x0002U
 #endif
-
 #ifndef F_ADD_SEALS
-#define F_ADD_SEALS	(1024 + 9)
+#define F_ADD_SEALS (1024 + 9)
 #endif
-
 #ifndef F_SEAL_WRITE
-#define F_SEAL_WRITE	0x0008
+#define F_SEAL_WRITE 0x0008
 #endif
 
 int32_t SystemNative_IsMemfdSupported(void)
