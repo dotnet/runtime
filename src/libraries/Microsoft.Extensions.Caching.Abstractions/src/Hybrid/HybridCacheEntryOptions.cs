@@ -20,10 +20,12 @@ public sealed class HybridCacheEntryOptions
     public TimeSpan? Expiration { get; init; } // overall cache duration
 
     /// <summary>
-    /// Cache duration in local cache; when retrieving a cached value
-    /// from an external cache store, this value will be used to calculate the local
-    /// cache expiration, not exceeding the remaining overall cache lifetime.
+    /// Gets or sets the cache duration in the local cache.
     /// </summary>
+    /// <remarks>
+    /// When retrieving a cached value from an external cache store, this value will be used to calculate the local
+    /// cache expiration, not exceeding the remaining overall cache lifetime.
+    /// </remarks>
     public TimeSpan? LocalCacheExpiration { get; init; } // TTL in L1
 
     /// <summary>
