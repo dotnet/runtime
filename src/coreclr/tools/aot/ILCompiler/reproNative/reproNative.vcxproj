@@ -1,8 +1,16 @@
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Checked|ARM64">
+      <Configuration>Checked</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Checked|Win32">
       <Configuration>Checked</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -15,6 +23,10 @@
     <ProjectConfiguration Include="Checked|x64">
       <Configuration>Checked</Configuration>
       <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -42,6 +54,12 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -49,6 +67,13 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Checked|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Checked|ARM64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -69,6 +94,13 @@
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
@@ -82,10 +114,16 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Checked|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Checked|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Checked|Win32'" Label="PropertySheets">
@@ -94,11 +132,18 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
@@ -110,11 +155,19 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Checked|ARM64'">
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Checked|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
@@ -138,6 +191,24 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\Runtime.VxsortDisabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Debug\aotsdk\standalonegc-disabled.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;HOST_ARM64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4477</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <MinimalRebuild>false</MinimalRebuild>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\Arm64\Debug\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Debug\aotsdk\standalonegc-disabled.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -179,6 +250,26 @@
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Checked\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\Runtime.VxsortDisabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Checked\aotsdk\standalonegc-disabled.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Checked|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;_LIB;HOST_ARM64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4477</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\Arm64\Checked\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Checked\aotsdk\standalonegc-disabled.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Checked|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -218,6 +309,26 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>$(ArtifactsRoot)bin\repro\x64\Release\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\Runtime.VxsortDisabled.lib;$(ArtifactsRoot)bin\coreclr\windows.x64.Release\aotsdk\standalonegc-disabled.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;_LIB;HOST_ARM64;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(CoreClrSourceRoot)gc;$(CoreClrSourceRoot)gc\env</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4477</DisableSpecificWarnings>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>$(ArtifactsRoot)bin\repro\Arm64\Release\repro.obj;$(Win32SDKLibs);%(AdditionalDependencies);$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\Runtime.WorkstationGC.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\System.Globalization.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\System.IO.Compression.Native.Aot.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\eventpipe-disabled.lib;$(ArtifactsRoot)bin\coreclr\windows.Arm64.Release\aotsdk\standalonegc-disabled.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

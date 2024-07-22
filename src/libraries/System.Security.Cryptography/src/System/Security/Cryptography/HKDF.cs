@@ -261,7 +261,7 @@ namespace System.Security.Cryptography
         {
             if (!hmac.TryGetHashAndReset(output, out int bytesWritten))
             {
-                Debug.Assert(false, "HMAC operation failed unexpectedly");
+                Debug.Fail("HMAC operation failed unexpectedly");
                 throw new CryptographicException(SR.Arg_CryptographyException);
             }
 

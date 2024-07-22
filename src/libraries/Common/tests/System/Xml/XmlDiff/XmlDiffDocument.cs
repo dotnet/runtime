@@ -201,7 +201,7 @@ namespace System.Xml.XmlDiff
             else
             {
                 //something really wrong here, what should we do???
-                Debug.Assert(false, "ComparePosition meets an indecision situation.");
+                Debug.Fail("ComparePosition meets an indecision situation.");
                 return NodePosition.Unknown;
             }
         }
@@ -747,7 +747,7 @@ namespace System.Xml.XmlDiff
 
         public string GetNamespace(string name)
         {
-            Debug.Assert(false, "GetNamespace is NYI");
+            Debug.Fail("GetNamespace is NYI");
             return "";
         }
 
@@ -835,12 +835,12 @@ namespace System.Xml.XmlDiff
         }
         public bool MoveToId(string id)
         {
-            Debug.Assert(false, "MoveToId is NYI");
+            Debug.Fail("MoveToId is NYI");
             return false;
         }
         public bool MoveToNamespace(string name)
         {
-            Debug.Assert(false, "MoveToNamespace is NYI");
+            Debug.Fail("MoveToNamespace is NYI");
             return false;
         }
         public bool MoveToNext()
@@ -1000,7 +1000,7 @@ namespace System.Xml.XmlDiff
         {
             get
             {
-                Debug.Assert(false, "BaseURI is NYI");
+                Debug.Fail("BaseURI is NYI");
                 return "";
             }
         }
@@ -1008,7 +1008,7 @@ namespace System.Xml.XmlDiff
         {
             get
             {
-                Debug.Assert(false, "XmlLang not supported");
+                Debug.Fail("XmlLang not supported");
                 return "";
             }
         }
@@ -1594,7 +1594,7 @@ namespace System.Xml.XmlDiff
                     w.WriteString(Value);
                     break;
                 default:
-                    Debug.Assert(false, $"Wrong type for text-like node : {this._nodetype}");
+                    Debug.Fail($"Wrong type for text-like node : {this._nodetype}");
                     break;
             }
         }

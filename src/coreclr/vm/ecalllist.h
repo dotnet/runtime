@@ -92,7 +92,6 @@ FCFuncEnd()
 
 FCFuncStart(gExceptionFuncs)
     FCFuncElement("IsImmutableAgileException", ExceptionNative::IsImmutableAgileException)
-    FCFuncElement("GetMethodFromStackTrace", SystemNative::GetMethodFromStackTrace)
     FCFuncElement("PrepareForForeignExceptionRaise", ExceptionNative::PrepareForForeignExceptionRaise)
     FCFuncElement("GetFrozenStackTrace", ExceptionNative::GetFrozenStackTrace)
     FCFuncElement("GetExceptionCount", ExceptionNative::GetExceptionCount)

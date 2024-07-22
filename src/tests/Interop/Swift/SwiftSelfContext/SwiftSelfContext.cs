@@ -69,7 +69,6 @@ public class SelfContextTests
     public static extern long SumFrozenNonEnregisteredStruct(SwiftSelf<FrozenNonEnregisteredStruct> self);
 
     [Fact]
-    [SkipOnMono("SwiftSelf<T> is not supported on Mono")]
     public unsafe static void TestSelfIsFrozenEnregisteredStruct()
     {
         long sum = SumFrozenEnregisteredStruct(new SwiftSelf<FrozenEnregisteredStruct>(new FrozenEnregisteredStruct { A = 10, B = 20 }));
@@ -77,7 +76,6 @@ public class SelfContextTests
     }
 
     [Fact]
-    [SkipOnMono("SwiftSelf<T> is not supported on Mono")]
     public unsafe static void TestSelfIsFrozenNonEnregisteredStruct()
     {
         long sum = SumFrozenNonEnregisteredStruct(new SwiftSelf<FrozenNonEnregisteredStruct>(new FrozenNonEnregisteredStruct { A = 10, B = 20, C = 30, D = 40, E = 50 }));

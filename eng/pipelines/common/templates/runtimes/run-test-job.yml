@@ -430,14 +430,7 @@ jobs:
           - jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'jitstress-isas-sve') }}:
           scenarios:
-          - default_arm64_sve
-          - jitstress1_arm64_sve
-          - jitstress2_arm64_sve
-          - jitstressregs1_arm64_sve
-          - jitstressregs2_arm64_sve
-          - jitstressregs3_arm64_sve
-          - jitstressregs4_arm64_sve
-          - jitstressregs8_arm64_sve
+          - jitstress_isas_arm64_sve
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx

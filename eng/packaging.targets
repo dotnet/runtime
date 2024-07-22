@@ -20,7 +20,12 @@
     <!-- Don't treat the TPM as an input to APICompat PackageValidation's reference assembly calculation. -->
     <ApiCompatIgnoreTargetPlatformMoniker Condition="'$(SuppressDependenciesWhenPacking)' == 'true'">true</ApiCompatIgnoreTargetPlatformMoniker>
     <PackageDesignerMarkerFile>$(MSBuildThisFileDirectory)useSharedDesignerContext.txt</PackageDesignerMarkerFile>
-    <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and Exists('PACKAGE.md')">PACKAGE.md</PackageReadmeFile>
+
+    <!-- PackageReadmeFile specifies the package readme file name in the package. PackageReadmeFilePath points to the package readme file on disk. -->
+    <PackageReadmeFile Condition="'$(PackageReadmeFile)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFile>
+    <PackageReadmeFilePath Condition="'$(PackageReadmeFilePath)' == '' and '$(EnableDefaultPackageReadmeFile)' == 'true'">PACKAGE.md</PackageReadmeFilePath>
+    <BeforePack>$(BeforePack);ValidatePackageReadmeExists</BeforePack>
+
     <!-- Non-shipping packages shouldn't incrementally serviced. -->
     <PackageUseIncrementalServicingVersion Condition="'$(IsShipping)' != 'true'">false</PackageUseIncrementalServicingVersion>
     <!-- Generate packages for rid specific projects or for allconfigurations during build. -->
@@ -83,9 +88,9 @@
                                   TargetFramework="$(NetFrameworkMinimum)" />
   </ItemGroup>
 
-  <!-- Add a package README file from. -->
-  <ItemGroup Condition="'$(PackageReadmeFile)' != ''">
-    <None Include="$(PackageReadmeFile)" Pack="true" PackagePath="\" />
+  <!-- Add a package README file -->
+  <ItemGroup Condition="'$(PackageReadmeFilePath)' != ''">
+    <None Include="$(PackageReadmeFilePath)" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <Choose>
@@ -310,6 +315,12 @@
                      '$(DotNetBuildSourceOnly)' != 'true'"
           AfterTargets="GenerateNuspec">
     <Error Condition="'$(ServicingVersion)' == '0'" Text="ServicingVersion is set to 0 and it should be an increment of the patch version from the last released package." />
+  </Target>
+
+  <Target Name="ValidatePackageReadmeExists"
+          Condition="'$(PackageReadmeFilePath)' != '' and
+                     !Exists('$(PackageReadmeFilePath)')">
+    <Error Text="$(PackageId) is a shipping package and is missing a required package README file. Add a 'PACKAGE.md' file into to the source project folder." />
   </Target>
 
 </Project>

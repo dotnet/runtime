@@ -4832,7 +4832,7 @@ CorElementType MethodTable::GetSignatureCorElementType()
     // common cases of ELEMENT_TYPE_CLASS and ELEMENT_TYPE_VALUETYPE.
     CorElementType ret;
 
-    switch (GetFlag(enum_flag_Category_ElementTypeMask))
+    switch (GetFlag(enum_flag_Category_Mask))
     {
     case enum_flag_Category_Array:
         ret = ELEMENT_TYPE_ARRAY;
@@ -4843,17 +4843,13 @@ CorElementType MethodTable::GetSignatureCorElementType()
         break;
 
     case enum_flag_Category_ValueType:
+    case enum_flag_Category_Nullable:
+    case enum_flag_Category_PrimitiveValueType:
         ret = ELEMENT_TYPE_VALUETYPE;
         break;
 
-    case enum_flag_Category_PrimitiveValueType:
-        //
-        // This is the only difference from MethodTable::GetInternalCorElementType()
-        //
-        if (IsTruePrimitive())
-            ret = GetClass()->GetInternalCorElementType();
-        else
-            ret = ELEMENT_TYPE_VALUETYPE;
+    case enum_flag_Category_TruePrimitive:
+        ret = GetClass()->GetInternalCorElementType();
         break;
 
     default:
@@ -5855,41 +5851,6 @@ bool MethodTable::DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, Me
     _ASSERTE(!typeID.IsThisClass());
     InterfaceMapIterator intIt = IterateInterfaceMapFrom(typeID.GetInterfaceNum());
     return intIt.CurrentInterfaceMatches(this, pMT);
-}
-
-//==========================================================================================
-MethodDesc * MethodTable::GetIntroducingMethodDesc(DWORD slotNumber)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodDesc * pCurrentMD = GetMethodDescForSlot(slotNumber);
-    DWORD        dwSlot = pCurrentMD->GetSlot();
-    MethodDesc * pIntroducingMD = NULL;
-
-    MethodTable * pParentType = GetParentMethodTable();
-    MethodTable * pPrevParentType = NULL;
-
-    // Find this method in the parent.
-    // If it does exist in the parent, it would be at the same vtable slot.
-    while ((pParentType != NULL) &&
-           (dwSlot < pParentType->GetNumVirtuals()))
-    {
-        pPrevParentType = pParentType;
-        pParentType = pParentType->GetParentMethodTable();
-    }
-
-    if (pPrevParentType != NULL)
-    {
-        pIntroducingMD = pPrevParentType->GetMethodDescForSlot(dwSlot);
-    }
-
-    return pIntroducingMD;
 }
 
 //==========================================================================================
