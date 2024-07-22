@@ -439,7 +439,7 @@ namespace System.Formats.Tar
 
         private void CreateNonRegularFile(string filePath, string? linkTargetPath)
         {
-            Debug.Assert(EntryType is not TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile);
+            Debug.Assert(EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile));
 
             switch (EntryType)
             {
