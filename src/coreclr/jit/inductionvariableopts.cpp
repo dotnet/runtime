@@ -1759,9 +1759,6 @@ void StrengthReductionContext::AdvanceCursors(ArrayStack<CursorInfo>* cursors, A
                 break;
             }
 
-            // TODO-CQ: If this is now the source to a store, we can
-            // look for uses of the LHS local and add those as cursors
-            // as well.
             Scev* parentIV = m_scevContext.Analyze(nextCursor.Block, nextCursor.Tree);
             if (parentIV == nullptr)
             {
