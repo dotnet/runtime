@@ -2190,13 +2190,17 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
 
     if (m_storesToRemove.Height() > 0)
     {
-        JITDUMP("    Removing useless stores\n");
+        JITDUMP("    Deleting useless store data\n");
         for (int i = 0; i < m_storesToRemove.Height(); i++)
         {
             CursorInfo& toRemove = m_storesToRemove.BottomRef(i);
-            JITDUMP("      Removing [%06u]\n", Compiler::dspTreeID(toRemove.Tree));
-            toRemove.Tree->AsLclVarCommon()->Data() =
-                m_comp->gtNewZeroConNode(genActualType(toRemove.Tree->AsLclVarCommon()->Data()->TypeGet()));
+            GenTreeLclVarCommon* lcl = toRemove.Tree->AsLclVarCommon();
+            JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(lcl->Data()));
+            // We cannot remove these stores entirely as that will break
+            // downstream phases looking for SSA defs.. instead just replace
+            // the data with a zero and leave it up to backend liveness to
+            // remove that.
+            lcl->Data() = m_comp->gtNewZeroConNode(genActualType(lcl->Data()));
             m_comp->gtSetStmtInfo(toRemove.Stmt);
             m_comp->fgSetStmtSeq(toRemove.Stmt);
             m_comp->gtUpdateStmtSideEffects(toRemove.Stmt);
