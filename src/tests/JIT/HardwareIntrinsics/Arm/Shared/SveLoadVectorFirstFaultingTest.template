@@ -31,6 +31,8 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 // Validates basic functionality works
                 test.RunBasicScenario_Load();
+
+                // Validates basic functionality of first-faulting behavior
                 test.RunBasicScenario_LoadFirstFaulting();
 
                 // Validates calling via reflection works
@@ -204,7 +206,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var faultResult = Sve.GetFfr{GetFfrType}();
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateFirstFaultingResult(ref op2Ref, Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>(), _dataTable.outArrayPtr, faultResult.As<{GetFfrType}, {RetBaseType}>());
+            ValidateFirstFaultingResult(ref op2Ref, Vector<{RetBaseType}>.Count * Unsafe.SizeOf<{Op2BaseType}>(), _dataTable.outArrayPtr, faultResult);
         }
 
         public void RunReflectionScenario_Load()
@@ -351,7 +353,7 @@ namespace JIT.HardwareIntrinsics.Arm
             }
         }
 
-        private void ValidateFirstFaultingResult(ref byte firstOp, int size, void* result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult(ref byte firstOp, int size, void* result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
             {Op2BaseType}[] inArray = new {Op2BaseType}[size / Unsafe.SizeOf<{Op2BaseType}>()];
             {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
@@ -362,7 +364,7 @@ namespace JIT.HardwareIntrinsics.Arm
             ValidateFirstFaultingResult(inArray, outArray, faultResult, method);
         }
 
-        private void ValidateFirstFaultingResult({Op2BaseType}[] firstOp, {RetBaseType}[] result, Vector<{RetBaseType}> faultResult, [CallerMemberName] string method = "")
+        private void ValidateFirstFaultingResult({Op2BaseType}[] firstOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
             var succeeded = Helpers.CheckLoadVectorFirstFaultingBehavior(firstOp, result, faultResult);
 

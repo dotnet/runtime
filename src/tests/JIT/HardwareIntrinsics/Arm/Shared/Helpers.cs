@@ -8507,26 +8507,6 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
-        {
-            var count = op1.Length;
-            var result = new T[count];
-
-            // embedded true mask
-            var mask = new T[count];
-            for (var i = 0; i < count; i++)
-            {
-                mask[i] = T.One;
-            }
-
-            if (LastActive(mask, op1) != T.Zero)
-            {
-                Array.Copy(op2, result, count);
-            }
-
-            return result;
-        }
-
         private static T ConditionalSelectResult<T>(T maskResult, T result, T falseResult) where T : INumberBase<T>
         {
             return (maskResult != T.Zero) ? result : falseResult;
@@ -8674,7 +8654,9 @@ namespace JIT.HardwareIntrinsics.Arm
             return CheckGatherVectorBasesBehaviorCore<T, AddressT, ExtendedElementT>(mask, data, result, (i, gatherResult) => ConditionalSelectTrueResult(cndSelMask[i], gatherResult, cndSelTrue[i]));
         }
 
-        private static bool CheckFirstFaultingBehaviorCore<T>(T[] result, Vector<T> faultResult, Func<int, bool> checkIter) where T : INumberBase<T>
+        private static bool CheckFirstFaultingBehaviorCore<T, TFault>(T[] result, Vector<TFault> faultResult, Func<int, bool> checkIter) 
+                where T : INumberBase<T>
+                where TFault : INumberBase<TFault>
         {
             bool hitFault = false;
 
@@ -8682,14 +8664,14 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 if (hitFault)
                 {
-                    if (faultResult[i] != T.Zero)
+                    if (faultResult[i] != TFault.Zero)
                     {
                         return false;
                     }
                 }
                 else
                 {
-                    if (faultResult[i] == T.Zero)
+                    if (faultResult[i] == TFault.Zero)
                     {
                         // There has to be a valid value for the first element, so check it.
                         if (i == 0)
@@ -8717,27 +8699,154 @@ namespace JIT.HardwareIntrinsics.Arm
             return true;
         }
 
-        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem>(TMem[] firstOp, TElem[] result, Vector<TElem> faultResult)
-            where TMem  : INumberBase<TMem>, IConvertible
-            where TElem : INumberBase<TElem>
+        private static bool CheckFaultResultHasAtLeastOneZero<T>(Vector<T> faultResult) where T : INumberBase<T>
         {
+            for (var i = 0; i < Vector<T>.Count; i++)
+            {
+                if (faultResult[i] == T.Zero)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool CheckLoadVectorFirstFaultingBehavior<TMem, TElem, TFault>(TMem[] firstOp, TElem[] result, Vector<TFault> faultResult)
+                where TMem  : INumberBase<TMem>, IConvertible
+                where TElem : INumberBase<TElem>
+                where TFault : INumberBase<TFault>
+        {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var validElementCount = firstOp.Length;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (i < validElementCount)
+                    {
+                        return TFault.One;
+                    }
+                    return TFault.Zero;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetLoadVectorExpectedResultByIndex(i, firstOp, result) == result[i]);
         }
 
-        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<T> faultResult)
+        public static bool CheckGatherVectorFirstFaultingBehavior<T, ExtendedElementT, Index, TFault>(T[] mask, ExtendedElementT[] data, Index[] indices, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T> 
                 where ExtendedElementT : INumberBase<ExtendedElementT> 
                 where Index : IBinaryInteger<Index>
+                where TFault : INumberBase<TFault>
         {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    var index = int.CreateChecked(indices[i]);
+                    if (index < 0 || index >= data.Length)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorResultByIndex(i, mask, data, indices) == result[i]);
         }
 
-        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT>(T[] mask, AddressT[] data, T[] result, Vector<T> faultResult)
+        public static bool CheckGatherVectorBasesFirstFaultingBehavior<T, AddressT, ExtendedElementT, TFault>(T[] mask, AddressT[] data, T[] result, Vector<TFault> faultResult)
                 where T : INumberBase<T> 
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT> 
+                where TFault : INumberBase<TFault>
         {
+            // Checking first faulting behavior requires at least one zero to ensure we are testing the behavior.
+            if (!CheckFaultResultHasAtLeastOneZero(faultResult))
+            {
+                TestLibrary.TestFramework.LogInformation("Fault result requires at least one zero.");
+                return false;
+            }
+
+            var hasFaulted = false;
+            var expectedFaultResult = 
+                InitVector<TFault>(i =>
+                {
+                    if (hasFaulted)
+                    {
+                        return TFault.Zero;
+                    }
+                    
+                    if (mask[i] == T.Zero)
+                    {
+                        return TFault.One;
+                    }
+
+                    if (data[i] == AddressT.Zero)
+                    {
+                        hasFaulted = true;
+                        return TFault.Zero;
+                    }
+                    return TFault.One;
+                });
+            if (expectedFaultResult != faultResult)
+            {
+                TestLibrary.TestFramework.LogInformation($"Expected fault result: {expectedFaultResult}\nActual fault result: {faultResult}");
+                return false;
+            }
+
             return CheckFirstFaultingBehaviorCore(result, faultResult, i => GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(i, mask, data) == result[i]);
+        }
+        
+        public static T[] CreateBreakPropagateMask<T>(T[] op1, T[] op2) where T : IBinaryInteger<T>
+        {
+            var count = op1.Length;
+            var result = new T[count];
+
+            // embedded true mask
+            var mask = new T[count];
+            for (var i = 0; i < count; i++)
+            {
+                mask[i] = T.One;
+            }
+
+            if (LastActive(mask, op1) != T.Zero)
+            {
+                Array.Copy(op2, result, count);
+            }
+
+            return result;
         }
 
         private static byte ConditionalExtract(byte[] op1, byte op2, byte[] op3, bool after)
