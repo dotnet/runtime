@@ -147,11 +147,9 @@
       <_WasiCompileFlags Include="-D_WASI_EMULATED_PROCESS_CLOCKS"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_SIGNAL"/>
       <_WasiCompileFlags Include="-D_WASI_EMULATED_MMAN"/>
-      <!-- keep in sync with src\mono\wasi\build\WasiApp.Native.targets -->
+      <!-- keep in sync with src\mono\wasi\build\WasiApp.targets -->
       <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkFlags Include="-Wl,-z,stack-size=8388608,--initial-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
-      <!-- this makes hard dependency on wasi:http@0.2.0 for the default build of dotnet.wasm. It would be ideal to have optional imports instead, but WASI doesn't support it yet -->
-      <_WasiLinkFlags Include="-Wl,--component-type,&quot;$([MSBuild]::NormalizePath('$(RepoRoot)', 'src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit').Replace('\','/'))&quot;"/>
     </ItemGroup>
 
     <PropertyGroup>
@@ -214,6 +212,9 @@
 
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Debug'"  >$(CMakeConfigurationWasiFlags)</CMakeConfigurationLinkFlags>
       <CMakeConfigurationLinkFlags Condition="'$(Configuration)' == 'Release'">-O2</CMakeConfigurationLinkFlags>
+
+      <!-- this makes hard dependency on wasi:http@0.2.0 for the default build of dotnet.wasm. It would be ideal to have optional imports instead, but WASI doesn't support it yet -->
+      <CMakeConfigurationLinkFlags>$(CMakeBuildRuntimeConfigureCmd) -Wl,--component-type,&quot;$([MSBuild]::NormalizePath('$(RepoRoot)', 'src/libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit').Replace('\','/'))&quot;</CMakeConfigurationLinkFlags>
 
       <CMakeBuildRuntimeConfigureCmd>cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">cmake -G Ninja $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>

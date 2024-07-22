@@ -345,7 +345,7 @@
       <_WasiLinkStepArgs Condition="'$(OS)' != 'Windows_NT'" Include="@(_WasiFilePathForFixup -> '&quot;%(Identity)&quot;')" />
 
       <_WasiLinkStepArgs Include="-Wl,--export=malloc,--export=free,--export=__heap_base,--export=__data_end" />
-      <!-- keep in sync with src\mono\wasi\build\WasiApp.Native.targets -->
+      <!-- keep in sync with src\mono\wasi\wasi.proj -->
       <!-- keep in sync with src\native\libs\CMakeLists.txt -->
       <_WasiLinkStepArgs Include="-Wl,-z,stack-size=8388608,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman"/>
       <!-- TODO this makes hard dependency on wasi:http@0.2.0, ideally this would be trimmable when HTTP is not used -->

@@ -55,7 +55,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-D_WASI_EMULATED_PROCESS_CLOCKS)
         add_compile_options(-D_WASI_EMULATED_SIGNAL)
         add_compile_options(-D_WASI_EMULATED_MMAN)
-        # keep in sync with src\mono\wasi\build\WasiApp.Native.targets
+        # keep in sync with src\mono\wasi\build\WasiApp.targets
         # keep in sync with src\mono\wasi\wasi.proj
         add_link_options(-Wl,-z,stack-size=1048576,--initial-memory=5242880,--max-memory=52428800,-lwasi-emulated-process-clocks,-lwasi-emulated-signal,-lwasi-emulated-mman)
     endif ()
