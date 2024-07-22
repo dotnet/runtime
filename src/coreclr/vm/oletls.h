@@ -8,7 +8,7 @@
 #error FEATURE_COMINTEROP_APARTMENT_SUPPORT is required for this file
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-// See https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/ms690269(v=vs.85)
+// See https://learn.microsoft.com/previous-versions/windows/desktop/legacy/ms690269(v=vs.85)
 typedef struct _SOleTlsData {
   void  *pvReserved0[2];
   DWORD dwReserved0[3];
