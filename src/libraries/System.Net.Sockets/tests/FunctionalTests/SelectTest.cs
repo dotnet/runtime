@@ -419,13 +419,13 @@ namespace System.Net.Sockets.Tests
         }
 
         [ConditionalFact]
-        public void Slect_LargeNumber_Succcess()
+        public void Select_LargeNumber_Succcess()
         {
             const int MaxSockets = 1025;
             KeyValuePair<Socket, Socket>[] socketPairs;
             try
             {
-                // we try to shoot for more socket than FD_SETSIZE (that is typically 1024
+                // we try to shoot for more socket than FD_SETSIZE (that is typically 1024)
                 socketPairs = Enumerable.Range(0, MaxSockets).Select(_ => SelectTest.CreateConnectedSockets()).ToArray();
             }
             catch

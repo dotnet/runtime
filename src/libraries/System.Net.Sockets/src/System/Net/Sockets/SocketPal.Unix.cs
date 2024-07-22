@@ -1898,7 +1898,7 @@ namespace System.Net.Sockets
             if (socketList == null)
                 return;
 
-            // Removing list can be O(n^2), some more tgoughs are written in FilterPollList that does exactly same opeation.
+            // This loop can be O(n^2) in the unexpected and worst case. Some more thoughts are written in FilterPollList that does exactly same operation.
 
             for (int i = socketList.Count - 1; i >= 0; --i)
             {
