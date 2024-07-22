@@ -1346,6 +1346,7 @@ class StrengthReductionContext
     BasicBlock* FindPostUseUpdateInsertionPoint(ArrayStack<CursorInfo>* cursors,
                                                 BasicBlock*             backEdgeDominator,
                                                 Statement**             afterStmt);
+    Statement*  LatestStatement(Statement* stmt1, Statement* stmt2);
     bool        InsertionPointPostDominatesUses(BasicBlock* insertionPoint, ArrayStack<CursorInfo>* cursors);
 
     bool StressProfitability()
@@ -2312,36 +2313,7 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
                                                                       Statement**             afterStmt)
 {
     BitVecTraits poTraits = m_loop->GetDfsTree()->PostOrderTraits();
-
-#ifdef DEBUG
-    // We will be relying on the fact that the cursors are ordered in a useful
-    // way here: loop locals are visited in post order within each basic block,
-    // meaning that "cursors" has the last uses first for each basic block.
-    // Assert that here.
-
-    BitVec seenBlocks(BitVecOps::MakeEmpty(&poTraits));
-    for (int i = 1; i < cursors->Height(); i++)
-    {
-        CursorInfo& prevCursor = cursors->BottomRef(i - 1);
-        CursorInfo& cursor     = cursors->BottomRef(i);
-
-        if (cursor.Block != prevCursor.Block)
-        {
-            assert(BitVecOps::TryAddElemD(&poTraits, seenBlocks, prevCursor.Block->bbPostorderNum));
-            continue;
-        }
-
-        Statement* curStmt = cursor.Stmt;
-        while ((curStmt != nullptr) && (curStmt != prevCursor.Stmt))
-        {
-            curStmt = curStmt->GetNextStmt();
-        }
-
-        assert(curStmt == prevCursor.Stmt);
-    }
-#endif
-
-    BitVec blocksWithUses(BitVecOps::MakeEmpty(&poTraits));
+    BitVec       blocksWithUses(BitVecOps::MakeEmpty(&poTraits));
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
@@ -2361,6 +2333,7 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
             return nullptr;
         }
 
+        Statement* latestStmt = nullptr;
         for (int i = 0; i < cursors->Height(); i++)
         {
             CursorInfo& cursor = cursors->BottomRef(i);
@@ -2369,17 +2342,65 @@ BasicBlock* StrengthReductionContext::FindPostUseUpdateInsertionPoint(ArrayStack
                 continue;
             }
 
-            if (!InsertionPointPostDominatesUses(cursor.Block, cursors))
+            if (latestStmt == nullptr)
             {
-                return nullptr;
+                latestStmt = cursor.Stmt;
             }
-
-            *afterStmt = cursor.Stmt;
-            return cursor.Block;
+            else
+            {
+                latestStmt = LatestStatement(latestStmt, cursor.Stmt);
+            }
         }
+
+        assert(latestStmt != nullptr);
+        if (!InsertionPointPostDominatesUses(backEdgeDominator, cursors))
+        {
+            return nullptr;
+        }
+
+        *afterStmt = latestStmt;
+        return backEdgeDominator;
     }
 
     return nullptr;
+}
+
+//------------------------------------------------------------------------
+// LatestStatement: Given two statements in the same basic block, return the
+// latter of the two.
+//
+// Parameters:
+//   stmt1 - First statement
+//   stmt2 - Second statement
+//
+// Returns:
+//   Latter of the statements.
+//
+Statement* StrengthReductionContext::LatestStatement(Statement* stmt1, Statement* stmt2)
+{
+    if (stmt1 == stmt2)
+    {
+        return stmt1;
+    }
+
+    Statement* cursor1 = stmt1->GetNextStmt();
+    Statement* cursor2 = stmt2->GetNextStmt();
+
+    while (true)
+    {
+        if ((cursor1 == stmt2) || (cursor2 == nullptr))
+        {
+            return stmt2;
+        }
+
+        if ((cursor2 == stmt1) || (cursor1 == nullptr))
+        {
+            return stmt1;
+        }
+
+        cursor1 = cursor1->GetNextStmt();
+        cursor2 = cursor2->GetNextStmt();
+    }
 }
 
 //------------------------------------------------------------------------
