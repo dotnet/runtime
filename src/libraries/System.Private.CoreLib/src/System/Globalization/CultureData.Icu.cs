@@ -490,7 +490,7 @@ namespace System.Globalization
                         return ",,";
 
                     default:
-                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        Debug.Fail("[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
                         break;
                 }
             }
