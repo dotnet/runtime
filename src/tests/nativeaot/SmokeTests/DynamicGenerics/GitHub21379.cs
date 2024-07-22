@@ -10,9 +10,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Reflection;
 
-using CoreFXTestLibrary;
+using RuntimeLibrariesTest;
 
-// Regression test for https://github.com/dotnet/corefx/issues/21379
+// Regression test for https://github.com/dotnet/runtime/issues/22427
 public class GitHub21379
 {
     public static IEnumerable<object[]> BinarySearch_SZArray_TestData()

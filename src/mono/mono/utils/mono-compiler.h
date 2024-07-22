@@ -80,7 +80,7 @@ typedef ptrdiff_t ssize_t;
 /* Used to mark internal functions used by the profiler modules */
 #define MONO_PROFILER_API MONO_API
 
-/* Used to mark internal functions used by the CoreFX PAL library */
+/* Used to mark internal functions used by the src/native/libs */
 #define MONO_PAL_API MONO_API
 
 /* Mono components */

@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace CoreFXTestLibrary
+namespace RuntimeLibrariesTest
 {
     /// <summary>
     ///    A collection of helper classes to test various conditions within

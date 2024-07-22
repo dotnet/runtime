@@ -51,8 +51,8 @@ run-tests-coreclr-all:
 	$(DOTNET) msbuild /t:RunCoreClrTests $(MONO_PROJ)
 
 # run tests for a bcl lib, e.g.:
-#   make run-tests-corefx-System.Runtime 
+#   make run-tests-libs-System.Runtime 
 # for `System.Runtime.Tests` (the rule builds both the lib and the test if needed)
-run-tests-corefx-%:
+run-tests-libs-%:
 	$(DOTNET) build ../../src/libraries/$*/tests -c $(LIBRARIES_TESTS_CONFIG) /p:RuntimeFlavor=mono /t:Test
 

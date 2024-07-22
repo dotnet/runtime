@@ -2,7 +2,7 @@
 ARG BUILD_BASE_IMAGE=mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:8.0
 
-FROM $BUILD_BASE_IMAGE as corefxbuild
+FROM $BUILD_BASE_IMAGE as libsbuild
 
 ARG CONFIGURATION=Release
 
@@ -28,23 +28,23 @@ RUN bash ./dotnet-install.sh --channel $_DOTNET_INSTALL_CHANNEL --quality daily 
 # 4. testhost
 # 5. msquic interop sources (needed for HttpStress)
 
-COPY --from=corefxbuild \
+COPY --from=libsbuild \
     /repo/artifacts/bin/microsoft.netcore.app.ref \
     /live-runtime-artifacts/microsoft.netcore.app.ref
 
-COPY --from=corefxbuild \
+COPY --from=libsbuild \
     /repo/artifacts/bin/microsoft.netcore.app.runtime.linux-x64 \
     /live-runtime-artifacts/microsoft.netcore.app.runtime.linux-x64
 
-COPY --from=corefxbuild \
+COPY --from=libsbuild \
     /repo/eng/targetingpacks.targets \
     /live-runtime-artifacts/targetingpacks.targets
 
-COPY --from=corefxbuild \
+COPY --from=libsbuild \
     /repo/artifacts/bin/testhost \
     /live-runtime-artifacts/testhost
 
-COPY --from=corefxbuild \
+COPY --from=libsbuild \
     /repo/src/libraries/System.Net.Quic/src/System/Net/Quic/Interop \
     /live-runtime-artifacts/msquic-interop
 
