@@ -373,12 +373,10 @@ namespace System.Runtime.InteropServices
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-#pragma warning disable IDE0060
         internal static Type? GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
             throw new NotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
-#pragma warning restore
 
         [SupportedOSPlatform("windows")]
         public static string GetTypeInfoName(ITypeInfo typeInfo)
