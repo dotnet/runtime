@@ -711,7 +711,7 @@ namespace System.Runtime
                         break;
 
                     default:
-                        Debug.Assert(false, "unknown generic variance type");
+                        Debug.Fail("unknown generic variance type");
                         break;
                 }
             }

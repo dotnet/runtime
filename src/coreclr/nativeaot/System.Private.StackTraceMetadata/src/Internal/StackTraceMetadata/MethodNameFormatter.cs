@@ -263,7 +263,7 @@ namespace Internal.StackTraceMetadata
                     break;
 
                 default:
-                    Debug.Assert(false, $"Type handle {typeHandle.HandleType} was not handled");
+                    Debug.Fail($"Type handle {typeHandle.HandleType} was not handled");
                     _outputBuilder.Append("???");
                     break;
             }
