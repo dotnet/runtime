@@ -57,9 +57,9 @@ namespace System.Buffers.Text
         {
 #if NET
             private static readonly SearchValues<char> s_validBase64UrlChars = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
-
             public int IndexOfAnyExcept(ReadOnlySpan<char> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
-#else
+#endif
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public int DecodeValue(char value)
             {
                 if (value > byte.MaxValue)
@@ -70,7 +70,6 @@ namespace System.Buffers.Text
 
                 return default(Base64UrlDecoderByte).DecodingMap[value];
             }
-#endif
             public bool IsWhiteSpace(char value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(char value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -82,11 +81,9 @@ namespace System.Buffers.Text
         {
 #if NET
             private static readonly SearchValues<byte> s_validBase64UrlChars = SearchValues.Create(default(Base64UrlEncoderByte).EncodingMap);
-
             public int IndexOfAnyExcept(ReadOnlySpan<byte> span) => span.IndexOfAnyExcept(s_validBase64UrlChars);
-#else
-            public int DecodeValue(byte value) => default(Base64UrlDecoderByte).DecodingMap[value];
 #endif
+            public int DecodeValue(byte value) => default(Base64UrlDecoderByte).DecodingMap[value];
             public bool IsWhiteSpace(byte value) => Base64Helper.IsWhiteSpace(value);
             public bool IsEncodingPad(byte value) => value == Base64Helper.EncodingPad || value == UrlEncodingPad;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

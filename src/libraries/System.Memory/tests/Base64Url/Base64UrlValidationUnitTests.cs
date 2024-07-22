@@ -222,7 +222,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("YQ== ", 1)]
         [InlineData("YQ%%", 1)]
         [InlineData("YWI%", 2)]
-        [InlineData("YW% ", 1)]
+        [InlineData("YQ% ", 1)]
         public void ValidateWithPaddingReturnsCorrectCountBytes(string utf8WithByteToBeIgnored, int expectedLength)
         {
             byte[] utf8BytesWithByteToBeIgnored = UTF8Encoding.UTF8.GetBytes(utf8WithByteToBeIgnored);
@@ -248,7 +248,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("YQ== ", 1)]
         [InlineData("YQ%%", 1)]
         [InlineData("YWI%", 2)]
-        [InlineData("YW% ", 1)]
+        [InlineData("YQ% ", 1)]
         public void ValidateWithPaddingReturnsCorrectCountChars(string utf8WithByteToBeIgnored, int expectedLength)
         {
             ReadOnlySpan<char> utf8BytesWithByteToBeIgnored = utf8WithByteToBeIgnored.ToArray();
