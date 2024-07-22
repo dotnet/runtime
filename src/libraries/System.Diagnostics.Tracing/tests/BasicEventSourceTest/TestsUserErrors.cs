@@ -1,16 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif
-using Xunit;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+using System.Diagnostics.Tracing;
+using System.Collections.Generic;
+using Xunit;
 
 namespace BasicEventSourceTests
 {
@@ -150,38 +145,6 @@ namespace BasicEventSourceTests
                 Assert.Equal(0, ea.Version);
             }
         }
-
-        [Fact]
-        public void Test_Bad_WriteRelatedID_ParameterName()
-        {
-#if true
-            Debug.WriteLine("Test disabled because the fix it tests is not in CoreCLR yet.");
-#else
-            Guid oldGuid;
-            Guid newGuid = Guid.NewGuid();
-            Guid newGuid2 = Guid.NewGuid();
-            EventSource.SetCurrentThreadActivityId(newGuid, out oldGuid);
-
-            using (var bes = new BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter())
-            using (var listener = new EventListenerListener())
-            {
-                var events = new List<Event>();
-                listener.OnEvent = delegate (Event data) { events.Add(data); };
-
-                listener.EventSourceCommand(bes.Name, EventCommand.Enable);
-
-                bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
-
-                // Confirm that we get exactly one event from this whole process, that has the error message we expect.
-                Assert.Equal(1, events.Count);
-                Event _event = events[0];
-                Assert.Equal("EventSourceMessage", _event.EventName);
-                string message = _event.PayloadString(0, "message");
-                // expected message: "EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId."
-                Assert.Contains("EventSource expects the first parameter of the Event method to be of type Guid and to be named \"relatedActivityId\" when calling WriteEventWithRelatedActivityId.", message);
-            }
-#endif
-        }
     }
 
     /// <summary>
@@ -194,34 +157,6 @@ namespace BasicEventSourceTests
         public void Event1(int arg) { WriteEvent(1, arg); }
         // Error Used the same event ID for this event.
         public void Event2(int arg) { WriteEvent(1, arg); }
-    }
-
-    /// <summary>
-    /// A manifest based provider with a bad type byte[]
-    /// </summary>
-    internal class BadEventSource_Bad_Type_ByteArray : EventSource
-    {
-        public void Event1(byte[] myArray) { WriteEvent(1, myArray); }
-    }
-
-    public sealed class BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter : EventSource
-    {
-        public void E2()
-        {
-            this.Write("sampleevent", new { a = "a string" });
-        }
-
-        [Event(7, Keywords = Keywords.Debug, Message = "Hello Message 7", Channel = EventChannel.Admin, Opcode = EventOpcode.Send)]
-
-        public void RelatedActivity(Guid guid, string message, int value, string componentName, string instanceId)
-        {
-            WriteEventWithRelatedActivityId(7, guid, message, value, componentName, instanceId);
-        }
-
-        public class Keywords
-        {
-            public const EventKeywords Debug = (EventKeywords)0x0002;
-        }
     }
 
     [EventData]
