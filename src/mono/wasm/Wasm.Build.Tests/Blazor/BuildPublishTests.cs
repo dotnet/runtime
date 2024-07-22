@@ -49,6 +49,8 @@ public class BuildPublishTests : BlazorWasmTestBase
             data.Add("Debug", true);
         }
 
+        // [ActiveIssue("https://github.com/dotnet/runtime/issues/103625", TestPlatforms.Windows)]
+        // when running locally the path might be longer than 260 chars and these tests can fail with AOT
         data.Add("Release", false); // Release relinks by default
         data.Add("Release", true);
         return data;
