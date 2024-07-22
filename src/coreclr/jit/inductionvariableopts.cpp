@@ -1333,7 +1333,7 @@ class StrengthReductionContext
     SimplificationAssumptions m_simplAssumptions;
     ArrayStack<CursorInfo>    m_cursors1;
     ArrayStack<CursorInfo>    m_cursors2;
-    ArrayStack<CursorInfo>    m_storesToRemove;
+    ArrayStack<CursorInfo>    m_intermediateIVStores;
 
     void        InitializeSimplificationAssumptions();
     bool        InitializeCursors(GenTreeLclVarCommon* primaryIVLcl, ScevAddRec* primaryIV);
@@ -1362,7 +1362,7 @@ public:
         , m_backEdgeBounds(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors1(comp->getAllocator(CMK_LoopIVOpts))
         , m_cursors2(comp->getAllocator(CMK_LoopIVOpts))
-        , m_storesToRemove(comp->getAllocator(CMK_LoopIVOpts))
+        , m_intermediateIVStores(comp->getAllocator(CMK_LoopIVOpts))
     {
     }
 
@@ -1591,6 +1591,7 @@ bool StrengthReductionContext::InitializeCursors(GenTreeLclVarCommon* primaryIVL
 {
     m_cursors1.Reset();
     m_cursors2.Reset();
+    m_intermediateIVStores.Reset();
 
     auto visitor = [=](BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) {
         if (IsUseExpectedToBeRemoved(block, stmt, tree))
@@ -1872,7 +1873,7 @@ void StrengthReductionContext::ExpandStoredCursors(ArrayStack<CursorInfo>* curso
                     {
                         // We created cursors for all uses. Remove the IV that
                         // was feeding into the store from the list.
-                        m_storesToRemove.Emplace(cursorBlock, cursorStmt, parent, nullptr);
+                        m_intermediateIVStores.Emplace(cursorBlock, cursorStmt, parent, nullptr);
                         std::swap(cursors->BottomRef(i), cursors->TopRef(0));
                         std::swap(otherCursors->BottomRef(i), otherCursors->TopRef(0));
                         cursors->Pop();
@@ -1993,7 +1994,7 @@ bool StrengthReductionContext::StaysWithinManagedObject(ArrayStack<CursorInfo>* 
     for (int i = 0; i < cursors->Height(); i++)
     {
         CursorInfo& cursor = cursors->BottomRef(i);
-        GenTree* tree = cursor.Tree->gtEffectiveVal();
+        GenTree*    tree   = cursor.Tree->gtEffectiveVal();
         if (tree->OperIs(GT_ARR_ADDR))
         {
             arrAddr = tree->AsArrAddr();
@@ -2188,13 +2189,13 @@ bool StrengthReductionContext::TryReplaceUsesWithNewPrimaryIV(ArrayStack<CursorI
         m_comp->gtUpdateStmtSideEffects(cursor.Stmt);
     }
 
-    if (m_storesToRemove.Height() > 0)
+    if (m_intermediateIVStores.Height() > 0)
     {
-        JITDUMP("    Deleting useless store data\n");
-        for (int i = 0; i < m_storesToRemove.Height(); i++)
+        JITDUMP("    Deleting stores of intermediate IVs\n");
+        for (int i = 0; i < m_intermediateIVStores.Height(); i++)
         {
-            CursorInfo& toRemove = m_storesToRemove.BottomRef(i);
-            GenTreeLclVarCommon* lcl = toRemove.Tree->AsLclVarCommon();
+            CursorInfo&          toRemove = m_intermediateIVStores.BottomRef(i);
+            GenTreeLclVarCommon* lcl      = toRemove.Tree->AsLclVarCommon();
             JITDUMP("      Replacing [%06u] with a zero constant\n", Compiler::dspTreeID(lcl->Data()));
             // We cannot remove these stores entirely as that will break
             // downstream phases looking for SSA defs.. instead just replace
