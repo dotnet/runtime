@@ -12,9 +12,7 @@
      <!-- some tests require full ICU data, force it -->
     <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
 
-    <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
-    <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
-    <!-- Same for ILLink -->
+    <!-- The test is looking for debugger attributes we would have stripped -->
     <DebuggerSupport>true</DebuggerSupport>
     <!-- Active issue: https://github.com/dotnet/runtime/issues/97809 -->
     <ShouldILStrip>false</ShouldILStrip>
@@ -45,6 +43,7 @@
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs" Link="Common\System\Collections\TestBase.Generic.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs" Link="Common\System\Collections\TestBase.NonGeneric.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(CommonTestPath)System\GenericMathTestMemberData.cs" Link="Common\System\GenericMathTestMemberData.cs" />
     <Compile Include="$(CommonTestPath)System\TimeProviderTests.cs" Link="Common\System\TimeProviderTests.cs" />
     <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs" Link="Common\System\StringTests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs" Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
@@ -185,6 +184,7 @@
     <Compile Include="System\AppContext\AppContextTests.cs" />
     <Compile Include="System\AppContext\AppContextTests.Switch.cs" />
     <Compile Include="System\AppContext\AppContextTests.Switch.Validation.cs" />
+    <Compile Include="System\Collections\Generic\IEnumerableTests.cs" />
     <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />

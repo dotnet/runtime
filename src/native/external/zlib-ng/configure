@@ -1,0 +1,2179 @@
+#!/bin/sh
+# configure script for zlib.
+#
+# Normally configure builds both a static and a shared library.
+# If you want to build just a static library, use: ./configure --static
+#
+# To impose specific compiler or flags or install directory, use for example:
+#    prefix=$HOME CC=cc CFLAGS="-O4" ./configure
+# or for csh/tcsh users:
+#    (setenv prefix $HOME; setenv CC cc; setenv CFLAGS "-O4"; ./configure)
+
+# Incorrect settings of CC or CFLAGS may prevent creating a shared library.
+# If you have problems, try without defining CC and CFLAGS before reporting
+# an error.
+
+# start off configure.log
+echo -------------------- >> configure.log
+echo $0 $* >> configure.log
+date >> configure.log
+
+SRCDIR=$(cd $(dirname $0); pwd)
+BUILDDIR=$(pwd)
+
+# set command prefix for cross-compilation
+if [ -n "${CHOST}" ]; then
+    # normalize the chost before parsing it
+    NORM_CHOST=$(sh "$SRCDIR"/tools/config.sub $CHOST)
+    uname="$(echo "${NORM_CHOST}" | sed -e 's/^[^-]*-\([^-]*\)$/\1/' -e 's/^[^-]*-[^-]*-\([^-]*\)$/\1/' -e 's/^[^-]*-[^-]*-\([^-]*\)-.*$/\1/')"
+    CROSS_PREFIX="${CHOST}-"
+    ARCH="$(echo "${NORM_CHOST}" | sed -e 's/-.*//')"
+else
+    ARCH="$(uname -m)"
+fi
+
+case "${ARCH}" in
+    x86_64)
+        case "${CFLAGS}" in
+            *-m32*)
+                ARCH=i686
+            ;;
+        esac
+    ;;
+    i386 | i486 | i586 | i686)
+        case "${CFLAGS}" in
+            *-m64*)
+                ARCH=x86_64
+            ;;
+        esac
+    ;;
+esac
+
+# destination name for windows import library
+IMPORTLIB=
+
+# establish commands for library building
+if "${CROSS_PREFIX}ar" --version >/dev/null 2>/dev/null || test $? -lt 126; then
+    AR=${AR-"${CROSS_PREFIX}ar"}
+    test -n "${CROSS_PREFIX}" && echo Using ${AR} | tee -a configure.log
+else
+    AR=${AR-"ar"}
+    test -n "${CROSS_PREFIX}" && echo Using ${AR} | tee -a configure.log
+fi
+ARFLAGS=${ARFLAGS-"rc"}
+if "${CROSS_PREFIX}ranlib" --version >/dev/null 2>/dev/null || test $? -lt 126; then
+    RANLIB=${RANLIB-"${CROSS_PREFIX}ranlib"}
+    test -n "${CROSS_PREFIX}" && echo Using ${RANLIB} | tee -a configure.log
+else
+    RANLIB=${RANLIB-"ranlib"}
+fi
+
+# set defaults before processing command line options
+LDCONFIG=${LDCONFIG-"ldconfig"}
+DEFFILE=
+RC=
+RCFLAGS=
+RCOBJS=
+STRIP=
+ARCHS=
+PC_CFLAGS=
+prefix=${prefix-/usr/local}
+exec_prefix=${exec_prefix-'${prefix}'}
+bindir=${bindir-'${exec_prefix}/bin'}
+libdir=${libdir-'${exec_prefix}/lib'}
+sharedlibdir=${sharedlibdir-'${libdir}'}
+includedir=${includedir-'${prefix}/include'}
+mandir=${mandir-'${prefix}/share/man'}
+shared_ext='.so'
+shared=1
+gzfileops=1
+unalignedok=1
+compat=0
+cover=0
+build32=0
+build64=0
+buildvpclmulqdq=1
+buildacle=1
+buildarmv6=1
+buildaltivec=1
+buildpower8=1
+buildpower9=1
+buildneon=1
+builddfltccdeflate=0
+builddfltccinflate=0
+buildcrc32vx=1
+floatabi=
+forcesse2=0
+# For CPUs that can benefit from AVX512, it seems GCC generates suboptimal
+# instruction scheduling unless you specify a reasonable -mtune= target
+avx512flag="-mavx512f -mavx512dq -mavx512bw -mavx512vl"
+avx512vnniflag="${avx512flag} -mavx512vnni"
+avx2flag="-mavx2"
+sse2flag="-msse2"
+ssse3flag="-mssse3"
+sse42flag="-msse4.2"
+pclmulflag="-mpclmul"
+vpclmulflag="-mvpclmulqdq -mavx512f"
+xsaveflag="-mxsave"
+acleflag=
+neonflag=
+armv6flag=
+noltoflag="-fno-lto"
+vgfmaflag="-march=z13"
+vmxflag="-maltivec"
+symbol_prefix=""
+without_optimizations=0
+without_new_strategies=0
+reducedmem=0
+gcc=0
+warn=0
+debug=0
+visibility=1
+old_cc="$CC"
+old_cflags="$CFLAGS"
+OBJC='$(OBJZ)'
+PIC_OBJC='$(PIC_OBJZ)'
+INSTALLTARGETS="install-shared install-static"
+UNINSTALLTARGETS="uninstall-shared uninstall-static"
+
+TEST="teststatic"
+
+# leave this script, optionally in a bad way
+leave()
+{
+  if test "$*" != "0"; then
+    echo "** $0 aborting." | tee -a configure.log
+  fi
+  rm -f $test.[co] $test $test$shared_ext $test.gcno ./--version
+  echo -------------------- >> configure.log
+  echo >> configure.log
+  echo >> configure.log
+  exit $1
+}
+
+# process command line options
+while test $# -ge 1
+do
+case "$1" in
+    -h* | --help)
+      echo 'usage:' | tee -a configure.log
+      echo '  configure [--prefix=PREFIX]  [--eprefix=EXPREFIX]' | tee -a configure.log
+      echo '    [--static] [--32] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]' | tee -a configure.log
+      echo '    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]' | tee -a configure.log
+      echo '    [--sprefix=SYMBOL_PREFIX]   Adds a prefix to all exported symbols' | tee -a configure.log
+      echo '    [--warn]                    Enables extra compiler warnings' | tee -a configure.log
+      echo '    [--debug]                   Enables extra debug prints during operation' | tee -a configure.log
+      echo '    [--zlib-compat]             Compiles for zlib-compatible API instead of zlib-ng API' | tee -a configure.log
+      echo '    [--without-unaligned]       Compiles without fast unaligned access' | tee -a configure.log
+      echo '    [--without-gzfileops]       Compiles without the gzfile parts of the API enabled' | tee -a configure.log
+      echo '    [--without-optimizations]   Compiles without support for optional instruction sets' | tee -a configure.log
+      echo '    [--without-new-strategies]  Compiles without using new additional deflate strategies' | tee -a configure.log
+      echo '    [--without-acle]            Compiles without ARM C Language Extensions' | tee -a configure.log
+      echo '    [--without-neon]            Compiles without ARM Neon SIMD instruction set' | tee -a configure.log
+      echo '    [--without-armv6]           Compiles without ARMv6 SIMD instruction set' | tee -a configure.log
+      echo '    [--without-altivec]         Compiles without PPC AltiVec support' | tee -a configure.log
+      echo '    [--without-power8]          Compiles without Power8 instruction set' | tee -a configure.log
+      echo '    [--with-dfltcc-deflate]     Use DEFLATE CONVERSION CALL instruction for compression on IBM Z' | tee -a configure.log
+      echo '    [--with-dfltcc-inflate]     Use DEFLATE CONVERSION CALL instruction for decompression on IBM Z' | tee -a configure.log
+      echo '    [--without-crc32-vx]        Build without vectorized CRC32 on IBM Z' | tee -a configure.log
+      echo '    [--with-reduced-mem]        Reduced memory usage for special cases (reduces performance)' | tee -a configure.log
+      echo '    [--force-sse2]              Assume SSE2 instructions are always available (disabled by default on x86, enabled on x86_64)' | tee -a configure.log
+        exit 0 ;;
+    -p*=* | --prefix=*) prefix=$(echo $1 | sed 's/.*=//'); shift ;;
+    -e*=* | --eprefix=*) exec_prefix=$(echo $1 | sed 's/.*=//'); shift ;;
+    -m*=* | --sprefix=*) symbol_prefix=$(echo $1 | sed 's/.*=//'); shift ;;
+    -l*=* | --libdir=*) libdir=$(echo $1 | sed 's/.*=//'); shift ;;
+    --sharedlibdir=*) sharedlibdir=$(echo $1 | sed 's/.*=//'); shift ;;
+    -i*=* | --includedir=*) includedir=$(echo $1 | sed 's/.*=//');shift ;;
+    -u*=* | --uname=*) uname=$(echo $1 | sed 's/.*=//');shift ;;
+    -p* | --prefix) prefix="$2"; shift; shift ;;
+    -e* | --eprefix) exec_prefix="$2"; shift; shift ;;
+    -m* | --sprefix) symbol_prefix="$2"; shift; shift ;;
+    -l* | --libdir) libdir="$2"; shift; shift ;;
+    -i* | --includedir) includedir="$2"; shift; shift ;;
+    -s* | --shared | --enable-shared) shared=1; shift ;;
+    -t | --static) shared=0; shift ;;
+    --zlib-compat) compat=1; shift ;;
+    --without-unaligned) unalignedok=0; shift ;;
+    --without-gzfileops) gzfileops=0; shift ;;
+    --cover) cover=1; shift ;;
+    -3* | --32) build32=1; shift ;;
+    -6* | --64) build64=1; shift ;;
+    --without-vpclmulqdq) buildvpclmulqdq=0; shift ;;
+    --without-acle) buildacle=0; shift ;;
+    --without-neon) buildneon=0; shift ;;
+    --without-armv6) buildarmv6=0; shift ;;
+    --without-altivec) buildaltivec=0 ; shift ;;
+    --without-power8) buildpower8=0 ; shift ;;
+    --without-power9) buildpower9=0 ; shift ;;
+    --with-dfltcc-deflate) builddfltccdeflate=1; shift ;;
+    --with-dfltcc-inflate) builddfltccinflate=1; shift ;;
+    --without-crc32-vx) buildcrc32vx=0; shift ;;
+    --with-reduced-mem) reducedmem=1; shift ;;
+    --force-sse2) forcesse2=1; shift ;;
+    -a*=* | --archs=*) ARCHS=$(echo $1 | sed 's/.*=//'); shift ;;
+    --sysconfdir=*) echo "ignored option: --sysconfdir" | tee -a configure.log; shift ;;
+    --localstatedir=*) echo "ignored option: --localstatedir" | tee -a configure.log; shift ;;
+    -noopt | --without-optimizations) without_optimizations=1; shift;;
+    -oldstrat | --without-new-strategies) without_new_strategies=1; shift;;
+    -w* | --warn) warn=1; shift ;;
+    -d* | --debug) debug=1; shift ;;
+
+    *)
+      echo "unknown option: $1" | tee -a configure.log
+      echo "$0 --help for help" | tee -a configure.log
+      leave 1;;
+    esac
+done
+
+# temporary file name
+test=ztest$$
+
+# put arguments in log, also put test file in log if used in arguments
+show()
+{
+  case "$@" in
+    *$test.c*)
+      echo "=== $test.c ===" >> configure.log
+      cat $test.c >> configure.log
+      echo "===" >> configure.log;;
+  esac
+  echo "$@" >> configure.log
+}
+
+# check for gcc vs. cc and set compile and link flags based on the system identified by uname
+cat > $test.c <<EOF
+extern int getchar();
+int main() {return getchar();}
+EOF
+
+cc=${CC-${CROSS_PREFIX}gcc}
+printf "Checking for compiler... " | tee -a configure.log
+case "$cc" in
+  *gcc*) gcc=1 ;;
+  *clang*) gcc=1 ;;
+esac
+case $($cc -v 2>&1) in
+  *gcc*) gcc=1 ;;
+  *clang*) gcc=1 ;;
+esac
+
+if test $build32 -eq 1; then
+  CFLAGS="${CFLAGS} -m32"
+  SFLAGS="${SFLAGS} -m32"
+  LDFLAGS="${LDFLAGS} -m32"
+fi
+if test $build64 -eq 1; then
+  CFLAGS="${CFLAGS} -m64"
+  SFLAGS="${SFLAGS} -m64"
+  LDFLAGS="${LDFLAGS} -m64"
+fi
+
+# Set library name depending on zlib-compat option
+if test $compat -eq 0; then
+  LIBNAME=libz-ng
+  LIBNAME2=zlib-ng
+  SUFFIX=-ng
+else
+  LIBNAME=libz
+  LIBNAME2=zlib
+  SUFFIX=""
+fi
+
+STATICLIB=${LIBNAME}.a
+MAPNAME=${LIBNAME2}.map
+
+# extract zlib version numbers from zlib.h
+if test $compat -eq 0; then
+  VER=$(sed -n -e '/ZLIBNG_VERSION "/s/.*"\(.*\)".*/\1/p' < ${SRCDIR}/zlib-ng.h.in)
+  VER3=$(sed -n -e '/ZLIBNG_VERSION "/s/.*"\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' < ${SRCDIR}/zlib-ng.h.in)
+  VER2=$(sed -n -e '/ZLIBNG_VERSION "/s/.*"\([0-9]*\.[0-9]*\)\..*/\1/p' < ${SRCDIR}/zlib-ng.h.in)
+  VER1=$(sed -n -e '/ZLIBNG_VERSION "/s/.*"\([0-9]*\)\..*/\1/p' < ${SRCDIR}/zlib-ng.h.in)
+else
+  VER=$(sed -n -e '/ZLIB_VERSION "/s/.*"\(.*\)".*/\1/p' < ${SRCDIR}/zlib.h.in)
+  VER3=$(sed -n -e '/ZLIB_VERSION "/s/.*"\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p' < ${SRCDIR}/zlib.h.in)
+  VER2=$(sed -n -e '/ZLIB_VERSION "/s/.*"\([0-9]*\.[0-9]*\)\..*/\1/p' < ${SRCDIR}/zlib.h.in)
+  VER1=$(sed -n -e '/ZLIB_VERSION "/s/.*"\([0-9]*\)\..*/\1/p' < ${SRCDIR}/zlib.h.in)
+fi
+
+show $cc -c $test.c
+if test "$gcc" -eq 1 && ($cc $CFLAGS -c $test.c) >> configure.log 2>&1; then
+  echo "$cc" | tee -a configure.log
+  CC="$cc"
+  CFLAGS="${CFLAGS} -std=c11"
+
+  # Re-check ARCH if the compiler is a cross-compiler.
+  if $CC -print-multiarch 1> /dev/null 2>&1 && test -n "$($CC -print-multiarch)" 1> /dev/null 2>&1; then
+      CC_ARCH=$($CC $CFLAGS -print-multiarch | sed 's/-.*//g')
+  else
+      CC_ARCH=$($CC $CFLAGS -dumpmachine | sed 's/-.*//g')
+  fi
+  case $CC_ARCH in
+    i386 | i486 | i586 | i686)
+      # Honor user choice if gcc is multilib and 64-bit is requested
+      if test $build64 -eq 1; then
+        ARCH=x86_64
+      else
+        ARCH=$CC_ARCH
+      fi ;;
+    x86_64)
+      # Honor user choice if gcc is multilib and 32-bit is requested
+      if test $build32 -ne 1; then
+        ARCH=$CC_ARCH
+      fi ;;
+    arm | armeb)
+      ARCH=arm
+      if test "${uname}" = "eabi"; then
+        uname=arm
+      fi ;;
+    armv8l)
+      ARCH=armv8-a ;;
+    aarch64 | aarch64_be | arm64)
+      if test "${uname}" = "elf"; then
+        uname=aarch64
+      fi
+      ARCH=aarch64 ;;
+    powerpc | ppc)
+      ARCH=powerpc ;;
+    powerpc64 | ppc64)
+      ARCH=powerpc64 ;;
+    powerpc64le | ppc64le)
+      ARCH=powerpc64le ;;
+  esac
+  CFLAGS="-O2 ${CFLAGS}"
+  if test -n "${ARCHS}"; then
+    CFLAGS="${CFLAGS} ${ARCHS}"
+    LDFLAGS="${LDFLAGS} ${ARCHS}"
+  fi
+  CFLAGS="${CFLAGS} -Wall"
+  SFLAGS="${CFLAGS} -fPIC"
+  if test "$warn" -eq 1; then
+    CFLAGS="${CFLAGS} -Wextra"
+  fi
+  if test $debug -eq 1; then
+    CFLAGS="${CFLAGS} -DZLIB_DEBUG"
+    SFLAGS="${SFLAGS} -DZLIB_DEBUG"
+  else
+    CFLAGS="${CFLAGS} -DNDEBUG"
+    SFLAGS="${SFLAGS} -DNDEBUG"
+  fi
+  if test -z "$uname"; then
+    uname=$( (uname -s || echo unknown) 2>/dev/null)
+  fi
+  case "$uname" in
+  Linux* | linux* | GNU | GNU/* | solaris*)
+        LDSHARED=${LDSHARED-"$cc"}
+        LDSHAREDFLAGS="-shared -Wl,-soname,${LIBNAME}.so.${VER1},--version-script,${SRCDIR}/${MAPNAME}" ;;
+  *BSD | *bsd* | DragonFly)
+        LDSHARED=${LDSHARED-"$cc"}
+        LDSHAREDFLAGS="-shared -Wl,-soname,${LIBNAME}.so.${VER1},--version-script,${SRCDIR}/${MAPNAME}"
+        LDCONFIG="ldconfig -m" ;;
+  CYGWIN* | Cygwin* | cygwin*)
+        visibility=0
+        ARFLAGS="rcs"
+        SFLAGS="${CFLAGS}"
+        shared_ext='.dll'
+        sharedlibdir='${bindir}'
+        if test $compat -eq 0; then
+          SHAREDLIB=cygz-ng$shared_ext
+        else
+          SHAREDLIB=cygz$shared_ext
+        fi
+        SHAREDLIBM=''
+        SHAREDLIBV=''
+        SHAREDTARGET=$SHAREDLIB
+        IMPORTLIB="${LIBNAME}.dll.a"
+        LDSHARED=${LDSHARED-"$cc"}
+        LDSHAREDFLAGS="-shared -Wl,--out-implib,${IMPORTLIB},--version-script,${SRCDIR}/${MAPNAME}"
+        LDSHAREDLIBC=""
+        if test $gzfileops -eq 0; then
+          DEFFILE='win32/${LIBNAME2}.def'
+        fi
+        RC="${CROSS_PREFIX}windres"
+        RCFLAGS="-I ${BUILDDIR}"
+        RCOBJS='zlibrc.o'
+        STRIP="${CROSS_PREFIX}strip"
+        EXE='.exe' ;;
+  MSYS* | msys*)
+        visibility=0
+        ARFLAGS="rcs"
+        SFLAGS="${CFLAGS}"
+        shared_ext='.dll'
+        sharedlibdir='${bindir}'
+        if test $compat -eq 0; then
+          SHAREDLIB=msys-z-ng$shared_ext
+        else
+          SHAREDLIB=msys-z$shared_ext
+        fi
+        SHAREDLIBM=''
+        SHAREDLIBV=''
+        SHAREDTARGET=$SHAREDLIB
+        IMPORTLIB="${LIBNAME}.dll.a"
+        LDSHARED=${LDSHARED-"$cc"}
+        LDSHAREDFLAGS="-shared -Wl,--out-implib,${IMPORTLIB}"
+        LDSHAREDLIBC=""
+        if test $gzfileops -eq 0; then
+          DEFFILE='win32/${LIBNAME2}.def'
+        fi
+        RC="${CROSS_PREFIX}windres"
+        RCFLAGS="-I ${BUILDDIR}"
+        RCOBJS='zlibrc.o'
+        STRIP="${CROSS_PREFIX}strip"
+        EXE='.exe' ;;
+  MINGW* | mingw*)
+        visibility=0
+        ARFLAGS="rcs"
+        CFLAGS="${CFLAGS} -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE=1 -Wno-pedantic-ms-format"
+        SFLAGS="${CFLAGS}"
+        shared_ext='.dll'
+        sharedlibdir='${bindir}'
+        SHAREDLIB=${LIBNAME}-$VER1$shared_ext
+        SHAREDLIBM=''
+        SHAREDLIBV=''
+        SHAREDTARGET=$SHAREDLIB
+        IMPORTLIB="${LIBNAME}.dll.a"
+        LDSHARED=${LDSHARED-"$cc"}
+        LDSHAREDFLAGS="-shared -Wl,--out-implib=${IMPORTLIB} -Wl,--version-script=${SRCDIR}/${MAPNAME}"
+        LDSHAREDLIBC=""
+        if test $gzfileops -eq 0; then
+          DEFFILE='win32/${LIBNAME2}.def'
+        fi
+        RC="${CROSS_PREFIX}windres"
+        RCFLAGS="-I ${BUILDDIR}"
+        if [ "$CC" = "mingw32-gcc" ]; then
+          case $ARCH in
+          i386 | i486 | i586 | i686) RCFLAGS="${RCFLAGS} -F pe-i386";;
+          esac;
+        fi
+        RCOBJS='zlibrc.o'
+        STRIP="${CROSS_PREFIX}strip"
+        EXE='.exe' ;;
+  QNX*)  # This is for QNX6. I suppose that the QNX rule below is for QNX2,QNX4
+         # (alain.bonnefoy@icbt.com)
+                 LDSHARED=${LDSHARED-"$cc"}
+                 LDSHAREDFLAGS="-shared -Wl,-h${LIBNAME}.so.${VER1}" ;;
+  HP-UX*)
+         LDSHARED=${LDSHARED-"$cc"}
+         LDSHAREDFLAGS="-shared"
+         case $( (uname -m || echo unknown) 2>/dev/null) in
+         ia64)
+                 shared_ext='.so'
+                 SHAREDLIB='${LIBNAME}.so' ;;
+         *)
+                 shared_ext='.sl'
+                 SHAREDLIB='${LIBNAME}.sl' ;;
+         esac ;;
+  Darwin* | darwin*)
+             shared_ext='.dylib'
+             SHAREDLIB=${LIBNAME}$shared_ext
+             SHAREDLIBV=${LIBNAME}.$VER$shared_ext
+             SHAREDLIBM=${LIBNAME}.$VER1$shared_ext
+             SHAREDTARGET=$SHAREDLIBV
+             LDSHARED=${LDSHARED-"$cc"}
+             LDSHAREDFLAGS="-dynamiclib -install_name @rpath/${SHAREDLIBM} -compatibility_version ${VER1} -current_version ${VER3}"
+             if libtool -V 2>&1 | grep Apple > /dev/null; then
+                 AR="libtool"
+             else
+                 AR="/usr/bin/libtool"
+             fi
+             ARFLAGS="-o" ;;
+  aarch64)
+             LDSHARED=${LDSHARED-"$cc"}
+             LDSHAREDFLAGS="-shared -Wl,-soname,${LIBNAME}.so.${VER1} -Wl,--version-script,${SRCDIR}/${MAPNAME}"
+             LDSHAREDLIBC="-Wl,--start-group -lc -lrdimon -Wl,--end-group" ;;
+  *)
+             LDSHARED=${LDSHARED-"$cc"}
+             LDSHAREDFLAGS="-shared" ;;
+  esac
+else
+  # find system name and corresponding cc options
+  CC=${CC-cc}
+  gcc=0
+  echo "$CC" | tee -a configure.log
+  if test -z "$uname"; then
+    uname=$( (uname -sr || echo unknown) 2>/dev/null)
+  fi
+  case "$uname" in
+  HP-UX*)    SFLAGS=${CFLAGS-"-O +z"}
+             CFLAGS=${CFLAGS-"-O"}
+             LDSHARED=${LDSHARED-"ld"}
+             LDSHAREDFLAGS="-b"
+         case $( (uname -m || echo unknown) 2>/dev/null) in
+         ia64)
+             shared_ext='.so'
+             SHAREDLIB='${LIBNAME}.so' ;;
+         *)
+             shared_ext='.sl'
+             SHAREDLIB='${LIBNAME}.sl' ;;
+         esac ;;
+  AIX*)  # Courtesy of dbakker@arrayasolutions.com
+             SFLAGS=${CFLAGS-"-O -qmaxmem=8192"}
+             CFLAGS=${CFLAGS-"-O -qmaxmem=8192"}
+             LDSHARED=${LDSHARED-"xlc"}
+             LDSHAREDFLAGS="-G" ;;
+  # send working options for other systems to zlib@gzip.org
+  *)         SFLAGS=${CFLAGS-"-O"}
+             CFLAGS=${CFLAGS-"-O"}
+             LDSHARED=${LDSHARED-"cc"}
+             LDSHAREDFLAGS="-shared" ;;
+  esac
+fi
+
+# Symbol versioning
+case "$uname" in
+  CYGWIN* | Cygwin* | cygwin* | MINGW* | mingw* | MSYS* | msys* | Darwin* | darwin*)
+    echo "Checking for Symbol versioning... No."
+  ;;
+  *)
+    if test $shared -eq 1; then
+      echo "Checking for Symbol versioning... Yes."
+      CFLAGS="${CFLAGS} -DHAVE_SYMVER"
+      SFLAGS="${SFLAGS} -DHAVE_SYMVER"
+    else
+      echo "Checking for Symbol versioning... No."
+    fi
+  ;;
+esac
+
+# Simplify some later conditionals
+case "$uname" in
+Linux* | linux*)
+  LINUX=1 ;;
+*)
+  LINUX=0 ;;
+esac
+
+# destination names for shared library if not defined above
+SHAREDLIB=${SHAREDLIB-"${LIBNAME}$shared_ext"}
+SHAREDLIBV=${SHAREDLIBV-"${LIBNAME}$shared_ext.$VER"}
+SHAREDLIBM=${SHAREDLIBM-"${LIBNAME}$shared_ext.$VER1"}
+SHAREDTARGET=${SHAREDTARGET-"${LIBNAME}$shared_ext.$VER"}
+
+echo >> configure.log
+
+# define functions for testing compiler and library characteristics and logging the results
+
+cat > $test.c <<EOF
+#error error
+EOF
+if ($CC -c $CFLAGS $test.c) 2>/dev/null; then
+  try()
+  {
+    show "$@"
+    test "$( ("$@") 2>&1 | tee -a configure.log)" = ""
+  }
+  echo - using any output from compiler to indicate an error >> configure.log
+else
+  try()
+  {
+    show "$@"
+    ( "$@" ) >> configure.log 2>&1
+    ret=$?
+    if test $ret -ne 0; then
+      echo "(exit code $ret)" >> configure.log
+    fi
+    return $ret
+  }
+fi
+
+cat > $test.c << EOF
+int foo() { return 0; }
+EOF
+echo "Checking for obsessive-compulsive compiler options..." >> configure.log
+if try $CC -c $CFLAGS $test.c; then
+  :
+else
+  echo "Compiler error reporting is too harsh for $0 (perhaps remove -Werror)." | tee -a configure.log
+  leave 1
+fi
+
+echo >> configure.log
+
+# see if shared library build supported
+cat > $test.c <<EOF
+extern int getchar();
+int hello() {return getchar();}
+EOF
+if test $shared -eq 1; then
+  printf "Checking for shared library support... " | tee -a configure.log
+  # we must test in two steps (cc then ld), required at least on SunOS 4.x
+  if try $CC -w -c $SFLAGS $test.c &&
+     try $LDSHARED $LDSHAREDFLAGS $LDFLAGS -o $test$shared_ext $test.o $LDSHAREDLIBC; then
+    echo "Building shared library $SHAREDTARGET with $CC." | tee -a configure.log
+  elif test -z "$old_cc" -a -z "$old_cflags"; then
+    echo "No shared library support." | tee -a configure.log
+    shared=0;
+  else
+    echo 'No shared library support; try without defining CC and CFLAGS' | tee -a configure.log
+    shared=0;
+  fi
+fi
+if test $shared -eq 0; then
+  LDSHARED="$CC"
+  LDSHAREDFLAGS=""
+  ALL="static"
+  SHAREDLIB=""
+  SHAREDLIBV=""
+  SHAREDLIBM=""
+  SHAREDTARGET=""
+  INSTALLTARGETS=install-static
+  UNINSTALLTARGETS=uninstall-static
+  echo Building static library $STATICLIB version $VER with $CC. | tee -a configure.log
+else
+  ALL="static shared"
+  TEST="${TEST} testshared"
+fi
+
+echo >> configure.log
+
+# check for large file support, and if none, check for fseeko()
+cat > $test.c <<EOF
+#include <sys/types.h>
+off64_t dummy = 0;
+EOF
+if try $CC -c $CFLAGS -D_LARGEFILE64_SOURCE=1 $test.c; then
+  CFLAGS="${CFLAGS} -D_LARGEFILE64_SOURCE=1"
+  SFLAGS="${SFLAGS} -D_LARGEFILE64_SOURCE=1"
+  echo "Checking for off64_t... Yes." | tee -a configure.log
+  echo "Checking for fseeko... Yes." | tee -a configure.log
+else
+  echo "Checking for off64_t... No." | tee -a configure.log
+  echo >> configure.log
+  cat > $test.c <<EOF
+#include <sys/types.h>
+int main() {
+  _off64_t dummy = 0;
+  return 0;
+}
+EOF
+  if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+    echo "Checking for _off64_t... Yes." | tee -a configure.log
+  else
+    echo "Checking for _off64_t... No." | tee -a configure.log
+  fi
+  echo >> configure.log
+  cat > $test.c <<EOF
+#include <stdio.h>
+int main(void) {
+  fseeko(NULL, 0, 0);
+  return 0;
+}
+EOF
+  if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+    echo "Checking for fseeko... Yes." | tee -a configure.log
+  else
+    CFLAGS="${CFLAGS} -DNO_FSEEKO"
+    SFLAGS="${SFLAGS} -DNO_FSEEKO"
+    echo "Checking for fseeko... No." | tee -a configure.log
+  fi
+fi
+echo >> configure.log
+
+cat > $test.c <<EOF
+#define _POSIX_C_SOURCE 200112L
+#include <stdlib.h>
+int main(void) {
+  void *ptr = 0;
+  int ret = posix_memalign(&ptr, 64, 10);
+  if (ptr)
+    free(ptr);
+  return ret;
+}
+EOF
+if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+  echo "Checking for posix_memalign... Yes." | tee -a configure.log
+  CFLAGS="${CFLAGS} -DHAVE_POSIX_MEMALIGN"
+  SFLAGS="${SFLAGS} -DHAVE_POSIX_MEMALIGN"
+else
+  echo "Checking for posix_memalign... No." | tee -a configure.log
+fi
+echo >> configure.log
+
+cat > $test.c <<EOF
+#define _ISOC11_SOURCE 1
+#include <stdlib.h>
+int main(void) {
+  void *ptr = aligned_alloc(64, 10);
+  if (ptr)
+    free(ptr);
+  return 0;
+}
+EOF
+if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+  echo "Checking for aligned_alloc... Yes." | tee -a configure.log
+  CFLAGS="${CFLAGS} -DHAVE_ALIGNED_ALLOC"
+  SFLAGS="${SFLAGS} -DHAVE_ALIGNED_ALLOC"
+else
+  echo "Checking for aligned_alloc... No." | tee -a configure.log
+fi
+echo >> configure.log
+
+# check for strerror() for use by gz* functions
+cat > $test.c <<EOF
+#include <string.h>
+#include <errno.h>
+int main() { return strlen(strerror(errno)); }
+EOF
+if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+  echo "Checking for strerror... Yes." | tee -a configure.log
+else
+  CFLAGS="${CFLAGS} -DNO_STRERROR"
+  SFLAGS="${SFLAGS} -DNO_STRERROR"
+  echo "Checking for strerror... No." | tee -a configure.log
+fi
+
+# check for getauxval() or elf_aux_info() for architecture feature detection at run-time
+cat > $test.c <<EOF
+#include <sys/auxv.h>
+int main() {
+#ifdef __FreeBSD__
+  int test;
+  return elf_aux_info(AT_PAGESZ, &test, sizeof(test));
+#else
+  return getauxval(0);
+#endif
+}
+EOF
+if try $CC $CFLAGS -o $test $test.c $LDSHAREDLIBC; then
+  echo "Checking for getauxval() or elf_aux_info() in sys/auxv.h... Yes." | tee -a configure.log
+  CFLAGS="${CFLAGS} -DHAVE_SYS_AUXV_H"
+  SFLAGS="${SFLAGS} -DHAVE_SYS_AUXV_H"
+else
+  echo "Checking for getauxval() in sys/auxv.h... No." | tee -a configure.log
+fi
+
+# We need to remove consigured files (zconf.h etc) from source directory if building outside of it
+if [ "$SRCDIR" != "$BUILDDIR" ]; then
+    rm -f $SRCDIR/zconf${SUFFIX}.h
+    rm -f $SRCDIR/zlib${SUFFIX}.h
+    rm -f $SRCDIR/zlib_name_mangling${SUFFIX}.h
+fi
+
+# Rename @ZLIB_SYMBOL_PREFIX@ to $symbol_prefix in gzread.c, zlib.h and zlib_name_mangling.h
+sed < $SRCDIR/gzread.c.in "s/@ZLIB_SYMBOL_PREFIX@/$symbol_prefix/g" > gzread.c
+sed < $SRCDIR/zlib${SUFFIX}.h.in "s/@ZLIB_SYMBOL_PREFIX@/$symbol_prefix/g" > zlib${SUFFIX}.h
+if [ ! -z "$symbol_prefix" ]; then
+  sed < $SRCDIR/zlib_name_mangling${SUFFIX}.h.in "s/@ZLIB_SYMBOL_PREFIX@/$symbol_prefix/g" > zlib_name_mangling${SUFFIX}.h
+else
+  # symbol_prefix is not set, copy the empty mangling header
+  cp -p $SRCDIR/zlib_name_mangling.h.empty zlib_name_mangling${SUFFIX}.h
+fi
+
+# copy clean zconf.h for subsequent edits
+cp -p $SRCDIR/zconf${SUFFIX}.h.in zconf${SUFFIX}.h
+
+echo >> configure.log
+
+# check for unistd.h and save result in zconf.h
+cat > $test.c <<EOF
+#include <unistd.h>
+int main() { return 0; }
+EOF
+if try $CC -c $CFLAGS $test.c; then
+  sed < zconf${SUFFIX}.h "/^#ifdef HAVE_UNISTD_H.* may be/s/def HAVE_UNISTD_H\(.*\) may be/ 1\1 was/" > zconf${SUFFIX}.temp.h
+  mv zconf${SUFFIX}.temp.h zconf${SUFFIX}.h
+  echo "Checking for unistd.h... Yes." | tee -a configure.log
+else
+  sed < zconf${SUFFIX}.h "/^#ifdef HAVE_UNISTD_H.* may be/s/def HAVE_UNISTD_H\(.*\) may be set to #if 1/ 0\1 was set to #if 0/" > zconf${SUFFIX}.temp.h
+  mv zconf${SUFFIX}.temp.h zconf${SUFFIX}.h
+  echo "Checking for unistd.h... No." | tee -a configure.log
+fi
+
+echo >> configure.log
+
+# check for ptrdiff_t and save result in zconf.h
+printf "Checking for ptrdiff_t... " | tee -a configure.log
+cat > $test.c <<EOF
+#include <stddef.h>
+int fun(ptrdiff_t *a) { (void)a; return 0; }
+EOF
+if try $CC -c $CFLAGS $test.c; then
+  echo "Yes." | tee -a configure.log
+else
+    echo "No." | tee -a configure.log
+    sed < zconf${SUFFIX}.h "/^#ifdef NEED_PTRDIFF_T.* may be/s/def NEED_PTRDIFF_T\(.*\) may be/ 1\1 was/" > zconf${SUFFIX}.temp.h
+    mv zconf${SUFFIX}.temp.h zconf${SUFFIX}.h
+
+    printf "Checking for sizeof(void *)... " | tee -a configure.log
+    cat > $test.c <<EOF
+#include <stdint.h>
+#define COMPILE_TIME_ASSERT(pred) struct s { int x: (pred) ? 1 : -1; }
+COMPILE_TIME_ASSERT(sizeof(int32_t) == sizeof(void *));
+EOF
+    if try $CC -c $CFLAGS $test.c; then
+        echo "sizeof(int32_t)." | tee -a configure.log
+        sed < zconf${SUFFIX}.h "s/^typedef PTRDIFF_TYPE ptrdiff_t;/typedef int32_t ptrdiff_t;/g" > zconf${SUFFIX}.temp.h
+        mv zconf${SUFFIX}.temp.h zconf${SUFFIX}.h
+    else
+        cat > $test.c <<EOF
+#include <stdint.h>
+#define COMPILE_TIME_ASSERT(pred) struct s { int x: (pred) ? 1 : -1; }
+COMPILE_TIME_ASSERT(sizeof(int64_t) == sizeof(void *));
+EOF
+        if try $CC -c $CFLAGS $test.c; then
+            echo "sizeof(int64_t)." | tee -a configure.log
+            sed < zconf${SUFFIX}.h "s/^typedef PTRDIFF_TYPE ptrdiff_t;/typedef int64_t ptrdiff_t;/g" > zconf${SUFFIX}.temp.h
+            mv zconf${SUFFIX}.temp.h zconf${SUFFIX}.h
+        else
+            echo "unknown." | tee -a configure.log
+            exit 1
+        fi
+    fi
+fi
+
+# if --zlib-compat was requested
+if test $compat -eq 1; then
+  gzfileops=1
+  CFLAGS="${CFLAGS} -DZLIB_COMPAT"
+  SFLAGS="${SFLAGS} -DZLIB_COMPAT"
+  case "$uname" in
+  CYGWIN* | Cygwin* | cygwin* | MSYS* | msys* | MINGW* | mingw*)
+    DEFFILE="win32/zlibcompat.def" ;;
+  esac
+fi
+
+if [ ! -z "$DEFFILE" ]; then
+  mkdir -p win32
+  sed < $SRCDIR/$DEFFILE.in "s/@ZLIB_SYMBOL_PREFIX@/$symbol_prefix/g" > $DEFFILE
+fi
+
+# if --gzfileops was requested
+if test $gzfileops -eq 1; then
+  CFLAGS="${CFLAGS} -DWITH_GZFILEOP"
+  SFLAGS="${SFLAGS} -DWITH_GZFILEOP"
+  OBJC="${OBJC} \$(OBJG)"
+  PIC_OBJC="${PIC_OBJC} \$(PIC_OBJG)"
+else
+  TESTOBJG="\$(OBJG)"
+  PIC_TESTOBJG="\$(OBJG)"
+fi
+
+# set architecture alignment requirements
+if test $unalignedok -eq 0; then
+  CFLAGS="${CFLAGS} -DNO_UNALIGNED"
+  SFLAGS="${SFLAGS} -DNO_UNALIGNED"
+  echo "Unaligned reads manually disabled." | tee -a configure.log
+fi
+
+# enable reduced memory configuration
+if test $reducedmem -eq 1; then
+  echo "Configuring for reduced memory environment." | tee -a configure.log
+  CFLAGS="${CFLAGS} -DHASH_SIZE=32768u -DGZBUFSIZE=8192"
+fi
+
+# if code coverage testing was requested, use older gcc if defined, e.g. "gcc-4.2" on Mac OS X
+if test $cover -eq 1; then
+  CFLAGS="${CFLAGS} -fprofile-arcs -ftest-coverage"
+  LDFLAGS="${LDFLAGS} -fprofile-arcs -ftest-coverage"
+  if test -n "$GCC_CLASSIC"; then
+    CC=$GCC_CLASSIC
+  fi
+fi
+
+echo >> configure.log
+
+# Check for ANSI C compliant compiler
+cat > $test.c <<EOF
+#include <stdint.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include "zconf${SUFFIX}.h"
+int main() {
+#ifdef STDC
+  return 0;
+#endif
+  return 1;
+}
+EOF
+if try $CC -c $CFLAGS $test.c; then
+  echo "Checking for ANSI C compliant compiler...  Yes." | tee -a configure.log
+  :
+else
+  echo "Checking for ANSI C compliant compiler...  No." | tee -a configure.log
+  echo "Error: ANSI C compatible compiler needed, cannot continue." | tee -a configure.log
+  leave 1
+fi
+
+# Check for -fno-semantic-interposition compiler support
+echo "" > test.c
+  cat > $test.c <<EOF
+int main() { return 0; }
+EOF
+if test "$gcc" -eq 1 && ($cc $CFLAGS -fno-semantic-interposition -c $test.c) >> configure.log 2>&1; then
+  echo "Checking for -fno-semantic-interposition... Yes." | tee -a configure.log
+  SFLAGS="$SFLAGS -fno-semantic-interposition"
+else
+  echo "Checking for -fno-semantic-interposition... No." | tee -a configure.log
+fi
+
+# Check for -fno-lto compiler support
+if test $gcc -eq 1 -a $without_optimizations -eq 0; then
+  cat > $test.c <<EOF
+int main() { return 0; }
+EOF
+  if $cc $CFLAGS -fno-lto -c $test.c >> configure.log 2>&1; then
+    echo "Checking for -fno-lto... Yes." | tee -a configure.log
+  else
+    echo "Checking for -fno-lto... No." | tee -a configure.log
+    noltoflag=""
+  fi
+fi
+
+# see if we can hide zlib internal symbols that are linked between separate source files using hidden
+if test "$gcc" -eq 1 && test "$visibility" -eq 1; then
+  echo >> configure.log
+  cat > $test.c <<EOF
+#define Z_INTERNAL __attribute__((visibility ("hidden")))
+int Z_INTERNAL foo;
+int main() { return 0; }
+EOF
+  if try $CC $CFLAGS $test.c; then
+    CFLAGS="$CFLAGS -DHAVE_VISIBILITY_HIDDEN"
+    SFLAGS="$SFLAGS -DHAVE_VISIBILITY_HIDDEN"
+    echo >> configure.log
+    echo "Checking for attribute(visibility(hidden)) support... Yes." | tee -a configure.log
+  else
+    echo >> configure.log
+    echo "Checking for attribute(visibility(hidden)) support... No." | tee -a configure.log
+  fi
+fi
+
+# see if we can hide zlib internal symbols that are linked between separate source files using internal
+if test "$gcc" -eq 1 && test "$visibility" -eq 1; then
+  echo >> configure.log
+  cat > $test.c <<EOF
+#define Z_INTERNAL __attribute__((visibility ("internal")))
+int Z_INTERNAL foo;
+int main() { return 0; }
+EOF
+  if try $CC $CFLAGS $test.c; then
+    CFLAGS="$CFLAGS -DHAVE_VISIBILITY_INTERNAL"
+    SFLAGS="$SFLAGS -DHAVE_VISIBILITY_INTERNAL"
+    echo >> configure.log
+    echo "Checking for attribute(visibility(internal)) support... Yes." | tee -a configure.log
+  else
+    echo >> configure.log
+    echo "Checking for attribute(visibility(internal)) support... No." | tee -a configure.log
+  fi
+fi
+
+# Check for attribute(aligned) support in compiler
+cat > $test.c << EOF
+int main(void) {
+  __attribute__((aligned(8))) int test = 0;
+  (void)test;
+  return 0;
+}
+EOF
+if try ${CC} ${CFLAGS} $test.c $LDSHAREDLIBC; then
+    echo "Checking for attribute(aligned) ... Yes." | tee -a configure.log
+    CFLAGS="$CFLAGS -DHAVE_ATTRIBUTE_ALIGNED"
+    SFLAGS="$SFLAGS -DHAVE_ATTRIBUTE_ALIGNED"
+else
+    echo "Checking for attribute(aligned) ... No." | tee -a configure.log
+fi
+
+# Check for __builtin_ctz() support in compiler
+cat > $test.c << EOF
+long f(unsigned int x) { return __builtin_ctz(x); }
+int main(void) { return 0; }
+EOF
+if try ${CC} ${CFLAGS} $test.c $LDSHAREDLIBC; then
+    echo "Checking for __builtin_ctz ... Yes." | tee -a configure.log
+    CFLAGS="$CFLAGS -DHAVE_BUILTIN_CTZ"
+    SFLAGS="$SFLAGS -DHAVE_BUILTIN_CTZ"
+else
+    echo "Checking for __builtin_ctz ... No." | tee -a configure.log
+fi
+
+# Check for __builtin_ctzll() support in compiler
+cat > $test.c << EOF
+long f(unsigned long long x) { return __builtin_ctzll(x); }
+int main(void) { return 0; }
+EOF
+if try ${CC} ${CFLAGS} $test.c $LDSHAREDLIBC; then
+    echo "Checking for __builtin_ctzll ... Yes." | tee -a configure.log
+    CFLAGS="$CFLAGS -DHAVE_BUILTIN_CTZLL"
+    SFLAGS="$SFLAGS -DHAVE_BUILTIN_CTZLL"
+else
+    echo "Checking for __builtin_ctzll ... No." | tee -a configure.log
+fi
+
+check_avx2_intrinsics() {
+    # Check whether compiler supports AVX2 intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+__m256i f(__m256i x) {
+    const __m256i y = _mm256_set1_epi16(1);
+    return _mm256_subs_epu16(x, y);
+}
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${avx2flag} $test.c; then
+        echo "Checking for AVX2 intrinsics ... Yes." | tee -a configure.log
+        HAVE_AVX2_INTRIN=1
+    else
+        echo "Checking for AVX2 intrinsics ... No." | tee -a configure.log
+        HAVE_AVX2_INTRIN=0
+    fi
+}
+
+check_avx512_intrinsics() {
+    # Check whether compiler supports AVX512 intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+__m512i f(__m512i y) {
+  __m512i x = _mm512_set1_epi8(2);
+  return _mm512_sub_epi8(x, y);
+}
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${avx512flag} $test.c; then
+        echo "Checking for AVX512 intrinsics ... Yes." | tee -a configure.log
+        HAVE_AVX512_INTRIN=1
+    else
+        echo "Checking for AVX512 intrinsics ... No." | tee -a configure.log
+        HAVE_AVX512_INTRIN=0
+    fi
+}
+
+check_mtune_skylake_avx512_compiler_flag() {
+    # Check whether -mtune=skylake-avx512 works correctly
+    cat > $test.c << EOF
+int main() { return 0; }
+EOF
+    if try $CC -c $CFLAGS -mtune=skylake-avx512 $test.c; then
+        MTUNE_SKYLAKE_AVX512_AVAILABLE=1
+        echo "Check whether -mtune=skylake-avx512 works ... Yes." | tee -a configure.log
+    else
+        echo "Check whether -mtune=skylake-avx512 works ... No." | tee -a configure.log
+        MTUNE_SKYLAKE_AVX512_AVAILABLE=0
+    fi
+}
+
+check_mtune_cascadelake_compiler_flag() {
+    # Check whether -mtune=cascadelake works correctly
+    cat > $test.c << EOF
+int main() { return 0; }
+EOF
+    if try $CC -c $CFLAGS -mtune=cascadelake $test.c; then
+        MTUNE_CASCADELAKE_AVAILABLE=1
+        echo "Check whether -mtune=cascadelake works ... Yes." | tee -a configure.log
+    else
+        echo "Check whether -mtune=cascadelake works ... No." | tee -a configure.log
+        MTUNE_CASCADELAKE_AVAILABLE=0
+        check_mtune_skylake_avx512_compiler_flag
+    fi
+}
+
+check_avx512vnni_intrinsics() {
+    # Check whether compiler supports AVX512-VNNI intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+__m512i f(__m512i x, __m512i y) {
+    __m512i z = _mm512_setzero_epi32();
+    return _mm512_dpbusd_epi32(z, x, y);
+}
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${avx512vnniflag} $test.c; then
+        echo "Checking for AVX512VNNI intrinsics ... Yes." | tee -a configure.log
+        HAVE_AVX512VNNI_INTRIN=1
+    else
+        echo "Checking for AVX512VNNI intrinsics ... No." | tee -a configure.log
+        HAVE_AVX512VNNI_INTRIN=0
+    fi
+}
+
+check_mask_intrinsics() {
+    # Check whether compiler supports AVX512 k-mask intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+__mmask16 f(__mmask16 x) { return _knot_mask16(x); }
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${avx512flag} $test.c; then
+        echo "Checking for AVX512 k-mask intrinsics ... Yes." | tee -a configure.log
+        HAVE_MASK_INTRIN=1
+    else
+        echo "Checking for AVX512 k-mask intrinsics ... No." | tee -a configure.log
+        HAVE_MASK_INTRIN=0
+    fi
+}
+
+check_acle_compiler_flag() {
+    # Check whether -march=armv8-a+crc works correctly
+    cat > $test.c << EOF
+int main() { return 0; }
+EOF
+    if try $CC -c $CFLAGS -march=armv8-a+crc $test.c; then
+        ACLE_AVAILABLE=1
+        echo "Check whether -march=armv8-a+crc works ... Yes." | tee -a configure.log
+        acleflag="-march=armv8-a+crc"
+    else
+        echo "Check whether -march=armv8-a+crc works ... No." | tee -a configure.log
+        if try $CC -c $CFLAGS -march=armv8-a+crc+simd $test.c; then
+            ACLE_AVAILABLE=1
+            echo "Check whether -march=armv8-a+crc+simd works ... Yes." | tee -a configure.log
+            acleflag="-march=armv8-a+crc+simd"
+        else
+            ACLE_AVAILABLE=0
+            echo "Check whether -march=armv8-a+crc+simd works ... No." | tee -a configure.log
+        fi
+    fi
+}
+
+check_neon_compiler_flag() {
+    if test "$ARCH" = "aarch64"; then
+        neonflag="-march=armv8-a+simd"
+    else
+        neonflag="-mfpu=neon"
+    fi
+    # Check whether neon flag is available on ARM processors.
+    cat > $test.c << EOF
+#if defined(_M_ARM64) || defined(_M_ARM64EC)
+ #  include <arm64_neon.h>
+ #else
+ #  include <arm_neon.h>
+#endif
+int main() { return 0; }
+EOF
+    if try $CC -c $CFLAGS $neonflag $test.c; then
+        NEON_AVAILABLE=1
+        echo "Check whether $neonflag is available ... Yes." | tee -a configure.log
+    else
+        NEON_AVAILABLE=0
+        echo "Check whether $neonflag is available ... No." | tee -a configure.log
+    fi
+}
+
+check_neon_ld4_intrinsics() {
+    cat > $test.c << EOF
+#if defined(_MSC_VER) && (defined(_M_ARM64) || defined(_M_ARM64EC))
+#  include <arm64_neon.h>
+#else
+#  include <arm_neon.h>
+#endif
+int32x4x4_t f(int var[16]) { return vld1q_s32_x4(var); }
+int main(void) { return 0; }
+EOF
+    if try $CC -c $CFLAGS $neonflag $test.c; then
+        NEON_HAS_LD4=1
+        echo "check whether compiler supports 4 wide register loads ... Yes." | tee -a configure.log
+    else
+        NEON_HAS_LD4=0
+        echo "check whether compiler supports 4 wide register loads ... No." | tee -a configure.log
+    fi
+}
+
+check_armv6_intrinsics() {
+    # Check whether -march=armv6 works correctly
+    cat > $test.c << EOF
+int main() { return 0; }
+EOF
+    if try $CC -c $CFLAGS -march=armv6 $test.c; then
+        armv6flag=-march=armv6
+        echo "Check whether -march=armv6 works ... Yes." | tee -a configure.log
+    else
+        echo "Check whether -march=armv6 works ... No." | tee -a configure.log
+    fi
+
+    # Check whether compiler supports ARMv6 inline asm
+    cat > $test.c << EOF
+unsigned int f(unsigned int a, unsigned int b) {
+    unsigned int c;
+    __asm__ __volatile__ ( "uqsub16 %0, %1, %2" : "=r" (c) : "r" (a), "r" (b) );
+    return c;
+}
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${armv6flag} $test.c; then
+        echo "Checking for ARMv6 inline assembly ... Yes." | tee -a configure.log
+        HAVE_ARMV6_INLINE_ASM=1
+    else
+        echo "Checking for ARMv6 inline assembly ... No." | tee -a configure.log
+        HAVE_ARMV6_INLINE_ASM=0
+    fi
+
+    # Check whether compiler supports ARMv6 intrinsics
+    cat > $test.c << EOF
+#include <arm_acle.h>
+unsigned int f(unsigned int a, unsigned int b) {
+    return __uqsub16(a, b);
+}
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${armv6flag} $test.c; then
+        echo "Checking for ARMv6 intrinsics ... Yes." | tee -a configure.log
+        HAVE_ARMV6_INTRIN=1
+    else
+        echo "Checking for ARMv6 intrinsics ... No." | tee -a configure.log
+        HAVE_ARMV6_INTRIN=0
+    fi
+}
+
+check_pclmulqdq_intrinsics() {
+    # Check whether compiler supports PCLMULQDQ intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+#include <wmmintrin.h>
+__m128i f(__m128i a, __m128i b) { return _mm_clmulepi64_si128(a, b, 0x10); }
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${pclmulflag} $test.c; then
+        echo "Checking for PCLMULQDQ intrinsics ... Yes." | tee -a configure.log
+        HAVE_PCLMULQDQ_INTRIN=1
+    else
+        echo "Checking for PCLMULQDQ intrinsics ... No." | tee -a configure.log
+        HAVE_PCLMULQDQ_INTRIN=0
+    fi
+}
+
+check_vpclmulqdq_intrinsics() {
+    # Check whether compiler supports VPCLMULQDQ intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+#include <wmmintrin.h>
+__m512i f(__m512i a) {
+    __m512i b = _mm512_setzero_si512();
+    return _mm512_clmulepi64_epi128(a, b, 0x10);
+}
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${vpclmulflag} $test.c; then
+        echo "Checking for VPCLMULQDQ intrinsics ... Yes." | tee -a configure.log
+        HAVE_VPCLMULQDQ_INTRIN=1
+    else
+        echo "Checking for VPCLMULQDQ intrinsics ... No." | tee -a configure.log
+        HAVE_VPCLMULQDQ_INTRIN=0
+    fi
+}
+
+check_xsave_intrinsics() {
+   # Check whether compiler supports XSAVE intrinsics
+   cat > $test.c << EOF
+#ifdef _MSC_VER
+#  include <intrin.h>
+#else
+#  include <x86gprintrin.h>
+#endif
+unsigned int f(unsigned int a) { return (int) _xgetbv(a); }
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${xsaveflag} $test.c; then
+        echo "Checking for XSAVE intrinsics ... Yes." | tee -a configure.log
+        HAVE_XSAVE_INTRIN=1
+    else
+        echo "Checking for XSAVE intrinsics ... No." | tee -a configure.log
+        HAVE_XSAVE_INTRIN=0
+    fi
+}
+
+check_ppc_intrinsics() {
+        cat > $test.c << EOF
+#include <altivec.h>
+int main(void)
+{
+    vector int a = vec_splats(0);
+    vector int b = vec_splats(0);
+    a = vec_add(a, b);
+    return 0;
+}
+EOF
+        if test $buildaltivec -eq 1 && try ${CC} ${CFLAGS} -maltivec $test.c; then
+            echo "Checking for AltiVec intrinsics ... Yes." | tee -a configure.log
+            HAVE_ALTIVEC_INTRIN=1
+        else
+            echo "Checking for AltiVec intrinsics ... No." | tee -a configure.log
+            HAVE_ALTIVEC_INTRIN=0
+        fi
+        if test $buildaltivec -eq 1 && try ${CC} ${CFLAGS} -maltivec -mno-vsx $test.c; then
+            echo "Checking if -mno-vsx is supported ... Yes." | tee -a configure.log
+            vmxflag="$vmxflag -mno-vsx"
+        else
+            echo "Checking if -mno-vsx is supported ... No." | tee -a configure.log
+        fi
+        cat > $test.c << EOF
+#ifdef __FreeBSD__
+#include <machine/cpu.h>
+#endif
+#include <sys/auxv.h>
+int main() {
+#ifdef __FreeBSD__
+  unsigned long hwcap;
+  elf_aux_info(AT_HWCAP, &hwcap, sizeof(hwcap));
+  return (hwcap & PPC_FEATURE_HAS_ALTIVEC);
+#else
+  return (getauxval(AT_HWCAP) & PPC_FEATURE_HAS_ALTIVEC);
+#endif
+}
+EOF
+        if try $CC -c $CFLAGS -maltivec $test.c; then
+            HAVE_VMX=1
+            echo "Check whether VMX instructions are available ... Yes." | tee -a configure.log
+        else
+            HAVE_VMX=0
+            echo "Check whether VMX instructions are available ... No." | tee -a configure.log
+        fi
+}
+
+check_power8_intrinsics() {
+    # Check whether features needed by POWER8 optimisations are available
+    cat > $test.c << EOF
+#ifdef __FreeBSD__
+#include <machine/cpu.h>
+#endif
+#include <sys/auxv.h>
+int main() {
+#ifdef __FreeBSD__
+  unsigned long hwcap;
+  elf_aux_info(AT_HWCAP2, &hwcap, sizeof(hwcap));
+  return (hwcap & PPC_FEATURE2_ARCH_2_07);
+#else
+  return (getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_2_07);
+#endif
+}
+EOF
+    if test $buildpower8 -eq 1 && try $CC -c $CFLAGS -mcpu=power8 $test.c; then
+        HAVE_POWER8_INTRIN=1
+        echo "Check whether POWER8 instructions are available ... Yes." | tee -a configure.log
+    else
+        HAVE_POWER8_INTRIN=0
+        echo "Check whether POWER8 instructions are available ... No." | tee -a configure.log
+    fi
+}
+
+check_power9_intrinsics() {
+    # Check whether features needed by POWER9 optimisations are available
+    cat > $test.c << EOF
+#ifdef __FreeBSD__
+#include <machine/cpu.h>
+#endif
+#include <sys/auxv.h>
+int main() {
+#ifdef __FreeBSD__
+  unsigned long hwcap;
+  elf_aux_info(AT_HWCAP2, &hwcap, sizeof(hwcap));
+  return (hwcap & PPC_FEATURE2_ARCH_3_00);
+#else
+  return (getauxval(AT_HWCAP2) & PPC_FEATURE2_ARCH_3_00);
+#endif
+}
+EOF
+    if test $buildpower9 -eq 1 && try $CC -c $CFLAGS -mcpu=power9 $test.c; then
+        HAVE_POWER9_INTRIN=1
+        echo "Check whether POWER9 instructions are available ... Yes." | tee -a configure.log
+    else
+        HAVE_POWER9_INTRIN=0
+        echo "Check whether POWER9 instructions are available ... No." | tee -a configure.log
+    fi
+}
+
+check_sse2_intrinsics() {
+    # Check whether compiler supports SSE2 intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+__m128i f(__m128i x, __m128i y) { return _mm_sad_epu8(x, y); }
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${sse2flag} $test.c; then
+        echo "Checking for SSE2 intrinsics ... Yes." | tee -a configure.log
+        HAVE_SSE2_INTRIN=1
+    else
+        echo "Checking for SSE2 intrinsics ... No." | tee -a configure.log
+        HAVE_SSE2_INTRIN=0
+    fi
+}
+
+check_sse42_intrinsics() {
+    # Check whether compiler supports SSE4.2 intrinsics
+    cat > $test.c << EOF
+#include <nmmintrin.h>
+unsigned int f(unsigned int a, unsigned int b) { return _mm_crc32_u32(a, b); }
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${sse42flag} $test.c; then
+        echo "Checking for SSE4.2 intrinsics ... Yes." | tee -a configure.log
+        HAVE_SSE42_INTRIN=1
+    else
+        echo "Checking for SSE4.2 intrinsics ... No." | tee -a configure.log
+        HAVE_SSE42_INTRIN=0
+    fi
+}
+
+check_ssse3_intrinsics() {
+    # Check whether compiler supports SSSE3 intrinsics
+    cat > $test.c << EOF
+#include <immintrin.h>
+__m128i f(__m128i u) {
+  __m128i v = _mm_set1_epi32(1);
+  return _mm_hadd_epi32(u, v);
+}
+int main(void) { return 0; }
+EOF
+    if try ${CC} ${CFLAGS} ${ssse3flag} $test.c; then
+        echo "Checking for SSSE3 intrinsics ... Yes." | tee -a configure.log
+        HAVE_SSSE3_INTRIN=1
+    else
+        echo "Checking for SSSE3 intrinsics ... No." | tee -a configure.log
+        HAVE_SSSE3_INTRIN=0
+    fi
+}
+
+check_vgfma_intrinsics() {
+    # Check whether "VECTOR GALOIS FIELD MULTIPLY SUM AND ACCUMULATE" intrinsic is available
+    printf "Checking for -mzarch... " | tee -a configure.log
+    if try $CC -x c -c /dev/null -o /dev/null -mzarch; then
+        echo Yes. | tee -a configure.log
+        vgfmaflag="${vgfmaflag} -mzarch"
+    else
+        echo No. | tee -a configure.log
+    fi
+    printf "Checking for -fzvector... " | tee -a configure.log
+    if try $CC -x c -c /dev/null -o /dev/null -fzvector; then
+        echo Yes. | tee -a configure.log
+        vgfmaflag="${vgfmaflag} -fzvector"
+    else
+        echo No. | tee -a configure.log
+    fi
+    cat > $test.c << EOF
+#include <vecintrin.h>
+int main(void) {
+    unsigned long long a __attribute__((vector_size(16))) = { 0 };
+    unsigned long long b __attribute__((vector_size(16))) = { 0 };
+    unsigned char c __attribute__((vector_size(16))) = { 0 };
+    c = vec_gfmsum_accum_128(a, b, c);
+    return c[0];
+}
+EOF
+    printf "Checking for VGFMA support... " | tee -a configure.log
+    if try $CC -c $CFLAGS $vgfmaflag $test.c; then
+        HAVE_VGFMA_INTRIN=1
+        echo "Yes." | tee -a configure.log
+    else
+        HAVE_VGFMA_INTRIN=0
+        echo "No." | tee -a configure.log
+    fi
+}
+
+# Check whether to disable deflate_medium and deflate_quick
+if test $without_new_strategies -eq 1; then
+    CFLAGS="${CFLAGS} -DNO_QUICK_STRATEGY -DNO_MEDIUM_STRATEGY"
+    SFLAGS="${SFLAGS} -DNO_QUICK_STRATEGY -DNO_MEDIUM_STRATEGY"
+fi
+
+ARCHDIR='arch/generic'
+ARCH_STATIC_OBJS=''
+ARCH_SHARED_OBJS=''
+
+# Set ARCH specific FLAGS
+case "${ARCH}" in
+    # x86/amd64 specific optimizations
+    i386 | i486 | i586 | i686 |x86_64)
+        ARCHDIR=arch/x86
+
+        # Enable arch-specific optimizations
+        if test $without_optimizations -eq 0; then
+            CFLAGS="${CFLAGS} -DX86_FEATURES"
+            SFLAGS="${SFLAGS} -DX86_FEATURES"
+
+            ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} x86_features.o"
+            ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} x86_features.lo"
+
+            check_avx2_intrinsics
+
+            if test ${HAVE_AVX2_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_AVX2"
+                SFLAGS="${SFLAGS} -DX86_AVX2"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} slide_hash_avx2.o chunkset_avx2.o compare256_avx2.o adler32_avx2.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} slide_hash_avx2.lo chunkset_avx2.lo compare256_avx2.lo adler32_avx2.lo"
+            fi
+
+            check_avx512_intrinsics
+
+            if test ${HAVE_AVX512_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_AVX512"
+                SFLAGS="${SFLAGS} -DX86_AVX512"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512.lo"
+
+                check_mask_intrinsics
+
+                if test ${HAVE_MASK_INTRIN} -eq 1; then
+                    CFLAGS="${CFLAGS} -DX86_MASK_INTRIN"
+                    SFLAGS="${SFLAGS} -DX86_MASK_INTRIN"
+                fi
+            fi
+
+            check_mtune_cascadelake_compiler_flag
+
+            if test ${MTUNE_CASCADELAKE_AVAILABLE} -eq 1; then
+                avx512flag="${avx512flag} -mtune=cascadelake"
+                avx512vnniflag="${avx512vnniflag} -mtune=cascadelake"
+            else
+                if test ${MTUNE_SKYLAKE_AVX512_AVAILABLE} -eq 1; then
+                    avx512flag="${avx512flag} -mtune=skylake-avx512"
+                    avx512vnniflag="${avx512vnniflag} -mtune=skylake-avx512"
+                fi
+            fi
+
+            check_avx512vnni_intrinsics
+
+            if test ${HAVE_AVX512VNNI_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_AVX512VNNI"
+                SFLAGS="${SFLAGS} -DX86_AVX512VNNI"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_avx512_vnni.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_avx512_vnni.lo"
+            fi
+
+            check_sse42_intrinsics
+
+            if test ${HAVE_SSE42_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_SSE42"
+                SFLAGS="${SFLAGS} -DX86_SSE42"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_sse42.o insert_string_sse42.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_sse42.lo insert_string_sse42.lo"
+            fi
+
+            check_sse2_intrinsics
+
+            if test ${HAVE_SSE2_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_SSE2"
+                SFLAGS="${SFLAGS} -DX86_SSE2"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} chunkset_sse2.o compare256_sse2.o slide_hash_sse2.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} chunkset_sse2.lo compare256_sse2.lo slide_hash_sse2.lo"
+
+                if test $forcesse2 -eq 1; then
+                    CFLAGS="${CFLAGS} -DX86_NOCHECK_SSE2"
+                    SFLAGS="${SFLAGS} -DX86_NOCHECK_SSE2"
+                fi
+            fi
+
+            check_ssse3_intrinsics
+
+            if test ${HAVE_SSSE3_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_SSSE3"
+                SFLAGS="${SFLAGS} -DX86_SSSE3"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_ssse3.o chunkset_ssse3.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_ssse3.lo chunkset_ssse3.lo"
+            fi
+
+            check_pclmulqdq_intrinsics
+
+            if test ${HAVE_PCLMULQDQ_INTRIN} -eq 1; then
+                CFLAGS="${CFLAGS} -DX86_PCLMULQDQ_CRC"
+                SFLAGS="${SFLAGS} -DX86_PCLMULQDQ_CRC"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32_pclmulqdq.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_pclmulqdq.lo"
+
+                if test $buildvpclmulqdq -eq 1; then
+                    check_vpclmulqdq_intrinsics
+
+                    if test ${HAVE_VPCLMULQDQ_INTRIN} -eq 1 && test ${HAVE_AVX512_INTRIN} -eq 1; then
+                        CFLAGS="${CFLAGS} -DX86_VPCLMULQDQ_CRC"
+                        SFLAGS="${SFLAGS} -DX86_VPCLMULQDQ_CRC"
+                        ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32_vpclmulqdq.o"
+                        ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_vpclmulqdq.lo"
+                    fi
+                fi
+            fi
+
+            check_xsave_intrinsics
+
+            if test ${HAVE_XSAVE_INTRIN} -eq 0; then
+                xsaveflag=""
+            fi
+        fi
+    ;;
+
+    # ARM specific optimizations
+    arm* | aarch64)
+        case "${ARCH}" in
+            arm*)
+                [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=arm
+            ;;
+            aarch64)
+                [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=aarch64
+                buildarmv6=0
+            ;;
+        esac
+
+        ARCHDIR=arch/arm
+
+        cat > $test.c << EOF
+int main() { return 0; }
+EOF
+        if try $CC -w -c $SFLAGS $test.c -mfloat-abi=softfp &&
+           try $LDSHARED $LDSHAREDFLAGS $LDFLAGS -o $test$shared_ext $test.o $LDSHAREDLIBC; then
+            floatabi="-mfloat-abi=softfp"
+        else
+            if try $CC -w -c $SFLAGS $test.c -mfloat-abi=hard &&
+               try $LDSHARED $LDSHAREDFLAGS $LDFLAGS -o $test$shared_ext $test.o $LDSHAREDLIBC; then
+                floatabi="-mfloat-abi=hard"
+            fi
+        fi
+
+        if [ -z $floatabi ]; then
+            echo "ARM floating point arch not auto-detected" | tee -a configure.log
+        else
+            echo "ARM floating point arch: ${floatabi}" | tee -a configure.log
+
+            CFLAGS="${CFLAGS} ${floatabi}"
+            SFLAGS="${SFLAGS} ${floatabi}"
+        fi
+
+        if test $without_optimizations -eq 0; then
+            CFLAGS="${CFLAGS} -DARM_FEATURES"
+            SFLAGS="${SFLAGS} -DARM_FEATURES"
+            ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} arm_features.o"
+            ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} arm_features.lo"
+
+            cat > $test.c <<EOF
+#include <arm_acle.h>
+EOF
+            if try $CC -c $CFLAGS $test.c; then
+                echo "Checking for arm_acle.h... Yes." | tee -a configure.log
+                CFLAGS="${CFLAGS} -DHAVE_ARM_ACLE_H"
+                SFLAGS="${SFLAGS} -DHAVE_ARM_ACLE_H"
+            else
+                echo "Checking for arm_acle.h... No." | tee -a configure.log
+            fi
+
+
+            if test $LINUX -eq 1; then
+                if test "$ARCH" = "aarch64"; then
+                    cat > $test.c <<EOF
+#include <sys/auxv.h>
+int main() {
+    return (getauxval(AT_HWCAP) & HWCAP_CRC32);
+}
+EOF
+                    if try $CC -c $CFLAGS $test.c; then
+                        CFLAGS="${CFLAGS} -DARM_AUXV_HAS_CRC32"
+                        SFLAGS="${SFLAGS} -DARM_AUXV_HAS_CRC32"
+                    else
+                        echo "HWCAP_CRC32 not present in sys/auxv.h; cannot detect support at runtime." | tee -a configure.log
+                    fi
+                else
+                    cat > $test.c <<EOF
+#include <sys/auxv.h>
+int main() {
+    return (getauxval(AT_HWCAP2) & HWCAP2_CRC32);
+}
+EOF
+                    if try $CC -c $CFLAGS $test.c; then
+                        CFLAGS="${CFLAGS} -DARM_AUXV_HAS_CRC32"
+                        SFLAGS="${SFLAGS} -DARM_AUXV_HAS_CRC32"
+                    else
+                        cat > $test.c <<EOF
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+int main() {
+    return (getauxval(AT_HWCAP2) & HWCAP2_CRC32);
+}
+EOF
+                        if try $CC -c $CFLAGS $test.c; then
+                            CFLAGS="${CFLAGS} -DARM_AUXV_HAS_CRC32 -DARM_ASM_HWCAP"
+                            SFLAGS="${SFLAGS} -DARM_AUXV_HAS_CRC32 -DARM_ASM_HWCAP"
+                        else
+                            echo "HWCAP2_CRC32 not present in sys/auxv.h; cannot detect support at runtime." | tee -a configure.log
+                        fi
+                    fi
+
+                    cat > $test.c <<EOF
+#include <sys/auxv.h>
+int main() {
+    return (getauxval(AT_HWCAP) & HWCAP_ARM_NEON);
+}
+EOF
+                    if try $CC -c $CFLAGS $test.c; then
+                        CFLAGS="${CFLAGS} -DARM_AUXV_HAS_NEON"
+                        SFLAGS="${SFLAGS} -DARM_AUXV_HAS_NEON"
+                    else
+                        cat > $test.c <<EOF
+#include <sys/auxv.h>
+int main() {
+    return (getauxval(AT_HWCAP) & HWCAP_NEON);
+}
+EOF
+                        if try $CC -c $CFLAGS $test.c; then
+                            CFLAGS="${CFLAGS} -DARM_AUXV_HAS_NEON"
+                            SFLAGS="${SFLAGS} -DARM_AUXV_HAS_NEON"
+                        else
+                            echo "Neither HWCAP_ARM_NEON or HWCAP_NEON present in sys/auxv.h; cannot detect support at runtime." | tee -a configure.log
+                        fi
+                    fi
+                fi
+            fi
+
+            if test $buildacle -eq 1; then
+                check_acle_compiler_flag
+
+                if test $ACLE_AVAILABLE -eq 1; then
+                    CFLAGS="${CFLAGS} -DARM_ACLE"
+                    SFLAGS="${SFLAGS} -DARM_ACLE"
+
+                    ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32_acle.o insert_string_acle.o"
+                    ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_acle.lo insert_string_acle.lo"
+                fi
+            fi
+
+            if test $buildneon -eq 1; then
+                check_neon_compiler_flag
+
+                if test $NEON_AVAILABLE -eq 1; then
+                    CFLAGS="${CFLAGS} -DARM_NEON"
+                    SFLAGS="${SFLAGS} -DARM_NEON"
+
+                    check_neon_ld4_intrinsics
+
+                    if test $NEON_HAS_LD4 -eq 1; then
+                        CFLAGS="${CFLAGS} -DARM_NEON_HASLD4"
+                        SFLAGS="${SFLAGS} -DARM_NEON_HASLD4"
+                    fi
+
+                    ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_neon.o chunkset_neon.o compare256_neon.o slide_hash_neon.o"
+                    ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_neon.lo chunkset_neon.lo compare256_neon.lo slide_hash_neon.lo"
+                fi
+            fi
+
+            if test $buildarmv6 -eq 1; then
+                check_armv6_intrinsics
+
+                if test $HAVE_ARMV6_INTRIN -eq 1 || test $HAVE_ARMV6_INLINE_ASM -eq 1; then
+                    CFLAGS="${CFLAGS} -DARM_SIMD"
+                    SFLAGS="${SFLAGS} -DARM_SIMD"
+
+                    if test $HAVE_ARMV6_INTRIN -eq 1; then
+                        CFLAGS="${CFLAGS} -DARM_SIMD_INTRIN"
+                        SFLAGS="${SFLAGS} -DARM_SIMD_INTRIN"
+                    fi
+
+                    ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} slide_hash_armv6.o"
+                    ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} slide_hash_armv6.lo"
+                fi
+            fi
+
+        fi
+    ;;
+    powerpc*)
+        case "${ARCH}" in
+            powerpc)
+                [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=ppc
+            ;;
+            powerpc64)
+                [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=ppc64
+            ;;
+            powerpc64le)
+                [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=ppc64le
+            ;;
+        esac
+
+        ARCHDIR=arch/power
+
+        if test $without_optimizations -eq 0; then
+
+            check_ppc_intrinsics
+            check_power8_intrinsics
+            check_power9_intrinsics
+
+            if test $HAVE_VMX -eq 1; then
+                CFLAGS="${CFLAGS} -DPPC_FEATURES"
+                SFLAGS="${SFLAGS} -DPPC_FEATURES"
+            fi
+            if test $HAVE_VMX -eq 1 -o $HAVE_POWER8_INTRIN -eq 1; then
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} power_features.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} power_features.lo"
+            fi
+            if test $HAVE_VMX -eq 1 -a $HAVE_ALTIVEC_INTRIN -eq 1; then
+                CFLAGS="${CFLAGS} -DPPC_VMX"
+                SFLAGS="${SFLAGS} -DPPC_VMX"
+
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_vmx.o slide_hash_vmx.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_vmx.lo slide_hash_vmx.lo"
+            fi
+            if test $HAVE_POWER8_INTRIN -eq 1; then
+                CFLAGS="${CFLAGS} -DPOWER8_VSX -DPOWER_FEATURES"
+                SFLAGS="${SFLAGS} -DPOWER8_VSX -DPOWER_FEATURES"
+
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} adler32_power8.o chunkset_power8.o slide_hash_power8.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} adler32_power8.lo chunkset_power8.lo slide_hash_power8.lo"
+                case "${ARCH}" in
+                    powerpc64*)
+                        ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32_power8.o"
+                        ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32_power8.lo"
+                        CFLAGS="${CFLAGS} -DPOWER8_VSX_CRC32"
+                        SFLAGS="${SFLAGS} -DPOWER8_VSX_CRC32"
+                        ;;
+                esac
+            fi
+            if test $HAVE_POWER9_INTRIN -eq 1; then
+                CFLAGS="${CFLAGS} -DPOWER9 -DPOWER_FEATURES"
+                SFLAGS="${SFLAGS} -DPOWER9 -DPOWER_FEATURES"
+
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} compare256_power9.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} compare256_power9.lo"
+            fi
+        fi
+    ;;
+    s390x)
+        [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=s390x
+        ARCHDIR=arch/s390
+
+        if test $without_optimizations -eq 0; then
+            if test $buildcrc32vx -eq 1; then
+                CFLAGS="${CFLAGS} -DS390_FEATURES"
+                SFLAGS="${SFLAGS} -DS390_FEATURES"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} s390_features.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} s390_features.lo"
+            fi
+
+            if test $builddfltccdeflate -eq 1 -o $builddfltccinflate -eq 1; then
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} dfltcc_common.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} dfltcc_common.lo"
+            fi
+
+            if test $builddfltccdeflate -eq 1; then
+                CFLAGS="${CFLAGS} -DS390_DFLTCC_DEFLATE"
+                SFLAGS="${SFLAGS} -DS390_DFLTCC_DEFLATE"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} dfltcc_deflate.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} dfltcc_deflate.lo"
+                ARCH="${ARCH}+dfltcc-deflate"
+            fi
+
+            if test $builddfltccinflate -eq 1; then
+                CFLAGS="${CFLAGS} -DS390_DFLTCC_INFLATE"
+                SFLAGS="${SFLAGS} -DS390_DFLTCC_INFLATE"
+                ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} dfltcc_inflate.o"
+                ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} dfltcc_inflate.lo"
+                ARCH="${ARCH}+dfltcc-inflate"
+            fi
+
+            if test $buildcrc32vx -eq 1; then
+                check_vgfma_intrinsics
+                if test $HAVE_VGFMA_INTRIN -eq 1; then
+                    CFLAGS="${CFLAGS} -DS390_CRC32_VX"
+                    SFLAGS="${SFLAGS} -DS390_CRC32_VX"
+                    ARCH_STATIC_OBJS="${ARCH_STATIC_OBJS} crc32-vx.o"
+                    ARCH_SHARED_OBJS="${ARCH_SHARED_OBJS} crc32-vx.lo"
+                    ARCH="${ARCH}+crc32-vx"
+                fi
+            fi
+        fi
+    ;;
+    *)
+        [ ! -z $CROSS_PREFIX ] && QEMU_ARCH=$ARCH
+    ;;
+esac
+
+echo "Uname: $uname"
+echo "ARCH: ${ARCH}"
+echo "Using arch directory: ${ARCHDIR}"
+echo "Architecture-specific static object files:${ARCH_STATIC_OBJS}"
+echo "Architecture-specific shared object files:${ARCH_SHARED_OBJS}"
+
+# show the results in the log
+echo >> configure.log
+echo ALL = $ALL >> configure.log
+echo AR = $AR >> configure.log
+echo ARFLAGS = $ARFLAGS >> configure.log
+echo CC = $CC >> configure.log
+echo CFLAGS = $CFLAGS >> configure.log
+echo EXE = $EXE >> configure.log
+echo LDCONFIG = $LDCONFIG >> configure.log
+echo LDFLAGS = $LDFLAGS >> configure.log
+echo LDSHARED = $LDSHARED >> configure.log
+echo LDSHAREDFLAGS = $LDSHAREDFLAGS >> configure.log
+echo LDSHAREDLIBC = $LDSHAREDLIBC >> configure.log
+echo DEFFILE = $DEFFILE >> configure.log
+echo RC = $RC >> configure.log
+echo RCFLAGS = $RCFLAGS >> configure.log
+echo RCOBJS = $RCOBJS >> configure.log
+echo STRIP = $STRIP >> configure.log
+echo OBJC = $OBJC >> configure.log
+echo TESTOBJG = $TESTOBJG >> configure.log
+echo PIC_TESTOBJG = $PIC_TESTOBJG >> configure.log
+echo PIC_OBJC = $PIC_OBJC >> configure.log
+echo RANLIB = $RANLIB >> configure.log
+echo SFLAGS = $SFLAGS >> configure.log
+echo SHAREDLIB = $SHAREDLIB >> configure.log
+echo SHAREDLIBM = $SHAREDLIBM >> configure.log
+echo SHAREDLIBV = $SHAREDLIBV >> configure.log
+echo SHAREDTARGET = $SHAREDTARGET >> configure.log
+echo IMPORTLIB = $IMPORTLIB >> configure.log
+echo INSTALLTARGETS = $INSTALLTARGETS >> configure.log
+echo UNINSTALLTARGETS = $UNINSTALLTARGETS >> configure.log
+echo SRCDIR = $SRCDIR >> configure.log
+echo BUILDDIR = $BUILDDIR >> configure.log
+echo STATICLIB = $STATICLIB >> configure.log
+echo TEST = $TEST >> configure.log
+echo VER = $VER >> configure.log
+echo exec_prefix = $exec_prefix >> configure.log
+echo includedir = $includedir >> configure.log
+echo bindir = $bindir >> configure.log
+echo libdir = $libdir >> configure.log
+echo mandir = $mandir >> configure.log
+echo prefix = $prefix >> configure.log
+echo symbol_prefix = $symbol_prefix >> configure.log
+echo sharedlibdir = $sharedlibdir >> configure.log
+echo uname = $uname >> configure.log
+echo sse2flag = $sse2flag >> configure.log
+echo ssse3flag = $ssse3flag >> configure.log
+echo sse42flag = $sse42flag >> configure.log
+echo pclmulflag = $pclmulflag >> configure.log
+echo vpclmulflag = $vpclmulflag >> configure.log
+echo xsaveflag = $xsaveflag >> configure.log
+echo acleflag = $acleflag >> configure.log
+echo neonflag = $neonflag >> configure.log
+echo armv6flag = $armv6flag >> configure.log
+echo ARCHDIR = ${ARCHDIR} >> configure.log
+echo ARCH_STATIC_OBJS = ${ARCH_STATIC_OBJS} >> configure.log
+echo ARCH_SHARED_OBJS = ${ARCH_SHARED_OBJS} >> configure.log
+
+# Handle sed incompatibilities when using -i
+replace_in_file() {
+  if [ "$OS" = 'Darwin' ]; then
+    sed -i '.tmp' -e "$1" "$2"
+  else
+    sed -i'.tmp' -e "$1" "$2"
+  fi
+}
+
+# update Makefile with the configure results
+
+INCLUDES="-I$SRCDIR"
+if [ "$SRCDIR" != "$BUILDDIR" ]; then INCLUDES="-I$BUILDDIR ${INCLUDES}"; fi
+
+sed < $SRCDIR/Makefile.in "
+/^CC *=/s#=.*#=$CC#
+/^CFLAGS *=/s#=.*#=$CFLAGS#
+/^SFLAGS *=/s#=.*#=$SFLAGS#
+/^LDFLAGS *=/s#=.*#=$LDFLAGS#
+/^LDSHARED *=/s#=.*#=$LDSHARED#
+/^LDSHAREDFLAGS *=/s#=.*#=$LDSHAREDFLAGS#
+/^LIBNAME1 *=/s#=.*#=$LIBNAME#
+/^LIBNAME2 *=/s#=.*#=$LIBNAME2#
+/^SUFFIX *=/s#=.*#=$SUFFIX#
+/^STATICLIB *=/s#=.*#=$STATICLIB#
+/^SHAREDLIB *=/s#=.*#=$SHAREDLIB#
+/^SHAREDLIBV *=/s#=.*#=$SHAREDLIBV#
+/^SHAREDLIBM *=/s#=.*#=$SHAREDLIBM#
+/^SHAREDTARGET *=/s#=.*#=$SHAREDTARGET#
+/^IMPORTLIB *=/s#=.*#=$IMPORTLIB#
+/^VER *=/s#=.*#=$VER#
+/^VER1 *=/s#=.*#=$VER1#
+/^AR *=/s#=.*#=$AR#
+/^ARFLAGS *=/s#=.*#=$ARFLAGS#
+/^RANLIB *=/s#=.*#=$RANLIB#
+/^LDCONFIG *=/s#=.*#=$LDCONFIG#
+/^LDSHAREDLIBC *=/s#=.*#=$LDSHAREDLIBC#
+/^DEFFILE *=/s#=.*#=$DEFFILE#
+/^RC *=/s#=.*#=$RC#
+/^RCFLAGS *=/s#=.*#=$RCFLAGS#
+/^RCOBJS *=/s#=.*#=$RCOBJS#
+/^STRIP *=/s#=.*#=$STRIP#
+/^EXE *=/s#=.*#=$EXE#
+/^prefix *=/s#=.*#= $prefix#
+/^exec_prefix *=/s#=.*#= $exec_prefix#
+/^bindir *=/s#=.*#= $bindir#
+/^symbol_prefix *=/s#=.*#= $symbol_prefix#
+/^libdir *=/s#=.*#= $libdir#
+/^sharedlibdir *=/s#=.*#= $sharedlibdir#
+/^includedir *=/s#=.*#= $includedir#
+/^mandir *=/s#=.*#= $mandir#
+/^SRCDIR *=/s#=.*#=$SRCDIR#
+/^INCLUDES *=/s#=.*#=$INCLUDES#
+/^OBJC *=/s#=.*#= $OBJC#
+/^TESTOBJG *=/s#=.*#= $TESTOBJG#
+/^PIC_TESTOBJG *=/s#=.*#= $PIC_TESTOBJG#
+/^PIC_OBJC *=/s#=.*#= $PIC_OBJC#
+/^all: */s#:.*#: $ALL#
+/^install-libs: */s#:.*#: $INSTALLTARGETS#
+/^uninstall-libs: */s#:.*#: $UNINSTALLTARGETS#
+/^ARCHDIR *=/s#=.*#=$ARCHDIR#
+/^ARCH_STATIC_OBJS *=/s#=.*#=$ARCH_STATIC_OBJS#
+/^ARCH_SHARED_OBJS *=/s#=.*#=$ARCH_SHARED_OBJS#
+" > Makefile
+
+# Append header files dependencies.
+for file in $SRCDIR/*.c $SRCDIR/test/*.c $SRCDIR/test/fuzz/*.c $SRCDIR/$ARCHDIR/*.c $SRCDIR/tools/*.c; do
+    if test ! -f $file; then
+        continue
+    fi
+
+    short_name=$(echo $file | sed -e "s#$SRCDIR/##g")
+    incs=$(grep -h include $file | sed -n 's/# *\include *"\(.*\.h\)".*/\1/p' | sort | uniq)
+    includes=$(for i in $incs; do
+                   # Check that the include file exists in the current dir,
+                   # otherwise it may be one of the system include header.
+                   if test -e $SRCDIR/$i; then
+                       printf " \$(SRCDIR)/$i"
+                   fi
+                   # We also need to check whether the include file is in the ARCHDIR.
+                   if test -e $SRCDIR/$ARCHDIR/$i; then
+                       printf " \$(SRCDIR)/$ARCHDIR/$i"
+                   fi
+               done)
+    obj=$(basename $(echo $file | sed -e 's/\.c/\.o/g' -e 's#^\./##g'))
+    lobj=$(basename $(echo $file | sed -e 's/\.c/\.lo/g' -e 's#^\./##g'))
+
+    if grep -q "^$obj:" Makefile; then
+        # Replace the existing line with a line with all dependences.
+        $(replace_in_file "s#$obj:.*#$obj: \$(SRCDIR)/$short_name $includes#g" Makefile)
+    else
+        # Append at the end of Makefile a new line with the header dependences.
+        echo "$obj: \$(SRCDIR)/$short_name $includes" >> Makefile
+
+        # In case this is one of the ARCHDIR files, append a dependence line
+        # that will force the `$(MAKE) -C $(ARCHDIR)` generic rule. Without this
+        # we would only execute the copy rule from ARCHDIR to SRCDIR.
+        if test -e $SRCDIR/$ARCHDIR/$(basename $file); then
+            echo "$ARCHDIR/$obj: \$(SRCDIR)/$short_name $includes" >> Makefile
+        fi
+    fi
+
+    if grep -q "^$lobj:" Makefile; then
+        # Replace the existing line with a line with all dependences.
+        $(replace_in_file "s#$lobj:.*#$lobj: \$(SRCDIR)/$short_name $includes#g" Makefile)
+    else
+        # Append at the end of Makefile a new line with the header dependences.
+        echo "$lobj: \$(SRCDIR)/$short_name $includes" >> Makefile
+    fi
+done
+
+# Generate Makefile in arch dir
+mkdir -p $ARCHDIR
+
+ARCHINCLUDES="-I$SRCDIR/$ARCHDIR -I$SRCDIR"
+if [ "$SRCDIR" != "$BUILDDIR" ]; then ARCHINCLUDES="-I$BUILDDIR ${ARCHINCLUDES}"; fi
+
+sed < $SRCDIR/$ARCHDIR/Makefile.in "
+/^CC *=/s#=.*#=$CC#
+/^CFLAGS *=/s#=.*#=$CFLAGS#
+/^SFLAGS *=/s#=.*#=$SFLAGS#
+/^LDFLAGS *=/s#=.*#=$LDFLAGS#
+/^INCLUDES *=/s#=.*#=$ARCHINCLUDES#
+/^SUFFIX *=/s#=.*#=$SUFFIX#
+/^SRCDIR *=/s#=.*#=$SRCDIR/$ARCHDIR#
+/^SRCTOP *=/s#=.*#=$SRCDIR#
+/^BUILDDIR *=/s#=.*#=$BUILDDIR#
+/^AVX2FLAG *=/s#=.*#=$avx2flag#
+/^AVX512FLAG *=/s#=.*#=$avx512flag#
+/^AVX512VNNIFLAG *=/s#=.*#=$avx512vnniflag#
+/^SSE2FLAG *=/s#=.*#=$sse2flag#
+/^SSSE3FLAG *=/s#=.*#=$ssse3flag#
+/^SSE42FLAG *=/s#=.*#=$sse42flag#
+/^PCLMULFLAG *=/s#=.*#=$pclmulflag#
+/^VPCLMULFLAG *=/s#=.*#=$vpclmulflag#
+/^XSAVEFLAG *=/s#=.*#=$xsaveflag#
+/^ACLEFLAG *=/s#=.*#=$acleflag#
+/^NEONFLAG *=/s#=.*#=$neonflag#
+/^ARMV6FLAG *=/s#=.*#=$armv6flag#
+/^NOLTOFLAG *=/s#=.*#=$noltoflag#
+/^VGFMAFLAG *=/s#=.*#=$vgfmaflag#
+/^PPCFLAGS *=/s#=.*#=$vmxflag#
+" > $ARCHDIR/Makefile
+
+# Append header files dependencies.
+for file in $SRCDIR/$ARCHDIR/*.c; do
+    if test ! -f $file; then
+        continue
+    fi
+
+    incs=$(grep -h include $file | sed -n 's/# *\include *"\(.*\.h\)".*/\1/p' | sort | uniq)
+    includes=$(for i in $incs; do
+                   # Check that the include file exists in the current dir,
+                   # otherwise it may be one of the system include header.
+                   if test -e $SRCDIR/$i; then
+                       printf " \$(SRCTOP)/$i"
+                   fi
+                   # We also need to check whether the include file is in the ARCHDIR.
+                   if test -e $SRCDIR/$ARCHDIR/$i; then
+                       printf " \$(SRCDIR)/$i"
+                   fi
+               done)
+    obj=$(basename $(echo $file | sed -e 's/\.c/\.o/g' -e 's#^\./##g'))
+    lobj=$(basename $(echo $file | sed -e 's/\.c/\.lo/g' -e 's#^\./##g'))
+    short_name=$(basename $file)
+    if grep -q "^$obj:" $ARCHDIR/Makefile; then
+        # Replace the existing line with a line with all dependences.
+        $(replace_in_file "s#$obj:.*#$obj: \$(SRCDIR)/$short_name $includes#g" $ARCHDIR/Makefile)
+    else
+        # Append at the end of Makefile a new line with the header dependences.
+        echo "$obj: \$(SRCDIR)/$short_name $includes" >> $ARCHDIR/Makefile
+    fi
+
+    if grep -q "^$lobj:" $ARCHDIR/Makefile; then
+        # Replace the existing line with a line with all dependences.
+        $(replace_in_file "s#$lobj:.*#$lobj: \$(SRCDIR)/$short_name $includes#g" $ARCHDIR/Makefile)
+    else
+        # Append at the end of Makefile a new line with the header dependences.
+        echo "$lobj: \$(SRCDIR)/$short_name $includes" >> $ARCHDIR/Makefile
+    fi
+done
+
+# Emscripten does not support large amounts of data via stdin/out
+# https://github.com/emscripten-core/emscripten/issues/16755#issuecomment-1102732849
+if test "$CHOST" != "wasm32"; then
+    TEST="${TEST} ghtests"
+fi
+
+# Determine emulator to use when running tests
+if test -z "$EMU_RUN" && test $QEMU_ARCH; then
+    EMU_RUN="qemu-$QEMU_ARCH -L /usr/${CHOST}/"
+fi
+if test -n "$EMU_RUN"; then
+    echo "Using cross-compile emulator: $EMU_RUN"
+fi
+
+if test $gzfileops -eq 1; then
+    PC_CFLAGS="-DWITH_GZFILEOP"
+fi
+
+# Generate Makefile in test dir
+mkdir -p test
+sed < $SRCDIR/test/Makefile.in "
+/^CC *=/s#=.*#=$CC#
+/^CFLAGS *=/s#=.*#=$CFLAGS#
+/^LDFLAGS *=/s#=.*#=$LDFLAGS#
+/^EXE *=/s#=.*#=$EXE#
+/^alltests: */s#:.*#: $TEST#
+/^SRCDIR *=/s#=.*#=$SRCDIR/test#
+/^SRCTOP *=/s#=.*#=$SRCDIR#
+/^EMU_RUN *=/s#=.*#=$EMU_RUN#
+/^LIBNAME *=/s#=.*#=$LIBNAME#
+" > test/Makefile
+
+# create zlib.pc with the configure results
+sed < $SRCDIR/zlib.pc.in "
+/^CC *=/s#=.*#=$CC#
+/^CFLAGS *=/s#=.*#=$CFLAGS#
+/^LDFLAGS *=/s#=.*#=$LDFLAGS#
+/^LDSHARED *=/s#=.*#=$LDSHARED#
+/^LDSHAREDFLAGS *=/s#=.*#=$LDSHAREDFLAGS#
+/^STATICLIB *=/s#=.*#=$STATICLIB#
+/^SHAREDLIB *=/s#=.*#=$SHAREDLIB#
+/^SHAREDLIBV *=/s#=.*#=$SHAREDLIBV#
+/^SHAREDLIBM *=/s#=.*#=$SHAREDLIBM#
+/^IMPORTLIB *=/s#=.*#=$IMPORTLIB#
+/^AR *=/s#=.*#=$AR#
+/^ARFLAGS *=/s#=.*#=$ARFLAGS#
+/^RANLIB *=/s#=.*#=$RANLIB#
+/^EXE *=/s#=.*#=$EXE#
+/^prefix *=/s#=.*#=$prefix#
+/^exec_prefix *=/s#=.*#=$exec_prefix#
+/^bindir *=/s#=.*#=$bindir#
+/^symbol_prefix *=/s#=.*#=$symbol_prefix#
+/^libdir *=/s#=.*#=$libdir#
+/^sharedlibdir *=/s#=.*#=$sharedlibdir#
+/^includedir *=/s#=.*#=$includedir#
+/^mandir *=/s#=.*#=$mandir#
+/^LDFLAGS *=/s#=.*#=$LDFLAGS#
+" | sed -e "
+s/\@VERSION\@/$VER/g;
+s/\@SUFFIX\@/$SUFFIX/g;
+s/\@PKG_CONFIG_CFLAGS\@/$PC_CFLAGS/g;
+" > ${LIBNAME2}.pc
+
+# done
+leave 0

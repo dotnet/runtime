@@ -23,6 +23,8 @@ namespace System.Text.Json.Nodes
         private JsonElement? _jsonElement;
         private List<JsonNode?>? _list;
 
+        internal override JsonElement? UnderlyingElement => _jsonElement;
+
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonArray"/> class that is empty.
         /// </summary>
@@ -67,7 +69,7 @@ namespace System.Text.Json.Nodes
             InitializeFromSpan(items);
         }
 
-        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
+        private protected override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
 
         internal override JsonNode DeepCloneCore()
         {
@@ -93,11 +95,11 @@ namespace System.Text.Json.Nodes
             return jsonArray;
         }
 
-        internal override bool DeepEqualsCore(JsonNode? node)
+        internal override bool DeepEqualsCore(JsonNode node)
         {
             switch (node)
             {
-                case null or JsonObject:
+                case JsonObject:
                     return false;
                 case JsonValue value:
                     // JsonValue instances have special comparison semantics, dispatch to their implementation.
@@ -222,14 +224,14 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Gets or creates the underlying list containing the element nodes of the array.
         /// </summary>
-        internal List<JsonNode?> List => _list is { } list ? list : InitializeList();
+        private List<JsonNode?> List => _list ?? InitializeList();
 
-        internal JsonNode? GetItem(int index)
+        private protected override JsonNode? GetItem(int index)
         {
             return List[index];
         }
 
-        internal void SetItem(int index, JsonNode? value)
+        private protected override void SetItem(int index, JsonNode? value)
         {
             value?.AssignParent(this);
             DetachParent(List[index]);
@@ -246,7 +248,7 @@ namespace System.Text.Json.Nodes
                 Debug.Assert(index >= 0);
 
                 path.Append('[');
-#if NETCOREAPP
+#if NET
                 Span<char> chars = stackalloc char[JsonConstants.MaximumFormatUInt32Length];
                 bool formatted = ((uint)index).TryFormat(chars, out int charsWritten);
                 Debug.Assert(formatted);

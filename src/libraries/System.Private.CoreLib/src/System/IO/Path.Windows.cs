@@ -12,23 +12,23 @@ namespace System.IO
     {
         private static volatile delegate* unmanaged<int, char*, uint> s_GetTempPathWFunc;
 
-        public static char[] GetInvalidFileNameChars() => new char[]
-        {
+        public static char[] GetInvalidFileNameChars() =>
+        [
             '\"', '<', '>', '|', '\0',
             (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10,
             (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20,
             (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
             (char)31, ':', '*', '?', '\\', '/'
-        };
+        ];
 
-        public static char[] GetInvalidPathChars() => new char[]
-        {
+        public static char[] GetInvalidPathChars() =>
+        [
             '|', '\0',
             (char)1, (char)2, (char)3, (char)4, (char)5, (char)6, (char)7, (char)8, (char)9, (char)10,
             (char)11, (char)12, (char)13, (char)14, (char)15, (char)16, (char)17, (char)18, (char)19, (char)20,
             (char)21, (char)22, (char)23, (char)24, (char)25, (char)26, (char)27, (char)28, (char)29, (char)30,
             (char)31
-        };
+        ];
 
         private static bool ExistsCore(string fullPath, out bool isDirectory)
         {
@@ -49,7 +49,7 @@ namespace System.IO
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
-            // Embedded null characters are the only invalid character case we trully care about.
+            // Embedded null characters are the only invalid character case we truly care about.
             // This is because the nulls will signal the end of the string to Win32 and therefore have
             // unpredictable results.
             if (path.Contains('\0'))

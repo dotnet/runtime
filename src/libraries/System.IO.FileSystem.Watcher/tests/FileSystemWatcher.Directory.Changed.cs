@@ -78,6 +78,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_Changed_SynchronizingObject()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");

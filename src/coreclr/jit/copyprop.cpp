@@ -161,10 +161,24 @@ bool Compiler::optCopyProp(
     assert((tree->gtFlags & GTF_VAR_DEF) == 0);
     assert(tree->GetLclNum() == lclNum);
 
-    bool       madeChanges = false;
-    LclVarDsc* varDsc      = lvaGetDesc(lclNum);
-    ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
+    bool                madeChanges = false;
+    LclVarDsc* const    varDsc      = lvaGetDesc(lclNum);
+    LclSsaVarDsc* const varSsaDsc   = varDsc->GetPerSsaData(tree->GetSsaNum());
+    GenTree* const      varDefTree  = varSsaDsc->GetDefNode();
+    BasicBlock* const   varDefBlock = varSsaDsc->GetBlock();
+    ValueNum const      lclDefVN    = varSsaDsc->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
+
+    // See if this local is a candidate for phi dev equivalence checks
+    //
+    bool const varDefTreeIsPhiDef             = (varDefTree != nullptr) && varDefTree->IsPhiDefn();
+    bool       varDefTreeIsPhiDefAtCycleEntry = false;
+
+    if (varDefTreeIsPhiDef)
+    {
+        FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(varDefBlock);
+        varDefTreeIsPhiDefAtCycleEntry   = (loop != nullptr) && (loop->GetHeader() == varDefBlock);
+    }
 
     for (LclNumToLiveDefsMap::Node* const iter : LclNumToLiveDefsMap::KeyValueIteration(curSsaName))
     {
@@ -190,7 +204,15 @@ bool Compiler::optCopyProp(
 
         if (newLclDefVN != lclDefVN)
         {
-            continue;
+            bool arePhiDefsEquivalent =
+                varDefTreeIsPhiDefAtCycleEntry && vnStore->AreVNsEquivalent(lclDefVN, newLclDefVN);
+            if (!arePhiDefsEquivalent)
+            {
+                continue;
+            }
+
+            JITDUMP("orig [%06u] copy [%06u] VNs proved equivalent\n", dspTreeID(tree),
+                    dspTreeID(newLclDef.GetDefNode()));
         }
 
         // It may not be profitable to propagate a 'doNotEnregister' lclVar to an existing use of an
@@ -230,18 +252,16 @@ bool Compiler::optCopyProp(
             continue;
         }
 
-        if (tree->OperIs(GT_LCL_VAR))
+        var_types newLclType = newLclVarDsc->TypeGet();
+        if (!newLclVarDsc->lvNormalizeOnLoad())
         {
-            var_types newLclType = newLclVarDsc->TypeGet();
-            if (!newLclVarDsc->lvNormalizeOnLoad())
-            {
-                newLclType = genActualType(newLclType);
-            }
+            newLclType = genActualType(newLclType);
+        }
 
-            if (newLclType != tree->TypeGet())
-            {
-                continue;
-            }
+        var_types oldLclType = tree->OperIs(GT_LCL_VAR) ? tree->TypeGet() : varDsc->TypeGet();
+        if (newLclType != oldLclType)
+        {
+            continue;
         }
 
 #ifdef DEBUG
@@ -261,6 +281,24 @@ bool Compiler::optCopyProp(
 
         tree->AsLclVarCommon()->SetLclNum(newLclNum);
         tree->AsLclVarCommon()->SetSsaNum(newSsaNum);
+
+        // Update VN to match, and propagate up through any enclosing commas.
+        // (we could in principle try updating through other parents, but
+        // we lack VN's context for memory, so can't get them all).
+        //
+        if (newLclDefVN != lclDefVN)
+        {
+            tree->SetVNs(newLclSsaDef->m_vnPair);
+            GenTree* parent = tree->gtGetParent(nullptr);
+
+            while ((parent != nullptr) && parent->OperIs(GT_COMMA))
+            {
+                JITDUMP(" Updating COMMA parent VN [%06u]\n", dspTreeID(parent));
+                ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(parent->AsOp()->gtOp1->gtVNPair);
+                parent->SetVNs(vnStore->VNPWithExc(parent->AsOp()->gtOp2->gtVNPair, op1Xvnp));
+                parent = parent->gtGetParent(nullptr);
+            }
+        }
         gtUpdateSideEffects(stmt, tree);
         newLclSsaDef->AddUse(block);
 
@@ -336,12 +374,6 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
     else if (lclNode->HasSsaName())
     {
         unsigned ssaNum = lclNode->GetSsaNum();
-        if ((defNode != nullptr) && defNode->IsPhiDefn())
-        {
-            // TODO-CQ: design better heuristics for propagation and remove this.
-            ssaNum = SsaConfig::RESERVED_SSA_NUM;
-        }
-
         pushDef(lclNum, ssaNum);
     }
 }

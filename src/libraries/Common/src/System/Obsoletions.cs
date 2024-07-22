@@ -88,7 +88,7 @@ namespace System
         internal const string SuppressIldasmAttributeMessage = "SuppressIldasmAttribute has no effect in .NET 6.0+.";
         internal const string SuppressIldasmAttributeDiagId = "SYSLIB0025";
 
-        internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.";
+        internal const string X509CertificateImmutableMessage = "X509Certificate and X509Certificate2 are immutable. Use X509CertificateLoader to create a new certificate.";
         internal const string X509CertificateImmutableDiagId = "SYSLIB0026";
 
         internal const string PublicKeyPropertyMessage = "PublicKey.Key is obsolete. Use the appropriate method to get the public key, such as GetRSAPublicKey.";
@@ -174,5 +174,17 @@ namespace System
 
         internal const string ThreadVolatileReadWriteMessage = "Thread.VolatileRead and Thread.VolatileWrite are obsolete. Use Volatile.Read or Volatile.Write respectively instead.";
         internal const string ThreadVolatileReadWriteDiagId = "SYSLIB0054";
+
+        internal const string ArmIntrinsicPerformsUnsignedOperationMessage = "The underlying hardware instruction does not perform a signed saturate narrowing operation, and it always returns an unsigned result. Use the unsigned overload instead.";
+        internal const string ArmIntrinsicPerformsUnsignedOperationDiagId = "SYSLIB0055";
+
+        internal const string LoadFromHashAlgorithmMessage = "LoadFrom with a custom AssemblyHashAlgorithm is obsolete. Use overloads without an AssemblyHashAlgorithm.";
+        internal const string LoadFromHashAlgorithmDiagId = "SYSLIB0056";
+
+        internal const string X509CtorCertDataObsoleteMessage = "Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.";
+        internal const string X509CtorCertDataObsoleteDiagId = "SYSLIB0057";
+
+        // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
+        // Keep new const identifiers above this comment.
     }
 }

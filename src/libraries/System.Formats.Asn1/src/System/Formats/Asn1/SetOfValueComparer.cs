@@ -17,7 +17,7 @@ namespace System.Formats.Asn1
             int min = Math.Min(x.Length, y.Length);
             int diff;
 
-#if NET7_0_OR_GREATER
+#if NET
             int diffIndex = x.CommonPrefixLength(y);
 
             if (diffIndex != min)

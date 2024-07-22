@@ -20,6 +20,9 @@ namespace System.Formats.Tar
         // Used to access the data section of this entry in an unseekable file
         private TarReader? _readerOfOrigin;
 
+        // These formats have a limited numeric range due to the octal number representation.
+        protected bool FormatIsOctalOnly => _header._format is TarEntryFormat.V7 or TarEntryFormat.Ustar;
+
         // Constructor called when reading a TarEntry from a TarReader.
         internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
         {
@@ -92,13 +95,16 @@ namespace System.Formats.Tar
         /// A timestamps that represents the last time the contents of the file represented by this entry were modified.
         /// </summary>
         /// <remarks>In Unix platforms, this timestamp is commonly known as <c>mtime</c>.</remarks>
-        /// <exception cref="ArgumentOutOfRangeException">The specified value is larger than <see cref="DateTimeOffset.UnixEpoch"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The specified value is larger than <see cref="DateTimeOffset.UnixEpoch"/> when using <see cref="TarEntryFormat.V7"/> or <see cref="TarEntryFormat.Ustar"/>.</exception>
         public DateTimeOffset ModificationTime
         {
             get => _header._mTime;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
+                if (FormatIsOctalOnly)
+                {
+                    ArgumentOutOfRangeException.ThrowIfLessThan(value, DateTimeOffset.UnixEpoch);
+                }
                 _header._mTime = value;
             }
         }
@@ -472,7 +478,7 @@ namespace System.Formats.Tar
                 case TarEntryType.GlobalExtendedAttributes:
                 case TarEntryType.LongPath:
                 case TarEntryType.LongLink:
-                    Debug.Assert(false, $"Metadata entry type should not be visible: '{EntryType}'");
+                    Debug.Fail($"Metadata entry type should not be visible: '{EntryType}'");
                     break;
 
                 case TarEntryType.MultiVolume:

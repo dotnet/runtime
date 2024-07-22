@@ -176,9 +176,7 @@ namespace System.Runtime.InteropServices
 
             // Unsafe.AsPointer is safe since array must be pinned
             void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
-#pragma warning disable 8500 // sizeof of managed types
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)sizeof(T));
-#pragma warning restore 8500
         }
 
         public static IntPtr OffsetOf<T>(string fieldName) => OffsetOf(typeof(T), fieldName);
@@ -550,7 +548,7 @@ namespace System.Runtime.InteropServices
         }
 
         /// <summary>
-        /// Creates a new instance of "structuretype" and marshals data from a
+        /// Creates a new instance of <paramref name="structureType"/> and marshals data from a
         /// native memory block to it.
         /// </summary>
         [RequiresDynamicCode("Marshalling code for the object might not be available")]

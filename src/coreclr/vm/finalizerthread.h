@@ -48,6 +48,8 @@ public:
 
     static BOOL HaveExtraWorkForFinalizer();
 
+    static OBJECTREF GetNextFinalizableObject();
+
     static void RaiseShutdownEvents()
     {
         WRAPPER_NO_CONTRACT;
@@ -63,12 +65,9 @@ public:
         }
     }
 
-    static void FinalizerThreadWait(DWORD timeout = INFINITE);
+    static void FinalizerThreadWait();
 
-    // We wake up a wait for finaliation for two reasons:
-    // if fFinalizer=TRUE, we have finished finalization.
-    // if fFinalizer=FALSE, the timeout for finalization is changed, and AD unload helper thread is notified.
-    static void SignalFinalizationDone(BOOL fFinalizer);
+    static void SignalFinalizationDone();
 
     static VOID FinalizerThreadWorker(void *args);
     static DWORD WINAPI FinalizerThreadStart(void *args);

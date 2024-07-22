@@ -54,6 +54,7 @@ namespace SinCalc_sin_functional_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             object i;

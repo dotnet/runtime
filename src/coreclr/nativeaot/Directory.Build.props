@@ -13,7 +13,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
     <DebugType>Portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
 
     <OutputPath Condition="$(MSBuildProjectName.StartsWith('System.Private.'))">$(RuntimeBinDir)/aotsdk/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
@@ -89,6 +88,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm64'">
     <DefineConstants>TARGET_64BIT;TARGET_ARM64;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'loongarch64'">
+    <DefineConstants>TARGET_64BIT;TARGET_LOONGARCH64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>

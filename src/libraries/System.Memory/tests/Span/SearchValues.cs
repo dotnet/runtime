@@ -68,9 +68,32 @@ namespace System.SpanTests
                 "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFA",
                 "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFFB",
                 "\uFFFF\uFFFE\uFFFD\uFFFC\uFFFB\uFFF9",
+                new string('\u0080', 256) + '\u0082',
+                new string('\u0080', 100) + '\uF000',
+                new string('\u0080', 256) + '\uF000',
+                string.Concat(Enumerable.Range(128, 255).Select(i => (char)i)),
+                string.Concat(Enumerable.Range(128, 257).Select(i => (char)i)),
+                string.Concat(Enumerable.Range(128, 254).Select(i => (char)i)) + '\uF000',
+                string.Concat(Enumerable.Range(128, 256).Select(i => (char)i)) + '\uF000',
+                '\0' + string.Concat(Enumerable.Range(2, char.MaxValue - 1).Select(i => (char)i)),
             };
 
-            return values.Select(v => new object[] { v, Encoding.Latin1.GetBytes(v) });
+            foreach (string value in values)
+            {
+                yield return Pair(value);
+                yield return Pair('a' + value);
+                yield return Pair('\uFF00' + value);
+
+                // Test some more duplicates
+                if (value.Length > 0)
+                {
+                    yield return Pair(value + value[0]);
+                    yield return Pair(value[0] + value);
+                    yield return Pair(value + value);
+                }
+            }
+
+            static object[] Pair(string value) => new object[] { value, Encoding.Latin1.GetBytes(value) };
         }
 
         [Theory]
@@ -192,10 +215,12 @@ namespace System.SpanTests
 
             static void Test<T>(ReadOnlySpan<T> needle, SearchValues<T> values) where T : struct, INumber<T>, IMinMaxValue<T>
             {
+                HashSet<T> needleSet = needle.ToArray().ToHashSet();
+
                 for (int i = int.CreateChecked(T.MaxValue); i >= 0; i--)
                 {
                     T t = T.CreateChecked(i);
-                    Assert.Equal(needle.Contains(t), values.Contains(t));
+                    Assert.Equal(needleSet.Contains(t), values.Contains(t));
                 }
             }
         }
@@ -502,17 +527,17 @@ namespace System.SpanTests
 
                 if (expectedIndex != indexOfAnyIndex)
                 {
-                    AssertionFailed(haystack, needle, expectedIndex, indexOfAnyIndex, nameof(indexOfAny));
+                    AssertionFailed(haystack, needle, searchValuesInstance, expectedIndex, indexOfAnyIndex, nameof(indexOfAny));
                 }
 
                 if (expectedIndex != searchValuesIndex)
                 {
-                    AssertionFailed(haystack, needle, expectedIndex, searchValuesIndex, nameof(searchValues));
+                    AssertionFailed(haystack, needle, searchValuesInstance, expectedIndex, searchValuesIndex, nameof(searchValues));
                 }
 
                 if ((expectedIndex >= 0) != searchValuesContainsResult)
                 {
-                    AssertionFailed(haystack, needle, expectedIndex, searchValuesContainsResult ? 0 : -1, nameof(searchValuesContainsResult));
+                    AssertionFailed(haystack, needle, searchValuesInstance, expectedIndex, searchValuesContainsResult ? 0 : -1, nameof(searchValuesContainsResult));
                 }
             }
 
@@ -522,13 +547,16 @@ namespace System.SpanTests
                 return slice.Slice(0, Math.Min(slice.Length, rng.Next(maxLength + 1)));
             }
 
-            private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, int expected, int actual, string approach)
+            private static void AssertionFailed<T>(ReadOnlySpan<T> haystack, ReadOnlySpan<T> needle, SearchValues<T> searchValues, int expected, int actual, string approach)
                 where T : INumber<T>
             {
+                Type implType = searchValues.GetType();
+                string impl = $"{implType.Name} [{string.Join(", ", implType.GenericTypeArguments.Select(t => t.Name))}]";
+
                 string readableHaystack = string.Join(", ", haystack.ToArray().Select(c => int.CreateChecked(c)));
                 string readableNeedle = string.Join(", ", needle.ToArray().Select(c => int.CreateChecked(c)));
 
-                Assert.Fail($"Expected {expected}, got {approach}={actual} for needle='{readableNeedle}', haystack='{readableHaystack}'");
+                Assert.Fail($"Expected {expected}, got {approach}={actual} for impl='{impl}', needle='{readableNeedle}', haystack='{readableHaystack}'");
             }
         }
     }

@@ -148,7 +148,7 @@ namespace MonoTargetsTasks
                     MethodSignature<Compatibility> sgn = decoder.DecodeMethodSignature(ref sgnBlobReader);
                     if(sgn.ReturnType == Compatibility.Incompatible || sgn.ParameterTypes.Any(p => p == Compatibility.Incompatible))
                     {
-                        Log.LogMessage(MessageImportance.Low, string.Format("Assembly {0} requires marhsal-ilgen for method {1}.{2}:{3} (first pass).",
+                        Log.LogMessage(MessageImportance.Low, string.Format("Assembly {0} requires marshal-ilgen for method {1}.{2}:{3} (first pass).",
                             assyPath, ns, name, mdtReader.GetString(mthDef.Name)));
 
                         return true;

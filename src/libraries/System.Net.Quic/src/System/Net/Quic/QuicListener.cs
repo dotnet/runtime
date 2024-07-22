@@ -6,6 +6,7 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Channels;
@@ -36,6 +37,9 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// The current implementation depends on <see href="https://github.com/microsoft/msquic">MsQuic</see> native library, this property checks its presence (Linux machines).
     /// It also checks whether TLS 1.3, requirement for QUIC protocol, is available and enabled (Windows machines).
     /// </remarks>
+    [SupportedOSPlatformGuard("windows")]
+    [SupportedOSPlatformGuard("linux")]
+    [SupportedOSPlatformGuard("osx")]
     public static bool IsSupported => MsQuicApi.IsQuicSupported;
 
     /// <summary>
@@ -48,7 +52,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     {
         if (!IsSupported)
         {
-            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason));
+            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason ?? "General loading failure."));
         }
 
         // Validate and fill in defaults for the options.
@@ -70,9 +74,9 @@ public sealed partial class QuicListener : IAsyncDisposable
     private readonly MsQuicContextSafeHandle _handle;
 
     /// <summary>
-    /// Set to non-zero once disposed. Prevents double and/or concurrent disposal.
+    /// Set to true once disposed. Prevents double and/or concurrent disposal.
     /// </summary>
-    private int _disposed;
+    private bool _disposed;
 
     /// <summary>
     /// Completed when SHUTDOWN_COMPLETE arrives.
@@ -171,7 +175,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <returns>A task that will contain a fully connected <see cref="QuicConnection" /> which successfully finished the handshake and is ready to be used.</returns>
     public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed == 1, this);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         GCHandle keepObject = GCHandle.Alloc(this);
         try
@@ -245,28 +249,6 @@ public sealed partial class QuicListener : IAsyncDisposable
                 await connection.DisposeAsync().ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (connection.ConnectionShutdownToken.IsCancellationRequested)
-        {
-            // Connection closed by peer
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(connection, $"{connection} Connection closed by remote peer");
-            }
-
-            // Retrieve the exception which failed the handshake, the parameters are not going to be
-            // validated because the inner _connectedTcs is already transitioned to faulted state.
-            ValueTask task = connection.FinishHandshakeAsync(null!, null!, default);
-            Debug.Assert(task.IsFaulted);
-
-            // Unwrap AggregateException and propagate it to the accept queue.
-            Exception ex = task.AsTask().Exception!.InnerException!;
-
-            await connection.DisposeAsync().ConfigureAwait(false);
-            if (!_acceptQueue.Writer.TryWrite(ex))
-            {
-                // Channel has been closed, connection is already disposed, do nothing.
-            }
-        }
         catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
         {
             // Handshake stopped by QuicListener.DisposeAsync:
@@ -280,7 +262,7 @@ public sealed partial class QuicListener : IAsyncDisposable
 
             await connection.DisposeAsync().ConfigureAwait(false);
         }
-        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested && !connection.ConnectionShutdownToken.IsCancellationRequested)
         {
             // Handshake cancelled by options.HandshakeTimeout, probably stalled:
             // 1. Connection must be killed so dispose it and by that shut it down --> application error code doesn't matter here as this is a transport error.
@@ -303,6 +285,24 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Handshake failed:
             // 1. Dispose the connection and by that shut it down --> application error code doesn't matter here as this is a transport error.
             // 2. Connection cannot be handed out since it's useless --> propagate the exception as-is, listener will pass it to the caller.
+
+            if (wrapException && connection.ConnectionShutdownToken.IsCancellationRequested)
+            {
+                // The connection was closed while we were waiting for the connection options callback to complete
+                // ex is going to be an OperationCanceledException, but we want to propagate the original exception.
+                // Since the inner _connectedTcs is already transitioned to faulted state (because ConnectionShutdownToken
+                // fired), the parameters to FinishHandshakeAsync are not going to be validated and it will return the
+                // faulted task.
+                ValueTask task = connection.FinishHandshakeAsync(null!, null!, default);
+                Debug.Assert(task.IsCompleted);
+
+                // Unwrap AggregateException and propagate it to the accept queue.
+                if (task.AsTask().Exception?.InnerException is Exception handshakeException)
+                {
+                    ex = handshakeException;
+                    wrapException = false;
+                }
+            }
 
             if (NetEventSource.Log.IsEnabled())
             {
@@ -335,6 +335,12 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
 
         QuicConnection connection = new QuicConnection(data.Connection, data.Info);
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} New inbound connection {connection}.");
+        }
+
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
@@ -399,9 +405,14 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <returns>A task that represents the asynchronous dispose operation.</returns>
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+        if (Interlocked.Exchange(ref _disposed, true))
         {
             return;
+        }
+
+        if (NetEventSource.Log.IsEnabled())
+        {
+            NetEventSource.Info(this, $"{this} Disposing.");
         }
 
         // Check if the listener has been shut down and if not, shut it down.

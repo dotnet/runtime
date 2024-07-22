@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.Build.Traversal">
     <PropertyGroup>
-        <!-- We always want to use release for publishing using NativeAOT -->
-        <NativeLibsPublishConfiguration>Release</NativeLibsPublishConfiguration>
-	<!-- we always want to make shared libs -->
+    	<!-- we always want to make shared libs -->
         <NativeLibKind Condition="'$(NativeLibKind)' == ''">shared</NativeLibKind>
 
 	<!-- When we publish, we want to ensure the SDK does the same thing as though we ran 'dotnet publish' -->
@@ -37,24 +35,17 @@
         <CustomLinkerArgToolchainArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">--gcc-toolchain=$(ROOTFS_DIR)/usr</CustomLinkerArgToolchainArg>
     </PropertyGroup>
 
-    <!-- properties to pass down to the subproject builds -->
     <ItemGroup>
-        <SubprojectProps Include="Configuration" Value="$(NativeLibsPublishConfiguration)" />
-        <SubprojectProps Include="RuntimeConfiguration" Value="$(RuntimeConfiguration)" />
-        <SubprojectProps Include="LibrariesConfiguration" Value="$(LibrariesConfiguration)" />
-        <SubprojectProps Include="RuntimeIdentifier" Value="$(OutputRID)" />
-
-        <SubprojectProps Include="NativeLib" Value="$(NativeLibKind)" />
+        <!-- additional native compilation-specific properties to pass down to the ProjectReference -->
+        <SubprojectProps Include="NativeLib" Value="$(NativeLibKind)"/>
 
         <SubprojectProps Condition="'$(SysRoot)' != ''" Include="SysRoot" Value="$(SysRoot)" />
         <SubprojectProps Condition="'$(LinkerFlavor)' != ''" Include="LinkerFlavor" Value="$(LinkerFlavor)" />
         <SubprojectProps Condition="'$(CustomLinkerArgToolchainArg)' != ''" Include="CustomLinkerArgToolchainArg" Value="$(CustomLinkerArgToolchainArg)" />
     </ItemGroup>
 
-    <PropertyGroup>
-        <SplitSubprojectProps>@(SubprojectProps->'%(Identity)=%(Value)', ';')</SplitSubprojectProps>
-    </PropertyGroup>
-
+    <Import Project=".\subproject.props" />
+    
     <ItemGroup>
         <ProjectReference Include="@(NativeLibsProjectsToBuild)"
                           ReferenceOutputAssembly="false"

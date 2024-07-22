@@ -53,6 +53,7 @@ namespace Test_refarg_c_cs
         }
 
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             Test(ref s_aa.mm);

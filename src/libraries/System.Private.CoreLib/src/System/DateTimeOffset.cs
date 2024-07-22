@@ -250,7 +250,7 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, TimeSpan offset)
             : this(year, month, day, hour, minute, second, millisecond, offset)
         {
-            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
+            if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond)
             {
                 throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -327,7 +327,7 @@ namespace System
         public DateTimeOffset(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar, TimeSpan offset)
         : this(year, month, day, hour, minute, second, millisecond, calendar, offset)
         {
-            if ((uint)microsecond >= DateTime.MicrosecondsPerMillisecond)
+            if ((uint)microsecond >= TimeSpan.MicrosecondsPerMillisecond)
             {
                 throw new ArgumentOutOfRangeException(nameof(microsecond), SR.ArgumentOutOfRange_BadHourMinuteSecond);
             }
@@ -571,26 +571,16 @@ namespace System
         int IComparable.CompareTo(object? obj)
         {
             if (obj == null) return 1;
-            if (!(obj is DateTimeOffset))
+            if (obj is not DateTimeOffset other)
             {
                 throw new ArgumentException(SR.Arg_MustBeDateTimeOffset);
             }
 
-            DateTime objUtc = ((DateTimeOffset)obj).UtcDateTime;
-            DateTime utc = UtcDateTime;
-            if (utc > objUtc) return 1;
-            if (utc < objUtc) return -1;
-            return 0;
+            return DateTime.Compare(UtcDateTime, other.UtcDateTime);
         }
 
-        public int CompareTo(DateTimeOffset other)
-        {
-            DateTime otherUtc = other.UtcDateTime;
-            DateTime utc = UtcDateTime;
-            if (utc > otherUtc) return 1;
-            if (utc < otherUtc) return -1;
-            return 0;
-        }
+        public int CompareTo(DateTimeOffset other) =>
+            DateTime.Compare(UtcDateTime, other.UtcDateTime);
 
         // Checks if this DateTimeOffset is equal to a given object. Returns
         // true if the given object is a boxed DateTimeOffset and its value

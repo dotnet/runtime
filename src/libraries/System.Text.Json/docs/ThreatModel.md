@@ -10,17 +10,17 @@ The emphasis of this document is to describe security threats that were consider
 
 The notes in this section apply to the following serialization methods:
 
-- [`JsonSerializer.Serialize`](https://docs.microsoft.com/dotnet/api/system.text.json.jsonserializer.serialize?view=net-5.0)
-- [`JsonSerializer.SerializeAsync`](https://docs.microsoft.com/dotnet/api/system.text.json.jsonserializer.serializeasync?view=net-5.0)
-- [`JsonSerializer.SerializeToUtf8Bytes`](https://docs.microsoft.com/dotnet/api/system.text.json.jsonserializer.serializetoutf8bytes?view=net-5.0)
+- [`JsonSerializer.Serialize`](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializer.serialize?view=net-5.0)
+- [`JsonSerializer.SerializeAsync`](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializer.serializeasync?view=net-5.0)
+- [`JsonSerializer.SerializeToUtf8Bytes`](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializer.serializetoutf8bytes?view=net-5.0)
 
 ### Threat: Stack overflow due to circular references
 
-.NET object graphs existing at runtime are generally trusted as inputs to `Utf8JsonWriter` and `JsonSerializer.Serialize` when writing. However, circular references in the instantiated input object graphs may cause a [`StackOverflowException`](https://docs.microsoft.com/dotnet/api/system.stackoverflowexception?view=net-5.0) if not guarded against, and possibly cause the application process to crash.
+.NET object graphs existing at runtime are generally trusted as inputs to `Utf8JsonWriter` and `JsonSerializer.Serialize` when writing. However, circular references in the instantiated input object graphs may cause a [`StackOverflowException`](https://learn.microsoft.com/dotnet/api/system.stackoverflowexception?view=net-5.0) if not guarded against, and possibly cause the application process to crash.
 
 #### Mitigation
 
-Circular references are detected when writing due to a maximum depth setting (64 by default), and a clear [`JsonException`](https://docs.microsoft.com/dotnet/api/system.text.json.jsonexception?view=net-5.0) is thrown when this depth is exceeded. Note that the reference handling feature implemented by the serializer provides a way to preserve object references on serialization and deserialization.
+Circular references are detected when writing due to a maximum depth setting (64 by default), and a clear [`JsonException`](https://learn.microsoft.com/dotnet/api/system.text.json.jsonexception?view=net-5.0) is thrown when this depth is exceeded. Note that the reference handling feature implemented by the serializer provides a way to preserve object references on serialization and deserialization.
 
 ### Threat: Unintentional information disclosure
 
@@ -36,8 +36,8 @@ Circular references are detected when writing due to a maximum depth setting (64
 
 The notes in this section apply to the following deserialization methods:
 
-- [`JsonSerializer.Deserialize`](https://docs.microsoft.com/dotnet/api/system.text.json.jsonserializer.deserialize?view=net-5.0)
-- [`JsonSerializer.DeserializeAsync`](https://docs.microsoft.com/dotnet/api/system.text.json.jsonserializer.deserializeasync?view=net-5.0)
+- [`JsonSerializer.Deserialize`](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializer.deserialize?view=net-5.0)
+- [`JsonSerializer.DeserializeAsync`](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializer.deserializeasync?view=net-5.0)
 
 The `Utf8JsonReader` class, leveraged by `JsonSerializer` for deserialization, accepts arbitrary UTF-8 text or binary data as input, and is therefore expected to handle data from potentially untrusted sources.
 
@@ -79,7 +79,7 @@ This situation can be avoided by being aware of the following points:
 
 - Constructors run when `JsonSerializer.Deserialize` deserializes POCOs. Therefore, logic in constructors may participate in state management of the deserialized instance.
 
-- If necessitated by your deserialization scenario, use callbacks to ensure that the object is in a valid state. This is not yet a first-class feature in the serializer, but a workaround is described in the [How to migrate from Newtonsoft.Json to System.Text.Json document](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-migrate-from-newtonsoft-how-to#callbacks). Be aware that this workaround potentially degrades performance.
+- If necessitated by your deserialization scenario, use callbacks to ensure that the object is in a valid state. This is not yet a first-class feature in the serializer, but a workaround is described in the [How to migrate from Newtonsoft.Json to System.Text.Json document](https://learn.microsoft.com/dotnet/standard/serialization/system-text-json-migrate-from-newtonsoft-how-to#callbacks). Be aware that this workaround potentially degrades performance.
 
 - Where applicable, consider validating object graphs deserialized from untrusted data sources before processing them. Each individual object may be in a consistent state, but an object graph as a whole may not be.
 
@@ -139,11 +139,11 @@ By default, the `JsonSerializer` and `Utf8JsonReader` strictly honor the [RFC 82
 
 - When advancing through JSON payloads, the `Utf8JsonReader` validates that the next token does not violate RFC 8529. However, a deserialization converter may decide to validate that the next token is compatible with the target type they wish to obtain. For instance, if you are expecting a `JsonTokenType.Number` the reader will not validate that the next token is not a `JsonTokenType.StartObject`. For such cases, the converter could check the payload and throw a `JsonException` if it is invalid, similar to what the serializer would do. Otherwise, the reader will throw an `InvalidOperationException`.
 
-    If a `JsonException` or `NotSupportedException` is thrown from a custom converter without a message, the serializer will append a message that includes the path to the part of the JSON that caused the error. For more information on error handling in converters, see [How to write custom converters for JSON serialization (marshalling) in .NET](https://docs.microsoft.com/dotnet/standard/serialization/system-text-json-converters-how-to?pivots=dotnet-5-0#error-handling).
+    If a `JsonException` or `NotSupportedException` is thrown from a custom converter without a message, the serializer will append a message that includes the path to the part of the JSON that caused the error. For more information on error handling in converters, see [How to write custom converters for JSON serialization (marshalling) in .NET](https://learn.microsoft.com/dotnet/standard/serialization/system-text-json-converters-how-to?pivots=dotnet-5-0#error-handling).
 
 ## `JsonSerializerOptions`
 
-The notes in this section apply to usages of the [`JsonSerializerOptions`](https://docs.microsoft.com/dotnet/api/system.text.json.jsonserializeroptions?view=net-5.0) type.
+The notes in this section apply to usages of the [`JsonSerializerOptions`](https://learn.microsoft.com/dotnet/api/system.text.json.jsonserializeroptions?view=net-5.0) type.
 
 ### Threat: Poor CPU throughput due to not caching custom `JsonSerializerOptions` instances
 
@@ -193,7 +193,7 @@ Be sure to maintain an upper bound to the number of types being passed to `JsonS
 
 - The serializer, reader, and writer strictly honor the [RFC 8259 specification](https://tools.ietf.org/html/rfc8259) by default, but more permissive settings such as allowing trailing commas, allowing quoted numbers, and allowing, skipping, or disallowing both single-line and multi-line comments can be opted-into with `JsonSerializerOptions` and `JsonReaderOptions`.
 
-- The serializer has a built-in converter for `DateTime` and `DateTimeOffset` types which parses and formats according to the ISO 8601:1-2019 extended profile. The specification and information about workarounds using custom converters is documented in the docs website: https://docs.microsoft.com/en-us/dotnet/standard/datetime/system-text-json-support.
+- The serializer has a built-in converter for `DateTime` and `DateTimeOffset` types which parses and formats according to the ISO 8601:1-2019 extended profile. The specification and information about workarounds using custom converters is documented in the docs website: https://learn.microsoft.com/dotnet/standard/datetime/system-text-json-support.
 
 - The reference handling feature utilizes a non-standard JSON schema adopted from `Newtonsoft.Json` in which "$id", "$ref", and "$values" metadata properties are interspersed in JSON to allow keeping track of object references. When deserializing, this allows objects to point to each other in the resulting instance. When serializing, the resulting JSON is formatted using the previously mentioned representation. This feature is opt-in only (not enabled by default). When the feature is enabled, any deviation from the expected metadata in the input payloads when deserializing will cause a `JsonException` to be thrown.
 

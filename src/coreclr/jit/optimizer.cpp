@@ -234,7 +234,7 @@ void Compiler::optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk)
     for (BasicBlock* const curBlk : BasicBlockRangeList(begBlk, endBlk))
     {
         // Don't change the block weight if it came from profile data.
-        if (curBlk->hasProfileWeight() && fgHaveProfileData())
+        if (curBlk->hasProfileWeight() && fgHaveProfileWeights())
         {
             reportBlockWeight(curBlk, "; unchanged: has profile weight");
             continue;
@@ -872,8 +872,8 @@ bool Compiler::optComputeLoopRep(int        constInit,
 {
     noway_assert(genActualType(iterOperType) == TYP_INT);
 
-    __int64 constInitX;
-    __int64 constLimitX;
+    int64_t constInitX;
+    int64_t constLimitX;
 
     unsigned loopCount;
     int      iterSign;
@@ -953,7 +953,7 @@ bool Compiler::optComputeLoopRep(int        constInit,
 
     switch (testOper)
     {
-        __int64 iterAtExitX;
+        int64_t iterAtExitX;
 
         case GT_EQ:
             // Something like "for (i=init; i == lim; i++)" doesn't make any sense.
@@ -2479,8 +2479,24 @@ PhaseStatus Compiler::optOptimizePostLayout()
         {
             GenTree* const test = block->lastNode();
             assert(test->OperIsConditionalJump());
-            GenTree* const cond = gtReverseCond(test);
-            assert(cond == test); // Ensure `gtReverseCond` did not create a new node
+
+            if (test->OperIs(GT_JTRUE))
+            {
+                // Flip GT_JTRUE node's conditional operand, and handle any new nodes this may introduce
+                GenTree* const cond    = test->gtGetOp1();
+                GenTree* const newCond = gtReverseCond(cond);
+                if (cond != newCond)
+                {
+                    LIR::AsRange(block).InsertAfter(cond, newCond);
+                    test->AsUnOp()->gtOp1 = newCond;
+                }
+            }
+            else
+            {
+                // gtReverseCond can handle other conditional jumps without introducing a new node
+                GenTree* const cond = gtReverseCond(test);
+                assert(cond == test);
+            }
 
             FlowEdge* const oldTrueEdge  = block->GetTrueEdge();
             FlowEdge* const oldFalseEdge = block->GetFalseEdge();
@@ -3266,8 +3282,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
             /* Constants can usually be narrowed by changing their value */
 
 #ifndef TARGET_64BIT
-            __int64 lval;
-            __int64 lmask;
+            int64_t lval;
+            int64_t lmask;
 
             case GT_CNS_LNG:
                 lval  = tree->AsIntConCommon()->LngValue();
@@ -3304,10 +3320,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 if (doit)
                 {
                     tree->BashToConst(static_cast<int32_t>(lval));
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
+                    fgUpdateConstTreeValueNumber(tree);
                 }
 
                 return true;
@@ -3356,10 +3369,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 {
                     tree->gtType                = TYP_INT;
                     tree->AsIntCon()->gtIconVal = (int)ival;
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(tree);
-                    }
+
+                    fgUpdateConstTreeValueNumber(tree);
                 }
 #endif // TARGET_64BIT
 
@@ -4009,7 +4020,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_hoistedFPExprCount  = 0;
     }
 
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     if (!VarSetOps::IsEmpty(this, lvaMaskVars))
     {
         VARSET_TP loopMskVars(VarSetOps::Intersection(this, loopVars, lvaMaskVars));
@@ -4040,7 +4051,7 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
         hoistCtxt->m_loopVarInOutMskCount = 0;
         hoistCtxt->m_hoistedMskExprCount  = 0;
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Find the set of definitely-executed blocks.
     // Ideally, the definitely-executed blocks are the ones that post-dominate the entry block.
@@ -4162,9 +4173,9 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     optHoistLoopBlocks(loop, &defExec, hoistCtxt);
 
     unsigned numHoisted = hoistCtxt->m_hoistedFPExprCount + hoistCtxt->m_hoistedExprCount;
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     numHoisted += hoistCtxt->m_hoistedMskExprCount;
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     return numHoisted > 0;
 }
 
@@ -4196,7 +4207,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
         }
 #endif
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(tree))
     {
         hoistedExprCount = hoistCtxt->m_hoistedMskExprCount;
@@ -4209,7 +4220,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* l
             availRegCount += CNT_CALLEE_TRASH_MASK - 1;
         }
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     else
     {
         assert(varTypeUsesFloatReg(tree));
@@ -5052,7 +5063,7 @@ void Compiler::optHoistCandidate(GenTree*              tree,
                                  FlowGraphNaturalLoop* loop,
                                  LoopHoistContext*     hoistCtxt)
 {
-    // It must pass the hoistable profitablity tests for this loop level
+    // It must pass the hoistable profitability tests for this loop level
     if (!optIsProfitableToHoistTree(tree, loop, hoistCtxt))
     {
         JITDUMP("   ... not profitable to hoist\n");
@@ -5112,12 +5123,12 @@ void Compiler::optHoistCandidate(GenTree*              tree,
         }
 #endif
     }
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     else if (varTypeUsesMaskReg(tree))
     {
         hoistCtxt->m_hoistedMskExprCount++;
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
     else
     {
         assert(varTypeUsesFloatReg(tree));
@@ -5316,8 +5327,6 @@ PhaseStatus Compiler::fgCanonicalizeFirstBB()
 
     assert(!fgFirstBBisScratch());
     fgEnsureFirstBBisScratch();
-    // TODO-Quirk: Remove
-    fgCanonicalizedFirstBB = true;
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
@@ -5371,7 +5380,7 @@ void Compiler::optComputeInterestingVarSets()
 #ifndef TARGET_64BIT
     VarSetOps::AssignNoCopy(this, lvaLongVars, VarSetOps::MakeEmpty(this));
 #endif
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
     VarSetOps::AssignNoCopy(this, lvaMaskVars, VarSetOps::MakeEmpty(this));
 #endif
 
@@ -5390,12 +5399,12 @@ void Compiler::optComputeInterestingVarSets()
                 VarSetOps::AddElemD(this, lvaLongVars, varDsc->lvVarIndex);
             }
 #endif
-#ifdef TARGET_XARCH
+#ifdef FEATURE_MASKED_HW_INTRINSICS
             else if (varTypeUsesMaskReg(varDsc->lvType))
             {
                 VarSetOps::AddElemD(this, lvaMaskVars, varDsc->lvVarIndex);
             }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
         }
     }
 }
@@ -5904,10 +5913,35 @@ void Compiler::optRemoveRedundantZeroInits()
 
     assert(fgNodeThreading == NodeThreading::AllTrees);
 
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && !block->HasFlag(BBF_MARKED);
-         block             = block->GetUniqueSucc())
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->GetUniqueSucc())
     {
-        block->SetFlags(BBF_MARKED);
+        if (m_dfsTree->HasCycle())
+        {
+            // See if this block is a cycle entry
+            //
+            bool stop = false;
+            for (FlowEdge* predEdge = BlockPredsWithEH(block); predEdge != nullptr;
+                 predEdge           = predEdge->getNextPredEdge())
+            {
+                BasicBlock* const predBlock = predEdge->getSourceBlock();
+                if (m_dfsTree->IsAncestor(block, predBlock))
+                {
+                    JITDUMP(FMT_BB " is part of a cycle, stopping the block scan\n", block->bbNum);
+                    stop = true;
+                    break;
+                }
+            }
+
+            // If so, stop looking for redundant zero inits
+            //
+            if (stop)
+            {
+                break;
+            }
+        }
+
+        JITDUMP("Analyzing " FMT_BB "\n", block->bbNum);
+
         CompAllocator   allocator(getAllocator(CMK_ZeroInit));
         LclVarRefCounts defsInBlock(allocator);
         bool            removedTrackedDefs = false;
@@ -5918,12 +5952,8 @@ void Compiler::optRemoveRedundantZeroInits()
             Statement* next = stmt->GetNextStmt();
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (((tree->gtFlags & GTF_CALL) != 0))
-                {
-                    hasGCSafePoint = true;
-                }
-
                 hasImplicitControlFlow |= hasEHSuccs && ((tree->gtFlags & GTF_EXCEPT) != 0);
+                hasGCSafePoint |= IsPotentialGCSafePoint(tree);
 
                 switch (tree->gtOper)
                 {
@@ -6028,7 +6058,7 @@ void Compiler::optRemoveRedundantZeroInits()
 
                         if (tree->Data()->IsIntegralConst(0))
                         {
-                            bool bbInALoop  = block->HasFlag(BBF_BACKWARD_JUMP);
+                            bool bbInALoop  = false;
                             bool bbIsReturn = block->KindIs(BBJ_RETURN);
 
                             if (!bbInALoop || bbIsReturn)
@@ -6073,9 +6103,10 @@ void Compiler::optRemoveRedundantZeroInits()
                             (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->lvLiveInOutOfHndlr)))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
-                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME which is a gc-safe point.
-                            if (!lclDsc->HasGCPtr() ||
-                                (!GetInterruptible() && !hasGCSafePoint && !compMethodRequiresPInvokeFrame()))
+                            // insert a call to CORINFO_HELP_INIT_PINVOKE_FRAME but that is not a gc-safe point.
+                            assert(s_helperCallProperties.IsNoGC(CORINFO_HELP_INIT_PINVOKE_FRAME));
+
+                            if (!lclDsc->HasGCPtr() || (!GetInterruptible() && !hasGCSafePoint))
                             {
                                 // The local hasn't been used and won't be reported to the gc between
                                 // the prolog and this explicit initialization. Therefore, it doesn't
@@ -6104,12 +6135,6 @@ void Compiler::optRemoveRedundantZeroInits()
                 }
             }
         }
-    }
-
-    for (BasicBlock* block = fgFirstBB; (block != nullptr) && block->HasFlag(BBF_MARKED);
-         block             = block->GetUniqueSucc())
-    {
-        block->RemoveFlags(BBF_MARKED);
     }
 }
 

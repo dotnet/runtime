@@ -20,15 +20,12 @@
     <UseQuicTransportPackage  Condition="'$(UseQuicTransportPackage)' == ''">false</UseQuicTransportPackage>
   </PropertyGroup>
 
-  <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
-  </ItemGroup>
-
   <!-- Source files -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Quic\**\*.cs" Exclude="System\Net\Quic\*.Unsupported.cs"/>
     <!-- System.Net common -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
+    <Compile Include="$(CommonPath)System\Net\SafeHandleCache.cs" Link="Common\System\Net\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs" Link="Common\System\Net\ArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\MultiArrayBuffer.cs" Link="Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs" Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
@@ -47,10 +44,6 @@
   <!-- Unsupported platforms -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\Net\Quic\*.Unsupported.cs" />
-    <!-- [ActiveIssue("https://github.com/dotnet/runtime/issues/71559")]: PNSE generator cannot handle required keyword, so excluding affected classes in ExcludeApiList.PNSE.txt and including real code for now. -->
-    <Compile Include="System\Net\Quic\QuicListenerOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicConnectionOptions.cs" />
-    <Compile Include="System\Net\Quic\QuicDefaults.cs" />
   </ItemGroup>
 
   <!-- Windows specific files -->

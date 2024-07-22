@@ -9,6 +9,7 @@ namespace GCTest_selfref_cs
     public class Test
     {
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             object aref = null;

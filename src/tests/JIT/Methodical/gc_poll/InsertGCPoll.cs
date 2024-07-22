@@ -85,8 +85,17 @@ public class InsertGCPoll
             i += GCPollNative.NextUInt64(1);
         }
     }
+
+    public static readonly bool IsMonoJitArm64 = 
+        TestLibrary.PlatformDetection.IsArm64Process
+        && TestLibrary.PlatformDetection.IsMonoRuntime
+        && !TestLibrary.PlatformDetection.IsMonoInterpreter
+        && !TestLibrary.PlatformDetection.IsMonoFULLAOT
+        && !TestLibrary.PlatformDetection.IsMonoLLVMAOT;
     
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(InsertGCPoll), nameof(IsMonoJitArm64))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         try

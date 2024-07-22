@@ -18,8 +18,13 @@ namespace Microsoft.Interop
         public IEnumerable<ComMethodContext> DeclaredMethods => Methods.Where(m => !m.IsInheritedMethod);
 
         /// <summary>
+        /// COM methods that require shadowing declarations on the derived interface.
+        /// </summary>
+        public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.IsInheritedMethod && !m.IsHiddenOnDerivedInterface);
+
+        /// <summary>
         /// COM methods that are declared on an interface the interface inherits from.
         /// </summary>
-        public IEnumerable<ComMethodContext> ShadowingMethods => Methods.Where(m => m.IsInheritedMethod);
+        public IEnumerable<ComMethodContext> InheritedMethods => Methods.Where(m => m.IsInheritedMethod);
     }
 }

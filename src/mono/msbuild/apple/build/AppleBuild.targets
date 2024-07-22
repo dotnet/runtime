@@ -6,6 +6,7 @@
     <AppleGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">false</AppleGenerateAppBundle>
     <_ProcessRuntimeComponentsForLibraryMode Condition="'$(_IsLibraryMode)' == 'true' and '$(UseNativeAOTRuntime)' != 'true'">_ProcessRuntimeComponentsForLibraryMode</_ProcessRuntimeComponentsForLibraryMode>
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
+    <UseSystemZlib Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst' or '$(TargetOS)' == 'android' or '$(TargetArchitecture)' == 'armv6'">true</UseSystemZlib>
   </PropertyGroup>
 
   <UsingTask Condition="'$(AppleGenerateAppBundle)' == 'true'"
@@ -70,7 +71,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <_CommonLinkerArgs Include="-lz" />
+      <_CommonLinkerArgs Include="-lz" Condition="'$(UseSystemZlib)' == 'true'" />
       <_CommonLinkerArgs Include="-lc++" />
       <_CommonLinkerArgs Include="-liconv" />
       <_CommonLinkerArgs Include="-licucore" />
@@ -159,9 +160,9 @@
 
     <ItemGroup>
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=arm64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=arm64-apple-ios15.0-macabi" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'maccatalyst'" Include="mtriple=x86_64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
+      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'maccatalyst'" Include="mtriple=x86_64-apple-ios15.0-macabi" />
       <MonoAOTCompilerDefaultAotArguments Include="static" />
       <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
       <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->

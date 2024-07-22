@@ -3,7 +3,6 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <DefineConstants>$(DefineConstants);SIMPLE_HFA;FLOAT64</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

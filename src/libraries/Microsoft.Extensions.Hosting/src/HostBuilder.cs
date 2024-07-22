@@ -37,6 +37,7 @@ namespace Microsoft.Extensions.Hosting
         private HostingEnvironment? _hostingEnvironment;
         private IServiceProvider? _appServices;
         private PhysicalFileProvider? _defaultProvider;
+        private readonly bool _defaultProviderFactoryUsed;
 
         /// <summary>
         /// Initializes a new instance of <see cref="HostBuilder"/>.
@@ -44,6 +45,7 @@ namespace Microsoft.Extensions.Hosting
         public HostBuilder()
         {
             _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory());
+            _defaultProviderFactoryUsed = true;
         }
 
         /// <summary>
@@ -190,11 +192,6 @@ namespace Microsoft.Extensions.Hosting
             return diagnosticListener;
         }
 
-// Remove when https://github.com/dotnet/runtime/pull/78532 is merged and consumed by the used SDK.
-#if NET7_0
-        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
-            Justification = "DiagnosticSource is used here to pass objects in-memory to code using HostFactoryResolver. This won't require creating new generic types.")]
-#endif
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write are being consumed by the application already.")]
         private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
@@ -347,6 +344,11 @@ namespace Microsoft.Extensions.Hosting
             foreach (Action<HostBuilderContext, IServiceCollection> configureServicesAction in _configureServicesActions)
             {
                 configureServicesAction(_hostBuilderContext!, services);
+            }
+
+            if (_hostBuilderContext!.HostingEnvironment.IsDevelopment() && _defaultProviderFactoryUsed)
+            {
+                _serviceProviderFactory = new ServiceFactoryAdapter<IServiceCollection>(new DefaultServiceProviderFactory(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true }));
             }
 
             object containerBuilder = _serviceProviderFactory.CreateBuilder(services);

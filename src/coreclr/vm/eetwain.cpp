@@ -843,7 +843,22 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
             dwRelOffset
             );
 
-    return gcInfoDecoder.IsInterruptible();
+    if (gcInfoDecoder.IsInterruptible())
+        return true;
+
+    if (InterruptibleSafePointsEnabled() && gcInfoDecoder.IsInterruptibleSafePoint())
+        return true;
+
+    return false;
+}
+
+bool EECodeManager::InterruptibleSafePointsEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // zero initialized
+    static ConfigDWORD interruptibleCallSitesEnabled;
+    return interruptibleCallSitesEnabled.val(CLRConfig::INTERNAL_InterruptibleCallSites) != 0;
 }
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -939,7 +954,7 @@ unsigned EECodeManager::FindEndOfLastInterruptibleRegion(unsigned curOffset,
     return state.lastRangeOffset;
 #else
     DacNotImpl();
-    return NULL;
+    return 0;
 #endif // #ifndef DACCESS_COMPILE
 }
 
@@ -1408,31 +1423,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
 
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
 
-#if defined(STRESS_HEAP) && defined(PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED)
-    // When we simulate a hijack during gcstress
-    //  we start with ActiveStackFrame and the offset
-    //  after the call
-    // We need to make it look like a non-leaf frame
-    //  so that it's treated like a regular hijack
-    if (flags & ActiveStackFrame)
-    {
-        GcInfoDecoder _gcInfoDecoder(
-                            gcInfoToken,
-                            DECODE_INTERRUPTIBILITY,
-                            curOffs
-                            );
-        if(!_gcInfoDecoder.IsInterruptible())
-        {
-            // This must be the offset after a call
-#ifdef _DEBUG
-            GcInfoDecoder _safePointDecoder(gcInfoToken, (GcInfoDecoderFlags)0, 0);
-            _ASSERTE(_safePointDecoder.IsSafePoint(curOffs));
-#endif
-            flags &= ~((unsigned)ActiveStackFrame);
-        }
-    }
-#endif // STRESS_HEAP && PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
-
 #ifdef _DEBUG
     if (flags & ActiveStackFrame)
     {
@@ -1441,40 +1431,10 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
                             DECODE_INTERRUPTIBILITY,
                             curOffs
                             );
-        _ASSERTE(_gcInfoDecoder.IsInterruptible());
+        _ASSERTE(_gcInfoDecoder.IsInterruptible() ||
+            (InterruptibleSafePointsEnabled() && _gcInfoDecoder.CouldBeInterruptibleSafePoint()));
     }
 #endif
-
-    /* If we are not in the active method, we are currently pointing
-         * to the return address; at the return address stack variables
-         * can become dead if the call is the last instruction of a try block
-         * and the return address is the jump around the catch block. Therefore
-         * we simply assume an offset inside of call instruction.
-         * NOTE: The GcInfoDecoder depends on this; if you change it, you must
-         * revisit the GcInfoEncoder/Decoder
-         */
-
-    if (!(flags & ExecutionAborted))
-    {
-        if (!(flags & ActiveStackFrame))
-        {
-            curOffs--;
-            LOG((LF_GCINFO, LL_INFO1000, "Adjusted GC reporting offset due to flags !ExecutionAborted && !ActiveStackFrame. Now reporting GC refs for %s at offset %04x.\n",
-                methodName, curOffs));
-        }
-    }
-    else
-    {
-        // Since we are aborting execution, we are either in a frame that actually faulted or in a throwing call.
-        // * We do not need to adjust in a leaf
-        // * A throwing call will have unreachable <brk> after it, thus GC info is the same as before the call.
-        // 
-        // Either way we do not need to adjust.
-
-        // NOTE: only fully interruptible methods may need to report anything here as without
-        //       exception handling all current local variables are already unreachable.
-        //       EnumerateLiveSlots will shortcircuit the partially interruptible case just a bit later.
-    }
 
     // Check if we have been given an override value for relOffset
     if (relOffsetOverride != NO_OVERRIDE_OFFSET)
@@ -1519,7 +1479,6 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pRD,
     // A frame is non-leaf if we are executing a call, or a fault occurred in the function.
     // The only case in which we need to report scratch slots for a non-leaf frame
     //   is when execution has to be resumed at the point of interruption (via ResumableFrame)
-    //<TODO>Implement ResumableFrame</TODO>
     _ASSERTE( sizeof( BOOL ) >= sizeof( ActiveStackFrame ) );
     reportScratchSlots = (flags & ActiveStackFrame) != 0;
 

@@ -3,7 +3,6 @@
     <OutputType>Library</OutputType>
   </PropertyGroup>
   <PropertyGroup>
-    <DebugType />
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

@@ -731,7 +731,7 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
  *
  * Unlike \c mono_method_get_unmanaged_thunk, minimal marshaling is done to the method parameters in
  * the wrapper. See
- * https://docs.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.unmanagedcallersonlyattribute?view=net-6.0
+ * https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedcallersonlyattribute?view=net-6.0
  * The method must be static and only use blittable argument types.  There is no exception out-argument.
  *
  *

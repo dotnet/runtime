@@ -16,7 +16,7 @@ namespace System
     {
         public static int GetRandomizedOrdinalHashCode(this string value)
         {
-#if NETCOREAPP
+#if NET
             // In .NET Core, string hash codes are already randomized.
 
             return value.GetHashCode();

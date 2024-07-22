@@ -1062,9 +1062,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     m_b2->CopyFlags(m_b1, BBF_COPY_PROPAGATE);
 
     // Join the two blocks. This is done now to ensure that additional conditions can be chained.
-    if (m_b1->NextIs(m_b2) && m_comp->fgCanCompactBlocks(m_b1, m_b2))
+    if (m_comp->fgCanCompactBlock(m_b1))
     {
-        m_comp->fgCompactBlocks(m_b1, m_b2);
+        m_comp->fgCompactBlock(m_b1);
     }
 
 #ifdef DEBUG
@@ -1248,14 +1248,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         optReturnBlock = true;
     }
 
-    assert(m_cmpOp != NULL && m_c1 != nullptr && m_c2 != nullptr);
+    assert(m_cmpOp != GT_NONE && m_c1 != nullptr && m_c2 != nullptr);
 
     GenTree* cmpOp1 = m_foldOp == GT_NONE ? m_c1 : m_comp->gtNewOperNode(m_foldOp, m_foldType, m_c1, m_c2);
-    if (m_testInfo1.isBool && m_testInfo2.isBool)
-    {
-        // When we 'OR'/'AND' two booleans, the result is boolean as well
-        cmpOp1->gtFlags |= GTF_BOOLEAN;
-    }
 
     GenTree* t1Comp = m_testInfo1.compTree;
     t1Comp->SetOper(m_cmpOp);
@@ -1272,30 +1267,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
         assert(m_comp->fgReturnCount >= 2);
         --m_comp->fgReturnCount;
     }
-
-#if FEATURE_SET_FLAGS
-    // For comparisons against zero we will have the GTF_SET_FLAGS set
-    // and this can cause an assert to fire in fgMoveOpsLeft(GenTree* tree)
-    // during the CSE phase.
-    //
-    // So make sure to clear any GTF_SET_FLAGS bit on these operations
-    // as they are no longer feeding directly into a comparisons against zero
-
-    // Make sure that the GTF_SET_FLAGS bit is cleared.
-    // Fix 388436 ARM JitStress WP7
-    m_c1->gtFlags &= ~GTF_SET_FLAGS;
-    m_c2->gtFlags &= ~GTF_SET_FLAGS;
-
-    // The new top level node that we just created does feed directly into
-    // a comparison against zero, so set the GTF_SET_FLAGS bit so that
-    // we generate an instruction that sets the flags, which allows us
-    // to omit the cmp with zero instruction.
-
-    // Request that the codegen for cmpOp1 sets the condition flags
-    // when it generates the code for cmpOp1.
-    //
-    cmpOp1->gtRequestSetFlags();
-#endif
 
     // Recost/rethread the tree if necessary
     //
@@ -1743,11 +1714,7 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     // Is the value a boolean?
     // We can either have a boolean expression (marked GTF_BOOLEAN) or a constant 0/1.
 
-    if (opr1->gtFlags & GTF_BOOLEAN)
-    {
-        pOptTest->isBool = true;
-    }
-    else if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
+    if ((opr1->gtOper == GT_CNS_INT) && (opr1->IsIntegralConst(0) || opr1->IsIntegralConst(1)))
     {
         pOptTest->isBool = true;
     }

@@ -64,11 +64,11 @@ namespace Microsoft.Interop
                     return ResolvedGenerator.Resolved(s_blittable);
 
                 // Pointer with no marshalling info
-                case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: false), MarshallingAttributeInfo: NoMarshallingInfo }:
+                case { ManagedType: PointerTypeInfo{ IsFunctionPointer: false }, MarshallingAttributeInfo: NoMarshallingInfo }:
                     return ResolvedGenerator.Resolved(s_blittable);
 
                 // Function pointer with no marshalling info
-                case { ManagedType: PointerTypeInfo(_, _, IsFunctionPointer: true), MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
+                case { ManagedType: PointerTypeInfo { IsFunctionPointer: true }, MarshallingAttributeInfo: NoMarshallingInfo or MarshalAsInfo(UnmanagedType.FunctionPtr, _) }:
                     return ResolvedGenerator.Resolved(s_blittable);
 
                 // Bool with marshalling info

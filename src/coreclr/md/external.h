@@ -13,4 +13,6 @@
 
 #include <clrtypes.h>
 #include <safemath.h>
-#include <new.hpp>
+#include <new>
+
+using std::nothrow;

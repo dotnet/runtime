@@ -8,6 +8,10 @@
   <PropertyGroup>
     <ICULibDir Condition="'$(WasmEnableThreads)' != 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm', 'native', 'lib'))</ICULibDir>
     <ICULibDir Condition="'$(WasmEnableThreads)' == 'true'">$([MSBuild]::NormalizeDirectory('$(PkgMicrosoft_NETCore_Runtime_ICU_Transport)', 'runtimes', 'wasi-wasm-threads', 'native', 'lib'))</ICULibDir>
+    <InvariantTimezone Condition="'$(InvariantTimezone)' == ''">false</InvariantTimezone>
+    <InvariantGlobalization Condition="'$(InvariantGlobalization)' == ''">false</InvariantGlobalization>
+    <WasmNativeStrip Condition="'$(WasmNativeStrip)' == ''">true</WasmNativeStrip>
+    <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
     <FilterSystemTimeZones Condition="'$(FilterSystemTimeZones)' == ''">false</FilterSystemTimeZones>
     <WasiObjDir>$(ArtifactsObjDir)wasi</WasiObjDir>
@@ -15,17 +19,18 @@
     <_WasiCompileRspPath>$(NativeBinDir)src\wasi-compile.rsp</_WasiCompileRspPath>
     <_WasiLinkRspPath>$(NativeBinDir)src\wasi-link.rsp</_WasiLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
-    <WasiSdkRoot Condition="'$(WasiSdkRoot)' == ''">$(WASI_SDK_PATH)</WasiSdkRoot>
-    <WasiClang>$(WasiSdkRoot)\bin\clang</WasiClang>
+    <WASI_SDK_PATH Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')">$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), 'wasi-sdk'))</WASI_SDK_PATH>
+    <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
+    <WasiClang>$(WASI_SDK_PATH)bin/clang</WasiClang>
     <WasiClang Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiClang).exe</WasiClang>
-    <WasiLLVMAr>$(WasiSdkRoot)\bin\llvm-ar</WasiLLVMAr>
+    <WasiLLVMAr>$(WASI_SDK_PATH)bin/llvm-ar</WasiLLVMAr>
     <WasiLLVMAr Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(WasiLLVMAr).exe</WasiLLVMAr>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
     <Error Condition="'$(TargetArchitecture)' != 'wasm'" Text="Expected TargetArchitecture==wasm, got '$(TargetArchitecture)'"/>
     <Error Condition="'$(TargetOS)' != 'wasi'" Text="Expected TargetOS==wasi, got '$(TargetOS)'"/>
-    <Error Condition="'$(WASI_SDK_PATH)' == ''" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir."/>
+    <Error Condition="'$(WASI_SDK_PATH)' == '' or !Exists('$(WASI_SDK_PATH)/VERSION22PATCHED')" Text="The WASI_SDK_PATH environment variable should be set pointing to the WASI SDK root dir and match expected version."/>
   </Target>
 
   <ItemGroup>
@@ -45,6 +50,7 @@
       <WasmPInvokeModule Include="libSystem.Native" />
       <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
       <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+      <WasmPInvokeModule Include="libz" />
       <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
     </ItemGroup>
 
@@ -60,7 +66,8 @@
       Assemblies="@(WasmPInvokeAssembly)"
       PInvokeModules="@(WasmPInvokeModule)"
       PInvokeOutputPath="$(WasmPInvokeTablePath)"
-      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)"
+      IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
@@ -151,9 +158,17 @@
 {
   "items": {
     "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
+    "BoolPropertiesThatTriggerRelinking": [
+      { "identity": "InvariantTimezone",      "defaultValueInRuntimePack": "$(InvariantTimezone)" },
+      { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
+      { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },
+      { "identity": "WasmSingleFileBundle",   "defaultValueInRuntimePack": "$(WasmSingleFileBundle)" },
+      { "identity": "WasmEnableSIMD",         "defaultValueInRuntimePack": "$(WasmEnableSIMD)" }
+    ]
   }
 }
 ]]>
+<!-- { "identity": "WasmEnableExceptionHandling", "value": "$(WasmEnableExceptionHandling)", "defaultValueInRuntimePack": "true" }, -->
       </_WasiPropsJson>
     </PropertyGroup>
 
@@ -191,8 +206,6 @@
     <PropertyGroup>
       <PInvokeTableFile>$(WasiObjDir)\pinvoke-table.h</PInvokeTableFile>
       <InterpToNativeTableFile>$(WasiObjDir)\wasm_m2n_invoke.g.h</InterpToNativeTableFile>
-      <WASI_SDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(WASI_SDK_PATH)').Replace('\', '/'))</WASI_SDK_PATH>
-
       <CMakeConfigurationWasiFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationWasiFlags>
       <CMakeConfigurationWasiFlags Condition="'$(Configuration)' == 'Release'">-Oz </CMakeConfigurationWasiFlags>
 
@@ -202,10 +215,10 @@
       <CMakeBuildRuntimeConfigureCmd>cmake $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">cmake -G Ninja $(MSBuildThisFileDirectory)runtime</CMakeBuildRuntimeConfigureCmd>
 
+      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) --no-warn-unused-cli -DCMAKE_TOOLCHAIN_FILE=&quot;$([MSBuild]::NormalizePath('$(RepoRoot)', 'src/native/external/wasi-sdk-p2.cmake'))&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DWASI_SDK_PREFIX=$(WASI_SDK_PATH)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_SYSROOT=$(WASI_SDK_PATH)share/wasi-sysroot</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_CXX_FLAGS="--sysroot=$(WASI_SDK_PATH)share/wasi-sysroot"</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCMAKE_TOOLCHAIN_FILE=$(WASI_SDK_PATH)share/cmake/wasi-sdk.cmake</CMakeBuildRuntimeConfigureCmd>
 
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_WASICC_FLAGS=&quot;$(CMakeConfigurationWasiFlags)&quot;</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd>$(CMakeBuildRuntimeConfigureCmd) -DCONFIGURATION_LINK_FLAGS=&quot;$(CMakeConfigurationLinkFlags)&quot;</CMakeBuildRuntimeConfigureCmd>

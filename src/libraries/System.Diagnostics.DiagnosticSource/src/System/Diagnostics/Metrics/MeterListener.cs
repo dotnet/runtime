@@ -33,6 +33,14 @@ namespace System.Diagnostics.Metrics
         private MeasurementCallback<double>  _doubleMeasurementCallback  = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<decimal> _decimalMeasurementCallback = (instrument, measurement, tags, state) => { /* no-op */ };
 
+        static MeterListener()
+        {
+#if NET9_0_OR_GREATER
+            // This ensures that the static Meter gets created before any listeners exist.
+            _ = RuntimeMetrics.IsEnabled();
+#endif
+        }
+
         /// <summary>
         /// Creates a MeterListener object.
         /// </summary>
@@ -258,14 +266,17 @@ namespace System.Diagnostics.Metrics
                 s_allStartedListeners.Remove(this);
 
                 DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
-                if (current is not null && measurementsCompleted is not null)
+                if (current is not null)
                 {
-                    callbacksArguments = new Dictionary<Instrument, object?>();
+                    if (measurementsCompleted is not null)
+                    {
+                        callbacksArguments = new Dictionary<Instrument, object?>();
+                    }
 
                     do
                     {
                         object? state = current.Value.DisableMeasurements(this);
-                        callbacksArguments.Add(current.Value, state);
+                        callbacksArguments?.Add(current.Value, state);
                         current = current.Next;
                     } while (current is not null);
 

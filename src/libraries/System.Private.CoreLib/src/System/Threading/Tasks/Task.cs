@@ -1681,7 +1681,7 @@ namespace System.Threading.Tasks
             {
                 // For all other task than TaskContinuations we want to log. TaskContinuations log in their constructor
                 Debug.Assert(m_action != null, "Must have a delegate to be in ScheduleAndStart");
-                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.Method.Name, 0);
+                TplEventSource.Log.TraceOperationBegin(this.Id, "Task: " + m_action.GetMethodName(), 0);
             }
 
             try
@@ -4743,15 +4743,15 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
         public static bool WaitAll(Task[] tasks, TimeSpan timeout)
         {
-            if (tasks is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            }
-
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds is < -1 or > int.MaxValue)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.timeout);
+            }
+
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
             return WaitAllCore(tasks, (int)totalMilliseconds, default);
@@ -4873,6 +4873,33 @@ namespace System.Threading.Tasks
             }
 
             return WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+        }
+
+        /// <summary>Waits for all of the provided <see cref="Task"/> objects to complete execution unless the wait is cancelled.</summary>
+        /// <param name="tasks">An <see cref="IEnumerable{T}"/> of Task instances on which to wait.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe while waiting for the tasks to complete.</param>
+        /// <exception cref="ArgumentNullException">The <paramref name="tasks"/> argument is null.</exception>
+        /// <exception cref="ArgumentException">The <paramref name="tasks"/> argument contains a null element.</exception>
+        /// <exception cref="ObjectDisposedException">One or more of the <see cref="Task"/> objects in tasks has been disposed.</exception>
+        /// <exception cref="OperationCanceledException">The <paramref name="cancellationToken"/> was canceled.</exception>
+        /// <exception cref="AggregateException">
+        /// At least one of the <see cref="Task"/> instances was canceled. If a task was canceled, the <see cref="AggregateException"/>
+        /// contains an <see cref="OperationCanceledException"/> in its <see cref="AggregateException.InnerExceptions"/> collection.
+        /// </exception>
+        [UnsupportedOSPlatform("browser")]
+        public static void WaitAll(IEnumerable<Task> tasks, CancellationToken cancellationToken = default)
+        {
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
+            ReadOnlySpan<Task> span =
+                tasks is List<Task> list ? CollectionsMarshal.AsSpan(list) :
+                tasks is Task[] array ? array :
+                CollectionsMarshal.AsSpan(new List<Task>(tasks));
+
+            WaitAllCore(span, Timeout.Infinite, cancellationToken);
         }
 
         // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
@@ -5310,7 +5337,6 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // method looks long, but for a given TResult it results in a relatively small amount of asm
         public static unsafe Task<TResult> FromResult<TResult>(TResult result)
         {
-#pragma warning disable 8500 // address of / sizeof of managed types
             // The goal of this function is to be give back a cached task if possible, or to otherwise give back a new task.
             // To give back a cached task, we need to be able to evaluate the incoming result value, and we need to avoid as
             // much overhead as possible when doing so, as this function is invoked as part of the return path from every async
@@ -5359,7 +5385,6 @@ namespace System.Threading.Tasks
 
             // No cached task is available.  Manufacture a new one for this result.
             return new Task<TResult>(result);
-#pragma warning restore 8500
         }
 
         /// <summary>Creates a <see cref="Task{TResult}"/> that's completed exceptionally with the specified exception.</summary>
@@ -6971,7 +6996,7 @@ namespace System.Threading.Tasks
             {
                 if (continuationObject is Action singleAction)
                 {
-                    return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction) };
+                    return [AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction)];
                 }
 
                 if (continuationObject is TaskContinuation taskContinuation)
@@ -6990,7 +7015,7 @@ namespace System.Threading.Tasks
                 // the VS debugger is more interested in the continuation than the internal invoke()
                 if (continuationObject is ITaskCompletionAction singleCompletionAction)
                 {
-                    return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
+                    return [new Action<Task>(singleCompletionAction.Invoke)];
                 }
 
                 if (continuationObject is List<object?> continuationList)

@@ -20,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append("__GenericInstance");
+            sb.Append("__GenericInstance"u8);
 
             foreach (TypeDesc instArg in _details)
             {

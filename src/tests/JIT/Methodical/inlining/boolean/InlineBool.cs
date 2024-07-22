@@ -159,6 +159,7 @@ namespace InlineBool
 
         [MethodImpl(MethodImplOptions.NoOptimization)]
         [Fact]
+        [OuterLoop]
         public static int TestEntryPoint()
         {
             bool result = true;

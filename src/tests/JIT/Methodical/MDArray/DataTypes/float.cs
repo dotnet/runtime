@@ -5,6 +5,8 @@
 using System;
 using Xunit;
 
+namespace JIT.Methodical.MDArray.DataTypes.@float;
+
 public struct VT
 {
     public float[,] float2darr;
@@ -35,6 +37,7 @@ public class floatMDArrTest
     static float[][, ,] ja2_b = new float[2][, ,];
 
     [Fact]
+    [OuterLoop]
     public static int TestEntryPoint()
     {
 

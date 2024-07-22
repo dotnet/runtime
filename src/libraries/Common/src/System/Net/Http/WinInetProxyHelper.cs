@@ -104,7 +104,7 @@ namespace System.Net.Http
             autoProxyOptions.Reserved2 = 0;
 
             // AutoProxy Cache.
-            // https://docs.microsoft.com/en-us/windows/desktop/WinHttp/autoproxy-cache
+            // https://learn.microsoft.com/windows/desktop/WinHttp/autoproxy-cache
             // If the out-of-process service is active when WinHttpGetProxyForUrl is called, the cached autoproxy
             // URL and script are available to the whole computer. However, if the out-of-process service is used,
             // and the fAutoLogonIfChallenged flag in the pAutoProxyOptions structure is true, then the autoproxy

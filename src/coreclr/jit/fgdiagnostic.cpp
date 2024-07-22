@@ -56,7 +56,7 @@ void Compiler::fgPrintEdgeWeights()
 
 #ifdef DEBUG
 
-void Compiler::fgDebugCheckUpdate()
+void Compiler::fgDebugCheckUpdate(const bool doAggressiveCompaction)
 {
     if (!compStressCompile(STRESS_CHK_FLOW_UPDATE, 30))
     {
@@ -139,7 +139,7 @@ void Compiler::fgDebugCheckUpdate()
 
         /* no un-compacted blocks */
 
-        if (fgCanCompactBlocks(block, block->Next()))
+        if (fgCanCompactBlock(block) && (doAggressiveCompaction || block->JumpsToNext()))
         {
             noway_assert(!"Found un-compacted blocks!");
         }
@@ -370,12 +370,12 @@ namespace
 {
 const char* ConvertToUtf8(LPCWSTR wideString, CompAllocator& allocator)
 {
-    int utf8Len = WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
+    int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideString, -1, nullptr, 0, nullptr, nullptr);
     if (utf8Len == 0)
         return nullptr;
 
     char* alloc = (char*)allocator.allocate<char>(utf8Len);
-    if (0 == WszWideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
+    if (0 == WideCharToMultiByte(CP_UTF8, 0, wideString, -1, alloc, utf8Len, nullptr, nullptr))
         return nullptr;
 
     return alloc;
@@ -1782,13 +1782,13 @@ void Compiler::fgTableDispBasicBlock(const BasicBlock* block,
                                      int               blockTargetFieldWidth /* = 21 */,
                                      int               ibcColWidth /* = 0 */)
 {
-    const unsigned __int64 flags            = block->GetFlagsRaw();
-    unsigned               bbNumMax         = fgBBNumMax;
-    int                    maxBlockNumWidth = CountDigits(bbNumMax);
-    maxBlockNumWidth                        = max(maxBlockNumWidth, 2);
-    int blockNumWidth                       = CountDigits(block->bbNum);
-    blockNumWidth                           = max(blockNumWidth, 2);
-    int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
+    const uint64_t flags            = block->GetFlagsRaw();
+    unsigned       bbNumMax         = fgBBNumMax;
+    int            maxBlockNumWidth = CountDigits(bbNumMax);
+    maxBlockNumWidth                = max(maxBlockNumWidth, 2);
+    int blockNumWidth               = CountDigits(block->bbNum);
+    blockNumWidth                   = max(blockNumWidth, 2);
+    int blockNumPadding             = maxBlockNumWidth - blockNumWidth;
 
     // Instead of displaying a block number, should we instead display "*" when the specified block is
     // the next block?
@@ -3360,37 +3360,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
             break;
 
         case GT_IND:
-            // Do we have a constant integer address as op1 that is also a handle?
-            if (op1->IsIconHandle())
-            {
-                if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
-                {
-                    actualFlags |= GTF_IND_INVARIANT;
-                }
-                if ((tree->gtFlags & GTF_IND_NONFAULTING) != 0)
-                {
-                    actualFlags |= GTF_IND_NONFAULTING;
-                }
-
-                GenTreeFlags handleKind = op1->GetIconHandleFlag();
-
-                // Some of these aren't handles to invariant data...
-                if (GenTree::HandleKindDataIsInvariant(handleKind) && (handleKind != GTF_ICON_FTN_ADDR))
-                {
-                    expectedFlags |= GTF_IND_INVARIANT;
-                }
-                else
-                {
-                    // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
-                    // fail to set it in a number of situations, and so this check is disabled.
-                    // TODO: enable checking of GTF_GLOB_REF.
-                    // expectedFlags |= GTF_GLOB_REF;
-                }
-
-                // Currently we expect all indirections with constant addresses to be nonfaulting.
-                expectedFlags |= GTF_IND_NONFAULTING;
-            }
-
             assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
             break;
 
@@ -3459,6 +3428,14 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
 
 #if defined(TARGET_ARM64)
                     case NI_ArmBase_Yield:
+                    case NI_Sve_PrefetchBytes:
+                    case NI_Sve_PrefetchInt16:
+                    case NI_Sve_PrefetchInt32:
+                    case NI_Sve_PrefetchInt64:
+                    case NI_Sve_GatherPrefetch16Bit:
+                    case NI_Sve_GatherPrefetch32Bit:
+                    case NI_Sve_GatherPrefetch64Bit:
+                    case NI_Sve_GatherPrefetch8Bit:
                     {
                         assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;

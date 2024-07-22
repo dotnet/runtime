@@ -338,7 +338,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
+        /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
         /// This is the preferred way of generating a manifest to be embedded in the ETW stream as it is fast and
         /// the fact that it only includes localized entries for the current UI culture is an acceptable tradeoff.
         /// </summary>
@@ -359,7 +359,7 @@ namespace System.Diagnostics.Tracing
         }
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
-        /// documented at in EventManifest Schema https://docs.microsoft.com/en-us/windows/desktop/WES/eventmanifestschema-schema.
+        /// documented at in EventManifest Schema https://learn.microsoft.com/windows/desktop/WES/eventmanifestschema-schema.
         /// Pass EventManifestOptions.AllCultures when generating a manifest to be registered on the machine. This
         /// ensures that the entries in the event log will be "optimally" localized.
         /// </summary>
@@ -1121,12 +1121,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // Returns the object as a IntPtr - safe when only used for logging
-        internal static unsafe nint ObjectIDForEvents(object? o)
-        {
-#pragma warning disable CS8500 // takes address of managed type
-            return *(nint*)&o;
-#pragma warning restore CS8500
-        }
+        internal static unsafe nint ObjectIDForEvents(object? o) => *(nint*)&o;
 
 #pragma warning restore 1591
 
@@ -1461,6 +1456,8 @@ namespace System.Diagnostics.Tracing
         /// <param name="disposing">True if called from Dispose(), false if called from the finalizer.</param>
         protected virtual void Dispose(bool disposing)
         {
+            // NOTE: If !IsSupported, we use ILLink.Substitutions to nop out the finalizer.
+            //       Do not add any code before this line (or you'd need to delete the substitution).
             if (!IsSupported)
             {
                 return;
@@ -1504,6 +1501,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         ~EventSource()
         {
+            // NOTE: we nop out this method body if !IsSupported using ILLink.Substitutions.
             this.Dispose(false);
         }
 #endregion
@@ -2157,9 +2155,6 @@ namespace System.Diagnostics.Tracing
 
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                     Justification = "The call to TraceLoggingEventTypes with the below parameter values are trim safe")]
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
-                    Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
-                                    "constructor that requires unreferenced code. EventSource will not access this local function.")]
                 static TraceLoggingEventTypes GetTrimSafeTraceLoggingEventTypes() =>
                     new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { typeof(string) });
 
@@ -2205,7 +2200,7 @@ namespace System.Diagnostics.Tracing
                                     string eventName = "EventSourceMessage";
                                     EventParameterInfo paramInfo = default(EventParameterInfo);
                                     paramInfo.SetInfo("message", typeof(string));
-                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, EventOpcode.Info, new EventParameterInfo[] { paramInfo });
+                                    byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateMetadata(0, eventName, keywords, (uint)level, 0, EventOpcode.Info, [paramInfo]);
                                     uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
                                     fixed (byte* pMetadata = metadata)
@@ -2963,7 +2958,7 @@ namespace System.Diagnostics.Tracing
 
                     if (data.ConstructorArguments.Count == 1)
                     {
-                        attr = (Attribute?)Activator.CreateInstance(attributeType, new object?[] { data.ConstructorArguments[0].Value });
+                        attr = (Attribute?)Activator.CreateInstance(attributeType, [data.ConstructorArguments[0].Value]);
                     }
                     else if (data.ConstructorArguments.Count == 0)
                     {
@@ -5155,8 +5150,11 @@ namespace System.Diagnostics.Tracing
             if (dllName != null)
                 sb.Append($" resourceFileName=\"{dllName}\" messageFileName=\"{dllName}\"");
 
-            string symbolsName = providerName.Replace("-", "").Replace('.', '_');  // Period and - are illegal replace them.
-            sb.AppendLine($" symbol=\"{symbolsName}\">");
+            sb.Append(" symbol=\"");
+            int pos = sb.Length;
+            sb.Append(providerName); // Period and dash are illegal; replace them.
+            sb.Replace('.', '_', pos, sb.Length - pos).Replace("-", "", pos, sb.Length - pos);
+            sb.AppendLine("\">");
         }
 
         /// <summary>
@@ -5573,7 +5571,7 @@ namespace System.Diagnostics.Tracing
                                 continue;
 
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                            Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
+                            ReadOnlySpan<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
 
                             sb?.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
@@ -5620,7 +5618,7 @@ namespace System.Diagnostics.Tracing
                     sb?.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
                     keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
-                    Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
+                    ReadOnlySpan<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
                     sb?.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb?.AppendLine(" </keywords>");
@@ -5922,7 +5920,7 @@ namespace System.Diagnostics.Tracing
             stringBuilder.Append(eventMessage, startIndex, count);
         }
 
-        private static readonly string[] s_escapes = { "&amp;", "&lt;", "&gt;", "&apos;", "&quot;", "%r", "%n", "%t" };
+        private static readonly string[] s_escapes = ["&amp;", "&lt;", "&gt;", "&apos;", "&quot;", "%r", "%n", "%t"];
         // Manifest messages use %N conventions for their message substitutions.   Translate from
         // .NET conventions.   We can't use RegEx for this (we are in mscorlib), so we do it 'by hand'
         private string TranslateToManifestConvention(string eventMessage, string evtName)

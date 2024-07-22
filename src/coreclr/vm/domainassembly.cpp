@@ -23,10 +23,6 @@
 #include "dllimportcallback.h"
 #include "peimagelayout.inl"
 
-#ifdef FEATURE_PERFMAP
-#include "perfmap.h"
-#endif // FEATURE_PERFMAP
-
 #ifndef DACCESS_COMPILE
 DomainAssembly::DomainAssembly(PEAssembly* pPEAssembly, LoaderAllocator* pLoaderAllocator) :
     m_pAssembly(NULL),
@@ -344,14 +340,14 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
     {
         REFLECTMODULEBASEREF refClass = NULL;
 
-        // Will be TRUE only if LoaderAllocator managed object was already collected and therefore we should
+        // Will be true only if LoaderAllocator managed object was already collected and therefore we should
         // return NULL
-        BOOL fIsLoaderAllocatorCollected = FALSE;
+        bool fIsLoaderAllocatorCollected = false;
 
         GCPROTECT_BEGIN(refClass);
 
         refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE));
-        refClass->SetModule(m_pModule);
+        refClass->SetModule(GetModule());
 
         // Attach the reference to the assembly to keep the LoaderAllocator for this collectible type
         // alive as long as a reference to the module is kept alive.
@@ -360,7 +356,7 @@ OBJECTREF DomainAssembly::GetExposedModuleObject()
             OBJECTREF refAssembly = GetModule()->GetAssembly()->GetExposedObject();
             if ((refAssembly == NULL) && GetModule()->GetAssembly()->IsCollectible())
             {
-                fIsLoaderAllocatorCollected = TRUE;
+                fIsLoaderAllocatorCollected = true;
             }
             refClass->SetAssembly(refAssembly);
         }
@@ -554,15 +550,6 @@ void DomainAssembly::FinishLoad()
 
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
-
-    // Set a bit to indicate that the module has been loaded in some domain, and therefore
-    // typeloads can involve types from this module. (Used for candidate instantiations.)
-    GetModule()->SetIsReadyForTypeLoad();
-
-#ifdef FEATURE_PERFMAP
-    // Notify the perfmap of the IL image load.
-    PerfMap::LogImageLoad(m_pPEAssembly);
-#endif
 }
 
 void DomainAssembly::Activate()
@@ -827,42 +814,6 @@ void DomainAssembly::DeliverSyncEvents()
     }
 #endif // DEBUGGING_SUPPORTED
 }
-
-/*
-  // The enum for dwLocation from managed code:
-    public enum ResourceLocation
-    {
-        Embedded = 1,
-        ContainedInAnotherAssembly = 2,
-        ContainedInManifestFile = 4
-    }
-*/
-
-BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
-                                 PBYTE *pbInMemoryResource, DomainAssembly** pAssemblyRef,
-                                 LPCSTR *szFileName, DWORD *dwLocation,
-                                 BOOL fSkipRaiseResolveEvent)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    return GetPEAssembly()->GetResource( szName,
-                                   cbResource,
-                                   pbInMemoryResource,
-                                   pAssemblyRef,
-                                   szFileName,
-                                   dwLocation,
-                                   fSkipRaiseResolveEvent,
-                                   this,
-                                   AppDomain::GetCurrentDomain() );
-}
-
 
 DWORD DomainAssembly::ComputeDebuggingConfig()
 {

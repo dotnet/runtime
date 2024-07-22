@@ -144,7 +144,7 @@ namespace System
                 obj: null,
                 invokeAttr: BindingFlags.DoNotWrapExceptions,
                 binder: null,
-                parameters: entry.GetParametersAsSpan().Length > 0 ? new object?[] { args } : null,
+                parameters: entry.GetParametersAsSpan().Length > 0 ? [args] : null,
                 culture: null);
 
             return result != null ? (int)result : 0;
@@ -414,8 +414,7 @@ namespace System
                             Debug.Assert(mi != null);
                             // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
                             // be available on all platforms.
-                            Volatile.Write(ref s_getUnauthenticatedPrincipal,
-                                mi.CreateDelegate<Func<IPrincipal>>());
+                            s_getUnauthenticatedPrincipal = mi.CreateDelegate<Func<IPrincipal>>();
                         }
 
                         principal = s_getUnauthenticatedPrincipal();
@@ -430,8 +429,7 @@ namespace System
                             {
                                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
                             }
-                            Volatile.Write(ref s_getWindowsPrincipal,
-                                mi.CreateDelegate<Func<IPrincipal>>());
+                            s_getWindowsPrincipal = mi.CreateDelegate<Func<IPrincipal>>();
                         }
 
                         principal = s_getWindowsPrincipal();

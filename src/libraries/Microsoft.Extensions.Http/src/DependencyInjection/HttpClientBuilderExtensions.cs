@@ -265,7 +265,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-#if NET5_0_OR_GREATER
+#if NET
         /// <summary>
         /// Adds or updates <see cref="SocketsHttpHandler"/> as a primary handler for a named <see cref="HttpClient"/>. If provided,
         /// also adds a delegate that will be used to configure the primary <see cref="SocketsHttpHandler"/>.
@@ -307,7 +307,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// and configures it using <see cref="ISocketsHttpHandlerBuilder"/>.
         /// </summary>
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
-        /// <param name="configureBuilder">Delegate that is used to set up the configuration of the the primary <see cref="SocketsHttpHandler"/>
+        /// <param name="configureBuilder">Delegate that is used to set up the configuration of the primary <see cref="SocketsHttpHandler"/>
         /// on <see cref="ISocketsHttpHandlerBuilder"/> that will later be applied on the primary handler during its creation.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         /// <remarks>
@@ -369,11 +369,6 @@ namespace Microsoft.Extensions.DependencyInjection
             this IHttpClientBuilder builder, bool validateSingleType)
             where TClient : class
         {
-            if (builder.Name is null)
-            {
-                throw new InvalidOperationException($"{nameof(HttpClientBuilderExtensions.AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
-            }
-
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
 
             builder.Services.AddTransient(s => AddTransientHelper<TClient>(s, builder));
@@ -650,11 +645,99 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        public static IHttpClientBuilder AddAsKeyed(this IHttpClientBuilder builder, ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            string? name = builder.Name;
+            IServiceCollection services = builder.Services;
+            HttpClientMappingRegistry registry = GetMappingRegistry(services);
+
+            UpdateEmptyNameHttpClient(services, registry);
+
+            if (name == null)
+            {
+                registry.DefaultKeyedLifetime?.RemoveRegistration(services);
+
+                registry.DefaultKeyedLifetime = new HttpClientKeyedLifetime(lifetime);
+                registry.DefaultKeyedLifetime.AddRegistration(services);
+            }
+            else
+            {
+                if (registry.KeyedLifetimeMap.TryGetValue(name, out HttpClientKeyedLifetime? clientLifetime))
+                {
+                    clientLifetime.RemoveRegistration(services);
+                }
+
+                clientLifetime = new HttpClientKeyedLifetime(name, lifetime);
+                registry.KeyedLifetimeMap[name] = clientLifetime;
+                clientLifetime.AddRegistration(services);
+            }
+
+            return builder;
+        }
+
+        public static IHttpClientBuilder RemoveAsKeyed(this IHttpClientBuilder builder)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            string? name = builder.Name;
+            IServiceCollection services = builder.Services;
+            HttpClientMappingRegistry registry = GetMappingRegistry(services);
+
+            UpdateEmptyNameHttpClient(services, registry);
+
+            if (name == null)
+            {
+                registry.DefaultKeyedLifetime?.RemoveRegistration(services);
+                registry.DefaultKeyedLifetime = HttpClientKeyedLifetime.Disabled;
+            }
+            else
+            {
+                if (registry.KeyedLifetimeMap.TryGetValue(name, out HttpClientKeyedLifetime? clientLifetime))
+                {
+                    clientLifetime.RemoveRegistration(services);
+                }
+                registry.KeyedLifetimeMap[name] = HttpClientKeyedLifetime.Disabled;
+            }
+
+            return builder;
+        }
+
+        // workaround for https://github.com/dotnet/runtime/issues/102654
+        private static void UpdateEmptyNameHttpClient(IServiceCollection services, HttpClientMappingRegistry registry)
+        {
+            if (registry.EmptyNameHttpClientDescriptor is not null)
+            {
+                bool removed = services.Remove(registry.EmptyNameHttpClientDescriptor);
+
+                if (removed)
+                {
+                    // trying to add it as keyed instead
+                    if (!registry.KeyedLifetimeMap.ContainsKey(string.Empty))
+                    {
+                        var clientLifetime = new HttpClientKeyedLifetime(string.Empty, ServiceLifetime.Transient);
+                        registry.KeyedLifetimeMap[string.Empty] = clientLifetime;
+                        clientLifetime.AddRegistration(services);
+                    }
+                }
+            }
+
+            if (services.Any(sd => sd.ServiceType == typeof(HttpClient) && sd.ServiceKey is null))
+            {
+                throw new InvalidOperationException($"{nameof(AddAsKeyed)} isn't supported when {nameof(HttpClient)} is registered as a service.");
+            }
+        }
+
         // See comments on HttpClientMappingRegistry.
         private static void ReserveClient(IHttpClientBuilder builder, Type type, string name, bool validateSingleType)
         {
-            var registry = (HttpClientMappingRegistry?)builder.Services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
-            Debug.Assert(registry != null);
+            if (builder.Name is null)
+            {
+                throw new InvalidOperationException($"{nameof(AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
+            }
+
+            HttpClientMappingRegistry registry = GetMappingRegistry(builder.Services);
 
             // Check for same name registered to two types. This won't work because we rely on named options for the configuration.
             if (registry.NamedClientRegistrations.TryGetValue(name, out Type? otherType) &&
@@ -677,5 +760,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 registry.NamedClientRegistrations[name] = type;
             }
         }
+
+        private static HttpClientMappingRegistry GetMappingRegistry(IServiceCollection services)
+            => HttpClientFactoryServiceCollectionExtensions.GetMappingRegistry(services);
     }
 }

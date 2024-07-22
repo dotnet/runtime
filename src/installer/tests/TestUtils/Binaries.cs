@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build;
 
@@ -106,6 +108,74 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 {
                     return peReader.HasMetadata && peReader.GetMetadataReader().IsAssembly;
                 }
+            }
+        }
+
+        public static class CetCompat
+        {
+            // We only support CET shadow stack compatibility for Windows x64 currently
+            public static bool IsSupported => OperatingSystem.IsWindows() && TestContext.BuildArchitecture == "x64";
+
+            // https://learn.microsoft.com/windows/win32/debug/pe-format#debug-type
+            private const int IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS = 20;
+
+            // https://learn.microsoft.com/windows/win32/debug/pe-format#extended-dll-characteristics
+            private const ushort IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT = 0x1;
+
+            /// <summary>
+            /// Determine if a PE image is marked with CET shadow stack compatibility
+            /// </summary>
+            /// <param name="filePath">Path to the image</param>
+            /// <returns>True if image is marked compatible, false otherwise</returns>
+            public static bool IsMarkedCompatible(string filePath)
+            {
+                using (PEReader reader = new PEReader(new FileStream(filePath, FileMode.Open, FileAccess.Read)))
+                {
+                    foreach (DebugDirectoryEntry entry in reader.ReadDebugDirectory())
+                    {
+                        if ((int)entry.Type != IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS)
+                            continue;
+
+                        // Get the extended DLL characteristics debug directory entry
+                        PEMemoryBlock data = reader.GetSectionData(entry.DataRelativeVirtualAddress);
+                        ushort dllCharacteristics = data.GetReader().ReadUInt16();
+
+                        // Check for the CET compat bit
+                        return (dllCharacteristics & IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT) != 0;
+                    }
+
+                    // Not marked compatible - no debug directory entry for extended DLL characteristics
+                    return false;
+                }
+            }
+
+            /// <summary>
+            /// Create a PE image with with CET compatability enabled/disabled
+            /// </summary>
+            /// <param name="setCetCompatBit">True to set CET compat bit, false to not set, null to omit extended DLL characteristics</param>
+            /// <returns>PE image blob</returns>
+            public static BlobBuilder CreatePEImage(bool? setCetCompatBit)
+            {
+                // Create a PE image with with CET compatability enabled/disabled
+                DebugDirectoryBuilder debugDirectoryBuilder = new DebugDirectoryBuilder();
+                if (setCetCompatBit.HasValue)
+                {
+                    debugDirectoryBuilder.AddEntry<ushort>(
+                        (DebugDirectoryEntryType)IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS,
+                        version: 0,
+                        stamp: 0,
+                        setCetCompatBit.Value ? IMAGE_DLLCHARACTERISTICS_EX_CET_COMPAT : (ushort)0,
+                        (BlobBuilder b, ushort data) => b.WriteUInt16(data));
+                }
+                ManagedPEBuilder peBuilder = new ManagedPEBuilder(
+                    PEHeaderBuilder.CreateExecutableHeader(),
+                    new MetadataRootBuilder(new MetadataBuilder()),
+                    ilStream: new BlobBuilder(),
+                    debugDirectoryBuilder: debugDirectoryBuilder);
+
+                BlobBuilder peBlob = new BlobBuilder();
+                peBuilder.Serialize(peBlob);
+                return peBlob;
             }
         }
     }

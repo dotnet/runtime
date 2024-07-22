@@ -3,9 +3,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
@@ -25,7 +23,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="values">The set of values.</param>
         /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
-        public static SearchValues<byte> Create(ReadOnlySpan<byte> values)
+        public static SearchValues<byte> Create(params ReadOnlySpan<byte> values)
         {
             if (values.IsEmpty)
             {
@@ -68,7 +66,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="values">The set of values.</param>
         /// /// <returns>The optimized representation of <paramref name="values"/> used for efficient searching.</returns>
-        public static SearchValues<char> Create(ReadOnlySpan<char> values)
+        public static SearchValues<char> Create(params ReadOnlySpan<char> values)
         {
             if (values.IsEmpty)
             {
@@ -159,36 +157,61 @@ namespace System.Buffers
                 return new Any5SearchValues<char, short>(shortValues);
             }
 
-            scoped ReadOnlySpan<char> probabilisticValues = values;
-
-            if (Vector128.IsHardwareAccelerated && values.Length < 8)
-            {
-                // ProbabilisticMap does a Span.Contains check to confirm potential matches.
-                // If we have fewer than 8 values, pad them with existing ones to make the verification faster.
-                Span<char> newValues = stackalloc char[8];
-                newValues.Fill(values[0]);
-                values.CopyTo(newValues);
-                probabilisticValues = newValues;
-            }
-
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && minInclusive < 128)
             {
-                // If we have both ASCII and non-ASCII characters, use an implementation that
-                // does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
+                // We have a mix of ASCII and non-ASCII characters.
 
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && probabilisticValues.Contains('\0')
-                    ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(probabilisticValues)
-                    : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(probabilisticValues);
+                if (IndexOfAnyAsciiSearcher.TryComputeAsciiWithSecondSetState(values, maxInclusive, out IndexOfAnyAsciiSearcher.AsciiWithSecondSetState state))
+                {
+                    // All of the non-ASCII values fit within a range of 128 characters.
+                    // Use an implementation that checks against two 128-bit bitmaps, with the second one at a variable offset to the start of the non-ASCII set.
+                    return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                        ? new AsciiWithSecondSetCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(state)
+                        : new AsciiWithSecondSetCharSearchValues<IndexOfAnyAsciiSearcher.Default>(state);
+                }
+
+                // Use an implementation that does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                    ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values, maxInclusive)
+                    : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values, maxInclusive);
             }
 
-            // We prefer using the ProbabilisticMap over Latin1CharSearchValues if the former is vectorized.
-            if (!(Sse41.IsSupported || AdvSimd.Arm64.IsSupported) && maxInclusive < 256)
+            if (ShouldUseProbabilisticMap(values.Length, maxInclusive))
             {
-                // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
-                return new Latin1CharSearchValues(values);
+                return new ProbabilisticCharSearchValues(values, maxInclusive);
             }
 
-            return new ProbabilisticCharSearchValues(probabilisticValues);
+            // This will also match ASCII values when IndexOfAnyAsciiSearcher is not supported.
+            return new BitmapCharSearchValues(values, maxInclusive);
+
+            static bool ShouldUseProbabilisticMap(int valuesLength, int maxInclusive)
+            {
+                // *Rough estimates*. The current implementation uses 256 bits for the bloom filter.
+                // If the implementation is vectorized we can get away with a decent false positive rate.
+                const int MaxValuesForProbabilisticMap = 256;
+
+                if (valuesLength > MaxValuesForProbabilisticMap)
+                {
+                    // If the number of values is too high, we won't see any benefits from the 'probabilistic' part.
+                    return false;
+                }
+
+                if (Sse41.IsSupported || AdvSimd.Arm64.IsSupported)
+                {
+                    // If the probabilistic map is vectorized, we prefer it.
+                    return true;
+                }
+
+                // The probabilistic map is more memory efficient for spare sets, while the bitmap is more efficient for dense sets.
+                int bitmapFootprintBytesEstimate = 64 + (maxInclusive / 8);
+                int probabilisticFootprintBytesEstimate = 128 + (valuesLength * 4);
+
+                // The bitmap is a bit faster than the perfect hash checks employed by the probabilistic map.
+                // Sacrifice some memory usage for faster lookups.
+                const int AcceptableSizeMultiplier = 2;
+
+                return AcceptableSizeMultiplier * probabilisticFootprintBytesEstimate < bitmapFootprintBytesEstimate;
+            }
         }
 
         /// <summary>
