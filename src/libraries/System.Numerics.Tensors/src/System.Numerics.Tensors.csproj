@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <Compile Include="System\Numerics\Tensors\netcore\TensorShape.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Tensor.Factory.cs" />
@@ -23,7 +24,6 @@
     <Compile Include="System\Numerics\Tensors\netcore\ITensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\IReadOnlyTensor.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanDebugView.cs" />
-    <Compile Include="System\Numerics\Tensors\netcore\TensorSpanExtensions.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\ReadOnlyTensorSpan.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorSpanHelpers.T.cs" />
@@ -37,6 +37,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.ITernaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryInputBinaryOutput.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOneToTwoOperator.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOneToFourOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\Common\TensorPrimitives.IUnaryTwoToOneOperator.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Abs.cs" />
@@ -98,9 +99,11 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.LogP1.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Max.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.MaxMagnitude.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.MaxMagnitudeNumber.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.MaxNumber.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Min.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.MinMagnitude.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.MinMagnitudeNumber.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.MinNumber.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Multiply.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.MultiplyAdd.cs" />

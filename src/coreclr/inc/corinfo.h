@@ -145,22 +145,12 @@ The first 4 options are mutually exclusive
         also CORINFO_FLG_STATIC_IN_HEAP).
 
 
-This last field can modify any of the cases above except CORINFO_FLG_HELPER
+This last field can modify any of the cases above
 
 CORINFO_FLG_STATIC_IN_HEAP This is currently only used for static fields of value classes. If the field has
 this set then after computing what would normally be the field, what you actually get is a object pointer
 (that must be reported to the GC) to a boxed version of the value. Thus the actual field address is computed
 by addr = (*addr+sizeof(OBJECTREF))
-
-Instance fields
-
-    * CORINFO_FLG_HELPER This is used if the class is MarshalByRef, which means that the object might be a
-        proxy to the real object in some other appdomain or process. If the field has this set, then the JIT
-        must call getFieldHelper and call the returned helper with the object ref. If the helper returned is
-        helpers that are for structures the args are as follows
-
-    * CORINFO_HELP_GETFIELDSTRUCT - args are: retBuff, object, fieldDesc
-    * CORINFO_HELP_SETFIELDSTRUCT - args are object fieldDesc value
 
 The other GET helpers take an object fieldDesc and return the value The other SET helpers take an object
 fieldDesc and value
@@ -445,6 +435,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
     CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
     CORINFO_HELP_UNBOX,
+    CORINFO_HELP_UNBOX_TYPETEST,    // Verify unbox type, throws if incompatible
     CORINFO_HELP_UNBOX_NULLABLE,    // special form of unboxing for Nullable<T>
     CORINFO_HELP_GETREFANY,         // Extract the byref from a TypedReference, checking that it is the expected type
 
@@ -498,27 +489,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ASSIGN_BYREF,
     CORINFO_HELP_BULK_WRITEBARRIER,
 
-
     /* Accessing fields */
-
-    // For COM object support (using COM get/set routines to update object)
-    // and EnC and cross-context support
-    CORINFO_HELP_GETFIELD8,
-    CORINFO_HELP_SETFIELD8,
-    CORINFO_HELP_GETFIELD16,
-    CORINFO_HELP_SETFIELD16,
-    CORINFO_HELP_GETFIELD32,
-    CORINFO_HELP_SETFIELD32,
-    CORINFO_HELP_GETFIELD64,
-    CORINFO_HELP_SETFIELD64,
-    CORINFO_HELP_GETFIELDOBJ,
-    CORINFO_HELP_SETFIELDOBJ,
-    CORINFO_HELP_GETFIELDSTRUCT,
-    CORINFO_HELP_SETFIELDSTRUCT,
-    CORINFO_HELP_GETFIELDFLOAT,
-    CORINFO_HELP_SETFIELDFLOAT,
-    CORINFO_HELP_GETFIELDDOUBLE,
-    CORINFO_HELP_SETFIELDDOUBLE,
 
     CORINFO_HELP_GETFIELDADDR,
     CORINFO_HELP_GETSTATICFIELDADDR,
@@ -893,7 +864,7 @@ enum CORINFO_ACCESS_FLAGS
 {
     CORINFO_ACCESS_ANY        = 0x0000, // Normal access
     CORINFO_ACCESS_THIS       = 0x0001, // Accessed via the this reference
-    // UNUSED                 = 0x0002,
+    CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
 
     CORINFO_ACCESS_NONNULL    = 0x0004, // Instance is guaranteed non-null
 
@@ -2111,6 +2082,22 @@ public:
         CORINFO_METHOD_HANDLE meth1Hnd,
         CORINFO_METHOD_HANDLE meth2Hnd) = 0;
 
+    //------------------------------------------------------------------------------
+    // getTypeDefinition: Get the (unconstructed) type definition from a given type handle.
+    //
+    // Arguments:
+    //    type - The input type handle
+    //
+    // Return Value:
+    //   The type handle for the (unconstructed) type definition from type.
+    //
+    // Remarks:
+    //   This is equivalent of Type.GetGenericTypeDefinition(). Given a generic type handle, it will
+    //   return the original type definition (eg. for Foo<int> it will return Foo<>). If called with
+    //   an unconstructed generic type, the method returns the same type as the input. This method
+    //   should only be called when the input type is in fact a generic type.
+    virtual CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type) = 0;
+
     // Decides if you have any limitations for inlining. If everything's OK, it will return
     // INLINE_PASS.
     //
@@ -2242,10 +2229,6 @@ public:
 
     // load and restore the method
     virtual void methodMustBeLoadedBeforeCodeIsRun(
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
-
-    virtual CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(
             CORINFO_METHOD_HANDLE       method
             ) = 0;
 
@@ -2552,6 +2535,14 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    // Get a representation for a stack-allocated boxed value type.
+    //
+    // This differs from getTypeForBox in that it includes an explicit field
+    // for the method table pointer.
+    virtual CORINFO_CLASS_HANDLE getTypeForBoxOnStack(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
     // returns the correct box helper for a particular class.  Note
     // that if this returns CORINFO_HELP_BOX, the JIT can assume
     // 'standard' boxing (allocate object and copy), and optimize
@@ -2715,6 +2706,11 @@ public:
 
     // Returns true if a class handle can only describe values of exactly one type.
     virtual bool isExactType(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    // Returns whether a class handle represents a generic type, if that can be statically determined.
+    virtual TypeCompareState isGenericType(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 

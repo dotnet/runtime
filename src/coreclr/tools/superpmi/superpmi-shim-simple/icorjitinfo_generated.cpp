@@ -60,6 +60,12 @@ bool interceptor_ICJI::haveSameMethodDefinition(
     return original_ICorJitInfo->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    return original_ICorJitInfo->getTypeDefinition(type);
+}
+
 CorInfoInline interceptor_ICJI::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)
@@ -190,12 +196,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method)
 {
     original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
 }
 
 void interceptor_ICJI::getGSCookie(
@@ -458,6 +458,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
     return original_ICorJitInfo->getTypeForBox(cls);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
+}
+
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -580,6 +586,12 @@ bool interceptor_ICJI::isExactType(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->isExactType(cls);
+}
+
+TypeCompareState interceptor_ICJI::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->isGenericType(cls);
 }
 
 TypeCompareState interceptor_ICJI::isNullableType(

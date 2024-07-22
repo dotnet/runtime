@@ -533,462 +533,6 @@ HCIMPL1(void*, JIT_GetStaticFieldAddr, FieldDesc* pFD)
 HCIMPLEND
 #include <optdefault.h>
 
-/*********************************************************************/
-#define HCallAssert(cache, target) // suppressed to avoid ambiguous cast errors caused by use of template
-template <typename FIELDTYPE>
-NOINLINE HCIMPL2(FIELDTYPE, JIT_GetField_Framed, Object *obj, FieldDesc *pFD)
-#undef HCallAssert
-{
-    FCALL_CONTRACT;
-
-    FIELDTYPE value = 0;
-
-    // This is an instance field helper
-    _ASSERTE(!pFD->IsStatic());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(objRef);
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->GetInstanceField(objRef, &value);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-
-    return value;
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-
-HCIMPL2(INT8, JIT_GetField8, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT8>, obj, pFD);
-    }
-
-    INT8 val = VolatileLoad<INT8>((INT8*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(INT16, JIT_GetField16, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT16>, obj, pFD);
-    }
-
-    INT16 val = VolatileLoad<INT16>((INT16*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(INT32, JIT_GetField32, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT32>, obj, pFD);
-    }
-
-    INT32 val = VolatileLoad<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(INT64, JIT_GetField64, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<INT64>, obj, pFD);
-    }
-
-    INT64 val = VolatileLoad<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(FLOAT, JIT_GetFieldFloat, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<FLOAT>, obj, pFD);
-    }
-
-    FLOAT val;
-    (INT32&)val = VolatileLoad<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-HCIMPL2(DOUBLE, JIT_GetFieldDouble, Object *obj, FieldDesc *pFD)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetField_Framed<DOUBLE>, obj, pFD);
-    }
-
-    DOUBLE val;
-    (INT64&)val = VolatileLoad<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj));
-    FC_GC_POLL_RET();
-    return val;
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-/*********************************************************************/
-#define HCallAssert(cache, target) // suppressed to avoid ambiguous cast errors caused by use of template
-template <typename FIELDTYPE>
-NOINLINE HCIMPL3(VOID, JIT_SetField_Framed, Object *obj, FieldDesc* pFD, FIELDTYPE val)
-#undef HCallAssert
-{
-    FCALL_CONTRACT;
-
-    // This is an instance field helper
-    _ASSERTE(!pFD->IsStatic());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->SetInstanceField(objRef, &val);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-/*********************************************************************/
-#include <optsmallperfcritical.h>
-
-HCIMPL3(VOID, JIT_SetField8, Object *obj, FieldDesc *pFD, INT8 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT8>, obj, pFD, val);
-    }
-
-    VolatileStore<INT8>((INT8*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetField16, Object *obj, FieldDesc *pFD, INT16 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT16>, obj, pFD, val);
-    }
-
-    VolatileStore<INT16>((INT16*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetField32, Object *obj, FieldDesc *pFD, INT32 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT32>, obj, pFD, val);
-    }
-
-    VolatileStore<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetField64, Object *obj, FieldDesc *pFD, INT64 val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<INT64>, obj, pFD, val);
-    }
-
-    VolatileStore<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj), val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetFieldFloat, Object *obj, FieldDesc *pFD, FLOAT val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<FLOAT>, obj, pFD, val);
-    }
-
-    VolatileStore<INT32>((INT32*)pFD->GetAddressGuaranteedInHeap(obj), (INT32&)val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-HCIMPL3(VOID, JIT_SetFieldDouble, Object *obj, FieldDesc *pFD, DOUBLE val)
-{
-    FCALL_CONTRACT;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetField_Framed<DOUBLE>, obj, pFD, val);
-    }
-
-    VolatileStore<INT64>((INT64*)pFD->GetAddressGuaranteedInHeap(obj), (INT64&)val);
-    FC_GC_POLL();
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL2(Object*, JIT_GetFieldObj_Framed, Object *obj, FieldDesc *pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    OBJECTREF val = NULL;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_2(objRef, val);        // Set up a frame
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->GetInstanceField(objRef, &val);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-
-    return OBJECTREFToObject(val);
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL2(Object*, JIT_GetFieldObj, Object *obj, FieldDesc *pFD)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL2(JIT_GetFieldObj_Framed, obj, pFD);
-    }
-
-    void * address = pFD->GetAddressGuaranteedInHeap(obj);
-    OBJECTREF val = ObjectToOBJECTREF(VolatileLoad((Object **)address));
-
-    FC_GC_POLL_AND_RETURN_OBJREF(val);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL3(VOID, JIT_SetFieldObj_Framed, Object *obj, FieldDesc *pFD, Object *value)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-    OBJECTREF val = ObjectToOBJECTREF(value);
-
-    HELPER_METHOD_FRAME_BEGIN_2(objRef, val);
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-    pFD->SetInstanceField(objRef, &val);
-    HELPER_METHOD_POLL();
-    HELPER_METHOD_FRAME_END();
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL3(VOID, JIT_SetFieldObj, Object *obj, FieldDesc *pFD, Object *value)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(!pFD->IsStatic());
-        PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
-    } CONTRACTL_END;
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL3(JIT_SetFieldObj_Framed, obj, pFD, value);
-    }
-
-    void * address = pFD->GetAddressGuaranteedInHeap(obj);
-    SetObjectReference((OBJECTREF*)address, ObjectToOBJECTREF(value));
-    FC_GC_POLL();
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL4(VOID, JIT_GetFieldStruct_Framed, LPVOID retBuff, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT)
-{
-    FCALL_CONTRACT;
-
-    // This may be a  cross context field access. Setup a frame as we will
-    // transition to managed code later
-
-    // This is an instance field helper
-    _ASSERTE(!pFD->IsStatic());
-
-    // Assert that we are not called for objects or primitive types
-    _ASSERTE(!pFD->IsPrimitive());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);        // Set up a frame
-
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    // Try an unwrap operation in case that we are not being called
-    // in the same context as the server.
-    // If that is the case then GetObjectFromProxy will return
-    // the server object.
-    BOOL fRemoted = FALSE;
-
-
-    if (!fRemoted)
-    {
-        void * pAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
-        CopyValueClass(retBuff, pAddr, pFieldMT);
-    }
-
-    HELPER_METHOD_FRAME_END();          // Tear down the frame
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL4(VOID, JIT_GetFieldStruct, LPVOID retBuff, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pFieldMT->IsValueType());
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL4(JIT_GetFieldStruct_Framed, retBuff, obj, pFD, pFieldMT);
-    }
-
-    void * pAddr = pFD->GetAddressGuaranteedInHeap(obj);
-    CopyValueClass(retBuff, pAddr, pFieldMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-/*********************************************************************/
-HCIMPL4(VOID, JIT_SetFieldStruct_Framed, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT, LPVOID valuePtr)
-{
-    FCALL_CONTRACT;
-
-    // Assert that we are not called for objects or primitive types
-    _ASSERTE(!pFD->IsPrimitive());
-
-    OBJECTREF objRef = ObjectToOBJECTREF(obj);
-
-    // This may be a  cross context field access. Setup a frame as we will
-    // transition to managed code later
-
-    HELPER_METHOD_FRAME_BEGIN_1(objRef);        // Set up a frame
-
-    if (objRef == NULL)
-        COMPlusThrow(kNullReferenceException);
-
-    // Try an unwrap operation in case that we are not being called
-    // in the same context as the server.
-    // If that is the case then GetObjectFromProxy will return
-    // the server object.
-    BOOL fRemoted = FALSE;
-
-
-    if (!fRemoted)
-    {
-        void * pAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
-        CopyValueClass(pAddr, valuePtr, pFieldMT);
-    }
-
-    HELPER_METHOD_FRAME_END();          // Tear down the frame
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-HCIMPL4(VOID, JIT_SetFieldStruct, Object *obj, FieldDesc *pFD, MethodTable *pFieldMT, LPVOID valuePtr)
-{
-    FCALL_CONTRACT;
-
-    _ASSERTE(pFieldMT->IsValueType());
-
-    if (obj == NULL || pFD->IsEnCNew())
-    {
-        ENDFORBIDGC();
-        return HCCALL4(JIT_SetFieldStruct_Framed, obj, pFD, pFieldMT, valuePtr);
-    }
-
-    void * pAddr = pFD->GetAddressGuaranteedInHeap(obj);
-    CopyValueClass(pAddr, valuePtr, pFieldMT);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-
-
-//========================================================================
-//
-//      STATIC FIELD HELPERS
-//
-//========================================================================
-
-
-
 // Slow helper to tailcall from the fast one
 NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
 {
@@ -1659,48 +1203,42 @@ HCIMPLEND
 //*************************************************************
 // Allocation fast path for typical objects
 //
-HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
+HCIMPL1_RAW(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 {
-    FCALL_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
-    do
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+
+    TypeHandle typeHandle(typeHnd_);
+    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
+    MethodTable *methodTable = typeHandle.AsMethodTable();
+
+    SIZE_T size = methodTable->GetBaseSize();
+    _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
     {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+        // Tail call to the slow helper
+        return HCCALL1(JIT_New, typeHnd_);
+    }
 
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+    allocContext->alloc_ptr = allocPtr + size;
 
-        TypeHandle typeHandle(typeHnd_);
-        _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
-        MethodTable *methodTable = typeHandle.AsMethodTable();
+    _ASSERTE(allocPtr != nullptr);
+    Object *object = reinterpret_cast<Object *>(allocPtr);
+    _ASSERTE(object->HasEmptySyncBlockInfo());
+    object->SetMethodTable(methodTable);
 
-        SIZE_T size = methodTable->GetBaseSize();
-        _ASSERTE(size % DATA_ALIGNMENT == 0);
-
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + size;
-
-        _ASSERTE(allocPtr != nullptr);
-        Object *object = reinterpret_cast<Object *>(allocPtr);
-        _ASSERTE(object->HasEmptySyncBlockInfo());
-        object->SetMethodTable(methodTable);
-
-        return object;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(JIT_New, typeHnd_);
+    return object;
 }
-HCIMPLEND
+HCIMPLEND_RAW
 
 #include <optdefault.h>
 
@@ -1773,83 +1311,56 @@ HCIMPLEND
 //*************************************************************
 // Allocation fast path for typical objects
 //
-HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
+HCIMPL1_RAW(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 {
-    FCALL_CONTRACT;
-
-    do
-    {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
-
-        // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
-        // problems, as well as making sure big string objects are correctly allocated in the big object heap.
-        if (stringLength >= (LARGE_OBJECT_SIZE - 256) / sizeof(WCHAR))
-        {
-            break;
-        }
-
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
-
-        SIZE_T totalSize = StringObject::GetSize(stringLength);
-
-        // The method table's base size includes space for a terminating null character
-        _ASSERTE(totalSize >= g_pStringClass->GetBaseSize());
-        _ASSERTE((totalSize - g_pStringClass->GetBaseSize()) / sizeof(WCHAR) == stringLength);
-
-        SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
-        _ASSERTE(alignedTotalSize >= totalSize);
-        totalSize = alignedTotalSize;
-
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + totalSize;
-
-        _ASSERTE(allocPtr != nullptr);
-        StringObject *stringObject = reinterpret_cast<StringObject *>(allocPtr);
-        stringObject->SetMethodTable(g_pStringClass);
-        stringObject->SetStringLength(stringLength);
-        _ASSERTE(stringObject->GetBuffer()[stringLength] == W('\0'));
-
-        return stringObject;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL1(FramedAllocateString, stringLength);
-}
-HCIMPLEND
-
-#include <optdefault.h>
-
-/*********************************************************************/
-/* We don't use HCIMPL macros because this is not a real helper call */
-/* This function just needs mangled arguments like a helper call     */
-
-HCIMPL1_RAW(StringObject*, UnframedAllocateString, DWORD stringLength)
-{
-    // This isn't _really_ an FCALL and therefore shouldn't have the
-    // SO_TOLERANT part of the FCALL_CONTRACT b/c it is not entered
-    // from managed code.
     CONTRACTL {
         THROWS;
-        GC_TRIGGERS;
+        DISABLED(GC_TRIGGERS);
         MODE_COOPERATIVE;
     } CONTRACTL_END;
 
-    STRINGREF result;
-    result = AllocateString(stringLength);
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
-    return((StringObject*) OBJECTREFToObject(result));
+    // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
+    // problems, as well as making sure big string objects are correctly allocated in the big object heap.
+    if (stringLength >= (LARGE_OBJECT_SIZE - 256) / sizeof(WCHAR))
+    {
+        // Tail call to the slow helper
+        return HCCALL1(FramedAllocateString, stringLength);
+    }
+
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+
+    SIZE_T totalSize = StringObject::GetSize(stringLength);
+
+    // The method table's base size includes space for a terminating null character
+    _ASSERTE(totalSize >= g_pStringClass->GetBaseSize());
+    _ASSERTE((totalSize - g_pStringClass->GetBaseSize()) / sizeof(WCHAR) == stringLength);
+
+    SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
+    _ASSERTE(alignedTotalSize >= totalSize);
+    totalSize = alignedTotalSize;
+
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL1(FramedAllocateString, stringLength);
+    }
+    allocContext->alloc_ptr = allocPtr + totalSize;
+
+    _ASSERTE(allocPtr != nullptr);
+    StringObject *stringObject = reinterpret_cast<StringObject *>(allocPtr);
+    stringObject->SetMethodTable(g_pStringClass);
+    stringObject->SetStringLength(stringLength);
+    _ASSERTE(stringObject->GetBuffer()[stringLength] == W('\0'));
+
+    return stringObject;
 }
 HCIMPLEND_RAW
+
+#include <optdefault.h>
 
 HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 {
@@ -1910,129 +1421,118 @@ HCIMPLEND
 //*************************************************************
 // Array allocation fast path for arrays of value type elements
 //
-HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+HCIMPL2_RAW(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 {
-    FCALL_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
-    do
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+
+    // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
+    // have to worry about "large" objects, since the allocation quantum is never big enough for
+    // LARGE_OBJECT_SIZE.
+    //
+    // For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
+    // The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
+    // slack value out of laziness.
+    SIZE_T componentCount = static_cast<SIZE_T>(size);
+    if (componentCount >= static_cast<SIZE_T>(65535 - 256))
     {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
 
-        // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
-        // have to worry about "large" objects, since the allocation quantum is never big enough for
-        // LARGE_OBJECT_SIZE.
-        //
-        // For Value Classes, this needs to be 2^16 - slack (2^32 / max component size),
-        // The slack includes the size for the array header and round-up ; for alignment.  Use 256 for the
-        // slack value out of laziness.
-        SIZE_T componentCount = static_cast<SIZE_T>(size);
-        if (componentCount >= static_cast<SIZE_T>(65535 - 256))
-        {
-            break;
-        }
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
 
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+    MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
-        MethodTable *pArrayMT = (MethodTable *)arrayMT;
+    _ASSERTE(pArrayMT->HasComponentSize());
+    SIZE_T componentSize = pArrayMT->RawGetComponentSize();
+    SIZE_T totalSize = componentCount * componentSize;
+    _ASSERTE(totalSize / componentSize == componentCount);
 
-        _ASSERTE(pArrayMT->HasComponentSize());
-        SIZE_T componentSize = pArrayMT->RawGetComponentSize();
-        SIZE_T totalSize = componentCount * componentSize;
-        _ASSERTE(totalSize / componentSize == componentCount);
+    SIZE_T baseSize = pArrayMT->GetBaseSize();
+    totalSize += baseSize;
+    _ASSERTE(totalSize >= baseSize);
 
-        SIZE_T baseSize = pArrayMT->GetBaseSize();
-        totalSize += baseSize;
-        _ASSERTE(totalSize >= baseSize);
+    SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
+    _ASSERTE(alignedTotalSize >= totalSize);
+    totalSize = alignedTotalSize;
 
-        SIZE_T alignedTotalSize = ALIGN_UP(totalSize, DATA_ALIGNMENT);
-        _ASSERTE(alignedTotalSize >= totalSize);
-        totalSize = alignedTotalSize;
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
+    allocContext->alloc_ptr = allocPtr + totalSize;
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + totalSize;
+    _ASSERTE(allocPtr != nullptr);
+    ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
+    array->SetMethodTable(pArrayMT);
+    _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
+    array->m_NumComponents = static_cast<DWORD>(componentCount);
 
-        _ASSERTE(allocPtr != nullptr);
-        ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetMethodTable(pArrayMT);
-        _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
-        array->m_NumComponents = static_cast<DWORD>(componentCount);
-
-        return array;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_NewArr1, arrayMT, size);
+    return array;
 }
-HCIMPLEND
+HCIMPLEND_RAW
 
 //*************************************************************
 // Array allocation fast path for arrays of object elements
 //
-HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
+HCIMPL2_RAW(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
 {
-    FCALL_CONTRACT;
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
 
-    do
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+
+    // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
+    // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
+    SIZE_T componentCount = static_cast<SIZE_T>(size);
+    if (componentCount >= static_cast<SIZE_T>((LARGE_OBJECT_SIZE - 256) / sizeof(void *)))
     {
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
 
-        // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
-        // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
-        SIZE_T componentCount = static_cast<SIZE_T>(size);
-        if (componentCount >= static_cast<SIZE_T>((LARGE_OBJECT_SIZE - 256) / sizeof(void *)))
-        {
-            break;
-        }
+    SIZE_T totalSize = componentCount * sizeof(void *);
+    _ASSERTE(totalSize / sizeof(void *) == componentCount);
 
-        // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
-        // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
-        // some reshuffling of intermediate values into nonvolatile registers around the call.
-        Thread *thread = GetThread();
+    MethodTable *pArrayMT = (MethodTable *)arrayMT;
 
-        SIZE_T totalSize = componentCount * sizeof(void *);
-        _ASSERTE(totalSize / sizeof(void *) == componentCount);
+    SIZE_T baseSize = pArrayMT->GetBaseSize();
+    totalSize += baseSize;
+    _ASSERTE(totalSize >= baseSize);
 
-        MethodTable *pArrayMT = (MethodTable *)arrayMT;
+    _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
 
-        SIZE_T baseSize = pArrayMT->GetBaseSize();
-        totalSize += baseSize;
-        _ASSERTE(totalSize >= baseSize);
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_NewArr1, arrayMT, size);
+    }
+    allocContext->alloc_ptr = allocPtr + totalSize;
 
-        _ASSERTE(ALIGN_UP(totalSize, DATA_ALIGNMENT) == totalSize);
+    _ASSERTE(allocPtr != nullptr);
+    ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
+    array->SetMethodTable(pArrayMT);
+    _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
+    array->m_NumComponents = static_cast<DWORD>(componentCount);
 
-        gc_alloc_context *allocContext = thread->GetAllocContext();
-        BYTE *allocPtr = allocContext->alloc_ptr;
-        _ASSERTE(allocPtr <= allocContext->alloc_limit);
-        if (totalSize > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
-        {
-            break;
-        }
-        allocContext->alloc_ptr = allocPtr + totalSize;
-
-        _ASSERTE(allocPtr != nullptr);
-        ArrayBase *array = reinterpret_cast<ArrayBase *>(allocPtr);
-        array->SetMethodTable(pArrayMT);
-        _ASSERTE(static_cast<DWORD>(componentCount) == componentCount);
-        array->m_NumComponents = static_cast<DWORD>(componentCount);
-
-        return array;
-    } while (false);
-
-    // Tail call to the slow helper
-    ENDFORBIDGC();
-    return HCCALL2(JIT_NewArr1, arrayMT, size);
+    return array;
 }
-HCIMPLEND
+HCIMPLEND_RAW
 
 #include <optdefault.h>
 
@@ -2143,42 +1643,72 @@ HCIMPLEND
 
 #include <optdefault.h>
 
-//===========================================================================
-// This routine is called if the Array store needs a frame constructed
-// in order to do the array check.  It should only be called from
-// the array store check helpers.
-
-HCIMPL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, *pElement, *pArray);
-
-    GCStress<cfg_any, EeconfigFastGcSPolicy>::MaybeTrigger();
-
-    // call "Core" version directly since all the callers do the "NoGC" call first and that checks the cache
-    if (!ObjIsInstanceOfCore(*pElement, (*pArray)->GetArrayElementTypeHandle()))
-        COMPlusThrow(kArrayTypeMismatchException);
-
-    HELPER_METHOD_FRAME_END();
-
-    return (LPVOID)0; // Used to aid epilog walker
-}
-HCIMPLEND
-
 //========================================================================
 //
 //      VALUETYPE/BYREF HELPERS
 //
 //========================================================================
+/*************************************************************/
+HCIMPL2_RAW(Object*, JIT_Box_MP_FastPortable, CORINFO_CLASS_HANDLE type, void* unboxedData)
+{
+    CONTRACTL {
+        THROWS;
+        DISABLED(GC_TRIGGERS);
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    if (unboxedData == nullptr)
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+
+    _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
+    gc_alloc_context *allocContext = &t_runtime_thread_locals.alloc_context;
+
+    TypeHandle typeHandle(type);
+    _ASSERTE(!typeHandle.IsTypeDesc()); // heap objects must have method tables
+    MethodTable *methodTable = typeHandle.AsMethodTable();
+    // The fast helper should never be called for nullable types.
+    _ASSERTE(!methodTable->IsNullable());
+
+#ifdef FEATURE_64BIT_ALIGNMENT
+    if (methodTable->RequiresAlign8())
+    {
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+#endif
+
+    SIZE_T size = methodTable->GetBaseSize();
+    _ASSERTE(size % DATA_ALIGNMENT == 0);
+
+    BYTE *allocPtr = allocContext->alloc_ptr;
+    _ASSERTE(allocPtr <= allocContext->alloc_limit);
+    if (size > static_cast<SIZE_T>(allocContext->alloc_limit - allocPtr))
+    {
+        // Tail call to the slow helper
+        return HCCALL2(JIT_Box, type, unboxedData);
+    }
+
+    allocContext->alloc_ptr = allocPtr + size;
+
+    _ASSERTE(allocPtr != nullptr);
+    Object *object = reinterpret_cast<Object *>(allocPtr);
+    _ASSERTE(object->HasEmptySyncBlockInfo());
+    object->SetMethodTable(methodTable);
+
+    // Copy the data into the object
+    CopyValueClass(object->UnBox(), unboxedData, methodTable);
+
+    return object;
+}
+HCIMPLEND_RAW
 
 /*************************************************************/
 HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 {
     FCALL_CONTRACT;
 
-    // <TODO>TODO: if we care, we could do a fast trial allocation
-    // and avoid the building the frame most times</TODO>
     OBJECTREF newobj = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();    // Set up a frame
     GCPROTECT_BEGININTERIOR(unboxedData);
@@ -2316,6 +1846,65 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
     // Fall back to a framed helper that can also handle GC suspension and type equivalence.
     ENDFORBIDGC();
     return HCCALL2(Unbox_Helper_Framed, pMT1, obj);
+}
+HCIMPLEND
+
+/* framed Unbox type test helper that handles enums and full-blown type equivalence */
+NOINLINE HCIMPL2(void, JIT_Unbox_TypeTest_Framed, MethodTable* pMT1, MethodTable* pMT2)
+{
+    FCALL_CONTRACT;
+
+    HELPER_METHOD_FRAME_BEGIN_0();
+    HELPER_METHOD_POLL();
+
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
+    {
+        // type test test passes
+    }
+    else if (pMT1->IsEquivalentTo(pMT2))
+    {
+        // the structures are equivalent
+    }
+    else
+    {
+        COMPlusThrowInvalidCastException(TypeHandle(pMT2), TypeHandle(pMT1));
+    }
+    HELPER_METHOD_FRAME_END();
+}
+HCIMPLEND
+
+/*************************************************************/
+/* Unbox type test that handles enums */
+HCIMPL2(void, JIT_Unbox_TypeTest, CORINFO_CLASS_HANDLE type, CORINFO_CLASS_HANDLE boxType)
+{
+    FCALL_CONTRACT;
+
+    TypeHandle typeHnd(type);
+    // boxable types have method tables
+    _ASSERTE(!typeHnd.IsTypeDesc());
+
+    MethodTable* pMT1 = typeHnd.AsMethodTable();
+    // must be a value type
+    _ASSERTE(pMT1->IsValueType());
+
+    TypeHandle boxTypeHnd(boxType);
+    MethodTable* pMT2 = boxTypeHnd.AsMethodTable();
+
+    // we allow enums and their primitive type to be interchangeable.
+    // if suspension is requested, defer to the framed helper.
+    if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
+            (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
+            (pMT2->IsEnum() || pMT2->IsTruePrimitive()) &&
+            g_TrapReturningThreads == 0)
+    {
+        return;
+    }
+
+    // Fall back to a framed helper that can also handle GC suspension and type equivalence.
+    ENDFORBIDGC();
+    HCCALL2(JIT_Unbox_TypeTest_Framed, pMT1, pMT2);
 }
 HCIMPLEND
 
@@ -3489,7 +3078,7 @@ HCIMPL1(void, IL_Throw,  Object* obj)
     OBJECTREF oref = ObjectToOBJECTREF(obj);
 
 #if defined(_DEBUG) && defined(TARGET_X86)
-    __helperframe.InsureInit(false, NULL);
+    __helperframe.InsureInit(NULL);
     g_ExceptionEIP = (LPVOID)__helperframe.GetReturnAddress();
 #endif // defined(_DEBUG) && defined(TARGET_X86)
 
@@ -4631,13 +4220,13 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         }
 
         // We've successfully created the osr method; make it available.
-        _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+        _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
         ppInfo->m_osrMethodCode = osrMethodCode;
         isNewMethod = true;
     }
 
     // If we get here, we have code to transition to...
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     {
         Thread *pThread = GetThread();
@@ -4870,7 +4459,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
             }
 
             // We've successfully created the osr method; make it available.
-            _ASSERTE(ppInfo->m_osrMethodCode == NULL);
+            _ASSERTE(ppInfo->m_osrMethodCode == (PCODE)NULL);
             ppInfo->m_osrMethodCode = newMethodCode;
             isNewMethod = true;
         }
@@ -4878,7 +4467,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
 
     // If we get here, we have code to transition to...
     PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    _ASSERTE(osrMethodCode != NULL);
+    _ASSERTE(osrMethodCode != (PCODE)NULL);
 
     Thread *pThread = GetThread();
 
@@ -5268,7 +4857,7 @@ HCIMPL3(void, JIT_VTableProfile32, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())
@@ -5317,7 +4906,7 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
     WORD slot = pBaseMD->GetSlot();
     _ASSERTE(slot < pBaseMD->GetMethodTable()->GetNumVirtuals());
 
-    MethodDesc* pMD = pMT->GetMethodDescForSlot(slot);
+    MethodDesc* pMD = pMT->GetMethodDescForSlot_NoThrow(slot);
 
     MethodDesc* pRecordedMD = (MethodDesc*)DEFAULT_UNKNOWN_HANDLE;
     if (!pMD->GetLoaderAllocator()->IsCollectible() && !pMD->IsDynamicMethod())

@@ -34,6 +34,7 @@ namespace System.Net.Security.Tests
         [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103449", TestPlatforms.Windows)]
         public async Task ClientDisableTlsResume_Succeeds(bool testClient)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
@@ -133,9 +134,8 @@ namespace System.Net.Security.Tests
             server.Dispose();
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(SslProtocolsData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103354", typeof(PlatformDetection), nameof(PlatformDetection.IsArmOrArm64Process))]
         public Task NoClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions
@@ -159,16 +159,9 @@ namespace System.Net.Security.Tests
         {
             var data = new TheoryData<SslProtocols>();
 
-            data.Add(SslProtocols.None);
-
-            if (PlatformDetection.SupportsTls12)
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
             {
-                data.Add(SslProtocols.Tls12);
-            }
-
-            if (PlatformDetection.SupportsTls13)
-            {
-                data.Add(SslProtocols.Tls13);
+                data.Add(protocol);
             }
 
             return data;
@@ -185,7 +178,7 @@ namespace System.Net.Security.Tests
         {
             var data = new TheoryData<SslProtocols, bool, ClientCertSource>();
 
-            foreach (SslProtocols protocol in SslProtocolsData().Select(x => x[0]))
+            foreach (SslProtocols protocol in SslProtocolSupport.EnumerateSupportedProtocols(SslProtocols.Tls12 | SslProtocols.Tls13, true))
             foreach (bool certRequired in new[] { true, false })
             foreach (ClientCertSource source in Enum.GetValues(typeof(ClientCertSource)))
             {
@@ -195,9 +188,8 @@ namespace System.Net.Security.Tests
             return data;
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(ClientCertTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/103354", typeof(PlatformDetection), nameof(PlatformDetection.IsArmOrArm64Process))]
         public Task ClientCert_DefaultValue_ResumeSucceeds(SslProtocols sslProtocol, bool certificateRequired, ClientCertSource certSource)
         {
             SslServerAuthenticationOptions serverOptions = new SslServerAuthenticationOptions

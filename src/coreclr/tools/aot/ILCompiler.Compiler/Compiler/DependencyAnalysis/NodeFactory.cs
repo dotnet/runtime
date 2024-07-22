@@ -44,6 +44,9 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataInterner dataInterner)
         {
             _target = context.Target;
+
+            InitialInterfaceDispatchStub = new AddressTakenExternSymbolNode("RhpInitialDynamicInterfaceDispatch");
+
             _context = context;
             _compilationModuleGroup = compilationModuleGroup;
             _vtableSliceProvider = vtableSliceProvider;
@@ -98,6 +101,11 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public NameMangler NameMangler
+        {
+            get;
+        }
+
+        public ISymbolNode InitialInterfaceDispatchStub
         {
             get;
         }
@@ -311,6 +319,11 @@ namespace ILCompiler.DependencyAnalysis
             _genericMethodEntries = new NodeCache<MethodDesc, GenericMethodsHashtableEntryNode>(method =>
             {
                 return new GenericMethodsHashtableEntryNode(method);
+            });
+
+            _exactMethodEntries = new NodeCache<MethodDesc, ExactMethodInstantiationsEntryNode>(method =>
+            {
+                return new ExactMethodInstantiationsEntryNode(method);
             });
 
             _gvmTableEntries = new NodeCache<TypeDesc, TypeGVMEntriesNode>(type =>
@@ -1046,6 +1059,12 @@ namespace ILCompiler.DependencyAnalysis
         public GenericMethodsHashtableEntryNode GenericMethodsHashtableEntry(MethodDesc method)
         {
             return _genericMethodEntries.GetOrAdd(method);
+        }
+
+        private NodeCache<MethodDesc, ExactMethodInstantiationsEntryNode> _exactMethodEntries;
+        public ExactMethodInstantiationsEntryNode ExactMethodInstantiationsHashtableEntry(MethodDesc method)
+        {
+            return _exactMethodEntries.GetOrAdd(method);
         }
 
         private NodeCache<TypeDesc, TypeGVMEntriesNode> _gvmTableEntries;

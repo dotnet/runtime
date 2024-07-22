@@ -367,10 +367,12 @@ public:
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
 #if defined(TARGET_XARCH)
-    simd32_t   GetConstantSimd32(ValueNum argVN);
-    simd64_t   GetConstantSimd64(ValueNum argVN);
-    simdmask_t GetConstantSimdMask(ValueNum argVN);
+    simd32_t GetConstantSimd32(ValueNum argVN);
+    simd64_t GetConstantSimd64(ValueNum argVN);
 #endif // TARGET_XARCH
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    simdmask_t GetConstantSimdMask(ValueNum argVN);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 private:
@@ -453,8 +455,10 @@ public:
 #if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(const simd32_t& cnsVal);
     ValueNum VNForSimd64Con(const simd64_t& cnsVal);
-    ValueNum VNForSimdMaskCon(const simdmask_t& cnsVal);
 #endif // TARGET_XARCH
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    ValueNum VNForSimdMaskCon(const simdmask_t& cnsVal);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
     ValueNum VNForGenericCon(var_types typ, uint8_t* cnsVal);
 
@@ -507,6 +511,8 @@ public:
     }
 
     CORINFO_CLASS_HANDLE GetObjectType(ValueNum vn, bool* pIsExact, bool* pIsNonNull);
+
+    void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
 
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
@@ -1061,6 +1067,13 @@ public:
 
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
+
+    // Returns true iff the VN is a phi definition
+    bool IsVNPhiDef(ValueNum vn);
+
+    // Returns true if the two VNs represent the same value
+    // despite being different VNs. Useful for phi def VNs.
+    bool AreVNsEquivalent(ValueNum vn1, ValueNum vn2);
 
     enum class VN_RELATION_KIND
     {
@@ -1779,7 +1792,9 @@ private:
         }
         return m_simd64CnsMap;
     }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     struct SimdMaskPrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simdmask_t>
     {
         static bool Equals(const simdmask_t& x, const simdmask_t& y)
@@ -1808,7 +1823,7 @@ private:
         }
         return m_simdMaskCnsMap;
     }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>
@@ -1991,14 +2006,16 @@ struct ValueNumStore::VarTypConv<TYP_SIMD64>
     typedef simd64_t Type;
     typedef simd64_t Lang;
 };
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 struct ValueNumStore::VarTypConv<TYP_MASK>
 {
     typedef simdmask_t Type;
     typedef simdmask_t Lang;
 };
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 template <>
@@ -2074,14 +2091,16 @@ FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, uns
     assert(c->m_typ == TYP_SIMD64);
     return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 FORCEINLINE simdmask_t ValueNumStore::SafeGetConstantValue<simdmask_t>(Chunk* c, unsigned offset)
 {
     assert(c->m_typ == TYP_MASK);
     return reinterpret_cast<VarTypConv<TYP_MASK>::Lang*>(c->m_defs)[offset];
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <>
 FORCEINLINE simd8_t ValueNumStore::ConstantValueInternal<simd8_t>(ValueNum vn DEBUGARG(bool coerce))
@@ -2153,7 +2172,9 @@ FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn 
 
     return SafeGetConstantValue<simd64_t>(c, offset);
 }
+#endif // TARGET_XARCH
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
 template <>
 FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum vn DEBUGARG(bool coerce))
 {
@@ -2167,7 +2188,7 @@ FORCEINLINE simdmask_t ValueNumStore::ConstantValueInternal<simdmask_t>(ValueNum
 
     return SafeGetConstantValue<simdmask_t>(c, offset);
 }
-#endif // TARGET_XARCH
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
 
 // Inline functions.

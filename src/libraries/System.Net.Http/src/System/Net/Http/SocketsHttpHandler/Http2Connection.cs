@@ -25,7 +25,6 @@ namespace System.Net.Http
 
         private TaskCompletionSourceWithCancellation<bool>? _initialSettingsReceived;
 
-        private readonly HttpConnectionPool _pool;
         private readonly Stream _stream;
 
         // NOTE: These are mutable structs; do not make these readonly.
@@ -72,6 +71,8 @@ namespace System.Net.Http
         // If this is set, the connection is aborting due to an IO failure (IOException) or a protocol violation (Http2ProtocolException).
         // _shutdown above is true, and requests in flight have been (or are being) failed.
         private Exception? _abortException;
+
+        private Http2ProtocolErrorCode? _goAwayErrorCode;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -129,10 +130,9 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
-            : base(pool, remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
+            : base(pool, connectionSetupActivity, remoteEndPoint)
         {
-            _pool = pool;
             _stream = stream;
 
             _incomingBuffer = new ArrayBuffer(initialSize: 0, usePool: true);
@@ -412,7 +412,11 @@ namespace System.Net.Http
                     _incomingBuffer.Commit(bytesRead);
                     if (bytesRead == 0)
                     {
-                        if (_incomingBuffer.ActiveLength == 0)
+                        if (_goAwayErrorCode is not null)
+                        {
+                            ThrowProtocolError(_goAwayErrorCode.Value, SR.net_http_http2_connection_close);
+                        }
+                        else if (_incomingBuffer.ActiveLength == 0)
                         {
                             ThrowMissingFrame();
                         }
@@ -498,6 +502,7 @@ namespace System.Net.Http
                 catch (HttpProtocolException e)
                 {
                     InitialSettingsReceived.TrySetException(e);
+                    LogExceptions(InitialSettingsReceived.Task);
                     throw;
                 }
                 catch (Exception e)
@@ -1071,6 +1076,7 @@ namespace System.Net.Http
 
             Debug.Assert(lastStreamId >= 0);
             Exception resetException = HttpProtocolException.CreateHttp2ConnectionException(errorCode, SR.net_http_http2_connection_close);
+            _goAwayErrorCode = errorCode;
 
             // There is no point sending more PING frames for RTT estimation:
             _rttEstimator.OnGoAwayReceived();
@@ -1794,18 +1800,6 @@ namespace System.Net.Http
             return true;
         }
 
-        public override long GetIdleTicks(long nowTicks)
-        {
-            // The pool is holding the lock as part of its scavenging logic.
-            // We must not lock on Http2Connection.SyncObj here as that could lead to lock ordering problems.
-            Debug.Assert(_pool.HasSyncObjLock);
-
-            // There is a race condition here where the connection pool may see this connection as idle right before
-            // we start processing a new request and start its disposal. This is okay as we will either
-            // return false from TryReserveStream, or process pending requests before tearing down the transport.
-            return _streamsInUse == 0 ? base.GetIdleTicks(nowTicks) : 0;
-        }
-
         /// <summary>Abort all streams and cause further processing to fail.</summary>
         /// <param name="abortException">Exception causing Abort to be called.</param>
         private void Abort(Exception abortException)
@@ -1850,7 +1844,6 @@ namespace System.Net.Http
             Debug.Assert(_streamsInUse == 0);
 
             GC.SuppressFinalize(this);
-
             _stream.Dispose();
 
             _connectionWindow.Dispose();
@@ -1994,6 +1987,7 @@ namespace System.Net.Http
             Debug.Assert(async);
             Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
+            if (ConnectionSetupActivity is not null) ConnectionSetupDistributedTracing.AddConnectionLinkToRequestActivity(ConnectionSetupActivity);
 
             try
             {

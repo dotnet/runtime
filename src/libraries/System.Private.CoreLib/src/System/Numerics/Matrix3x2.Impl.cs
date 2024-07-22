@@ -72,8 +72,7 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-
-                    return Unsafe.Add(ref Unsafe.AsRef(in this.X), row)[column];
+                    return Unsafe.Add(ref Unsafe.AsRef(in X), row)[column];
                 }
 
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,7 +82,7 @@ namespace System.Numerics
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
-                    Unsafe.Add(ref this.X, row)[column] = value;
+                    Unsafe.Add(ref X, row)[column] = value;
                 }
             }
 
@@ -514,7 +513,7 @@ namespace System.Numerics
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public override readonly int GetHashCode() => HashCode.Combine(X, Y, Z);
 
-            bool IEquatable<Impl>.Equals(Impl other) => Equals(in other);
+            readonly bool IEquatable<Impl>.Equals(Impl other) => Equals(in other);
         }
     }
 }

@@ -24,11 +24,13 @@ case "$os" in
             apt update
 
             apt install -y build-essential gettext locales cmake llvm clang lldb liblldb-dev libunwind8-dev libicu-dev liblttng-ust-dev \
-                libssl-dev libkrb5-dev zlib1g-dev
+                libssl-dev libkrb5-dev
 
             localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
+        elif [ "$ID" = "fedora" ]; then
+            dnf install -y cmake llvm lld lldb clang python curl libicu-devel openssl-devel krb5-devel lttng-ust-devel
         elif [ "$ID" = "alpine" ]; then
-            apk add build-base cmake bash curl clang llvm-dev krb5-dev lttng-ust-dev icu-dev zlib-dev openssl-dev
+            apk add build-base cmake bash curl clang llvm-dev krb5-dev lttng-ust-dev icu-dev openssl-dev
         else
             echo "Unsupported distro. distro: $ID"
             exit 1

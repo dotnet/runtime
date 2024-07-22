@@ -29,7 +29,7 @@ namespace System.Runtime.CompilerServices
         // Unlike the IsInstanceOfInterface and IsInstanceOfClass functions,
         // this test must deal with all kinds of type tests
         [DebuggerHidden]
-        private static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
+        internal static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
             if (obj != null)
             {
@@ -463,7 +463,6 @@ namespace System.Runtime.CompilerServices
             WriteBarrier(ref element, obj);
         }
 
-#if FEATURE_ARRAYSTUB_AS_IL
         [DebuggerHidden]
         private static unsafe void ArrayTypeCheck(object obj, Array array)
         {
@@ -493,6 +492,5 @@ namespace System.Runtime.CompilerServices
                 ThrowArrayMismatchException();
             }
         }
-#endif
     }
 }

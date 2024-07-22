@@ -23,9 +23,6 @@
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <XunitShowProgress>true</XunitShowProgress>
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
-    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
     <WasmXHarnessMaxParallelThreads>1</WasmXHarnessMaxParallelThreads>
   </PropertyGroup>
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">

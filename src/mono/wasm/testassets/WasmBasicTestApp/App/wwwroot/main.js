@@ -14,6 +14,12 @@ function testOutput(msg) {
     console.log(`TestOutput -> ${msg}`);
 }
 
+function countChars(str) {
+    const length = str.length;
+    testOutput(`JS received str of ${length} length`);
+    return length;
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -93,6 +99,26 @@ switch (testCase) {
         await dotnet.download();
         testOutput("download finished");
         break;
+    case "MaxParallelDownloads":
+        const maxParallelDownloads = params.get("maxParallelDownloads");
+        let activeFetchCount = 0;
+        const originalFetch2 = globalThis.fetch;
+        globalThis.fetch = async (...args) => {
+            activeFetchCount++;
+            testOutput(`Fetch started. Active downloads: ${activeFetchCount}`);
+            try {
+                const response = await originalFetch2(...args);
+                activeFetchCount--;
+                testOutput(`Fetch completed. Active downloads: ${activeFetchCount}`);
+                return response;
+            } catch (error) {
+                activeFetchCount--;
+                testOutput(`Fetch failed. Active downloads: ${activeFetchCount}`);
+                throw error;
+            }
+        };
+        dotnet.withConfig({ maxParallelDownloads: maxParallelDownloads });
+        break;
 }
 
 const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
@@ -147,6 +173,14 @@ try {
             exit(0);
             break;
         case "DownloadThenInit":
+        case "MaxParallelDownloads":
+            exit(0);
+            break;
+        case "AllocateLargeHeapThenInterop":
+            setModuleImports('main.js', {
+                countChars
+            });
+            exports.MemoryTest.Run();
             exit(0);
             break;
         default:

@@ -595,9 +595,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallNativeAOT(BasicBlock** pBlock, St
 
         CORINFO_CONST_LOOKUP tlsIndexObject = threadStaticInfo.tlsIndexObject;
 
-        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_OBJ_HDL);
+        GenTree* dllRef = gtNewIconHandleNode((size_t)tlsIndexObject.handle, GTF_ICON_CONST_PTR);
         dllRef          = gtNewIndir(TYP_INT, dllRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-        dllRef          = gtNewOperNode(GT_MUL, TYP_I_IMPL, dllRef, gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
+        dllRef          = gtNewCastNode(TYP_I_IMPL, dllRef, true, TYP_I_IMPL);
+        dllRef          = gtNewOperNode(GT_LSH, TYP_I_IMPL, dllRef, gtNewIconNode(3, TYP_I_IMPL));
 
         // Add the dllRef to produce thread local storage reference for coreclr
         tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
@@ -1533,9 +1534,9 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
     assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
 
     // Extra step: merge prevBb with isInitedBb if possible
-    if (fgCanCompactBlocks(prevBb, isInitedBb))
+    if (fgCanCompactBlock(prevBb))
     {
-        fgCompactBlocks(prevBb, isInitedBb);
+        fgCompactBlock(prevBb);
     }
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
@@ -1862,9 +1863,9 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
 
     // Extra step: merge prevBb with lengthCheckBb if possible
-    if (fgCanCompactBlocks(prevBb, lengthCheckBb))
+    if (fgCanCompactBlock(prevBb))
     {
-        fgCompactBlocks(prevBb, lengthCheckBb);
+        fgCompactBlock(prevBb);
     }
 
     JITDUMP("ReadUtf8: succesfully expanded!\n")
@@ -2686,9 +2687,9 @@ bool Compiler::fgLateCastExpansionForCall(BasicBlock** pBlock, Statement* stmt, 
     }
 
     // Bonus step: merge prevBb with nullcheckBb as they are likely to be mergeable
-    if (fgCanCompactBlocks(firstBb, nullcheckBb))
+    if (fgCanCompactBlock(firstBb))
     {
-        fgCompactBlocks(firstBb, nullcheckBb);
+        fgCompactBlock(firstBb);
     }
 
     return true;

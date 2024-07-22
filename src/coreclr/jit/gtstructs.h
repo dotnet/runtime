@@ -61,6 +61,7 @@ GTSTRUCT_1(LngCon      , GT_CNS_LNG)
 GTSTRUCT_1(DblCon      , GT_CNS_DBL)
 GTSTRUCT_1(StrCon      , GT_CNS_STR)
 GTSTRUCT_1(VecCon      , GT_CNS_VEC)
+GTSTRUCT_1(MskCon      , GT_CNS_MSK)
 GTSTRUCT_N(LclVarCommon, GT_LCL_VAR, GT_LCL_FLD, GT_PHI_ARG, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR)
 GTSTRUCT_2(LclVar      , GT_LCL_VAR, GT_STORE_LCL_VAR)
 GTSTRUCT_3(LclFld      , GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_ADDR)
@@ -117,10 +118,8 @@ GTSTRUCT_N(OpCC        , GT_SELECTCC, GT_SELECT_INCCC, GT_JCMP, GT_JTEST, GT_SEL
 #else
 GTSTRUCT_3(OpCC        , GT_SELECTCC, GT_JCMP, GT_JTEST)
 #endif
-#if defined(TARGET_X86)
+#if !defined(TARGET_64BIT)
 GTSTRUCT_1(MultiRegOp  , GT_MUL_LONG)
-#elif defined (TARGET_ARM)
-GTSTRUCT_3(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG, GT_BITCAST)
 #endif
 /*****************************************************************************/
 #undef  GTSTRUCT_0

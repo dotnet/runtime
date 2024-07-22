@@ -541,6 +541,11 @@
   <Import Project="$(MSBuildThisFileDirectory)Common\runonly.targets" Condition="'$(CLRTestKind)' == 'RunOnly'" />
 
   <PropertyGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <!-- The test infra already sets up the environment for native compilation.
+         The ILC targets don't have to do that. The batch script to set up environment
+         variables is horribly slow (seeing 1.4 seconds on a 11th gen Intel Core i7) -->
+    <IlcUseEnvironmentalTools>true</IlcUseEnvironmentalTools>
+
     <!-- NativeAOT compiled output is placed into a 'native' subdirectory: we need to tweak
          rpath so that the test can load its native library dependencies if there's any -->
     <IlcRPath Condition="'$(TargetOS)' == 'osx' or '$(TargetsAppleMobile)' == 'true'">@executable_path/..</IlcRPath>

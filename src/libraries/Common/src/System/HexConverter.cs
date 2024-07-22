@@ -193,10 +193,8 @@ namespace System
             }
             return result.ToString();
 #else
-#pragma warning disable CS8500 // takes address of managed type
             return string.Create(bytes.Length * 2, (RosPtr: (IntPtr)(&bytes), casing), static (chars, args) =>
                 EncodeToUtf16(*(ReadOnlySpan<byte>*)args.RosPtr, chars, args.casing));
-#pragma warning restore CS8500
 #endif
         }
 
