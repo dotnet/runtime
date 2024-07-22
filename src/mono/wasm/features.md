@@ -76,7 +76,7 @@ To reduce startup time and increase the odds that your application will work on 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
 
 ### Maximum Memory Size
-When building a Blazor app that runs on the client (.Client project of a Blazor Web App or standalone Blazor WebAssembly app) and targets mobile device browsers, especially Safari on iOS, decreasing the maximum memory for the app may be required.
+When building an app targeting mobile device browsers, especially Safari on iOS, decreasing the maximum memory for the app may be required.
 
 The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
 To set the maximum memory size, include the MSBuild property like `<EmccMaximumHeapSize>268435456<EmccMaximumHeapSize>`.
