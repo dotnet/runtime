@@ -55,7 +55,7 @@ namespace System.IO.Strategies
 
         internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
-            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin >= SeekOrigin.Begin && origin <= SeekOrigin.End");
+            Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End);
 
             if (!Interop.Kernel32.SetFilePointerEx(handle, offset, out long ret, (uint)origin))
             {
@@ -132,7 +132,7 @@ namespace System.IO.Strategies
 
         internal static unsafe int ReadFileNative(SafeFileHandle handle, Span<byte> bytes, NativeOverlapped* overlapped, out int errorCode)
         {
-            Debug.Assert(handle != null, "handle != null");
+            Debug.Assert(handle != null);
 
             int r;
             int numBytesRead = 0;

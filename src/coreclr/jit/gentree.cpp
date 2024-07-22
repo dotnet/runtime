@@ -13402,9 +13402,15 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         }
         else if (op1->OperIsConst() || op2->OperIsConst())
         {
-            /* at least one is a constant - see if we have a
-             * special operator that can use only one constant
-             * to fold - e.g. booleans */
+            // At least one is a constant - see if we have a
+            // special operator that can use only one constant
+            // to fold - e.g. booleans
+
+            if (tier0opts && opts.OptimizationDisabled())
+            {
+                // Too heavy for tier0
+                return tree;
+            }
 
             return gtFoldExprSpecial(tree);
         }
