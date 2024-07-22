@@ -1815,9 +1815,10 @@ namespace System.Net.Sockets
 
         private static SocketError SelectViaSelect(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
-            Span<int> readFDs = checkRead?.Count > 20 ? new int[checkRead.Count] : stackalloc int[checkRead?.Count ?? 0];
-            Span<int> writeFDs = checkWrite?.Count > 20 ? new int[checkWrite.Count] : stackalloc int[checkWrite?.Count ?? 0];
-            Span<int> errorFDs =  checkError?.Count > 20 ? new int[checkError.Count] : stackalloc int[checkError?.Count ?? 0];
+            const int MaxStackAllocCount = 20;      // this is just arbitrary limit 3x 20 -> 60 e.g. close to 64 we have in some other places
+            Span<int> readFDs = checkRead?.Count > MaxStackAllocCount ? new int[checkRead.Count] : stackalloc int[checkRead?.Count ?? 0];
+            Span<int> writeFDs = checkWrite?.Count > MaxStackAllocCount ? new int[checkWrite.Count] : stackalloc int[checkWrite?.Count ?? 0];
+            Span<int> errorFDs =  checkError?.Count > MaxStackAllocCount ? new int[checkError.Count] : stackalloc int[checkError?.Count ?? 0];
 
             int refsAdded = 0;
             int maxFd = 0;
