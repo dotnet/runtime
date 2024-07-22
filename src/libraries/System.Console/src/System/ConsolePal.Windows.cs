@@ -679,18 +679,22 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
+                const string BellString = "\u0007"; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+
                 Span<byte> bell = stackalloc byte[10];
-                if (Console.OutputEncoding.TryGetBytes("\u0007", bell, out int bytesWritten))
+                if (Console.OutputEncoding.TryGetBytes(BellString, bell, out int bytesWritten))
                 {
-                    int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell.Slice(0, bytesWritten), useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
-                    if (errorCode == Interop.Errors.ERROR_SUCCESS)
-                    {
-                        return;
-                    }
+                    bell = bell.Slice(0, bytesWritten);
                 }
                 else
                 {
-                    Debug.Fail("The input buffer was too small.");
+                    bell = Console.OutputEncoding.GetBytes(BellString);
+                }
+
+                int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
+                if (errorCode == Interop.Errors.ERROR_SUCCESS)
+                {
+                    return;
                 }
             }
 
