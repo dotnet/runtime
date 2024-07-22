@@ -988,7 +988,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				/*
 				 * We need to set this even when sig->pinvoke is FALSE, because the `cinfo` gets copied to the
 				 * `cfg->arch` on the first pass. However, later in `amd64_handle_swift_return_buffer_reg` we 
-				 * condition the Swift return buffer handling only to P/Invoke calls. 
+				 * condition the Swift return buffer handling only to P/Invoke calls. This however can trigger
+				 * a false positive in some scenarios where the Swift return buffer is not needed. 
 				 */
 				cinfo->need_swift_return_buffer = TRUE;
 			}
@@ -1095,8 +1096,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 			if ((klass == swift_self || klass == swift_indirect_result) && sig->pinvoke) {
 				guint32 size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke && !sig->marshalling_disabled);
-				g_assert (size == 8);
-
+				g_assert (size == TARGET_SIZEOF_VOID_P);
 				ainfo->storage = ArgValuetypeInReg;
 				ainfo->pair_storage [0] = ArgInIReg;
 				ainfo->pair_storage [1] = ArgNone;
@@ -1286,17 +1286,17 @@ arg_get_val (CallContext *ccontext, ArgInfo *ainfo, gpointer dest)
 			int storage_type = ainfo->pair_storage [k];
 			int reg_storage = ainfo->pair_regs [k];
 			switch (storage_type) {
-				case ArgInIReg:
-					*(gsize*)(storage + ainfo->offsets [k]) = ccontext->gregs [reg_storage];
-					break;
-				case ArgInFloatSSEReg:
-					*(float*)(storage + ainfo->offsets [k]) = *(float*)&ccontext->fregs [reg_storage];
-					break;
-				case ArgInDoubleSSEReg:
-					*(double*)(storage + ainfo->offsets [k]) = ccontext->fregs [reg_storage];
-					break;
-				default:
-					g_assert_not_reached ();
+			case ArgInIReg:
+				*(gsize*)(storage + ainfo->offsets [k]) = ccontext->gregs [reg_storage];
+				break;
+			case ArgInFloatSSEReg:
+				*(float*)(storage + ainfo->offsets [k]) = *(float*)&ccontext->fregs [reg_storage];
+				break;
+			case ArgInDoubleSSEReg:
+				*(double*)(storage + ainfo->offsets [k]) = ccontext->fregs [reg_storage];
+				break;
+			default:
+				g_assert_not_reached ();
 			}
 		}
 		break;
@@ -1314,11 +1314,13 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 {
 	g_assert (arg_need_temp (ainfo));
 
-	host_mgreg_t *src_cast = (host_mgreg_t*)src;
-	for (int k = 0; k < ainfo->nregs; k++) {
-		int storage_type = ainfo->pair_storage [k];
-		int reg_storage = ainfo->pair_regs [k];
-		switch (storage_type) {
+	switch (ainfo->storage) {
+	case ArgValuetypeInReg: {
+		host_mgreg_t *src_cast = (host_mgreg_t*)src;
+		for (int k = 0; k < ainfo->nregs; k++) {
+			int storage_type = ainfo->pair_storage [k];
+			int reg_storage = ainfo->pair_regs [k];
+			switch (storage_type) {
 			case ArgInIReg:
 				ccontext->gregs [reg_storage] = *src_cast;
 				break;
@@ -1328,9 +1330,38 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 				break;
 			default:
 				g_assert_not_reached ();
+			}
+			src_cast++;
 		}
-		src_cast++;
+		break;
 	}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	case ArgSwiftValuetypeLoweredRet: {
+		char *storage = (char*)src;
+		for (int k = 0; k < ainfo->nregs; k++) {
+			int storage_type = ainfo->pair_storage [k];
+			int reg_storage = ainfo->pair_regs [k];
+			switch (storage_type) {
+			case ArgInIReg:
+				ccontext->gregs [reg_storage] = *(gsize*)(storage + ainfo->offsets [k]);
+				break;
+			case ArgInFloatSSEReg:
+				*(float*)&ccontext->fregs [reg_storage] = *(float*)(storage + ainfo->offsets [k]);
+				break;
+			case ArgInDoubleSSEReg:
+				ccontext->fregs [reg_storage] = *(double*)(storage + ainfo->offsets [k]);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+		}
+		break;
+	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
+	default:
+		g_assert_not_reached ();
+	}
+	
 }
 
 gpointer
@@ -2368,6 +2399,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		linfo->ret.storage = LLVMArgVtypeRetAddr;
 		linfo->vret_arg_index = cinfo->vret_arg_index;
 		break;
+	case ArgSwiftValuetypeLoweredRet:
+		linfo->ret.storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
+		break;
 	default:
 		g_assert_not_reached ();
 		break;
@@ -2433,6 +2467,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 		case ArgValuetypeAddrInIReg:
 		case ArgValuetypeAddrOnStack:
 			linfo->args [i].storage = LLVMArgVtypeAddr;
+			break;
+		case ArgSwiftError:
+			linfo->args [i].storage = LLVMArgNone; // LLVM compilation of pinvoke wrappers is not supported, see emit_method_inner in mini-llvm.c
 			break;
 		default:
 			cfg->exception_message = g_strdup ("ainfo->storage");
@@ -8393,8 +8430,19 @@ MONO_RESTORE_WARNING
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		/* Save volatile arguments to the stack */
-		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR))
-			amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, cinfo->ret.reg, 8);
+		if (cfg->vret_addr && (cfg->vret_addr->opcode != OP_REGVAR)) {
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+			if (mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL) && sig->pinvoke &&
+	    		cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && 
+	    		cfg->arch.cinfo->need_swift_return_buffer && cinfo->ret.reg == AMD64_R10) {
+				// Save the return buffer passed by the Swift caller
+				amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, SWIFT_RETURN_BUFFER_REG, 8);
+			} else
+#endif
+			{
+				amd64_mov_membase_reg (code, cfg->vret_addr->inst_basereg, cfg->vret_addr->inst_offset, cinfo->ret.reg, 8);
+			}
+		}
 	}
 
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
@@ -8680,7 +8728,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 
 	/* Load returned vtypes into registers if needed */
 	cinfo = cfg->arch.cinfo;
-	if (cinfo->ret.storage == ArgValuetypeInReg) {
+	switch (cinfo->ret.storage) {
+	case ArgValuetypeInReg: {
 		ArgInfo *ainfo = &cinfo->ret;
 		MonoInst *inst = cfg->ret;
 
@@ -8701,6 +8750,33 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 				g_assert_not_reached ();
 			}
 		}
+		break;
+	}
+#ifdef MONO_ARCH_HAVE_SWIFTCALL
+	case ArgSwiftValuetypeLoweredRet: {
+		if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+			ArgInfo *ainfo = &cinfo->ret;
+			MonoInst *ins = cfg->ret;
+
+			for (int i = 0; i < ainfo->nregs; i++) {
+				switch (ainfo->pair_storage [i]) {
+				case ArgInIReg:
+					amd64_mov_reg_membase (code, ainfo->pair_regs [i], ins->inst_basereg, ins->inst_offset + ainfo->offsets [i], sizeof (target_mgreg_t));
+					break;
+				case ArgInFloatSSEReg:
+					amd64_movss_reg_membase (code, ainfo->pair_regs [i], ins->inst_basereg, ins->inst_offset + ainfo->offsets [i]);
+					break;
+				case ArgInDoubleSSEReg:
+					amd64_movsd_reg_membase (code, ainfo->pair_regs [i], ins->inst_basereg, ins->inst_offset + ainfo->offsets [i]);
+					break;
+				default:
+					g_assert_not_reached ();
+				}
+			}
+		}
+		break;
+	}
+#endif /* MONO_ARCH_HAVE_SWIFTCALL */
 	}
 
 	if (cfg->arch.omit_fp) {

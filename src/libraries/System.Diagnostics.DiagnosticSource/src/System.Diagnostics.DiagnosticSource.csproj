@@ -29,7 +29,6 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
 
   <ItemGroup>
     <Compile Include="System\Diagnostics\Activity.cs" />
-    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
     <Compile Include="System\Diagnostics\ActivityStatusCode.cs" />
     <Compile Include="System\Diagnostics\ActivityTagsCollection.cs" />
     <Compile Include="System\Diagnostics\ActivityContext.cs" />
@@ -45,7 +44,12 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
     <Compile Include="System\Diagnostics\DiagnosticSourceEventSource.cs" />
     <Compile Include="System\Diagnostics\DiagLinkedList.cs" />
+    <Compile Include="System\Diagnostics\DsesActivityEvents.cs" />
+    <Compile Include="System\Diagnostics\DsesActivitySourceListener.cs" />
+    <Compile Include="System\Diagnostics\DsesSamplerBuilder.cs" />
     <Compile Include="System\Diagnostics\DistributedContextPropagator.cs" />
+    <Compile Include="System\Diagnostics\DsesFilterAndTransform.cs" />
+    <Compile Include="System\Diagnostics\Helpers.cs" />
     <Compile Include="System\Diagnostics\LegacyPropagator.cs" />
     <Compile Include="System\Diagnostics\NoOutputPropagator.cs" />
     <Compile Include="System\Diagnostics\PassThroughPropagator.cs" />
@@ -126,6 +130,11 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
     <Compile Include="System\Diagnostics\Activity.DateTime.netfx.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
+    <Compile Include="System\Diagnostics\Metrics\RuntimeMetrics.cs" />
+    <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
