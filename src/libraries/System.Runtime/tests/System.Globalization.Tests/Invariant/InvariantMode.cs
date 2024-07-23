@@ -773,6 +773,7 @@ namespace System.Globalization.Tests
         [InlineData("Hello", CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth, "HELLO")]
         [InlineData("Hell\u00F6", CompareOptions.None, "Hell\u00F6")] // U+00F6 = LATIN SMALL LETTER O WITH DIAERESIS
         [InlineData("Hell\u00F6", CompareOptions.IgnoreCase, "HELL\u00D6")]
+        [InlineData("Hell\uD82A\uDC15", CompareOptions.IgnoreCase, "HELL\uD82A\uDC15")] // U+D82A = High Surrogate; U+DC15 = Low Surrogate
         public unsafe void TestSortKey_FromSpan(string input, CompareOptions options, string expected)
         {
             byte[] expectedOutputBytes = GetExpectedInvariantOrdinalSortKey(expected);
