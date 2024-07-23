@@ -501,6 +501,7 @@ namespace System.Net.WebSockets
             return WaitForWriteTaskAsync(writeTask, shouldFlush: true);
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, bool shouldFlush)
         {
             try
@@ -524,6 +525,7 @@ namespace System.Net.WebSockets
             }
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlyMemory<byte> payloadBuffer, Task lockTask, CancellationToken cancellationToken)
         {
             await lockTask.ConfigureAwait(false);
@@ -668,6 +670,7 @@ namespace System.Net.WebSockets
             return maskOffset;
         }
 
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<TResult> ReceiveAsyncPrivate<TResult>(Memory<byte> payloadBuffer, CancellationToken cancellationToken)
         {
             CancellationTokenRegistration registration = cancellationToken.CanBeCanceled
@@ -1055,6 +1058,7 @@ namespace System.Net.WebSockets
         /// <summary>Processes a received ping or pong message.</summary>
         /// <param name="header">The message header.</param>
         /// <param name="cancellationToken">The CancellationToken used to cancel the websocket operation.</param>
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask HandleReceivedPingPongAsync(MessageHeader header, CancellationToken cancellationToken)
         {
             Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
