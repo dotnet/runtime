@@ -2776,8 +2776,8 @@ function getBranchDisplacement (
         case MintOpArgType.MintOpShortBranch:
             result = getI16(payloadAddress);
             break;
-        case MintOpArgType.MintOpShortAndShortBranch:
-            result = getI16(payloadAddress + 2);
+        case MintOpArgType.MintOpShortAndBranch:
+            result = getI32_unaligned(payloadAddress + 2);
             break;
         default:
             return undefined;
