@@ -4848,6 +4848,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 {
     assert(tree);
 
+    if (opts.OptimizationDisabled())
+    {
+        return gtSetEvalOrderMinOpts(tree);
+    }
+
 #ifdef DEBUG
     /* Clear the GTF_DEBUG_NODE_MORPHED flag as well */
     tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
@@ -6211,6 +6216,166 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// gtSetEvalOrderMinOpts: A MinOpts specific version of gtSetEvalOrder. We don't
+//    need to set costs, but we're looking for opportunities to swap operands.
+//
+// Arguments:
+//    tree - The tree for which we are setting the evaluation order.
+//
+// Return Value:
+//    the Sethi 'complexity' estimate for this tree (the higher
+//    the number, the higher is the tree's resources requirement)
+//
+unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
+{
+    assert(tree);
+
+    if (tree->OperIsLeaf())
+    {
+        // Nothing to do for leaves.
+        return 0;
+    }
+
+    unsigned level = 1;
+    if (tree->OperIsSimple())
+    {
+        GenTree* op1 = tree->AsOp()->gtOp1;
+        GenTree* op2 = tree->gtGetOp2IfPresent();
+
+        // Check for addressing mode with a null base
+        if (tree->OperIsAddrMode() && (op1 == nullptr))
+        {
+            std::swap(op1, op2);
+        }
+
+        // Check for a nilary operator
+        if (op1 == nullptr)
+        {
+            assert(op2 == nullptr);
+            return level;
+        }
+
+        if (op2 == nullptr)
+        {
+            gtSetEvalOrderMinOpts(op1);
+            return level;
+        }
+
+        // Default Binary ops have a cost of 1,1
+        level         = gtSetEvalOrderMinOpts(op1);
+        unsigned lvl2 = gtSetEvalOrderMinOpts(op2);
+
+        bool allowReversal = true;
+        // for certain operators.
+        switch (tree->OperGet())
+        {
+            case GT_COMMA:
+            case GT_BOUNDS_CHECK:
+            case GT_INTRINSIC:
+            case GT_QMARK:
+            case GT_COLON:
+                // We're not going to swap operands in these
+                allowReversal = false;
+                break;
+
+            case GT_STORE_BLK:
+            case GT_STOREIND:
+            {
+                if (op1->IsInvariant())
+                {
+                    allowReversal = false;
+                    tree->SetReverseOp();
+                    break;
+                }
+                if ((op1->gtFlags & GTF_ALL_EFFECT) != 0)
+                {
+                    break;
+                }
+
+                // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
+                if (gtMayHaveStoreInterference(op2, op1))
+                {
+                    // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
+                    allowReversal = false;
+                    break;
+                }
+
+                // If op2 is simple then evaluate op1 first
+                if (op2->OperIsLeaf())
+                {
+                    break;
+                }
+
+                allowReversal = false;
+                tree->SetReverseOp();
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        bool tryToSwap = false;
+        if (fgOrder != FGOrderLinear)
+        {
+            tryToSwap = tree->IsReverseOp() ? level > lvl2 : level < lvl2;
+        }
+
+        if (tryToSwap && allowReversal)
+        {
+            // Can we swap the order by commuting the operands?
+            bool canSwap = tree->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
+            if (canSwap)
+            {
+                if (tree->OperIsCmpCompare())
+                {
+                    genTreeOps oper = tree->OperGet();
+                    if (GenTree::SwapRelop(oper) != oper)
+                    {
+                        tree->SetOper(GenTree::SwapRelop(oper));
+                    }
+                    std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
+                }
+                else if (tree->OperIsCommutative())
+                {
+                    std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
+                }
+                else
+                {
+                    // Mark the operand's evaluation order to be swapped.
+                    tree->gtFlags ^= GTF_REVERSE_OPS;
+                }
+            }
+        }
+
+        // Swap the level counts
+        if (tree->IsReverseOp())
+        {
+            std::swap(level, lvl2);
+        }
+
+        // Compute the sethi number for this binary operator
+        if (level < 1)
+        {
+            level = lvl2;
+        }
+        else if (level == lvl2)
+        {
+            level++;
+        }
+    }
+    else if (tree->IsCall())
+    {
+        for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
+        {
+            gtSetEvalOrderMinOpts(arg.GetEarlyNode());
+        }
+        level = 3;
+    }
+    return level;
+}
 
 //------------------------------------------------------------------------
 // gtMayHaveStoreInterference: Check if two trees may interfere because of a
