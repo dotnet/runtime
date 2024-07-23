@@ -7,6 +7,7 @@ import { AssetEntry } from "./types";
 
 export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boolean> {
     const resources = loaderHelpers.config.resources!;
+    const originalAssemblyName = assemblyNameToLoad;
     const lazyAssemblies = resources.lazyAssembly;
     if (!lazyAssemblies) {
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
@@ -20,6 +21,7 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
 
     const assemblyNameToLoadDll = assemblyNameWithoutExtension + ".dll";
     const assemblyNameToLoadWasm = assemblyNameWithoutExtension + ".wasm";
+
     if (loaderHelpers.config.resources!.fingerprinting) {
         const map = loaderHelpers.config.resources!.fingerprinting;
         for (const fingerprintedName in map) {
