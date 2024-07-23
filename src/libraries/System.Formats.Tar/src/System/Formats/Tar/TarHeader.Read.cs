@@ -25,7 +25,7 @@ namespace System.Formats.Tar
 
             archiveStream.ReadExactly(buffer);
 
-            TarHeader? header = TryReadAttributes(initialFormat, buffer);
+            TarHeader? header = TryReadAttributes(initialFormat, buffer, archiveStream);
             if (header != null && processDataBlock)
             {
                 header.ProcessDataBlock(archiveStream, copyData);
@@ -47,7 +47,7 @@ namespace System.Formats.Tar
 
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-            TarHeader? header = TryReadAttributes(initialFormat, buffer.Span);
+            TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
             if (header != null && processDataBlock)
             {
                 await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
@@ -58,7 +58,7 @@ namespace System.Formats.Tar
             return header;
         }
 
-        private static TarHeader? TryReadAttributes(TarEntryFormat initialFormat, ReadOnlySpan<byte> buffer)
+        private static TarHeader? TryReadAttributes(TarEntryFormat initialFormat, ReadOnlySpan<byte> buffer, Stream archiveStream)
         {
             // Confirms if v7 or pax, or tentatively selects ustar
             TarHeader? header = TryReadCommonAttributes(buffer, initialFormat);
@@ -86,6 +86,8 @@ namespace System.Formats.Tar
                     }
                     // In PAX, there is nothing to read in this section (empty space)
                 }
+                // Finished reading the header metadata, next byte belongs to the data section, save the position
+                SetDataOffset(header, archiveStream);
             }
             return header;
         }

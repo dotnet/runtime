@@ -8028,10 +8028,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
 
             GenTree* oldTree = tree;
 
-            if (opts.OptimizationEnabled())
-            {
-                tree = gtFoldExpr(tree);
-            }
+            tree = gtFoldExpr(tree);
 
             // Were we able to fold it ?
             // Note that gtFoldExpr may return a non-leaf even if successful
@@ -8330,11 +8327,8 @@ DONE_MORPHING_CHILDREN:
         qmarkOp2 = oldTree->AsOp()->gtOp2->AsOp()->gtOp2;
     }
 
-    if (opts.OptimizationEnabled())
-    {
-        // Try to fold it, maybe we get lucky,
-        tree = gtFoldExpr(tree);
-    }
+    // Try to fold it, maybe we get lucky,
+    tree = gtFoldExpr(tree);
 
     if (oldTree != tree)
     {
@@ -12360,11 +12354,8 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags |= tree->AsConditional()->gtOp1->gtFlags & GTF_ALL_EFFECT;
             tree->gtFlags |= tree->AsConditional()->gtOp2->gtFlags & GTF_ALL_EFFECT;
 
-            if (opts.OptimizationEnabled())
-            {
-                // Try to fold away any constants etc.
-                tree = gtFoldExpr(tree);
-            }
+            // Try to fold away any constants etc.
+            tree = gtFoldExpr(tree);
 
             break;
 

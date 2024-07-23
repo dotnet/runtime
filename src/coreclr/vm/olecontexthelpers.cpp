@@ -51,7 +51,7 @@ LPVOID SetupOleContext()
             SOleTlsData* _pData = (SOleTlsData *) ClrTeb::GetOleReservedPtr();
             if (_pData && _pData->pCurrentCtx == NULL)
             {
-                _pData->pCurrentCtx = (CObjectContext*)pObjCtx;   // no release !!!!
+                _pData->pCurrentCtx = pObjCtx;   // no release !!!!
             }
             else
             {

@@ -1216,19 +1216,42 @@ void GcInfoEncoder::Build()
 
     ///////////////////////////////////////////////////////////////////////
     // Normalize call sites
+    // Eliminate call sites that fall inside interruptible ranges
     ///////////////////////////////////////////////////////////////////////
-
-    _ASSERTE(m_NumCallSites == 0 || numInterruptibleRanges == 0);
 
     UINT32 numCallSites = 0;
     for(UINT32 callSiteIndex = 0; callSiteIndex < m_NumCallSites; callSiteIndex++)
     {
         UINT32 callSite = m_pCallSites[callSiteIndex];
-        callSite += m_pCallSiteSizes[callSiteIndex];
+        // There's a contract with the EE that says for non-leaf stack frames, where the
+        // method is stopped at a call site, the EE will not query with the return PC, but
+        // rather the return PC *minus 1*.
+        // The reason is that variable/register liveness may change at the instruction immediately after the
+        // call, so we want such frames to appear as if they are "within" the call.
+        // Since we use "callSite" as the "key" when we search for the matching descriptor, also subtract 1 here
+        // (after, of course, adding the size of the call instruction to get the return PC).
+        callSite += m_pCallSiteSizes[callSiteIndex] - 1;
 
         _ASSERTE(DENORMALIZE_CODE_OFFSET(NORMALIZE_CODE_OFFSET(callSite)) == callSite);
         UINT32 normOffset = NORMALIZE_CODE_OFFSET(callSite);
-        m_pCallSites[numCallSites++] = normOffset;
+
+        BOOL keepIt = TRUE;
+
+        for(UINT32 intRangeIndex = 0; intRangeIndex < numInterruptibleRanges; intRangeIndex++)
+        {
+            InterruptibleRange *pRange = &pRanges[intRangeIndex];
+            if(pRange->NormStopOffset > normOffset)
+            {
+                if(pRange->NormStartOffset <= normOffset)
+                {
+                    keepIt = FALSE;
+                }
+                break;
+            }
+        }
+
+        if(keepIt)
+            m_pCallSites[numCallSites++] = normOffset;
     }
 
     GCINFO_WRITE_VARL_U(m_Info1, NORMALIZE_NUM_SAFE_POINTS(numCallSites), NUM_SAFE_POINTS_ENCBASE, NumCallSitesSize);
@@ -1395,7 +1418,7 @@ void GcInfoEncoder::Build()
 
         for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
         {
-            if(pCurrent->CodeOffset >= callSite)
+            if(pCurrent->CodeOffset > callSite)
             {
                 couldBeLive |= liveState;
 
@@ -1750,7 +1773,7 @@ void GcInfoEncoder::Build()
         {
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset >= callSite)
+                if(pCurrent->CodeOffset > callSite)
                 {
                     // Time to record the call site
 
@@ -1849,7 +1872,7 @@ void GcInfoEncoder::Build()
 
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset >= callSite)
+                if(pCurrent->CodeOffset > callSite)
                 {
                     // Time to encode the call site
 
@@ -1896,7 +1919,7 @@ void GcInfoEncoder::Build()
 
             for(pCurrent = pTransitions; pCurrent < pEndTransitions; )
             {
-                if(pCurrent->CodeOffset >= callSite)
+                if(pCurrent->CodeOffset > callSite)
                 {
                     // Time to encode the call site
                     GCINFO_WRITE_VECTOR(m_Info1, liveState, CallSiteStateSize);

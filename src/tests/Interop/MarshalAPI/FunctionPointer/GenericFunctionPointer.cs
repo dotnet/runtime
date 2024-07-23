@@ -8,7 +8,6 @@ using Xunit;
 
 public partial class FunctionPtr
 {
-    public static bool CanRunGenericFunctionPointerTest => !TestLibrary.Utilities.IsMonoRuntime;
     public static bool CanRunInvalidGenericFunctionPointerTest => !TestLibrary.Utilities.IsNativeAot && !TestLibrary.Utilities.IsMonoRuntime;
 
     [UnmanagedCallersOnly]
@@ -58,7 +57,7 @@ public partial class FunctionPtr
         public int X;
     }
 
-    [ConditionalTheory(nameof(CanRunGenericFunctionPointerTest))]
+    [Theory]
     [InlineData(0f)]
     [InlineData(1f)]
     [InlineData(-1f)]
