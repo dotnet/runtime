@@ -577,7 +577,23 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             Assert.NotNull(host.Services.GetRequiredService<ServiceA>());
         }
+        [Fact]
+        public void ScopeValidationtEnabledInDevelopmentWithServiceProviderChanges()
+        {
+            var host = new HostBuilder()
+                .UseEnvironment(Environments.Development)
+                .ConfigureServices(services =>
+                {
+                    services.AddScoped<ServiceA>();
+                })
+                .UseDefaultServiceProvider((context, options) =>
+                {
+                    options.ValidateScopes = true;
+                })
+                .Build();
 
+            Assert.Throws<InvalidOperationException>(() => host.Services.GetRequiredService<ServiceA>());
+        }
         [Fact]
         public void ValidateOnBuildNotEnabledInDevelopmentWithServiceProviderChanges()
         {
