@@ -9,7 +9,7 @@ namespace System
     /// <summary>Supports iterating over a <see cref="string"/> object and reading its individual characters.</summary>
     public sealed class CharEnumerator : IEnumerator, IEnumerator<char>, IDisposable, ICloneable
     {
-        private string _str; // null after disposal
+        private string _str; // Empty string after disposal
         private int _index = -1;
 
         internal CharEnumerator(string str) => _str = str;
@@ -31,7 +31,7 @@ namespace System
             return false;
         }
 
-        public void Dispose() => _str = String.Empty;
+        public void Dispose() => _str = string.Empty;
 
         object? IEnumerator.Current => Current;
 
