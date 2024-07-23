@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Runtime;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -290,6 +291,50 @@ namespace System.Tests
                     Finalized = true;
                 }
             }
+        }
+
+        // [OuterLoop]  // TODO: VS uncomment before merging
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
+        public unsafe static void WaitForPendingFinalizersRaces()
+        {
+            Task.Run(Test);
+            Task.Run(Test);
+            Task.Run(Test);
+            Task.Run(Test);
+            Task.Run(Test);
+            Task.Run(Test);
+            Test();
+
+            static void Test()
+            {
+                for (int i = 0; i < 2000; i++)
+                {
+                    bool finalized = false;
+                    MakeAndNull(&finalized);
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    Assert.True(finalized);
+                }
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void MakeAndNull(bool* flag)
+            {
+                var deadObj = new TestObjectWithFinalizer(flag);
+                // it's dead here
+            };
+        }
+
+        unsafe class TestObjectWithFinalizer
+        {
+            bool* _flag;
+
+            public TestObjectWithFinalizer(bool* flag)
+            {
+                _flag = flag;
+            }
+
+            ~TestObjectWithFinalizer() => *_flag = true;
         }
 
         [Fact]
