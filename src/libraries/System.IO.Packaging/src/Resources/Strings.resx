@@ -375,4 +375,43 @@
   <data name="FileContainsCorruptedData" xml:space="preserve">
     <value>File contains corrupted data.</value>
   </data>
+  <data name="DuplicatePiecesFound" xml:space="preserve">
+    <value>Duplicate pieces found in the package.</value>
+  </data>
+  <data name="OffsetNegative" xml:space="preserve">
+    <value>Offset must be greater than or equal to zero.</value>
+  </data>
+  <data name="PieceDoesNotExist" xml:space="preserve">
+    <value>Cannot find piece with the specified piece number.</value>
+  </data>
+  <data name="ReadBufferTooSmall" xml:space="preserve">
+    <value>Buffer too small to hold results of Read.</value>
+  </data>
+  <data name="ReadCountNegative" xml:space="preserve">
+    <value>Count of bytes to read cannot be negative.</value>
+  </data>
+  <data name="ReadNotSupported" xml:space="preserve">
+    <value>Reading is not supported on this stream.</value>
+  </data>
+  <data name="SeekNegative" xml:space="preserve">
+    <value>Cannot set seek pointer to a negative position.</value>
+  </data>
+  <data name="SeekNotSupported" xml:space="preserve">
+    <value>Stream does not support Seek.</value>
+  </data>
+  <data name="StreamDoesNotSupportWrite" xml:space="preserve">
+    <value>Cannot change content of a read-only stream.</value>
+  </data>
+  <data name="WriteBufferTooSmall" xml:space="preserve">
+    <value>Buffer of bytes to be written is too small.</value>
+  </data>
+  <data name="WriteCountNegative" xml:space="preserve">
+    <value>Count of bytes to write cannot be negative.</value>
+  </data>
+  <data name="WriteNotSupported" xml:space="preserve">
+    <value>Stream does not support writing.</value>
+  </data>
+  <data name="UnexpectedPartPieceUri" xml:space="preserve">
+    <value>Provided URI is a part piece URI, not a part URI.</value>
+  </data>
 </root>

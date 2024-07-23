@@ -152,7 +152,7 @@ namespace System
                 AdjustmentRule? rule = CreateAdjustmentRuleFromTimeZoneInformation(regZone, DateTime.MinValue.Date, DateTime.MaxValue.Date, zone.Bias);
                 if (rule != null)
                 {
-                    _adjustmentRules = new[] { rule };
+                    _adjustmentRules = [rule];
                 }
             }
 
@@ -524,7 +524,7 @@ namespace System
                             defaultTimeZoneInformation, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
                         if (rule != null)
                         {
-                            rules = new[] { rule };
+                            rules = [rule];
                         }
                         return true;
                     }
@@ -558,7 +558,7 @@ namespace System
                         AdjustmentRule? rule = CreateAdjustmentRuleFromTimeZoneInformation(dtzi, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
                         if (rule != null)
                         {
-                            rules = new[] { rule };
+                            rules = [rule];
                         }
                         return true;
                     }

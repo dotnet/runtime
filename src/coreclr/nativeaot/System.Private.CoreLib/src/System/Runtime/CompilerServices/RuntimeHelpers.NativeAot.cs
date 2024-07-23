@@ -27,7 +27,6 @@ namespace System.Runtime.CompilerServices
             throw new PlatformNotSupportedException();
         }
 
-#pragma warning disable IDE0060
         private static unsafe ref byte GetSpanDataFrom(
             RuntimeFieldHandle fldHandle,
             RuntimeTypeHandle targetTypeHandle,
@@ -39,7 +38,6 @@ namespace System.Runtime.CompilerServices
             // https://github.com/dotnet/corert/issues/364
             throw new PlatformNotSupportedException();
         }
-#pragma warning disable IDE0060
 
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
