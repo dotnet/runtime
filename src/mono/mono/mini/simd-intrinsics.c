@@ -702,7 +702,8 @@ get_xconst_int_elem (MonoCompile *cfg, MonoInst *ins, MonoTypeEnum etype, int in
 			g_assert (index < 8);
 			return ((guint16*)cns_vec) [index];
 		}
-		case MONO_TYPE_I4: {
+		case MONO_TYPE_I4:
+		case MONO_TYPE_R4: {
 			g_assert (index < 4);
 			return ((gint32*)cns_vec) [index];
 		}
@@ -710,7 +711,8 @@ get_xconst_int_elem (MonoCompile *cfg, MonoInst *ins, MonoTypeEnum etype, int in
 			g_assert (index < 4);
 			return ((guint32*)cns_vec) [index];
 		}
-		case MONO_TYPE_I8: {
+		case MONO_TYPE_I8:
+		case MONO_TYPE_R8: {
 			g_assert (index < 2);
 			return ((gint64*)cns_vec) [index];
 		}
