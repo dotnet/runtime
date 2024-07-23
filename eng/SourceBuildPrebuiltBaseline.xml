@@ -28,5 +28,11 @@
     <!-- Analyzers cannot be SBRPed + an older release version is being used, meaning there is no intermediate for it
          In full source build, this version is overridden by previous repo outputs or come from previously source-built artifacts. -->
     <UsagePattern IdentityGlob="Microsoft.CodeAnalysis.Analyzers/*" />
+
+    <!-- Allowed due to https://github.com/dotnet/source-build-reference-packages/pull/979 -->
+    <UsagePattern IdentityGlob="System.IO.Pipelines.6.0.*" />
+    <UsagePattern IdentityGlob="System.IO.Pipelines.7.0.0" />
+    <UsagePattern IdentityGlob="System.IO.Pipelines.8.0.*" />
+    <UsagePattern IdentityGlob="System.Security.Cryptography.Pkcs.5.0.0"/>
   </IgnorePatterns>
 </UsageData>
