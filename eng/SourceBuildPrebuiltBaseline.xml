@@ -33,6 +33,6 @@
     <UsagePattern IdentityGlob="System.IO.Pipelines/6.0.*" />
     <UsagePattern IdentityGlob="System.IO.Pipelines/7.0.0" />
     <UsagePattern IdentityGlob="System.IO.Pipelines/8.0.*" />
-    <UsagePattern IdentityGlob="System.Security.Cryptography.Pkcs/5.0.0"/>
+    <UsagePattern IdentityGlob="System.Security.Cryptography.Pkcs/5.0.0" />
   </IgnorePatterns>
 </UsageData>
