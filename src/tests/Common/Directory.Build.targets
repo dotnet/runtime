@@ -190,7 +190,7 @@
           TargetDir="wasm-test-runner/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(BrowserProjectRoot)\test-main.js"
+          Include="$(BrowserProjectRoot)\test-main.mjs"
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal

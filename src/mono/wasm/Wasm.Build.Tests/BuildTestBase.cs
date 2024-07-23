@@ -191,7 +191,7 @@ namespace Wasm.Build.Tests
                                            string targetFramework = DefaultTargetFramework,
                                            string? extraXHarnessMonoArgs = null,
                                            string? extraXHarnessArgs = null,
-                                           string jsRelativePath = "test-main.js",
+                                           string jsRelativePath = "test-main.mjs",
                                            string environmentLocale = DefaultEnvironmentLocale)
         {
             buildDir ??= _projectDir;
@@ -373,7 +373,7 @@ namespace Wasm.Build.Tests
                 <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
                 <OutputType>Exe</OutputType>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
-                <WasmMainJSPath>test-main.js</WasmMainJSPath>
+                <WasmMainJSPath>test-main.mjs</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>
               <ItemGroup>

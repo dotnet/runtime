@@ -102,7 +102,7 @@ public class TestMainJsProjectProvider : ProjectProviderBase
                                         TargetFramework: buildProjectOptions.TargetFramework!,
                                         BinFrameworkDir: binFrameworkDir,
                                         ProjectName: buildArgs.ProjectName,
-                                        MainJS: buildProjectOptions.MainJS ?? "test-main.js",
+                                        MainJS: buildProjectOptions.MainJS ?? "test-main.mjs",
                                         GlobalizationMode: buildProjectOptions.GlobalizationMode,
                                         HasV8Script: buildProjectOptions.HasV8Script,
                                         PredefinedIcudt: buildProjectOptions.PredefinedIcudt ?? string.Empty,

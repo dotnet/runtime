@@ -210,8 +210,8 @@ namespace Wasm.Build.Tests
 
                 File.WriteAllText(Path.Combine(_projectDir, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
                 File.Copy(Path.Combine(AppContext.BaseDirectory,
-                                        options.TargetFramework == "net7.0" ? "data/test-main-7.0.js" : "test-main.js"),
-                            Path.Combine(_projectDir, "test-main.js"));
+                                        options.TargetFramework == "net7.0" ? "data/test-main-7.0.js" : "test-main.mjs"),
+                            Path.Combine(_projectDir, "test-main.mjs"));
             }
             else if (_projectDir is null)
             {
