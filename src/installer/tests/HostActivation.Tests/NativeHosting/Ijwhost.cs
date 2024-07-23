@@ -68,27 +68,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     "NativeEntryPoint"
                 };
 
-                if (load_isolated)
-                {
-                    RuntimeConfig.FromFile(app.RuntimeConfigJson)
+                RuntimeConfig.FromFile(app.RuntimeConfigJson)
                     .WithProperty("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext", load_isolated.ToString())
                     .Save();
-                }
 
                 CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
                     .Execute();
 
+                result.Should().Pass()
+                    .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class");
+
                 if (load_isolated)  // Assembly should be loaded in an isolated context
                 {
-                    result.Should().Pass()
-                        .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                        .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"IsolatedComponentLoadContext");
+                    result.Should().HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"IsolatedComponentLoadContext");
                 }
                 else  // Assembly should be loaded in the default context
                 {
-                    result.Should().Pass()
-                        .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                        .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
+                    result.Should().HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
                 }
             }
         }
