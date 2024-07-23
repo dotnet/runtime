@@ -116,10 +116,10 @@ namespace System.Buffers
         private sealed class AllocHGlobalHandle : SafeHandle
         {
             private IntPtr buffer;
-            private Int32 allocationSize;
+            private ulong allocationSize;
 
             // Called by P/Invoke when returning SafeHandles
-            private AllocHGlobalHandle(IntPtr buffer, Int32 allocationSize)
+            private AllocHGlobalHandle(IntPtr buffer, ulong allocationSize)
                 : base(IntPtr.Zero, ownsHandle: true)
             {
                 this.buffer = buffer;
@@ -130,9 +130,9 @@ namespace System.Buffers
             {
 
                 // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
-                Int32 pageSize = Environment.SystemPageSize;
-                Int32 allocationSize = (Int32)((byteLength % pageSize) + 2) * pageSize;
-                IntPtr buffer = memalign(pageSize, allocationSize);
+                int pageSize = Environment.SystemPageSize;
+                int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
+                IntPtr buffer = mmap(IntPtr.Zero, (ulong)allocationSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
                 if (buffer == IntPtr.Zero)
                 {
@@ -154,12 +154,12 @@ namespace System.Buffers
                 }
 
                 // Protect the page before/after based on the poison page placement.
-                if (mprotect(poisonPageAddress, (ulong)pageSize, PROT_NONE) == -1)
+                if (mprotect(poisonPageAddress, (ulong) pageSize, PROT_NONE) == -1)
                 {
                     throw new InvalidOperationException("Failed to mark page as a poison page using mprotect.");
                 }
 
-                AllocHGlobalHandle retVal = new AllocHGlobalHandle(buffer, allocationSize);
+                AllocHGlobalHandle retVal = new AllocHGlobalHandle(buffer, (ulong)allocationSize);
                 retVal.SetHandle(baseAddress); // this base address would be used as the start of Span that is used during unit testing.
                 return retVal;
             }
@@ -168,27 +168,23 @@ namespace System.Buffers
 
             protected override bool ReleaseHandle()
             {
-                // Reset the protection on the allocated memory.
-                if (mprotect(buffer, (ulong)allocationSize, PROT_READ | PROT_WRITE) == -1)
-                {
-                    throw new InvalidOperationException("Failed to reset memory protection using mprotect.");
-                }
-                free(buffer);
+                munmap(buffer, allocationSize);
                 return true;
             }
-
+            const int MAP_PRIVATE = 0x2;
+            const int MAP_ANONYMOUS = 0x20;
             const int PROT_NONE = 0x0;
             const int PROT_READ = 0x1;
             const int PROT_WRITE = 0x2;
 
             [DllImport("libc", SetLastError = true)]
-            static extern IntPtr memalign(int alignment, int size);
+            static extern IntPtr mmap(IntPtr addrress, ulong length, int prot, int flags, int fd, int offset);
+
+            [DllImport("libc", SetLastError = true)]
+            static extern IntPtr munmap(IntPtr addrress, ulong length);
 
             [DllImport("libc", SetLastError = true)]
             static extern int mprotect(IntPtr addr, ulong len, int prot);
-
-            [DllImport("libc", SetLastError = true)]
-            static extern void free(IntPtr ptr);
         }
     }
 }
