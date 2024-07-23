@@ -2961,7 +2961,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             // We are about to store the FFR on stack. So first read the FFR register and
             // store it in op1Reg. After that, op1Reg will be stored on the stack.
             assert(varDsc->lvImplicitlyReferenced == 1);
-           
+
             regNumber op1Reg = data->GetRegNum();
             assert(op1Reg != REG_NA);
             GetEmitter()->emitIns_R(INS_sve_rdffr, EA_SCALABLE, op1Reg);

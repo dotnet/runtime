@@ -1521,8 +1521,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Sve_SetFfr:
         {
             // Create physReg FFR definition to store FFR register.
-            unsigned lclNum = comp->getFFRegisterVarNum();
-            GenTree* ffrReg = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
+            unsigned lclNum      = comp->getFFRegisterVarNum();
+            GenTree* ffrReg      = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
             GenTree* storeLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
             BlockRange().InsertAfter(node, ffrReg, storeLclVar);
 
@@ -1565,7 +1565,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 LowerNode(lclVar);
 
                 node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
-            }            
+            }
 
             if (foundUse)
             {
