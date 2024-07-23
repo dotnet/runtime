@@ -4836,8 +4836,10 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     return false;
 }
 
-static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeStoreInd* store, bool* allowReversal)
+static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool* allowReversal)
 {
+    assert(store->OperIs(GT_STORE_BLK, GT_STOREIND));
+
     GenTree* addr  = store->Addr();
     GenTree* data  = store->Data();
     *allowReversal = true;
@@ -5892,7 +5894,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-ASG-Cleanup: this logic emulated the ASG case below. See how of much of it can be deleted.
                 if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
                 {
-                    SetIndirectStoreEvalOrder(this, tree->AsStoreInd(), &allowReversal);
+                    SetIndirectStoreEvalOrder(this, tree->AsIndir(), &allowReversal);
                 }
                 break;
 
@@ -6310,7 +6312,7 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
 
             case GT_STORE_BLK:
             case GT_STOREIND:
-                SetIndirectStoreEvalOrder(this, tree->AsStoreInd(), &allowSwap);
+                SetIndirectStoreEvalOrder(this, tree->AsIndir(), &allowSwap);
                 break;
 
             default:
