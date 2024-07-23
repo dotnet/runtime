@@ -1619,7 +1619,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
             if (FAILED(hr = m_pPortablePdbWriter->ChangePdbStreamGuid(pdbGuid))) goto exit;
         }
 
-        if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;
+        //if (FAILED(hr=CreateDebugDirectory(pdbChecksum))) goto exit;
     }
 
     if (FAILED(hr=m_pCeeFileGen->SetOutputFileName(m_pCeeFile, pwzOutputFilename))) goto exit;
