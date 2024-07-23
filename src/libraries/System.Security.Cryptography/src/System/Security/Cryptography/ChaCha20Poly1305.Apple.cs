@@ -8,8 +8,8 @@ namespace System.Security.Cryptography
 {
     public sealed partial class ChaCha20Poly1305
     {
-        // CryptoKit added ChaCha20Poly1305 in macOS 10.15, which is lower than our minimum target for macOS.
-        public static bool IsSupported => true;
+        // CryptoKit added ChaCha20Poly1305 in macOS 10.15, which is lower than our minimum target for macOS/MacCatalyst. On iOS/tvOS, it was added in 13.0.
+        public static bool IsSupported => OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOSVersionAtLeast(13) || OperatingSystem.IsTvOSVersionAtLeast(13);
         private FixedMemoryKeyBox _keyBox;
 
         [MemberNotNull(nameof(_keyBox))]

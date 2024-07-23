@@ -282,6 +282,15 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
+        /// Gets the starting position of the data stream respective to the archive stream.
+        /// </summary>
+        /// <remarks>
+        /// If the entry does not come from an archive stream or if the archive stream is not seekable, returns -1.
+        /// The position value returned by this property is relative to the absolute start of the archive stream, independent of where the tar archive begins.
+        /// </remarks>
+        public long DataOffset => _header._dataOffset;
+
+        /// <summary>
         /// A string that represents the current entry.
         /// </summary>
         /// <returns>The <see cref="Name"/> of the current entry.</returns>
@@ -430,7 +439,7 @@ namespace System.Formats.Tar
 
         private void CreateNonRegularFile(string filePath, string? linkTargetPath)
         {
-            Debug.Assert(EntryType is not TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile);
+            Debug.Assert(EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile or TarEntryType.ContiguousFile));
 
             switch (EntryType)
             {

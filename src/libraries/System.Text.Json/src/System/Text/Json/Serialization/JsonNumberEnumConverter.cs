@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentOutOfRangeException_JsonConverterFactory_TypeNotSupported(typeToConvert);
             }
 
-            return new EnumConverter<TEnum>(EnumConverterOptions.AllowNumbers, options);
+            return EnumConverterFactory.Create<TEnum>(EnumConverterOptions.AllowNumbers, options);
         }
     }
 }

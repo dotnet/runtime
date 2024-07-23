@@ -134,6 +134,12 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmEnableWebCil"] = "false";
             }
 
+            if (!EnvironmentVariables.UseFingerprinting)
+            {
+                // Default is 'true'
+                EnvVars["WasmFingerprintAssets"] = "false";
+            }
+
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";

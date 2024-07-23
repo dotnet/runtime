@@ -11,8 +11,8 @@ namespace System.Security.Cryptography
     {
         private FixedMemoryKeyBox _keyBox;
 
-        // CryptoKit added AES.GCM in macOS 10.15, which is lower than our minimum target for macOS.
-        public static bool IsSupported => true;
+        // CryptoKit added AES.GCM in macOS 10.15, which is lower than our minimum target for macOS/MacCatalyst. On iOS/tvOS, it was added in 13.0.
+        public static bool IsSupported => OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOSVersionAtLeast(13) || OperatingSystem.IsTvOSVersionAtLeast(13);
 
         // CryptoKit only supports 16 byte tags.
         public static KeySizes TagByteSizes { get; } = new KeySizes(16, 16, 1);

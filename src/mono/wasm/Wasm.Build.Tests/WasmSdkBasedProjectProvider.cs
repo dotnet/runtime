@@ -17,7 +17,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
 {
     public WasmSdkBasedProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
             : base(_testOutput, _projectDir)
-    {}
+    {
+        IsFingerprintingSupported = true;
+    }
 
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(AssertBundleOptionsBase assertOptions)
         => new SortedDictionary<string, bool>()
@@ -27,7 +29,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                { "dotnet.native.js", true },
                { "dotnet.native.js.symbols", false },
                { "dotnet.globalization.js", true },
-               { "dotnet.native.wasm", false },
+               { "dotnet.native.wasm", true },
                { "dotnet.native.worker.mjs", true },
                { "dotnet.runtime.js", true },
                { "dotnet.runtime.js.map", false },
