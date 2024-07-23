@@ -146,6 +146,7 @@ namespace BasicEventSourceTests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/105293")]
         [Fact]
         public void Test_Bad_WriteRelatedID_ParameterName()
         {
