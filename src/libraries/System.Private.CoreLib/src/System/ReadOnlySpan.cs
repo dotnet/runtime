@@ -11,7 +11,6 @@ using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
 #pragma warning disable 0809 // Obsolete member 'Span<T>.Equals(object)' overrides non-obsolete member 'object.Equals(object)'
-#pragma warning disable 8500 // address / sizeof of managed types
 
 namespace System
 {
@@ -22,9 +21,7 @@ namespace System
     [DebuggerTypeProxy(typeof(SpanDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
     [NonVersionable]
-#pragma warning disable SYSLIB1056 // Specified native type is invalid
     [NativeMarshalling(typeof(ReadOnlySpanMarshaller<,>))]
-#pragma warning restore SYSLIB1056 // Specified native type is invalid
     [Intrinsic]
     public readonly ref struct ReadOnlySpan<T>
     {

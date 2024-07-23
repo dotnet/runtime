@@ -26,8 +26,8 @@ namespace System
         // MinTimeTicks is the ticks for the midnight time 00:00:00.000 AM
         private const long MinTimeTicks = 0;
 
-        // MaxTimeTicks is the max tick value for the time in the day. It is calculated using DateTime.Today.AddTicks(-1).TimeOfDay.Ticks.
-        private const long MaxTimeTicks = 863_999_999_999;
+        // MaxTimeTicks is the max tick value for the time in the day.
+        private const long MaxTimeTicks = TimeSpan.TicksPerDay - 1;
 
         /// <summary>
         /// Represents the smallest possible value of TimeOnly.

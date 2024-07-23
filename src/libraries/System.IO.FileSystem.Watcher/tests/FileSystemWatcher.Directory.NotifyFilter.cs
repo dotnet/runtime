@@ -21,6 +21,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(FilterTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_NotifyFilter_Attributes(NotifyFilters filter)
         {
             FileSystemWatcherTest.Execute(() =>
@@ -116,6 +117,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(FilterTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_NotifyFilter_LastWriteTime(NotifyFilters filter)
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
@@ -165,6 +167,7 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(FilterTypes))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to set security info
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_NotifyFilter_Security(NotifyFilters filter)
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
@@ -222,6 +225,7 @@ namespace System.IO.Tests
         /// after each other.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
         public void FileSystemWatcher_Directory_NotifyFilter_ModifyAndCreate()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");

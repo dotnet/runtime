@@ -2,20 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
-using Microsoft.VisualBasic;
-
-#pragma warning disable 8500 // sizeof of managed types
 
 namespace System.Numerics.Tensors
 {
     internal static partial class TensorSpanHelpers
     {
+        internal static bool AreShapesTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)
+            where T : IEquatable<T>, IEqualityOperators<T, T, bool> => tensor1._shape.Lengths.SequenceEqual(tensor2._shape.Lengths);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CalculateTotalLength(ReadOnlySpan<nint> lengths)
         {
@@ -42,6 +41,34 @@ namespace System.Numerics.Tensors
         public static nint[] CalculateStrides(ReadOnlySpan<nint> lengths)
         {
             nint[] strides = new nint[lengths.Length];
+
+            if (lengths.Length == 1 && lengths[0] == 0 || lengths.Length == 0)
+            {
+                strides[0] = 0;
+                return strides;
+            }
+
+            nint stride = 1;
+
+            for (int i = strides.Length - 1; i >= 0; i--)
+            {
+                strides[i] = stride;
+                stride *= lengths[i];
+            }
+
+            return strides;
+        }
+
+        /// <summary>
+        /// Gets the set of strides that can be used to calculate the offset of n-dimensions in a 1-dimensional layout
+        /// </summary>
+        /// <returns></returns>
+        public static nint[] CalculateStrides(ReadOnlySpan<nint> lengths, nint linearLength)
+        {
+            nint[] strides = new nint[lengths.Length];
+
+            if (linearLength == 0)
+                return strides;
 
             nint stride = 1;
 
@@ -76,23 +103,63 @@ namespace System.Numerics.Tensors
             return index;
         }
 
+        public static nint ComputeMaxLinearIndex(ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
+        {
+            Debug.Assert(strides.Length == lengths.Length);
+
+            nint index = 0;
+            for (int i = 0; i < lengths.Length; i++)
+            {
+                index += strides[i] * (lengths[i] - 1);
+            }
+
+            return index;
+        }
+
         /// <summary>
         /// Calculates the 1-d index for n-d indexes in layout specified by strides.
         /// </summary>
+        /// <param name="array"></param>
         /// <param name="indexes"></param>
-        /// <param name="strides"></param>
-        /// <param name="lengths"></param>
         /// <returns></returns>
-        public static nint ComputeLinearIndex(ReadOnlySpan<int> indexes, ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
+        public static nint ComputeStartOffsetSystemArray(Array array, ReadOnlySpan<int> indexes)
         {
-            Debug.Assert(strides.Length == indexes.Length);
+            Debug.Assert(array.Rank == indexes.Length || indexes.Length == 0);
 
-            nint index = 0;
-            for (int i = 0; i < indexes.Length; i++)
+            if (indexes.Length == 0)
+                return 0;
+
+            nint index = indexes[indexes.Length - 1];
+            for (int i = indexes.Length - 2; i >= 0; i--)
             {
-                if (indexes[i] >= lengths[i] || indexes[i] < 0)
+                if ((indexes[i] != 0 && indexes[i] >= array.GetLength(i)) || indexes[i] < 0)
                     ThrowHelper.ThrowIndexOutOfRangeException();
-                index += strides[i] * indexes[i];
+                index += array.GetLength(i) * indexes[i];
+            }
+
+            return index;
+        }
+
+        /// <summary>
+        /// Calculates the 1-d index for n-d indexes in layout specified by strides.
+        /// </summary>
+        /// <param name="array"></param>
+        /// <param name="indexes"></param>
+        /// <returns></returns>
+        public static nint ComputeStartOffsetSystemArray(Array array, ReadOnlySpan<NIndex> indexes)
+        {
+            Debug.Assert(array.Rank == indexes.Length || indexes.Length == 0);
+
+            if (indexes.Length == 0)
+                return 0;
+
+            nint index = indexes[indexes.Length - 1].GetOffset(array.GetLength(indexes.Length - 1));
+            for (int i = indexes.Length - 2; i >= 0; i--)
+            {
+                nint offset = indexes[i].GetOffset(array.GetLength(i));
+                if ((offset != 0 && offset >= array.GetLength(i)) || offset < 0)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+                index += array.GetLength(i) * offset;
             }
 
             return index;
@@ -121,19 +188,25 @@ namespace System.Numerics.Tensors
             return index;
         }
 
-        public static nint ComputeMaxElementCount(ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
+        public static void ValidateStrides(ReadOnlySpan<nint> strides, ReadOnlySpan<nint> lengths)
         {
             Debug.Assert(strides.Length == lengths.Length);
 
-            nint index = 0;
-            for (int i = 0; i < lengths.Length; i++)
-            {
-                if (strides[i] < 0)
-                    ThrowHelper.ThrowArgument_StrideLessThan0();
-                index *= strides[i] * lengths[i];
-            }
+            if (strides.Length == 0)
+                return;
 
-            return index;
+            if (strides[lengths.Length - 1] < 0)
+                ThrowHelper.ThrowArgument_StrideLessThan0();
+
+            for (int i = lengths.Length - 1; i > 0; i--)
+            {
+                if (strides[i - 1] == 0)
+                    continue;
+                else if (strides[i - 1] < 0)
+                    ThrowHelper.ThrowArgument_StrideLessThan0();
+                if (strides[i - 1] < strides[i] * lengths[i])
+                    ThrowHelper.ThrowArgument_StrideLessThan0();
+            }
         }
 
         /// <summary>

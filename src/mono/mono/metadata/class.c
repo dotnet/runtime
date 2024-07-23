@@ -50,6 +50,8 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/bsearch.h>
 #include <mono/utils/checked-build.h>
+// for dn_simdhash_ght_t
+#include "../native/containers/dn-simdhash-specializations.h"
 
 MonoStats mono_stats;
 
@@ -1944,21 +1946,25 @@ mono_class_interface_offset (MonoClass *klass, MonoClass *itf)
 int
 mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match)
 {
-	int i = mono_class_interface_offset (klass, itf);
+	gboolean has_variance = mono_class_has_variant_generic_params (itf);
+	int exact_match = mono_class_interface_offset (klass, itf), i = -1;
 	*non_exact_match = FALSE;
-	if (i >= 0)
-		return i;
+
+	if (exact_match >= 0) {
+		if (!has_variance)
+			return exact_match;
+	}
 
 	int klass_interface_offsets_count = m_class_get_interface_offsets_count (klass);
 
-	if (m_class_is_array_special_interface  (itf) && m_class_get_rank (klass) < 2) {
+	if (m_class_is_array_special_interface (itf) && m_class_get_rank (klass) < 2) {
 		MonoClass *gtd = mono_class_get_generic_type_definition (itf);
 		int found = -1;
 
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 
@@ -1969,7 +1975,7 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 		for (i = 0; i < klass_interface_offsets_count; i++) {
 			if (mono_class_get_generic_type_definition (m_class_get_interfaces_packed (klass) [i]) == gtd) {
 				found = i;
-				*non_exact_match = TRUE;
+				*non_exact_match = (i != exact_match);
 				break;
 			}
 		}
@@ -1978,16 +1984,55 @@ mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gbo
 			return -1;
 
 		return m_class_get_interface_offsets_packed (klass) [found];
-	}
+	} else if (has_variance) {
+		int vst_count, offset = 0;
+		MonoVarianceSearchTableEntry *vst = mono_class_get_variance_search_table (klass, &vst_count);
 
-	if (!mono_class_has_variant_generic_params (itf))
-		return -1;
+		// The variance search table is a buffer containing all interfaces with in/out params in the type's inheritance
+		//  hierarchy, with a NULL separator between each level of the hierarchy. This allows us to skip recursing down
+		//  the whole chain and avoid performing duplicate compatibility checks, since duplicates are stripped from the
+		//  buffer. To comply with the spec, we do an exact-match pass and then a variance pass for each level in the
+		//  hierarchy, then move on to the next level and do two passes for that one.
+		while (offset < vst_count) {
+			// Exact match pass: Is there an exact match at this level of the type hierarchy?
+			// If so, we can use the interface_offset we computed earlier, since we're walking from most derived to least.
+			for (i = offset; i < vst_count; i++) {
+				// If we hit a null, that's the next level in the inheritance hierarchy, so stop there
+				if (vst [i].klass == NULL)
+					break;
 
-	for (i = 0; i < klass_interface_offsets_count; i++) {
-		if (mono_class_is_variant_compatible (itf, m_class_get_interfaces_packed (klass) [i], FALSE)) {
-			*non_exact_match = TRUE;
-			return m_class_get_interface_offsets_packed (klass) [i];
+				if (itf != vst [i].klass)
+					continue;
+
+				*non_exact_match = FALSE;
+				g_assert (vst [i].offset == exact_match);
+				return exact_match;
+			}
+
+			// Inexact match (variance) pass:
+			// Is any interface at this level of the type hierarchy variantly compatible with the desired interface?
+			// If so, select the first compatible one we find.
+			for (i = offset; i < vst_count; i++) {
+				// If we hit a null, that's the next level in the inheritance hierarchy, so bump offset past it
+				if (vst [i].klass == NULL) {
+					offset = i + 1;
+					break;
+				}
+
+				if (!mono_class_is_variant_compatible (itf, vst [i].klass, FALSE))
+					continue;
+
+				int inexact_match = vst [i].offset;
+				// FIXME: Is it correct that this is possible?
+				// g_assert (inexact_match != exact_match);
+				*non_exact_match = inexact_match != exact_match;
+				return inexact_match;
+			}
 		}
+
+		// If the variance search failed to find a match, return the exact match search result (probably -1).
+		*non_exact_match = (exact_match < 0);
+		return exact_match;
 	}
 
 	return -1;
@@ -3580,6 +3625,7 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				    gboolean check_interfaces)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
 	/* FIXME test for interfaces with variant generic arguments */
 	if (check_interfaces) {
 		mono_class_init_internal (klass);
@@ -4282,13 +4328,9 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 
 		MonoClass *eclass;
 		MonoClass *eoclass;
-		if (signature_assignment) {
-			eclass = composite_type_to_reduced_element_type (klass);
-			eoclass = composite_type_to_reduced_element_type (oklass);
-		} else {
-			eclass = m_class_get_cast_class (klass);
-			eoclass = m_class_get_cast_class (oklass);
-		}
+
+		eclass = composite_type_to_reduced_element_type (klass);
+		eoclass = composite_type_to_reduced_element_type (oklass);
 
 		*result = (eclass == eoclass);
 		return;

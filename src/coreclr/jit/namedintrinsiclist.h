@@ -13,6 +13,8 @@ enum NamedIntrinsic : unsigned short
 {
     NI_Illegal = 0,
 
+    NI_System_ArgumentNullException_ThrowIfNull,
+
     NI_System_Enum_HasFlag,
 
     NI_System_BitConverter_DoubleToInt64Bits,
@@ -81,11 +83,13 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsPrimitive,
     NI_System_Type_get_IsByRefLike,
     NI_System_Type_get_TypeHandle,
+    NI_System_Type_get_IsGenericType,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
     NI_System_Type_op_Equality,
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
+    NI_System_Type_GetGenericTypeDefinition,
     NI_System_Array_Clone,
     NI_System_Array_GetLength,
     NI_System_Array_GetLowerBound,
@@ -109,6 +113,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
 
     NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference,
 
@@ -139,6 +144,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Interlocked_ExchangeAdd,
     NI_System_Threading_Interlocked_MemoryBarrier,
     NI_System_Threading_Interlocked_ReadMemoryBarrier,
+
+    // These two are special marker IDs so that we still get the inlining profitability boost
+    NI_System_Numerics_Intrinsic,
+    NI_System_Runtime_Intrinsics_Intrinsic,
 
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,

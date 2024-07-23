@@ -36,10 +36,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
-using System.Reflection.Runtime.TypeParsing;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using ILCompiler.DependencyAnalysisFramework;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
@@ -61,7 +58,7 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		private bool _completed;
+		protected Queue<(MethodDefinition, DependencyInfo)> _methods;
 		protected Dictionary<MethodDefinition, MessageOrigin> _interface_methods;
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
 		protected Queue<(AttributeProviderPair, DependencyInfo, MessageOrigin)> _lateMarkedAttributes;
@@ -75,8 +72,6 @@ namespace Mono.Linker.Steps
 		// Stores, for compiler-generated methods only, whether they require the reflection
 		// method body scanner.
 		readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
-		private readonly NodeFactory _nodeFactory;
-		private readonly DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> _dependencyGraph;
 
 		MarkStepContext? _markContext;
 		MarkStepContext MarkContext {
@@ -215,7 +210,7 @@ namespace Mono.Linker.Steps
 
 		public MarkStep ()
 		{
-			_completed = false;
+			_methods = new Queue<(MethodDefinition, DependencyInfo)> ();
 			_interface_methods = new Dictionary<MethodDefinition, MessageOrigin> ();
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<(AttributeProviderPair, DependencyInfo, MessageOrigin)> ();
@@ -226,8 +221,6 @@ namespace Mono.Linker.Steps
 			_pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)> ();
 			_entireTypesMarked = new HashSet<TypeDefinition> ();
 			_compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool> ();
-			_nodeFactory = new NodeFactory (this);
-			_dependencyGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory> (_nodeFactory, null);
 		}
 
 		public AnnotationStore Annotations => Context.Annotations;
@@ -361,23 +354,13 @@ namespace Mono.Linker.Steps
 
 		void Process ()
 		{
-			_dependencyGraph.ComputeDependencyRoutine += (List<DependencyNodeCore<NodeFactory>> nodes) => {
-				foreach (DependencyNodeCore<NodeFactory> node in nodes) {
-					if (node is ProcessCallbackNode processNode)
-						processNode.Process ();
-				}
-			};
-			_dependencyGraph.AddRoot (new ProcessCallbackNode (ProcessAllPendingItems), "start");
-			_dependencyGraph.ComputeMarkedNodes ();
-
-			ProcessPendingTypeChecks ();
-
-			bool ProcessAllPendingItems ()
-				=> ProcessPrimaryQueue () ||
+			while (ProcessPrimaryQueue () ||
 				ProcessMarkedPending () ||
 				ProcessLazyAttributes () ||
 				ProcessLateMarkedAttributes () ||
-				MarkFullyPreservedAssemblies ();
+				MarkFullyPreservedAssemblies ()) ;
+
+			ProcessPendingTypeChecks ();
 		}
 
 		static bool IsFullyPreservedAction (AssemblyAction action) => action == AssemblyAction.Copy || action == AssemblyAction.Save;
@@ -429,11 +412,11 @@ namespace Mono.Linker.Steps
 
 		bool ProcessPrimaryQueue ()
 		{
-			if (_completed)
+			if (QueueIsEmpty ())
 				return false;
 
-			while (!_completed) {
-				_completed = true;
+			while (!QueueIsEmpty ()) {
+				ProcessQueue ();
 				ProcessInterfaceMethods ();
 				ProcessMarkedTypesWithInterfaces ();
 				ProcessDynamicCastableImplementationInterfaces ();
@@ -479,7 +462,6 @@ namespace Mono.Linker.Steps
 
 			foreach (var type in Annotations.GetPendingPreserve ()) {
 				marked = true;
-				Debug.Assert (Annotations.IsProcessed (type));
 				ApplyPreserveInfo (type);
 			}
 
@@ -503,6 +485,24 @@ namespace Mono.Linker.Steps
 
 				Context.LogMessage ($"Removing typecheck of '{type.FullName}' inside '{item.Body.Method.GetDisplayName ()}' method.");
 			}
+		}
+
+		void ProcessQueue ()
+		{
+			while (!QueueIsEmpty ()) {
+				(MethodDefinition method, DependencyInfo reason) = _methods.Dequeue ();
+				ProcessMethod (method, reason);
+			}
+		}
+
+		bool QueueIsEmpty ()
+		{
+			return _methods.Count == 0;
+		}
+
+		protected virtual void EnqueueMethod (MethodDefinition method, in DependencyInfo reason)
+		{
+			_methods.Enqueue ((method, reason));
 		}
 
 		void ProcessInterfaceMethods ()
@@ -718,33 +718,25 @@ namespace Mono.Linker.Steps
 		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
 		/// </summary>
 		bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType)
+			=> IsInterfaceImplementationMarkedRecursively (type, interfaceType, Context);
+
+		/// <summary>
+		/// Returns true if <paramref name="type"/> implements <paramref name="interfaceType"/> and the interface implementation is marked,
+		/// or if any marked interface implementations on <paramref name="type"/> are interfaces that implement <paramref name="interfaceType"/> and that interface implementation is marked
+		/// </summary>
+		internal static bool IsInterfaceImplementationMarkedRecursively (TypeDefinition type, TypeDefinition interfaceType, LinkContext context)
 		{
 			if (type.HasInterfaces) {
 				foreach (var intf in type.Interfaces) {
-					TypeDefinition? resolvedInterface = Context.Resolve (intf.InterfaceType);
+					TypeDefinition? resolvedInterface = context.Resolve (intf.InterfaceType);
 					if (resolvedInterface == null)
 						continue;
-
-					if (Annotations.IsMarked (intf) && RequiresInterfaceRecursively (resolvedInterface, interfaceType))
-						return true;
-				}
-			}
-
-			return false;
-		}
-
-		bool RequiresInterfaceRecursively (TypeDefinition typeToExamine, TypeDefinition interfaceType)
-		{
-			if (typeToExamine == interfaceType)
-				return true;
-
-			if (typeToExamine.HasInterfaces) {
-				foreach (var iface in typeToExamine.Interfaces) {
-					var resolved = Context.TryResolve (iface.InterfaceType);
-					if (resolved == null)
+					if (!context.Annotations.IsMarked (intf))
 						continue;
 
-					if (RequiresInterfaceRecursively (resolved, interfaceType))
+					if (resolvedInterface == interfaceType)
+						return true;
+					if (IsInterfaceImplementationMarkedRecursively (resolvedInterface, interfaceType, context))
 						return true;
 				}
 			}
@@ -1624,20 +1616,6 @@ namespace Mono.Linker.Steps
 					break;
 				}
 			}
-
-			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
-			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
-			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
-			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
-			// functions should never be virtual overrides in the first place.
-			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-			switch (dependencyKind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.DynamicallyAccessedMember:
-				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations))
-					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName ());
-				break;
-			}
 		}
 
 		void ReportWarningsForTypeHierarchyReflectionAccess (IMemberDefinition member, MessageOrigin origin)
@@ -1679,23 +1657,6 @@ namespace Mono.Linker.Steps
 			if (isReflectionAccessCoveredByDAM && !isCompilerGenerated) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
 				Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
-			}
-
-			// Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
-			// due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
-			// the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
-			// for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
-			// functions should never be virtual overrides in the first place.
-			bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-			if (member is MethodDefinition method && ShouldWarnForReflectionAccessToCompilerGeneratedCode (method, isCoveredByAnnotations)) {
-				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
-				Context.LogWarning (origin, id, type.GetDisplayName (), method.GetDisplayName ());
-			}
-
-			// Warn on reflection access to compiler-generated fields.
-			if (member is FieldDefinition field && ShouldWarnForReflectionAccessToCompilerGeneratedCode (field, isCoveredByAnnotations)) {
-				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
-				Context.LogWarning (origin, id, type.GetDisplayName (), field.GetDisplayName ());
 			}
 		}
 
@@ -1760,24 +1721,6 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		bool ShouldWarnForReflectionAccessToCompilerGeneratedCode (FieldDefinition field, bool isCoveredByAnnotations)
-		{
-			// No need to warn if it's already covered by the Requires attribute or explicit annotations on the field.
-			if (isCoveredByAnnotations)
-				return false;
-
-			if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember (field))
-				return false;
-
-			// Only warn for types which are interesting for dataflow. Note that this does
-			// not include integer types, even though we track integers in the dataflow analysis.
-			// Technically we should also warn for integer types, but this leads to more warnings
-			// for example about the compiler-generated "state" field for state machine methods.
-			// This should be ok because in most cases the state machine types will also have other
-			// hoisted locals that produce warnings anyway when accessed via reflection.
-			return Annotations.FlowAnnotations.IsTypeInterestingForDataflow (field.FieldType);
-		}
-
 		void ProcessAnalysisAnnotationsForField (FieldDefinition field, DependencyKind dependencyKind, in MessageOrigin origin)
 		{
 			switch (dependencyKind) {
@@ -1798,11 +1741,9 @@ namespace Mono.Linker.Steps
 			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider, out _))
 				return;
 
-			bool isReflectionAccessCoveredByRUC;
-			if (isReflectionAccessCoveredByRUC = Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute))
 				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute!, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
-			bool isReflectionAccessCoveredByDAM = false;
 			switch (dependencyKind) {
 			case DependencyKind.AccessedViaReflection:
 			case DependencyKind.DynamicDependency:
@@ -1810,18 +1751,9 @@ namespace Mono.Linker.Steps
 			case DependencyKind.InteropMethodDependency:
 			case DependencyKind.Ldtoken:
 			case DependencyKind.UnsafeAccessorTarget:
-				if (isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
+				if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
 					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
-				break;
-			}
-
-			switch (dependencyKind) {
-			case DependencyKind.AccessedViaReflection:
-			case DependencyKind.DynamicallyAccessedMember:
-				bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
-				if (ShouldWarnForReflectionAccessToCompilerGeneratedCode (field, isCoveredByAnnotations))
-					Context.LogWarning (origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, field.GetDisplayName ());
 				break;
 			}
 		}
@@ -1863,7 +1795,7 @@ namespace Mono.Linker.Steps
 			MarkMethodsIf (type.Methods, HasOnSerializeOrDeserializeAttribute, new DependencyInfo (DependencyKind.SerializationMethodForType, type), origin);
 		}
 
-		protected internal virtual void MarkTypeVisibleToReflection (TypeReference type, TypeDefinition definition, in DependencyInfo reason, in MessageOrigin origin)
+		protected internal virtual TypeDefinition? MarkTypeVisibleToReflection (TypeReference type, TypeDefinition definition, in DependencyInfo reason, in MessageOrigin origin)
 		{
 			// If a type is visible to reflection, we need to stop doing optimization that could cause observable difference
 			// in reflection APIs. This includes APIs like MakeGenericType (where variant castability of the produced type
@@ -1874,7 +1806,7 @@ namespace Mono.Linker.Steps
 
 			MarkImplicitlyUsedFields (definition, origin);
 
-			MarkType (type, reason, origin);
+			return MarkType (type, reason, origin);
 		}
 
 		internal void MarkMethodVisibleToReflection (MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
@@ -1955,7 +1887,6 @@ namespace Mono.Linker.Steps
 			MarkStaticConstructor (type, reason, origin);
 		}
 
-
 		/// <summary>
 		/// Marks the specified <paramref name="reference"/> as referenced.
 		/// </summary>
@@ -2015,12 +1946,6 @@ namespace Mono.Linker.Steps
 			if (type.Scope is ModuleDefinition module)
 				MarkModule (module, new DependencyInfo (DependencyKind.ScopeOfType, type), origin);
 
-			_dependencyGraph.AddRoot (_nodeFactory.GetTypeNode (type), Enum.GetName (reason.Kind));
-			return type;
-		}
-
-		protected internal virtual void ProcessType (TypeDefinition type)
-		{
 			var typeOrigin = new MessageOrigin (type);
 
 			foreach (Action<TypeDefinition> handleMarkType in MarkContext.MarkTypeActions)
@@ -2106,7 +2031,7 @@ namespace Mono.Linker.Steps
 						MarkMethod (method, new DependencyInfo (DependencyKind.VirtualNeededDueToPreservedScope, type), typeOrigin);
 					}
 				}
-				if (ShouldMarkTypeStaticConstructor (type)) {
+				if (ShouldMarkTypeStaticConstructor (type) && reason.Kind != DependencyKind.TriggersCctorForCalledMethod) {
 					MarkStaticConstructor (type, new DependencyInfo (DependencyKind.CctorForType, type), typeOrigin);
 				}
 			}
@@ -2116,7 +2041,7 @@ namespace Mono.Linker.Steps
 			ApplyPreserveInfo (type);
 			ApplyPreserveMethods (type, typeOrigin);
 
-			return;
+			return type;
 		}
 
 		/// <summary>
@@ -2162,12 +2087,6 @@ namespace Mono.Linker.Steps
 
 				if (property.Name == "TargetTypeName") {
 					string targetTypeName = (string) property.Argument.Value;
-					TypeName? typeName = TypeParser.ParseTypeName (targetTypeName);
-					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
-						AssemblyDefinition? assembly = Context.TryResolve (assemblyQualifiedTypeName.AssemblyName.Name);
-						return assembly == null ? null : Context.TryResolve (assembly, targetTypeName);
-					}
-
 					return Context.TryResolve (asm, targetTypeName);
 				}
 			}
@@ -2744,22 +2663,16 @@ namespace Mono.Linker.Steps
 		{
 			var arguments = instance.GenericArguments;
 
-			var generic_element = GetGenericProviderFromInstance (instance);
-			if (generic_element == null)
-				return;
-
-			var parameters = generic_element.GenericParameters;
-
-			if (arguments.Count != parameters.Count)
-				return;
+			IGenericParameterProvider? generic_element = GetGenericProviderFromInstance (instance);
+			Collection<GenericParameter>? parameters = generic_element?.GenericParameters;
 
 			for (int i = 0; i < arguments.Count; i++) {
 				var argument = arguments[i];
-				var parameter = parameters[i];
+				var parameter = parameters?[i];
 
 				var argumentTypeDef = MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance), origin);
 
-				if (Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
+				if (parameter is not null && Annotations.FlowAnnotations.RequiresGenericArgumentDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
@@ -2771,9 +2684,9 @@ namespace Mono.Linker.Steps
 				if (argumentTypeDef == null)
 					continue;
 
-				_dependencyGraph.AddRoot (_nodeFactory.GetTypeIsRelevantToVariantCastingNode (argumentTypeDef), "Generic Argument");
+				Annotations.MarkRelevantToVariantCasting (argumentTypeDef);
 
-				if (parameter.HasDefaultConstructorConstraint)
+				if (parameter?.HasDefaultConstructorConstraint == true)
 					MarkDefaultConstructor (argumentTypeDef, new DependencyInfo (DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
 			}
 		}
@@ -2795,7 +2708,7 @@ namespace Mono.Linker.Steps
 
 			if (Annotations.TryGetPreserve (type, out TypePreserve preserve)) {
 				if (!Annotations.SetAppliedPreserve (type, preserve))
-					throw new InternalErrorException ($"Type {type} already has applied {preserve}.");
+					return;
 
 				var di = new DependencyInfo (DependencyKind.TypePreserve, type);
 
@@ -2978,7 +2891,16 @@ namespace Mono.Linker.Steps
 			if (method == null)
 				return null;
 
-			if (Annotations.GetAction (method) == MethodAction.Nothing)
+			var methodAction = Annotations.GetAction (method);
+			if (methodAction is MethodAction.ConvertToStub) {
+				// CodeRewriterStep runs after sweeping, and may request the stubbed value for any preserved method
+				// with the action ConvertToStub. Ensure we have precomputed any stub value that may be needed by
+				// CodeRewriterStep. This ensures sweeping doesn't change the stub value (which can be determined by
+				// FeatureGuardAttribute or FeatureSwitchDefinitionAttribute that might have been removed).
+				Annotations.TryGetMethodStubValue (method, out _);
+			}
+
+			if (methodAction == MethodAction.Nothing)
 				Annotations.SetAction (method, MethodAction.Parse);
 
 
@@ -3017,8 +2939,7 @@ namespace Mono.Linker.Steps
 
 			// We will only enqueue a method to be processed if it hasn't been processed yet.
 			if (!CheckProcessed (method))
-				_completed = false;
-			_dependencyGraph.AddRoot (_nodeFactory.GetMethodDefinitionNode (method, reason), Enum.GetName (reason.Kind));
+				EnqueueMethod (method, reason);
 
 			return method;
 		}
@@ -3197,8 +3118,12 @@ namespace Mono.Linker.Steps
 						Context.Resolve (@base) is MethodDefinition baseDefinition
 						&& baseDefinition.DeclaringType.IsInterface && baseDefinition.IsStatic && method.IsStatic)
 						continue;
+					// Instance methods can have overrides on public implementation methods in IL, but C# will usually only have them for private explicit interface implementations.
+					// It is valid IL for a public method to override an interface method and only be called directly. In this case it would be safe to skip marking the .override method.
+					// However, in most cases, the C# compiler will only generate .override for instance methods when it's a private explicit interface implementations which can only be called through the interface.
+					// We can just take a short cut and mark all the overrides on instance methods. We shouldn't miss out on size savings for code generated by Roslyn.
 					MarkMethod (@base, new DependencyInfo (DependencyKind.MethodImplOverride, method), methodOrigin);
-					MarkExplicitInterfaceImplementation (method, @base);
+					MarkRuntimeInterfaceImplementation (method, @base);
 				}
 			}
 
@@ -3314,22 +3239,21 @@ namespace Mono.Linker.Steps
 			DoAdditionalInstantiatedTypeProcessing (type);
 		}
 
-		void MarkExplicitInterfaceImplementation (MethodDefinition method, MethodReference ov)
+		void MarkRuntimeInterfaceImplementation (MethodDefinition method, MethodReference ov)
 		{
 			if (Context.Resolve (ov) is not MethodDefinition resolvedOverride)
 				return;
+			if (!resolvedOverride.DeclaringType.IsInterface)
+				return;
+			var interfaceToBeImplemented = ov.DeclaringType;
 
-			if (resolvedOverride.DeclaringType.IsInterface) {
-				foreach (var ifaceImpl in method.DeclaringType.Interfaces) {
-					var resolvedInterfaceType = Context.Resolve (ifaceImpl.InterfaceType);
-					if (resolvedInterfaceType == null) {
-						continue;
-					}
-
-					if (resolvedInterfaceType == resolvedOverride.DeclaringType) {
-						MarkInterfaceImplementation (ifaceImpl, new MessageOrigin (method.DeclaringType));
-						return;
-					}
+			var ifaces = Annotations.GetRecursiveInterfaces (method.DeclaringType);
+			if (ifaces is null)
+				return;
+			foreach (var iface in ifaces) {
+				if (TypeReferenceEqualityComparer.AreEqual (iface.InterfaceType, interfaceToBeImplemented, Context)) {
+					MarkInterfaceImplementationList (iface.ImplementationChain, new MessageOrigin (method.DeclaringType));
+					return;
 				}
 			}
 		}
@@ -3407,7 +3331,7 @@ namespace Mono.Linker.Steps
 				return;
 
 			foreach (OverrideInformation ov in base_methods) {
-				// We should add all interface base methods to _interface_methods for virtual override annotation validation
+				// We should add all interface base methods to _virtual_methods for virtual override annotation validation
 				// Interfaces from preserved scope will be missed if we don't add them here
 				// This will produce warnings for all interface methods and virtual methods regardless of whether the interface, interface implementation, or interface method is kept or not.
 				if (ov.Base.DeclaringType.IsInterface && !method.DeclaringType.IsInterface) {
@@ -3509,8 +3433,11 @@ namespace Mono.Linker.Steps
 			if (!Annotations.MarkProcessed (prop, reason))
 				return;
 
-			PropertyDefinitionNode propertyNode = _nodeFactory.GetPropertyNode (prop);
-			_dependencyGraph.AddRoot (propertyNode, reason.Kind.ToString ());
+			var propertyOrigin = new MessageOrigin (prop);
+
+			// Consider making this more similar to MarkEvent method?
+			MarkCustomAttributes (prop, new DependencyInfo (DependencyKind.CustomAttribute, prop), propertyOrigin);
+			DoAdditionalPropertyProcessing (prop);
 		}
 
 		protected internal virtual void MarkEvent (EventDefinition evt, in DependencyInfo reason, MessageOrigin origin)

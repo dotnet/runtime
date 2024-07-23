@@ -34,10 +34,12 @@ Wasm.Build.Tests.PInvokeTableGeneratorTests
 Wasm.Build.Tests.RebuildTests
 Wasm.Build.Tests.SatelliteAssembliesTests
 Wasm.Build.Tests.TestAppScenarios.AppSettingsTests
+Wasm.Build.Tests.TestAppScenarios.DownloadThenInitTests
 Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
 Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
 Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests
 Wasm.Build.Tests.TestAppScenarios.ModuleConfigTests
+Wasm.Build.Tests.TestAppScenarios.MemoryTests
 Wasm.Build.Tests.AspNetCore.SignalRClientTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmNativeDefaultsTests

@@ -39,6 +39,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithMultipleConstructors))]
         [JsonSerializable(typeof(DerivedClassWithShadowingProperties))]
         [JsonSerializable(typeof(IDerivedInterface))]
+        [JsonSerializable(typeof(ClassWithRequiredAndOptionalConstructorParameters))]
         partial class Context : JsonSerializerContext;
     }
 }

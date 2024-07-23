@@ -137,7 +137,7 @@ namespace System.Threading
                     if (context != null && context.IsWaitNotificationRequired())
                     {
                         usedSyncContextWait = true;
-                        waitResult = context.Wait(new[] { waitHandle.DangerousGetHandle() }, false, millisecondsTimeout);
+                        waitResult = context.Wait([waitHandle.DangerousGetHandle()], false, millisecondsTimeout);
                     }
                 }
 
@@ -401,7 +401,7 @@ namespace System.Threading
             return waitResult;
         }
 
-        internal static int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout)
+        internal static int WaitMultipleIgnoringSyncContext(ReadOnlySpan<IntPtr> handles, bool waitAll, int millisecondsTimeout)
         {
             int waitResult = WaitFailed;
 

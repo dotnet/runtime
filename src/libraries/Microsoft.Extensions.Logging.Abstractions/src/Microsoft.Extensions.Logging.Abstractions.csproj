@@ -41,16 +41,19 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
 
+    <!-- Important: Only the most recent source generator project should be referenced when building from source. -->
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true"
                       Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj"
                       ReferenceOutputAssembly="false"
-                      PackAsAnalyzer="true" />
+                      PackAsAnalyzer="true"
+                      Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
     <ProjectReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj"
                       ReferenceOutputAssembly="false"
                       PackAsAnalyzer="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.DiagnosticSource\src\System.Diagnostics.DiagnosticSource.csproj" /> 
   </ItemGroup>
 
 </Project>

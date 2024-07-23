@@ -198,7 +198,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (op2->IsEmbMaskOp())
             {
-                assert(intrinsicId == NI_AVX512F_BlendVariableMask);
+                assert(intrinsicId == NI_EVEX_BlendVariableMask);
                 assert(op2->isContained());
                 assert(op2->OperIsHWIntrinsic());
 
@@ -613,7 +613,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_BlendVariable:
                         case NI_AVX_BlendVariable:
                         case NI_AVX2_BlendVariable:
-                        case NI_AVX512F_BlendVariableMask:
+                        case NI_EVEX_BlendVariableMask:
                         {
                             genHWIntrinsic_R_R_RM_R(node, ins, simdSize, instOptions);
                             break;
@@ -776,6 +776,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512BW_VL:
         case InstructionSet_AVX512VBMI:
         case InstructionSet_AVX512VBMI_VL:
+        case InstructionSet_AVX10v1:
+        case InstructionSet_AVX10v1_X64:
+        case InstructionSet_AVX10v1_V512:
+        case InstructionSet_AVX10v1_V512_X64:
+        case InstructionSet_EVEX:
+        case InstructionSet_EVEX_X64:
         {
             genAvxFamilyIntrinsic(node, instOptions);
             break;
@@ -908,7 +914,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                         {
                             if (varTypeIsSmall(node->GetSimdBaseType()))
                             {
-                                if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512BW_VL))
+                                if (compiler->canUseEvexEncoding())
                                 {
                                     needsInstructionFixup = true;
                                 }
@@ -917,7 +923,7 @@ void CodeGen::genHWIntrinsic_R_RM(
                                     needsBroadcastFixup = true;
                                 }
                             }
-                            else if (compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
+                            else if (compiler->canUseEvexEncoding())
                             {
                                 needsInstructionFixup = true;
                             }
@@ -1292,8 +1298,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
             // non-RMW based codegen.
 
 #if defined(DEBUG)
-            NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-            assert((intrinsicId == NI_AVX512F_TernaryLogic) || (intrinsicId == NI_AVX512F_VL_TernaryLogic));
+            assert(HWIntrinsicInfo::IsTernaryLogic(node->GetHWIntrinsicId()));
 
             uint8_t                 control  = static_cast<uint8_t>(ival);
             const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
@@ -1303,6 +1308,19 @@ void CodeGen::genHWIntrinsic_R_R_R_RM_I(
 #endif // DEBUG
 
             op2Reg = targetReg;
+        }
+        else
+        {
+#if defined(DEBUG)
+            if (HWIntrinsicInfo::IsTernaryLogic(node->GetHWIntrinsicId()))
+            {
+                uint8_t                 control  = static_cast<uint8_t>(ival);
+                const TernaryLogicInfo& info     = TernaryLogicInfo::lookup(control);
+                TernaryLogicUseFlags    useFlags = info.GetAllUseFlags();
+
+                assert(useFlags == TernaryLogicUseFlags::BC);
+            }
+#endif // DEBUG
         }
     }
 
@@ -1462,9 +1480,13 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 
         case NI_AVX512F_ConvertToInt32:
         case NI_AVX512F_ConvertToUInt32:
+        case NI_AVX10v1_ConvertToInt32:
+        case NI_AVX10v1_ConvertToUInt32:
 #if defined(TARGET_AMD64)
         case NI_AVX512F_X64_ConvertToInt64:
         case NI_AVX512F_X64_ConvertToUInt64:
+        case NI_AVX10v1_X64_ConvertToInt64:
+        case NI_AVX10v1_X64_ConvertToUInt64:
 #endif // TARGET_AMD64
         {
             assert(varTypeIsFloating(baseType));
@@ -1483,6 +1505,8 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 
         case NI_AVX512F_X64_ConvertScalarToVector128Single:
         case NI_AVX512F_X64_ConvertScalarToVector128Double:
+        case NI_AVX10v1_X64_ConvertScalarToVector128Single:
+        case NI_AVX10v1_X64_ConvertScalarToVector128Double:
         {
             assert(varTypeIsLong(baseType));
             auto emitSwCase = [&](int8_t i) {
@@ -1505,6 +1529,10 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
         case NI_AVX512F_FusedMultiplySubtractNegated:
         case NI_AVX512F_FusedMultiplySubtractNegatedScalar:
         case NI_AVX512F_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
+        case NI_AVX10v1_FusedMultiplyAddNegatedScalar:
+        case NI_AVX10v1_FusedMultiplySubtractScalar:
+        case NI_AVX10v1_FusedMultiplySubtractNegatedScalar:
         {
             // For FMA intrinsics, since it is not possible to get any contained operand in this case: embedded rounding
             // is limited in register-to-register form, and the control byte is dynamic, we don't need to do any swap.
@@ -1749,6 +1777,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             break;
         }
 
+        case NI_Vector128_AsVector128Unsafe:
         case NI_Vector128_AsVector2:
         case NI_Vector128_AsVector3:
         case NI_Vector128_ToScalar:
@@ -2404,7 +2433,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_AddMask:
+        case NI_EVEX_AddMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2444,7 +2473,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_AndMask:
+        case NI_EVEX_AndMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2484,7 +2513,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_AndNotMask:
+        case NI_EVEX_AndNotMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2524,7 +2553,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_MoveMask:
+        case NI_EVEX_MoveMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2561,7 +2590,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_KORTEST:
+        case NI_EVEX_KORTEST:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2603,7 +2632,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_KTEST:
+        case NI_EVEX_KTEST:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2641,7 +2670,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_NotMask:
+        case NI_EVEX_NotMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2676,7 +2705,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_OrMask:
+        case NI_EVEX_OrMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2716,7 +2745,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_ShiftLeftMask:
+        case NI_EVEX_ShiftLeftMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2757,7 +2786,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_ShiftRightMask:
+        case NI_EVEX_ShiftRightMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2798,7 +2827,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX512F_XorMask:
+        case NI_EVEX_XorMask:
         {
             assert(instOptions == INS_OPTS_NONE);
 
@@ -2838,12 +2867,58 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
+        case NI_EVEX_XnorMask:
+        {
+            assert(instOptions == INS_OPTS_NONE);
+
+            uint32_t simdSize = node->GetSimdSize();
+            uint32_t count    = simdSize / genTypeSize(baseType);
+
+            if (count <= 8)
+            {
+                assert((count == 2) || (count == 4) || (count == 8));
+                ins = INS_kxnorb;
+            }
+            else if (count == 16)
+            {
+                ins = INS_kxnorw;
+            }
+            else if (count == 32)
+            {
+                ins = INS_kxnord;
+            }
+            else
+            {
+                assert(count == 64);
+                ins = INS_kxnorq;
+            }
+
+            op1Reg = op1->GetRegNum();
+
+            GenTree*  op2    = node->Op(2);
+            regNumber op2Reg = op2->GetRegNum();
+
+            assert(emitter::isMaskReg(targetReg));
+            assert(emitter::isMaskReg(op1Reg));
+            assert(emitter::isMaskReg(op2Reg));
+
+            // Use EA_32BYTE to ensure the VEX.L bit gets set
+            emit->emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
+            break;
+        }
+
         case NI_AVX512F_ConvertToInt32:
         case NI_AVX512F_ConvertToUInt32:
         case NI_AVX512F_ConvertToUInt32WithTruncation:
         case NI_AVX512F_X64_ConvertToInt64:
         case NI_AVX512F_X64_ConvertToUInt64:
         case NI_AVX512F_X64_ConvertToUInt64WithTruncation:
+        case NI_AVX10v1_X64_ConvertToInt64:
+        case NI_AVX10v1_X64_ConvertToUInt64:
+        case NI_AVX10v1_X64_ConvertToUInt64WithTruncation:
+        case NI_AVX10v1_ConvertToInt32:
+        case NI_AVX10v1_ConvertToUInt32:
+        case NI_AVX10v1_ConvertToUInt32WithTruncation:
         {
             assert(baseType == TYP_DOUBLE || baseType == TYP_FLOAT);
             emitAttr attr = emitTypeSize(targetType);
@@ -2857,6 +2932,8 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512F_ConvertToVector256UInt32:
         case NI_AVX512F_VL_ConvertToVector128UInt32:
         case NI_AVX512F_VL_ConvertToVector128UInt32WithSaturation:
+        case NI_AVX10v1_ConvertToVector128UInt32:
+        case NI_AVX10v1_ConvertToVector128UInt32WithSaturation:
         {
             if (varTypeIsFloating(baseType))
             {
@@ -2899,6 +2976,16 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         case NI_AVX512BW_VL_ConvertToVector128ByteWithSaturation:
         case NI_AVX512BW_VL_ConvertToVector128SByte:
         case NI_AVX512BW_VL_ConvertToVector128SByteWithSaturation:
+        case NI_AVX10v1_ConvertToVector128Byte:
+        case NI_AVX10v1_ConvertToVector128ByteWithSaturation:
+        case NI_AVX10v1_ConvertToVector128Int16:
+        case NI_AVX10v1_ConvertToVector128Int16WithSaturation:
+        case NI_AVX10v1_ConvertToVector128Int32:
+        case NI_AVX10v1_ConvertToVector128Int32WithSaturation:
+        case NI_AVX10v1_ConvertToVector128SByte:
+        case NI_AVX10v1_ConvertToVector128SByteWithSaturation:
+        case NI_AVX10v1_ConvertToVector128UInt16:
+        case NI_AVX10v1_ConvertToVector128UInt16WithSaturation:
         {
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
 
@@ -2912,6 +2999,8 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
         case NI_AVX512F_X64_ConvertScalarToVector128Double:
         case NI_AVX512F_X64_ConvertScalarToVector128Single:
+        case NI_AVX10v1_X64_ConvertScalarToVector128Double:
+        case NI_AVX10v1_X64_ConvertScalarToVector128Single:
         {
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -3071,6 +3160,8 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     regNumber targetReg = node->GetRegNum();
 
+    genConsumeMultiOpOperands(node);
+
     regNumber op1NodeReg = op1->GetRegNum();
     regNumber op2NodeReg = op2->GetRegNum();
     regNumber op3NodeReg = op3->GetRegNum();
@@ -3083,11 +3174,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
-
-    // We need to keep this in sync with lsraxarch.cpp
-    // Ideally we'd actually swap the operands in lsra and simplify codegen
-    // but its a bit more complicated to do so for many operands as well
-    // as being complicated to tell codegen how to pick the right instruction
 
     instruction ins = INS_invalid;
 
@@ -3158,21 +3244,6 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             ins = _213form;
         }
     }
-
-#ifdef DEBUG
-    // Use nums are assigned in LIR order but this node is special and doesn't
-    // actually use operands. Fix up the use nums here to avoid asserts.
-    unsigned useNum1  = op1->gtUseNum;
-    unsigned useNum2  = op2->gtUseNum;
-    unsigned useNum3  = op3->gtUseNum;
-    emitOp1->gtUseNum = useNum1;
-    emitOp2->gtUseNum = useNum2;
-    emitOp3->gtUseNum = useNum3;
-#endif
-
-    genConsumeRegs(emitOp1);
-    genConsumeRegs(emitOp2);
-    genConsumeRegs(emitOp3);
 
     assert(ins != INS_invalid);
     genHWIntrinsic_R_R_R_RM(ins, attr, targetReg, emitOp1->GetRegNum(), emitOp2->GetRegNum(), emitOp3, instOptions);

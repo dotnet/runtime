@@ -59,6 +59,10 @@
 #elif HAVE_IOS_NETINET_IP_VAR_H
 #include "ios/netinet/ip_var.h"
 #endif
+#ifdef __FreeBSD__
+#include <sys/callout.h>
+#include <sys/osd.h>
+#endif
 #include <netinet/tcp_var.h>
 #include <netinet/tcp.h>
 #if HAVE_TCP_FSM_H

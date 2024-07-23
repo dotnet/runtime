@@ -379,7 +379,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public static unsafe ComVariant CreateRaw<T>(VarEnum vt, T rawValue)
             where T : unmanaged
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(Unsafe.SizeOf<T>(), sizeof(UnionTypes), nameof(T));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(sizeof(T), sizeof(UnionTypes), nameof(T));
             if (vt == VarEnum.VT_DECIMAL)
             {
                 throw new ArgumentException(SR.ComVariant_VT_DECIMAL_NotSupported_CreateRaw, nameof(vt));
@@ -571,7 +571,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public unsafe ref T GetRawDataRef<T>()
             where T : unmanaged
         {
-            ArgumentOutOfRangeException.ThrowIfGreaterThan(Unsafe.SizeOf<T>(), sizeof(UnionTypes), nameof(T));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(sizeof(T), sizeof(UnionTypes), nameof(T));
             if (typeof(T) == typeof(decimal))
             {
                 throw new ArgumentException(SR.ComVariant_VT_DECIMAL_NotSupported_RawDataRef, nameof(T));

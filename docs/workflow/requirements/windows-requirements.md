@@ -89,7 +89,7 @@ The _dotnet/runtime_ repository requires at least Git 2.22.0.
 
 While not strictly needed to build or test this repository, having the .NET SDK installed lets you browse solution files in this repository with Visual Studio and use the `dotnet.exe` command to run .NET applications in the 'normal' way.
 
-We use this in the [build testing with the installed SDK](/docs/workflow/testing/using-your-build-with-installed-sdk.md), and [build testing with dev shipping packages](/docs/workflow/testing/using-dev-shipping-packages.md) instructions. The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). You can find the installers and binaries for latest development builds of .NET SDK in the [installer repo](https://github.com/dotnet/installer#installers-and-binaries).
+We use this in the [build testing with the installed SDK](/docs/workflow/testing/using-your-build-with-installed-sdk.md), and [build testing with dev shipping packages](/docs/workflow/testing/using-dev-shipping-packages.md) instructions. The minimum required version of the SDK is specified in the [global.json file](https://github.com/dotnet/runtime/blob/main/global.json#L3). You can find the installers and binaries for latest development builds of .NET SDK in the [sdk repo](https://github.com/dotnet/sdk#installing-the-sdk).
 
 Alternatively, to avoid modifying your machine state, you can use the repository's locally acquired SDK by passing in the solution to load via the `-vs` switch. For example:
 
@@ -108,3 +108,33 @@ You can also temporarily add a directory to the PATH environment variable with t
 You can make your change to the PATH variable persistent by going to _Control Panel -> System And Security -> System -> Advanced system settings -> Environment Variables_, and select the `Path` variable under `System Variables` (if you want to change it for all users) or `User Variables` (if you only want to change it for the current user).
 
 Simply edit the PATH variable's value and add the directory (with a semicolon separator).
+
+### Windows on Arm64
+
+The Windows on Arm64 development experience has improved substantially over the last few years, however there are still a few steps you should take to improve performance when developing dotnet/runtime on an ARM device.
+
+During preview releases, the repo sources its compilers from the [Microsoft.NET.Compilers.Toolset](https://www.nuget.org/packages/Microsoft.Net.Compilers.Toolset/) package whose bits aren't configured for the ARM64 build of .NET framework. This can result in [suboptimal performance](https://github.com/dotnet/runtime/issues/104548) when working on libraries in Visual Studio. The issue can be worked around by [configuring the registry](https://github.com/dotnet/runtime/issues/104548#issuecomment-2214581797) to run the compiler as Arm64 processes. The proper fix that will make this workaround unnecessary is being worked on in [this PR](https://github.com/dotnet/roslyn/pull/74285).
+
+Using an Administrator Powershell prompt run the script:
+
+```powershell
+function SetPreferredMachineToArm64($imageName)
+{
+    $RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\${imageName}"
+    $Name = "PreferredMachine"
+    $Value = [convert]::ToInt32("aa64", 16)
+
+    # Create the key if it does not exist
+    If (-NOT (Test-Path $RegistryPath)) {
+        New-Item -Path $RegistryPath -Force | Out-Null
+    }
+
+    # Now set the value
+    New-ItemProperty -Path $RegistryPath -Name $Name -Value $Value -PropertyType DWORD -Force
+}
+
+SetPreferredMachineToArm64('csc.exe')
+SetPreferredMachineToArm64('VBCSCompiler.exe')
+```
+
+Then restart any open Visual Studio applications.
