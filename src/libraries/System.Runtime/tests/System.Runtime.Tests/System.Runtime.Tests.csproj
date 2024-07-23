@@ -17,6 +17,9 @@
     <!-- Active issue: https://github.com/dotnet/runtime/issues/97809 -->
     <ShouldILStrip>false</ShouldILStrip>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
+    <XunitShowProgress>true</XunitShowProgress>
+  </PropertyGroup>
 
   <!--
     Add special trait for running local timezone validation tests on certain devices e.g. in CI to make sure the local timezone is correct and not UTC. Disable these tests otherwise.
