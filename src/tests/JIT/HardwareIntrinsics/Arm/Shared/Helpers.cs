@@ -8569,7 +8569,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 gatherResult = map(i, gatherResult);
                 if (result[i] != gatherResult)
                 {
-                    Console.WriteLine($"API: {result[i]}, helper: {gatherResult}");
                     return false;
                 }
             }
