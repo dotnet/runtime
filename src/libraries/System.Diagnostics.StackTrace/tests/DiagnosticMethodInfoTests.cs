@@ -109,24 +109,20 @@ namespace System.Diagnostics.Tests
 
             IGenericInterfaceForDiagnosticMethodInfoTests<object> og = new GenericClassForDiagnosticMethodInfoTests<object>();
 
-            // Making this work with CoreCLR tracked in https://github.com/dotnet/runtime/issues/103268
-            if (PlatformDetection.IsMonoRuntime || PlatformDetection.IsNativeAot)
+            // Making this work with native AOT tracked in https://github.com/dotnet/runtime/issues/103219
+            if (!PlatformDetection.IsNativeAot)
             {
-                // Making this work with native AOT tracked in https://github.com/dotnet/runtime/issues/103219
-                if (!PlatformDetection.IsNativeAot)
-                {
-                    yield return new object[] {
-                            (Action)og.NonGenericDefaultMethod,
-                            nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.NonGenericDefaultMethod) ,
-                            TestNamespace + nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>) + "`1"
-                        };
-                }
                 yield return new object[] {
-                        (Action)og.GenericDefaultMethod<object>,
-                        nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.GenericDefaultMethod),
+                        (Action)og.NonGenericDefaultMethod,
+                        nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.NonGenericDefaultMethod) ,
                         TestNamespace + nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>) + "`1"
                     };
             }
+            yield return new object[] {
+                    (Action)og.GenericDefaultMethod<object>,
+                    nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.GenericDefaultMethod),
+                    TestNamespace + nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>) + "`1"
+                };
             yield return new object[] {
                 (Action)og.NonGenericMethod,
                 TestNamespace + nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>) + "<T>." + nameof(IGenericInterfaceForDiagnosticMethodInfoTests<object>.NonGenericMethod),

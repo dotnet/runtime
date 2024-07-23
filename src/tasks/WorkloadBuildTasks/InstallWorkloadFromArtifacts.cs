@@ -287,6 +287,8 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
+
+            // If we one sub entry, it's workload manifest version and we should install into it (aka workload sets)
             string[] outputSubEntries = Directory.GetFileSystemEntries(outputDir);
             if (outputSubEntries.Length == 1)
                 outputDir = outputSubEntries[0];
