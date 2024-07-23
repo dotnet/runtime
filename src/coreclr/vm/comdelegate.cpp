@@ -1908,7 +1908,7 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         if (*pMD->GetSig() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
             COMPlusThrow(kInvalidProgramException);
 
-        Stub *pStub = pClass->m_pMultiCastInvokeStub;
+        Stub *pStub = pClass->m_pSingleCastInvokeStub;
         if (pStub == NULL)
         {
             MetaSig sig(pMD);
