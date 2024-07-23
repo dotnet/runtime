@@ -31,7 +31,7 @@ namespace System
             return false;
         }
 
-        public void Dispose() => _str = null!;
+        public void Dispose() => _str = String.Empty;
 
         object? IEnumerator.Current => Current;
 
