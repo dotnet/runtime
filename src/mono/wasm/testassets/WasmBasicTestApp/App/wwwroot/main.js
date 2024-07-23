@@ -31,6 +31,9 @@ switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
+    case "LazyLoadingTest":
+        dotnet.withDiagnosticTracing(true);
+        break;
     case "DownloadResourceProgressTest":
         if (params.get("failAssemblyDownload") === "true") {
             let assemblyCounter = 0;
@@ -124,7 +127,7 @@ switch (testCase) {
 const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.coreAssembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
 
 // Run the test case
 try {
