@@ -4928,12 +4928,12 @@ interp_call:
 
 #define ZEROP_SP(datatype, op) \
 	if (LOCAL_VAR (ip [1], datatype) op 0) { \
-		gint16 br_offset = (gint16) ip [2]; \
+		gint32 br_offset = (gint32)READ32(ip + 2); \
 		BACK_BRANCH_PROFILE (br_offset); \
 		SAFEPOINT; \
 		ip += br_offset; \
 	} else \
-		ip += 3;
+		ip += 4;
 
 MINT_IN_CASE(MINT_BRFALSE_I4_SP) ZEROP_SP(gint32, ==); MINT_IN_BREAK;
 MINT_IN_CASE(MINT_BRFALSE_I8_SP) ZEROP_SP(gint64, ==); MINT_IN_BREAK;
@@ -4942,12 +4942,12 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 #define CONDBR_SP(cond) \
 	if (cond) { \
-		gint16 br_offset = (gint16) ip [3]; \
+		gint32 br_offset = (gint32)READ32(ip + 3); \
 		BACK_BRANCH_PROFILE (br_offset); \
 		SAFEPOINT; \
 		ip += br_offset; \
 	} else \
-		ip += 4;
+		ip += 5;
 #define BRELOP_SP(datatype, op) \
 	CONDBR_SP(LOCAL_VAR (ip [1], datatype) op LOCAL_VAR (ip [2], datatype))
 

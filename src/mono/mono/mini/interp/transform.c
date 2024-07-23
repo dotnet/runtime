@@ -1459,12 +1459,12 @@ interp_dump_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 		g_string_append_printf (str, ")");
 		break;
 	}
-	case MintOpShortAndShortBranch:
+	case MintOpShortAndBranch:
 		if (ins) {
 			/* the target IL is already embedded in the instruction */
 			g_string_append_printf (str, " %u, BB%d", *(guint16*)data, ins->info.target_bb->index);
 		} else {
-			target = ins_offset + *(gint16*)(data + 1);
+			target = ins_offset + (gint32)READ32 (data + 1);
 			g_string_append_printf (str, " %u, IR_%04x", *(guint16*)data, target);
 		}
 		break;
@@ -8836,6 +8836,9 @@ get_short_brop (int opcode)
 	if (opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8)
 		return opcode + MINT_BEQ_I4_S - MINT_BEQ_I4;
 
+	if (MINT_IS_SUPER_BRANCH (opcode))
+		g_assert_not_reached ();
+
 	// Already short branch
 	return opcode;
 }
@@ -8995,8 +8998,9 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 
 		if (ins->info.target_bb->native_offset >= 0) {
 			int offset = ins->info.target_bb->native_offset - br_offset;
-			// Backwards branch. We can already patch it.
-			if (interp_is_short_offset (br_offset, ins->info.target_bb->native_offset)) {
+			// Backwards branch. We can already patch it. Branch super ins are always long offset
+			if (!MINT_IS_SUPER_BRANCH (opcode) &&
+					interp_is_short_offset (br_offset, ins->info.target_bb->native_offset)) {
 				// Replace the long opcode we added at the start
 				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
 				*ip++ = GINT_TO_UINT16 (ins->info.target_bb->native_offset - br_offset);
@@ -9011,18 +9015,9 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			// otherwise we conservatively have to use long branch opcodes
 			int cur_estimation_error = td->cbb->native_offset_estimate - td->cbb->native_offset;
 			int target_bb_estimated_offset = ins->info.target_bb->native_offset_estimate - cur_estimation_error;
-			gboolean is_short = interp_is_short_offset (br_offset, target_bb_estimated_offset);
+			gboolean is_short = !MINT_IS_SUPER_BRANCH (opcode) && interp_is_short_offset (br_offset, target_bb_estimated_offset);
 			if (is_short)
 				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
-			else if (MINT_IS_SUPER_BRANCH (opcode)) {
-				g_printf (
-					"long superbranch detected with opcode %d (%s) in method %s.%s\n",
-					opcode, mono_interp_opname (opcode),
-					m_class_get_name (td->method->klass), td->method->name
-				);
-				// FIXME missing handling for long branch
-				g_assert (FALSE);
-			}
 
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
