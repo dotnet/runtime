@@ -136,7 +136,7 @@ namespace ILLink.Shared.TrimAnalysis
 								// We don't know anything about the type GetType was called on. Track this as a usual result of a method call without any annotations
 								AddReturnValue (_context.Annotations.FlowAnnotations.GetMethodReturnValue (calledMethod, _isNewObj));
 							}
-						} else if (staticTypeDef.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.IsTypeOf ("System", "Array")) {
+						} else if (staticTypeDef.IsSealed || staticTypeDef.IsTypeOf ("System", "Delegate") || staticTypeDef.IsTypeOf ("System", "Array")) {
 							// We can treat this one the same as if it was a typeof() expression
 
 							// We can allow Object.GetType to be modeled as System.Delegate because we keep all methods
