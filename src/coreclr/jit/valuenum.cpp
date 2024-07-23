@@ -3242,6 +3242,7 @@ public:
 
     bool Lookup(ValueNum vn)
     {
+        // O(N) lookup for inline elements
         if (m_numElements <= ArrLen(m_inlineElements))
         {
             for (unsigned i = 0; i < m_numElements; i++)
@@ -3251,12 +3252,16 @@ public:
                     return true;
                 }
             }
+
+            // Not found
             return false;
         }
+
         return m_set->Lookup(vn);
     }
 
-    void Add(Compiler* comp, ValueNum vn)
+    // Returns false if the value already exists
+    bool Add(Compiler* comp, ValueNum vn)
     {
         if (m_numElements <= ArrLen(m_inlineElements))
         {
@@ -3264,7 +3269,8 @@ public:
             {
                 if (m_inlineElements[i] == vn)
                 {
-                    return;
+                    // Already exists
+                    return false;
                 }
             }
 
@@ -3287,12 +3293,12 @@ public:
                 m_numElements++;
                 assert(m_numElements == set->GetCount());
             }
+            return true;
         }
-        else
-        {
-            m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
-            m_numElements = m_set->GetCount();
-        }
+
+        bool exists   = m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
+        m_numElements = m_set->GetCount();
+        return !exists;
     }
 };
 
@@ -6542,86 +6548,72 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
-    assert(varTypeIsIntegral(TypeOfVN(vn)));
-
-    if (IsVNConstant(vn))
-    {
-        var_types vnTy = TypeOfVN(vn);
-        if (vnTy == TYP_INT)
+    auto unwrapper = [this](ValueNum vn) -> Unwrap {
+        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
-            return GetConstantInt32(vn) >= 0;
-        }
-        else if (vnTy == TYP_LONG)
-        {
-            return GetConstantInt64(vn) >= 0;
+            return Unwrap::Abort;
         }
 
-        return false;
-    }
-
-    // Array length can never be negative.
-    if (IsVNArrLen(vn))
-    {
-        return true;
-    }
-
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
-    {
-        switch (funcApp.m_func)
+        if (IsVNConstant(vn))
         {
-            case VNF_GE_UN:
-            case VNF_GT_UN:
-            case VNF_LE_UN:
-            case VNF_LT_UN:
-            case VNF_COUNT:
-            case VNF_ADD_UN_OVF:
-            case VNF_SUB_UN_OVF:
-            case VNF_MUL_UN_OVF:
+            var_types vnTy = TypeOfVN(vn);
+            if (vnTy == TYP_INT)
+            {
+                return GetConstantInt32(vn) >= 0 ? Unwrap::Continue : Unwrap::Abort;
+            }
+            if (vnTy == TYP_LONG)
+            {
+                return GetConstantInt64(vn) >= 0 ? Unwrap::Continue : Unwrap::Abort;
+            }
+            return Unwrap::Abort;
+        }
+
+        // Array length can never be negative.
+        if (IsVNArrLen(vn))
+        {
+            return Unwrap::Continue;
+        }
+
+        VNFuncApp funcApp;
+        if (GetVNFunc(vn, &funcApp))
+        {
+            switch (funcApp.m_func)
+            {
+                case VNF_GE_UN:
+                case VNF_GT_UN:
+                case VNF_LE_UN:
+                case VNF_LT_UN:
+                case VNF_COUNT:
+                case VNF_ADD_UN_OVF:
+                case VNF_SUB_UN_OVF:
+                case VNF_MUL_UN_OVF:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
-            case VNF_HWI_POPCNT_PopCount:
-            case VNF_HWI_POPCNT_X64_PopCount:
-            case VNF_HWI_LZCNT_LeadingZeroCount:
-            case VNF_HWI_LZCNT_X64_LeadingZeroCount:
-            case VNF_HWI_BMI1_TrailingZeroCount:
-            case VNF_HWI_BMI1_X64_TrailingZeroCount:
-                return true;
+                case VNF_HWI_POPCNT_PopCount:
+                case VNF_HWI_POPCNT_X64_PopCount:
+                case VNF_HWI_LZCNT_LeadingZeroCount:
+                case VNF_HWI_LZCNT_X64_LeadingZeroCount:
+                case VNF_HWI_BMI1_TrailingZeroCount:
+                case VNF_HWI_BMI1_X64_TrailingZeroCount:
+                    return Unwrap::Continue;
 #elif defined(TARGET_ARM64)
-            case VNF_HWI_AdvSimd_PopCount:
-            case VNF_HWI_AdvSimd_LeadingZeroCount:
-            case VNF_HWI_AdvSimd_LeadingSignCount:
-            case VNF_HWI_ArmBase_LeadingZeroCount:
-            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
-            case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-                return true;
+                case VNF_HWI_AdvSimd_PopCount:
+                case VNF_HWI_AdvSimd_LeadingZeroCount:
+                case VNF_HWI_AdvSimd_LeadingSignCount:
+                case VNF_HWI_ArmBase_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
+                    return Unwrap::Continue;
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
-            case VNF_PhiDef:
-            case VNF_PhiMemoryDef:
-            {
-                // Inspect all PHI args - if all of them are non-negative,
-                // then the PHI itself is non-negative too (even if it has cycles).
-                auto phiVisitor = [this](ValueNum phiVN) -> PhiArgWalkResult {
-                    // Bail out if the type is not integral
-                    if (!varTypeIsIntegral(TypeOfVN(phiVN)))
-                    {
-                        return PhiArgWalkResult::Abort;
-                    }
-                    return IsVNNeverNegative(phiVN) ? PhiArgWalkResult::Continue : PhiArgWalkResult::Abort;
-                };
-
-                // maxDepth is set to 2 to improve JIT TP
-                return VNWalkPhis(vn, funcApp, phiVisitor, /* maxDepth */ 2) == PhiDefWalkResult::Completed;
+                default:
+                    break;
             }
-
-            default:
-                break;
         }
-    }
-
-    return false;
+        return Unwrap::Abort;
+    };
+    return VNUnwrapPhis(vn, unwrapper, /* maxDepth */ 2) == UnwrapResult::Completed;
 }
 
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
@@ -15200,147 +15192,101 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 }
 
 //--------------------------------------------------------------------------------
-// VNWalkPhis: Walk the given PhiDef/PhiMemoryDef and call phiArgVisitor on each real VN.
+// VNUnwrapPhis: given a VN, call the specified callback function on it. In case if the VN
+//    is a phi node, recursively call the callback function on all the VN arguments of that phi node.
 //
 // Arguments:
-//    phiDefVN      - The VN of the PhiDef
-//    phiDefFunc    - VNFuncApp for phiDefVN since caller typically has it anyway (to save TP).
-//    phiArgVisitor - The callback function to call on each Phi argument.
-//    maxDepth      - Maximum depth to handle recursive PhiDef chains. -1 means no limits.
-//    vnKind        - The kind of VN to use (Conservative or Liberal)
+//    vn         - The VN to unwrap
+//    argVisitor - The callback function to call on the vn and its PHI arguments if any
+//    maxDepth   - Maximum depth to handle recursive PHI chains. -1 means no limits.
+//    vnk        - The kind of VN to use (Conservative or Liberal)
 //
 // Return Value:
-//    PhiDefWalkResult::InvalidPhiDef  if any PhiDef didn't allow us to make any assumptions
-//    PhiDefWalkResult::HitLimitations if we hit the maxDepth limit (for TP reasons)
-//    PhiDefWalkResult::Aborted        if any phiArgVisitor returned PhiArgWalkResult::Abort
-//    PhiDefWalkResult::Completed      if the walk was successful (all phiArgVisitors returned
-//                                     PhiArgWalkResult::Continue) and the phiArgVisitor was called at least once
+//    UnwrapResult::MaxDepthReached - we hit the maxDepth limit (for TP reasons)
+//    UnwrapResult::Aborted         - any argVisitor returned Unwrap::Abort
+//    UnwrapResult::Completed       - unwrap was successful (all argVisitor returned Unwrap::Continue)
 //
-template <typename TPhiArgVisitorFunc>
-ValueNumStore::PhiDefWalkResult ValueNumStore::VNWalkPhis(
-    ValueNum phiDefVN, VNFuncApp phiDefFunc, TPhiArgVisitorFunc phiArgVisitor, int maxDepth, ValueNumKind vnKind)
+template <typename TArgVisitor>
+ValueNumStore::UnwrapResult ValueNumStore::VNUnwrapPhis(ValueNum     vn,
+                                                        TArgVisitor  argVisitor,
+                                                        int          maxDepth,
+                                                        ValueNumKind vnk)
 {
-    int              realVNsVisited = 0;
     SmallValueNumSet hashSet;
-    PhiDefWalkResult result =
-        VNWalkPhisInternal(phiDefVN, phiDefFunc, phiArgVisitor, maxDepth, vnKind, realVNsVisited, hashSet);
-    if ((result == PhiDefWalkResult::Completed) && (realVNsVisited == 0))
-    {
-        // We somehow didn't visit any real VN - bail out.
-        return PhiDefWalkResult::InvalidPhiDef;
-    }
+    UnwrapResult     result = VNUnwrapPhisInternal(vn, argVisitor, maxDepth, vnk, hashSet);
     return result;
 }
 
 //--------------------------------------------------------------------------------
-// VNWalkPhisInternal: internal worker for VNWalkPhis, see comments in VNWalkPhis
+// VNUnwrapPhisInternal: internal worker for VNUnwrapPhis, see comments above.
 //
-template <typename TPhiArgVisitorFunc>
-ValueNumStore::PhiDefWalkResult ValueNumStore::VNWalkPhisInternal(ValueNum           phiDefVN,
-                                                                  VNFuncApp          phiDefFunc,
-                                                                  TPhiArgVisitorFunc phiArgVisitor,
-                                                                  int                maxDepth,
-                                                                  ValueNumKind       vnKind,
-                                                                  int&               realVNsVisited,
-                                                                  SmallValueNumSet&  hashSet)
+template <typename TArgVisitor>
+ValueNumStore::UnwrapResult ValueNumStore::VNUnwrapPhisInternal(
+    ValueNum vn, TArgVisitor argVisitor, int maxDepth, ValueNumKind vnk, SmallValueNumSet& hashSet)
 {
-    assert((maxDepth == -1) || (maxDepth > 0));
-    assert((phiDefFunc.m_func == VNF_PhiDef) || (phiDefFunc.m_func == VNF_PhiMemoryDef));
+    assert(maxDepth >= -1);
 
-    const bool isMemory = (phiDefFunc.m_func == VNF_PhiMemoryDef);
-
-    // VNF_PhiDef(LclNum, SsaNum, VNF_Phi)
-    // VNF_PhiMemoryDef(BB, VNF_Phi)
-    ValueNum nextPhiArg = isMemory ? phiDefFunc.m_args[1] : phiDefFunc.m_args[2];
-    if (!isMemory && (phiDefFunc.m_args[0] == BAD_VAR_NUM))
+    if (!hashSet.Add(m_pComp, vn))
     {
-        JITDUMP("We can't process this PhiDef - bail out.\n");
-        return PhiDefWalkResult::InvalidPhiDef;
+        // Recursive PhiDef chain detected
+        return UnwrapResult::Completed;
     }
 
-    assert(!hashSet.Lookup(phiDefVN));
-    hashSet.Add(m_pComp, phiDefVN);
+    unsigned* ssaArgs;
+    unsigned  numSsaArgs;
+    unsigned  lclNum;
 
-    // Now we iterate over Phi arguments, e.g.
-    //  2 args: VNF_Phi(SSA1, SSA2)
-    //  3 args: VNF_Phi(SSA1, VNF_Phi(SSA2, SSA3))
-    //  4 args: VNF_Phi(SSA1, VNF_Phi(SSA2, VNF_Phi(SSA3, SSA4)))
-    // etc.
-    //
-    while (nextPhiArg != NoVN)
+    VNPhiDef       phiDef;
+    VNMemoryPhiDef memoryPhiDef;
+    if (GetPhiDef(vn, &phiDef))
     {
-        ValueNum  current = nextPhiArg;
-        VNFuncApp phiArgFuncApp;
+        lclNum     = phiDef.LclNum;
+        ssaArgs    = phiDef.SsaArgs;
+        numSsaArgs = phiDef.NumArgs;
+    }
+    else if (GetMemoryPhiDef(vn, &memoryPhiDef))
+    {
+        lclNum     = BAD_VAR_NUM;
+        ssaArgs    = memoryPhiDef.SsaArgs;
+        numSsaArgs = memoryPhiDef.NumArgs;
+    }
+    else
+    {
+        // Not a phi node - handle normally and return
+        return argVisitor(vn) == Unwrap::Abort ? UnwrapResult::Aborted : UnwrapResult::Completed;
+    }
 
-        // nextPhiArg is either VNF_Phi or SSA num (last)
-        if (GetVNFunc(nextPhiArg, &phiArgFuncApp))
-        {
-            assert(phiArgFuncApp.m_func == VNF_Phi);
-            current    = phiArgFuncApp.m_args[0];
-            nextPhiArg = phiArgFuncApp.m_args[1];
-        }
-        else
-        {
-            // Ok this was the last Phi arg
-            nextPhiArg = NoVN;
-        }
+    // At this point vn is a PHI definition node
 
-        // We expect a constant VN here representing the SSA number
-        assert(IsVNConstant(current));
+    if (maxDepth == 0)
+    {
+        return UnwrapResult::MaxDepthReached;
+    }
 
-        // Extract the real VN from the Phi arg
-        unsigned phiArgSsaNum = ConstantValue<unsigned>(current);
+    assert(ssaArgs != nullptr);
+    assert(numSsaArgs > 0);
 
+    for (unsigned i = 0; i < numSsaArgs; i++)
+    {
         ValueNum phiArgVN;
-        if (isMemory)
+        if (lclNum != BAD_VAR_NUM)
         {
-            phiArgVN = m_pComp->GetMemoryPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnKind);
+            phiArgVN = m_pComp->lvaGetDesc(lclNum)->GetPerSsaData(ssaArgs[i])->m_vnPair.Get(vnk);
         }
         else
         {
-            // NOTE: it's unfortunate that LclNum is not a VN.
-            unsigned phiDefLclNum = phiDefFunc.m_args[0];
-            phiArgVN              = m_pComp->lvaTable[phiDefLclNum].GetPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnKind);
+            phiArgVN = m_pComp->GetMemoryPerSsaData(ssaArgs[i])->m_vnPair.Get(vnk);
         }
 
-        if (hashSet.Lookup(phiArgVN))
-        {
-            // We already visited this VN which means we have a cycle
-            continue;
-        }
+        // maxDepth being -1 means we don't have depth limits
+        int newDepth = maxDepth == -1 ? -1 : maxDepth - 1;
 
-        // Now check the actual VN arg, if it's yet another PhiDef, walk it recursively
-        VNFuncApp argFuncApp;
-        if (GetVNFunc(phiArgVN, &argFuncApp) &&
-            ((argFuncApp.m_func == VNF_PhiDef) || (argFuncApp.m_func == VNF_PhiMemoryDef)))
+        // TODO-VN: Consider getting rid of this recursion and using an ArrayStack instead.
+        UnwrapResult result = VNUnwrapPhisInternal(phiArgVN, argVisitor, newDepth, vnk, hashSet);
+        if (result != UnwrapResult::Completed)
         {
-            if (maxDepth == 1)
-            {
-                JITDUMP("optWalkPhiVNs: maxDepth reached - bail out.\n");
-                return PhiDefWalkResult::HitLimitations;
-            }
-
-            // MaxDepth being -1 means we don't have depth limits
-            int              newDepth = maxDepth == -1 ? -1 : maxDepth - 1;
-            PhiDefWalkResult result =
-                VNWalkPhisInternal(phiArgVN, argFuncApp, phiArgVisitor, newDepth, vnKind, realVNsVisited, hashSet);
-            if (result != PhiDefWalkResult::Completed)
-            {
-                return result;
-            }
-        }
-        else
-        {
-            if (phiArgVisitor(phiArgVN) == PhiArgWalkResult::Abort)
-            {
-                // Caller realized that it doesn't make sense to continue any further
-                JITDUMP("optWalkPhiVNs: aborted by callback.\n");
-                return PhiDefWalkResult::Aborted;
-            }
-            realVNsVisited++;
-            hashSet.Add(m_pComp, phiArgVN);
+            return result;
         }
     }
-
-    return PhiDefWalkResult::Completed;
+    return UnwrapResult::Completed;
 }

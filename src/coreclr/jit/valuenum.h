@@ -529,34 +529,27 @@ public:
 
     void PeelOffsets(ValueNum* vn, target_ssize_t* offset);
 
-    enum class PhiArgWalkResult
+    enum class Unwrap
     {
         Continue,
         Abort,
     };
-    enum class PhiDefWalkResult
+    enum class UnwrapResult
     {
         Completed,
         Aborted,
-        InvalidPhiDef,
-        HitLimitations,
+        MaxDepthReached,
     };
-    template <typename TPhiArgVisitorFunc>
-    PhiDefWalkResult VNWalkPhis(ValueNum           phiDefVN,
-                                VNFuncApp          phiDefFunc,
-                                TPhiArgVisitorFunc walkPhiVnsFn,
-                                int                maxDepth = -1,
-                                ValueNumKind       vnKind   = VNK_Conservative);
+    template <typename TArgVisitor>
+    UnwrapResult VNUnwrapPhis(ValueNum     vn,
+                              TArgVisitor  argVisitor,
+                              int          maxDepth = -1,
+                              ValueNumKind vnk      = VNK_Conservative);
 
 private:
-    template <typename TPhiArgVisitorFunc>
-    PhiDefWalkResult VNWalkPhisInternal(ValueNum                phiDefVN,
-                                        VNFuncApp               phiDefFunc,
-                                        TPhiArgVisitorFunc      walkPhiVnsFn,
-                                        int                     maxDepth,
-                                        ValueNumKind            vnKind,
-                                        int&                    realVNsVisited,
-                                        class SmallValueNumSet& hashSet);
+    template <typename TArgVisitor>
+    UnwrapResult VNUnwrapPhisInternal(
+        ValueNum vn, TArgVisitor argVisitor, int maxDepth, ValueNumKind vnk, class SmallValueNumSet& hashSet);
 public:
 
     // And the single constant for an object reference type.
