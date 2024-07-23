@@ -86,24 +86,29 @@ internal sealed class StressLogAnalyzer(
                         localMessages.Add(message);
                     }
 
-                    if (stringFinder.IsWellKnown(message.FormatString, out WellKnownString wellKnown))
+                    if (!stringFinder.IsWellKnown(message.FormatString, out WellKnownString wellKnown))
                     {
-                        gcThreadMap.ProcessInterestingMessage(log.ThreadId, wellKnown, message.Args);
-                        if (wellKnown == WellKnownString.GCSTART)
-                        {
-                            timeTracker.RecordGCStart(message.Args[0], message.Timestamp);
-                        }
-                        else if (wellKnown == WellKnownString.GCEND)
-                        {
-                            timeTracker.RecordGCEnd(message.Args[0], message.Timestamp);
-                        }
+                        // If the string isn't a well-known string, we've finished the processing we need to do.
+                        // Go to the next message.
+                        continue;
                     }
 
-                    if (threadFilter.HasAnyGCThreadFilter
-                        && gcThreadMap.ThreadHasHeap(log.ThreadId)
-                        && !gcThreadMap.IncludeThread(log.ThreadId, threadFilter))
+                    if (wellKnown == WellKnownString.GCSTART)
                     {
-                        // As soon as we know that this thread corresponds a GC heap that we don't want, we can skip processing
+                        timeTracker.RecordGCStart(message.Args[0], message.Timestamp);
+                    }
+                    else if (wellKnown == WellKnownString.GCEND)
+                    {
+                        timeTracker.RecordGCEnd(message.Args[0], message.Timestamp);
+                    }
+
+                    if (gcThreadMap.TryRememberHeapForThread(log.ThreadId, wellKnown, message.Args, out ulong heapNumber, out bool isBackground)
+                        && threadFilter.HasAnyGCThreadFilter
+                        && !threadFilter.IncludeHeapThread(heapNumber, isBackground)
+                        && !threadFilter.IncludeThread(log.ThreadId))
+                    {
+                        // As soon as we know that this thread corresponds to a thread that we definitely don't care about,
+                        // we can skip processing
                         // the rest of the messages on this thread log.
                         // We also won't push these messages up for later processing.
                         includeThreadMessages = false;
@@ -132,6 +137,14 @@ internal sealed class StressLogAnalyzer(
         }
 
         IEnumerable<(ThreadStressLogData thread, StressMsgData message, int numMessageOnThread)> messages = allMessages;
+
+        if (threadFilter.HasAnyGCThreadFilter)
+        {
+            // If we have GC thread filters, we have filtered out threads that we know are GC threads we don't care about.
+            // However, if the thread is not a GC thread at all, then we haven't filtered it out yet.
+            // Filter out uninteresting threads that aren't GC threads now.
+            messages = messages.Where(message => gcThreadMap.ThreadHasHeap(message.thread.ThreadId) || threadFilter.IncludeThread(message.thread.ThreadId));
+        }
 
         // Now that we know all GC times, we can filter out messages that aren't in interesting GC time ranges.
         messages = messages.Where(message => timeTracker.IsInInterestingGCTimeRange(message.message.Timestamp));

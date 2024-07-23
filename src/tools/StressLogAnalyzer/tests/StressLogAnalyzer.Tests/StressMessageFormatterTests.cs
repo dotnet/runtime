@@ -15,6 +15,7 @@ public unsafe class StressMessageFormatterTests
         public record Utf8String(string Value) : StressMessageArgument;
         public record Utf16String(string Value) : StressMessageArgument;
         public record SignedInteger(long Value) : StressMessageArgument;
+        public record FloatingPoint(double Value) : StressMessageArgument;
         public record UnsignedInteger(ulong Value) : StressMessageArgument;
     }
 
@@ -41,7 +42,7 @@ public unsafe class StressMessageFormatterTests
     [Fact]
     public void UnsupportedFormatSpecifier()
     {
-        var (target, message) = CreateFixture("The answer is %f", new StressMessageArgument.SignedInteger(0));
+        var (target, message) = CreateFixture("The answer is %e", new StressMessageArgument.SignedInteger(0));
 
         StressMessageFormatter formatter = new(target, NoOpSpecialPointerFormatter);
         Assert.Throws<InvalidOperationException>(() => formatter.GetFormattedMessage(message));
@@ -267,6 +268,50 @@ public unsafe class StressMessageFormatterTests
         Assert.Equal($"We have a StackTrace: 0x{value:X}", formatter.GetFormattedMessage(message));
     }
 
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(123.45)]
+    [InlineData(-42.0)]
+    public void SimpleFloatingPoint(double value)
+    {
+        var (target, message) = CreateFixture("The answer is %f", new StressMessageArgument.FloatingPoint(value));
+
+        Assert.Equal($"The answer is {value:0.######}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+    }
+
+    [Theory]
+    [InlineData(0.0, "0")]
+    [InlineData(123.45, "123.45")]
+    [InlineData(-42.0, "-42")]
+    public void FloatingPointWithPrecision(double value, string expected)
+    {
+        var (target, message) = CreateFixture("The answer is %.6f", new StressMessageArgument.FloatingPoint(value));
+
+        Assert.Equal($"The answer is {expected}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+    }
+
+    [Theory]
+    [InlineData(0.0, "0")]
+    [InlineData(123.45, "123.45")]
+    [InlineData(-42.0, "-42")]
+    public void FloatingPointWithPrecisionAndWidth(double value, string expected)
+    {
+        var (target, message) = CreateFixture("The answer is %10.6f", new StressMessageArgument.FloatingPoint(value));
+
+        Assert.Equal($"The answer is {expected.PadLeft(10)}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+    }
+
+    [Theory]
+    [InlineData(0.0, "0000")]
+    [InlineData(123.45, "0123.45")]
+    [InlineData(-42.0, "-0042")]
+    public void FloatingPointWithPrecisionAndWidthAndZeroPadding(double value, string expected)
+    {
+        var (target, message) = CreateFixture("The answer is %08.3f", new StressMessageArgument.FloatingPoint(value));
+
+        Assert.Equal($"The answer is {expected}", new StressMessageFormatter(target, NoOpSpecialPointerFormatter).GetFormattedMessage(message));
+    }
+
     private static (Target target, StressMsgData Message) CreateFixture(string format, params StressMessageArgument[] args)
     {
         // Add a dummy value at 0 to make the format string a non-null pointer and null terminate it.
@@ -293,6 +338,9 @@ public unsafe class StressMessageFormatterTests
                     break;
                 case StressMessageArgument.UnsignedInteger(ulong unsignedInteger):
                     arguments[i] = unsignedInteger;
+                    break;
+                case StressMessageArgument.FloatingPoint(double floatingPoint):
+                    arguments[i] = BitConverter.DoubleToUInt64Bits(floatingPoint);
                     break;
             }
         }

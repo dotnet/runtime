@@ -12,7 +12,7 @@ namespace StressLogAnalyzer;
 
 public sealed class StressMessageFormatter
 {
-    private record struct PaddingFormat(int Width, char FormatChar);
+    private record struct PaddingFormat(int Width, char FormatChar, int Precision = 6);
 
     private readonly Target _target;
     private readonly ISpecialPointerFormatter _pointerFormatter;
@@ -34,6 +34,7 @@ public sealed class StressMessageFormatter
             { "S", FormatUtf16String },
             { "ls", FormatUtf16String },
             { "p", FormatPointer },
+            { "f", FormatFloatingPoint },
             { "d", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<int>(ptr, 'd', paddingFormat)) },
             { "i", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<int>(ptr, 'd', paddingFormat)) },
             { "u", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
@@ -51,6 +52,7 @@ public sealed class StressMessageFormatter
             { "zx", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
             { "zX", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'X', paddingFormat)) },
             { "I64u", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'd', paddingFormat)) },
+            { "Id", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<long>(ptr, 'd', paddingFormat)) },
             { "Ix", (ptr, paddingFormat, builder) => builder.Append(FormatInteger<ulong>(ptr, 'x', paddingFormat)) },
             { "I64p", FormatPointer },
         };
@@ -150,6 +152,47 @@ public sealed class StressMessageFormatter
         }
     }
 
+    private static void FormatFloatingPoint(TargetPointer valueAsBits, PaddingFormat paddingFormat, StringBuilder builder)
+    {
+        double value = BitConverter.UInt64BitsToDouble(valueAsBits.Value);
+        if (paddingFormat.Precision == 0)
+        {
+            if (paddingFormat.FormatChar == '0')
+            {
+                builder.Append(value.ToString($"F{paddingFormat.Width}", provider: CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                builder.Append(value.ToString("F", provider: CultureInfo.InvariantCulture).PadLeft(paddingFormat.Width, paddingFormat.FormatChar));
+            }
+        }
+        else
+        {
+            if (paddingFormat.FormatChar == '0')
+            {
+                // Create a format string of 00000.### where there are Precision #s and Width - Precision - 1 0s.
+                string formatString = string.Create(paddingFormat.Width, paddingFormat, (buffer, format) =>
+                {
+                    buffer.Fill('0');
+                    buffer[^paddingFormat.Precision..].Fill('#');
+                    buffer[buffer.Length - paddingFormat.Precision - 1] = '.';
+                });
+                builder.Append(value.ToString(formatString, provider: CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                // Create a format string of #####.### where there are Precision #s after the dot, '0' before the dot, and #s until the string is Width long at the start.
+                string formatString = string.Create(paddingFormat.Width, paddingFormat, (buffer, format) =>
+                {
+                    buffer.Fill('#');
+                    buffer[buffer.Length - paddingFormat.Precision - 1] = '.';
+                    buffer[buffer.Length - paddingFormat.Precision - 2] = '0';
+                });
+                builder.Append(value.ToString(formatString, provider: CultureInfo.InvariantCulture).PadLeft(paddingFormat.Width, paddingFormat.FormatChar));
+            }
+        }
+    }
+
     private unsafe string ReadZeroTerminatedString<T>(TargetPointer pointer, int maxLength)
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
@@ -220,10 +263,21 @@ public sealed class StressMessageFormatter
                     operand = formatString[startIndex++];
                 }
 
-                while (operand >= '0' && operand <= '9')
+                while (operand is >= '0' and <= '9')
                 {
                     paddingFormat = paddingFormat with { Width = paddingFormat.Width * 10 + (operand - '0') };
                     operand = formatString[startIndex++];
+                }
+
+                if (operand == '.')
+                {
+                    paddingFormat = paddingFormat with { Precision = 0 };
+                    operand = formatString[startIndex++];
+                    while (operand is >= '0' and <= '9')
+                    {
+                        paddingFormat = paddingFormat with { Precision = paddingFormat.Precision * 10 + (operand - '0') };
+                        operand = formatString[startIndex++];
+                    }
                 }
 
                 string specifier;
@@ -277,7 +331,7 @@ public sealed class StressMessageFormatter
 
                 if (!formatActions.TryGetValue(specifier, out var action))
                 {
-                    throw new InvalidOperationException($"Unknown format specifier '{specifier}'");
+                    throw new InvalidOperationException($"Unknown format specifier '{specifier}' in string '{formatString}'");
                 }
 
                 action(stressMsg.Args[currentArg++], paddingFormat, sb);

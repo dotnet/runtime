@@ -16,7 +16,7 @@ namespace StressLogAnalyzer
         private ulong _seenHeapBitmap;
         private readonly ConcurrentDictionary<ulong, (ulong heap, bool background)> _heapMap = [];
 
-        public void ProcessInterestingMessage(ulong threadId, WellKnownString wellKnownString, IReadOnlyList<TargetPointer> args)
+        public bool TryRememberHeapForThread(ulong threadId, WellKnownString wellKnownString, IReadOnlyList<TargetPointer> args, out ulong heap, out bool background)
         {
             switch (wellKnownString)
             {
@@ -28,22 +28,32 @@ namespace StressLogAnalyzer
                 case WellKnownString.RELOCATE_END:
                 case WellKnownString.COMPACT_START:
                 case WellKnownString.COMPACT_END:
-                    RememberHeapForThread(threadId, (ulong)args[0], false);
-                    break;
+                    heap = (ulong)args[0];
+                    background = false;
+                    RememberHeapForThread(threadId, heap, background);
+                    return true;
 
                 case WellKnownString.DESIRED_NEW_ALLOCATION:
                     if (args[1] <= 1)
                     {
                         // do this only for gen 0 and 1, because otherwise it
                         // may be background GC
-                        RememberHeapForThread(threadId, (ulong)args[0], false);
+                        heap = (ulong)args[0];
+                        background = false;
+                        RememberHeapForThread(threadId, heap, background);
+                        return true;
                     }
                     break;
 
                 case WellKnownString.START_BGC_THREAD:
-                    RememberHeapForThread(threadId, (ulong)args[0], true);
-                    break;
+                    heap = (ulong)args[0];
+                    background = true;
+                    RememberHeapForThread(threadId, heap, background);
+                    return true;
             }
+            heap = 0;
+            background = false;
+            return false;
         }
 
         private void RememberHeapForThread(ulong threadId, ulong heap, bool background)
