@@ -12,9 +12,7 @@ namespace System.Net.WebSockets
 {
     internal sealed partial class ManagedWebSocket : WebSocket
     {
-        private static bool KeepAlivePingEnabled => false; // TODO feature flag
-
-        private bool IsUnsolicitedPongKeepAlive => !KeepAlivePingEnabled || _keepAlivePingState is null;
+        private bool IsUnsolicitedPongKeepAlive => _keepAlivePingState is null;
 
         private void HeartBeat()
         {
@@ -111,7 +109,7 @@ namespace System.Net.WebSockets
 
             if (_receiveMutex.IsHeld)
             {
-                // Read is already in progress, no need to issue read-ahead
+                // Read (either user read, or previous read-ahead) is already in progress, no need to issue read-ahead
                 return ValueTask.CompletedTask;
             }
 
@@ -137,6 +135,7 @@ namespace System.Net.WebSockets
                 }
 
                 _readAheadState!.ReadAheadTask = DoReadAheadAsync().AsTask(); //todo optimize to use value task??
+                // note: DoReadAheadAsync will handle releasing the mutex on this code path
             }
             catch
             {
@@ -209,7 +208,7 @@ namespace System.Net.WebSockets
                     MessageOpcode.Ping,
                     endOfMessage: true,
                     disableCompression: true,
-                    pingPayloadBuffer,
+                    pingPayloadBuffer.AsMemory(0, sizeof(long)),
                     CancellationToken.None).ConfigureAwait(false);
             }
             finally
@@ -284,7 +283,7 @@ namespace System.Net.WebSockets
 
         private sealed class ReadAheadState : IDisposable
         {
-            internal const int ReadAheadBufferSize = 16384;
+            internal const int ReadAheadBufferSize = 16384; // TODO: 4096 ?
             internal ArrayBuffer Buffer;
             internal ValueWebSocketReceiveResult BufferedResult;
             internal Task? ReadAheadTask;
@@ -313,9 +312,9 @@ namespace System.Net.WebSockets
                 {
                     if (!ReadAheadTask.IsCompleted)
                     {
-                        // we are in a mutex. read-ahead task also only executes within the mutex.
-                        // if the task isn't null, it must be already completed.
-                        // throwing instead of Debug.Assert, to prevent hanging on GetAwaiter().GetResult()
+                        // We are in a mutex. Read-ahead task also only executes within the mutex.
+                        // If the task isn't null, it must be already completed.
+                        // Throwing here instead of Debug.Assert, just in case to prevent hanging on GetAwaiter().GetResult()
                         throw new InvalidOperationException("Read-ahead task should be completed before consuming the result.");
                     }
 
@@ -331,7 +330,8 @@ namespace System.Net.WebSockets
                     {
                         result = BufferedResult;
                         BufferedResult = default;
-                        return result; // even if we've consumed 0 bytes, it is still a valid result (EOF)?
+                        Buffer.ClearAndReturnBuffer(); // TODO: should we return or keep the buffer??
+                        return result;
                     }
 
                     // If we have more data in the read-ahead buffer, we need to construct a new result for the next read to consume it.

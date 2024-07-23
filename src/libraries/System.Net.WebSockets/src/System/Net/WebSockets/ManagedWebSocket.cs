@@ -170,7 +170,7 @@ namespace System.Net.WebSockets
             if (keepAliveInterval > TimeSpan.Zero)
             {
                 long heartBeatIntervalMs = (long)keepAliveInterval.TotalMilliseconds;
-                if (keepAliveTimeout > TimeSpan.Zero && KeepAlivePingEnabled) // keep-alive Ping/Pong strategy
+                if (keepAliveTimeout > TimeSpan.Zero) // keep-alive Ping/Pong strategy
                 {
                     _readAheadState = new ReadAheadState(_receiveMutex);
                     _keepAlivePingState = new KeepAlivePingState(keepAliveInterval, keepAliveTimeout);

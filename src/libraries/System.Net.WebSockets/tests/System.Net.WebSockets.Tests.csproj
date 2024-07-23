@@ -9,6 +9,7 @@
     <Compile Include="WebSocketCloseTests.cs" />
     <Compile Include="WebSocketTests.cs" />
     <Compile Include="WebSocketExceptionTests.cs" />
+    <Compile Include="WebSocketKeepAliveTests.cs" />
     <Compile Include="WebSocketReceiveResultTests.cs" />
     <Compile Include="WebSocketCreateTest.cs" />
     <Compile Include="WebSocketTestStream.cs" />
