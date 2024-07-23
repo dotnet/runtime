@@ -8,7 +8,6 @@ namespace System.Runtime.CompilerServices
 {
     //
     // Subsetted clone of System.Runtime.CompilerServices.Unsafe for internal runtime use.
-    // Keep in sync with src/libraries/shims/System.Runtime.CompilerServices.Unsafe.
     //
 
     /// <summary>
