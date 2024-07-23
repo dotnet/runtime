@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Metrics
 {
@@ -87,6 +88,17 @@ namespace System.Diagnostics.Metrics
             {
                 return;
             }
+
+            // MeterListener has a static constructor that creates runtime metrics instruments.
+            // We need to ensure this static constructor is called before starting to publish the instrument.
+            // This is necessary because creating runtime metrics instruments will cause re-entry to the Publish method,
+            // potentially resulting in a deadlock due to the SyncObject lock.
+            // Sequence of the deadlock:
+            //   1. An application creates an early instrument (e.g., Counter) before the MeterListener static constructor is executed.
+            //   2. Instrument.Publish is called and enters the SyncObject lock.
+            //   3. Within the lock block, MeterListener is called, triggering its static constructor.
+            //   4. The static constructor creates runtime metrics instruments, causing re-entry to Instrument.Publish and leading to a deadlock.
+            RuntimeHelpers.RunClassConstructor(typeof(MeterListener).TypeHandle);
 
             List<MeterListener>? allListeners = null;
             lock (Instrument.SyncObject)
