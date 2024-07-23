@@ -2659,9 +2659,43 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_WASM
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
 #elif defined(TARGET_ARM64)
-		if (vector_size == 128 && (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1))
+		if (vector_size != 128) {
+			return NULL;
+		}
+		if ((arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1)) {
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
-		return NULL;
+		}
+		if (args [1]->opcode != OP_XCONST) {
+			return NULL;
+		}
+		MonoInst *new_args[2];
+		new_args [0] = args [0];
+		if (COMPILE_LLVM (cfg)) {
+			if ((get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 0) == 0x300000002) &&
+				(get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 1) == 0x100000000)) {
+				new_args [1] = args [0];
+				return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_EXT, 0, MONO_TYPE_U8, fsig, new_args);
+			}
+		}
+		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+		int ecount = (vector_size / 8) / esize;
+		guint64 value = 0;
+		guint8 vec_cns[16];
+		for (int index = 0; index < ecount; index++) {
+			value = get_xconst_int_elem (cfg, args [1], arg0_type, index);
+
+			if (value < ecount) {
+				for (int i = 0; i < esize; i++) {
+					vec_cns [(index * esize) + i] = (guint8)((value * esize) + i);
+				}
+			} else {
+				for (int i = 0; i < esize; i++) {
+					vec_cns [(index * esize) + i] = 0xFF;
+				}
+			}
+		}
+		new_args [1] = emit_xconst_v128 (cfg, klass, vec_cns);
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, new_args);
 #elif defined(TARGET_AMD64)
 		if (COMPILE_LLVM (cfg)) {
 			if (vector_size != 128) {
@@ -2682,7 +2716,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				needs_zero = true;
 			}
 			for (int index = 0; index < ecount; index++) {
-				value = get_xconst_int_elem (cfg, args [1], etype->type, index);
+				value = get_xconst_int_elem (cfg, args [1], arg0_type, index);
 				if (value < ecount) {
 					// Setting the control for byte/sbyte and short/ushort is unnecessary
 					// and will actually compute an incorrect control word. But it simplifies
@@ -2696,7 +2730,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					// sequential bytes.
 
 					for (int i = 0; i < esize; i++) {
-						vec_cns[(index * esize) + i] = (guint8)((value * esize) + i);
+						vec_cns [(index * esize) + i] = (guint8)((value * esize) + i);
 					}
 				} else {
 					needs_zero = true;
@@ -2707,7 +2741,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					// set, but we use 0xFF instead since that will be the equivalent of AllBitsSet
 
 					for (int i = 0; i < esize; i++) {
-						vec_cns[(index * esize) + i] = 0xFF;
+						vec_cns [(index * esize) + i] = 0xFF;
 					}
 				}
 			}
