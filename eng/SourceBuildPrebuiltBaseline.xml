@@ -30,9 +30,9 @@
     <UsagePattern IdentityGlob="Microsoft.CodeAnalysis.Analyzers/*" />
 
     <!-- Allowed due to https://github.com/dotnet/source-build-reference-packages/pull/979 -->
-    <UsagePattern IdentityGlob="System.IO.Pipelines.6.0.*" />
-    <UsagePattern IdentityGlob="System.IO.Pipelines.7.0.0" />
-    <UsagePattern IdentityGlob="System.IO.Pipelines.8.0.*" />
-    <UsagePattern IdentityGlob="System.Security.Cryptography.Pkcs.5.0.0"/>
+    <UsagePattern IdentityGlob="System.IO.Pipelines/6.0.*" />
+    <UsagePattern IdentityGlob="System.IO.Pipelines/7.0.0" />
+    <UsagePattern IdentityGlob="System.IO.Pipelines/8.0.*" />
+    <UsagePattern IdentityGlob="System.Security.Cryptography.Pkcs/5.0.0"/>
   </IgnorePatterns>
 </UsageData>
