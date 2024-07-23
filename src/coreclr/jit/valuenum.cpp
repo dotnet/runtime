@@ -6718,6 +6718,138 @@ const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
 }
 #endif
 
+bool ValueNumStore::IsVNPhiDef(ValueNum vn)
+{
+    VNFuncApp funcAttr;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    return funcAttr.m_func == VNF_PhiDef;
+}
+//------------------------------------------------------------------------
+// AreVNsEquivalent: returns true iff VNs represent the same value
+//
+// Arguments:
+//    vn1 - first value number to consider
+//    vn2 - second value number ot consider
+//
+// Notes:
+//    Normally if vn1 != vn2 then we cannot say if the two values
+//    are equivalent or different. PhiDef VNs don't represent the
+//    phi def values in this way, and can be proven equivalent even
+//    for different value numbers.
+//
+bool ValueNumStore::AreVNsEquivalent(ValueNum vn1, ValueNum vn2)
+{
+    if (vn1 == vn2)
+    {
+        return true;
+    }
+
+    VNFuncApp funcAttr1;
+    if (!GetVNFunc(vn1, &funcAttr1))
+    {
+        return false;
+    }
+
+    if (funcAttr1.m_func != VNF_PhiDef)
+    {
+        return false;
+    }
+
+    VNFuncApp funcAttr2;
+    if (!GetVNFunc(vn2, &funcAttr2))
+    {
+        return false;
+    }
+
+    if (funcAttr2.m_func != VNF_PhiDef)
+    {
+        return false;
+    }
+
+    // We have two PhiDefs. They may be equivalent, if
+    // they come from Phis in the same block.
+    //
+    const unsigned lclNum1    = unsigned(funcAttr1.m_args[0]);
+    const unsigned ssaDefNum1 = unsigned(funcAttr1.m_args[1]);
+
+    LclVarDsc* const    varDsc1      = m_pComp->lvaGetDesc(lclNum1);
+    LclSsaVarDsc* const varSsaDsc1   = varDsc1->GetPerSsaData(ssaDefNum1);
+    GenTree* const      varDefTree1  = varSsaDsc1->GetDefNode();
+    BasicBlock* const   varDefBlock1 = varSsaDsc1->GetBlock();
+
+    const unsigned lclNum2    = unsigned(funcAttr2.m_args[0]);
+    const unsigned ssaDefNum2 = unsigned(funcAttr2.m_args[1]);
+
+    LclVarDsc* const    varDsc2      = m_pComp->lvaGetDesc(lclNum2);
+    LclSsaVarDsc* const varSsaDsc2   = varDsc2->GetPerSsaData(ssaDefNum2);
+    GenTree* const      varDefTree2  = varSsaDsc2->GetDefNode();
+    BasicBlock* const   varDefBlock2 = varSsaDsc2->GetBlock();
+
+    if (varDefBlock1 != varDefBlock2)
+    {
+        return false;
+    }
+
+    if ((varDefTree1 == nullptr) || (varDefTree2 == nullptr))
+    {
+        return false;
+    }
+
+    // PhiDefs are from same block. Walk the phi args
+    //
+    GenTreePhi* const       treePhi1  = varDefTree1->AsLclVar()->Data()->AsPhi();
+    GenTreePhi* const       treePhi2  = varDefTree2->AsLclVar()->Data()->AsPhi();
+    GenTreePhi::UseIterator treeIter1 = treePhi1->Uses().begin();
+    GenTreePhi::UseIterator treeEnd1  = treePhi1->Uses().end();
+    GenTreePhi::UseIterator treeIter2 = treePhi2->Uses().begin();
+    GenTreePhi::UseIterator treeEnd2  = treePhi2->Uses().end();
+
+    bool phiArgsAreEquivalent = true;
+
+    for (; (treeIter1 != treeEnd1) && (treeIter2 != treeEnd2); ++treeIter1, ++treeIter2)
+    {
+        GenTreePhiArg* const treePhiArg1 = treeIter1->GetNode()->AsPhiArg();
+        GenTreePhiArg* const treePhiArg2 = treeIter2->GetNode()->AsPhiArg();
+
+        assert(treePhiArg1->gtPredBB == treePhiArg2->gtPredBB);
+
+        ValueNum treePhiArgVN1 = treePhiArg1->gtVNPair.GetConservative();
+        ValueNum treePhiArgVN2 = treePhiArg2->gtVNPair.GetConservative();
+
+        // If the PhiArg VNs differ, the phis are not equivalent.
+        // (Note we don't recurse into AreVNsEquivalent as we can't
+        // handle possible cycles in the SSA graph).
+        //
+        if (treePhiArgVN1 != treePhiArgVN2)
+        {
+            phiArgsAreEquivalent = false;
+            break;
+        }
+
+        // If we failed to find meaningful VNs, the phis are not equivalent
+        //
+        if (treePhiArgVN1 == ValueNumStore::NoVN)
+        {
+            phiArgsAreEquivalent = false;
+            break;
+        }
+    }
+
+    // If we didn't verify all phi args we have failed to prove equivalence
+    //
+    if (phiArgsAreEquivalent)
+    {
+        phiArgsAreEquivalent &= (treeIter1 == treeEnd1);
+        phiArgsAreEquivalent &= (treeIter2 == treeEnd2);
+    }
+
+    return phiArgsAreEquivalent;
+}
+
 bool ValueNumStore::IsVNRelop(ValueNum vn)
 {
     VNFuncApp funcAttr;
@@ -8230,6 +8362,113 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                 break;
             }
 
+            case GT_EQ:
+            {
+                if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
+                    var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                break;
+            }
+
+            case GT_GT:
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                if (varTypeIsUnsigned(baseType))
+                {
+                    // Handle `(0 > x) == false` for unsigned types.
+                    if ((cnsVN == arg0VN) && (cnsVN == VNZeroForType(simdType)))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                else if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x > NaN) == false` and `(NaN > x) == false` for floating-point types
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                break;
+            }
+
+            case GT_GE:
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                if (varTypeIsUnsigned(baseType))
+                {
+                    // Handle `x >= 0 == true` for unsigned types.
+                    if ((cnsVN == arg1VN) && (cnsVN == VNZeroForType(simdType)))
+                    {
+                        return VNAllBitsForType(type);
+                    }
+                }
+                else if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x >= NaN) == false` and `(NaN >= x) == false` for floating-point types
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                break;
+            }
+
+            case GT_LT:
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                if (varTypeIsUnsigned(baseType))
+                {
+                    // Handle `x < 0 == false` for unsigned types.
+                    if ((cnsVN == arg1VN) && (cnsVN == VNZeroForType(simdType)))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                else if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x < NaN) == false` and `(NaN < x) == false` for floating-point types
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                break;
+            }
+
+            case GT_LE:
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                if (varTypeIsUnsigned(baseType))
+                {
+                    // Handle `0 <= x == true` for unsigned types.
+                    if ((cnsVN == arg0VN) && (cnsVN == VNZeroForType(simdType)))
+                    {
+                        return VNAllBitsForType(type);
+                    }
+                }
+                else if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x <= NaN) == false` and `(NaN <= x) == false` for floating-point types
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                break;
+            }
+
             case GT_MUL:
             {
                 if (!varTypeIsFloating(baseType))
@@ -8273,6 +8512,21 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                 if (cnsVN == oneVN)
                 {
                     return argVN;
+                }
+                break;
+            }
+
+            case GT_NE:
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x != NaN) == true` and `(NaN != x) == true` for floating-point types
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNAllBitsForType(type);
+                    }
                 }
                 break;
             }
@@ -8444,6 +8698,48 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
             }
 #endif
 
+            case NI_Vector128_op_Equality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Equality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
+                    var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNZeroForType(type);
+                    }
+                }
+                break;
+            }
+
+            case NI_Vector128_op_Inequality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Inequality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                if (varTypeIsFloating(baseType))
+                {
+                    // Handle `(x != NaN) == true` and `(NaN != x) == true` for floating-point types
+                    var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+                    if (VNIsVectorNaN(simdType, baseType, cnsVN))
+                    {
+                        return VNOneForType(type);
+                    }
+                }
+                break;
+            }
+
             default:
             {
                 break;
@@ -8472,6 +8768,32 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
                 return arg0VN;
             }
 
+            case GT_EQ:
+            case GT_GE:
+            case GT_LE:
+            {
+                // We can't handle floating-point due to NaN
+
+                if (varTypeIsIntegral(baseType))
+                {
+                    return VNAllBitsForType(type);
+                }
+                break;
+            }
+
+            case GT_GT:
+            case GT_LT:
+            case GT_NE:
+            {
+                // We can't handle floating-point due to NaN
+
+                if (varTypeIsIntegral(baseType))
+                {
+                    return VNZeroForType(type);
+                }
+                break;
+            }
+
             case GT_OR:
             {
                 // Handle `x | x == x`
@@ -8498,6 +8820,48 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(GenTreeHWIntrinsic* tree,
 
             default:
                 break;
+        }
+
+        switch (ni)
+        {
+            case NI_Vector128_op_Equality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Equality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                // We can't handle floating-point due to NaN
+
+                if (varTypeIsIntegral(baseType))
+                {
+                    return VNOneForType(type);
+                }
+                break;
+            }
+
+            case NI_Vector128_op_Inequality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Inequality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                // We can't handle floating-point due to NaN
+
+                if (varTypeIsIntegral(baseType))
+                {
+                    return VNZeroForType(type);
+                }
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
     }
 
@@ -10430,38 +10794,15 @@ PhaseStatus Compiler::fgValueNumber()
     // SSA has already computed a post-order taking EH successors into account.
     // Visiting that in reverse will ensure we visit a block's predecessors
     // before itself whenever possible.
+    //
+    EnsureBasicBlockEpoch();
+    BlockSet     visitedBlocks(BlockSetOps::MakeEmpty(this));
     BasicBlock** postOrder      = m_dfsTree->GetPostOrder();
     unsigned     postOrderCount = m_dfsTree->GetPostOrderCount();
     for (unsigned i = postOrderCount; i != 0; i--)
     {
-        BasicBlock* block = postOrder[i - 1];
-        JITDUMP("Visiting " FMT_BB "\n", block->bbNum);
-
-        if (block != fgFirstBB)
-        {
-            bool anyPredReachable = false;
-            for (FlowEdge* pred = BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
-            {
-                BasicBlock* predBlock = pred->getSourceBlock();
-                if (!vs.IsReachableThroughPred(block, predBlock))
-                {
-                    JITDUMP("  Unreachable through pred " FMT_BB "\n", predBlock->bbNum);
-                    continue;
-                }
-
-                JITDUMP("  Reachable through pred " FMT_BB "\n", predBlock->bbNum);
-                anyPredReachable = true;
-                break;
-            }
-
-            if (!anyPredReachable)
-            {
-                JITDUMP("  " FMT_BB " was proven unreachable\n", block->bbNum);
-                vs.SetUnreachable(block);
-            }
-        }
-
-        fgValueNumberBlock(block);
+        BasicBlock* const block = postOrder[i - 1];
+        fgValueNumberBlocks(block, visitedBlocks);
     }
 
 #ifdef DEBUG
@@ -10474,6 +10815,87 @@ PhaseStatus Compiler::fgValueNumber()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberBlocks: Run value numbering for a block or blocks in a loop
+//
+// Arguments:
+//   block -- block to value number (may already have been numbered)
+//   visitedBlocks -- blocks that have already had VNs assigned
+//
+// Notes:
+//
+//   Within the overall reverse post order, we want to ensure we visit all blocks in
+//   a loop before any possible loop block successors. So if we visit a loop
+//   header, we switch to visiting the loop blocks in RPO, and once we finish
+//   that visitation, we try and refine loop header PHIs.
+//
+void Compiler::fgValueNumberBlocks(BasicBlock* block, BlockSet& visitedBlocks)
+{
+    // Because we're not following the strict RPO, we may have already visisted this block.
+    //
+    if (BlockSetOps::IsMember(this, visitedBlocks, block->bbNum))
+    {
+        return;
+    }
+
+    JITDUMP("Visiting " FMT_BB "\n", block->bbNum);
+
+    if (block != fgFirstBB)
+    {
+        bool anyPredReachable = false;
+        for (FlowEdge* pred = BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
+        {
+            BasicBlock* predBlock = pred->getSourceBlock();
+            if (!vnState->IsReachableThroughPred(block, predBlock))
+            {
+                JITDUMP("  Unreachable through pred " FMT_BB "\n", predBlock->bbNum);
+                continue;
+            }
+
+            JITDUMP("  Reachable through pred " FMT_BB "\n", predBlock->bbNum);
+            anyPredReachable = true;
+            break;
+        }
+
+        if (!anyPredReachable)
+        {
+            JITDUMP("  " FMT_BB " was proven unreachable\n", block->bbNum);
+            vnState->SetUnreachable(block);
+        }
+    }
+
+    fgValueNumberBlock(block);
+
+    // Mark block as visited
+    //
+    BlockSetOps::AddElemD(this, visitedBlocks, block->bbNum);
+
+    // Is block the head of a loop?
+    //
+    FlowGraphNaturalLoop* const loop = m_blockToLoop->GetLoop(block);
+    if ((loop != nullptr) && (block == loop->GetHeader()))
+    {
+        // Yes. Visit all other loop blocks using the within-loop RPO.
+        //
+        loop->VisitLoopBlocksReversePostOrder([&](BasicBlock* block) {
+            fgValueNumberBlocks(block, visitedBlocks);
+            return BasicBlockVisit::Continue;
+        });
+
+        // Re-value number all the PhiDefs in block
+        //
+        for (Statement* stmt = block->firstStmt(); (stmt != nullptr) && stmt->IsPhiDefnStmt();
+             stmt            = stmt->GetNextStmt())
+        {
+            GenTreeLclVar* const newSsaDef = stmt->GetRootNode()->AsLclVar();
+            fgValueNumberPhiDef(newSsaDef, block, /* isUpdate */ true);
+        }
+
+        // TODO: Propagate those new VNs to their uses?
+        //
+    }
+}
+
 void Compiler::fgValueNumberBlock(BasicBlock* blk)
 {
     compCurBB = blk;
@@ -10484,89 +10906,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
     {
         GenTreeLclVar* newSsaDef = stmt->GetRootNode()->AsLclVar();
-        GenTreePhi*    phiNode   = newSsaDef->AsLclVar()->Data()->AsPhi();
-        ValueNumPair   phiVNP;
-        ValueNumPair   sameVNP;
-
-        for (GenTreePhi::Use& use : phiNode->Uses())
-        {
-            GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-            if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
-            {
-                JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
-                        dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
-
-                if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
-                {
-                    continue;
-                }
-
-                assert(!vnState->IsReachable(blk));
-                JITDUMP("  ..but no other path can, so we are using it anyway\n");
-            }
-
-            ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
-            ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
-
-            phiArg->gtVNPair = phiArgVNP;
-
-            if (phiVNP.GetLiberal() == ValueNumStore::NoVN)
-            {
-                // This is the first PHI argument
-                phiVNP  = ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN);
-                sameVNP = phiArgVNP;
-            }
-            else
-            {
-                phiVNP = vnStore->VNPairForFuncNoFolding(newSsaDef->TypeGet(), VNF_Phi,
-                                                         ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
-
-                if ((sameVNP.GetLiberal() != phiArgVNP.GetLiberal()) ||
-                    (sameVNP.GetConservative() != phiArgVNP.GetConservative()))
-                {
-                    // If this argument's VNs are different from "same" then change "same" to NoVN.
-                    // Note that this means that if any argument's VN is NoVN then the final result
-                    // will also be NoVN, which is what we want.
-                    sameVNP.SetBoth(ValueNumStore::NoVN);
-                }
-            }
-        }
-
-        // We should have visited at least one phi arg in the loop above
-        assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
-        assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
-
-        ValueNumPair newSsaDefVNP;
-
-        if (sameVNP.BothDefined())
-        {
-            // If all the args of the phi had the same value(s, liberal and conservative), then there wasn't really
-            // a reason to have the phi -- just pass on that value.
-            newSsaDefVNP = sameVNP;
-        }
-        else
-        {
-            // They were not the same; we need to create a phi definition.
-            ValueNum lclNumVN = ValueNum(newSsaDef->GetLclNum());
-            ValueNum ssaNumVN = ValueNum(newSsaDef->GetSsaNum());
-
-            newSsaDefVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_PhiDef, ValueNumPair(lclNumVN, lclNumVN),
-                                                  ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
-        }
-
-        LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
-        newSsaDefDsc->m_vnPair     = newSsaDefVNP;
-#ifdef DEBUG
-        if (verbose)
-        {
-            printf("SSA PHI definition: set VN of local %d/%d to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
-            vnpPrint(newSsaDefVNP, 1);
-            printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
-        }
-#endif // DEBUG
-
-        newSsaDef->gtVNPair = vnStore->VNPForVoid();
-        phiNode->gtVNPair   = newSsaDefVNP;
+        fgValueNumberPhiDef(newSsaDef, blk);
     }
 
     // Now do the same for each MemoryKind.
@@ -10711,6 +11051,123 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     }
 
     compCurBB = nullptr;
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberRegisterConstFieldSeq: If a VN'd integer constant has a
+// field sequence we want to keep track of, then register it in the side table.
+//
+// Arguments:
+//   newSsaDef - lcl var node representing a phi definition
+//   blk - block with the phi
+//   isUpdate - true if the phi has already been numbered and this is a renumbering
+//
+void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bool isUpdate)
+{
+    GenTreePhi*  phiNode = newSsaDef->AsLclVar()->Data()->AsPhi();
+    ValueNumPair phiVNP;
+    ValueNumPair sameVNP;
+
+    for (GenTreePhi::Use& use : phiNode->Uses())
+    {
+        GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
+        if (!vnState->IsReachableThroughPred(blk, phiArg->gtPredBB))
+        {
+            JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
+                    dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
+
+            if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
+            {
+                continue;
+            }
+
+            assert(!vnState->IsReachable(blk) || isUpdate);
+            JITDUMP("  ..but no other path can, so we are using it anyway\n");
+        }
+
+        ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
+        ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
+
+        if (isUpdate && (phiArgVNP != phiArg->gtVNPair))
+        {
+            JITDUMP("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
+            JITDUMPEXEC(vnpPrint(phiArg->gtVNPair, 0));
+            JITDUMP(" to ");
+            JITDUMPEXEC(vnpPrint(phiArgVNP, 0));
+            JITDUMP("\n");
+        }
+
+        phiArg->gtVNPair = phiArgVNP;
+
+        if (phiVNP.GetLiberal() == ValueNumStore::NoVN)
+        {
+            // This is the first PHI argument
+            phiVNP  = ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN);
+            sameVNP = phiArgVNP;
+        }
+        else
+        {
+            phiVNP = vnStore->VNPairForFuncNoFolding(newSsaDef->TypeGet(), VNF_Phi,
+                                                     ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
+
+            if ((sameVNP.GetLiberal() != phiArgVNP.GetLiberal()) ||
+                (sameVNP.GetConservative() != phiArgVNP.GetConservative()))
+            {
+                // If this argument's VNs are different from "same" then change "same" to NoVN.
+                // Note that this means that if any argument's VN is NoVN then the final result
+                // will also be NoVN, which is what we want.
+                sameVNP.SetBoth(ValueNumStore::NoVN);
+            }
+        }
+    }
+
+    // We should have visited at least one phi arg in the loop above
+    assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
+    assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
+
+    ValueNumPair newSsaDefVNP;
+
+    if (sameVNP.BothDefined())
+    {
+        // If all the args of the phi had the same value(s, liberal and conservative), then there wasn't really
+        // a reason to have the phi -- just pass on that value.
+        newSsaDefVNP = sameVNP;
+    }
+    else
+    {
+        // They were not the same; we need to create a phi definition.
+        ValueNum lclNumVN = ValueNum(newSsaDef->GetLclNum());
+        ValueNum ssaNumVN = ValueNum(newSsaDef->GetSsaNum());
+
+        newSsaDefVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_PhiDef, ValueNumPair(lclNumVN, lclNumVN),
+                                              ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
+    }
+
+    LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
+
+#ifdef DEBUG
+    if (isUpdate)
+    {
+        assert(!newSsaDefDsc->m_updated);
+        newSsaDefDsc->m_origVNPair = newSsaDefDsc->m_vnPair;
+        newSsaDefDsc->m_updated    = true;
+    }
+#endif
+
+    newSsaDefDsc->m_vnPair = newSsaDefVNP;
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("SSA PHI definition: set VN of local %d/%d to ", newSsaDef->GetLclNum(), newSsaDef->GetSsaNum());
+        vnpPrint(newSsaDefVNP, 1);
+        printf(" %s.\n", sameVNP.BothDefined() ? "(all same)" : "");
+    }
+#endif // DEBUG
+
+    newSsaDef->gtVNPair = vnStore->VNPForVoid();
+
+    phiNode->gtVNPair = newSsaDefVNP;
 }
 
 ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind            memoryKind,
@@ -14540,4 +14997,40 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
     }
 
     return NO_CLASS_HANDLE;
+}
+
+//--------------------------------------------------------------------------------
+// PeelOffsets: Peel all additions with a constant offset away from the
+// specified VN.
+//
+// Arguments:
+//    vn     - [in, out] The VN. Will be modified to the base VN that the offsets are added to.
+//    offset - [out] The offsets peeled out of the VNF_ADD funcs.
+//
+void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
+{
+#ifdef DEBUG
+    var_types vnType = TypeOfVN(*vn);
+    assert((vnType == TYP_I_IMPL) || (vnType == TYP_REF) || (vnType == TYP_BYREF));
+#endif
+
+    *offset = 0;
+    VNFuncApp app;
+    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    {
+        if (IsVNConstantNonHandle(app.m_args[0]))
+        {
+            *offset += ConstantValue<target_ssize_t>(app.m_args[0]);
+            *vn = app.m_args[1];
+        }
+        else if (IsVNConstantNonHandle(app.m_args[1]))
+        {
+            *offset += ConstantValue<target_ssize_t>(app.m_args[1]);
+            *vn = app.m_args[0];
+        }
+        else
+        {
+            break;
+        }
+    }
 }

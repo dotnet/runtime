@@ -4,8 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable IDE0060
-
 namespace System.Runtime.Intrinsics.Wasm
 {
     [CLSCompliant(false)]

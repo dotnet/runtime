@@ -231,8 +231,8 @@
   <data name="InvalidCharacterWithinString" xml:space="preserve">
     <value>'{0}' is invalid within a JSON string. The string should be correctly escaped.</value>
   </data>
-  <data name="InvalidEnumTypeWithSpecialChar" xml:space="preserve">
-    <value>Enum type '{0}' uses unsupported identifer name '{1}'.</value>
+  <data name="UnsupportedEnumIdentifier" xml:space="preserve">
+    <value>Enum type '{0}' uses unsupported identifier '{1}'. It must not be null, empty, or containing leading or trailing whitespace. Flags enums must additionally not contain commas.</value>
   </data>
   <data name="InvalidEndOfJsonNonPrimitive" xml:space="preserve">
     <value>'{0}' is an invalid token type for the end of the JSON payload. Expected either 'EndArray' or 'EndObject'.</value>
@@ -760,5 +760,45 @@
   </data>
   <data name="JsonSchemaExporter_DepthTooLarge" xml:space="preserve">
     <value>The depth of the generated JSON schema exceeds the JsonSerializerOptions.MaxDepth setting.</value>
+  </data>
+  <!-- System.Collections polyfills -->
+  <data name="Arg_WrongType" xml:space="preserve">
+    <value>The value '{0}' is not of type '{1}' and cannot be used in this generic collection.</value>
+  </data>
+  <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
+    <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
+  </data>
+  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
+    <value>Only single dimensional arrays are supported for the requested action.</value>
+  </data>
+  <data name="Arg_NonZeroLowerBound" xml:space="preserve">
+    <value>The lower bound of target array must be zero.</value>
+  </data>
+  <data name="Argument_IncompatibleArrayType" xml:space="preserve">
+    <value>Target array type is not compatible with the type of items in the collection.</value>
+  </data>
+  <data name="Arg_KeyNotFoundWithKey" xml:space="preserve">
+    <value>The given key '{0}' was not present in the dictionary.</value>
+  </data>
+  <data name="Argument_AddingDuplicate" xml:space="preserve">
+    <value>An item with the same key has already been added. Key: {0}</value>
+  </data>
+  <data name="InvalidOperation_ConcurrentOperationsNotSupported" xml:space="preserve">
+    <value>Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.</value>
+  </data>
+  <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
+    <value>Collection was modified after the enumerator was instantiated.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
+    <value>{0} ('{1}') must be a non-negative value.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be greater than or equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be less than or equal to '{2}'.</value>
+  </data>
+  <data name="Arg_HTCapacityOverflow" xml:space="preserve">
+    <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
 </root>

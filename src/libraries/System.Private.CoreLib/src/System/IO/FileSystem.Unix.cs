@@ -62,7 +62,6 @@ namespace System.IO
             return null; // Let SafeFileHandle create the exception for this error.
         }
 
-#pragma warning disable IDE0060
         public static void Encrypt(string path)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
@@ -72,7 +71,6 @@ namespace System.IO
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
-#pragma warning restore IDE0060
 
         private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
         {

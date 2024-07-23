@@ -380,7 +380,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     {
         if (pal::get_dotnet_self_registered_dir(&dotnet_dir) || pal::get_default_installation_dir(&dotnet_dir))
         {
-            trace::info(_X("Using global installation location [%s]."), dotnet_dir.c_str());
+            trace::info(_X("Using global install location [%s]."), dotnet_dir.c_str());
         }
         else
         {

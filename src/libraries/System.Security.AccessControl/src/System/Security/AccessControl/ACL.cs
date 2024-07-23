@@ -337,7 +337,7 @@ namespace System.Security.AccessControl
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Debug.Assert(false, "aceLength % 4 != 0");
+                    Debug.Fail("aceLength % 4 != 0");
                     // Replacing SystemException with InvalidOperationException. This code path
                     // indicates a bad ACE, but I don't know of a great exception to represent that.
                     // InvalidOperation seems to be the closest, though it's definitely not exactly
@@ -480,7 +480,7 @@ namespace System.Security.AccessControl
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Debug.Assert(false, "aceLength % 4 != 0");
+                    Debug.Fail("aceLength % 4 != 0");
                     // Replacing SystemException with InvalidOperationException. This code path
                     // indicates a bad ACE, but I don't know of a great exception to represent that.
                     // InvalidOperation seems to be the closest, though it's definitely not exactly
@@ -516,7 +516,7 @@ namespace System.Security.AccessControl
                     // Binary length of an ace must ALWAYS be divisible by 4.
                     //
 
-                    Debug.Assert(false, "aceLength % 4 != 0");
+                    Debug.Fail("aceLength % 4 != 0");
                     // Replacing SystemException with InvalidOperationException. This code path
                     // indicates a bad ACE, but I don't know of a great exception to represent that.
                     // InvalidOperation seems to be the closest, though it's definitely not exactly
@@ -1684,7 +1684,7 @@ namespace System.Security.AccessControl
                             // Only allow and deny ACEs are allowed here
                             //
 
-                            Debug.Assert(false, "Audit and alarm ACEs must have been stripped by remove-meaningless logic");
+                            Debug.Fail("Audit and alarm ACEs must have been stripped by remove-meaningless logic");
                             return false;
                         }
                     }
@@ -1762,7 +1762,7 @@ namespace System.Security.AccessControl
                             // Only audit and alarm ACEs are allowed here
                             //
 
-                            Debug.Assert(false, "Allow and deny ACEs must have been stripped by remove-meaningless logic");
+                            Debug.Fail("Allow and deny ACEs must have been stripped by remove-meaningless logic");
                             return false;
                         }
                     }

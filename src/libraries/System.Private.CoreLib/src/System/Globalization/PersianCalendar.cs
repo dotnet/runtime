@@ -303,7 +303,7 @@ namespace System.Globalization
             return PersianEra;
         }
 
-        public override int[] Eras => new int[] { PersianEra };
+        public override int[] Eras => [PersianEra];
 
         public override int GetMonth(DateTime time)
         {

@@ -1347,7 +1347,7 @@ namespace System.Text
             internal bool Fallback(byte fallbackByte)
             {
                 // Build our buffer
-                byte[] byteBuffer = new byte[] { fallbackByte };
+                byte[] byteBuffer = [fallbackByte];
 
                 // Do the fallback and add the data.
                 return Fallback(byteBuffer);
@@ -1356,7 +1356,7 @@ namespace System.Text
             internal bool Fallback(byte byte1, byte byte2)
             {
                 // Build our buffer
-                byte[] byteBuffer = new byte[] { byte1, byte2 };
+                byte[] byteBuffer = [byte1, byte2];
 
                 // Do the fallback and add the data.
                 return Fallback(byteBuffer);
@@ -1365,7 +1365,7 @@ namespace System.Text
             internal bool Fallback(byte byte1, byte byte2, byte byte3, byte byte4)
             {
                 // Build our buffer
-                byte[] byteBuffer = new byte[] { byte1, byte2, byte3, byte4 };
+                byte[] byteBuffer = [byte1, byte2, byte3, byte4];
 
                 // Do the fallback and add the data.
                 return Fallback(byteBuffer);

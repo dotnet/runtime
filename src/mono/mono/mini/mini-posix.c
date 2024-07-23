@@ -788,7 +788,8 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		g_assertion_disable_global (assert_printer_callback);
 	} else {
 		g_async_safe_printf ("\nAn error has occurred in the native fault reporting. Some diagnostic information will be unavailable.\n");
-
+		g_async_safe_printf ("\nExiting early due to double fault.\n");
+		_exit (-1);
 	}
 
 #ifdef HAVE_BACKTRACE_SYMBOLS
@@ -845,11 +846,6 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 		waitpid (pid, &status, 0);
 	} else {
 		// If we can't fork, do as little as possible before exiting
-	}
-
-	if (double_faulted) {
-		g_async_safe_printf("\nExiting early due to double fault.\n");
-		_exit (-1);
 	}
 
 #endif

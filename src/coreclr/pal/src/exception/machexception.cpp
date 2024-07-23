@@ -689,7 +689,7 @@ HijackFaultingThread(
 
     void **targetSP = (void **)threadContext.Rsp;
 #elif defined(HOST_ARM64)
-    threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
+    threadContext.ContextFlags = CONTEXT_FLOATING_POINT | CONTEXT_XSTATE;
     CONTEXT_GetThreadContextFromThreadState(ARM_NEON_STATE64, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER;
@@ -1325,7 +1325,7 @@ void MachExceptionInfo::RestoreState(mach_port_t thread)
     kern_return_t machret = thread_set_state(thread, x86_THREAD_STATE, (thread_state_t)&ThreadState, x86_THREAD_STATE_COUNT);
     CHECK_MACH("thread_set_state(thread)", machret);
 
-    machret = thread_set_state(thread, x86_FLOAT_STATE, (thread_state_t)&FloatState, x86_FLOAT_STATE_COUNT);
+    machret = thread_set_state(thread, FloatState.ash.flavor, (thread_state_t)&FloatState, FloatState.ash.count);
     CHECK_MACH("thread_set_state(float)", machret);
 
     machret = thread_set_state(thread, x86_DEBUG_STATE, (thread_state_t)&DebugState, x86_DEBUG_STATE_COUNT);
