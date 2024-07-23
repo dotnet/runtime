@@ -6375,9 +6375,18 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
         }
         level = 3;
     }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (tree->OperIsHWIntrinsic())
+    {
+        for (size_t i = tree->AsMultiOp()->GetOperandCount(); i >= 1; i--)
+        {
+            unsigned lvl = gtSetEvalOrderMinOpts(tree->AsMultiOp()->Op(i));
+            level        = max(lvl, level + 1);
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
 
-    // NOTE: we skip many operators here (e.g. GT_HWINTRINSIC)
-    // in order to maintain a good trade-off between CQ and TP.
+    // NOTE: we skip many operators here in order to maintain a good trade-off between CQ and TP.
 
     return level;
 }
