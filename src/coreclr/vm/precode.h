@@ -14,8 +14,8 @@
 #if defined(TARGET_AMD64)
 
 #define OFFSETOF_PRECODE_TYPE              0
-#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
-#define OFFSETOF_PRECODE_TYPE_MOV_R10     10
+#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5 // FIXME: unused
+#define OFFSETOF_PRECODE_TYPE_MOV_R10     10 // FIXME: unused
 
 #define SIZEOF_PRECODE_BASE               16
 
@@ -24,8 +24,8 @@
 EXTERN_C VOID STDCALL PrecodeRemotingThunk();
 
 #define OFFSETOF_PRECODE_TYPE              0
-#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5
-#define OFFSETOF_PRECODE_TYPE_MOV_RM_R     6
+#define OFFSETOF_PRECODE_TYPE_CALL_OR_JMP  5 // FIXME: unuxed
+#define OFFSETOF_PRECODE_TYPE_MOV_RM_R     6 // FIXME: unused
 
 #define SIZEOF_PRECODE_BASE                8
 
@@ -596,4 +596,57 @@ static_assert_no_msg(NDirectImportPrecode::Type != ThisPtrRetBufPrecode::Type);
 static_assert_no_msg(sizeof(Precode) <= sizeof(NDirectImportPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(FixupPrecode));
 static_assert_no_msg(sizeof(Precode) <= sizeof(ThisPtrRetBufPrecode));
+
+#ifndef DACCESS_COMPILE
+// A summary of the precode layout for diagnostic purposes
+struct PrecodeMachineDescriptor
+{
+#ifndef TARGET_ARM
+    uintptr_t CodePointerToInstrPointerMask = ~0;
+#else
+    // mask off the thumb bit
+    uintptr_t CodePointerToInstrPointerMask = ~1;
+#endif
+    uint8_t OffsetOfPrecodeType = OFFSETOF_PRECODE_TYPE; // FIXME(cdac): sometimes OFFSETOF_PRECODE_TYPE is undefined?
+    // cDAC will do (where N = 8*ReadWidthOfPrecodeType):
+    //   uintN_t PrecodeType = *(uintN_t*)(pPrecode + OffsetOfPrecodeType);
+    //   PrecodeType >>= ShiftOfPrecodeType;
+    //   return (byte)PrecodeType;
+#ifdef TARGET_LOONGARCH64
+    uint8_t ReadWidthOfPrecodeType = 2;
+    uint8_t ShiftOfPrecodeType = 5;
+#else
+    uint8_t ReadWidthOfPrecodeType = 1;
+    uint8_t ShiftOfPrecodeType = 0;
+#endif
+    // uint8_t SizeOfPrecodeBase = SIZEOF_PRECODE_BASE;
+
+    uint8_t InvalidPrecodeType = InvalidPrecode::Type;
+    uint8_t StubPrecodeType = StubPrecode::Type;
+#ifdef HAS_NDIRECT_IMPORT_PRECODE
+    uint8_t HasNDirectImportPrecode = 1;
+    uint8_t NDirectImportPrecodeType = NDirectImportPrecode::Type;
+#else
+    uint8_t HasNDirectImportPrecode = 0;
+    uint8_t NDirectImportPrecodeType = 0;
+#endif // HAS_NDIRECT_IMPORT_PRECODE
+#ifdef HAS_FIXUP_PRECODE
+    uint8_t HasFixupPrecode = 1;
+    uint8_t FixupPrecodeType = FixupPrecode::Type;
+#else
+    uint8_t HasFixupPrecode = 0;
+    uint8_t FixupPrecodeType = 0;
+#endif // HAS_FIXUP_PRECODE
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    uint8_t HasThisPtrRetBufPrecode = 1;
+    uint8_t HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type,
+#else
+    uint8_t HasThisPtrRetBufPrecode = 0;
+    uint8_t HasThisPointerRetBufPrecodeType = 0;
+#endif // HAS_THISPTR_RETBUF_PRECODE
+};
+
+extern PrecodeMachineDescriptor g_PrecodeMachDesc;
+#endif DACCESS_COMPILE
+
 #endif // __PRECODE_H__

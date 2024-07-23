@@ -247,7 +247,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return new NonValidated.MethodDesc(_target, desc, chunk);
     }
 
-    private TargetCodePointer GetTemporaryEntryPointIfExists(NonValidated.MethodDesc umd)
+    private static TargetCodePointer GetTemporaryEntryPointIfExists(NonValidated.MethodDesc umd)
     {
         if (!umd.TemporaryEntryPointAssigned)
         {
@@ -275,18 +275,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 return false;
             }
-            // TODO: request.cpp
-            // TODO[cdac]: this needs a Precode lookup
-            // see MethodDescChunk::GetTemporaryEntryPoint
-#if false
-            MethodDesc *pMDCheck = MethodDesc::GetMethodDescFromStubAddr(pMD->GetTemporaryEntryPoint(), TRUE);
 
-            if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+            TargetCodePointer temporaryEntryPoint = GetTemporaryEntryPointIfExists(umd);
+            if (temporaryEntryPoint != TargetCodePointer.Null)
             {
-                retval = FALSE;
+                Contracts.INativeCodePointers codePointers = _target.Contracts.NativeCodePointers;
+                TargetPointer methodDesc = codePointers.MethodDescFromStubAddress(temporaryEntryPoint, speculative: true);
+                if (methodDesc != methodDescPointer)
+                {
+                    return false;
+                }
             }
-#endif
-
             // TODO: request.cpp
             // TODO[cdac]: needs MethodDesc::GetNativeCode and MethodDesc::GetMethodEntryPoint()
 #if false

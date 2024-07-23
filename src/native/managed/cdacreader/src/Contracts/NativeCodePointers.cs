@@ -10,13 +10,16 @@ internal interface INativeCodePointers : IContract
     static string IContract.Name { get; } = nameof(NativeCodePointers);
     static IContract IContract.Create(Target target, int version)
     {
+        TargetPointer precodeMachineDescriptorAddress = target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor);
+        Data.PrecodeMachineDescriptor precodeMachineDescriptor = target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(precodeMachineDescriptorAddress);
         return version switch
         {
-            1 => new NativeCodePointers_1(target),
+            1 => new NativeCodePointers_1(target, precodeMachineDescriptor),
             _ => default(NativeCodePointers),
         };
     }
 
+    public virtual TargetPointer MethodDescFromStubAddress(TargetCodePointer codeAddress) => throw new NotImplementedException();
 }
 
 internal readonly struct NativeCodePointers : INativeCodePointers

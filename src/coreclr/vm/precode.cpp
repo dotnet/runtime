@@ -662,4 +662,7 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     return FALSE;
 }
 
+PrecodeMachineDescriptor g_PrecodeMachDesc;
+
 #endif // !DACCESS_COMPILE
+
