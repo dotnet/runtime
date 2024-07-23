@@ -1154,7 +1154,7 @@ emit_vector_insert_element (
 {
 	int op = type_to_insert_op (type);
 
-	if (is_zero_inited && is_zero_const (element)) {
+	if (((is_zero_inited) || (ins->opcode == OP_XZERO)) && is_zero_const (element)) {
 		// element already set to zero
 		return ins;
 	}
@@ -1228,6 +1228,7 @@ emit_vector_insert_element (
 				}
 			}
 			if (ins->opcode == OP_XCONST) {
+				memcpy (ins->inst_p0, cns_vec, 16);
 				return ins;
 			}
 			return emit_xconst_v128 (cfg, vklass, cns_vec);
