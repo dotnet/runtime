@@ -30,6 +30,8 @@ namespace HttpStress
 
         public static readonly bool IsQuicSupported = QuicListener.IsSupported && QuicConnection.IsSupported;
 
+        private static readonly Dictionary<string, int> s_unobservedExceptions = new Dictionary<string, int>();
+
         public static async Task<int> Main(string[] args)
         {
             if (!TryParseCli(args, out Configuration? config))
@@ -186,6 +188,15 @@ namespace HttpStress
             Console.WriteLine("Query Parameters: " + config.MaxParameters);
             Console.WriteLine();
 
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                lock (s_unobservedExceptions)
+                {
+                    string text = e.Exception.ToString();
+                    s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
+                }
+            };
+
             StressServer? server = null;
             if (config.RunMode.HasFlag(RunMode.server))
             {
@@ -210,8 +221,10 @@ namespace HttpStress
             client?.Stop();
             client?.PrintFinalReport();
 
+            Console.WriteLine($"Unobserved exceptions of {s_unobservedExceptions.Count} different types: {Environment.NewLine}{string.Join(Environment.NewLine + new string('=', 120) + Environment.NewLine, s_unobservedExceptions.Select(pair => $"Count {pair.Value}: {pair.Key}"))}");
+
             // return nonzero status code if there are stress errors
-            return client?.TotalErrorCount == 0 ? ExitCode.Success : ExitCode.StressError;
+            return client?.TotalErrorCount == 0 && s_unobservedExceptions.Count == 0 ? ExitCode.Success : ExitCode.StressError;
         }
 
         private static async Task WaitUntilMaxExecutionTimeElapsedOrKeyboardInterrupt(TimeSpan? maxExecutionTime = null)
