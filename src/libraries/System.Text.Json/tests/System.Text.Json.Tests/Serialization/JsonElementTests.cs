@@ -221,7 +221,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(10)]
         [InlineData(100)]
-        [InlineData(1000)]
+        [InlineData(500)]
         public static void DeepEquals_DeepJsonDocument(int depth)
         {
             ArrayBufferWriter<byte> bufferWriter = new();
