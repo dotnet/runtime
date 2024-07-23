@@ -909,53 +909,53 @@ namespace System
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
         {
-            var g = new byte[16];
+            var bytes = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                MemoryMarshal.Write(bytes, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(g, in guid);
+                MemoryMarshal.Write(bytes, in guid);
             }
-            return g;
+            return bytes;
         }
 
 
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray(bool bigEndian)
         {
-            var g = new byte[16];
+            var bytes = new byte[16];
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(g, in this);
+                MemoryMarshal.Write(bytes, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(g, in guid);
+                MemoryMarshal.Write(bytes, in guid);
             }
-            return g;
+            return bytes;
         }
 
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination)
         {
-            if (destination.Length < 16)
+            if ((uint)destination.Length < 16)
                 return false;
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                MemoryMarshal.Write(destination, in this);
             }
             else
             {
                 // slower path for BigEndian
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), false);
-                MemoryMarshal.TryWrite(destination, in guid);
+                MemoryMarshal.Write(destination, in guid);
             }
             return true;
         }
@@ -963,7 +963,7 @@ namespace System
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination, bool bigEndian, out int bytesWritten)
         {
-            if (destination.Length < 16)
+            if ((uint)destination.Length < 16)
             {
                 bytesWritten = 0;
                 return false;
@@ -971,13 +971,13 @@ namespace System
 
             if (BitConverter.IsLittleEndian != bigEndian)
             {
-                MemoryMarshal.TryWrite(destination, in this);
+                MemoryMarshal.Write(destination, in this);
             }
             else
             {
                 // slower path for Reverse
                 Guid guid = new Guid(MemoryMarshal.AsBytes(new ReadOnlySpan<Guid>(in this)), bigEndian);
-                MemoryMarshal.TryWrite(destination, in guid);
+                MemoryMarshal.Write(destination, in guid);
             }
             bytesWritten = 16;
             return true;
