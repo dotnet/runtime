@@ -18,6 +18,7 @@
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="oob-all.proj" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="oob-gen.proj" />
   </ItemGroup>
 
   <!-- Support building reference projects only. -->

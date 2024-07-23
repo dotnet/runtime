@@ -64,7 +64,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <!-- Runtime feature defaults to trim unnecessary code -->
     <InvariantTimezone Condition="'$(BlazorEnableTimeZoneSupport)' == 'false'">true</InvariantTimezone>
-    <BlazorCacheBootResources Condition="'$(BlazorCacheBootResources)' == ''">true</BlazorCacheBootResources>
 
     <!-- Turn off parts of the build that do not apply to WASM projects -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -176,6 +175,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <Target Name="_ResolveWasmConfiguration" DependsOnTargets="_ResolveGlobalizationConfiguration">
     <PropertyGroup>
       <_TargetingNET80OrLater>false</_TargetingNET80OrLater>
+      <_TargetingNET90OrLater>false</_TargetingNET90OrLater>
       <_TargetingNET80OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">true</_TargetingNET80OrLater>
       <_TargetingNET90OrLater Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '9.0'))">true</_TargetingNET90OrLater>
 
@@ -194,6 +194,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_BlazorWebAssemblyStartupMemoryCache>$(BlazorWebAssemblyStartupMemoryCache)</_BlazorWebAssemblyStartupMemoryCache>
       <_BlazorWebAssemblyJiterpreter>$(BlazorWebAssemblyJiterpreter)</_BlazorWebAssemblyJiterpreter>
       <_BlazorWebAssemblyRuntimeOptions>$(BlazorWebAssemblyRuntimeOptions)</_BlazorWebAssemblyRuntimeOptions>
+      <_BlazorCacheBootResources>$(BlazorCacheBootResources)</_BlazorCacheBootResources>
+      <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == '' and '$(_TargetingNET90OrLater)' == 'true'">false</_BlazorCacheBootResources>
+      <_BlazorCacheBootResources Condition="'$(_BlazorCacheBootResources)' == ''">true</_BlazorCacheBootResources>
       <_WasmFingerprintAssets>$(WasmFingerprintAssets)</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == '' and '$(_TargetingNET90OrLater)' == 'true'">true</_WasmFingerprintAssets>
       <_WasmFingerprintAssets Condition="'$(_WasmFingerprintAssets)' == ''">false</_WasmFingerprintAssets>
@@ -367,7 +370,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="false"
-      CacheBootResources="$(BlazorCacheBootResources)"
+      CacheBootResources="$(_BlazorCacheBootResources)"
       OutputPath="$(_WasmBuildBootJsonPath)"
       ConfigurationFiles="@(_WasmJsConfigStaticWebAsset)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
@@ -658,7 +661,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"
       LinkerEnabled="$(PublishTrimmed)"
-      CacheBootResources="$(BlazorCacheBootResources)"
+      CacheBootResources="$(_BlazorCacheBootResources)"
       OutputPath="$(IntermediateOutputPath)blazor.publish.boot.json"
       ConfigurationFiles="@(_WasmPublishConfigFile)"
       LazyLoadedAssemblies="@(BlazorWebAssemblyLazyLoad)"
