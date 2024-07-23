@@ -11,6 +11,7 @@ param(
 
 Set-StrictMode -version 2.0
 $ErrorActionPreference='Stop'
+$ProgressPreference = 'SilentlyContinue'
 
 New-Item -Path $WasiSdkPath -ItemType "directory"
 Invoke-WebRequest -Uri $WasiSdkUrl -OutFile ./wasi-sdk-$WasiSdkVersion.0-mingw.tar.gz
@@ -26,3 +27,5 @@ Remove-Item ./wasi-sdk-$WasiSdkVersion.0-mingw.tar.gz -fo
 Invoke-WebRequest -Uri https://github.com/bytecodealliance/wasm-component-ld/releases/download/v0.5.5/wasm-component-ld-v0.5.5-x86_64-windows.zip -OutFile wasm-component-ld-v0.5.5-x86_64-windows.zip
 Expand-Archive -LiteralPath wasm-component-ld-v0.5.5-x86_64-windows.zip -DestinationPath .
 Copy-Item wasm-component-ld-v0.5.5-x86_64-windows/wasm-component-ld.exe $WasiSdkPath/bin
+Remove-Item ./wasm-component-ld-v0.5.5-x86_64-windows.zip -fo
+Remove-Item ./wasm-component-ld-v0.5.5-x86_64-windows -Recurse -fo
