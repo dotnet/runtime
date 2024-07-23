@@ -162,24 +162,31 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class TypeGenericParameterAsField<T> where T : Enum
 			{
 				[Kept]
-				static T field;
+				public static T field;
 
 				[Kept]
-				[ExpectedWarning ("IL2072", Tool.NativeAot, "nativeaot tracks field type as EcmaGenericParameter")]
-				// TODO: the field type is EcmaGenericParameter 'T', which is not a signature variable.
-				// (It's not a def type, so goes to the first case, but doesn't get the enum special handling.)
-				// Why is this EcmaGenericParameter while the method parameter is a signature variable?
-				public static void Test ()
+				public static void TestAccessFromType ()
 				{
 					field.GetType ().RequiresPublicFields ();
 				}
+			}
+
+			// Note: this doesn't warn for ILLink as a consequence of https://github.com/dotnet/runtime/issues/105345.
+			// ILLink sees the field type as a generic parameter, whereas the other tools see it as System.Enum.
+			// The special handling that treats Enum as satisfying PublicFields only applies to generic parameter constraints,
+			// so ILLink doesn't warn here. Once this 105345 is fixed, ILLink should match the warning behavior of ILC
+			// here and in the similar cases below.
+			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/105345")]
+			static void TestAccessTypeGenericParameterAsField ()
+			{
+				TypeGenericParameterAsField<Enum>.field.GetType ().RequiresPublicFields ();
 			}
 
 			[Kept]
 			class TypeGenericParameterAsParameter<T> where T : Enum
 			{
 				[Kept]
-				static void Method (T instance)
+				public static void Method (T instance)
 				{
 					instance.GetType ().RequiresPublicFields ();
 				}
@@ -195,17 +202,47 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			class TypeGenericParameterAsReturnType<T> where T : Enum
 			{
 				[Kept]
-				static T Method ()
+				public static T Method ()
 				{
 					return default;
 				}
 
 				[Kept]
-				[ExpectedWarning ("IL2072", Tool.NativeAot, "nativeaot tracks return type as EcmaGenericParameter")]
-				public static void Test ()
+				public static void TestAccessFromType ()
 				{
 					Method ().GetType ().RequiresPublicFields ();
 				}
+			}
+
+			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/105345")]
+			static void TestAccessTypeGenericParameterAsReturnType ()
+			{
+				TypeGenericParameterAsReturnType<Enum>.Method ().GetType ().RequiresPublicFields ();
+			}
+
+			[Kept]
+			class TypeGenericParameterAsOutParam<T> where T : Enum
+			{
+				[Kept]
+				public static void Method (out T instance)
+				{
+					instance = default;
+				}
+
+				[Kept]
+				[ExpectedWarning ("IL2072")]
+				public static void TestAccessFromType ()
+				{
+					Method (out var instance);
+					instance.GetType ().RequiresPublicFields ();
+				}
+			}
+
+			[ExpectedWarning ("IL2072")]
+			static void TestAccessTypeGenericParameterAsOutParam ()
+			{
+				TypeGenericParameterAsOutParam<Enum>.Method (out var instance);
+				instance.GetType ().RequiresPublicFields ();
 			}
 
 			[KeptMember ("value__")]
@@ -222,11 +259,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			// ILC tracks the static type of the return value as System.Enum,
-			// which doesn't get special handling for GetType.
-			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "nativeaot tracks instantiated return type. analyzer does same.")]
-			// ILLink's handling of this sees a return type of 'T', which
-			// gets the new handling because T has an Enum constraint.
+			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/105345")]
 			static void TestMethodGenericParameterAsReturnType ()
 			{
 				MethodGenericParameterAsReturnType<Enum> ().GetType ().RequiresPublicFields ();
@@ -236,8 +269,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				TypeGenericParameterAsParameter<Enum>.Test ();
-				TypeGenericParameterAsReturnType<Enum>.Test ();
-				TypeGenericParameterAsField<Enum>.Test ();
+				TypeGenericParameterAsReturnType<Enum>.TestAccessFromType ();
+				TestAccessTypeGenericParameterAsReturnType ();
+				TypeGenericParameterAsOutParam<Enum>.TestAccessFromType ();
+				TestAccessTypeGenericParameterAsOutParam ();
+				TypeGenericParameterAsField<Enum>.TestAccessFromType ();
+				TestAccessTypeGenericParameterAsField ();
 				MethodGenericParameterAsParameter<Enum> (EnumType.Value);
 				TestMethodGenericParameterAsReturnType ();
 			}
