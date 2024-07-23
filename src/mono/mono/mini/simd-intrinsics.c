@@ -660,6 +660,50 @@ emit_xconst_v128 (MonoCompile *cfg, MonoClass *klass, guint8 value[16])
 	return ins;
 }
 
+static guint64
+get_xconst_int_elem (MonoCompile *cfg, MonoInst *ins, MonoTypeEnum etype, int index)
+{
+	g_assert (ins->opcode == OP_XCONST);
+	g_assert (index >= 0);
+	switch (etype) {
+		case MONO_TYPE_I1: {
+			g_assert (index < 16);
+			return ((gint8*)ins->inst_p0) [index];
+		}
+		case MONO_TYPE_U1: {
+			g_assert (index < 16);
+			return ((guint8*)ins->inst_p0) [index];
+		}
+		case MONO_TYPE_I2: {
+			g_assert (index < 8);
+			return ((gint16*)ins->inst_p0) [index];
+		}
+		case MONO_TYPE_U2: {
+			g_assert (index < 8);
+			return ((guint16*)ins->inst_p0) [index];
+		}
+		case MONO_TYPE_I4: {
+			g_assert (index < 4);
+			return ((gint32*)ins->inst_p0) [index];
+		}
+		case MONO_TYPE_U4: {
+			g_assert (index < 4);
+			return ((guint32*)ins->inst_p0) [index];
+		}
+		case MONO_TYPE_I8: {
+			g_assert (index < 2);
+			return ((gint64*)ins->inst_p0) [index];
+		}
+		case MONO_TYPE_U8: {
+			g_assert (index < 2);
+			return ((guint64*)ins->inst_p0) [index];
+		}
+		default: {
+			g_assert_not_reached ();
+		}
+	}
+}
+
 #ifdef TARGET_ARM64
 static int type_to_extract_op (MonoTypeEnum type);
 static MonoType* get_vector_t_elem_type (MonoType *vector_type);
@@ -2609,7 +2653,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
 	case SN_Shuffle: {
-		if (!is_element_type_primitive (fsig->params [0]))
+		MonoType *etype = fsig->params [0];
+		if (!is_element_type_primitive (etype))
 			return NULL;
 #ifdef TARGET_WASM
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
@@ -2619,8 +2664,78 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #elif defined(TARGET_AMD64)
 		if (COMPILE_LLVM (cfg)) {
-			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3) && vector_size == 128 && (arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1))
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, args);
+			if (vector_size != 128) {
+				return NULL;
+			}
+			if (args [1]->opcode != OP_XCONST) {
+				return NULL;
+			}
+			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
+			int ecount = (vector_size / 8) / esize;
+			guint8 control = 0;
+			gboolean needs_zero = false;
+			guint64 value = 0;
+			guint8 vec_cns[16];
+			if ((arg0_type == MONO_TYPE_I1) || (arg0_type == MONO_TYPE_U1)) {
+				needs_zero = true;
+			} else if ((arg0_type == MONO_TYPE_I2) || (arg0_type == MONO_TYPE_U2)) {
+				needs_zero = true;
+			}
+			for (int index = 0; index < ecount; index++) {
+				value = get_xconst_int_elem (cfg, args [1], etype->type, index);
+				if (value < ecount) {
+					// Setting the control for byte/sbyte and short/ushort is unnecessary
+					// and will actually compute an incorrect control word. But it simplifies
+					// the overall logic needed here and will remain unused.
+					
+					control |= (value << (index * (ecount / 2)));
+					
+					// When Ssse3 is supported, we may need vecCns to accurately select the relevant
+					// bytes if some index is outside the valid range. Since x86/x64 is little-endian
+					// we can simplify this down to a for loop that scales the value and selects count
+					// sequential bytes.
+
+					for (int i = 0; i < esize; i++) {
+						vec_cns[(index * esize) + i] = (guint8)((value * esize) + i);
+					}
+				} else {
+					needs_zero = true;
+
+					// When Ssse3 is supported, we may need vecCns to accurately select the relevant
+					// bytes if some index is outside the valid range. We can do this by just zeroing
+					// out each byte in the element. This only requires the most significant bit to be
+					// set, but we use 0xFF instead since that will be the equivalent of AllBitsSet
+
+					for (int i = 0; i < esize; i++) {
+						vec_cns[(index * esize) + i] = 0xFF;
+					}
+				}
+			}
+			MonoInst *new_args[2];
+			new_args [0] = args[0];
+			if (needs_zero) {
+				if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) {
+					return NULL;
+				}
+				new_args [1] = emit_xconst_v128 (cfg, klass, vec_cns);
+				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, new_args);
+			}
+			if ((arg0_type == MONO_TYPE_I8) || (arg0_type == MONO_TYPE_U8)) {
+				// TYP_LONG and TYP_ULONG don't have their own shuffle/permute instructions and so we'll
+				// just utilize the path for TYP_DOUBLE for simplicity. We could alternatively break this
+				// down into a TYP_INT or TYP_UINT based shuffle, but that's additional complexity for no
+				// real benefit since shuffle gets its own port rather than using the fp specific ports.
+				arg0_type = MONO_TYPE_R8;
+			}
+			EMIT_NEW_ICONST (cfg, new_args [1], control);
+			if (arg0_type == MONO_TYPE_R4) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFPS, 0, arg0_type, fsig, new_args);
+			} else if (arg0_type == MONO_TYPE_R8) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_SHUFPD, 0, arg0_type, fsig, new_args);
+			} else {
+				g_assert ((arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4));
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFD, 0, arg0_type, fsig, new_args);
+			}
 		}
 		// There is no variable shuffle until avx512
 		return NULL;
