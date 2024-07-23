@@ -445,74 +445,6 @@ FCIMPL1(INT32, RuntimeTypeHandle::GetArrayRank, ReflectClassBaseObject *pTypeUNS
 }
 FCIMPLEND
 
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    MethodTable *pMT = typeHandle.GetMethodTable();
-
-    if (pMT)
-        return (INT32)pMT->GetNumVirtuals();
-    else
-        return 0;
-}
-FCIMPLEND
-
-FCIMPL1(INT32, RuntimeTypeHandle::GetNumVirtualsAndStaticVirtuals, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    if (typeHandle.IsGenericVariable())
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    INT32 numVirtuals = 0;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-    MethodTable *pMT = typeHandle.GetMethodTable();
-    if (pMT)
-    {
-        numVirtuals = (INT32)pMT->GetNumVirtuals();
-
-        if (pMT->HasVirtualStaticMethods())
-        {
-            for (MethodTable::MethodIterator it(pMT); it.IsValid(); it.Next())
-            {
-                MethodDesc *pMD = it.GetMethodDesc();
-                if (pMD->IsVirtual() &&
-                    pMD->IsStatic())
-                {
-                    numVirtuals++;
-                }
-            }
-        }
-    }
-    HELPER_METHOD_FRAME_END();
-
-    return numVirtuals;
-}
-FCIMPLEND
-
 FCIMPL2(MethodDesc *, RuntimeTypeHandle::GetMethodAt, ReflectClassBaseObject *pTypeUNSAFE, INT32 slot) {
     CONTRACTL {
         FCALL_CHECK;
@@ -995,6 +927,44 @@ extern "C" void QCALLTYPE QCall_FreeGCHandleForTypeHandle(QCall::TypeHandle pTyp
     DestroyTypedHandle(objHandle);
 
     END_QCALL;
+}
+
+extern "C" INT32 QCALLTYPE RuntimeTypeHandle_GetNumVirtuals(QCall::TypeHandle pTypeHandle, BOOL includeStaticVirtuals)
+{
+    QCALL_CONTRACT;
+
+    INT32 numVirtuals = 0;
+
+    BEGIN_QCALL;
+
+    TypeHandle typeHandle = pTypeHandle.AsTypeHandle();
+
+    if (typeHandle.IsGenericVariable())
+        COMPlusThrow(kArgumentException, W("Arg_InvalidHandle"));
+
+    MethodTable *pMT = typeHandle.GetMethodTable();
+    if (pMT != NULL)
+    {
+        numVirtuals = (INT32)pMT->GetNumVirtuals();
+
+        if (includeStaticVirtuals
+            && pMT->HasVirtualStaticMethods())
+        {
+            for (MethodTable::MethodIterator it(pMT); it.IsValid(); it.Next())
+            {
+                MethodDesc *pMD = it.GetMethodDesc();
+                if (pMD->IsVirtual()
+                    && pMD->IsStatic())
+                {
+                    numVirtuals++;
+                }
+            }
+        }
+    }
+
+    END_QCALL;
+
+    return numVirtuals;
 }
 
 extern "C" void QCALLTYPE RuntimeTypeHandle_VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle)
