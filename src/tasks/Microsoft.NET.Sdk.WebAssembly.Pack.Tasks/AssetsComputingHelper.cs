@@ -93,20 +93,49 @@ public class AssetsComputingHelper
         return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
-    public static string GetCandidateRelativePath(ITaskItem candidate)
+    public static string GetCandidateRelativePath(ITaskItem candidate, bool fingerprintAssets, bool fingerprintDotNetJs)
     {
+        const string optionalFingerprint = "#[.{fingerprint}]?";
+        const string requiredFingerprint = "#[.{fingerprint}]!";
+
+        string fileName = candidate.GetMetadata("FileName");
+        string extension = candidate.GetMetadata("Extension");
+        string subPath = string.Empty;
+
         var destinationSubPath = candidate.GetMetadata("DestinationSubPath");
         if (!string.IsNullOrEmpty(destinationSubPath))
-            return $"_framework/{destinationSubPath}";
+        {
+            fileName = Path.GetFileNameWithoutExtension(destinationSubPath);
+            extension = Path.GetExtension(destinationSubPath);
+            subPath = destinationSubPath.Substring(fileName.Length + extension.Length);
+        }
 
-        var relativePath = candidate.GetMetadata("FileName") + candidate.GetMetadata("Extension");
-        return $"_framework/{relativePath}";
+        string relativePath;
+        if (fingerprintAssets)
+        {
+            relativePath = (fileName, extension) switch
+            {
+                ("dotnet", ".js") => string.Concat(fileName, fingerprintDotNetJs ? requiredFingerprint : optionalFingerprint, extension),
+                ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.native.worker", ".mjs") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.globalization", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("segmentation-rules", ".json") => string.Concat(fileName, requiredFingerprint, extension),
+                _ => string.Concat(fileName, extension)
+            };
+        }
+        else
+        {
+            relativePath = string.Concat(fileName, extension);
+        }
+
+        return $"_framework/{subPath}{relativePath}";
     }
 
-    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate)
+    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate, bool fingerprintAssets)
     {
         var customIcuCandidate = new TaskItem(candidate);
-        var relativePath = GetCandidateRelativePath(customIcuCandidate);
+        var relativePath = GetCandidateRelativePath(customIcuCandidate, fingerprintAssets, false);
         customIcuCandidate.SetMetadata("RelativePath", relativePath);
         customIcuCandidate.SetMetadata("AssetTraitName", "BlazorWebAssemblyResource");
         customIcuCandidate.SetMetadata("AssetTraitValue", "native");
