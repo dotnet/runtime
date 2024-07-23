@@ -200,7 +200,7 @@ namespace System.Buffers.Text
 
                     i0 |= i2;
 
-                    if (i0 < 0 || (i2 & 0xc0) != 0) // also check 2 unused lower bits are set to 0
+                    if ((i0 & 0x800000c0) != 0) // also check 2 unused lower bits are set to 0
                     {
                         goto InvalidDataExit;
                     }
@@ -216,7 +216,7 @@ namespace System.Buffers.Text
                 }
                 else
                 {
-                    if (i0 < 0 || (i0 & 0xF000) != 0) // also check 4 unused lower bits are set to 0
+                    if ((i0 & 0x8000F000) != 0) // also check 4 unused lower bits are set to 0
                     {
                         goto InvalidDataExit;
                     }
@@ -415,7 +415,7 @@ namespace System.Buffers.Text
 
                     i0 |= i2;
 
-                    if (i0 < 0 || (i2 & 0xc0) != 0)  // also check 2 unused lower bits are set to 0
+                    if ((i0 & 0x800000c0) != 0)  // also check 2 unused lower bits are set to 0
                     {
                         goto InvalidExit;
                     }
@@ -426,7 +426,7 @@ namespace System.Buffers.Text
                 }
                 else
                 {
-                    if (i0 < 0 || (i0 & 0xF000) != 0) // also check 4 unused lower bits are set to 0
+                    if ((i0 & 0x8000F000) != 0) // if negative or 4 unused bits are not 0.
                     {
                         goto InvalidExit;
                     }

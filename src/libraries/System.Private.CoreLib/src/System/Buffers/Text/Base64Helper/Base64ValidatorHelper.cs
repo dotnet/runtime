@@ -182,8 +182,8 @@ namespace System.Buffers.Text
                 if (length % 4 == 0)
                 {
                     int decoded = default(Base64DecoderByte).DecodingMap[lastChar];
-                    if (paddingCount == 1 && (decoded & 0x03) != 0 ||
-                        paddingCount == 2 && (decoded & 0x0F) != 0)
+                    if ((paddingCount == 1 && (decoded & 0x03) != 0) ||
+                        (paddingCount == 2 && (decoded & 0x0F) != 0))
                     {
                         // unused lower bits are not 0, reject input
                         decodedLength = 0;

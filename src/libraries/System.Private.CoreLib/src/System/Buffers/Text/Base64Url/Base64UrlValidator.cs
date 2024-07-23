@@ -115,8 +115,8 @@ namespace System.Buffers.Text
                 decodedLength = (length >> 2) * 3 + (remainder > 0 ? remainder - 1 : 0) - paddingCount;
 #endif
                 int decoded = default(Base64DecoderByte).DecodingMap[lastChar];
-                if ((remainder == 3 || paddingCount == 1) && (decoded & 0x03) != 0 ||
-                    (remainder == 2 || paddingCount == 2) && (decoded & 0x0F) != 0)
+                if (((remainder == 3 || paddingCount == 1) && (decoded & 0x03) != 0) ||
+                    ((remainder == 2 || paddingCount == 2) && (decoded & 0x0F) != 0))
                 {
                     // unused lower bits are not 0, reject input
                     decodedLength = 0;
