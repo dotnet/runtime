@@ -48,7 +48,7 @@ public static class Program
         {
             ulong offset = address - header->memoryBase;
             new Span<byte>((byte*)header + offset, buffer.Length).CopyTo(buffer);
-            return (int)buffer.Length;
+            return buffer.Length;
         }
 
         return -1;
