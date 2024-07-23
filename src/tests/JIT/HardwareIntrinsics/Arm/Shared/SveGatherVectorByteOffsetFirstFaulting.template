@@ -549,7 +549,7 @@ namespace JIT.HardwareIntrinsics.Arm
             {
                 {RetBaseType} element = Helpers.Load{RetBaseType}FromByteArray(secondOp, thirdOp[i]);
                 {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : element);
-                if (result[i] != gatherResult)
+                if ({ConvertFunc}(result[i]) != {ConvertFunc}(gatherResult))
                 {
                     succeeded = false;
                     break;
@@ -653,7 +653,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {RetBaseType} element = Helpers.Load{RetBaseType}FromByteArray(secondOp, thirdOp[i]);
                 {RetBaseType} gatherResult = ({RetBaseType})(firstOp[i] == 0 ? 0 : element);
                 {RetBaseType} iterResult = (maskOp[i] != 0) ? gatherResult : falseOp[i];
-                if (iterResult != result[i])
+                if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
                 {
                     succeeded = false;
                     break;
@@ -705,7 +705,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 {RetBaseType} iterResult = (maskOp[i] != 0) ? trueOp[i] : gatherResult;
                 if (maskOp[i] != 0)
                 {
-                    if (iterResult != result[i])
+                    if ({ConvertFunc}(iterResult) != {ConvertFunc}(result[i]))
                     {
                         succeeded = false;
                         break;
@@ -745,7 +745,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private void ValidateFirstFaultingResult({Op1BaseType}[] firstOp, {Op2BaseType}[] secondOp, {Op3BaseType}[] thirdOp, {RetBaseType}[] result, Vector<{GetFfrType}> faultResult, [CallerMemberName] string method = "")
         {
-            var succeeded = Helpers.CheckGatherVectorFirstFaultingBehavior(firstOp, secondOp, thirdOp, result, faultResult);
+            var succeeded = Helpers.CheckGatherVectorWithByteOffsetFirstFaultingBehavior(firstOp, secondOp, thirdOp, result, faultResult);
 
             if (!succeeded)
             {
