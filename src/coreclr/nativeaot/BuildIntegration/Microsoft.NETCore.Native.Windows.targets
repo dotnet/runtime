@@ -105,9 +105,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Condition="'$(CETCompat)' == 'false' and '$(_targetArchitecture)' == 'x64'" Include="/CETCOMPAT:NO" />
       <!-- Enable EHCONT if CET is not disabled and CFG is enabled. -->
       <LinkerArg Condition="'$(CETCompat)' != 'false' and '$(_targetArchitecture)' == 'x64' and '$(ControlFlowGuard)' == 'Guard'" Include="/guard:ehcont"/>
-
-      <!-- Export the managed entry point if building a native library in custom main mode -->
-      <IlcArg Condition="'$(NativeLib)' == 'Shared' and '$(CustomNativeMain)' == 'true'" Include="--export-dynamic-symbol:__managed__Main" />
     </ItemGroup>
 
     <ItemGroup Condition="!Exists('$(IlcSdkPath)debugucrt.txt')">
