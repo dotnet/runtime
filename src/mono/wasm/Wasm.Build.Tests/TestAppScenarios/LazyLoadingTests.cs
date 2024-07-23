@@ -20,14 +20,16 @@ public class LazyLoadingTests : AppTestBase
     {
     }
 
-    [Fact]
+    [Fact, TestCategory("no-fingerprinting")]
     public async Task LoadLazyAssemblyBeforeItIsNeeded()
     {
         CopyTestAsset("WasmBasicTestApp", "LazyLoadingTests", "App");
-        PublishProject("Debug");
+        BuildProject("Debug");
 
-        var result = await RunSdkStyleAppForPublish(new(Configuration: "Debug", TestScenario: "LazyLoadingTest"));
+        var result = await RunSdkStyleAppForBuild(new(Configuration: "Debug", TestScenario: "LazyLoadingTest"));
+
         Assert.True(result.TestOutput.Any(m => m.Contains("FirstName")), "The lazy loading test didn't emit expected message with JSON");
+        Assert.True(result.ConsoleOutput.Any(m => m.Contains("Attempting to download") && m.Contains("_framework/Json.") && m.Contains(".pdb")), "The lazy loading test didn't load PDB");
     }
 
     [Fact]

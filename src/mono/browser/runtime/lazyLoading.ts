@@ -7,9 +7,21 @@ import { AssetEntry } from "./types";
 
 export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boolean> {
     const resources = loaderHelpers.config.resources!;
+    const originalAssemblyName = assemblyNameToLoad;
     const lazyAssemblies = resources.lazyAssembly;
     if (!lazyAssemblies) {
         throw new Error("No assemblies have been marked as lazy-loadable. Use the 'BlazorWebAssemblyLazyLoad' item group in your project file to enable lazy loading an assembly.");
+    }
+
+    if (loaderHelpers.config.resources!.fingerprinting) {
+        const map = loaderHelpers.config.resources!.fingerprinting;
+        for (const fingerprintedName in map) {
+            const nonFingerprintedName = map[fingerprintedName];
+            if (nonFingerprintedName == assemblyNameToLoad) {
+                assemblyNameToLoad = fingerprintedName;
+                break;
+            }
+        }
     }
 
     if (!lazyAssemblies[assemblyNameToLoad]) {
@@ -26,8 +38,22 @@ export async function loadLazyAssembly (assemblyNameToLoad: string): Promise<boo
         return false;
     }
 
-    const pdbNameToLoad = changeExtension(dllAsset.name, ".pdb");
-    const shouldLoadPdb = loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported() && Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+    let pdbNameToLoad = changeExtension(originalAssemblyName, ".pdb");
+    let shouldLoadPdb = false;
+    if (loaderHelpers.config.debugLevel != 0 && loaderHelpers.isDebuggingSupported()) {
+        shouldLoadPdb = Object.prototype.hasOwnProperty.call(lazyAssemblies, pdbNameToLoad);
+        if (loaderHelpers.config.resources!.fingerprinting) {
+            const map = loaderHelpers.config.resources!.fingerprinting;
+            for (const fingerprintedName in map) {
+                const nonFingerprintedName = map[fingerprintedName];
+                if (nonFingerprintedName == pdbNameToLoad) {
+                    pdbNameToLoad = fingerprintedName;
+                    shouldLoadPdb = true;
+                    break;
+                }
+            }
+        }
+    }
 
     const dllBytesPromise = loaderHelpers.retrieve_asset_download(dllAsset);
 
