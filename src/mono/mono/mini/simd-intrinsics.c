@@ -97,6 +97,18 @@ is_const (const MonoInst* ins)
 }
 
 static gboolean
+is_xconst (const MonoInst* ins)
+{
+	switch (ins->opcode) {
+	case OP_XCONST:
+	case OP_XZERO:
+	case OP_XONES:
+		return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
 is_zero_const (const MonoInst* ins)
 {
 	switch (ins->opcode) {
@@ -663,40 +675,48 @@ emit_xconst_v128 (MonoCompile *cfg, MonoClass *klass, guint8 value[16])
 static guint64
 get_xconst_int_elem (MonoCompile *cfg, MonoInst *ins, MonoTypeEnum etype, int index)
 {
-	g_assert (ins->opcode == OP_XCONST);
+	guint8 cns_vec[16];
+	if (ins->opcode == OP_XZERO) {
+		memset (cns_vec, 0x00, 16);
+	} else if (ins->opcode == OP_XONES) {
+		memset (cns_vec, 0xFF, 16);
+	} else {
+		g_assert (ins->opcode == OP_XCONST);
+		memcpy (cns_vec, ins->inst_p0, 16);
+	}
 	g_assert (index >= 0);
 	switch (etype) {
 		case MONO_TYPE_I1: {
 			g_assert (index < 16);
-			return ((gint8*)ins->inst_p0) [index];
+			return ((gint8*)cns_vec) [index];
 		}
 		case MONO_TYPE_U1: {
 			g_assert (index < 16);
-			return ((guint8*)ins->inst_p0) [index];
+			return ((guint8*)cns_vec) [index];
 		}
 		case MONO_TYPE_I2: {
 			g_assert (index < 8);
-			return ((gint16*)ins->inst_p0) [index];
+			return ((gint16*)cns_vec) [index];
 		}
 		case MONO_TYPE_U2: {
 			g_assert (index < 8);
-			return ((guint16*)ins->inst_p0) [index];
+			return ((guint16*)cns_vec) [index];
 		}
 		case MONO_TYPE_I4: {
 			g_assert (index < 4);
-			return ((gint32*)ins->inst_p0) [index];
+			return ((gint32*)cns_vec) [index];
 		}
 		case MONO_TYPE_U4: {
 			g_assert (index < 4);
-			return ((guint32*)ins->inst_p0) [index];
+			return ((guint32*)cns_vec) [index];
 		}
 		case MONO_TYPE_I8: {
 			g_assert (index < 2);
-			return ((gint64*)ins->inst_p0) [index];
+			return ((gint64*)cns_vec) [index];
 		}
 		case MONO_TYPE_U8: {
 			g_assert (index < 2);
-			return ((guint64*)ins->inst_p0) [index];
+			return ((guint64*)cns_vec) [index];
 		}
 		default: {
 			g_assert_not_reached ();
@@ -1137,11 +1157,19 @@ emit_vector_insert_element (
 		return ins;
 	}
 
-	if ((ins->opcode == OP_XCONST) && is_const (element)) {
+	if (is_xconst (ins) && is_const (element)) {
 		// Specially handle insertion of a constant into a constant
 		int vector_size = mono_class_value_size (vklass, NULL);
 		if (vector_size == 16) {
-			guint8* cns_vec = (guint8*)ins->inst_p0;
+			guint8 cns_vec[16];
+			if (ins->opcode == OP_XZERO) {
+				memset (cns_vec, 0x00, 16);
+			} else if (ins->opcode == OP_XONES) {
+				memset (cns_vec, 0xFF, 16);
+			} else {
+				g_assert (ins->opcode == OP_XCONST);
+				memcpy (cns_vec, ins->inst_p0, 16);
+			}
 			if (type_enum_is_float (type)) {
 				double cns_val;
 				if (element->opcode == OP_R4CONST) {
@@ -1197,7 +1225,10 @@ emit_vector_insert_element (
 					}
 				}
 			}
-			return ins;
+			if (ins->opcode == OP_XCONST) {
+				return ins;
+			}
+			return emit_xconst_v128 (cfg, vklass, cns_vec);
 		}
 	}
 
@@ -2665,7 +2696,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if ((arg0_type == MONO_TYPE_I1 || arg0_type == MONO_TYPE_U1)) {
 			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
 		}
-		if (args [1]->opcode != OP_XCONST) {
+		if (!is_xconst (args [1])) {
 			return NULL;
 		}
 		MonoInst *new_args[2];
@@ -2701,7 +2732,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (vector_size != 128) {
 				return NULL;
 			}
-			if (args [1]->opcode != OP_XCONST) {
+			if (!is_xconst (args [1])) {
 				return NULL;
 			}
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
