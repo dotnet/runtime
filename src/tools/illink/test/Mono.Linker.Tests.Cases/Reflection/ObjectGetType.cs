@@ -231,7 +231,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				}
 			}
 
-
 			[Kept]
 			public static void Test ()
 			{
@@ -690,7 +689,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				new Derived ().GetType ().GetMethod ("Method");
 			}
 		}
-
 
 		[Kept]
 		class InterfaceSeenFirst
