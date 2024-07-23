@@ -94,6 +94,22 @@ EXTERN_C void QCALLTYPE RhInitializeFinalizerThread()
     g_FinalizerEvent.Set();
 }
 
+static int32_t g_fullGcCountSeenByFinalization;
+
+// Indicate that the current round of finalizations is complete.
+EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount, int32_t observedFullGcCount)
+{
+    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
+
+    g_fullGcCountSeenByFinalization = observedFullGcCount;
+    g_FinalizerDoneEvent.Set();
+
+    if (YieldProcessorNormalization::IsMeasurementScheduled())
+    {
+        YieldProcessorNormalization::PerformMeasurement();
+    }
+}
+
 EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
 {
     // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
@@ -103,6 +119,14 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
     // Can't call this from the finalizer thread itself.
     if (ThreadStore::GetCurrentThread() != g_pFinalizerThread)
     {
+        // We may see a completion of finalization cycle that might not see objects that became
+        // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
+        // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
+        // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
+        int desiredFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+
+    tryAgain:
         // Clear any current indication that a finalization pass is finished and wake the finalizer thread up
         // (if there's no work to do it'll set the done event immediately).
         g_FinalizerDoneEvent.Reset();
@@ -110,6 +134,14 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
 
         // Wait for the finalizer thread to get back to us.
         g_FinalizerDoneEvent.Wait(INFINITE, false, allowReentrantWait);
+
+        if (desiredFullGcCount - g_fullGcCountSeenByFinalization > 0)
+        {
+            // There were some Full GCs happening before we started waiting and possibly not seen by the
+            // last finalization cycle. This is rare, but we need to be sure we have seen those,
+            // so we try one more time.
+            goto tryAgain;
+        }
     }
 }
 
@@ -174,18 +206,6 @@ EXTERN_C UInt32_BOOL QCALLTYPE RhpWaitForFinalizerRequest()
             return FALSE;
         }
     } while (true);
-}
-
-// Indicate that the current round of finalizations is complete.
-EXTERN_C void QCALLTYPE RhpSignalFinalizationComplete(uint32_t fcount)
-{
-    FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
-    g_FinalizerDoneEvent.Set();
-
-    if (YieldProcessorNormalization::IsMeasurementScheduled())
-    {
-        YieldProcessorNormalization::PerformMeasurement();
-    }
 }
 
 //

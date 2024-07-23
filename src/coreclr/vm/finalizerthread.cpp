@@ -540,13 +540,13 @@ void FinalizerThread::FinalizerThreadCreate()
     }
 }
 
-static int fullGcCountSeenByFinalization;
+static int g_fullGcCountSeenByFinalization;
 
 void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 {
     WRAPPER_NO_CONTRACT;
 
-    fullGcCountSeenByFinalization = observedFullGcCount;
+    g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
 }
 
@@ -557,16 +557,16 @@ void FinalizerThread::FinalizerThreadWait()
     ASSERT(hEventFinalizer->IsValid());
     ASSERT(GetFinalizerThread());
 
-    // We may see a completion of finalization cycle that might not see objects that became
-    // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
-    // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
-    // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
-    int desiredFullGcCount =
-        GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
-
     // Can't call this from within a finalized method.
     if (!IsCurrentThreadFinalizer())
     {
+        // We may see a completion of finalization cycle that might not see objects that became
+        // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
+        // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
+        // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
+        int desiredFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+
         GCX_PREEMP();
 
 #ifdef FEATURE_COMINTEROP
@@ -593,9 +593,9 @@ void FinalizerThread::FinalizerThreadWait()
         DWORD status;
         status = hEventFinalizerDone->Wait(INFINITE,TRUE);
 
-        if (desiredFullGcCount - fullGcCountSeenByFinalization > 0)
+        if (desiredFullGcCount - g_fullGcCountSeenByFinalization > 0)
         {
-            // There were some Full GCs happened before we started waiting and possibly not seen by the
+            // There were some Full GCs happening before we started waiting and possibly not seen by the
             // last finalization cycle. This is rare, but we need to be sure we have seen those,
             // so we try one more time.
             goto tryAgain;
