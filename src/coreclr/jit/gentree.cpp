@@ -3931,8 +3931,10 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     int      costSz = 1;
     unsigned level  = 0;
 
+    bool optsEnabled = opts.OptimizationEnabled();
+
 #if defined(FEATURE_HW_INTRINSICS)
-    if (multiOp->OperIs(GT_HWINTRINSIC))
+    if (multiOp->OperIs(GT_HWINTRINSIC) && optsEnabled)
     {
         GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
 #if defined(TARGET_XARCH)
@@ -4052,8 +4054,12 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             level += 1;
         }
 
-        costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
-        costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+        if (optsEnabled)
+        {
+            // We don't need/have costs in MinOpts
+            costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
+            costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+        }
     }
     else
     {
@@ -4064,12 +4070,19 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
             level = max(lvl, level + 1);
 
-            costEx += op->GetCostEx();
-            costSz += op->GetCostSz();
+            if (optsEnabled)
+            {
+                // We don't need/have costs in MinOpts
+                costEx += op->GetCostEx();
+                costSz += op->GetCostSz();
+            }
         }
     }
 
-    multiOp->SetCosts(costEx, costSz);
+    if (optsEnabled)
+    {
+        multiOp->SetCosts(costEx, costSz);
+    }
     return level;
 }
 #endif
@@ -6378,11 +6391,7 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
 #if defined(FEATURE_HW_INTRINSICS)
     else if (tree->OperIsHWIntrinsic())
     {
-        for (size_t i = tree->AsMultiOp()->GetOperandCount(); i >= 1; i--)
-        {
-            unsigned lvl = gtSetEvalOrderMinOpts(tree->AsMultiOp()->Op(i));
-            level        = max(lvl, level + 1);
-        }
+        return gtSetMultiOpOrder(tree->AsMultiOp());
     }
 #endif // FEATURE_HW_INTRINSICS
 
