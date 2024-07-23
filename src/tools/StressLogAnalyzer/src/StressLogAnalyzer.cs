@@ -18,20 +18,21 @@ using System.Diagnostics;
 namespace StressLogAnalyzer;
 
 internal sealed class StressLogAnalyzer(
-    IStressLog stressLogContract,
+    Func<IStressLog> stressLogContractFactory,
     IInterestingStringFinder stringFinder,
     IMessageFilter messageFilter,
     ThreadFilter threadFilter,
     ThreadFilter? earliestMessageFilter)
 {
-    public async Task AnalyzeLogsAsync(TargetPointer logsPointer, TimeTracker timeTracker, GCThreadMap gcThreadMap, IStressMessageOutput messageOutput, CancellationToken token)
+    public async Task<(ulong messagesProcessed, ulong messagesPrinted)> AnalyzeLogsAsync(TargetPointer logsPointer, TimeTracker timeTracker, GCThreadMap gcThreadMap, IStressMessageOutput messageOutput, CancellationToken token)
     {
-        IEnumerable<ThreadStressLogData> logs = [.. stressLogContract.GetThreadStressLogs(logsPointer)];
+        ThreadLocal<IStressLog> stressLogContract = new(() => stressLogContractFactory());
+        IEnumerable<ThreadStressLogData> logs = [.. stressLogContract.Value!.GetThreadStressLogs(logsPointer)];
 
         // The "end" timestamp is the timestamp of the most recent message.
         timeTracker.SetEndTimestamp(
             logs.Select(
-                log => stressLogContract.GetStressMessages(log).FirstOrDefault().Timestamp)
+                log => stressLogContract.Value.GetStressMessages(log).FirstOrDefault().Timestamp)
             .Max());
 
         if (!threadFilter.HasAnyGCThreadFilter)
@@ -45,6 +46,8 @@ internal sealed class StressLogAnalyzer(
         ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> earliestMessages = [];
         ConcurrentBag<(ThreadStressLogData thread, StressMsgData message, ulong numMessageOnThread)> allMessages = [];
 
+        ThreadLocal<ulong> numMessagesProcessed = new(() => 0, trackAllValues: true);
+
         var parallelOptions = new ParallelOptions { CancellationToken = token, MaxDegreeOfParallelism = Debugger.IsAttached ? 1 : Environment.ProcessorCount };
 
         await Parallel.ForEachAsync(logs, parallelOptions, (log, ct) =>
@@ -52,8 +55,9 @@ internal sealed class StressLogAnalyzer(
             ulong numMessageOnThread = 0;
             // Stress logs are traversed from newest message to oldest, so the last message we see is the earliest one.
             StressMsgData? earliestMessage = null;
-            foreach (StressMsgData message in stressLogContract.GetStressMessages(log))
+            foreach (StressMsgData message in stressLogContract.Value.GetStressMessages(log))
             {
+                numMessagesProcessed.Value++;
                 token.ThrowIfCancellationRequested();
 
                 earliestMessage = message;
@@ -126,8 +130,10 @@ internal sealed class StressLogAnalyzer(
         messages = messages.OrderByDescending(message => (message.message.Timestamp, message.thread.ThreadId))
             .ThenBy(message => message.numMessageOnThread);
 
+        ulong messagesPrinted = 0;
         foreach (var message in messages)
         {
+            messagesPrinted++;
             await messageOutput.OutputMessageAsync(message.thread, message.message).ConfigureAwait(false);
         }
 
@@ -141,5 +147,7 @@ internal sealed class StressLogAnalyzer(
                 await messageOutput.OutputMessageAsync(thread, message).ConfigureAwait(false);
             }
         }
+
+        return (numMessagesProcessed.Values.Aggregate(0ul, (acc, val) => acc + val), messagesPrinted);
     }
 }

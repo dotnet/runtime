@@ -6,8 +6,9 @@ using Microsoft.Diagnostics.DataContractReader;
 
 namespace StressLogAnalyzer;
 
-public enum WellKnownString
+public enum WellKnownString : byte
 {
+    NOT_INTERESTING,
     THREAD_WAIT,
     THREAD_WAIT_DONE,
     GCSTART,
@@ -33,7 +34,7 @@ public enum WellKnownString
 
 public interface IInterestingStringFinder
 {
-    bool IsInteresting(TargetPointer formatStringPointer, out WellKnownString? wellKnownString);
+    bool IsInteresting(TargetPointer formatStringPointer, out WellKnownString wellKnownString);
 
     bool IsWellKnown(TargetPointer formatStringPointer, out WellKnownString wellKnownString);
 }

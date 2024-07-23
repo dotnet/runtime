@@ -5,6 +5,7 @@ using System;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
@@ -14,7 +15,7 @@ using Microsoft.Diagnostics.DataContractReader;
 
 namespace StressLogAnalyzer
 {
-    internal sealed class InterestingStringFinder(Target target, string[] userStrings, string[] userStringPrefixes, bool enableDefaultMessages) : IInterestingStringFinder
+    internal sealed class InterestingStringFinder(Target target, StressLogHeader.ModuleTable moduleTable, string[] userStrings, string[] userStringPrefixes, bool enableDefaultMessages) : IInterestingStringFinder
     {
         private static readonly Dictionary<string, WellKnownString> _knownStrings =
             new()
@@ -63,47 +64,87 @@ namespace StressLogAnalyzer
 
         private readonly string[] _userStringPrefixes = userStringPrefixes?.Select(InterpretEscapeSequences).ToArray() ?? [];
 
-        private readonly ConcurrentDictionary<ulong, (bool isInteresting, WellKnownString? wellKnown)> _addressCache = [];
-
-        public bool IsInteresting(TargetPointer formatStringPointer, out WellKnownString? wellKnownStringKind)
+        private readonly struct StringCacheEntry(bool isInteresting, WellKnownString stringKind)
         {
-            (bool isInteresting, WellKnownString? wellKnown) = _addressCache.GetOrAdd(formatStringPointer.Value, (address) =>
+            // Set the 16th bit to indicate that the entry is valid.
+            private readonly int _data = (1 << 16) | (byte)stringKind | (isInteresting ? 1 << 8 : 0);
+
+            public bool IsValid => (_data & (1 << 16)) != 0;
+            public bool IsInteresting => (_data & (1 << 8)) != 0;
+            public WellKnownString StringKind => (WellKnownString)(_data & 0xFF);
+        }
+
+        private readonly StringCacheEntry[] _addressCache = new StringCacheEntry[StressLogHeader.ModuleImageDataSize];
+
+        public bool IsInteresting(TargetPointer formatStringPointer, out WellKnownString wellKnownStringKind)
+        {
+            int cacheIndex = GetCacheIndex(formatStringPointer);
+            if (_addressCache[cacheIndex].IsValid)
             {
-                string formatString = target.ReadZeroTerminatedAsciiString(formatStringPointer, 1024);
-                WellKnownString? wellKnownId = null;
+                StringCacheEntry entry = _addressCache[cacheIndex];
+                wellKnownStringKind = entry.StringKind;
+                return entry.IsInteresting;
+            }
+
+            StringCacheEntry newEntry = CalculateEntryForString(formatStringPointer);
+            _addressCache[cacheIndex] = newEntry;
+            wellKnownStringKind = newEntry.StringKind;
+            return newEntry.IsInteresting;
+
+            StringCacheEntry CalculateEntryForString(TargetPointer address)
+            {
+                string formatString = target.ReadZeroTerminatedUtf8String(address, 1024);
                 bool defaultInteresting = false;
                 if (_knownStrings.TryGetValue(formatString, out WellKnownString wellKnown))
                 {
-                    wellKnownId = wellKnown;
                     if (enableDefaultMessages)
                     {
                         defaultInteresting = _defaultInterestingMessages.Contains((byte)wellKnown);
                     }
                 }
+                else
+                {
+                    wellKnown = WellKnownString.NOT_INTERESTING;
+                }
 
                 if (_userInterestingStrings.Contains(formatString))
                 {
-                    return (true, wellKnownId);
+                    return new StringCacheEntry(true, wellKnown);
                 }
 
                 foreach (string prefix in _userStringPrefixes)
                 {
                     if (formatString.StartsWith(prefix, StringComparison.Ordinal))
                     {
-                        return (true, wellKnownId);
+                        return new StringCacheEntry(true, wellKnown);
                     }
                 }
 
-                return (defaultInteresting, wellKnownId);
-            });
+                return new StringCacheEntry(defaultInteresting, wellKnown);
+            }
 
-            wellKnownStringKind = wellKnown;
-            return isInteresting;
+            int GetCacheIndex(TargetPointer address)
+            {
+                ulong cumulativeSize = 0;
+                foreach (StressLogHeader.ModuleDesc module in moduleTable)
+                {
+                    if (address >= module.baseAddr && address < module.baseAddr + module.size)
+                    {
+                        ulong moduleOffset = address - module.baseAddr;
+                        return (int)(cumulativeSize + moduleOffset);
+                    }
+                    else
+                    {
+                        cumulativeSize += module.size;
+                    }
+                }
+                throw new ArgumentOutOfRangeException(nameof(formatStringPointer));
+            }
         }
 
         public bool IsWellKnown(TargetPointer formatStringPointer, out WellKnownString wellKnownString)
         {
-            return _knownStrings.TryGetValue(target.ReadZeroTerminatedAsciiString(formatStringPointer, 1024), out wellKnownString);
+            return _knownStrings.TryGetValue(target.ReadZeroTerminatedUtf8String(formatStringPointer, 1024), out wellKnownString);
         }
     }
 }

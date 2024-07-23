@@ -54,7 +54,9 @@ internal struct StressLogHeader
 
     public ModuleTable moduleTable;
 
-    [InlineArray(64*1024*1024)]
+    public const int ModuleImageDataSize = 64 * 1024 * 1024;
+
+    [InlineArray(ModuleImageDataSize)]
     public struct ModuleImageData
     {
         private byte b;

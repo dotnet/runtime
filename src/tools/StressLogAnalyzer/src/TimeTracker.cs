@@ -37,9 +37,9 @@ internal sealed class TimeTracker(ulong startTimestamp, ulong tickFrequency, Tim
         {
             if (timeRange.StartTimestamp < 0)
             {
-                timeRange = new TimeRange(Math.Max(recordedTime - timeRange.StartTimestamp, 0), endTimestamp);
+                timeRange = new TimeRange(Math.Max(recordedTime + timeRange.StartTimestamp, 0), recordedTime);
             }
-            else
+            else if (timeRange.EndTimestamp == double.MaxValue)
             {
                 timeRange = timeRange with { EndTimestamp = recordedTime };
             }

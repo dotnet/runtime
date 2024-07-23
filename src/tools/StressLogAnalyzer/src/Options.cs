@@ -101,4 +101,5 @@ public sealed record Options(
     ThreadFilter ThreadFilter,
     bool PrintFormatStrings,
     string[]? FormatPrefixFilter,
-    string[]? FormatFilter);
+    string[]? FormatFilter,
+    bool SingleRun);

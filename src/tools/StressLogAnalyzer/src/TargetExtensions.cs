@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,20 +13,21 @@ namespace StressLogAnalyzer;
 
 internal static class TargetExtensions
 {
-    public static unsafe string ReadZeroTerminatedAsciiString(this Target target, TargetPointer pointer, int maxLength)
+    public static unsafe string ReadZeroTerminatedUtf8String(this Target target, TargetPointer pointer, int maxLength)
     {
-        StringBuilder sb = new();
-        for (byte ch = target.Read<byte>(pointer);
-        ch != 0;
-            ch = target.Read<byte>(pointer = new TargetPointer((ulong)pointer + 1)))
+        byte[]? rented = null;
+        Span<byte> bytes = maxLength <= 1024 ? stackalloc byte[maxLength] : (rented = ArrayPool<byte>.Shared.Rent(maxLength));
+        try
         {
-            if (sb.Length > maxLength)
-            {
-                break;
-            }
-
-            sb.Append((char)ch);
+            target.ReadBuffer(pointer, bytes.Slice(0, maxLength));
+            return Encoding.UTF8.GetString(bytes.Slice(0, bytes.IndexOf([(byte)0])));
         }
-        return sb.ToString();
+        finally
+        {
+            if (rented != null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
     }
 }

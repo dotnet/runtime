@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Concurrent;
 using System.CommandLine;
 using System.CommandLine.Help;
@@ -262,6 +263,11 @@ public static class Program
             Description = "Print the raw format strings along with the message",
         };
 
+        var singleRun = new CliOption<bool>("--single-run")
+        {
+            Description = "Only run once and do not prompt to run again."
+        };
+
         var rootCommand = new CliRootCommand
         {
             inputFile,
@@ -279,6 +285,7 @@ public static class Program
             hexThreadId,
             printFormatStrings,
             formatFilter,
+            singleRun,
             new DiagramDirective(),
         };
 
@@ -301,7 +308,8 @@ public static class Program
                 threads ?? new ThreadFilter([]),
                 PrintFormatStrings: args.GetValue(printFormatStrings) ?? formats is [],
                 args.GetValue(prefixOption),
-                formats);
+                formats,
+                args.GetValue(singleRun));
             return await AnalyzeStressLog(options, ct).ConfigureAwait(false);
         });
 
@@ -320,17 +328,19 @@ public static class Program
         }
         try
         {
-            (Target target, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
+            (Func<Target> targetFactory, StressLogHeader.ModuleTable moduleTable, TargetPointer logs) = CreateTarget(accessor.SafeMemoryMappedViewHandle);
 
-            Registry registry = new(target);
-            IStressLog stressLogContract = registry.StressLog;
+            Target globalTarget = targetFactory();
+
+            Registry registry = new(globalTarget);
+            IStressLog globalStressLogContract = registry.StressLog;
 
             bool runAgain = false;
             do
             {
                 using TextWriter? outputFile = options.OutputFile is not null ? File.CreateText(options.OutputFile.FullName) : null;
 
-                InterestingStringFinder stringFinder = new(target, options.FormatFilter ?? [], options.FormatPrefixFilter ?? [], options.IncludeDefaultMessages);
+                InterestingStringFinder stringFinder = new(globalTarget, moduleTable, options.FormatFilter ?? [], options.FormatPrefixFilter ?? [], options.IncludeDefaultMessages);
 
                 IMessageFilter messageFilter = CreateMessageFilter(options, stringFinder);
 
@@ -342,24 +352,30 @@ public static class Program
                 TimeTracker timeTracker = CreateTimeTracker(accessor.SafeMemoryMappedViewHandle, options);
 
                 var analyzer = new StressLogAnalyzer(
-                    stressLogContract,
+                    () => new Registry(targetFactory()).StressLog,
                     stringFinder,
                     messageFilter,
                     options.ThreadFilter,
                     options.EarliestMessageThreads);
-                await analyzer.AnalyzeLogsAsync(
+
+                var (numProcessed, numPrinted) = await analyzer.AnalyzeLogsAsync(
                     logs,
                     timeTracker,
                     gcThreadMap,
                     new StressMessageWriter(
                         threadNameOutput,
                         timeTracker,
-                        target,
+                        globalTarget,
                         options.PrintFormatStrings,
                         outputFile ?? Console.Out),
                     token).ConfigureAwait(false);
 
-                PrintFooter(accessor.SafeMemoryMappedViewHandle, stressLogContract, logs);
+                PrintFooter(accessor.SafeMemoryMappedViewHandle, globalStressLogContract, logs, numProcessed, numPrinted);
+
+                if (options.SingleRun)
+                {
+                    return 0;
+                }
 
                 Console.Write("'q' to quit, 'r' to run again\n>");
 
@@ -386,7 +402,7 @@ public static class Program
         }
     }
 
-    private static unsafe void PrintFooter(SafeMemoryMappedViewHandle handle, IStressLog stressLogContract, TargetPointer logs)
+    private static unsafe void PrintFooter(SafeMemoryMappedViewHandle handle, IStressLog stressLogContract, TargetPointer logs, ulong numProcessed, ulong numPrinted)
     {
         byte* buffer = null;
         try
@@ -401,10 +417,28 @@ public static class Program
 
             Console.WriteLine($"Use file size: {usedSize:F3} GB, still available {availableSize:F3} GB, {threadLogs.Length} threads total, {threadLogs.Count(t => t.WriteHasWrapped)} overwrote earlier messages");
             Console.WriteLine($"{header->threadsWithNoLog} threads did not get a log!");
+
+            Console.Write("Number of messages processed: ");
+            PrintFriendlyNumber(numProcessed);
+            Console.Write(", examined: ");
+            PrintFriendlyNumber(numPrinted);
+            Console.WriteLine();
         }
         finally
         {
             handle.ReleasePointer();
+        }
+
+        static void PrintFriendlyNumber(ulong n)
+        {
+            if (n < 1000)
+                Console.Write(n);
+            else if (n < 1000 * 1000)
+                Console.Write($"{n / 1000.0:F3} thousand");
+            else if (n < 1000 * 1000 * 1000)
+                Console.Write($"{n / 1000000.0:F6} million");
+            else
+                Console.Write($"{n / 1000000000.0:F9} billion");
         }
     }
 
@@ -437,7 +471,7 @@ public static class Program
         return filter;
     }
 
-    private static unsafe (Target target, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
+    private static unsafe (Func<Target> targetFactory, StressLogHeader.ModuleTable table, TargetPointer logs) CreateTarget(SafeMemoryMappedViewHandle handle)
     {
         byte* buffer = null;
         handle.AcquirePointer(ref buffer);
@@ -450,14 +484,14 @@ public static class Program
             throw new InvalidOperationException("Invalid memory-mapped stress log.");
         }
 
-        Target target = Target.Create(
+        return (CreateTarget, header->moduleTable, header->logs);
+
+        Target CreateTarget() => Target.Create(
             GetDescriptor((int)(header->version & 0xFFFF)),
             [TargetPointer.Null, new TargetPointer(header->memoryBase + (nuint)((byte*)&header->moduleTable - (byte*)header))],
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
             true,
             nuint.Size);
-
-        return (target, header->logs);
     }
 
     private static unsafe TimeTracker CreateTimeTracker(SafeMemoryMappedViewHandle handle, Options options)

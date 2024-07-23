@@ -15,8 +15,8 @@ internal sealed class ValueRangeFilter(IMessageFilter inner, IInterestingStringF
 {
     public bool IncludeMessage(StressMsgData message)
     {
-        _ = stringFinder.IsInteresting(message.FormatString, out WellKnownString? wellKnownString);
-        if (wellKnownString is null)
+        _ = stringFinder.IsInteresting(message.FormatString, out WellKnownString wellKnownString);
+        if (wellKnownString is WellKnownString.NOT_INTERESTING)
         {
             return inner.IncludeMessage(message);
         }
