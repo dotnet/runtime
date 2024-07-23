@@ -1,4 +1,4 @@
-api<Project>
+<Project>
   <PropertyGroup>
     <!-- The .NET product branding version -->
     <ProductVersion>9.0.0</ProductVersion>
