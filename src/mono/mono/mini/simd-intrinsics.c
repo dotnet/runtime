@@ -2699,13 +2699,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_xconst (args [1])) {
 			return NULL;
 		}
-		MonoInst *new_args[2];
+		MonoInst *new_args[3];
 		new_args [0] = args [0];
 		if (COMPILE_LLVM (cfg)) {
 			if ((get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 0) == 0x300000002) &&
 				(get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 1) == 0x100000000)) {
 				new_args [1] = args [0];
-				return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_EXT, 0, MONO_TYPE_U8, fsig, new_args);
+				EMIT_NEW_ICONST (cfg, new_args [2], 1);
+				MonoInst* ins = emit_simd_ins (cfg, klass, OP_ARM64_EXT, new_args [0]->dreg, new_args [1]->dreg);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = MONO_TYPE_U8;
+				ins->sreg3 = new_args [2]->dreg;
+				return ins;
 			}
 		}
 		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
@@ -2776,8 +2781,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					}
 				}
 			}
-			MonoInst *new_args[2];
-			new_args [0] = args[0];
+			MonoInst *new_args[3];
+			new_args [0] = args [0];
 			if (needs_zero) {
 				if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) {
 					return NULL;
@@ -2792,11 +2797,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				// real benefit since shuffle gets its own port rather than using the fp specific ports.
 				arg0_type = MONO_TYPE_R8;
 			}
-			EMIT_NEW_ICONST (cfg, new_args [1], control);
-			if (arg0_type == MONO_TYPE_R4) {
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE_SHUFPS, 0, arg0_type, fsig, new_args);
-			} else if (arg0_type == MONO_TYPE_R8) {
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_SHUFPD, 0, arg0_type, fsig, new_args);
+			if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8)) {
+				int opcode = (arg0_type == MONO_TYPE_R4) ? OP_SSE_SHUFPS : OP_SSE2_SHUFPD;
+				new_args [1] = args [0];
+				EMIT_NEW_ICONST (cfg, new_args [2], control);
+				MonoInst* ins = emit_simd_ins (cfg, klass, opcode, new_args [0]->dreg, new_args [1]->dreg);
+				ins->inst_c0 = 0;
+				ins->inst_c1 = arg0_type;
+				ins->sreg3 = new_args [2]->dreg;
+				return ins;
 			} else {
 				g_assert ((arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4));
 				return emit_simd_ins_for_sig (cfg, klass, OP_SSE2_PSHUFD, 0, arg0_type, fsig, new_args);
