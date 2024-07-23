@@ -206,6 +206,21 @@ struct VNFuncApp
     }
 };
 
+struct VNPhiDef
+{
+    unsigned  LclNum;
+    unsigned  SsaDef;
+    unsigned* SsaArgs;
+    unsigned  NumArgs;
+};
+
+struct VNMemoryPhiDef
+{
+    BasicBlock* Block;
+    unsigned*   SsaArgs;
+    unsigned    NumArgs;
+};
+
 // We use a unique prefix character when printing value numbers in dumps:  i.e.  $1c0
 // This define is used with string concatenation to put this in printf format strings
 #define FMT_VN "$%x"
@@ -730,6 +745,11 @@ public:
     // Skip all folding checks.
     ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
 
+    ValueNum VNForPhiDef(var_types type, unsigned lclNum, unsigned ssaDef, ArrayStack<unsigned>& ssaArgs);
+    bool     GetPhiDef(ValueNum vn, VNPhiDef* phiDef);
+    ValueNum VNForMemoryPhiDef(BasicBlock* block, ArrayStack<unsigned>& vns);
+    bool     GetMemoryPhiDef(ValueNum vn, VNMemoryPhiDef* memoryPhiDef);
+
     ValueNum VNForCast(VNFunc func, ValueNum castToVN, ValueNum objVN);
 
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
@@ -1098,9 +1118,6 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
-    // Returns true iff the VN is a phi definition
-    bool IsVNPhiDef(ValueNum vn);
-
     // Returns true if the two VNs represent the same value
     // despite being different VNs. Useful for phi def VNs.
     bool AreVNsEquivalent(ValueNum vn1, ValueNum vn2);
@@ -1428,13 +1445,15 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_Const,  // This chunk contains constant values.
-        CEA_Handle, // This chunk contains handle constants.
-        CEA_Func0,  // Represents functions of arity 0.
-        CEA_Func1,  // ...arity 1.
-        CEA_Func2,  // ...arity 2.
-        CEA_Func3,  // ...arity 3.
-        CEA_Func4,  // ...arity 4.
+        CEA_Const,        // This chunk contains constant values.
+        CEA_Handle,       // This chunk contains handle constants.
+        CEA_PhiDef,       // This contains pointers to VNPhiDef.
+        CEA_MemoryPhiDef, // This contains pointers to VNMemoryPhiDef.
+        CEA_Func0,        // Represents functions of arity 0.
+        CEA_Func1,        // ...arity 1.
+        CEA_Func2,        // ...arity 2.
+        CEA_Func3,        // ...arity 3.
+        CEA_Func4,        // ...arity 4.
         CEA_Count
     };
 

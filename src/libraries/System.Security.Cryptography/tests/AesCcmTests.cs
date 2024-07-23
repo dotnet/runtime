@@ -12,7 +12,6 @@ namespace System.Security.Cryptography.Tests
     public class AesCcmTests : CommonAEADTests
     {
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
         public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
         {
@@ -73,7 +72,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetValidNonceSizes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void ValidNonceSize(int nonceSize)
         {
             const int dataLength = 35;
@@ -116,7 +114,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetValidTagSizes))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void ValidTagSize(int tagSize)
         {
             const int dataLength = 35;
@@ -139,7 +136,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void TwoEncryptionsAndDecryptionsUsingOneInstance()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -267,7 +263,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void InplaceEncryptDecrypt()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -288,7 +283,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void InplaceEncryptTamperTagDecrypt()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -313,7 +307,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetNistCcmTestCases))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesCcmNistTests(AEADTest testCase)
         {
             using (var aesCcm = new AesCcm(testCase.Key))
@@ -332,7 +325,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetNistCcmTestCases))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesCcmNistTestsTamperTag(AEADTest testCase)
         {
             using (var aesCcm = new AesCcm(testCase.Key))
@@ -355,7 +347,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(GetNistCcmTestCasesWithNonEmptyPT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesCcmNistTestsTamperCiphertext(AEADTest testCase)
         {
             using (var aesCcm = new AesCcm(testCase.Key))
