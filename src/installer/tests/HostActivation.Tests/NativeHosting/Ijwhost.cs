@@ -19,10 +19,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [InlineData(true, false)]
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        public void LoadLibrary(bool no_runtimeconfig, bool load_isolated)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LoadLibrary(bool no_runtimeconfig)
         {
             // make a copy of a portion of the shared state because we will modify it
             using (var app = sharedState.IjwApp.Copy())
@@ -32,13 +31,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     app.AppDll,
                     "NativeEntryPoint"
                 };
-
-                if (load_isolated)
-                {
-                    RuntimeConfig.FromFile(app.RuntimeConfigJson)
-                    .WithProperty("System.Runtime.InteropServices.IJWHost.LoadComponentInIsolatedContext", "true")
-                    .Save();
-                }
 
                 if (no_runtimeconfig)
                 {
@@ -55,21 +47,52 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 }
                 else
                 {
-                    if (load_isolated)  // Assembly should be loaded in an isolated context
-                    {
-                        result.Should().Pass()
-                            .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                            .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"IsolatedComponentLoadContext");
-                    }
-                    else
-                    {
-                        result.Should().Pass()  // Assembly should be loaded in the default context
-                            .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
-                            .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
-                    }
+                    result.Should().Pass()
+                        .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                        .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
                 }
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void LoadLibrary_ContextConfig(bool load_isolated)
+        {
+            // make a copy of a portion of the shared state because we will modify it
+            using (var app = sharedState.IjwApp.Copy())
+            {
+                string[] args = {
+                    "ijwhost",
+                    app.AppDll,
+                    "NativeEntryPoint"
+                };
+
+                if (load_isolated)
+                {
+                    RuntimeConfig.FromFile(app.RuntimeConfigJson)
+                    .WithProperty("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext", "true")
+                    .Save();
+                }
+
+                CommandResult result = sharedState.CreateNativeHostCommand(args, TestContext.BuiltDotNet.BinPath)
+                    .Execute();
+
+                if (load_isolated)  // Assembly should be loaded in an isolated context
+                {
+                    result.Should().Pass()
+                        .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                        .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"IsolatedComponentLoadContext");
+                }
+                else  // Assembly should be loaded in the default context
+                {
+                    result.Should().Pass()
+                        .And.HaveStdOutContaining("[C++/CLI] NativeEntryPoint: calling managed class")
+                        .And.HaveStdOutContaining("[C++/CLI] ManagedClass: AssemblyLoadContext = \"Default\" System.Runtime.Loader.DefaultAssemblyLoadContext");
+                }
+            }
+        }
+
 
         [Fact]
         public void LoadLibraryWithoutRuntimeConfigButActiveRuntime()

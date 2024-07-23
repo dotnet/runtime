@@ -45,7 +45,7 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
             *load_context = nullptr;   // default load context
             auto get_runtime_property_value = reinterpret_cast<hostfxr_get_runtime_property_value_fn>(pal::get_symbol(fxr, "hostfxr_get_runtime_property_value"));
             const pal::char_t* value;
-            if (get_runtime_property_value(context, _X("System.Runtime.InteropServices.IJWHost.LoadComponentInIsolatedContext"), &value) == StatusCode::Success
+            if (get_runtime_property_value(context, _X("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext"), &value) == StatusCode::Success
                 && pal::strcasecmp(value, _X("true")) == 0)
             {
                 *load_context = ISOLATED_CONTEXT; // Isolated load context
