@@ -182,7 +182,6 @@ struct _InterpCallInfo {
 };
 
 typedef enum {
-	RELOC_SHORT_BRANCH,
 	RELOC_LONG_BRANCH,
 	RELOC_SWITCH
 } RelocType;

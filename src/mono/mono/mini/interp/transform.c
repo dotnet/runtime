@@ -1424,15 +1424,6 @@ interp_dump_ins_data (InterpInst *ins, gint32 ins_offset, const guint16 *data, i
 		g_string_append_printf (str, " %g", * (double *)&tmp);
 		break;
 	}
-	case MintOpShortBranch:
-		if (ins) {
-			/* the target IL is already embedded in the instruction */
-			g_string_append_printf (str, " BB%d", ins->info.target_bb->index);
-		} else {
-			target = ins_offset + *(gint16*)data;
-			g_string_append_printf (str, " IR_%04x", target);
-		}
-		break;
 	case MintOpBranch:
 		if (ins) {
 			g_string_append_printf (str, " BB%d", ins->info.target_bb->index);
@@ -8661,10 +8652,6 @@ handle_relocations (TransformData *td)
 		int offset = reloc->target_bb->native_offset - reloc->offset;
 
 		switch (reloc->type) {
-		case RELOC_SHORT_BRANCH:
-			g_assert (td->new_code [reloc->offset + reloc->skip + 1] == 0xdead);
-			td->new_code [reloc->offset + reloc->skip + 1] = GINT_TO_UINT16 (offset);
-			break;
 		case RELOC_LONG_BRANCH: {
 			guint16 *v = (guint16 *)&offset;
 			g_assert (td->new_code [reloc->offset + reloc->skip + 1] == 0xdead);
@@ -8788,42 +8775,6 @@ interp_compute_native_offset_estimates (TransformData *td)
 		td->param_area_offset = td->total_locals_size;
 	}
 	return noe;
-}
-
-gboolean
-interp_is_short_offset (int src_offset, int dest_offset)
-{
-	int diff = dest_offset - src_offset;
-	if (diff >= G_MININT16 && diff <= G_MAXINT16)
-		return TRUE;
-	return FALSE;
-}
-
-static int
-get_short_brop (int opcode)
-{
-	if (MINT_IS_UNCONDITIONAL_BRANCH (opcode)) {
-		if (opcode == MINT_BR)
-			return MINT_BR_S;
-		else if (opcode == MINT_LEAVE_CHECK)
-			return MINT_LEAVE_S_CHECK;
-		else if (opcode == MINT_CALL_HANDLER)
-			return MINT_CALL_HANDLER_S;
-		else
-			return opcode;
-	}
-
-	if (opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_I8)
-		return opcode + MINT_BRFALSE_I4_S - MINT_BRFALSE_I4;
-
-	if (opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8)
-		return opcode + MINT_BEQ_I4_S - MINT_BEQ_I4;
-
-	if (MINT_IS_SUPER_BRANCH (opcode))
-		g_assert_not_reached ();
-
-	// Already short branch
-	return opcode;
 }
 
 static void
@@ -8981,37 +8932,20 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 
 		if (ins->info.target_bb->native_offset >= 0) {
 			int offset = ins->info.target_bb->native_offset - br_offset;
-			// Backwards branch. We can already patch it. Branch super ins are always long offset
-			if (!MINT_IS_SUPER_BRANCH (opcode) &&
-					interp_is_short_offset (br_offset, ins->info.target_bb->native_offset)) {
-				// Replace the long opcode we added at the start
-				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
-				*ip++ = GINT_TO_UINT16 (ins->info.target_bb->native_offset - br_offset);
-			} else {
-				WRITE32 (ip, &offset);
-			}
+			WRITE32 (ip, &offset);
 		} else if (opcode == MINT_BR && ins->info.target_bb == td->cbb->next_bb) {
 			// Ignore branch to the next basic block. Revert the added MINT_BR.
 			ip--;
 		} else {
-			// If the estimate offset is short, then surely the real offset is short
-			// otherwise we conservatively have to use long branch opcodes
-			int cur_estimation_error = td->cbb->native_offset_estimate - td->cbb->native_offset;
-			int target_bb_estimated_offset = ins->info.target_bb->native_offset_estimate - cur_estimation_error;
-			gboolean is_short = !MINT_IS_SUPER_BRANCH (opcode) && interp_is_short_offset (br_offset, target_bb_estimated_offset);
-			if (is_short)
-				*start_ip = GINT_TO_OPCODE (get_short_brop (opcode));
-
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
-			reloc->type = is_short ? RELOC_SHORT_BRANCH : RELOC_LONG_BRANCH;
+			reloc->type = RELOC_LONG_BRANCH;
 			reloc->skip = mono_interp_op_sregs [opcode] + has_imm;
 			reloc->offset = br_offset;
 			reloc->target_bb = ins->info.target_bb;
 			g_ptr_array_add (td->relocs, reloc);
 			*ip++ = 0xdead;
-			if (!is_short)
-				*ip++ = 0xbeef;
+			*ip++ = 0xbeef;
 		}
 		if (opcode == MINT_CALL_HANDLER)
 			*ip++ = ins->data [2];
