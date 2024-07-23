@@ -4836,6 +4836,42 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     return false;
 }
 
+static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeStoreInd* store, bool* allowReversal)
+{
+    GenTree* addr  = store->Addr();
+    GenTree* data  = store->Data();
+    *allowReversal = true;
+
+    if (addr->IsInvariant())
+    {
+        *allowReversal = false;
+        store->SetReverseOp();
+        return;
+    }
+
+    if ((addr->gtFlags & GTF_ALL_EFFECT) != 0)
+    {
+        return;
+    }
+
+    // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
+    if (comp->gtMayHaveStoreInterference(data, addr))
+    {
+        // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
+        *allowReversal = false;
+        return;
+    }
+
+    // If op2 is simple then evaluate op1 first
+    if (data->OperIsLeaf())
+    {
+        return;
+    }
+
+    *allowReversal = false;
+    store->SetReverseOp();
+}
+
 /*****************************************************************************
  *
  *  Given a tree, figure out the order in which its sub-operands should be
@@ -5856,33 +5892,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-ASG-Cleanup: this logic emulated the ASG case below. See how of much of it can be deleted.
                 if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
                 {
-                    if (op1->IsInvariant())
-                    {
-                        allowReversal = false;
-                        tree->SetReverseOp();
-                        break;
-                    }
-                    if ((op1->gtFlags & GTF_ALL_EFFECT) != 0)
-                    {
-                        break;
-                    }
-
-                    // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                    if (gtMayHaveStoreInterference(op2, op1))
-                    {
-                        // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
-                        allowReversal = false;
-                        break;
-                    }
-
-                    // If op2 is simple then evaluate op1 first
-                    if (op2->OperIsLeaf())
-                    {
-                        break;
-                    }
-
-                    allowReversal = false;
-                    tree->SetReverseOp();
+                    SetIndirectStoreEvalOrder(this, tree->AsStoreInd(), &allowReversal);
                 }
                 break;
 
@@ -6271,14 +6281,15 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
         // Check for a nilary operator
         if (op1 == nullptr)
         {
+            // E.g. void GT_RETURN, GT_RETFIT
             assert(op2 == nullptr);
-            return level;
+            return 0;
         }
 
         if (op2 == nullptr)
         {
             gtSetEvalOrderMinOpts(op1);
-            return level;
+            return 1;
         }
 
         level             = gtSetEvalOrderMinOpts(op1);
@@ -6299,36 +6310,8 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
 
             case GT_STORE_BLK:
             case GT_STOREIND:
-            {
-                if (op1->IsInvariant())
-                {
-                    allowSwap = false;
-                    tree->SetReverseOp();
-                    break;
-                }
-                if ((op1->gtFlags & GTF_ALL_EFFECT) != 0)
-                {
-                    break;
-                }
-
-                // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                if (gtMayHaveStoreInterference(op2, op1))
-                {
-                    // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
-                    allowSwap = false;
-                    break;
-                }
-
-                // If op2 is simple then evaluate op1 first
-                if (op2->OperIsLeaf())
-                {
-                    break;
-                }
-
-                allowSwap = false;
-                tree->SetReverseOp();
+                SetIndirectStoreEvalOrder(this, tree->AsStoreInd(), &allowSwap);
                 break;
-            }
 
             default:
                 break;
