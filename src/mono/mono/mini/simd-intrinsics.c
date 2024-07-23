@@ -2706,6 +2706,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (COMPILE_LLVM (cfg)) {
 			if ((get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 0) == 0x300000002) &&
 				(get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 1) == 0x100000000)) {
+				etype = m_class_get_byval_arg (mono_defaults.uint64_class);
+				klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
 				new_args [1] = args [0];
 				EMIT_NEW_ICONST (cfg, new_args [2], 1);
 				MonoInst* ins = emit_simd_ins (cfg, klass, OP_ARM64_EXT, new_args [0]->dreg, new_args [1]->dreg);
@@ -2732,6 +2734,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				}
 			}
 		}
+		etype = m_class_get_byval_arg (mono_defaults.byte_class);
+		klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
 		new_args [1] = emit_xconst_v128 (cfg, klass, vec_cns);
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, new_args);
 #elif defined(TARGET_AMD64)
@@ -2789,6 +2793,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) {
 					return NULL;
 				}
+				etype = m_class_get_byval_arg (mono_defaults.byte_class);
+				klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
 				new_args [1] = emit_xconst_v128 (cfg, klass, vec_cns);
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, new_args);
 			}
@@ -2798,6 +2804,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				// down into a TYP_INT or TYP_UINT based shuffle, but that's additional complexity for no
 				// real benefit since shuffle gets its own port rather than using the fp specific ports.
 				arg0_type = MONO_TYPE_R8;
+				etype = m_class_get_byval_arg (mono_defaults.double_class);
+				klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
 			}
 			if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8)) {
 				int opcode = (arg0_type == MONO_TYPE_R4) ? OP_SSE_SHUFPS : OP_SSE2_SHUFPD;
