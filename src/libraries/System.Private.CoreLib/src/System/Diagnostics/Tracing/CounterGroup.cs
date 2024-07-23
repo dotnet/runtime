@@ -46,8 +46,9 @@ namespace System.Diagnostics.Tracing
 
         private void OnEventSourceCommand(object? sender, EventCommandEventArgs e)
         {
-            // Should only be enable or disable
-            Debug.Assert(e.Command == EventCommand.Enable || e.Command == EventCommand.Disable);
+            // Should only be enable or disable, but during EventSource initialization, update may be seen as this callback
+            // is invoked on all m_deferredCommands while processing them synchronously through EventSource.DoCommand.
+            Debug.Assert(e.Command == EventCommand.Enable || e.Command == EventCommand.Disable || e.Command == EventCommand.Update);
 
             lock (s_counterGroupLock)      // Lock the CounterGroup
             {
@@ -73,9 +74,8 @@ namespace System.Diagnostics.Tracing
                         EnableTimer(intervalValue);
                     }
                 }
-                else
+                else if (e.Command == EventCommand.Disable)
                 {
-                    Debug.Assert(e.Command == EventCommand.Disable);
                     // Since we allow sessions to send multiple Enable commands to update the interval, we cannot
                     // rely on ref counting to determine when to enable and disable counters. You will get an arbitrary
                     // number of Enables and one Disable per session.
@@ -90,6 +90,12 @@ namespace System.Diagnostics.Tracing
                     {
                         DisableTimer();
                     }
+                }
+                else
+                {
+                    // Encountered EventCommand.Update while registering this callback on all deferred commands
+                    // during EventSource initialization before they are all processed.
+                    return;
                 }
 
                 Debug.Assert((s_counterGroupEnabledList == null && !_eventSource.IsEnabled())
