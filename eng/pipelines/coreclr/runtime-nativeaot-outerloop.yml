@@ -162,6 +162,7 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          helixQueueGroup: cet
           buildConfig: Checked
           platforms:
           - windows_x64
