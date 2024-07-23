@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime;
 using System.Threading;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,6 +17,9 @@ namespace System.Diagnostics.Metrics.Tests
         private const string GreaterThanOrEqualToZeroMessage = "Expected value to be greater than or equal to zero.";
 
         private static readonly string[] s_genNames = ["gen0", "gen1", "gen2", "loh", "poh"];
+
+        // On some platforms and AoT scenarios, the JIT may not be in use. Some assertions will consider zero as a valid in such cases.
+        private static bool s_jitHasRun = JitInfo.GetCompiledMethodCount() > 0;
 
         private static readonly Func<bool> s_forceGc = () =>
         {
@@ -69,7 +73,7 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.True(measurements.Count >= gensExpected, $"Expected to find at least one measurement for each generation ({gensExpected}) " +
                 $"but received {measurements.Count} measurements.");
 
-            foreach (Measurement<long> measurement in measurements.Where(m => m.Value >= 1))
+            foreach (Measurement<long> measurement in measurements)
             {
                 var tags = measurement.Tags.ToArray();
                 var tag = tags.SingleOrDefault(k => k.Key == "gc.heap.generation");
@@ -228,9 +232,9 @@ namespace System.Diagnostics.Metrics.Tests
             new object[] { "dotnet.gc.heap.total_allocated", s_longGreaterThanZero, null },
             new object[] { "dotnet.gc.last_collection.memory.committed_size", s_longGreaterThanZero, s_forceGc },
             new object[] { "dotnet.gc.pause.time", s_doubleGreaterThanOrEqualToZero, s_forceGc }, // may be zero if no GC has occurred
-            new object[] { "dotnet.jit.compiled_il.size", s_longGreaterThanZero, null },
-            new object[] { "dotnet.jit.compiled_methods", s_longGreaterThanZero, null },
-            new object[] { "dotnet.jit.compilation.time", s_doubleGreaterThanZero, null },
+            new object[] { "dotnet.jit.compiled_il.size", s_jitHasRun ? s_longGreaterThanZero : s_longGreaterThanOrEqualToZero, null },
+            new object[] { "dotnet.jit.compiled_methods", s_jitHasRun ? s_longGreaterThanZero : s_longGreaterThanOrEqualToZero, null },
+            new object[] { "dotnet.jit.compilation.time", s_jitHasRun ? s_longGreaterThanZero : s_longGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.monitor.lock_contentions", s_longGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.thread_pool.thread.count", s_longGreaterThanZero, null },
             new object[] { "dotnet.thread_pool.work_item.count", s_longGreaterThanOrEqualToZero, null },
