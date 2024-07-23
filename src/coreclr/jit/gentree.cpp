@@ -6231,10 +6231,15 @@ DONE:
 unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
 {
     assert(tree);
+    if (fgOrder == FGOrderLinear)
+    {
+        // We don't re-order operands in LIR anyway.
+        return 0;
+    }
 
     if (tree->OperIsLeaf())
     {
-        // Nothing to do for leaves.
+        // Nothing to do for leaves, report as having Sethi 'complexity' of 0
         return 0;
     }
 
@@ -6244,8 +6249,8 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
         GenTree* op1 = tree->AsOp()->gtOp1;
         GenTree* op2 = tree->gtGetOp2IfPresent();
 
-        // Check for addressing mode with a null base
-        if (tree->OperIsAddrMode() && (op1 == nullptr))
+        // Only GT_LEA may have a nullptr op1 and a non-nullptr op2
+        if (tree->OperIs(GT_LEA) && (op1 == nullptr))
         {
             std::swap(op1, op2);
         }
@@ -6263,12 +6268,11 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
             return level;
         }
 
-        // Default Binary ops have a cost of 1,1
-        level         = gtSetEvalOrderMinOpts(op1);
-        unsigned lvl2 = gtSetEvalOrderMinOpts(op2);
+        level             = gtSetEvalOrderMinOpts(op1);
+        unsigned levelOp2 = gtSetEvalOrderMinOpts(op2);
 
-        bool allowReversal = true;
-        // for certain operators.
+        bool allowSwap = true;
+        // TODO: Introduce a function to check whether we can swap the order of its operands or not.
         switch (tree->OperGet())
         {
             case GT_COMMA:
@@ -6277,7 +6281,7 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
             case GT_QMARK:
             case GT_COLON:
                 // We're not going to swap operands in these
-                allowReversal = false;
+                allowSwap = false;
                 break;
 
             case GT_STORE_BLK:
@@ -6285,7 +6289,7 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
             {
                 if (op1->IsInvariant())
                 {
-                    allowReversal = false;
+                    allowSwap = false;
                     tree->SetReverseOp();
                     break;
                 }
@@ -6298,7 +6302,7 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
                 if (gtMayHaveStoreInterference(op2, op1))
                 {
                     // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
-                    allowReversal = false;
+                    allowSwap = false;
                     break;
                 }
 
@@ -6308,7 +6312,7 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
                     break;
                 }
 
-                allowReversal = false;
+                allowSwap = false;
                 tree->SetReverseOp();
                 break;
             }
@@ -6317,16 +6321,11 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
                 break;
         }
 
-        bool tryToSwap = false;
-        if (fgOrder != FGOrderLinear)
-        {
-            tryToSwap = tree->IsReverseOp() ? level > lvl2 : level < lvl2;
-        }
-
-        if (tryToSwap && allowReversal)
+        const bool shouldSwap = tree->IsReverseOp() ? level > levelOp2 : level < levelOp2;
+        if (shouldSwap && allowSwap)
         {
             // Can we swap the order by commuting the operands?
-            bool canSwap = tree->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
+            const bool canSwap = tree->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
             if (canSwap)
             {
                 if (tree->OperIsCmpCompare())
@@ -6353,15 +6352,15 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
         // Swap the level counts
         if (tree->IsReverseOp())
         {
-            std::swap(level, lvl2);
+            std::swap(level, levelOp2);
         }
 
         // Compute the sethi number for this binary operator
         if (level < 1)
         {
-            level = lvl2;
+            level = levelOp2;
         }
-        else if (level == lvl2)
+        else if (level == levelOp2)
         {
             level++;
         }
@@ -6376,6 +6375,10 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
         }
         level = 3;
     }
+
+    // NOTE: we skip many operators here (e.g. GT_HWINTRINSIC)
+    // in order to maintain a good trade-off between CQ and TP.
+
     return level;
 }
 
@@ -30428,10 +30431,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(tree->OperIsHWIntrinsic());
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
