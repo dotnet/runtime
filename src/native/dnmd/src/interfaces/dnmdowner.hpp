@@ -19,6 +19,8 @@ struct IDNMDOwner : IUnknown
     virtual mdhandle_t MetaData() = 0;
 };
 
+class DNMDOwner;
+
 // We use a reference wrapper around the handle to allow the handle to be swapped out.
 // We plan to use swapping to implement table sorting as DNMD itself does not support
 // sorting tables or remapping tokens.
@@ -27,9 +29,9 @@ struct IDNMDOwner : IUnknown
 class mdhandle_view final
 {
 private:
-    IDNMDOwner* _owner;
+    DNMDOwner* _owner;
 public:
-    explicit mdhandle_view(IDNMDOwner* owner)
+    explicit mdhandle_view(DNMDOwner* owner)
         : _owner{ owner }
     {
     }
@@ -42,10 +44,7 @@ public:
 
     mdhandle_view& operator=(mdhandle_view&& other) = default;
 
-    mdhandle_t get() const
-    {
-        return _owner->MetaData();
-    }
+    mdhandle_t get() const;
 
     bool operator==(std::nullptr_t) const
     {
@@ -109,5 +108,10 @@ public: // IDNMDOwner
         return _handle.get();
     }
 };
+
+inline mdhandle_t mdhandle_view::get() const
+{
+    return _owner->MetaData();
+}
 
 #endif // !_SRC_INTERFACES_DNMDOWNER_HPP_

@@ -11,19 +11,54 @@
 #include "controllingiunknown.hpp"
 #include "metadataimportro.hpp"
 #include "metadataemit.hpp"
+#include "threadsafe.hpp"
 
 #include <cstring>
 
 namespace
 {
-    class MDDispenserStateless final : IMetaDataDispenser
+    class MDDispenser final : public TearOffBase<IMetaDataDispenserEx>
     {
+        bool _threadSafe;
+    private:
+        dncp::com_ptr<ControllingIUnknown> CreateExposedObject(dncp::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner)
+        {
+            mdhandle_view handle_view{ owner };
+            MetadataEmit* emit = unknown->CreateAndAddTearOff<MetadataEmit>(handle_view);
+            MetadataImportRO* import = unknown->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
+            if (!_threadSafe)
+            {
+                return unknown;
+            }
+            dncp::com_ptr<ControllingIUnknown> threadSafeUnknown;
+            threadSafeUnknown.Attach(new ControllingIUnknown());
+            
+            // Define an IDNMDOwner* tear-off here so the thread-safe object can be identified as a DNMD object.
+            (void)threadSafeUnknown->CreateAndAddTearOff<DelegatingDNMDOwner>(handle_view);
+            (void)threadSafeUnknown->CreateAndAddTearOff<ThreadSafeImportEmit<MetadataImportRO, MetadataEmit>>(std::move(unknown), import, emit);
+            // ThreadSafeImportEmit took ownership of owner through unknown.
+            return threadSafeUnknown;
+        }
+
+    protected:
+        virtual bool TryGetInterfaceOnThis(REFIID riid, void** ppvObject) override
+        {
+            if (riid == IID_IMetaDataDispenserEx || riid == IID_IMetaDataDispenser)
+            {
+                *ppvObject = static_cast<IMetaDataDispenserEx*>(this);
+                return true;
+            }
+            return false;
+        }
+
     public: // IMetaDataDispenser
+        using TearOffBase<IMetaDataDispenserEx>::TearOffBase;
+
         STDMETHOD(DefineScope)(
             REFCLSID    rclsid,
             DWORD       dwCreateFlags,
             REFIID      riid,
-            IUnknown** ppIUnk)
+            IUnknown** ppIUnk) override
         {
             if (rclsid != CLSID_CLR_v2_MetaData)
             {
@@ -60,23 +95,20 @@ namespace
 
             try
             {
-                mdhandle_view handle_view{ obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr)) };
-                (void)obj->CreateAndAddTearOff<MetadataEmit>(handle_view);
-                (void)obj->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
+                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr));
+                return CreateExposedObject(std::move(obj), owner)->QueryInterface(riid, (void**)ppIUnk);
             }
             catch(std::bad_alloc const&)
             {
                 return E_OUTOFMEMORY;
             }
-
-            return obj->QueryInterface(riid, (void**)ppIUnk);
         }
 
         STDMETHOD(OpenScope)(
             LPCWSTR     szScope,
             DWORD       dwOpenFlags,
             REFIID      riid,
-            IUnknown** ppIUnk)
+            IUnknown** ppIUnk) override
         {
             UNREFERENCED_PARAMETER(szScope);
             UNREFERENCED_PARAMETER(dwOpenFlags);
@@ -90,7 +122,7 @@ namespace
             ULONG       cbData,
             DWORD       dwOpenFlags,
             REFIID      riid,
-            IUnknown** ppIUnk)
+            IUnknown** ppIUnk) override
         {
             if (ppIUnk == nullptr)
                 return E_INVALIDARG;
@@ -123,62 +155,117 @@ namespace
 
             try
             {
-                mdhandle_view handle_view{ obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr), std::move(copiedMem), std::move(nowOwned)) };
-                
-                if (!(dwOpenFlags & ofReadOnly))
-                    (void)obj->CreateAndAddTearOff<MetadataEmit>(handle_view);
+                DNMDOwner* owner = obj->CreateAndAddTearOff<DNMDOwner>(std::move(md_ptr), std::move(copiedMem), std::move(nowOwned));
+                mdhandle_view handle_view{ owner };
 
-                (void)obj->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
+                if (dwOpenFlags & ofReadOnly)
+                {
+                    // If we're read-only, then we don't need to deal with thread safety.
+                    (void)obj->CreateAndAddTearOff<MetadataImportRO>(std::move(handle_view));
+                    return obj->QueryInterface(riid, (void**)ppIUnk);
+                }
+                
+                // If we're read-write, go through our helper to create an object that respects all of the options
+                // (as the various options affect writing operations only).
+                return CreateExposedObject(std::move(obj), owner)->QueryInterface(riid, (void**)ppIUnk);
             }
             catch(std::bad_alloc const&)
             {
                 return E_OUTOFMEMORY;
             }
-
-            return obj->QueryInterface(riid, (void**)ppIUnk);
         }
 
-    public: // IUnknown
-        virtual HRESULT STDMETHODCALLTYPE QueryInterface(
-            /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+        public: // IMetaDataDispenserEx
+            STDMETHOD(SetOption)(
+            REFGUID     optionid,
+            VARIANT const *value) override
         {
-            if (ppvObject == nullptr)
-                return E_POINTER;
-
-            if (riid == IID_IUnknown)
+            if (optionid == MetaDataThreadSafetyOptions)
             {
-                *ppvObject = static_cast<IUnknown*>(this);
+                _threadSafe = V_UI4(value) == CorThreadSafetyOptions::MDThreadSafetyOn;
+                return S_OK;
             }
-            else if (riid == IID_IMetaDataDispenser)
-            {
-                *ppvObject = static_cast<IMetaDataDispenser*>(this);
-            }
-            else
-            {
-                *ppvObject = nullptr;
-                return E_NOINTERFACE;
-            }
-
-            (void)AddRef();
-            return S_OK;
+            return E_INVALIDARG;
         }
 
-        virtual ULONG STDMETHODCALLTYPE AddRef(void)
+        STDMETHOD(GetOption)(
+            REFGUID     optionid,
+            VARIANT *pvalue) override
         {
-            return 1;
+            if (optionid == MetaDataThreadSafetyOptions)
+            {
+                V_UI4(pvalue) = _threadSafe ? CorThreadSafetyOptions::MDThreadSafetyOn : CorThreadSafetyOptions::MDThreadSafetyOff;
+                return S_OK;
+            }
+            return E_INVALIDARG;
         }
 
-        virtual ULONG STDMETHODCALLTYPE Release(void)
+        STDMETHOD(OpenScopeOnITypeInfo)(
+            ITypeInfo   *pITI,
+            DWORD       dwOpenFlags,
+            REFIID      riid,
+            IUnknown    **ppIUnk) override
         {
-            return 1;
+            UNREFERENCED_PARAMETER(pITI);
+            UNREFERENCED_PARAMETER(dwOpenFlags);
+            UNREFERENCED_PARAMETER(riid);
+            UNREFERENCED_PARAMETER(ppIUnk);
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(GetCORSystemDirectory)(
+        _Out_writes_to_opt_(cchBuffer, *pchBuffer)
+            LPWSTR      szBuffer,
+            DWORD       cchBuffer,
+            DWORD*      pchBuffer) override
+        {
+            UNREFERENCED_PARAMETER(szBuffer);
+            UNREFERENCED_PARAMETER(cchBuffer);
+            UNREFERENCED_PARAMETER(pchBuffer);
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(FindAssembly)(
+            LPCWSTR  szAppBase,
+            LPCWSTR  szPrivateBin,
+            LPCWSTR  szGlobalBin,
+            LPCWSTR  szAssemblyName,
+            LPCWSTR  szName,
+            ULONG    cchName,
+            ULONG    *pcName) override
+        {
+            UNREFERENCED_PARAMETER(szAppBase);
+            UNREFERENCED_PARAMETER(szPrivateBin);
+            UNREFERENCED_PARAMETER(szGlobalBin);
+            UNREFERENCED_PARAMETER(szAssemblyName);
+            UNREFERENCED_PARAMETER(szName);
+            UNREFERENCED_PARAMETER(cchName);
+            UNREFERENCED_PARAMETER(pcName);
+            return E_NOTIMPL;
+        }
+
+        STDMETHOD(FindAssemblyModule)(
+            LPCWSTR  szAppBase,
+            LPCWSTR  szPrivateBin,
+            LPCWSTR  szGlobalBin,
+            LPCWSTR  szAssemblyName,
+            LPCWSTR  szModuleName,
+        _Out_writes_to_opt_(cchName, *pcName)
+            LPWSTR   szName,
+            ULONG    cchName,
+            ULONG    *pcName) override
+        {
+            UNREFERENCED_PARAMETER(szAppBase);
+            UNREFERENCED_PARAMETER(szPrivateBin);
+            UNREFERENCED_PARAMETER(szGlobalBin);
+            UNREFERENCED_PARAMETER(szAssemblyName);
+            UNREFERENCED_PARAMETER(szModuleName);
+            UNREFERENCED_PARAMETER(szName);
+            UNREFERENCED_PARAMETER(cchName);
+            UNREFERENCED_PARAMETER(pcName);
+            return E_NOTIMPL;
         }
     };
-
-    // The only available dispenser is stateless and
-    // statically allocated. There is no lifetime management
-    // needed.
-    MDDispenserStateless g_dispenser;
 }
 
 extern "C" DNMD_EXPORT
@@ -186,11 +273,24 @@ HRESULT GetDispenser(
     REFGUID riid,
     void** ppObj)
 {
-    if (riid != IID_IMetaDataDispenser)
+    if (riid != IID_IMetaDataDispenser
+        && riid != IID_IMetaDataDispenserEx)
+    {
         return E_INVALIDARG;
+    }
 
     if (ppObj == nullptr)
         return E_INVALIDARG;
 
-    return g_dispenser.QueryInterface(riid, (void**)ppObj);
+    try
+    {
+        dncp::com_ptr<ControllingIUnknown> obj;
+        obj.Attach(new ControllingIUnknown());
+        (void)obj->CreateAndAddTearOff<MDDispenser>();
+        return obj->QueryInterface(riid, (void**)ppObj);
+    }
+    catch(std::bad_alloc const&)
+    {
+        return E_OUTOFMEMORY;
+    }
 }
