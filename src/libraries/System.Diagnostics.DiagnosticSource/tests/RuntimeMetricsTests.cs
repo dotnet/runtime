@@ -224,7 +224,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        public static IEnumerable<object[]> LongMeasurements => new List<object[]>
+        public static IEnumerable<object[]> Measurements => new List<object[]>
         {
             new object[] { "dotnet.process.memory.working_set", s_longGreaterThanZero, null },
             new object[] { "dotnet.assembly.count", s_longGreaterThanZero, null },
@@ -234,7 +234,7 @@ namespace System.Diagnostics.Metrics.Tests
             new object[] { "dotnet.gc.pause.time", s_doubleGreaterThanOrEqualToZero, s_forceGc }, // may be zero if no GC has occurred
             new object[] { "dotnet.jit.compiled_il.size", s_jitHasRun ? s_longGreaterThanZero : s_longGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.jit.compiled_methods", s_jitHasRun ? s_longGreaterThanZero : s_longGreaterThanOrEqualToZero, null },
-            new object[] { "dotnet.jit.compilation.time", s_jitHasRun ? s_longGreaterThanZero : s_longGreaterThanOrEqualToZero, null },
+            new object[] { "dotnet.jit.compilation.time", s_jitHasRun ? s_doubleGreaterThanZero : s_doubleGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.monitor.lock_contentions", s_longGreaterThanOrEqualToZero, null },
             new object[] { "dotnet.thread_pool.thread.count", s_longGreaterThanZero, null },
             new object[] { "dotnet.thread_pool.work_item.count", s_longGreaterThanOrEqualToZero, null },
@@ -243,7 +243,7 @@ namespace System.Diagnostics.Metrics.Tests
         };
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        [MemberData(nameof(LongMeasurements))]
+        [MemberData(nameof(Measurements))]
         public void ValidateMeasurements<T>(string metricName, Func<T, (bool, string?)>? valueAssertion, Func<bool>? beforeRecord)
             where T : struct
         {
