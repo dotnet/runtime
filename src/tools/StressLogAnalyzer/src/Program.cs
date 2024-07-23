@@ -420,7 +420,7 @@ public static class Program
 
             Console.Write("Number of messages processed: ");
             PrintFriendlyNumber(numProcessed);
-            Console.Write(", examined: ");
+            Console.Write(", printed: ");
             PrintFriendlyNumber(numPrinted);
             Console.WriteLine();
         }

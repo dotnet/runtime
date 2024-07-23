@@ -26,13 +26,13 @@ internal sealed class StressLogAnalyzer(
 {
     public async Task<(ulong messagesProcessed, ulong messagesPrinted)> AnalyzeLogsAsync(TargetPointer logsPointer, TimeTracker timeTracker, GCThreadMap gcThreadMap, IStressMessageOutput messageOutput, CancellationToken token)
     {
-        ThreadLocal<IStressLog> stressLogContract = new(() => stressLogContractFactory());
-        IEnumerable<ThreadStressLogData> logs = [.. stressLogContract.Value!.GetThreadStressLogs(logsPointer)];
+        IStressLog outerLogContract = stressLogContractFactory();
+        IEnumerable<ThreadStressLogData> logs = [.. outerLogContract.GetThreadStressLogs(logsPointer)];
 
         // The "end" timestamp is the timestamp of the most recent message.
         timeTracker.SetEndTimestamp(
             logs.Select(
-                log => stressLogContract.Value.GetStressMessages(log).FirstOrDefault().Timestamp)
+                log => outerLogContract.GetStressMessages(log).FirstOrDefault().Timestamp)
             .Max());
 
         if (!threadFilter.HasAnyGCThreadFilter)
@@ -44,84 +44,94 @@ internal sealed class StressLogAnalyzer(
         }
 
         ConcurrentBag<(ThreadStressLogData thread, StressMsgData message)> earliestMessages = [];
-        ConcurrentBag<(ThreadStressLogData thread, StressMsgData message, ulong numMessageOnThread)> allMessages = [];
+        ConcurrentBag<(ThreadStressLogData thread, StressMsgData message, int numMessageOnThread)> allMessages = [];
 
-        ThreadLocal<ulong> numMessagesProcessed = new(() => 0, trackAllValues: true);
+        using ThreadLocal<ulong> numMessagesProcessed = new(() => 0, trackAllValues: true);
 
-        var parallelOptions = new ParallelOptions { CancellationToken = token, MaxDegreeOfParallelism = Debugger.IsAttached ? 1 : Environment.ProcessorCount };
+        var parallelOptions = new ParallelOptions { CancellationToken = token, MaxDegreeOfParallelism = /*Debugger.IsAttached ? 1 : */Environment.ProcessorCount };
 
-        await Parallel.ForEachAsync(logs, parallelOptions, (log, ct) =>
+        using (ThreadLocal<IStressLog> stressLogContract = new(() => stressLogContractFactory()))
         {
-            ulong numMessageOnThread = 0;
-            // Stress logs are traversed from newest message to oldest, so the last message we see is the earliest one.
-            StressMsgData? earliestMessage = null;
-            foreach (StressMsgData message in stressLogContract.Value.GetStressMessages(log))
+            await Parallel.ForEachAsync(logs, parallelOptions, (log, ct) =>
             {
-                numMessagesProcessed.Value++;
-                token.ThrowIfCancellationRequested();
-
-                earliestMessage = message;
-
-                TimeTracker.TimeQueryResult time = timeTracker.IsInTimeRange(message.Timestamp);
-
-                if (time == TimeTracker.TimeQueryResult.AfterRange)
+                // Stress logs are traversed from newest message to oldest, so the last message we see is the earliest one.
+                StressMsgData? earliestMessage = null;
+                List<StressMsgData> localMessages = [];
+                bool includeThreadMessages = true;
+                foreach (StressMsgData message in stressLogContract.Value!.GetStressMessages(log))
                 {
-                    // We still haven't reached the interesting time range.
-                    // Skip this message.
-                    continue;
-                }
-                else if (time == TimeTracker.TimeQueryResult.BeforeRange)
-                {
-                    // We've passed the interesting time range.
-                    // We can stop processing this thread.
-                    break;
-                }
-                // Otherwise, we're in the interesting time range.
+                    numMessagesProcessed.Value++;
+                    token.ThrowIfCancellationRequested();
 
-                if (messageFilter.IncludeMessage(message))
-                {
-                    allMessages.Add((log, message, numMessageOnThread++));
-                }
+                    earliestMessage = message;
 
-                if (stringFinder.IsWellKnown(message.FormatString, out WellKnownString wellKnown))
-                {
-                    gcThreadMap.ProcessInterestingMessage(log.ThreadId, wellKnown, message.Args);
-                    if (wellKnown == WellKnownString.GCSTART)
+                    TimeTracker.TimeQueryResult time = timeTracker.IsInTimeRange(message.Timestamp);
+
+                    if (time == TimeTracker.TimeQueryResult.AfterRange)
                     {
-                        timeTracker.RecordGCStart(message.Args[0], message.Timestamp);
+                        // We still haven't reached the interesting time range.
+                        // Skip this message.
+                        continue;
                     }
-                    else if (wellKnown == WellKnownString.GCEND)
+                    else if (time == TimeTracker.TimeQueryResult.BeforeRange)
                     {
-                        timeTracker.RecordGCEnd(message.Args[0], message.Timestamp);
+                        // We've passed the interesting time range.
+                        // We can stop processing this thread.
+                        break;
+                    }
+                    // Otherwise, we're in the interesting time range.
+
+                    if (messageFilter.IncludeMessage(message))
+                    {
+                        localMessages.Add(message);
+                    }
+
+                    if (stringFinder.IsWellKnown(message.FormatString, out WellKnownString wellKnown))
+                    {
+                        gcThreadMap.ProcessInterestingMessage(log.ThreadId, wellKnown, message.Args);
+                        if (wellKnown == WellKnownString.GCSTART)
+                        {
+                            timeTracker.RecordGCStart(message.Args[0], message.Timestamp);
+                        }
+                        else if (wellKnown == WellKnownString.GCEND)
+                        {
+                            timeTracker.RecordGCEnd(message.Args[0], message.Timestamp);
+                        }
+                    }
+
+                    if (threadFilter.HasAnyGCThreadFilter
+                        && gcThreadMap.ThreadHasHeap(log.ThreadId)
+                        && !gcThreadMap.IncludeThread(log.ThreadId, threadFilter))
+                    {
+                        // As soon as we know that this thread corresponds a GC heap that we don't want, we can skip processing
+                        // the rest of the messages on this thread log.
+                        // We also won't push these messages up for later processing.
+                        includeThreadMessages = false;
+                        break;
                     }
                 }
 
-                if (threadFilter.HasAnyGCThreadFilter
-                    && gcThreadMap.ThreadHasHeap(log.ThreadId)
-                    && !gcThreadMap.IncludeThread(log.ThreadId, threadFilter))
+                // If we didn't determine that this thread should be filtered, add the messages to the bag now.
+                if (includeThreadMessages)
                 {
-                    // As soon as we know that this thread corresponds a GC heap that we don't want, we can skip the rest of the messages.
-                    break;
+                    for (int i = 0; i < localMessages.Count; i++)
+                    {
+                        allMessages.Add((log, localMessages[i], i));
+                    }
                 }
-            }
 
-            // If we're recording the earliest messages for this thread, do so now.
-            if (earliestMessage is not null
-                && earliestMessageFilter is not null
-                && gcThreadMap.IncludeThread(log.ThreadId, earliestMessageFilter))
-            {
-                earliestMessages.Add((log, earliestMessage.Value));
-            }
-            return ValueTask.CompletedTask;
-        }).ConfigureAwait(false);
-
-        IEnumerable<(ThreadStressLogData thread, StressMsgData message, ulong numMessageOnThread)> messages = allMessages;
-
-        if (threadFilter.HasAnyGCThreadFilter)
-        {
-            // Re-filter out the messages we added before we knew a thread was a filtered-out GC thread
-            messages = messages.Where(message => gcThreadMap.IncludeThread(message.thread.ThreadId, threadFilter));
+                // If we're recording the earliest messages for this thread, do so now.
+                if (earliestMessage is not null
+                    && earliestMessageFilter is not null
+                    && gcThreadMap.IncludeThread(log.ThreadId, earliestMessageFilter))
+                {
+                    earliestMessages.Add((log, earliestMessage.Value));
+                }
+                return ValueTask.CompletedTask;
+            }).ConfigureAwait(false);
         }
+
+        IEnumerable<(ThreadStressLogData thread, StressMsgData message, int numMessageOnThread)> messages = allMessages;
 
         // Now that we know all GC times, we can filter out messages that aren't in interesting GC time ranges.
         messages = messages.Where(message => timeTracker.IsInInterestingGCTimeRange(message.message.Timestamp));
