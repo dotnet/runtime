@@ -98,6 +98,7 @@ static const Entry s_QCall[] =
     DllImportEntry(Environment_FailFast)
     DllImportEntry(Environment_GetProcessorCount)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)
+    DllImportEntry(ExceptionNative_GetMethodFromStackTrace)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
     DllImportEntry(QCall_FreeGCHandleForTypeHandle)

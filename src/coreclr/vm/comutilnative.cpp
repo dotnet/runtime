@@ -114,7 +114,7 @@ FCIMPL1(Object *, ExceptionNative::GetFrozenStackTrace, Object* pExceptionObject
     {
         gc.result = gc.stackTrace.Get();
     }
-    
+
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.result);
@@ -411,6 +411,46 @@ extern "C" void QCALLTYPE ExceptionNative_GetMessageFromNativeResources(Exceptio
     else {
         retMesg.Set(buffer);
     }
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectHandleOnStack stacktrace, QCall::ObjectHandleOnStack retMethodInfo)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    GCX_COOP();
+
+    MethodDesc* pMD = NULL;
+    // See ExceptionObject::GetStackTrace() and ExceptionObject::SetStackTrace()
+    // for details on the stacktrace array.
+    {
+        ARRAYBASEREF arrayBaseRef = (ARRAYBASEREF)stacktrace.Get();
+        _ASSERTE(arrayBaseRef != NULL);
+
+        // The stacktrace can be either sbyte[] or Object[]. In the latter case,
+        // the first entry is the actual stack trace sbyte[], the rest are pointers
+        // to the method info objects. We only care about the first entry here.
+        if (arrayBaseRef->GetArrayElementType() != ELEMENT_TYPE_I1)
+        {
+            _ASSERTE(arrayBaseRef->GetArrayElementType() == ELEMENT_TYPE_OBJECT);
+            PTRARRAYREF ptrArrayRef = (PTRARRAYREF)arrayBaseRef;
+            arrayBaseRef = (ARRAYBASEREF)OBJECTREFToObject(ptrArrayRef->GetAt(0));
+        }
+
+        I1ARRAYREF arrayRef = (I1ARRAYREF)arrayBaseRef;
+        StackTraceArray stackArray(arrayRef);
+        _ASSERTE(stackArray.Size() > 0);
+        pMD = stackArray[0].pFunc;
+    }
+
+    // The managed stack trace classes always return typical method definition,
+    // so we don't need to bother providing exact instantiation.
+    MethodDesc* pMDTypical = pMD->LoadTypicalMethodDefinition();
+    retMethodInfo.Set(pMDTypical->GetStubMethodInfo());
+    _ASSERTE(pMDTypical->IsRuntimeMethodHandle());
 
     END_QCALL;
 }
@@ -1784,7 +1824,7 @@ extern "C" BOOL QCALLTYPE TypeHandle_CanCastTo_NoCacheLookup(void* fromTypeHnd, 
 
     TypeHandle fromTH = TypeHandle::FromPtr(fromTypeHnd);
     TypeHandle toTH = TypeHandle::FromPtr(toTypeHnd);
-    
+
     if (fromTH.IsTypeDesc())
     {
         ret = fromTH.AsTypeDesc()->CanCastTo(toTH, NULL);

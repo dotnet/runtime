@@ -1164,6 +1164,12 @@ namespace System.Text.Json.Serialization
         public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
         public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, AllowMultiple=false)]
+    public partial class JsonStringEnumMemberNameAttribute : System.Attribute
+    {
+        public JsonStringEnumMemberNameAttribute(string name) { }
+        public string Name { get { throw null; } }
+    }
     public enum JsonUnknownDerivedTypeHandling
     {
         FailSerialization = 0,

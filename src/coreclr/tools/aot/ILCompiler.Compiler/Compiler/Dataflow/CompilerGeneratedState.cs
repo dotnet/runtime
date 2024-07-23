@@ -378,7 +378,7 @@ namespace ILCompiler.Dataflow
                                     }
                                     else
                                     {
-                                        Debug.Assert(false, "This should be impossible in valid code");
+                                        Debug.Fail("This should be impossible in valid code");
                                     }
                                 }
                             }

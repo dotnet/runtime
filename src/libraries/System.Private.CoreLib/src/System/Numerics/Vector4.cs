@@ -320,6 +320,10 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 CopySign(Vector4 value, Vector4 sign) => Vector128.CopySign(value.AsVector128(), sign.AsVector128()).AsVector4();
 
+        /// <inheritdoc cref="Vector128.Cos(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 Cos(Vector4 vector) => Vector128.Cos(vector.AsVector128()).AsVector4();
+
         /// <summary>Creates a new <see cref="Vector4" /> object whose four elements have the same value.</summary>
         /// <param name="value">The value to assign to all four elements.</param>
         /// <returns>A new <see cref="Vector4" /> whose four elements have the same value.</returns>
@@ -556,6 +560,18 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector128.Round(Vector128{float}, MidpointRounding)" />
         [Intrinsic]
         public static Vector4 Round(Vector4 vector, MidpointRounding mode) => Vector128.Round(vector.AsVector128(), mode).AsVector4();
+
+        /// <inheritdoc cref="Vector128.Sin(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector4 Sin(Vector4 vector) => Vector128.Sin(vector.AsVector128()).AsVector4();
+
+        /// <inheritdoc cref="Vector128.SinCos(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector4 Sin, Vector4 Cos) SinCos(Vector4 vector)
+        {
+            (Vector128<float> sin, Vector128<float> cos) = Vector128.SinCos(vector.AsVector128());
+            return (sin.AsVector4(), cos.AsVector4());
+        }
 
         /// <summary>Returns a vector whose elements are the square root of each of a specified vector's elements.</summary>
         /// <param name="value">A vector.</param>

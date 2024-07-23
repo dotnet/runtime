@@ -293,9 +293,15 @@ struct GenericsDictInfo
 
     // Number of type parameters (NOT including those of superclasses).
     WORD   m_wNumTyPars;
+    template<typename T> friend struct ::cdac_offsets;
 };  // struct GenericsDictInfo
 typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 
+template<>
+struct cdac_offsets<GenericsDictInfo>
+{
+    static constexpr size_t NumTypeArgs = offsetof(GenericsDictInfo, m_wNumTyPars);
+};
 
 // These various statics structures exist directly before the MethodTableAuxiliaryData
 
@@ -615,7 +621,7 @@ public:
                 // If it has, then we don't need to do anything
                 return false;
             }
-            
+
             if (isClassInitedByUpdatingStaticPointer)
             {
                 oldValFromInterlockedOp = InterlockedCompareExchangeT(pAddr, newVal, oldVal);
@@ -1671,11 +1677,13 @@ public:
     // Slots <-> the MethodDesc associated with the slot.
     //
 
+#ifndef DACCESS_COMPILE
     // Get the MethodDesc that implements a given slot
     // NOTE: Since this may fill in the slot with a temporary entrypoint if that hasn't happened
     //       yet, when writing asserts, GetMethodDescForSlot_NoThrow should be used to avoid
     //       the presence of an assert hiding bugs.
     MethodDesc* GetMethodDescForSlot(DWORD slot);
+#endif
 
     // This api produces the same result as GetMethodDescForSlot, but it uses a variation on the
     // algorithm that does not allocate a temporary entrypoint for the slot if it doesn't exist.
@@ -2433,8 +2441,6 @@ public:
     // exact result.
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
     bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
-
-    MethodDesc *GetIntroducingMethodDesc(DWORD slotNumber);
 
     // Determines whether all methods in the given interface have their final implementing
     // slot in a parent class. I.e. if this returns TRUE, it is trivial (no VSD lookup) to
@@ -3943,6 +3949,7 @@ template<> struct cdac_offsets<MethodTable>
     static constexpr size_t ParentMethodTable = offsetof(MethodTable, m_pParentMethodTable);
     static constexpr size_t NumInterfaces = offsetof(MethodTable, m_wNumInterfaces);
     static constexpr size_t NumVirtuals = offsetof(MethodTable, m_wNumVirtuals);
+    static constexpr size_t PerInstInfo = offsetof(MethodTable, m_pPerInstInfo);
 };
 
 #ifndef CROSSBITNESS_COMPILE
