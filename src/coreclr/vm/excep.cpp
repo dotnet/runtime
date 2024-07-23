@@ -7351,10 +7351,6 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
                     pFrame = pFrame->Next();
                 }
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRVectoredExceptionHandlerShim: stack");
-                while (count < 20 && sp < stopPoint)
-                {
-                    sp += 1;
-                }
             }
         }
 #endif // _DEBUG
