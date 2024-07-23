@@ -2397,7 +2397,7 @@ namespace System
 
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offsetIn, inArrayLength - length);
 
-            if (inArrayLength == 0)
+            if (length == 0)
                 return 0;
 
             // This is the maximally required length that must be available in the char array
@@ -2798,7 +2798,7 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(offset);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, inArray.Length - length);
 
-            if (inArray.Length == 0)
+            if (length == 0)
             {
                 return Array.Empty<byte>();
             }
