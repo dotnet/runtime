@@ -71,7 +71,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 if (load_isolated)
                 {
                     RuntimeConfig.FromFile(app.RuntimeConfigJson)
-                    .WithProperty("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext", "true")
+                    .WithProperty("System.Runtime.InteropServices.CppCLI.LoadComponentInIsolatedContext", load_isolated.ToString())
                     .Save();
                 }
 
