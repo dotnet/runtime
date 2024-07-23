@@ -614,7 +614,15 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_PHYSREG:
         {
             srcCount = 0;
-            BuildDef(tree, getSingleTypeRegMask(tree->AsPhysReg()->gtSrcReg, TYP_MASK));
+            if (varTypeIsMask(tree))
+            {
+                assert(tree->AsPhysReg()->gtSrcReg == REG_FFR);
+                BuildDef(tree, getSingleTypeRegMask(tree->AsPhysReg()->gtSrcReg, TYP_MASK));
+            }
+            else
+            {
+                BuildSimple(tree);
+            }
             break;
         }
         case GT_LCL_VAR:
