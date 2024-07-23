@@ -392,9 +392,8 @@ namespace ILLink.Shared.TrimAnalysis
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
                                 DynamicallyAccessedMemberTypes annotation = default;
-                                if (staticType is { IsSignatureVariable: true })
+                                if (staticType is GenericParameterDesc genericParam)
                                 {
-                                    var genericParam = (GenericParameterDesc)staticType.InstantiateSignature(_callingMethod.OwningType.Instantiation, _callingMethod.Instantiation);
                                     foreach (TypeDesc constraint in genericParam.TypeConstraints)
                                     {
                                         if (constraint.IsWellKnownType(Internal.TypeSystem.WellKnownType.Enum))

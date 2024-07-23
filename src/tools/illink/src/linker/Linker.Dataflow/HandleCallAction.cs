@@ -126,9 +126,7 @@ namespace ILLink.Shared.TrimAnalysis
 							if (staticType is GenericParameter genericParam && genericParam.HasConstraints) {
 								foreach (var constraint in genericParam.Constraints) {
 									if (constraint.ConstraintType.IsTypeOf ("System", "Enum"))
-									{
 										annotation = DynamicallyAccessedMemberTypes.PublicFields;
-									}
 								}
 							}
 
