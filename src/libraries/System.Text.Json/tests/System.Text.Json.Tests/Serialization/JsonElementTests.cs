@@ -224,8 +224,23 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(500)]
         public static void DeepEquals_DeepJsonDocument(int depth)
         {
+            using JsonDocument jDoc = CreateDeepJsonDocument(depth);
+            JsonElement element = jDoc.RootElement;
+            Assert.True(JsonElement.DeepEquals(element, element));
+        }
+
+        [Fact]
+        public static void DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
+        {
+            using JsonDocument jDoc = CreateDeepJsonDocument(10_000);
+            JsonElement element = jDoc.RootElement;
+            Assert.Throws<InsufficientExecutionStackException>(() => JsonElement.DeepEquals(element, element));
+        }
+
+        private static JsonDocument CreateDeepJsonDocument(int depth)
+        {
             ArrayBufferWriter<byte> bufferWriter = new();
-            using Utf8JsonWriter writer = new(bufferWriter);
+            using Utf8JsonWriter writer = new(bufferWriter, new() { MaxDepth = depth + 1 });
 
             for (int i = 0; i < depth; i++)
             {
@@ -257,10 +272,7 @@ namespace System.Text.Json.Serialization.Tests
             writer.Flush();
 
             JsonDocumentOptions options = new JsonDocumentOptions { MaxDepth = depth };
-            using JsonDocument jDoc = JsonDocument.Parse(bufferWriter.WrittenSpan.ToArray(), options);
-            JsonElement element = jDoc.RootElement;
-
-            Assert.True(JsonElement.DeepEquals(element, element));
+            return JsonDocument.Parse(bufferWriter.WrittenSpan.ToArray(), options);
         }
     }
 }
