@@ -6368,6 +6368,8 @@ unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
     }
     else if (tree->IsCall())
     {
+        // We ignore late args - they don't bring any noticeable benefits
+        // according to asmdiffs/tpdiff
         for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
         {
             gtSetEvalOrderMinOpts(arg.GetEarlyNode());

@@ -1103,7 +1103,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
                     SetNeedsTemp(&arg);
                 }
-                else
+                else if (opts.OptimizationEnabled())
                 {
                     // Finally, we call gtPrepareCost to measure the cost of evaluating this tree.
                     comp->gtPrepareCost(argx);
