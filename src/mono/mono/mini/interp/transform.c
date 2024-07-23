@@ -8751,18 +8751,14 @@ interp_foreach_ins_var (TransformData *td, InterpInst *ins, gpointer data, void 
 }
 
 int
-interp_compute_native_offset_estimates (TransformData *td, gboolean final_code)
+interp_compute_native_offset_estimates (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	int noe = 0;
 
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
-		// FIXME This doesn't currently hold because of bblock reordering potentially
-		// inserting additional instructions after the estimate is computed.
-		//
-		// if (bb->native_offset_estimate)
-		//	g_assert (bb->native_offset_estimate >= noe);
+
 		bb->native_offset_estimate = noe;
 		if (!td->optimized && bb->patchpoint_bb)
 			noe += 2;
@@ -8781,19 +8777,6 @@ interp_compute_native_offset_estimates (TransformData *td, gboolean final_code)
 			if (MINT_IS_EMIT_NOP (opcode))
 				continue;
 			noe += interp_get_ins_length (ins);
-
-			if (!final_code && td->optimized &&
-					(ins->flags & INTERP_INST_FLAG_CALL) &&
-					ins->info.call_info &&
-					ins->info.call_info->call_args) {
-				// When code is optimized, for a call, the offset allocator
-				// might end up inserting additional moves for the arguments
-				int *call_args = ins->info.call_info->call_args;
-				while (*call_args != -1) {
-					noe += 4; // mono_interp_oplen [MINT_MOV_VT];
-					call_args++;
-				}
-			}
 
 			if (!td->optimized)
 				interp_foreach_ins_var (td, ins, NULL, alloc_unopt_global_local);
@@ -9228,9 +9211,7 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	td->relocs = g_ptr_array_new ();
 	InterpBasicBlock *bb;
 
-	// This iteration could be avoided at the cost of less precise size result, following
-	// super instruction pass
-	size = interp_compute_native_offset_estimates (td, TRUE);
+	size = interp_compute_native_offset_estimates (td);
 
 	// Generate the compacted stream of instructions
 	td->new_code = ip = (guint16*)imethod_alloc0 (td, size * sizeof (guint16));
