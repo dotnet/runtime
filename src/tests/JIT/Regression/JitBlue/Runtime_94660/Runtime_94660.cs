@@ -107,10 +107,4 @@ public class Runtime_94660
     {
         public void WriteLine<T>(T value) => System.Console.WriteLine(value);
     }
-
-    public class C0
-    {
-        public uint F0;
-        public int F1;
-    }
 }
