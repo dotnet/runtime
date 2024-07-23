@@ -436,7 +436,7 @@ extern "C" void QCALLTYPE ExceptionNative_GetMethodFromStackTrace(QCall::ObjectH
         CorElementType elemType = arrayBaseRef->GetArrayElementType();
         if (elemType != ELEMENT_TYPE_I1)
         {
-            _ASSERTE(elemType == ELEMENT_TYPE_OBJECT || elemType == ELEMENT_TYPE_CLASS);
+            _ASSERTE(elemType == ELEMENT_TYPE_CLASS); // object[]
             PTRARRAYREF ptrArrayRef = (PTRARRAYREF)arrayBaseRef;
             arrayBaseRef = (ARRAYBASEREF)OBJECTREFToObject(ptrArrayRef->GetAt(0));
         }
