@@ -13,7 +13,9 @@ internal static class Constants
         internal const string FinalizerThread = nameof(FinalizerThread);
         internal const string GCThread = nameof(GCThread);
 
+        internal const string FeatureCOMInterop = nameof(FeatureCOMInterop);
         internal const string FeatureEHFunclets = nameof(FeatureEHFunclets);
+
         internal const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         internal const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
 

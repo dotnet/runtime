@@ -375,13 +375,16 @@ internal sealed partial class SOSDacImpl : ISOSDacInterface, ISOSDacInterface2, 
             }
 
             // TODO: [cdac] Get RCW and CCW from interop info on sync block
+            if (_target.ReadGlobal<byte>(Constants.Globals.FeatureCOMInterop) != 0)
+                return HResults.E_NOTIMPL;
+
         }
         catch (System.Exception ex)
         {
             return ex.HResult;
         }
 
-        return HResults.E_NOTIMPL;
+        return HResults.S_OK;
     }
 
     public unsafe int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data)

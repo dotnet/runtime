@@ -296,6 +296,11 @@ CDAC_GLOBAL(FeatureEHFunclets, uint8, 1)
 #else
 CDAC_GLOBAL(FeatureEHFunclets, uint8, 0)
 #endif
+#if FEATURE_COMINTEROP
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 1)
+#else
+CDAC_GLOBAL(FeatureCOMInterop, uint8, 0)
+#endif
 // See Object::GetGCSafeMethodTable
 #ifdef TARGET_64BIT
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
