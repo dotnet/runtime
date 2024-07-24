@@ -596,7 +596,7 @@ void FinalizerThread::FinalizerThreadWait()
         // we use unsigned math here as the collection counts, which are size_t internally,
         // can in theory overflow an int and wrap around.
         // unsigned math would have more defined/portable behavior in such case
-        if ((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization > 0)
+        if ((int)((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization) > 0)
         {
             // There were some Full GCs happening before we started waiting and possibly not seen by the
             // last finalization cycle. This is rare, but we need to be sure we have seen those,
