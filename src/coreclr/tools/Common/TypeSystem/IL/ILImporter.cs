@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Buffers.Binary;
 using Internal.TypeSystem;
 
 namespace Internal.IL
@@ -20,7 +22,7 @@ namespace Internal.IL
 
         private byte ReadILByte()
         {
-            if (_currentOffset >= _ilBytes.Length)
+            if (_currentOffset + 1 > _ilBytes.Length)
                 ReportMethodEndInsideInstruction();
 
             return _ilBytes[_currentOffset++];
@@ -28,22 +30,20 @@ namespace Internal.IL
 
         private ushort ReadILUInt16()
         {
-            if (_currentOffset + 1 >= _ilBytes.Length)
+            if (!BinaryPrimitives.TryReadUInt16LittleEndian(_ilBytes.AsSpan(_currentOffset), out ushort value))
                 ReportMethodEndInsideInstruction();
 
-            ushort val = (ushort)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
-            _currentOffset += 2;
-            return val;
+            _currentOffset += sizeof(ushort);
+            return value;
         }
 
         private uint ReadILUInt32()
         {
-            if (_currentOffset + 3 >= _ilBytes.Length)
+            if (!BinaryPrimitives.TryReadUInt32LittleEndian(_ilBytes.AsSpan(_currentOffset), out uint value))
                 ReportMethodEndInsideInstruction();
 
-            uint val = (uint)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
-            _currentOffset += 4;
-            return val;
+            _currentOffset += sizeof(uint);
+            return value;
         }
 
         private int ReadILToken()
@@ -53,8 +53,10 @@ namespace Internal.IL
 
         private ulong ReadILUInt64()
         {
-            ulong value = ReadILUInt32();
-            value |= (((ulong)ReadILUInt32()) << 32);
+            if (!BinaryPrimitives.TryReadUInt64LittleEndian(_ilBytes.AsSpan(_currentOffset), out ulong value))
+                ReportMethodEndInsideInstruction();
+
+            _currentOffset += sizeof(ulong);
             return value;
         }
 
