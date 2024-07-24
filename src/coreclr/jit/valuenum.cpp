@@ -6526,7 +6526,7 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
-    auto unwrapper = [this](ValueNum vn) -> VNVisit {
+    auto vnVisitor = [this](ValueNum vn) -> VNVisit {
         if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
             return VNVisit::Abort;
@@ -6551,6 +6551,9 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         {
             return VNVisit::Continue;
         }
+
+        // TODO-VN: Recognize Span.Length
+        // Handle more intrinsics such as Math.Max(neverNegative1, neverNegative2)
 
         VNFuncApp funcApp;
         if (GetVNFunc(vn, &funcApp))
@@ -6591,7 +6594,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
         }
         return VNVisit::Abort;
     };
-    return VNVisitReachingVNs(vn, unwrapper) == VNVisitResult::Completed;
+    return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
 
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)

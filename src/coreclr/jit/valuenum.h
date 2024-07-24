@@ -578,13 +578,6 @@ public:
         Abort,
     };
 
-    enum class VNVisitResult
-    {
-        Completed,
-        Aborted,
-        MaxDepthReached,
-    };
-
     ValueNum VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum);
 
     //--------------------------------------------------------------------------------
@@ -596,11 +589,11 @@ public:
     //    argVisitor - The callback function to call on the vn and its PHI arguments if any
     //
     // Return Value:
-    //    VNVisitResult::Aborted   - an argVisitor returned VNVisit::Abort, we stop the walk and return
-    //    VNVisitResult::Completed - all argVisitor returned VNVisit::Continue
+    //    VNVisit::Aborted  - an argVisitor returned VNVisit::Abort, we stop the walk and return
+    //    VNVisit::Continue - all argVisitor returned VNVisit::Continue
     //
     template <typename TArgVisitor>
-    VNVisitResult VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
+    VNVisit VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
     {
         ArrayStack<ValueNum> toVisit(m_alloc);
         toVisit.Push(vn);
@@ -630,11 +623,11 @@ public:
                 if (argVisitor(vnToVisit) == VNVisit::Abort)
                 {
                     // The visitor wants to abort the walk.
-                    return VNVisitResult::Aborted;
+                    return VNVisit::Abort;
                 }
             }
         }
-        return VNVisitResult::Completed;
+        return VNVisit::Continue;
     }
 
     // And the single constant for an object reference type.
