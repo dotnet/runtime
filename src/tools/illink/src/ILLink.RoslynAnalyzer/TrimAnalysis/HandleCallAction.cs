@@ -79,9 +79,6 @@ namespace ILLink.Shared.TrimAnalysis
 						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
 						// currently it won't do.
 
-						// To emulate IL tools behavior (trimmer, NativeAOT compiler), we're going to intentionally "forget" the static type
-						// if it is a generic argument type.
-
 						ITypeSymbol? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
 						ITypeSymbol? staticTypeDef = staticType?.OriginalDefinition;
 						if (staticType is null || staticTypeDef is null || staticType is ITypeParameterSymbol) {
