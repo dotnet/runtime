@@ -75,7 +75,8 @@ class FirefoxInspectorClient : InspectorClient
     {
         var resultTabs = command.Value?["result"]?["value"]?["tabs"];
         if (resultTabs == null ||
-            resultTabs.Value<JArray>()?.Count == 0 ||
+            resultTabs.Value<JArray>() == null ||
+            resultTabs.Value<JArray>().Count == 0 ||
             resultTabs[0]?["url"]?.Value<string>()?.StartsWith("about:") == true)
             return false;
         var toCmd = resultTabs[0]?["actor"]?.Value<string>();

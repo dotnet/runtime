@@ -58,7 +58,7 @@ namespace System.Reflection.Emit.Tests
         [MemberData(nameof(TestData))]
         public void DefineNestedType(string name, TypeAttributes attributes, Type parent, PackingSize packingSize, int typesize, Type[] implementedInterfaces)
         {
-            bool isDefaultImplementedInterfaces = implementedInterfaces?.Length == 0;
+            bool isDefaultImplementedInterfaces = implementedInterfaces != null && implementedInterfaces.Length == 0;
             bool isDefaultPackingSize = packingSize == PackingSize.Unspecified;
             bool isDefaultSize = typesize == 0;
             bool isDefaultParent = parent == null;

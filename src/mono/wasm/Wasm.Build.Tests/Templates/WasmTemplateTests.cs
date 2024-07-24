@@ -234,7 +234,7 @@ namespace Wasm.Build.Tests
         //[InlineData("Debug", "-f net8.0", "net8.0")]
         [InlineData("Debug", "-f net9.0", "net9.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs, string expectedTFM)
-            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs?.Length == 0);
+            => ConsoleBuildAndRun(config, false, extraNewArgs, expectedTFM, addFrameworkArg: extraNewArgs != null && extraNewArgs.Length == 0);
 
         private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs, string expectedTFM, bool addFrameworkArg)
         {

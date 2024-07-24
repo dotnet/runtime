@@ -761,7 +761,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
         public List<string> PostalAddress
         {
             get => ExtensionGet("postalAddress").OfType<string>().ToList();
-            set => ExtensionSet("postalAddress", value == null || value?.Count == 0 ? null : value.ToArray());
+            set => ExtensionSet("postalAddress", value == null || value.Count == 0 ? null : value.ToArray());
         }
 
         // Method overrides
