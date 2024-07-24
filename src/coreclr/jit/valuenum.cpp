@@ -3204,103 +3204,81 @@ ValueNum ValueNumStore::VNForMapPhysicalSelect(
     return result;
 }
 
-typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
-
-class SmallValueNumSet
+bool ValueNumStore::SmallValueNumSet::Lookup(ValueNum vn)
 {
-    union
+    // O(N) lookup for inline elements
+    if (m_numElements <= ArrLen(m_inlineElements))
     {
-        ValueNum     m_inlineElements[4];
-        ValueNumSet* m_set;
-    };
-    unsigned m_numElements = 0;
+        for (unsigned i = 0; i < m_numElements; i++)
+        {
+            if (m_inlineElements[i] == vn)
+            {
+                return true;
+            }
+        }
 
-public:
-    unsigned Count()
-    {
-        return m_numElements;
+        // Not found
+        return false;
     }
 
-    template <typename Func>
-    void ForEach(Func func)
+    return m_set->Lookup(vn);
+}
+
+// Returns false if the value already exists
+bool ValueNumStore::SmallValueNumSet::Add(Compiler* comp, ValueNum vn)
+{
+    if (m_numElements <= ArrLen(m_inlineElements))
     {
-        if (m_numElements <= ArrLen(m_inlineElements))
+        for (unsigned i = 0; i < m_numElements; i++)
         {
-            for (unsigned i = 0; i < m_numElements; i++)
+            if (m_inlineElements[i] == vn)
             {
-                func(m_inlineElements[i]);
+                // Already exists
+                return false;
             }
+        }
+
+        if (m_numElements < ArrLen(m_inlineElements))
+        {
+            m_inlineElements[m_numElements] = vn;
+            m_numElements++;
         }
         else
         {
-            for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+            ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
+            for (ValueNum oldVn : m_inlineElements)
             {
-                func(vn);
+                set->Set(oldVn, true);
             }
+
+            set->Set(vn, true);
+
+            m_set = set;
+            m_numElements++;
+            assert(m_numElements == set->GetCount());
         }
+        return true;
     }
 
-    bool Lookup(ValueNum vn)
-    {
-        // O(N) lookup for inline elements
-        if (m_numElements <= ArrLen(m_inlineElements))
-        {
-            for (unsigned i = 0; i < m_numElements; i++)
-            {
-                if (m_inlineElements[i] == vn)
-                {
-                    return true;
-                }
-            }
+    bool exists   = m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
+    m_numElements = m_set->GetCount();
+    return !exists;
+}
 
-            // Not found
-            return false;
-        }
-
-        return m_set->Lookup(vn);
-    }
-
-    // Returns false if the value already exists
-    bool Add(Compiler* comp, ValueNum vn)
-    {
-        if (m_numElements <= ArrLen(m_inlineElements))
-        {
-            for (unsigned i = 0; i < m_numElements; i++)
-            {
-                if (m_inlineElements[i] == vn)
-                {
-                    // Already exists
-                    return false;
-                }
-            }
-
-            if (m_numElements < ArrLen(m_inlineElements))
-            {
-                m_inlineElements[m_numElements] = vn;
-                m_numElements++;
-            }
-            else
-            {
-                ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
-                for (ValueNum oldVn : m_inlineElements)
-                {
-                    set->Set(oldVn, true);
-                }
-
-                set->Set(vn, true);
-
-                m_set = set;
-                m_numElements++;
-                assert(m_numElements == set->GetCount());
-            }
-            return true;
-        }
-
-        bool exists   = m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
-        m_numElements = m_set->GetCount();
-        return !exists;
-    }
-};
+//------------------------------------------------------------------------------
+// VNPhiDefToVN: Extracts the VN for a specific argument of a phi definition.
+//
+// Arguments:
+//    phiDef    - The phi definition
+//    ssaArgNum - The argument number to extract
+//
+// Return Value:
+//    The VN for the specified argument of the phi definition.
+//
+ValueNum ValueNumStore::VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum)
+{
+    return m_pComp->lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaArgs[ssaArgNum])->m_vnPair.Get(VNK_Conservative);
+}
 
 //------------------------------------------------------------------------------
 // VNForMapSelectInner: Select value from a map and record loop memory dependencies.
@@ -6548,10 +6526,10 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
-    auto unwrapper = [this](ValueNum vn) -> Unwrap {
+    auto unwrapper = [this](ValueNum vn) -> VNVisit {
         if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
-            return Unwrap::Abort;
+            return VNVisit::Abort;
         }
 
         if (IsVNConstant(vn))
@@ -6559,19 +6537,19 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
             var_types vnTy = TypeOfVN(vn);
             if (vnTy == TYP_INT)
             {
-                return GetConstantInt32(vn) >= 0 ? Unwrap::Continue : Unwrap::Abort;
+                return GetConstantInt32(vn) >= 0 ? VNVisit::Continue : VNVisit::Abort;
             }
             if (vnTy == TYP_LONG)
             {
-                return GetConstantInt64(vn) >= 0 ? Unwrap::Continue : Unwrap::Abort;
+                return GetConstantInt64(vn) >= 0 ? VNVisit::Continue : VNVisit::Abort;
             }
-            return Unwrap::Abort;
+            return VNVisit::Abort;
         }
 
         // Array length can never be negative.
         if (IsVNArrLen(vn))
         {
-            return Unwrap::Continue;
+            return VNVisit::Continue;
         }
 
         VNFuncApp funcApp;
@@ -6595,7 +6573,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_HWI_LZCNT_X64_LeadingZeroCount:
                 case VNF_HWI_BMI1_TrailingZeroCount:
                 case VNF_HWI_BMI1_X64_TrailingZeroCount:
-                    return Unwrap::Continue;
+                    return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
                 case VNF_HWI_AdvSimd_PopCount:
                 case VNF_HWI_AdvSimd_LeadingZeroCount:
@@ -6603,7 +6581,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                 case VNF_HWI_ArmBase_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
                 case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-                    return Unwrap::Continue;
+                    return VNVisit::Continue;
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
@@ -6611,9 +6589,9 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
                     break;
             }
         }
-        return Unwrap::Abort;
+        return VNVisit::Abort;
     };
-    return VNUnwrapPhis(vn, unwrapper, /* maxDepth */ 2) == UnwrapResult::Completed;
+    return VNVisitReachingVNs(vn, unwrapper) == VNVisitResult::Completed;
 }
 
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
@@ -15189,104 +15167,4 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
             break;
         }
     }
-}
-
-//--------------------------------------------------------------------------------
-// VNUnwrapPhis: given a VN, call the specified callback function on it. In case if the VN
-//    is a phi node, recursively call the callback function on all the VN arguments of that phi node.
-//
-// Arguments:
-//    vn         - The VN to unwrap
-//    argVisitor - The callback function to call on the vn and its PHI arguments if any
-//    maxDepth   - Maximum depth to handle recursive PHI chains. -1 means no limits.
-//    vnk        - The kind of VN to use (Conservative or Liberal)
-//
-// Return Value:
-//    UnwrapResult::MaxDepthReached - we hit the maxDepth limit (for TP reasons)
-//    UnwrapResult::Aborted         - any argVisitor returned Unwrap::Abort
-//    UnwrapResult::Completed       - unwrap was successful (all argVisitor returned Unwrap::Continue)
-//
-template <typename TArgVisitor>
-ValueNumStore::UnwrapResult ValueNumStore::VNUnwrapPhis(ValueNum     vn,
-                                                        TArgVisitor  argVisitor,
-                                                        int          maxDepth,
-                                                        ValueNumKind vnk)
-{
-    SmallValueNumSet hashSet;
-    UnwrapResult     result = VNUnwrapPhisInternal(vn, argVisitor, maxDepth, vnk, hashSet);
-    return result;
-}
-
-//--------------------------------------------------------------------------------
-// VNUnwrapPhisInternal: internal worker for VNUnwrapPhis, see comments above.
-//
-template <typename TArgVisitor>
-ValueNumStore::UnwrapResult ValueNumStore::VNUnwrapPhisInternal(
-    ValueNum vn, TArgVisitor argVisitor, int maxDepth, ValueNumKind vnk, SmallValueNumSet& hashSet)
-{
-    assert(maxDepth >= -1);
-
-    if (!hashSet.Add(m_pComp, vn))
-    {
-        // Recursive PhiDef chain detected
-        return UnwrapResult::Completed;
-    }
-
-    unsigned* ssaArgs;
-    unsigned  numSsaArgs;
-    unsigned  lclNum;
-
-    VNPhiDef       phiDef;
-    VNMemoryPhiDef memoryPhiDef;
-    if (GetPhiDef(vn, &phiDef))
-    {
-        lclNum     = phiDef.LclNum;
-        ssaArgs    = phiDef.SsaArgs;
-        numSsaArgs = phiDef.NumArgs;
-    }
-    else if (GetMemoryPhiDef(vn, &memoryPhiDef))
-    {
-        lclNum     = BAD_VAR_NUM;
-        ssaArgs    = memoryPhiDef.SsaArgs;
-        numSsaArgs = memoryPhiDef.NumArgs;
-    }
-    else
-    {
-        // Not a phi node - handle normally and return
-        return argVisitor(vn) == Unwrap::Abort ? UnwrapResult::Aborted : UnwrapResult::Completed;
-    }
-
-    // At this point vn is a PHI definition node
-
-    if (maxDepth == 0)
-    {
-        return UnwrapResult::MaxDepthReached;
-    }
-
-    assert(ssaArgs != nullptr);
-    assert(numSsaArgs > 0);
-
-    for (unsigned i = 0; i < numSsaArgs; i++)
-    {
-        ValueNum phiArgVN;
-        if (lclNum != BAD_VAR_NUM)
-        {
-            phiArgVN = m_pComp->lvaGetDesc(lclNum)->GetPerSsaData(ssaArgs[i])->m_vnPair.Get(vnk);
-        }
-        else
-        {
-            phiArgVN = m_pComp->GetMemoryPerSsaData(ssaArgs[i])->m_vnPair.Get(vnk);
-        }
-
-        // maxDepth being -1 means we don't have depth limits
-        int newDepth = maxDepth == -1 ? -1 : maxDepth - 1;
-
-        // TODO-VN: Consider getting rid of this recursion and using an ArrayStack instead.
-        UnwrapResult result = VNUnwrapPhisInternal(phiArgVN, argVisitor, newDepth, vnk, hashSet);
-        if (result != UnwrapResult::Completed)
-        {
-            return result;
-        }
-    }
-    return UnwrapResult::Completed;
 }
