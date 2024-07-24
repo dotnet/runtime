@@ -2356,6 +2356,38 @@ namespace System.Net.Tests
             }, IsAsync.ToString()).DisposeAsync();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSetToIntMax_DoesNotThrow()
+        {
+            await RemoteExecutor.Invoke(async isAsync =>
+            {
+                TaskCompletionSource tcs = new TaskCompletionSource();
+                await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpWebRequest request = WebRequest.CreateHttp(uri);
+                    HttpWebRequest.DefaultMaximumErrorResponseLength = int.MaxValue; // KB
+                    WebException exception =
+                        await Assert.ThrowsAsync<WebException>(() => bool.Parse(isAsync) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
+                    tcs.SetResult();
+                    Assert.NotNull(exception.Response);
+                    using (Stream responseStream = exception.Response.GetResponseStream())
+                    {
+                        Assert.Equal(1, await responseStream.ReadAsync(new byte[1]));
+                    }
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(
+                        async connection =>
+                        {
+                            await connection.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10 * 1024));
+                            await tcs.Task;
+                        });
+                });
+            }, IsAsync.ToString()).DisposeAsync();
+        }
+
         [Fact]
         public void HttpWebRequest_SetProtocolVersion_Success()
         {

@@ -346,7 +346,7 @@ namespace System.Net
                     return contentStream;
                 }
 
-                return new TruncatedReadStream(contentStream, maxErrorResponseLength * 1024);
+                return new TruncatedReadStream(contentStream, (long)maxErrorResponseLength * 1024);
             }
 
             return Stream.Null;
@@ -383,6 +383,7 @@ namespace System.Net
 
         internal sealed class TruncatedReadStream(Stream innerStream, long maxSize) : Stream
         {
+            private long _maxRemainingLength = maxSize;
             public override bool CanRead => true;
             public override bool CanSeek => false;
             public override bool CanWrite => false;
@@ -399,8 +400,8 @@ namespace System.Net
 
             public override int Read(Span<byte> buffer)
             {
-                int readBytes = innerStream.Read(buffer.Slice(0, (int)Math.Min(buffer.Length, maxSize)));
-                maxSize -= readBytes;
+                int readBytes = innerStream.Read(buffer.Slice(0, (int)Math.Min(buffer.Length, _maxRemainingLength)));
+                _maxRemainingLength -= readBytes;
                 return readBytes;
             }
 
@@ -411,9 +412,9 @@ namespace System.Net
 
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
-                int readBytes = await innerStream.ReadAsync(buffer.Slice(0, (int)Math.Min(buffer.Length, maxSize)), cancellationToken)
+                int readBytes = await innerStream.ReadAsync(buffer.Slice(0, (int)Math.Min(buffer.Length, _maxRemainingLength)), cancellationToken)
                     .ConfigureAwait(false);
-                maxSize -= readBytes;
+                _maxRemainingLength -= readBytes;
                 return readBytes;
             }
 
