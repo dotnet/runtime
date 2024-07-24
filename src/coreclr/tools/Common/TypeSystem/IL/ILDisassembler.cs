@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -192,15 +191,15 @@ namespace Internal.IL
 
         private ushort ReadILUInt16()
         {
-            ushort val = BinaryPrimitives.ReadUInt16LittleEndian(_ilBytes.AsSpan(_currentOffset, sizeof(ushort)));
-            _currentOffset += sizeof(ushort);
+            ushort val = (ushort)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
+            _currentOffset += 2;
             return val;
         }
 
         private uint ReadILUInt32()
         {
-            uint val = BinaryPrimitives.ReadUInt32LittleEndian(_ilBytes.AsSpan(_currentOffset, sizeof(uint)));
-            _currentOffset += sizeof(uint);
+            uint val = (uint)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
+            _currentOffset += 4;
             return val;
         }
 
@@ -212,23 +211,21 @@ namespace Internal.IL
 
         private ulong ReadILUInt64()
         {
-            ulong value = BinaryPrimitives.ReadUInt64LittleEndian(_ilBytes.AsSpan(_currentOffset, sizeof(ulong)));
-            _currentOffset += sizeof(ulong);
+            ulong value = ReadILUInt32();
+            value |= (((ulong)ReadILUInt32()) << 32);
             return value;
         }
 
-        private float ReadILFloat()
+        private unsafe float ReadILFloat()
         {
-            float value = BinaryPrimitives.ReadSingleLittleEndian(_ilBytes.AsSpan(_currentOffset, sizeof(float)));
-            _currentOffset += sizeof(float);
-            return value;
+            uint value = ReadILUInt32();
+            return *(float*)(&value);
         }
 
-        private double ReadILDouble()
+        private unsafe double ReadILDouble()
         {
-            double value = BinaryPrimitives.ReadDoubleLittleEndian(_ilBytes.AsSpan(_currentOffset, sizeof(double)));
-            _currentOffset += sizeof(double);
-            return value;
+            ulong value = ReadILUInt64();
+            return *(double*)(&value);
         }
 
         public static void AppendOffset(StringBuilder sb, int offset)
