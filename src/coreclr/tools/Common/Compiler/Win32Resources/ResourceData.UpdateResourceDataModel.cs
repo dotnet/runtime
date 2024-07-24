@@ -27,8 +27,7 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(type is string);
-                // Undocumented semantic for Win32 Resource APIs
-                type = ((string)type).ToUpperInvariant();
+                type = ToUpperForResource((string)type);
                 if (!_resTypeHeadName.TryGetValue((string)type, out resType))
                 {
                     resType = new ResType();
@@ -49,8 +48,7 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(name is string);
-                // Undocumented semantic for Win32 Resource APIs
-                name = ((string)name).ToUpperInvariant();
+                name = ToUpperForResource((string)name);
                 if (!resType.NameHeadName.TryGetValue((string)name, out resName))
                 {
                     resName = new ResName();
@@ -72,8 +70,7 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(type is string);
-                // Undocumented semantic for Win32 Resource APIs
-                type = ((string)type).ToUpperInvariant();
+                type = ToUpperForResource((string)type);
                 _resTypeHeadName.TryGetValue((string)type, out resType);
             }
 
@@ -89,8 +86,7 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(name is string);
-                // Undocumented semantic for Win32 Resource APIs
-                name = ((string)name).ToUpperInvariant();
+                name = ToUpperForResource((string)name);
                 resType.NameHeadName.TryGetValue((string)name, out resName);
             }
 
@@ -101,6 +97,17 @@ namespace ILCompiler.Win32Resources
                 return null;
 
             return (byte[])resLanguage.DataEntry.Clone();
+        }
+
+        private static string ToUpperForResource(string str)
+        {
+            // Undocumented semantic for Win32 Resource APIs
+            StringBuilder builder = new(str.Length);
+            foreach (char c in str)
+            {
+                builder.Append('a' <= c && c <= 'z' ? char.ToUpper(c) : c);
+            }
+            return builder.ToString();
         }
     }
 }
