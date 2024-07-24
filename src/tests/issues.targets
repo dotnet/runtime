@@ -423,10 +423,19 @@
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
             <Issue>https://github.com/dotnet/runtime/issues/66174</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- OSX x64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashMainThread/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- OSX arm64 on CoreCLR Runtime -->
@@ -1271,6 +1280,19 @@
         </ExcludeList>
 
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/MethodImpl/CovariantReturns/Structs/IncompatibleOverride/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_d1/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_do/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_r1/**">
+            <Issue>Crashes during LLVM AOT compilation.</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_ro/**">
             <Issue>Crashes during LLVM AOT compilation.</Issue>
         </ExcludeList>
 

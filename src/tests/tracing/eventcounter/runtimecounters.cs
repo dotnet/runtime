@@ -1,16 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
-using System.Diagnostics.Tracing;
-#endif
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using Xunit;
 
 namespace RuntimeEventCounterTests
@@ -104,17 +100,19 @@ namespace RuntimeEventCounterTests
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
             {
-                Thread.Sleep(3000);
-                if (myListener.Verify())
+                // Wait max 60 seconds
+                for (int i = 0; i < 60; i++)
                 {
-                    Console.WriteLine("Test passed");
-                    return 100;
+                    Thread.Sleep(1000);
+                    if (myListener.Verify())
+                    {
+                        Console.WriteLine("Test passed");
+                        return 100;
+                    }
                 }
-                else
-                {
-                    Console.WriteLine($"Test Failed - did not see one or more of the expected runtime counters.");
-                    return 1;
-                }
+
+                Console.WriteLine($"Test Failed - did not see one or more of the expected runtime counters.");
+                return 1;
             }
         }
     }

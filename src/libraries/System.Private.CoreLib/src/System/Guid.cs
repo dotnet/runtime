@@ -130,7 +130,6 @@ namespace System
             _a = a;
             _b = b;
             _c = c;
-            _k = d[7]; // hoist bounds checks
             _d = d[0];
             _e = d[1];
             _f = d[2];
@@ -138,6 +137,7 @@ namespace System
             _h = d[4];
             _i = d[5];
             _j = d[6];
+            _k = d[7];
         }
 
         // Creates a new GUID initialized to the value represented by the
