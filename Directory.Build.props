@@ -395,6 +395,8 @@
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == ''">false</KeepNativeSymbols>
     <!-- Used for launchSettings.json and runtime config files. -->
     <AppDesignerFolder>Properties</AppDesignerFolder>
+    <!-- By default the SDK only produces ref assemblies for net5.0 or later. Enable for all TFMs for better incremental build performance. -->
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
