@@ -40,7 +40,7 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
     {
         internal StubPrecode(TargetPointer instrPointer, KnownPrecodeType type = KnownPrecodeType.Stub) : base(instrPointer, type) { }
 
-        internal override TargetPointer GetMethodDesc(Target targret, PrecodeMachineDescriptor precodeMachineDescriptor)
+        internal override TargetPointer GetMethodDesc(Target target, PrecodeMachineDescriptor precodeMachineDescriptor)
         {
             TargetPointer stubPrecodeDataAddress = InstrPointer + precodeMachineDescriptor.StubCodePageSize;
             Data.StubPrecodeData stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData>(stubPrecodeDataAddress);
@@ -86,6 +86,12 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         }
     }
 
+    private Data.StubPrecodeData GetStubPrecodeData(TargetPointer stubInstrPointer)
+    {
+        TargetPointer stubPrecodeDataAddress = stubInstrPointer + _precodeMachineDescriptor.StubCodePageSize;
+        return _target.ProcessedData.GetOrAdd<Data.StubPrecodeData>(stubPrecodeDataAddress);
+    }
+
     private KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrAddress)
     {
         // precode.h Precode::GetType()
@@ -93,9 +99,8 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         if (precodeType == _precodeMachineDescriptor.StubPrecodeType)
         {
             // get the actual type from the StubPrecodeData
-            TargetPointer stubPrecodeDataAddress = instrAddress + _precodeMachineDescriptor.StubCodePageSize;
-            Data.StubPrecodeData stubPrecodeData = _target.ProcessedData.GetOrAdd<Data.StubPrecodeData>(stubPrecodeDataAddress);
-            precodeType = stubPrecodeData.PrecodeType;
+            Data.StubPrecodeData stubPrecodeData = GetStubPrecodeData(instrAddress);
+            precodeType = stubPrecodeData.Type;
         }
 
         if (precodeType == _precodeMachineDescriptor.StubPrecodeType)

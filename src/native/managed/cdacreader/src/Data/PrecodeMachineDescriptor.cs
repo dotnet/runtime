@@ -25,6 +25,7 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         {
             FixupPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(FixupPrecodeType)].Offset);
         }
+        StubCodePageSize = target.Read<uint>(address + (ulong)type.Fields[nameof(StubCodePageSize)].Offset);
     }
 
     public TargetNUInt CodePointerToInstrPointerMask { get; init; }
@@ -35,6 +36,8 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
     public byte StubPrecodeType { get; init; }
     public byte? NDirectImportPrecodeType { get; init; }
     public byte? FixupPrecodeType { get; init; }
+
+    public uint StubCodePageSize { get; init; }
     private const string HasNDirectImportPrecode = nameof(HasNDirectImportPrecode);
     private const string HasFixupPrecode = nameof(HasFixupPrecode);
 }

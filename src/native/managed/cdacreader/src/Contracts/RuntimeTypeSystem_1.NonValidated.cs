@@ -280,7 +280,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             if (temporaryEntryPoint != TargetCodePointer.Null)
             {
                 Contracts.INativeCodePointers codePointers = _target.Contracts.NativeCodePointers;
-                TargetPointer methodDesc = codePointers.MethodDescFromStubAddress(temporaryEntryPoint, speculative: true);
+                TargetPointer methodDesc = codePointers.MethodDescFromStubAddress(temporaryEntryPoint);
                 if (methodDesc != methodDescPointer)
                 {
                     return false;

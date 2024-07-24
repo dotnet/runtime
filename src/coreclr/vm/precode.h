@@ -639,14 +639,20 @@ struct PrecodeMachineDescriptor
 #endif // HAS_FIXUP_PRECODE
 #ifdef HAS_THISPTR_RETBUF_PRECODE
     uint8_t HasThisPtrRetBufPrecode = 1;
-    uint8_t HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type,
+    uint8_t HasThisPointerRetBufPrecodeType = ThisPtrRetBufPrecode::Type;
 #else
     uint8_t HasThisPtrRetBufPrecode = 0;
     uint8_t HasThisPointerRetBufPrecodeType = 0;
 #endif // HAS_THISPTR_RETBUF_PRECODE
+    uint32_t StubCodePageSize = GetStubCodePageSize();
+public:
+    PrecodeMachineDescriptor() = default;
+    PrecodeMachineDescriptor(const PrecodeMachineDescriptor&) = delete;
+    PrecodeMachineDescriptor& operator=(const PrecodeMachineDescriptor&) = delete;
+    static void Init();
 };
 
-extern PrecodeMachineDescriptor g_PrecodeMachDesc;
-#endif DACCESS_COMPILE
+extern PrecodeMachineDescriptor g_PrecodeMachineDescriptor;
+#endif //DACCESS_COMPILE
 
 #endif // __PRECODE_H__

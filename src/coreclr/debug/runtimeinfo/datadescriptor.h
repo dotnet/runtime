@@ -355,7 +355,15 @@ CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, HasNDirectImportPrecode, of
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, NDirectImportPrecodeType, offsetof(PrecodeMachineDescriptor, NDirectImportPrecodeType))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, HasFixupPrecode, offsetof(PrecodeMachineDescriptor, HasFixupPrecode))
 CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint8*/, FixupPrecodeType, offsetof(PrecodeMachineDescriptor, FixupPrecodeType))
+CDAC_TYPE_FIELD(PrecodeMachineDescriptor, /*uint32*/, StubCodePageSize, offsetof(PrecodeMachineDescriptor, StubCodePageSize))
 CDAC_TYPE_END(PrecodeMachineDescriptor)
+
+CDAC_TYPE_BEGIN(StubPrecodeData)
+CDAC_TYPE_INDETERMINATE(StubPrecodeData)
+CDAC_TYPE_FIELD(StubPrecodeData, /*pointer*/, MethodDesc, offsetof(StubPrecodeData, MethodDesc))
+CDAC_TYPE_FIELD(StubPrecodeData, /*uint8*/, Type, offsetof(StubPrecodeData, Type))
+CDAC_TYPE_END(StubPrecodeData)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -394,7 +402,7 @@ CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
-CDAC_GLOBAL_POINTER(PrecodeMachineDescriptor, &::g_PrecodeMachDesc)
+CDAC_GLOBAL_POINTER(PrecodeMachineDescriptor, &::g_PrecodeMachineDescriptor)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE
