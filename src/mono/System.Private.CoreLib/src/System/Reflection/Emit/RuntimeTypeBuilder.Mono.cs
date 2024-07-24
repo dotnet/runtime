@@ -613,8 +613,7 @@ namespace System.Reflection.Emit
             check_name(nameof(name), name);
             if (parameterTypes != null)
                 foreach (Type param in parameterTypes)
-                    if (param == null)
-                        throw new ArgumentNullException(nameof(parameterTypes));
+                    ArgumentNullException.ThrowIfNull(param, nameof(parameterTypes));
             check_not_created();
 
             RuntimePropertyBuilder res = new RuntimePropertyBuilder(this, name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);

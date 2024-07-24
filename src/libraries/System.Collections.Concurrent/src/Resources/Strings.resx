@@ -126,9 +126,6 @@
   <data name="ConcurrentDictionary_KeyAlreadyExisted" xml:space="preserve">
     <value>The key already existed in the dictionary.</value>
   </data>
-  <data name="ConcurrentDictionary_ItemKeyIsNull" xml:space="preserve">
-    <value>TKey is a reference type and item.Key is null.</value>
-  </data>
   <data name="ConcurrentDictionary_TypeOfKeyIncorrect" xml:space="preserve">
     <value>The key was of an incorrect type for this dictionary.</value>
   </data>
