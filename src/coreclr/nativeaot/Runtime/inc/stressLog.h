@@ -109,54 +109,36 @@ enum LogFacilitiesEnum: unsigned int {
                 StressLog::LogMsgOL(_Args msg);                                              \
             } WHILE_0
 
+#define STRESS_LOG_WRITE(facility, level, msg, ...) do {                                      \
+            if (StressLog::StressLogOn(facility, level))                                      \
+                StressLog::LogMsgOL(facility, msg, __VA_ARGS__);                              \
+            } WHILE_0
+
 #define STRESS_LOG0(facility, level, msg) do {                                      \
             if (StressLog::StressLogOn(facility, level))                            \
                 StressLog::LogMsg(facility, 0, msg);                                \
             } WHILE_0                                                               \
 
-#define STRESS_LOG1(facility, level, msg, data1) do {                               \
-            if (StressLog::StressLogOn(facility, level))                            \
-                StressLog::LogMsg(facility, 1, msg, (void*)(size_t)(data1));        \
-            } WHILE_0
+#define STRESS_LOG1(facility, level, msg, data1) \
+    STRESS_LOG_WRITE(facility, level, msg, data1)
 
-#define STRESS_LOG2(facility, level, msg, data1, data2) do {                        \
-            if (StressLog::StressLogOn(facility, level))                            \
-                StressLog::LogMsg(facility, 2, msg,                                 \
-                    (void*)(size_t)(data1), (void*)(size_t)(data2));                \
-            } WHILE_0
+#define STRESS_LOG2(facility, level, msg, data1, data2) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2)
 
-#define STRESS_LOG3(facility, level, msg, data1, data2, data3) do {                           \
-            if (StressLog::StressLogOn(facility, level))                                      \
-                StressLog::LogMsg(facility, 3, msg,                                           \
-                    (void*)(size_t)(data1),(void*)(size_t)(data2),(void*)(size_t)(data3));    \
-            } WHILE_0
+#define STRESS_LOG3(facility, level, msg, data1, data2, data3) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3)
 
-#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4) do {                    \
-            if (StressLog::StressLogOn(facility, level))                                      \
-                StressLog::LogMsg(facility, 4, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4));    \
-            } WHILE_0
+#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4)
 
-#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5) do {             \
-            if (StressLog::StressLogOn(facility, level))                                      \
-                StressLog::LogMsg(facility, 5, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),     \
-                    (void*)(size_t)(data5));                                                  \
-            } WHILE_0
+#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5)
 
-#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6) do {      \
-            if (StressLog::StressLogOn(facility, level))                                      \
-                StressLog::LogMsg(facility, 6, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),     \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6));                          \
-            } WHILE_0
+#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5, data6)
 
-#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7) do { \
-            if (StressLog::StressLogOn(facility, level))                                      \
-                StressLog::LogMsg(facility, 7, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),     \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6), (void*)(size_t)(data7));  \
-            } WHILE_0
+#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)  \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)
 
 #define STRESS_LOG_RESERVE_MEM(numChunks) do {                                                \
             if (StressLog::StressLogOn(LF_ALL, LL_ALWAYS))                         \
@@ -348,13 +330,16 @@ public:
     static void* ConvertArgument(double arg) = delete;
 #endif
 
-    static void LogMsgOL(const char* format)
-    { LogMsg(LF_GC, 0, format); }
-
     template<typename... Ts>
     static void LogMsgOL(const char* format, Ts... args)
     {
         LogMsg(LF_GC, sizeof...(args), format, ConvertArgument(args)...);
+    }
+
+    template<typename... Ts>
+    static void LogMsgOL(unsigned facility, const char* format, Ts... args)
+    {
+        LogMsg(facility, sizeof...(args), format, ConvertArgument(args)...);
     }
 
     #ifdef _MSC_VER

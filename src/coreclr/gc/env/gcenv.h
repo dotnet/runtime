@@ -55,65 +55,38 @@
             LOGALWAYS(msg);                                                   \
             } while(0)
 
+#define STRESS_LOG_WRITE(facility, level, msg, ...) do {                            \
+            if (StressLog::LogOn(facility, level))                                  \
+                StressLog::LogMsg(facility, level, StressLogMsg(msg, __VA_ARGS__)); \
+            LOG((facility, level, msg, __VA_ARGS__));                               \
+            } while(0)
+
 #define STRESS_LOG0(facility, level, msg) do {                                \
             if (StressLog::LogOn(facility, level))                            \
                 StressLog::LogMsg(level, facility, StressLogMsg(msg));        \
             LOG((facility, level, msg));                                      \
             } while(0)
 
-#define STRESS_LOG1(facility, level, msg, data1) do {                              \
-            if (StressLog::LogOn(facility, level))                                 \
-                StressLog::LogMsg(level, facility,                                 \
-                    StressLogMsg(msg, (void*)(size_t)(data1)));                    \
-            LOG((facility, level, msg, data1));                                    \
-            } while(0)
+#define STRESS_LOG1(facility, level, msg, data1) \
+    STRESS_LOG_WRITE(facility, level, msg, data1)
 
-#define STRESS_LOG2(facility, level, msg, data1, data2) do {                            \
-            if (StressLog::LogOn(facility, level))                                      \
-                StressLog::LogMsg(level, facility,                                      \
-                    StressLogMsg(msg, (void*)(size_t)(data1), (void*)(size_t)(data2))); \
-            LOG((facility, level, msg, data1, data2));                                  \
-            } while(0)
+#define STRESS_LOG2(facility, level, msg, data1, data2) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2)
 
-#define STRESS_LOG3(facility, level, msg, data1, data2, data3) do {                             \
-            if (StressLog::LogOn(facility, level))                                              \
-                StressLog::LogMsg(level, facility,                                              \
-                    StressLogMsg(msg,                                                           \
-                        (void*)(size_t)(data1),(void*)(size_t)(data2),(void*)(size_t)(data3))); \
-            LOG((facility, level, msg, data1, data2, data3));                                   \
-            } while(0)
+#define STRESS_LOG3(facility, level, msg, data1, data2, data3) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3)
 
-#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4) do {                              \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility,                                                      \
-                    StressLogMsg(msg, (void*)(size_t)(data1),(void*)(size_t)(data2),                    \
-                        (void*)(size_t)(data3),(void*)(size_t)(data4)));                                \
-            LOG((facility, level, msg, data1, data2, data3, data4));                                    \
-            } while(0)
+#define STRESS_LOG4(facility, level, msg, data1, data2, data3, data4) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4)
 
-#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5) do {                       \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility, 5, msg, (void*)(size_t)(data1),                      \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),               \
-                    (void*)(size_t)(data5));                                                            \
-            LOG((facility, level, msg, data1, data2, data3, data4, data5));                             \
-            } while(0)
+#define STRESS_LOG5(facility, level, msg, data1, data2, data3, data4, data5) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5)
 
-#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6) do {                \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility, 6, msg, (void*)(size_t)(data1),                      \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),               \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6));                                    \
-            LOG((facility, level, msg, data1, data2, data3, data4, data5, data6));                      \
-            } while(0)
+#define STRESS_LOG6(facility, level, msg, data1, data2, data3, data4, data5, data6) \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5, data6)
 
-#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7) do {         \
-            if (StressLog::LogOn(facility, level))                                                      \
-                StressLog::LogMsg(level, facility, 7, msg, (void*)(size_t)(data1),                      \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),               \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6), (void*)(size_t)(data7));            \
-            LOG((facility, level, msg, data1, data2, data3, data4, data5, data6, data7));               \
-            } while(0)
+#define STRESS_LOG7(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)  \
+    STRESS_LOG_WRITE(facility, level, msg, data1, data2, data3, data4, data5, data6, data7)
 
 #define LOGALWAYS(msg)
 
