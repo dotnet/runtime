@@ -197,7 +197,7 @@ void* StressLogMsg::ConvertArgument(float arg) = delete;
 
 #if TARGET_64BIT
 template<>
-void* StressLogMsg::ConvertArgument(double arg)
+inline void* StressLogMsg::ConvertArgument(double arg)
 {
     return (void*)(size_t)(*((uint64_t*)&arg));
 }
@@ -207,13 +207,13 @@ void* StressLogMsg::ConvertArgument(double arg) = delete;
 
 // COMPAT: Truncate 64-bit integer arguments to 32-bit
 template<>
-void* StressLogMsg::ConvertArgument(uint64_t arg)
+inline void* StressLogMsg::ConvertArgument(uint64_t arg)
 {
     return (void*)(size_t)arg;
 }
 
 template<>
-void* StressLogMsg::ConvertArgument(int64_t arg)
+inline void* StressLogMsg::ConvertArgument(int64_t arg)
 {
     return (void*)(size_t)arg;
 }
