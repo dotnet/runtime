@@ -11,11 +11,11 @@ internal static partial class Interop
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateInit2_")]
         internal static unsafe partial ZLibNative.ErrorCode DeflateInit2_(
             ZLibNative.ZStream* stream,
-            ZLibNative.CompressionLevel level,
+            int level,
             ZLibNative.CompressionMethod method,
             int windowBits,
             int memLevel,
-            ZLibNative.CompressionStrategy strategy);
+            ZLibCompressionStrategy strategy);
 
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Deflate")]
         internal static unsafe partial ZLibNative.ErrorCode Deflate(ZLibNative.ZStream* stream, ZLibNative.FlushCode flush);

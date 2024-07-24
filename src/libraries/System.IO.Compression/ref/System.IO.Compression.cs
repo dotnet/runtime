@@ -24,6 +24,7 @@ namespace System.IO.Compression
         public DeflateStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public DeflateStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }
         public DeflateStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, bool leaveOpen) { }
+        public DeflateStream(System.IO.Stream stream, System.IO.Compression.ZLibCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public System.IO.Stream BaseStream { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
@@ -59,6 +60,7 @@ namespace System.IO.Compression
         public GZipStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public GZipStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }
         public GZipStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, bool leaveOpen) { }
+        public GZipStream(System.IO.Stream stream, System.IO.Compression.ZLibCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public System.IO.Stream BaseStream { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
@@ -129,12 +131,26 @@ namespace System.IO.Compression
         Create = 1,
         Update = 2,
     }
+    public sealed class ZLibCompressionOptions
+    {
+        public int CompressionLevel { get; set; }
+        public ZLibCompressionStrategy CompressionStrategy { get; set; }
+    }
+    public enum ZLibCompressionStrategy
+    {
+        Default = 0,
+        Filtered = 1,
+        HuffmanOnly = 2,
+        RunLengthEncoding = 3,
+        Fixed = 4
+    }
     public sealed partial class ZLibStream : System.IO.Stream
     {
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel) { }
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionLevel compressionLevel, bool leaveOpen) { }
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode) { }
         public ZLibStream(System.IO.Stream stream, System.IO.Compression.CompressionMode mode, bool leaveOpen) { }
+        public ZLibStream(System.IO.Stream stream, System.IO.Compression.ZLibCompressionOptions compressionOptions, bool leaveOpen = false) { }
         public System.IO.Stream BaseStream { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }

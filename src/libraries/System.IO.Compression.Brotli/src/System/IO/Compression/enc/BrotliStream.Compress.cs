@@ -27,6 +27,17 @@ namespace System.IO.Compression
             _encoder.SetQuality(BrotliUtils.GetQualityFromCompressionLevel(compressionLevel));
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression options, and optionally leaves the stream open.
+        /// </summary>
+        /// <param name="stream">The stream to which compressed data is written.</param>
+        /// <param name="compressionOptions">The Brotli options for fine tuning the compression stream.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
+        public BrotliStream(Stream stream, BrotliCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, CompressionMode.Compress, leaveOpen)
+        {
+            _encoder.SetQuality(compressionOptions.Quality);
+        }
+
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte array.</summary>
         /// <param name="buffer">The buffer containing the data to compress.</param>
         /// <param name="offset">The byte offset in <paramref name="buffer" /> from which the bytes will be read.</param>

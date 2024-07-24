@@ -40,66 +40,41 @@ namespace System.IO.Compression
         /// <summary>
         /// <p>ZLib can accept any integer value between 0 and 9 (inclusive) as a valid compression level parameter:
         /// 1 gives best speed, 9 gives best compression, 0 gives no compression at all (the input data is simply copied a block at a time).
-        /// <code>CompressionLevel.DefaultCompression</code> = -1 requests a default compromise between speed and compression
+        /// <code>ZLibDefaultCompression</code> = -1 requests a default compromise between speed and compression
         /// (currently equivalent to level 6).</p>
         ///
         /// <p><strong>How to choose a compression level:</strong></p>
         ///
-        /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>DefaultCompression</code>, <code>BestCompression</code> are taken over from
-        /// the corresponding ZLib definitions, which map to our public NoCompression, Fastest, Optimal, and SmallestSize respectively.</p>
+        /// <p>The names <code>ZLibNoCompression</code>, <code>ZLibBestSpeed</code>, <code>ZLibDefaultCompression</code>, <code>ZLibBestCompression</code> are taken over from
+        /// the corresponding ZLib definitions, which map to our public ZLibNoCompression, Fastest, Optimal, and SmallestSize respectively.</p>
         /// <p><em>Optimal Compression:</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;</code> <br />
+        /// <p><code>int compressionLevel = ZLibDefaultCompression;</code> <br />
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>int memLevel = 8;</code> <br />
-        ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
+        ///    <code>ZLibCompressionStrategy strategy = ZLibCompressionStrategy.DefaultStrategy;</code> </p>
         ///
         ///<p><em>Fastest compression:</em></p>
-        ///<p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestSpeed;</code> <br />
+        ///<p><code>int compressionLevel = ZLibBestSpeed;</code> <br />
         ///   <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
         ///   <code>int memLevel = 8; </code> <br />
         ///   <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         ///
         /// <p><em>No compression (even faster, useful for data that cannot be compressed such some image formats):</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.NoCompression;</code> <br />
+        /// <p><code>int compressionLevel = ZLibNoCompression;</code> <br />
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>int memLevel = 7;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         ///
         /// <p><em>Smallest Size Compression:</em></p>
-        /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.BestCompression;</code> <br />
+        /// <p><code>int compressionLevel = ZLibBestCompression;</code> <br />
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
         ///    <code>int memLevel = 8;</code> <br />
         ///    <code>ZLibNative.CompressionStrategy strategy = ZLibNative.CompressionStrategy.DefaultStrategy;</code> </p>
         /// </summary>
-        public enum CompressionLevel : int
-        {
-            NoCompression = 0,
-            BestSpeed = 1,
-            DefaultCompression = -1,
-            BestCompression = 9
-        }
-
-        /// <summary>
-        /// <p><strong>From the ZLib manual:</strong></p>
-        /// <p><code>CompressionStrategy</code> is used to tune the compression algorithm.<br />
-        /// Use the value <code>DefaultStrategy</code> for normal data, <code>Filtered</code> for data produced by a filter (or predictor),
-        /// <code>HuffmanOnly</code> to force Huffman encoding only (no string match), or <code>Rle</code> to limit match distances to one
-        /// (run-length encoding). Filtered data consists mostly of small values with a somewhat random distribution. In this case, the
-        /// compression algorithm is tuned to compress them better. The effect of <code>Filtered</code> is to force more Huffman coding and]
-        /// less string matching; it is somewhat intermediate between <code>DefaultStrategy</code> and <code>HuffmanOnly</code>.
-        /// <code>Rle</code> is designed to be almost as fast as <code>HuffmanOnly</code>, but give better compression for PNG image data.
-        /// The strategy parameter only affects the compression ratio but not the correctness of the compressed output even if it is not set
-        /// appropriately. <code>Fixed</code> prevents the use of dynamic Huffman codes, allowing for a simpler decoder for special applications.</p>
-        ///
-        /// <p><strong>For .NET Framework use:</strong></p>
-        /// <p>We have investigated compression scenarios for a bunch of different frequently occurring compression data and found that in all
-        /// cases we investigated so far, <code>DefaultStrategy</code> provided best results</p>
-        /// <p>See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.</p>
-        /// </summary>
-        public enum CompressionStrategy : int
-        {
-            DefaultStrategy = 0
-        }
+        public const int ZLibNoCompression = 0;
+        public const int ZLibBestSpeed = 1;
+        public const int ZLibDefaultCompression = -1;
+        public const int ZLibBestCompression = 9;
 
         /// <summary>
         /// In version 1.2.3, ZLib provides on the <code>Deflated</code>-<code>CompressionMethod</code>.
@@ -199,7 +174,6 @@ namespace System.IO.Compression
 
             private volatile State _initializationState;
 
-
             public ZLibStreamHandle()
                 : base(new IntPtr(-1), true)
             {
@@ -216,7 +190,6 @@ namespace System.IO.Compression
             {
                 get { return _initializationState; }
             }
-
 
             protected override bool ReleaseHandle() =>
                 InitializationState switch
@@ -257,15 +230,13 @@ namespace System.IO.Compression
                 ObjectDisposedException.ThrowIf(InitializationState == State.Disposed, this);
             }
 
-
             private void EnsureState(State requiredState)
             {
                 if (InitializationState != requiredState)
                     throw new InvalidOperationException("InitializationState != " + requiredState.ToString());
             }
 
-
-            public unsafe ErrorCode DeflateInit2_(CompressionLevel level, int windowBits, int memLevel, CompressionStrategy strategy)
+            public unsafe ErrorCode DeflateInit2_(int level, int windowBits, int memLevel, ZLibCompressionStrategy strategy)
             {
                 EnsureNotDisposed();
                 EnsureState(State.NotInitialized);
@@ -279,7 +250,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode Deflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -290,7 +260,6 @@ namespace System.IO.Compression
                     return Interop.ZLib.Deflate(stream, flush);
                 }
             }
-
 
             public unsafe ErrorCode DeflateEnd()
             {
@@ -306,7 +275,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode InflateInit2_(int windowBits)
             {
                 EnsureNotDisposed();
@@ -321,7 +289,6 @@ namespace System.IO.Compression
                 }
             }
 
-
             public unsafe ErrorCode Inflate(FlushCode flush)
             {
                 EnsureNotDisposed();
@@ -332,7 +299,6 @@ namespace System.IO.Compression
                     return Interop.ZLib.Inflate(stream, flush);
                 }
             }
-
 
             public unsafe ErrorCode InflateEnd()
             {
@@ -352,13 +318,12 @@ namespace System.IO.Compression
             public string GetErrorMessage() => _zStream.msg != ZNullPtr ? Marshal.PtrToStringUTF8(_zStream.msg)! : string.Empty;
         }
 
-        public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, CompressionLevel level,
-            int windowBits, int memLevel, CompressionStrategy strategy)
+        public static ErrorCode CreateZLibStreamForDeflate(out ZLibStreamHandle zLibStreamHandle, int level,
+            int windowBits, int memLevel, ZLibCompressionStrategy strategy)
         {
             zLibStreamHandle = new ZLibStreamHandle();
             return zLibStreamHandle.DeflateInit2_(level, windowBits, memLevel, strategy);
         }
-
 
         public static ErrorCode CreateZLibStreamForInflate(out ZLibStreamHandle zLibStreamHandle, int windowBits)
         {

@@ -478,10 +478,11 @@ namespace System.IO.Compression
 
             async Task<long> GetLengthAsync(CompressionLevel compressionLevel)
             {
+                uncompressedStream.Position = 0;
                 using var mms = new MemoryStream();
                 using var compressor = CreateStream(mms, compressionLevel);
                 await uncompressedStream.CopyToAsync(compressor);
-                compressor.Flush();
+                await compressor.FlushAsync();
                 return mms.Length;
             }
 

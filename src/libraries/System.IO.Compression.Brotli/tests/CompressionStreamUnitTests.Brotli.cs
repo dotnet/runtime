@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Compression
@@ -64,6 +66,105 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("inputSize", () => BrotliEncoder.GetMaxCompressedLength(2147483133));
             Assert.InRange(BrotliEncoder.GetMaxCompressedLength(2147483132), 0, int.MaxValue);
             Assert.Equal(1, BrotliEncoder.GetMaxCompressedLength(0));
+        }
+
+        [Fact]
+        public void InvalidBrotliCompressionQuality()
+        {
+            BrotliCompressionOptions options = new();
+
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = -1);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = 12);
+        }
+
+        public static IEnumerable<object[]> BrotliOptionsRoundTripTestData()
+        {
+            yield return new object[] { 1000, new BrotliCompressionOptions() { Quality = 0 } };
+            yield return new object[] { 900, new BrotliCompressionOptions() { Quality = 3 } };
+            yield return new object[] { 1200, new BrotliCompressionOptions() { Quality = 5 } };
+            yield return new object[] { 2000, new BrotliCompressionOptions() { Quality = 6 } };
+            yield return new object[] { 3000, new BrotliCompressionOptions() { Quality = 2 } };
+            yield return new object[] { 1500, new BrotliCompressionOptions() { Quality = 7 } };
+            yield return new object[] { 500, new BrotliCompressionOptions() { Quality = 9 } };
+            yield return new object[] { 1000, new BrotliCompressionOptions() { Quality = 11 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(BrotliOptionsRoundTripTestData))]
+        public static void Roundtrip_WriteByte_ReadByte_DifferentQuality_Success(int totalLength, BrotliCompressionOptions options)
+        {
+            byte[] correctUncompressedBytes = Enumerable.Range(0, totalLength).Select(i => (byte)i).ToArray();
+
+            byte[] compressedBytes;
+            using (var ms = new MemoryStream())
+            {
+                var bs = new BrotliStream(ms, options);
+                foreach (byte b in correctUncompressedBytes)
+                {
+                    bs.WriteByte(b);
+                }
+                bs.Dispose();
+                compressedBytes = ms.ToArray();
+            }
+
+            byte[] decompressedBytes = new byte[correctUncompressedBytes.Length];
+            using (var ms = new MemoryStream(compressedBytes))
+            using (var bs = new BrotliStream(ms, CompressionMode.Decompress))
+            {
+                for (int i = 0; i < decompressedBytes.Length; i++)
+                {
+                    int b = bs.ReadByte();
+                    Assert.InRange(b, 0, 255);
+                    decompressedBytes[i] = (byte)b;
+                }
+                Assert.Equal(-1, bs.ReadByte());
+                Assert.Equal(-1, bs.ReadByte());
+            }
+
+            Assert.Equal<byte>(correctUncompressedBytes, decompressedBytes);
+        }
+
+        [Theory]
+        [MemberData(nameof(UncompressedTestFiles))]
+        public async void BrotliCompressionQuality_SizeInOrder(string testFile)
+        {
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+
+            async Task<long> GetLengthAsync(int compressionQuality)
+            {
+                uncompressedStream.Position = 0;
+                using var mms = new MemoryStream();
+                using var compressor = new BrotliStream(mms, new BrotliCompressionOptions() { Quality = compressionQuality });
+                await uncompressedStream.CopyToAsync(compressor);
+                await compressor.FlushAsync();
+                await uncompressedStream.FlushAsync();
+                return mms.Length;
+            }
+
+            long quality0 = await GetLengthAsync(0);
+            long quality1 = await GetLengthAsync(1);
+            long quality2 = await GetLengthAsync(2);
+            long quality3 = await GetLengthAsync(3);
+            long quality4 = await GetLengthAsync(4);
+            long quality5 = await GetLengthAsync(5);
+            long quality6 = await GetLengthAsync(6);
+            long quality7 = await GetLengthAsync(7);
+            long quality8 = await GetLengthAsync(8);
+            long quality9 = await GetLengthAsync(9);
+            long quality10 = await GetLengthAsync(10);
+            long quality11 = await GetLengthAsync(11);
+
+            Assert.True(quality1 <= quality0);
+            Assert.True(quality2 <= quality1);
+            Assert.True(quality3 <= quality1);
+            Assert.True(quality4 <= quality2);
+            Assert.True(quality5 <= quality1);
+            Assert.True(quality6 <= quality1);
+            Assert.True(quality7 <= quality4);
+            Assert.True(quality8 <= quality7);
+            Assert.True(quality9 <= quality8);
+            Assert.True(quality10 <= quality9);
+            Assert.True(quality11 <= quality10);
         }
 
         [Fact]

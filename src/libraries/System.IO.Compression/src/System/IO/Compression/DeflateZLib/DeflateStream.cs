@@ -46,6 +46,38 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="DeflateStream"/> class by using the specified stream, compression options, and whether to leave the <paramref name="stream"/> open.
+        /// </summary>
+        /// <param name="stream">The stream to which compressed data is written.</param>
+        /// <param name="compressionOptions">The options for fine tuning the compression stream.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="DeflateStream"/> object; otherwise, <see langword="false" /></param>
+        public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, compressionOptions, leaveOpen, ZLibNative.Deflate_DefaultWindowBits)
+        {
+        }
+
+        internal DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen, int windowBits)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+
+            _stream = stream;
+            _mode = CompressionMode.Compress;
+            _leaveOpen = leaveOpen;
+            InitializeDeflater(stream, compressionOptions, windowBits);
+        }
+
+        internal void InitializeDeflater(Stream stream, ZLibCompressionOptions compressionOptions, int windowBits)
+        {
+            Debug.Assert(stream != null);
+            if (!stream.CanWrite)
+            {
+                throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
+            }
+
+            _deflater = new Deflater(compressionOptions, windowBits);
+            InitializeBuffer();
+        }
+
+        /// <summary>
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
