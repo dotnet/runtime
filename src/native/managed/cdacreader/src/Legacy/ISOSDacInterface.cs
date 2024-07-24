@@ -92,6 +92,32 @@ internal struct DacpMethodTableData
     public int bContainsGCPointers;
 }
 
+internal enum DacpObjectType
+{
+    OBJ_STRING = 0,
+    OBJ_FREE,
+    OBJ_OBJECT,
+    OBJ_ARRAY,
+    OBJ_OTHER
+};
+
+internal struct DacpObjectData
+{
+    public ulong MethodTable;
+    public DacpObjectType ObjectType;
+    public ulong Size;
+    public ulong ElementTypeHandle;
+    public uint ElementType;
+    public uint dwRank;
+    public ulong dwNumComponents;
+    public ulong dwComponentSize;
+    public ulong ArrayDataPtr;
+    public ulong ArrayBoundsPtr;
+    public ulong ArrayLowerBoundsPtr;
+    public ulong RCW;
+    public ulong CCW;
+}
+
 internal struct DacpUsefulGlobalsData
 {
     public ulong ArrayMethodTable;
@@ -236,7 +262,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Objects
     [PreserveSig]
-    int GetObjectData(ulong objAddr, /*struct DacpObjectData*/ void* data);
+    int GetObjectData(ulong objAddr, DacpObjectData* data);
     [PreserveSig]
     int GetObjectStringData(ulong obj, uint count, char* stringData, uint* pNeeded);
     [PreserveSig]
