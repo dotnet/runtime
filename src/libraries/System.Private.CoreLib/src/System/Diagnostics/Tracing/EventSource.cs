@@ -500,13 +500,16 @@ namespace System.Diagnostics.Tracing
 
                 m_eventCommandExecuted += value;
 
-                // If we have an EventHandler<EventCommandEventArgs> attached to the EventSource before the first command arrives
-                // It should get a chance to handle the deferred commands.
-                EventCommandEventArgs? deferredCommands = m_deferredCommands;
-                while (deferredCommands != null)
+                if (m_completelyInited)
                 {
-                    value(this, deferredCommands);
-                    deferredCommands = deferredCommands.nextCommand;
+                    // If we have an EventHandler<EventCommandEventArgs> attached to the EventSource before the first command arrives
+                    // It should get a chance to handle the deferred commands.
+                    EventCommandEventArgs? deferredCommands = m_deferredCommands;
+                    while (deferredCommands != null)
+                    {
+                        value(this, deferredCommands);
+                        deferredCommands = deferredCommands.nextCommand;
+                    }
                 }
             }
             remove
@@ -1638,8 +1641,9 @@ namespace System.Diagnostics.Tracing
                 m_eventPipeProvider = eventPipeProvider;
 #endif
                 Debug.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.
-                // We are logically completely initialized at this point.
-                m_completelyInited = true;
+                // We are logically completely initialized at this point, but set m_completelyInited after
+                // doing deferred commands under the EventListenersLock to avoid a race with SendCommand which
+                // can clear deferred commands before they are done.
             }
             catch (Exception e)
             {
@@ -1659,6 +1663,11 @@ namespace System.Diagnostics.Tracing
                 {
                     DoCommand(deferredCommands);      // This can never throw, it catches them and reports the errors.
                     deferredCommands = deferredCommands.nextCommand;
+                }
+
+                if (m_constructionException == null)
+                {
+                    m_completelyInited = true;
                 }
             }
         }
@@ -2573,8 +2582,12 @@ namespace System.Diagnostics.Tracing
             }
 
             // PRECONDITION: We should be holding the EventListener.EventListenersLock
+            Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
             // We defer commands until we are completely inited.  This allows error messages to be sent.
-            Debug.Assert(m_completelyInited);
+            // Technically, by this point initialization should be complete, but m_completelyInited
+            // is only set after processing deferred commands at the end of Initialize to
+            // avoid possibly double invoking the m_eventCommandExecuted callback should EventCommandExecuted
+            // be set during OnEventCommand.
 
             if (m_etwProvider == null)     // If we failed to construct
                 return;
