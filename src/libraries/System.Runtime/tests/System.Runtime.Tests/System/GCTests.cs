@@ -293,9 +293,9 @@ namespace System.Tests
             }
         }
 
-        // [OuterLoop]  // TODO: VS uncomment before merging
+        [OuterLoop]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        public unsafe static void WaitForPendingFinalizersRaces()
+        public static void WaitForPendingFinalizersRaces()
         {
             Task.Run(Test);
             Task.Run(Test);
@@ -307,34 +307,39 @@ namespace System.Tests
 
             static void Test()
             {
-                for (int i = 0; i < 2000; i++)
+                for (int i = 0; i < 20000; i++)
                 {
-                    bool finalized = false;
-                    MakeAndNull(&finalized);
+                    BoxedFinalized flag = new BoxedFinalized();
+                    MakeAndNull(flag);
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
-                    Assert.True(finalized);
+                    Assert.True(flag.finalized);
                 }
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static void MakeAndNull(bool* flag)
+            static void MakeAndNull(BoxedFinalized flag)
             {
                 var deadObj = new TestObjectWithFinalizer(flag);
                 // it's dead here
             };
         }
 
-        unsafe class TestObjectWithFinalizer
+        class BoxedFinalized
         {
-            bool* _flag;
+            public bool finalized;
+        }
 
-            public TestObjectWithFinalizer(bool* flag)
+        class TestObjectWithFinalizer
+        {
+            BoxedFinalized _flag;
+
+            public TestObjectWithFinalizer(BoxedFinalized flag)
             {
                 _flag = flag;
             }
 
-            ~TestObjectWithFinalizer() => *_flag = true;
+            ~TestObjectWithFinalizer() => _flag.finalized = true;
         }
 
         [Fact]
