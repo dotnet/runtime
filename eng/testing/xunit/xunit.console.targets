@@ -92,5 +92,6 @@
             CopyToOutputDirectory="PreserveNewest"
             Visible="false" />
     </ItemGroup>
+  </Target>
 
 </Project>
