@@ -103,6 +103,8 @@ namespace ILCompiler.Win32Resources
         private static string ToUpperForResource(string str)
         {
             // Undocumented semantic for Win32 Resource APIs
+            // This ToUpper logic should only be applied to the
+            // latin range from 'a' to 'z'.
             System.Text.StringBuilder builder = new(str.Length);
             foreach (char c in str)
             {
