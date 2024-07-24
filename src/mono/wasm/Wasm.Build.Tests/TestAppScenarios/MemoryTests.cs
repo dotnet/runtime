@@ -29,14 +29,12 @@ public class MemoryTests : AppTestBase
     {
         string config = "Release";
         CopyTestAsset("WasmBasicTestApp", "MemoryTests", "App");
-        string extraArgs = BuildTestBase.IsUsingWorkloads ? "-p:EmccMaximumHeapSize=4294901760" : "-p:EmccMaximumHeapSize=4294901760 -p:LazyLoad=false"; 
-        BuildProject(config, assertAppBundle: false, extraArgs: extraArgs);
+        string extraArgs = BuildTestBase.IsUsingWorkloads ? "-p:EmccMaximumHeapSize=4294901760" : "-p:EmccMaximumHeapSize=4294901760 -p:LazyLoad=false";
+        BuildProject(config, assertAppBundle: false, extraArgs: extraArgs, expectSuccess: BuildTestBase.IsUsingWorkloads);
 
-        int expectedCode = BuildTestBase.IsUsingWorkloads ? 0 : 1;
-        var result = await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop", ExpectedExitCode: expectedCode));
-        if(!BuildTestBase.IsUsingWorkloads)
+        if (BuildTestBase.IsUsingWorkloads)
         {
-            Assert.Contains(result.TestOutput, item => item.Contains("To build this project, the following workloads must be installed: wasm-tools"));
+            await RunSdkStyleAppForBuild(new (Configuration: config, TestScenario: "AllocateLargeHeapThenInterop"));
         }
     }
 }
