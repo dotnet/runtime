@@ -1330,14 +1330,6 @@ Thread::Thread()
 
     m_dwForbidSuspendThread = 0;
 
-    // Initialize lock state
-    m_pHead = &m_embeddedEntry;
-    m_embeddedEntry.pNext = m_pHead;
-    m_embeddedEntry.pPrev = m_pHead;
-    m_embeddedEntry.dwLLockID = 0;
-    m_embeddedEntry.dwULockID = 0;
-    m_embeddedEntry.wReaderLevel = 0;
-
     m_pBlockingLock = NULL;
 
     m_pRuntimeThreadLocals = nullptr;

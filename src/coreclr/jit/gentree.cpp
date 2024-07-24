@@ -1389,6 +1389,7 @@ CallArgs::CallArgs()
     , m_hasRetBuffer(false)
     , m_isVarArgs(false)
     , m_abiInformationDetermined(false)
+    , m_newAbiInformationDetermined(false)
     , m_hasRegArgs(false)
     , m_hasStackArgs(false)
     , m_argsComplete(false)
@@ -2568,6 +2569,8 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 //
 void CallArgs::ResetFinalArgsAndABIInfo()
 {
+    m_newAbiInformationDetermined = false;
+
     if (!IsAbiInformationDetermined())
     {
         return;
@@ -13399,9 +13402,15 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         }
         else if (op1->OperIsConst() || op2->OperIsConst())
         {
-            /* at least one is a constant - see if we have a
-             * special operator that can use only one constant
-             * to fold - e.g. booleans */
+            // At least one is a constant - see if we have a
+            // special operator that can use only one constant
+            // to fold - e.g. booleans
+
+            if (tier0opts && opts.OptimizationDisabled())
+            {
+                // Too heavy for tier0
+                return tree;
+            }
 
             return gtFoldExprSpecial(tree);
         }
@@ -30940,6 +30949,32 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 #endif
 
+                case NI_Vector128_op_Equality:
+#if defined(TARGET_ARM64)
+                case NI_Vector64_op_Equality:
+#elif defined(TARGET_XARCH)
+                case NI_Vector256_op_Equality:
+                case NI_Vector512_op_Equality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+                {
+                    cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_EQ, isScalar, simdBaseType, otherNode->AsVecCon());
+                    resultNode = gtNewIconNode(cnsNode->AsVecCon()->IsAllBitsSet() ? 1 : 0, retType);
+                    break;
+                }
+
+                case NI_Vector128_op_Inequality:
+#if defined(TARGET_ARM64)
+                case NI_Vector64_op_Inequality:
+#elif defined(TARGET_XARCH)
+                case NI_Vector256_op_Inequality:
+                case NI_Vector512_op_Inequality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+                {
+                    cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_NE, isScalar, simdBaseType, otherNode->AsVecCon());
+                    resultNode = gtNewIconNode(cnsNode->AsVecCon()->IsZero() ? 0 : 1, retType);
+                    break;
+                }
+
                 default:
                 {
                     break;
@@ -31379,6 +31414,48 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
 #endif
+
+            case NI_Vector128_op_Equality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Equality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtNewIconNode(0, retType);
+                        resultNode = gtWrapWithSideEffects(resultNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case NI_Vector128_op_Inequality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Inequality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x != NaN) == true` and `(NaN != x) == true` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtNewIconNode(1, retType);
+                        resultNode = gtWrapWithSideEffects(resultNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
 
             default:
             {

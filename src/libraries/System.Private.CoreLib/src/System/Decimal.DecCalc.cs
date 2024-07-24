@@ -2481,8 +2481,8 @@ done:
                 }
             }
 
-            private static readonly PowerOvfl[] PowerOvflValues = new[]
-            {
+            private static readonly PowerOvfl[] PowerOvflValues =
+            [
                 // This is a table of the largest values that can be in the upper two
                 // uints of a 96-bit number that will not overflow when multiplied
                 // by a given power.  For the upper word, this is a table of
@@ -2497,7 +2497,7 @@ done:
                 new PowerOvfl(4294,      4154504685, 2369172679),  // 10^6 remainder 0.551616
                 new PowerOvfl(429,       2133437386, 4102387834),  // 10^7 remainder 0.9551616
                 new PowerOvfl(42,        4078814305, 410238783),   // 10^8 remainder 0.09991616
-            };
+            ];
 
             [StructLayout(LayoutKind.Explicit)]
             private struct Buf12

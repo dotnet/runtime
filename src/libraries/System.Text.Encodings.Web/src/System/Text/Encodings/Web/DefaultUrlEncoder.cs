@@ -64,7 +64,7 @@ namespace System.Text.Encodings.Web
             // Basic Latin set is:
             // ALPHA / DIGIT / "-" / "." / "_" / "~" / "!" / "$" / "(" / ")" / "*" / "," / ";" / "@"
 
-            _innerEncoder = new OptimizedInboxTextEncoder(EscaperImplementation.Singleton, settings.GetAllowedCodePointsBitmap(), extraCharactersToEscape: stackalloc char[] {
+            _innerEncoder = new OptimizedInboxTextEncoder(EscaperImplementation.Singleton, settings.GetAllowedCodePointsBitmap(), extraCharactersToEscape: [
                 ' ', // chars from Basic Latin which aren't already disallowed by the base encoder
                 '#',
                 '%',
@@ -96,7 +96,7 @@ namespace System.Text.Encodings.Web
                 '\uFFFD',
                 '\uFFFE',
                 '\uFFFF',
-            });
+            ]);
         }
 
         public override int MaxOutputCharactersPerInputCharacter => 9; // "%XX%YY%ZZ" for a single char ("%XX%YY%ZZ%WW" [12 chars] for supplementary scalar value)
