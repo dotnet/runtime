@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Buffers.Binary;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
 
@@ -1380,10 +1382,7 @@ namespace Internal.IL
 
         private int ReadILTokenAt(int ilOffset)
         {
-            return (int)(_ilBytes[ilOffset]
-                + (_ilBytes[ilOffset + 1] << 8)
-                + (_ilBytes[ilOffset + 2] << 16)
-                + (_ilBytes[ilOffset + 3] << 24));
+            return BinaryPrimitives.ReadInt32LittleEndian(_ilBytes.AsSpan(ilOffset, sizeof(int)));
         }
 
         private static void ReportInvalidBranchTarget(int targetOffset)
