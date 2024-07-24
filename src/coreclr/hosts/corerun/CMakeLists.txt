@@ -27,6 +27,10 @@ if(CLR_CMAKE_HOST_WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
+    # Enable CET-compatibility
+    if (CLR_CMAKE_HOST_ARCH_AMD64)
+        target_link_options(corerun PRIVATE "/CETCOMPAT")
+    endif()
 else(CLR_CMAKE_HOST_WIN32)
     target_link_libraries(corerun PRIVATE ${CMAKE_DL_LIBS})
     # Required to expose symbols for global symbol discovery

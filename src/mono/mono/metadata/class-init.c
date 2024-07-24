@@ -1039,18 +1039,14 @@ class_composite_fixup_cast_class (MonoClass *klass, gboolean for_ptr)
 	case MONO_TYPE_U2:
 		klass->cast_class = mono_defaults.int16_class;
 		break;
-	case MONO_TYPE_U4:
-#if TARGET_SIZEOF_VOID_P == 4
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
-#endif
+		klass->cast_class = mono_defaults.int_class;
+		break;
+	case MONO_TYPE_U4:
 		klass->cast_class = mono_defaults.int32_class;
 		break;
 	case MONO_TYPE_U8:
-#if TARGET_SIZEOF_VOID_P == 8
-	case MONO_TYPE_I:
-	case MONO_TYPE_U:
-#endif
 		klass->cast_class = mono_defaults.int64_class;
 		break;
 	default:
@@ -3290,7 +3286,14 @@ mono_class_setup_interface_id_nolock (MonoClass *klass)
 	    * 	a != b ==> true
 		*/
 		const char *name = m_class_get_name (klass);
-		if (!strcmp (name, "IList`1") || !strcmp (name, "ICollection`1") || !strcmp (name, "IEnumerable`1") || !strcmp (name, "IEnumerator`1"))
+		if (
+			!strcmp (name, "IList`1") ||
+			!strcmp (name, "IReadOnlyList`1") ||
+			!strcmp (name, "ICollection`1") ||
+			!strcmp (name, "IReadOnlyCollection`1") ||
+			!strcmp (name, "IEnumerable`1") ||
+			!strcmp (name, "IEnumerator`1")
+		)
 			klass->is_array_special_interface = 1;
 	}
 }
@@ -4191,6 +4194,121 @@ void
 mono_class_set_runtime_vtable (MonoClass *klass, MonoVTable *vtable)
 {
 	klass->runtime_vtable = vtable;
+}
+
+static int
+index_of_class (MonoClass *needle, MonoVarianceSearchTableEntry *haystack, int haystack_size) {
+	for (int i = 0; i < haystack_size; i++)
+		if (haystack[i].klass == needle)
+			return i;
+
+	return -1;
+}
+
+static void
+append_variance_entry (MonoClass *klass, MonoVarianceSearchTableEntry *buf, int buf_size, int *buf_count, MonoClass *value) {
+	int index = *buf_count;
+	(*buf_count) += 1;
+	g_assert (index < buf_size);
+	buf[index].klass = value;
+	buf[index].offset = value ? mono_class_interface_offset (klass, value) : 0;
+}
+
+static gboolean
+build_variance_search_table_inner (MonoClass *klass, MonoVarianceSearchTableEntry *buf, int buf_size, int *buf_count, MonoClass *current, gboolean terminator) {
+	// We have to track separately whether the buffer contains any actual interfaces, since we're appending
+	//  null terminators between levels of the inheritance hierarchy
+	gboolean result = FALSE;
+
+	while (current) {
+		if (!m_class_is_interfaces_inited (current)) {
+			ERROR_DECL (error);
+			mono_class_setup_interfaces (current, error);
+			return_val_if_nok (error, FALSE);
+		}
+
+		guint c = m_class_get_interface_count (current);
+		MonoClass **ifaces = m_class_get_interfaces (current);
+		for (guint i = 0; i < c; i++) {
+			MonoClass *iface = ifaces [i];
+			// Avoid adding duplicates or recursing into them.
+			if (index_of_class (iface, buf, *buf_count) >= 0)
+				continue;
+
+			if (mono_class_has_variant_generic_params (iface)) {
+				append_variance_entry (klass, buf, buf_size, buf_count, iface);
+				result = TRUE;
+			}
+
+			if (build_variance_search_table_inner (klass, buf, buf_size, buf_count, iface, FALSE))
+				result = TRUE;
+		}
+
+		current = current->parent;
+
+		if (terminator) {
+			// HACK: Don't append another NULL if we already have one, it's unnecessary
+			if (*buf_count && buf[(*buf_count) - 1].klass != NULL)
+				append_variance_entry (klass, buf, buf_size, buf_count, NULL);
+		}
+	}
+
+	return result;
+}
+
+typedef struct VarianceSearchTable {
+	int count;
+	MonoVarianceSearchTableEntry entries[1]; // a total of count items, at least 1
+} VarianceSearchTable;
+
+// Only call this with the loader lock held
+static void
+build_variance_search_table (MonoClass *klass) {
+	int buf_size = m_class_get_interface_offsets_count (klass) + klass->idepth + 1, buf_count = 0;
+	MonoVarianceSearchTableEntry *buf = g_alloca (buf_size * sizeof(MonoVarianceSearchTableEntry));
+	VarianceSearchTable *result = NULL;
+	memset (buf, 0, buf_size * sizeof(MonoVarianceSearchTableEntry));
+	gboolean any_items = build_variance_search_table_inner (klass, buf, buf_size, &buf_count, klass, TRUE);
+
+	if (any_items) {
+		guint bytes = (buf_count * sizeof(MonoVarianceSearchTableEntry));
+		result = (VarianceSearchTable *)mono_mem_manager_alloc (m_class_get_mem_manager (klass), bytes + sizeof(VarianceSearchTable));
+		result->count = buf_count;
+		memcpy (result->entries, buf, bytes);
+	}
+	klass->variant_search_table = result;
+	// Ensure we do not set the inited flag until we've stored the result pointer
+	mono_memory_barrier ();
+	klass->variant_search_table_inited = TRUE;
+}
+
+MonoVarianceSearchTableEntry *
+mono_class_get_variance_search_table (MonoClass *klass, int *table_size) {
+	g_assert (klass);
+	g_assert (table_size);
+
+	// We will never do a variance search to locate a given interface on an interface, only on
+	//  a fully-defined type or generic instance
+	if (m_class_is_interface (klass)) {
+		*table_size = 0;
+		return NULL;
+	}
+
+	if (!klass->variant_search_table_inited) {
+		mono_loader_lock ();
+		if (!klass->variant_search_table_inited)
+			build_variance_search_table (klass);
+		mono_loader_unlock ();
+	}
+
+	VarianceSearchTable *vst = klass->variant_search_table;
+	if (vst) {
+		*table_size = vst->count;
+		return vst->entries;
+	} else {
+		*table_size = 0;
+		return NULL;
+	}
 }
 
 /**

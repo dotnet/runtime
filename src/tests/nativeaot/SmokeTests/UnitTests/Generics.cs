@@ -57,6 +57,7 @@ class Generics
         TestGvmLookupDependency.Run();
         Test99198Regression.Run();
         Test102259Regression.Run();
+        Test104913Regression.Run();
         TestInvokeMemberCornerCaseInGenerics.Run();
         TestRefAny.Run();
         TestNullableCasting.Run();
@@ -2356,9 +2357,29 @@ class Generics
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DeepAV(int x)
+        {
+            if (x > 0)
+                DeepAV(x - 1);
+
+            // Call an instance method on something we never allocated, but overrides a used virtual.
+            // This asserted the compiler when trying to build a template for Unused<__Canon>.
+            ((Unused<object>)s_ref).Blagh();
+        }
+
         public static void Run()
         {
             new Used().DoStuff();
+
+            for (int i = 0; i < 10; i++)
+            try
+            {
+                DeepAV(i);
+            }
+            catch (NullReferenceException)
+            {
+            }
 
             try
             {
@@ -3573,6 +3594,38 @@ class Generics
         public static void Run()
         {
             new Gen<object>();
+        }
+    }
+
+    class Test104913Regression
+    {
+        interface IFoo
+        {
+            (Type, Type) InvokeInstance<T>() where T : IBar;
+        }
+
+        class Foo : IFoo
+        {
+            public (Type, Type) InvokeInstance<T>() where T : IBar
+                => (typeof(T), T.InvokeStatic<int>());
+        }
+
+        interface IBar
+        {
+            static abstract Type InvokeStatic<T>();
+        }
+
+        class Bar : IBar
+        {
+            public static Type InvokeStatic<T>()
+                => typeof(T);
+        }
+
+        public static void Run()
+        {
+            (Type t1, Type t2) = ((IFoo)new Foo()).InvokeInstance<Bar>();
+            if (t1 != typeof(Bar) || t2 != typeof(int))
+                throw new Exception();
         }
     }
 

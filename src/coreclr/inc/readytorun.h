@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 0x0009
-#define READYTORUN_MINOR_VERSION 0x0003
+#define READYTORUN_MAJOR_VERSION 10
+#define READYTORUN_MINOR_VERSION 0x0001
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 0x009
+#define MINIMUM_READYTORUN_MAJOR_VERSION 10
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -36,6 +36,8 @@
 // R2R Version 9.2 adds MemZero and NativeMemSet helpers
 // R2R Version 9.3 adds BulkWriteBarrier helper
 //                 uses GCInfo v3, which makes safe points in partially interruptible code interruptible.
+// R2R Version 10.0 adds support for the statics being allocated on a per type basis instead of on a per module basis
+// R2R Version 10.1 adds Unbox_TypeTest helper
 
 struct READYTORUN_CORE_HEADER
 {
@@ -356,6 +358,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_Unbox                     = 0x5A,
     READYTORUN_HELPER_Unbox_Nullable            = 0x5B,
     READYTORUN_HELPER_NewMultiDimArr            = 0x5C,
+    READYTORUN_HELPER_Unbox_TypeTest            = 0x5D,
 
     // Helpers used with generic handle lookup cases
     READYTORUN_HELPER_NewObject                 = 0x60,

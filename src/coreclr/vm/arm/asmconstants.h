@@ -76,8 +76,8 @@ ASMCONSTANTS_C_ASSERT(MethodTable__m_BaseSize == offsetof(MethodTable, m_BaseSiz
 #define MethodTable__m_dwFlags         0x0
 ASMCONSTANTS_C_ASSERT(MethodTable__m_dwFlags == offsetof(MethodTable, m_dwFlags));
 
-#define MethodTable__enum_flag_ContainsPointers 0x01000000
-ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsPointers == MethodTable::enum_flag_ContainsPointers);
+#define MethodTable__enum_flag_ContainsGCPointers 0x01000000
+ASMCONSTANTS_C_ASSERT(MethodTable__enum_flag_ContainsGCPointers == MethodTable::enum_flag_ContainsGCPointers);
 
 #define MethodTable__m_ElementType        DBG_FRE(0x24, 0x20)
 ASMCONSTANTS_C_ASSERT(MethodTable__m_ElementType == offsetof(MethodTable, m_ElementTypeHnd));
@@ -141,13 +141,6 @@ ASMCONSTANTS_C_ASSERT(Thread__m_fPreemptiveGCDisabled == offsetof(Thread, m_fPre
 #define               Thread__m_pFrame                  0x08
 ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
-
-#define               DomainLocalModule__m_pDataBlob                 0x18
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pDataBlob == offsetof(DomainLocalModule, m_pDataBlob));
-
-#define               DomainLocalModule__m_pGCStatics                 0x10
-ASMCONSTANTS_C_ASSERT(DomainLocalModule__m_pGCStatics == offsetof(DomainLocalModule, m_pGCStatics));
-
 
 #define ASM__VTABLE_SLOTS_PER_CHUNK 8
 ASMCONSTANTS_C_ASSERT(ASM__VTABLE_SLOTS_PER_CHUNK == VTABLE_SLOTS_PER_CHUNK)

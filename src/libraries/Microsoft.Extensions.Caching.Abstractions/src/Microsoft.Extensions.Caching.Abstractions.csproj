@@ -13,13 +13,13 @@ Microsoft.Extensions.Caching.Memory.IMemoryCache</PackageDescription>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
-             Link="Common\System\ThrowHelper.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Remove="Microsoft.Extensions.Caching.Abstractions.Typeforwards.netcoreapp.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>
 
 </Project>

@@ -15,6 +15,8 @@
 Commonly Used Types:
 System.Resources.Extensions.DeserializingResourceReader
 System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -44,8 +46,6 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
     <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.Options.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.ParseState.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObject.TypeResolver.cs" />
-    <Compile Include="System\Resources\Extensions\BinaryFormat\BinaryFormattedObjectExtensions.cs" />
-    <Compile Include="System\Resources\Extensions\BinaryFormat\Id.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationEvents.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationExtensions.cs" />
     <Compile Include="System\Resources\Extensions\BinaryFormat\SerializationInfoExtensions.cs" />
@@ -65,12 +65,8 @@ System.Resources.Extensions.PreserializedResourceWriter</PackageDescription>
              Link="System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
-  <!-- when System.Runtime.Serialization.BinaryFormat gets approved, this whole block will be repalced with a reference to package -->
   <ItemGroup>
-    <Compile Include="$(LibrariesProjectRoot)\System.Runtime.Serialization.BinaryFormat\src\**\*.cs" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.IO.Hashing\src\System.IO.Hashing.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

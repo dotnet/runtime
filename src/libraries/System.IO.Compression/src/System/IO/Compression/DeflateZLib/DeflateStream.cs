@@ -20,7 +20,7 @@ namespace System.IO.Compression
         private Inflater? _inflater;
         private Deflater? _deflater;
         private byte[]? _buffer;
-        private int _activeAsyncOperation; // 1 == true, 0 == false
+        private volatile bool _activeAsyncOperation;
         private bool _wroteBytes;
 
         internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
@@ -730,7 +730,7 @@ namespace System.IO.Compression
                         if (buffer != null)
                         {
                             _buffer = null;
-                            if (!AsyncOperationIsActive)
+                            if (!_activeAsyncOperation)
                             {
                                 ArrayPool<byte>.Shared.Return(buffer);
                             }
@@ -783,7 +783,7 @@ namespace System.IO.Compression
                             if (buffer != null)
                             {
                                 _buffer = null;
-                                if (!AsyncOperationIsActive)
+                                if (!_activeAsyncOperation)
                                 {
                                     ArrayPool<byte>.Shared.Return(buffer);
                                 }
@@ -1091,24 +1091,27 @@ namespace System.IO.Compression
             public override void SetLength(long value) { throw new NotSupportedException(); }
         }
 
-        private bool AsyncOperationIsActive => _activeAsyncOperation != 0;
-
         private void EnsureNoActiveAsyncOperation()
         {
-            if (AsyncOperationIsActive)
-                ThrowInvalidBeginCall();
-        }
-
-        private void AsyncOperationStarting()
-        {
-            if (Interlocked.Exchange(ref _activeAsyncOperation, 1) != 0)
+            if (_activeAsyncOperation)
             {
                 ThrowInvalidBeginCall();
             }
         }
 
-        private void AsyncOperationCompleting() =>
-            Volatile.Write(ref _activeAsyncOperation, 0);
+        private void AsyncOperationStarting()
+        {
+            if (Interlocked.Exchange(ref _activeAsyncOperation, true))
+            {
+                ThrowInvalidBeginCall();
+            }
+        }
+
+        private void AsyncOperationCompleting()
+        {
+            Debug.Assert(_activeAsyncOperation);
+            _activeAsyncOperation = false;
+        }
 
         private static void ThrowInvalidBeginCall() =>
             throw new InvalidOperationException(SR.InvalidBeginCall);

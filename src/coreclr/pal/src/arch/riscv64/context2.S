@@ -105,10 +105,15 @@ LOCAL_LABEL(No_Restore_CONTEXT_INTEGER):
     beqz t1, LOCAL_LABEL(No_Restore_CONTEXT_CONTROL)
 
     ld  ra, (CONTEXT_Ra)(t4)
+    ld  t1, (CONTEXT_T4)(t4)
+    ld  fp, (CONTEXT_Sp)(t4)
+    sd  t1, -8(fp)
     ld  fp, (CONTEXT_Fp)(t4)
-    ld  sp, (CONTEXT_Sp)(t4)
     ld  t1, (CONTEXT_Pc)(t4) // Since we cannot control $pc directly, we're going to corrupt t1
-    ld  t4, (CONTEXT_T4)(t4)
+    ld  t4, (CONTEXT_Sp)(t4)
+    addi sp, t4, -8
+    ld  t4, (sp)
+    addi sp, sp, 8
     jr  t1
 
 LOCAL_LABEL(No_Restore_CONTEXT_CONTROL):

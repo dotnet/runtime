@@ -46,30 +46,30 @@ To build native runtime libraries for arm:
 
     $ ROOTFS_DIR=`pwd`/.tools/rootfs/arm ./build.sh libs.native --cross --arch arm --librariesConfiguration Release
 
-Build artifacts can be found in `artifacts/bin/native/net8.0-<TargetOS>-<BuildArch>-<BuildType>/`:
+Build artifacts can be found in `artifacts/bin/native/net9.0-<TargetOS>-<BuildArch>-<BuildType>/`:
 
-    $ ls artifacts/bin/native/net8.0-Linux-Release-arm/*
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Globalization.Native.a
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Globalization.Native.so
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Globalization.Native.so.dbg
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.IO.Compression.Native.a
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.IO.Compression.Native.so
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.IO.Compression.Native.so.dbg
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.IO.Ports.Native.a
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.IO.Ports.Native.so
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.IO.Ports.Native.so.dbg
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Native.a
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Native.so
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Native.so.dbg
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Net.Security.Native.a
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Net.Security.Native.so
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Net.Security.Native.so.dbg
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.a
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.so
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.so.dbg
+    $ ls artifacts/bin/native/net9.0-Linux-Release-arm/*
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Globalization.Native.a
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Globalization.Native.so
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Globalization.Native.so.dbg
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.IO.Compression.Native.a
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.IO.Compression.Native.so
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.IO.Compression.Native.so.dbg
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.IO.Ports.Native.a
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.IO.Ports.Native.so
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.IO.Ports.Native.so.dbg
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Native.a
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Native.so
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Native.so.dbg
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Net.Security.Native.a
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Net.Security.Native.so
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Net.Security.Native.so.dbg
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.a
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.so
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Security.Cryptography.Native.OpenSsl.so.dbg
 
-    $ file artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Native.so
-    artifacts/bin/native/net8.0-Linux-Release-arm/libSystem.Native.so: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, BuildID[sha1]=5f6f6f9c4012dffed133624867adf32ac2af130d, stripped
+    $ file artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Native.so
+    artifacts/bin/native/net9.0-Linux-Release-arm/libSystem.Native.so: ELF 32-bit LSB shared object, ARM, EABI5 version 1 (SYSV), dynamically linked, BuildID[sha1]=5f6f6f9c4012dffed133624867adf32ac2af130d, stripped
 
 
 Compile managed runtime libraries on Linux
@@ -88,7 +88,7 @@ Note that by default ILLinker trimming is enabled and libraries built above for 
 
     $ ./build.sh libs.sfx --arch arm --librariesConfiguration Release /p:ILLinkTrimAssembly=false
 
-Build artifacts can be found in `artifacts/bin/microsoft.netcore.app.runtime.<TargetOS>-<BuildArch>/<BuildType>/runtimes/<TargetOS>-<BuildArch>/lib/net8.0/`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md).
+Build artifacts can be found in `artifacts/bin/microsoft.netcore.app.runtime.<TargetOS>-<BuildArch>/<BuildType>/runtimes/<TargetOS>-<BuildArch>/lib/net9.0/`. For more details on the build configurations see [project-guidelines](/docs/coding-guidelines/project-guidelines.md).
 
 Both native and managed runtime libraries can be built at the same time with:
 

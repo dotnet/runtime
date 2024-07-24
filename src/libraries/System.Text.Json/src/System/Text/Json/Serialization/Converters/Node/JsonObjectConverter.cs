@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Schema;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
@@ -64,5 +65,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonObject jObject = new JsonObject(jElement, options);
             return jObject;
         }
+
+        internal override JsonSchema? GetSchema(JsonNumberHandling _) => new() { Type = JsonSchemaType.Object };
     }
 }

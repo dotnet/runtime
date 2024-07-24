@@ -76,12 +76,11 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
             ABIPassingInformation info;
             if (m_floatRegs.Count() >= slots)
             {
-                info.NumSegments = slots;
-                info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[slots];
+                info = ABIPassingInformation(comp, slots);
 
                 for (unsigned i = 0; i < slots; i++)
                 {
-                    info.Segments[i] = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), i * elemSize, elemSize);
+                    info.Segment(i) = ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), i * elemSize, elemSize);
                 }
             }
             else
@@ -132,11 +131,13 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
         // case. Normally a struct that does not fit in registers will always
         // be passed on stack.
         assert(compFeatureArgSplit());
-        info.NumSegments = 2;
-        info.Segments    = new (comp, CMK_ABI) ABIPassingSegment[2];
-        info.Segments[0] = ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0, TARGET_POINTER_SIZE);
-        info.Segments[1] = ABIPassingSegment::OnStack(m_stackArgSize, TARGET_POINTER_SIZE,
-                                                      structLayout->GetSize() - TARGET_POINTER_SIZE);
+        info = ABIPassingInformation::FromSegments(comp,
+                                                   ABIPassingSegment::InRegister(m_intRegs.Dequeue(), 0,
+                                                                                 TARGET_POINTER_SIZE),
+                                                   ABIPassingSegment::OnStack(m_stackArgSize, TARGET_POINTER_SIZE,
+                                                                              structLayout->GetSize() -
+                                                                                  TARGET_POINTER_SIZE));
+
         m_stackArgSize += TARGET_POINTER_SIZE;
     }
     else
@@ -152,15 +153,14 @@ ABIPassingInformation Arm64Classifier::Classify(Compiler*    comp,
 
         if (regs->Count() >= slots)
         {
-            info.NumSegments  = slots;
-            info.Segments     = new (comp, CMK_ABI) ABIPassingSegment[slots];
+            info              = ABIPassingInformation(comp, slots);
             unsigned slotSize = min(passedSize, (unsigned)TARGET_POINTER_SIZE);
-            info.Segments[0]  = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
+            info.Segment(0)   = ABIPassingSegment::InRegister(regs->Dequeue(), 0, slotSize);
             if (slots == 2)
             {
                 assert(varTypeIsStruct(type));
                 unsigned tailSize = structLayout->GetSize() - slotSize;
-                info.Segments[1]  = ABIPassingSegment::InRegister(regs->Dequeue(), slotSize, tailSize);
+                info.Segment(1)   = ABIPassingSegment::InRegister(regs->Dequeue(), slotSize, tailSize);
             }
         }
         else

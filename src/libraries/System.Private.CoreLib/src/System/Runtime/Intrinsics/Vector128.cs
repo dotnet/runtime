@@ -17,7 +17,7 @@ namespace System.Runtime.Intrinsics
     // that most of the code-paths will be optimized away as "dead code".
     //
     // We then manually inline cases (such as certain intrinsic code-paths) that
-    // will generate code small enough to make the AgressiveInlining profitable. The
+    // will generate code small enough to make the AggressiveInlining profitable. The
     // other cases (such as the software fallback) are placed in their own method.
     // This ensures we get good codegen for the "fast-path" and allows the JIT to
     // determine inline profitability of the other paths as it would normally.
@@ -173,6 +173,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Plane" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Plane" />.</returns>
+        [Intrinsic]
         internal static Plane AsPlane(this Vector128<float> value)
         {
 #if MONO
@@ -185,6 +186,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Quaternion" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
         /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Quaternion" />.</returns>
+        [Intrinsic]
         internal static Quaternion AsQuaternion(this Vector128<float> value)
         {
 #if MONO
@@ -264,17 +266,17 @@ namespace System.Runtime.Intrinsics
 #endif
         }
 
-        /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</returns>
         [Intrinsic]
-        public static Vector128<float> AsVector128(this Vector2 value) => new Vector4(value.X, value.Y, 0.0f, 0.0f).AsVector128();
+        public static Vector128<float> AsVector128(this Vector2 value) => Vector4.Create(value, 0, 0).AsVector128();
 
-        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</summary>
         /// <param name="value">The vector to reinterpret.</param>
-        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" /> with the new elements zeroed.</returns>
         [Intrinsic]
-        public static Vector128<float> AsVector128(this Vector3 value) => new Vector4(value.X, value.Y, value.Z, 0.0f).AsVector128();
+        public static Vector128<float> AsVector128(this Vector3 value) => Vector4.Create(value, 0).AsVector128();
 
         /// <summary>Reinterprets a <see cref="Vector4" /> as a new <see cref="Vector128{Single}" />.</summary>
         /// <param name="value">The vector to reinterpret.</param>
@@ -303,6 +305,34 @@ namespace System.Runtime.Intrinsics
 
             ref byte address = ref Unsafe.As<Vector<T>, byte>(ref value);
             return Unsafe.ReadUnaligned<Vector128<T>>(ref address);
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector2" /> as a new <see cref="Vector128{Single}" />, leaving the new elements undefined.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        public static Vector128<float> AsVector128Unsafe(this Vector2 value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            Unsafe.SkipInit(out Vector128<float> result);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            return result;
+        }
+
+        /// <summary>Reinterprets a <see cref="Vector3" /> as a new <see cref="Vector128{Single}" />, leaving the new elements undefined.</summary>
+        /// <param name="value">The vector to reinterpret.</param>
+        /// <returns><paramref name="value" /> reinterpreted as a new <see cref="Vector128{Single}" />.</returns>
+        [Intrinsic]
+        public static Vector128<float> AsVector128Unsafe(this Vector3 value)
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            Unsafe.SkipInit(out Vector128<float> result);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Vector128<float>, byte>(ref result), value);
+            return result;
         }
 
         /// <summary>Reinterprets a <see cref="Vector128{Single}" /> as a new <see cref="Vector2" />.</summary>
@@ -417,6 +447,22 @@ namespace System.Runtime.Intrinsics
         /// <seealso cref="Math.Ceiling(double)" />
         [Intrinsic]
         public static Vector128<double> Ceiling(Vector128<double> vector) => Ceiling<double>(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Clamp(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static Vector128<T> Clamp<T>(Vector128<T> value, Vector128<T> min, Vector128<T> max)
+        {
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
+            return Min(Max(value, min), max);
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ClampNative(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
+        public static Vector128<T> ClampNative<T>(Vector128<T> value, Vector128<T> min, Vector128<T> max)
+        {
+            // We must follow HLSL behavior in the case user specified min value is bigger than max value.
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <summary>Conditionally selects a value from two vectors on a bitwise basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -688,6 +734,32 @@ namespace System.Runtime.Intrinsics
             );
         }
 
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> CopySign<T>(Vector128<T> value, Vector128<T> sign)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return value;
+            }
+            else if (IsHardwareAccelerated)
+            {
+                return VectorMath.CopySign<Vector128<T>, T>(value, sign);
+            }
+            else
+            {
+                return Create(
+                    Vector64.CopySign(value._lower, sign._lower),
+                    Vector64.CopySign(value._upper, sign._upper)
+                );
+            }
+        }
+
         /// <summary>Copies a <see cref="Vector128{T}" /> to a given array.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to be copied.</param>
@@ -750,6 +822,47 @@ namespace System.Runtime.Intrinsics
             }
 
             Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), vector);
+        }
+
+        /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Cos(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosDouble<Vector128<double>, Vector128<long>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Cos(vector._lower),
+                    Vector64.Cos(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Cos(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Cos(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.CosSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.CosSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Cos(vector._lower),
+                    Vector64.Cos(vector._upper)
+                );
+            }
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance with all elements initialized to the specified value.</summary>
@@ -933,7 +1046,7 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector128<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15)
         {
             return Create(
-                Vector64.Create(e0, e1, e2,  e3,  e4,  e5,  e6,  e7),
+                Vector64.Create(e0, e1, e2, e3, e4, e5, e6, e7),
                 Vector64.Create(e8, e9, e10, e11, e12, e13, e14, e15)
             );
         }
@@ -1031,7 +1144,7 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector128<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15)
         {
             return Create(
-                Vector64.Create(e0, e1, e2,  e3,  e4,  e5,  e6,  e7),
+                Vector64.Create(e0, e1, e2, e3, e4, e5, e6, e7),
                 Vector64.Create(e8, e9, e10, e11, e12, e13, e14, e15)
             );
         }
@@ -1108,6 +1221,14 @@ namespace System.Runtime.Intrinsics
                 Vector64.Create(e1)
             );
         }
+
+        /// <summary>Creates a new <see cref="Vector128{T}" /> instance with the lower and upper 64-bits initialized to a specified value.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that the lower and upper 64-bits will be initialized to.</param>
+        /// <returns>A new <see cref="Vector128{T}" /> with the lower and upper 64-bits initialized to <paramref name="value" />.</returns>
+        /// <exception cref="NotSupportedException">The type of <paramref name="value" /> (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> Create<T>(Vector64<T> value) => Create(value, value);
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> instance from two <see cref="Vector64{T}" /> instances.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1398,10 +1519,46 @@ namespace System.Runtime.Intrinsics
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="start">The value that element 0 will be initialized to.</param>
         /// <param name="step">The value that indicates how far apart each element should be from the previous.</param>
-        /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the the value of the previous element plus <paramref name="step" />.</returns>
+        /// <returns>A new <see cref="Vector128{T}" /> instance with the first element initialized to <paramref name="start" /> and each subsequent element initialized to the value of the previous element plus <paramref name="step" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> CreateSequence<T>(T start, T step) => (Vector128<T>.Indices * step) + Create(start);
+
+        /// <inheritdoc cref="Vector64.DegreesToRadians(Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> DegreesToRadians(Vector128<double> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector128<double>, double>(degrees);
+            }
+            else
+            {
+                return Create(
+                    Vector64.DegreesToRadians(degrees._lower),
+                    Vector64.DegreesToRadians(degrees._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.DegreesToRadians(Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> DegreesToRadians(Vector128<float> degrees)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.DegreesToRadians<Vector128<float>, float>(degrees);
+            }
+            else
+            {
+                return Create(
+                    Vector64.DegreesToRadians(degrees._lower),
+                    Vector64.DegreesToRadians(degrees._upper)
+                );
+            }
+        }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1475,7 +1632,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpDouble<Vector128<double>, Vector128<long>, Vector128<ulong>>(vector);
+                return VectorMath.ExpDouble<Vector128<double>, Vector128<ulong>>(vector);
             }
             else
             {
@@ -1492,7 +1649,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpSingle<Vector128<float>, Vector128<uint>, Vector128<double>, Vector128<ulong>>(vector);
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.ExpSingle<Vector128<float>, Vector128<uint>, Vector256<double>, Vector256<ulong>>(vector);
+                }
+                else
+                {
+                    return VectorMath.ExpSingle<Vector128<float>, Vector128<uint>, Vector128<double>, Vector128<ulong>>(vector);
+                }
             }
             else
             {
@@ -1716,6 +1880,170 @@ namespace System.Runtime.Intrinsics
                 || Vector64.GreaterThanOrEqualAny(left._upper, right._upper);
         }
 
+        /// <inheritdoc cref="Vector64.Hypot(Vector64{double}, Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Hypot(Vector128<double> x, Vector128<double> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.HypotDouble<Vector128<double>, Vector128<ulong>>(x, y);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Hypot(x._lower, y._lower),
+                    Vector64.Hypot(x._upper, y._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Hypot(Vector64{float}, Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Hypot(Vector128<float> x, Vector128<float> y)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.HypotSingle<Vector128<float>, Vector256<double>>(x, y);
+                }
+                else
+                {
+                    return VectorMath.HypotSingle<Vector128<float>, Vector128<double>>(x, y);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Hypot(x._lower, y._lower),
+                    Vector64.Hypot(x._upper, y._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNaN(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> IsNaN<T>(Vector128<T> vector)
+        {
+            if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
+            {
+                return ~Equals(vector, vector);
+            }
+            return Vector128<T>.Zero;
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsNegative(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> IsNegative<T>(Vector128<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return Vector128<T>.Zero;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return LessThan(vector.AsInt32(), Vector128<int>.Zero).As<int, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return LessThan(vector.AsInt64(), Vector128<long>.Zero).As<long, T>();
+            }
+            else
+            {
+                return LessThan(vector, Vector128<T>.Zero);
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositive(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> IsPositive<T>(Vector128<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong))
+             || (typeof(T) == typeof(nuint)))
+            {
+                return Vector128<T>.AllBitsSet;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return GreaterThanOrEqual(vector.AsInt32(), Vector128<int>.Zero).As<int, T>();
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return GreaterThanOrEqual(vector.AsInt64(), Vector128<long>.Zero).As<long, T>();
+            }
+            else
+            {
+                return GreaterThanOrEqual(vector, Vector128<T>.Zero);
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsPositiveInfinity(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> IsPositiveInfinity<T>(Vector128<T> vector)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return Equals(vector, Create(float.PositiveInfinity).As<float, T>());
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return Equals(vector, Create(double.PositiveInfinity).As<double, T>());
+            }
+            return Vector128<T>.Zero;
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsZero(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> IsZero<T>(Vector128<T> vector) => Equals(vector, Vector128<T>.Zero);
+
+        /// <inheritdoc cref="Vector64.Lerp(Vector64{double}, Vector64{double}, Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Lerp(Vector128<double> x, Vector128<double> y, Vector128<double> amount)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Lerp<Vector128<double>, double>(x, y, amount);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Lerp(x._lower, y._lower, amount._lower),
+                    Vector64.Lerp(x._upper, y._upper, amount._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Lerp(Vector64{float}, Vector64{float}, Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Lerp(Vector128<float> x, Vector128<float> y, Vector128<float> amount)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Lerp<Vector128<float>, float>(x, y, amount);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Lerp(x._lower, y._lower, amount._lower),
+                    Vector64.Lerp(x._upper, y._upper, amount._upper)
+                );
+            }
+        }
+
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
@@ -1804,7 +2132,6 @@ namespace System.Runtime.Intrinsics
                 || Vector64.LessThanOrEqualAny(left._upper, right._upper);
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1843,7 +2170,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe Vector128<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -1954,36 +2280,184 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
-        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the maximum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right"/> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Max<T>(Vector128<T> left, Vector128<T> right)
         {
-            return Create(
-                Vector64.Max(left._lower, right._lower),
-                Vector64.Max(left._upper, right._upper)
-            );
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Max<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Max(left._lower, right._lower),
+                    Vector64.Max(left._upper, right._upper)
+                );
+            }
         }
 
-        /// <summary>Computes the minimum of two vectors on a per-element basis.</summary>
-        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
-        /// <param name="left">The vector to compare with <paramref name="right" />.</param>
-        /// <param name="right">The vector to compare with <paramref name="left" />.</param>
-        /// <returns>A vector whose elements are the minimum of the corresponding elements in <paramref name="left" /> and <paramref name="right" />.</returns>
-        /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right"/> (<typeparamref name="T" />) is not supported.</exception>
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MaxMagnitude<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxMagnitude<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MaxMagnitude(left._lower, right._lower),
+                    Vector64.MaxMagnitude(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MaxMagnitudeNumber<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxMagnitudeNumber<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MaxMagnitudeNumber(left._lower, right._lower),
+                    Vector64.MaxMagnitudeNumber(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MaxNative<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return ConditionalSelect(GreaterThan(left, right), left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MaxNative(left._lower, right._lower),
+                    Vector64.MaxNative(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MaxNumber<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MaxNumber<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MaxNumber(left._lower, right._lower),
+                    Vector64.MaxNumber(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> Min<T>(Vector128<T> left, Vector128<T> right)
         {
-            return Create(
-                Vector64.Min(left._lower, right._lower),
-                Vector64.Min(left._upper, right._upper)
-            );
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.Min<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Min(left._lower, right._lower),
+                    Vector64.Min(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MinMagnitude<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinMagnitude<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MinMagnitude(left._lower, right._lower),
+                    Vector64.MinMagnitude(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MinMagnitudeNumber<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinMagnitudeNumber<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MinMagnitudeNumber(left._lower, right._lower),
+                    Vector64.MinMagnitudeNumber(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MinNative<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return ConditionalSelect(LessThan(left, right), left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MinNative(left._lower, right._lower),
+                    Vector64.MinNative(left._upper, right._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<T> MinNumber<T>(Vector128<T> left, Vector128<T> right)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.MinNumber<Vector128<T>, T>(left, right);
+            }
+            else
+            {
+                return Create(
+                    Vector64.MinNumber(left._lower, right._lower),
+                    Vector64.MinNumber(left._upper, right._upper)
+                );
+            }
         }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
@@ -2012,6 +2486,16 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="left" /> and <paramref name="right"/> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector128<T> Multiply<T>(T left, Vector128<T> right) => right * left;
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<T> MultiplyAddEstimate<T>(Vector128<T> left, Vector128<T> right, Vector128<T> addend)
+        {
+            return Create(
+                Vector64.MultiplyAddEstimate(left._lower, right._lower, addend._lower),
+                Vector64.MultiplyAddEstimate(left._upper, right._upper, addend._upper)
+            );
+        }
 
         /// <inheritdoc cref="Vector64.MultiplyAddEstimate(Vector64{double}, Vector64{double}, Vector64{double})" />
         [Intrinsic]
@@ -2086,10 +2570,10 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<int> Narrow(Vector128<long> lower, Vector128<long> upper)
         {
-             return Create(
-                 Vector64.Narrow(lower._lower, lower._upper),
-                 Vector64.Narrow(upper._lower, upper._upper)
-             );
+            return Create(
+                Vector64.Narrow(lower._lower, lower._upper),
+                Vector64.Narrow(upper._lower, upper._upper)
+            );
         }
 
         /// <summary>Narrows two <see cref="Vector128{UInt16}"/> instances into one <see cref="Vector128{Byte}" />.</summary>
@@ -2152,6 +2636,84 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         public static Vector128<T> OnesComplement<T>(Vector128<T> vector) => ~vector;
+
+        /// <inheritdoc cref="Vector64.RadiansToDegrees(Vector64{double})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> RadiansToDegrees(Vector128<double> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector128<double>, double>(radians);
+            }
+            else
+            {
+                return Create(
+                    Vector64.RadiansToDegrees(radians._lower),
+                    Vector64.RadiansToDegrees(radians._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.RadiansToDegrees(Vector64{float})" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> RadiansToDegrees(Vector128<float> radians)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.RadiansToDegrees<Vector128<float>, float>(radians);
+            }
+            else
+            {
+                return Create(
+                    Vector64.RadiansToDegrees(radians._lower),
+                    Vector64.RadiansToDegrees(radians._upper)
+                );
+            }
+        }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<T> Round<T>(Vector128<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                return Create(
+                    Vector64.Round(vector._lower),
+                    Vector64.Round(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Round(Vector64{double})" />
+        [Intrinsic]
+        public static Vector128<double> Round(Vector128<double> vector) => Round<double>(vector);
+
+        /// <inheritdoc cref="Vector64.Round(Vector64{float})" />
+        [Intrinsic]
+        public static Vector128<float> Round(Vector128<float> vector) => Round<float>(vector);
+
+        /// <inheritdoc cref="Vector64.Round(Vector64{double}, MidpointRounding)" />
+        [Intrinsic]
+        public static Vector128<double> Round(Vector128<double> vector, MidpointRounding mode) => VectorMath.RoundDouble(vector, mode);
+
+        /// <inheritdoc cref="Vector64.Round(Vector64{float}, MidpointRounding)" />
+        [Intrinsic]
+        public static Vector128<float> Round(Vector128<float> vector, MidpointRounding mode) => VectorMath.RoundSingle(vector, mode);
 
         /// <summary>Shifts each element of a vector left by the specified amount.</summary>
         /// <param name="vector">The vector whose elements are to be shifted.</param>
@@ -2637,6 +3199,94 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <inheritdoc cref="Vector64.Sin(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<double> Sin(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinDouble<Vector128<double>, Vector128<long>>(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.Sin(vector._lower),
+                    Vector64.Sin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Sin(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<float> Sin(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.SinSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.SinSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                return Create(
+                    Vector64.Sin(vector._lower),
+                    Vector64.Sin(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Cos(Vector64{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<double> Sin, Vector128<double> Cos) SinCos(Vector128<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinCosDouble<Vector128<double>, Vector128<long>>(vector);
+            }
+            else
+            {
+                (Vector64<double> sinLower, Vector64<double> cosLower) = Vector64.SinCos(vector._lower);
+                (Vector64<double> sinUpper, Vector64<double> cosUpper) = Vector64.SinCos(vector._upper);
+
+                return (
+                    Create(sinLower, sinUpper),
+                    Create(cosLower, cosUpper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Cos(Vector64{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector128<float> Sin, Vector128<float> Cos) SinCos(Vector128<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.SinCosSingle<Vector128<float>, Vector128<int>, Vector256<double>, Vector256<long>>(vector);
+                }
+                else
+                {
+                    return VectorMath.SinCosSingle<Vector128<float>, Vector128<int>, Vector128<double>, Vector128<long>>(vector);
+                }
+            }
+            else
+            {
+                (Vector64<float> sinLower, Vector64<float> cosLower) = Vector64.SinCos(vector._lower);
+                (Vector64<float> sinUpper, Vector64<float> cosUpper) = Vector64.SinCos(vector._upper);
+
+                return (
+                    Create(sinLower, sinUpper),
+                    Create(cosLower, cosUpper)
+                );
+            }
+        }
+
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector whose square root is to be computed.</param>
@@ -2651,7 +3301,6 @@ namespace System.Runtime.Intrinsics
             );
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -2690,7 +3339,6 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [CLSCompliant(false)]
         public static unsafe void StoreAlignedNonTemporal<T>(this Vector128<T> source, T* destination) => source.StoreAligned(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>
         /// Stores to lower 64 bits of <paramref name="source"/> to memory destination of <paramref name="destination"/>[<paramref name="elementOffset"/>]
@@ -2812,6 +3460,40 @@ namespace System.Runtime.Intrinsics
             result.SetLowerUnsafe(vector);
             return result;
         }
+
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<T> Truncate<T>(Vector128<T> vector)
+        {
+            if ((typeof(T) == typeof(byte))
+             || (typeof(T) == typeof(short))
+             || (typeof(T) == typeof(int))
+             || (typeof(T) == typeof(long))
+             || (typeof(T) == typeof(nint))
+             || (typeof(T) == typeof(nuint))
+             || (typeof(T) == typeof(sbyte))
+             || (typeof(T) == typeof(ushort))
+             || (typeof(T) == typeof(uint))
+             || (typeof(T) == typeof(ulong)))
+            {
+                return vector;
+            }
+            else
+            {
+                return Create(
+                    Vector64.Truncate(vector._lower),
+                    Vector64.Truncate(vector._upper)
+                );
+            }
+        }
+
+        /// <inheritdoc cref="Vector64.Truncate(Vector64{double})" />
+        [Intrinsic]
+        public static Vector128<double> Truncate(Vector128<double> vector) => Truncate<double>(vector);
+
+        /// <inheritdoc cref="Vector64.Truncate(Vector64{float})" />
+        [Intrinsic]
+        public static Vector128<float> Truncate(Vector128<float> vector) => Truncate<float>(vector);
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>

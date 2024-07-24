@@ -14,7 +14,7 @@ import gitCommitInfo from "git-commit-info";
 import MagicString from "magic-string";
 
 const configuration = process.env.Configuration;
-const isDebug = false;
+const isDebug = configuration !== "Release";
 const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";

@@ -29,7 +29,12 @@ FORCEINLINE PTR_EEClass MethodTable::GetClassWithPossibleAV()
     LIMITED_METHOD_DAC_CONTRACT;
 
     TADDR addr = m_pCanonMT;
-
+#ifdef DACCESS_COMPILE
+    if (addr == (TADDR)NULL)
+    {
+        DacError(E_UNEXPECTED);
+    }
+#endif
     LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
@@ -39,7 +44,14 @@ FORCEINLINE PTR_EEClass MethodTable::GetClassWithPossibleAV()
     {
         // pointer to canonical MethodTable.
         TADDR canonicalMethodTable = union_getPointer(addr);
-        return PTR_EEClass(PTR_MethodTable(canonicalMethodTable)->m_pCanonMT);
+#ifdef DACCESS_COMPILE
+        if (canonicalMethodTable == (TADDR)NULL)
+        {
+            DacError(E_UNEXPECTED);
+        }
+#endif
+        // a canonical method table always points at its EEClass, and m_pEEClass has no mask bit, so just return it
+        return PTR_MethodTable(canonicalMethodTable)->m_pEEClass;
     }
 }
 
@@ -392,11 +404,12 @@ inline BOOL MethodTable::HasLayout()
 }
 
 //==========================================================================================
+#ifndef DACCESS_COMPILE
 inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
     }
@@ -406,6 +419,50 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
 
     // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
     // for an interface virtual, since their slots usually point to stub.
+    if (IsInterface() && slot < GetNumVirtuals())
+    {
+        return MethodDesc::GetMethodDescFromStubAddr(pCode);
+    }
+
+    return MethodTable::GetMethodDescForSlotAddress(pCode);
+}
+#endif // DACCESS_COMPILE
+
+//==========================================================================================
+inline MethodDesc* MethodTable::GetMethodDescForSlot_NoThrow(DWORD slot)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    PCODE pCode = GetCanonicalMethodTable()->GetSlot(slot);
+
+    if (pCode == (PCODE)NULL)
+    {
+        // This code path should only be hit for methods which have not been overriden
+        MethodTable *pMTToSearchForMethodDesc = this->GetCanonicalMethodTable();
+        while (pMTToSearchForMethodDesc != NULL)
+        {
+            IntroducedMethodIterator it(pMTToSearchForMethodDesc);
+            for (; it.IsValid(); it.Next())
+            {
+                if (it.GetMethodDesc()->GetSlot() == slot)
+                {
+                    return it.GetMethodDesc();
+                }
+            }
+
+            pMTToSearchForMethodDesc = pMTToSearchForMethodDesc->GetParentMethodTable()->GetCanonicalMethodTable();
+        }
+        _ASSERTE(!"We should never reach here, as there should always be a MethodDesc for a slot");
+    }
+
+    // This is an optimization that we can take advantage of if we're trying to get the MethodDesc
+    // for an interface virtual, since their slots point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
         return MethodDesc::GetMethodDescFromStubAddr(pCode);
@@ -423,8 +480,8 @@ inline void MethodTable::CopySlotFrom(UINT32 slotNumber, MethodDataWrapper &hSou
 
     MethodDesc *pMD = hSourceMTData->GetImplMethodDesc(slotNumber);
     _ASSERTE(CheckPointer(pMD));
-    _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot(slotNumber));
-    SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot());
+    _ASSERTE(pMD == pSourceMT->GetMethodDescForSlot_NoThrow(slotNumber));
+    SetSlot(slotNumber, pMD->GetInitialEntryPointForCopiedSlot(NULL, NULL));
 }
 
 //==========================================================================================
@@ -530,6 +587,12 @@ inline DispatchSlot MethodTable::MethodIterator::GetTarget() const {
     LIMITED_METHOD_CONTRACT;
     CONSISTENCY_CHECK(IsValid());
     return m_pMethodData->GetImplSlot(m_iCur);
+}
+
+inline bool MethodTable::MethodIterator::IsTargetNull() const {
+    LIMITED_METHOD_CONTRACT;
+    CONSISTENCY_CHECK(IsValid());
+    return m_pMethodData->IsImplSlotNull(m_iCur);
 }
 
 //==========================================================================================
@@ -1082,68 +1145,45 @@ inline DWORD MethodTable::GetOptionalMembersSize()
 inline PTR_BYTE MethodTable::GetNonGCStaticsBasePointer()
 {
     WRAPPER_NO_CONTRACT;
-    return GetDomainLocalModule()->GetNonGCStaticsBasePointer(this);
+    if (!IsDynamicStatics())
+    {
+        return NULL;
+    }
+    else
+    {
+        return GetDynamicStaticsInfo()->GetNonGCStaticsPointer();
+    }
 }
 
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetGCStaticsBasePointer()
 {
     WRAPPER_NO_CONTRACT;
-    return GetDomainLocalModule()->GetGCStaticsBasePointer(this);
+    if (!IsDynamicStatics())
+    {
+        return NULL;
+    }
+    else
+    {
+        return (PTR_BYTE)GetDynamicStaticsInfo()->GetGCStaticsPointer();
+    }
 }
 
 #ifndef DACCESS_COMPILE
-
 //==========================================================================================
 inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
-
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
-        return NULL;
-
-    return pTLM->GetNonGCStaticsBasePointer(this);
-}
-
-//==========================================================================================
-inline PTR_BYTE MethodTable::GetGCThreadStaticsBaseHandle()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
-
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
-        return NULL;
-
-    return dac_cast<PTR_BYTE>(pTLM->GetPrecomputedGCStaticsBaseHandle());
+    EnsureTlsIndexAllocated();
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->NonGCTlsIndex;
+    return (PTR_BYTE)GetThreadLocalStaticBase(tlsIndex);
 }
 
 //==========================================================================================
@@ -1151,25 +1191,15 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer()
 {
     CONTRACTL
     {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
 
-    // Get the current thread
-    PTR_Thread pThread = dac_cast<PTR_Thread>(GetThread());
-
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
-        return NULL;
-
-    return pTLM->GetGCStaticsBasePointer(this);
+    EnsureTlsIndexAllocated();
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->GCTlsIndex;
+    return (PTR_BYTE)GetThreadLocalStaticBase(tlsIndex);
 }
 
 #endif //!DACCESS_COMPILE
@@ -1179,16 +1209,11 @@ inline PTR_BYTE MethodTable::GetNonGCThreadStaticsBasePointer(PTR_Thread pThread
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->NonGCTlsIndex;
+    if (!tlsIndex.IsAllocated())
         return NULL;
 
-    return pTLM->GetNonGCStaticsBasePointer(this);
+    return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThread, tlsIndex);
 }
 
 //==========================================================================================
@@ -1196,23 +1221,11 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Get the current module's ModuleIndex
-    ModuleIndex index = GetModuleForStatics()->GetModuleIndex();
-
-    PTR_ThreadLocalBlock pTLB = ThreadStatics::GetCurrentTLB(pThread);
-
-    PTR_ThreadLocalModule pTLM = pTLB->GetTLMIfExists(index);
-    if (pTLM == NULL)
+    TLSIndex tlsIndex = GetThreadStaticsInfo()->GCTlsIndex;
+    if (!tlsIndex.IsAllocated())
         return NULL;
 
-    return pTLM->GetGCStaticsBasePointer(this);
-}
-
-//==========================================================================================
-inline PTR_DomainLocalModule MethodTable::GetDomainLocalModule()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetModuleForStatics()->GetDomainLocalModule();
+    return (PTR_BYTE)GetThreadLocalStaticBaseNoCreate(pThread, tlsIndex);
 }
 
 //==========================================================================================
@@ -1235,13 +1248,6 @@ inline OBJECTREF MethodTable::AllocateNoChecks()
     return AllocateObject(this);
 }
 
-
-//==========================================================================================
-inline DWORD MethodTable::GetClassIndex()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetClassIndexFromToken(GetCl());
-}
 
 #ifndef DACCESS_COMPILE
 //==========================================================================================
@@ -1295,27 +1301,6 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
     }
 }
 #endif
-
-//==========================================================================================
-FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END
-
-    _ASSERTE(HasGenericsStaticsInfo());
-
-    PTR_MethodTableAuxiliaryData AuxiliaryData = GetAuxiliaryDataForWrite();
-    PTR_GenericsStaticsInfo staticsInfo = MethodTableAuxiliaryData::GetGenericStaticsInfo(AuxiliaryData);
-    _ASSERTE(FitsIn<DWORD>(staticsInfo->m_DynamicTypeID) || staticsInfo->m_DynamicTypeID == (SIZE_T)-1);
-    *pID = (DWORD)staticsInfo->m_DynamicTypeID;
-    return AuxiliaryData->GetLoaderModule();
-}
 
 //==========================================================================================
 inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()

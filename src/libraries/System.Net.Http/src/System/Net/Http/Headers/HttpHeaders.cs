@@ -347,17 +347,14 @@ namespace System.Net.Http.Headers
                     // during enumeration so that we can parse the raw value in order to a) return
                     // the correct set of parsed values, and b) update the instance for subsequent enumerations
                     // to reflect that parsing.
-                    info = new HeaderStoreItemInfo() { RawValue = entry.Value };
 
-                    if (EntriesAreLiveView)
-                    {
-                        entries[i].Value = info;
-                    }
-                    else
-                    {
-                        Debug.Assert(Contains(entry.Key));
-                        ((Dictionary<HeaderDescriptor, object>)_headerStore!)[entry.Key] = info;
-                    }
+#nullable disable // https://github.com/dotnet/roslyn/issues/73928
+                    ref object storeValueRef = ref EntriesAreLiveView
+                        ? ref entries[i].Value
+                        : ref CollectionsMarshal.GetValueRefOrNullRef((Dictionary<HeaderDescriptor, object>)_headerStore, entry.Key);
+
+                    info = ReplaceWithHeaderStoreItemInfo(ref storeValueRef, entry.Value);
+#nullable restore
                 }
 
                 // Make sure we parse all raw values before returning the result. Note that this has to be
@@ -729,15 +726,10 @@ namespace System.Net.Http.Headers
             if (!Unsafe.IsNullRef(ref storeValueRef))
             {
                 object value = storeValueRef;
-                if (value is HeaderStoreItemInfo hsi)
-                {
-                    info = hsi;
-                }
-                else
-                {
-                    Debug.Assert(value is string);
-                    storeValueRef = info = new HeaderStoreItemInfo() { RawValue = value };
-                }
+
+                info = value is HeaderStoreItemInfo hsi
+                    ? hsi
+                    : ReplaceWithHeaderStoreItemInfo(ref storeValueRef, value);
 
                 ParseRawHeaderValues(key, info);
                 return true;
@@ -745,6 +737,31 @@ namespace System.Net.Http.Headers
 
             info = null;
             return false;
+        }
+
+        /// <summary>
+        /// Replaces <paramref name="storeValueRef"/> with a new <see cref="HeaderStoreItemInfo"/>,
+        /// or returns the existing <see cref="HeaderStoreItemInfo"/> if a different thread beat us to it.
+        /// </summary>
+        /// <remarks>
+        /// This helper should be used any time we're upgrading a storage slot from an unparsed string to a HeaderStoreItemInfo *while reading*.
+        /// Concurrent writes to the header collection are UB, so we don't need to worry about race conditions when doing the replacement there.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static HeaderStoreItemInfo ReplaceWithHeaderStoreItemInfo(ref object storeValueRef, object value)
+        {
+            Debug.Assert(value is string);
+
+            var info = new HeaderStoreItemInfo() { RawValue = value };
+            object previousValue = Interlocked.CompareExchange(ref storeValueRef, info, value);
+
+            if (ReferenceEquals(previousValue, value))
+            {
+                return info;
+            }
+
+            // Rare race condition: Another thread replaced the value with a HeaderStoreItemInfo.
+            return (HeaderStoreItemInfo)previousValue;
         }
 
         private static void ParseRawHeaderValues(HeaderDescriptor descriptor, HeaderStoreItemInfo info)

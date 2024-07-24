@@ -79,6 +79,15 @@ bool WrapICorJitInfo::haveSameMethodDefinition(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getTypeDefinition);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeDefinition(type);
+    API_LEAVE(getTypeDefinition);
+    return temp;
+}
+
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)
@@ -256,15 +265,6 @@ void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
     API_ENTER(methodMustBeLoadedBeforeCodeIsRun);
     wrapHnd->methodMustBeLoadedBeforeCodeIsRun(method);
     API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(mapMethodDeclToMethodImpl);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->mapMethodDeclToMethodImpl(method);
-    API_LEAVE(mapMethodDeclToMethodImpl);
-    return temp;
 }
 
 void WrapICorJitInfo::getGSCookie(
@@ -460,17 +460,6 @@ void WrapICorJitInfo::LongLifetimeFree(
     API_LEAVE(LongLifetimeFree);
 }
 
-size_t WrapICorJitInfo::getClassModuleIdForStatics(
-          CORINFO_CLASS_HANDLE cls,
-          CORINFO_MODULE_HANDLE* pModule,
-          void** ppIndirection)
-{
-    API_ENTER(getClassModuleIdForStatics);
-    size_t temp = wrapHnd->getClassModuleIdForStatics(cls, pModule, ppIndirection);
-    API_LEAVE(getClassModuleIdForStatics);
-    return temp;
-}
-
 bool WrapICorJitInfo::getIsClassInitedFlagAddress(
           CORINFO_CLASS_HANDLE cls,
           CORINFO_CONST_LOOKUP* addr,
@@ -479,6 +468,24 @@ bool WrapICorJitInfo::getIsClassInitedFlagAddress(
     API_ENTER(getIsClassInitedFlagAddress);
     bool temp = wrapHnd->getIsClassInitedFlagAddress(cls, addr, offset);
     API_LEAVE(getIsClassInitedFlagAddress);
+    return temp;
+}
+
+size_t WrapICorJitInfo::getClassThreadStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    API_ENTER(getClassThreadStaticDynamicInfo);
+    size_t temp = wrapHnd->getClassThreadStaticDynamicInfo(clr);
+    API_LEAVE(getClassThreadStaticDynamicInfo);
+    return temp;
+}
+
+size_t WrapICorJitInfo::getClassStaticDynamicInfo(
+          CORINFO_CLASS_HANDLE clr)
+{
+    API_ENTER(getClassStaticDynamicInfo);
+    size_t temp = wrapHnd->getClassStaticDynamicInfo(clr);
+    API_LEAVE(getClassStaticDynamicInfo);
     return temp;
 }
 
@@ -625,6 +632,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBox(
     API_ENTER(getTypeForBox);
     CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBox(cls);
     API_LEAVE(getTypeForBox);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getTypeForBoxOnStack);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBoxOnStack(cls);
+    API_LEAVE(getTypeForBoxOnStack);
     return temp;
 }
 
@@ -804,6 +820,15 @@ bool WrapICorJitInfo::isExactType(
     return temp;
 }
 
+TypeCompareState WrapICorJitInfo::isGenericType(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(isGenericType);
+    TypeCompareState temp = wrapHnd->isGenericType(cls);
+    API_LEAVE(isGenericType);
+    return temp;
+}
+
 TypeCompareState WrapICorJitInfo::isNullableType(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -953,11 +978,10 @@ uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
 }
 
 void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo,
-          bool isGCType)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     API_ENTER(getThreadLocalStaticBlocksInfo);
-    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo, isGCType);
+    wrapHnd->getThreadLocalStaticBlocksInfo(pInfo);
     API_LEAVE(getThreadLocalStaticBlocksInfo);
 }
 
@@ -1417,16 +1441,6 @@ void WrapICorJitInfo::getCallInfo(
     API_ENTER(getCallInfo);
     wrapHnd->getCallInfo(pResolvedToken, pConstrainedResolvedToken, callerHandle, flags, pResult);
     API_LEAVE(getCallInfo);
-}
-
-unsigned WrapICorJitInfo::getClassDomainID(
-          CORINFO_CLASS_HANDLE cls,
-          void** ppIndirection)
-{
-    API_ENTER(getClassDomainID);
-    unsigned temp = wrapHnd->getClassDomainID(cls, ppIndirection);
-    API_LEAVE(getClassDomainID);
-    return temp;
 }
 
 bool WrapICorJitInfo::getStaticFieldContent(

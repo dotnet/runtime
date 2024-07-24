@@ -350,11 +350,9 @@ namespace Internal.JitInterface
             IntPtr exception;
             IntPtr nativeEntry;
             uint codeSize;
-#pragma warning disable CS8500 // takes address of managed type
             var result = JitCompileMethod(out exception,
                     _jit, (IntPtr)(&_this), _unmanagedCallbacks,
                     ref methodInfo, (uint)CorJitFlag.CORJIT_FLAG_CALL_GETJITFLAGS, out nativeEntry, out codeSize);
-#pragma warning restore CS8500
             if (exception != IntPtr.Zero)
             {
                 if (_lastException != null)
@@ -480,13 +478,8 @@ namespace Internal.JitInterface
                 }
             }
 
-#pragma warning disable SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
-            _methodCodeNode.SetCode(objectData
-#if !SUPPORT_JIT && !READYTORUN
-                , isFoldable: (_compilation._compilationOptions & RyuJitCompilationOptions.MethodBodyFolding) != 0
-#endif
-                );
-#pragma warning restore SA1001, SA1113, SA1115 // Comma should be on the same line as previous parameter
+            _methodCodeNode.SetCode(objectData);
+
 #if READYTORUN
             if (_methodColdCodeNode != null)
             {
@@ -1255,6 +1248,11 @@ namespace Internal.JitInterface
             return meth1.GetTypicalMethodDefinition() == meth2.GetTypicalMethodDefinition();
         }
 
+        private CORINFO_CLASS_STRUCT_* getTypeDefinition(CORINFO_CLASS_STRUCT_* type)
+        {
+            return ObjectToHandle(HandleToObject(type).GetTypeDefinition());
+        }
+
         private CorInfoInline canInline(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* calleeHnd)
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
@@ -1630,9 +1628,6 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
         }
-
-        private CORINFO_METHOD_STRUCT_* mapMethodDeclToMethodImpl(CORINFO_METHOD_STRUCT_* method)
-        { throw new NotImplementedException("mapMethodDeclToMethodImpl"); }
 
         private static object ResolveTokenWithSubstitution(MethodILScope methodIL, mdToken token, Instantiation typeInst, Instantiation methodInst)
         {
@@ -2118,8 +2113,10 @@ namespace Internal.JitInterface
             Marshal.FreeCoTaskMem((IntPtr)obj);
         }
 
-        private UIntPtr getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
-        { throw new NotImplementedException("getClassModuleIdForStatics"); }
+        private UIntPtr getClassStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        { throw new NotImplementedException("getClassStaticDynamicInfo"); }
+        private UIntPtr getClassThreadStaticDynamicInfo(CORINFO_CLASS_STRUCT_* cls)
+        { throw new NotImplementedException("getClassThreadStaticDynamicInfo"); }
 
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
@@ -2355,14 +2352,8 @@ namespace Internal.JitInterface
             uint result = 0;
 
             MetadataType type = (MetadataType)HandleToObject(cls);
-
-            int pointerSize = PointerSize;
-
-            int ptrsCount = AlignmentHelper.AlignUp(type.InstanceFieldSize.AsInt, pointerSize) / pointerSize;
-
-            // Assume no GC pointers at first
-            for (int i = 0; i < ptrsCount; i++)
-                gcPtrs[i] = (byte)CorInfoGCType.TYPE_GC_NONE;
+            uint size = type.IsValueType ? getClassSize(cls) : getHeapClassSize(cls);
+            new Span<byte>(gcPtrs, (int)((size + PointerSize - 1) / PointerSize)).Clear();
 
             if (type.ContainsGCPointers || type.IsByRefLike)
             {
@@ -2607,6 +2598,30 @@ namespace Internal.JitInterface
             return ObjectToHandle(typeForBox);
         }
 
+        private CORINFO_CLASS_STRUCT_* getTypeForBoxOnStack(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc clsTypeDesc = HandleToObject(cls);
+            if (clsTypeDesc.IsNullable)
+            {
+                clsTypeDesc = clsTypeDesc.Instantiation[0];
+            }
+
+            if (clsTypeDesc.RequiresAlign8())
+            {
+                // Conservatively give up on such types (32bit)
+                return null;
+            }
+
+            // Instantiate StackAllocatedBox<T> helper type with the type we're boxing
+            MetadataType placeholderType = _compilation.TypeSystemContext.SystemModule.GetType("System.Runtime.CompilerServices", "StackAllocatedBox`1", throwIfNotFound: false);
+            if (placeholderType == null)
+            {
+                // Give up if corelib does not have support for stackallocation
+                return null;
+            }
+            return ObjectToHandle(placeholderType.MakeInstantiatedType(clsTypeDesc));
+        }
+
         private CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
@@ -2632,17 +2647,15 @@ namespace Internal.JitInterface
             MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
+#if !READYTORUN
             if (
-#if READYTORUN
-                IsClassPreInited(type)
-#else
                 _isFallbackBodyCompilation ||
                 !_compilation.HasLazyStaticConstructor(type)
-#endif
                 )
             {
                 return CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED;
             }
+#endif
 
             MetadataType typeToInit = (MetadataType)type;
 
@@ -2943,6 +2956,18 @@ namespace Internal.JitInterface
             return _compilation.IsEffectivelySealed(type);
         }
 
+        private TypeCompareState isGenericType(CORINFO_CLASS_STRUCT_* cls)
+        {
+            TypeDesc type = HandleToObject(cls);
+
+            if (type.IsCanonicalDefinitionType(CanonicalFormKind.Any))
+            {
+                return TypeCompareState.May;
+            }
+
+            return type.HasInstantiation ? TypeCompareState.Must : TypeCompareState.MustNot;
+        }
+
         private TypeCompareState isNullableType(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
@@ -3069,7 +3094,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 #pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
@@ -3568,9 +3593,6 @@ namespace Internal.JitInterface
             return constLookup;
         }
 
-        private uint getClassDomainID(CORINFO_CLASS_STRUCT_* cls, ref void* ppIndirection)
-        { throw new NotImplementedException("getClassDomainID"); }
-
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)
         {
             if (pIsSpeculative != null)
@@ -3898,6 +3920,8 @@ namespace Internal.JitInterface
                     const ushort IMAGE_REL_ARM64_BRANCH26 = 3;
                     const ushort IMAGE_REL_ARM64_PAGEBASE_REL21 = 4;
                     const ushort IMAGE_REL_ARM64_PAGEOFFSET_12A = 6;
+                    const ushort IMAGE_REL_ARM64_SECREL_LOW12A = 9;
+                    const ushort IMAGE_REL_ARM64_SECREL_HIGH12A = 0xA;
                     const ushort IMAGE_REL_ARM64_TLSDESC_ADR_PAGE21 = 0x107;
                     const ushort IMAGE_REL_ARM64_TLSDESC_LD64_LO12 = 0x108;
                     const ushort IMAGE_REL_ARM64_TLSDESC_ADD_LO12 = 0x109;
@@ -3920,6 +3944,10 @@ namespace Internal.JitInterface
                             return RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12;
                         case IMAGE_REL_ARM64_TLSDESC_CALL:
                             return RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL;
+                        case IMAGE_REL_ARM64_SECREL_HIGH12A:
+                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_HIGH12A;
+                        case IMAGE_REL_ARM64_SECREL_LOW12A:
+                            return RelocType.IMAGE_REL_ARM64_TLS_SECREL_LOW12A;
                         default:
                             Debug.Fail("Invalid RelocType: " + fRelocType);
                             return 0;

@@ -303,6 +303,27 @@ namespace System
         //
         public static int MaxGeneration => GetMaxGeneration();
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetNextFinalizableObject")]
+        private static unsafe partial void* GetNextFinalizeableObject(ObjectHandleOnStack target);
+
+        private static unsafe uint RunFinalizers()
+        {
+            Thread currentThread = Thread.CurrentThread;
+
+            uint count = 0;
+            while (true)
+            {
+                object? target = null;
+                void* fptr = GetNextFinalizeableObject(ObjectHandleOnStack.Create(ref target));
+                if (fptr == null)
+                    break;
+                ((delegate*<object, void>)fptr)(target!);
+                currentThread.ResetFinalizerThread();
+                count++;
+            }
+            return count;
+        }
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForPendingFinalizers")]
         private static partial void _WaitForPendingFinalizers();
 
@@ -769,9 +790,7 @@ namespace System
                 // for debug builds we always want to call AllocateNewArray to detect AllocateNewArray bugs
 #if !DEBUG
                 // small arrays are allocated using `new[]` as that is generally faster.
-#pragma warning disable 8500 // sizeof of managed types
                 if (length < 2048 / sizeof(T))
-#pragma warning restore 8500
                 {
                     return new T[length];
                 }
@@ -871,9 +890,7 @@ namespace System
                 Configurations = new Dictionary<string, object>()
             };
 
-#pragma warning disable CS8500 // takes address of managed type
             _EnumerateConfigurationValues(&context, &ConfigCallback);
-#pragma warning restore CS8500
             return context.Configurations!;
         }
 
