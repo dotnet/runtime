@@ -1254,7 +1254,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 }
 
 static void
-gc_roots (MonoProfiler *prof, uint64_t num, const mono_byte *const *addresses, MonoObject *const *objects)
+gc_roots (MonoProfiler *prof, uint64_t num, const mono_byte *const *addresses, MonoObject *const *objects, const char *kind)
 {
 	ENTER_LOG (&heap_roots_ctr, logbuffer,
 		EVENT_SIZE /* event */ +

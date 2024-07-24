@@ -582,7 +582,6 @@ new_codechunk (MonoCodeManager *cman, int size)
 	MONO_PROFILER_RAISE (jit_chunk_created, ((mono_byte *) chunk->data, chunk->size));
 
 	code_memory_used += chunk_size;
-	mono_runtime_resource_check_limit (MONO_RESOURCE_JIT_CODE, code_memory_used);
 	/*printf ("code chunk at: %p\n", ptr);*/
 	return chunk;
 }

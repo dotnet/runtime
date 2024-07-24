@@ -13,6 +13,12 @@ import fast_glob from "fast-glob";
 import gitCommitInfo from "git-commit-info";
 import MagicString from "magic-string";
 
+setTimeout(() => {
+    // eslint-disable-next-line no-console
+    console.log("Forcibly exiting process to work around hang in rollup");
+    process.exit();
+}, 35000);
+
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
 const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;

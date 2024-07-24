@@ -212,6 +212,9 @@ struct _MonoAssembly {
 	guint8 jit_optimizer_disabled_inited;
 	guint8 runtime_marshalling_enabled;
 	guint8 runtime_marshalling_enabled_inited;
+#ifdef HOST_BROWSER
+	char heapshot_scratch_byte;
+#endif
 };
 
 typedef struct {

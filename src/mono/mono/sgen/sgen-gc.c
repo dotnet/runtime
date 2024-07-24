@@ -4076,10 +4076,10 @@ sgen_check_canary_for_object (gpointer addr)
 
 
 #define MEM_PRESSURE_COUNT  4
-#define MAX_MEMORYPRESSURE_RATIO  10  
+#define MAX_MEMORYPRESSURE_RATIO  10
 guint64 memory_pressure_gc_count = 0;
 guint64 memory_pressure_iteration = 0;
-guint64 memory_pressure_adds[MEM_PRESSURE_COUNT] = {0, 0, 0, 0}; 
+guint64 memory_pressure_adds[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};
 guint64 memory_pressure_removes[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
 const unsigned min_memorypressure_budget = 4 * 1024 * 1024;		// 4 MB
 
@@ -4118,7 +4118,7 @@ static gboolean pressure_check_heuristic (guint64 new_mem_value)
 	for (gint i = 0; i < MEM_PRESSURE_COUNT; i++) {
 		add += memory_pressure_adds[i];
 		rem += memory_pressure_removes[i];
-	} 
+	}
 
 	add -= memory_pressure_adds[p];
 	rem -= memory_pressure_removes[p];
@@ -4150,7 +4150,7 @@ static gboolean pressure_check_heuristic (guint64 new_mem_value)
 			}
 			if (new_mem_value >= budget) {
 				// last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
-				if ((size_t)(mono_time_since_last_stw() + time_last) > (time_last * 5)) {	
+				if ((size_t)(mono_time_since_last_stw() + time_last) > (time_last * 5)) {
 					return TRUE;
 				}
 			}
@@ -4173,5 +4173,14 @@ void sgen_add_memory_pressure (guint64 bytes_allocated)
 		sgen_gc_collect (GENERATION_OLD);
   		check_pressure_counts ();
 	}
+}
+
+void sgen_registered_root_iterate (SgenRootIterateCallback callback, gpointer user_data, int root_type)
+{
+	void **start_root;
+	RootRecord *root;
+	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [root_type], void **, start_root, RootRecord *, root) {
+		callback (start_root, (void**)root->end_root, root->source, root_type, root->msg, user_data);
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 #endif /* HAVE_SGEN_GC */

@@ -941,9 +941,10 @@ export class BlobBuilder {
     encoder?: TextEncoder;
     textBuf = new Uint8Array(1024);
 
-    constructor () {
-        this.capacity = 16 * 1024;
+    constructor (capacity?: number) {
+        this.capacity = capacity || 16 * 1024;
         this.buffer = <any>Module._malloc(this.capacity);
+        mono_assert(this.buffer, () => `Failed to allocate ${this.capacity} byte(s) for BlobBuilder`);
         localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();

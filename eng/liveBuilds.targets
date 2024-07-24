@@ -232,6 +232,10 @@
                              Include="$(LibrariesNativeArtifactsPath)src\es6\*.js"
                              NativeSubDirectory="src\es6"
                              IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
+                             Include="$(RepoRoot)\src\mono\browser\runtime\heapshot\diagnostics-panel.html"
+                             NativeSubDirectory=""
+                             IsNative="true" />
 
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="

@@ -1,0 +1,204 @@
+<!doctype html>
+<html>
+    <head>
+        <title>.NET Runtime WebAssembly Diagnostics</title>
+        <style>
+            #tabs, #snapshots {
+                width: 100%;
+            }
+            #heapGraph {
+                width: 100%;
+                height: 200px;
+            }
+        </style>
+        <script>
+            const channel = new BroadcastChannel(".NET Runtime Diagnostics");
+            channel.addEventListener("message", channel_message);
+            const tabId = (Math.random() * 100000).toFixed(0);
+            const tabList = [];
+            const headerArray = new Uint8Array(8);
+            const headerView = new DataView(headerArray.buffer);
+            let statsPending = false;
+
+            // setInterval(refreshStats, 5000);
+
+            function processCounters (tabObj, chunk) {
+            }
+
+            function writePacket (tabObj, chunkId, chunk) {
+                for (let i = 0; i < 4; i++)
+                    headerArray[i] = chunkId.charCodeAt(i);
+                headerView.setUint32(4, chunk.length, true);
+                if (chunkId === "CNTR") {
+                    tabObj.blobParts.splice(0, 0, headerArray.slice(), chunk);
+                    processCounters(tabObj, chunk);
+                } else {
+                    tabObj.blobParts.push(headerArray.slice());
+                    tabObj.blobParts.push(chunk);
+                }
+            }
+
+            function downloadBlob (blob, name) {
+                const url = URL.createObjectURL(blob);
+                const elt = document.createElement("a");
+                elt.href = url;
+                elt.download = name;
+                document.body.appendChild(elt);
+                elt.click();
+                window.setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(elt);
+                }, 10000);
+            }
+
+            function tab_message (evt) {
+                const data = evt.data;
+                if ((typeof (data) !== "object") || (typeof (data.cmd) !== "string"))
+                    return;
+
+                console.log("tab_message", data.cmd, data.text, data.chunkId, data.chunk ? data.chunk.length : 0);
+                switch (data.cmd) {
+                    case "heapshotStart":
+                        this.log = "";
+                        this.blobParts = [];
+                        break;
+                    case "heapshotText":
+                        this.log += data.text + "\r\n";
+                        break;
+                    case "heapshotPacket":
+                        writePacket(this, data.chunkId || "", data.chunk);
+                        break;
+                    case "heapshotEnd":
+                        if (data.full) {
+                            var blob = new Blob(this.blobParts, { type: "application/octet-stream" });
+                            downloadBlob(blob, `${(new Date).toISOString().replace(":", "-")}.mono-heap`);
+                        } else
+                            statsPending = false;
+                        break;
+                }
+
+                this.refresh();
+            }
+
+            function refreshTab () {
+                if (getSelectedTab() === this)
+                    document.querySelector("#log").textContent = this.log;
+            }
+
+            function channel_message (evt) {
+                const data = evt.data;
+                if ((typeof (data) !== "object") || (typeof (data.sender) !== "string") || (typeof (data.cmd) !== "string"))
+                    return;
+
+                console.log("channel_message", data.cmd);
+                switch (data.cmd) {
+                    case "whosThere":
+                        break;
+                    case "iAmHere":
+                        let elt = document.querySelector(`#tabs option#tab${data.sender}`);
+                        if (!elt) {
+                            elt = document.createElement("option");
+                            elt.id = `tab${data.sender}`;
+                            elt.setAttribute("tabId", data.sender);
+                            const tabListElt = document.querySelector("#tabs");
+                            tabListElt.appendChild(elt);
+                            if (tabListElt.childElementCount === 0) {
+                                tabListElt.selectedOptions.length = 1;
+                                tabListElt.selectedOptions[0] = elt;
+                            }
+                        }
+                        elt.textContent = `${data.sender} | ${data.title} | ${data.version}`;
+                        if (!data.running)
+                            elt.textContent += " (exited)";
+                        elt.removeAttribute("disabled");
+                        const tabChannel = new BroadcastChannel(`.NET Runtime Diagnostics|${data.sender}`);
+                        const tabObj = {
+                            tabId: data.sender, elt, origin: evt.origin,
+                            channel: tabChannel, log: "", blobParts: []
+                        };
+                        tabObj.refresh = refreshTab.bind(tabObj);
+                        tabChannel.addEventListener("message", tab_message.bind(tabObj));
+                        elt.setAttribute("tabListIndex", tabList.length);
+                        tabList.push(tabObj);
+                        break;
+                }
+            }
+
+            function window_message (evt) {
+                console.log("window_message", evt, evt.data);
+            }
+
+            function onLoad () {
+                for (elt of document.querySelectorAll("button"))
+                    if (elt.id)
+                        elt.addEventListener("click", globalThis[elt.id + "_click"]);
+                for (elt of document.querySelectorAll("select"))
+                    if (elt.id)
+                        elt.addEventListener("change", globalThis[elt.id + "_change"]);
+
+                refreshTabs_click();
+            }
+
+            function refreshTabs_click () {
+                tabList.length = 0;
+                for (item of document.querySelectorAll("#tabs option"))
+                    item.setAttribute("disabled", "true");
+                channel.postMessage({ cmd: "whosThere", sender: tabId });
+            }
+
+            function getSelectedTab () {
+                const tabListElt = document.querySelector("#tabs");
+                const selectedTabElt = tabListElt.selectedOptions[0];
+                if (!selectedTabElt)
+                    return;
+                const tabListIndex = parseInt(selectedTabElt.getAttribute("tabListIndex"));
+                const tabObj = tabList[tabListIndex];
+                return tabObj;
+            }
+
+            function takeSnapshot_click () {
+                const tabObj = getSelectedTab();
+                if (tabObj)
+                    tabObj.channel.postMessage({ cmd: "takeSnapshot", sender: tabId });
+            }
+
+            function tabs_change () {
+                const tabObj = getSelectedTab();
+                if (tabObj)
+                    document.querySelector("#takeSnapshot").removeAttribute("disabled");
+                else
+                    document.querySelector("#takeSnapshot").setAttribute("disabled", true);
+
+                if (tabObj) {
+                    tabObj.refresh();
+                    refreshStats();
+                }
+            }
+
+            function refreshStats () {
+                if (statsPending)
+                    return;
+
+                const tabObj = getSelectedTab();
+                if (tabObj) {
+                    statsPending = true;
+                    tabObj.channel.postMessage({ cmd: "queryStats", sender: tabId });
+                }
+            }
+        </script>
+    </head>
+    <body onload="onLoad()">
+        <select id="tabs" size="2"></select><br>
+        <button id="refreshTabs">Refresh</button><br>
+        <!--
+        <canvas id="heapGraph"></canvas><br>
+        -->
+        <button id="takeSnapshot" disabled>Take Snapshot</button>
+        <!--
+        <button id="saveSelectedSnapshot" disabled>Save Snapshot</button><br>
+        <select id="snapshots" size="6"></select>
+        -->
+        <pre id="log">
+        </pre>
+    </body>
+</html>

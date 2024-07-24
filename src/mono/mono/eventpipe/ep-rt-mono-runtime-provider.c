@@ -4068,7 +4068,8 @@ buffer_gc_event_roots_callback (
 	MonoProfiler *prof,
 	uint64_t count,
 	const mono_byte *const * addresses,
-	MonoObject *const * objects)
+	MonoObject *const * objects,
+	const char *kind)
 {
 	GCHeapDumpContext *context = gc_heap_dump_context_get ();
 	if (!context)

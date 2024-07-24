@@ -17,6 +17,11 @@ import { mono_wasm_diagnostic_server_on_runtime_server_init, mono_wasm_event_pip
 import { mono_wasm_diagnostic_server_stream_signal_work_available } from "./diagnostics/server_pthread/stream-queue";
 import { mono_log_warn, mono_wasm_console_clear, mono_wasm_trace_logger } from "./logging";
 import { mono_wasm_profiler_leave, mono_wasm_profiler_enter } from "./profiler";
+import {
+    mono_wasm_heapshot_start, mono_wasm_heapshot_end, mono_wasm_heapshot_assembly,
+    mono_wasm_heapshot_class, mono_wasm_heapshot_object, mono_wasm_heapshot_gchandle,
+    mono_wasm_heapshot_roots, mono_wasm_heapshot_stats, mono_wasm_heapshot_counter
+} from "./heapshot";
 import { mono_wasm_browser_entropy } from "./crypto";
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 
@@ -84,6 +89,17 @@ export const mono_wasm_imports = [
     mono_wasm_trace_logger,
     mono_wasm_set_entrypoint_breakpoint,
     mono_wasm_event_pipe_early_startup_callback,
+
+    // heapshot.c
+    mono_wasm_heapshot_start,
+    mono_wasm_heapshot_assembly,
+    mono_wasm_heapshot_class,
+    mono_wasm_heapshot_object,
+    mono_wasm_heapshot_gchandle,
+    mono_wasm_heapshot_roots,
+    mono_wasm_heapshot_stats,
+    mono_wasm_heapshot_counter,
+    mono_wasm_heapshot_end,
 
     // src/native/minipal/random.c
     mono_wasm_browser_entropy,

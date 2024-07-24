@@ -471,6 +471,15 @@ scan_for_weak (gpointer hidden, GCHandleType handle_type, int max_generation, gp
 	return MONO_GC_HANDLE_OBJECT_POINTER (obj, is_weak);
 }
 
+gpointer
+sgen_try_reveal_pointer (gpointer hidden, GCHandleType handle_type)
+{
+	const gboolean is_weak = GC_HANDLE_TYPE_IS_WEAK (handle_type);
+	if (!MONO_GC_HANDLE_VALID (hidden))
+		return NULL;
+	return MONO_GC_REVEAL_POINTER (hidden, is_weak);
+}
+
 /* LOCKING: requires that the GC lock is held */
 void
 sgen_null_link_in_range (int generation, ScanCopyContext ctx, gboolean track)

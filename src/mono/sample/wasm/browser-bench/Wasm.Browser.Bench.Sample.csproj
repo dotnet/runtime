@@ -14,6 +14,7 @@
     <WasmExtraFilesToDeploy Include="index.html" />
     <WasmExtraFilesToDeploy Include="main.js" />
     <WasmExtraFilesToDeploy Include="appstart-frame.html" />
+    <!-- <WasmExtraFilesToDeploy Include="../../../browser/runtime/heapshot/diagnostics-panel.html" /> -->
     <WasmExtraFilesToDeploy Include="frame-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />

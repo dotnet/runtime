@@ -89,8 +89,10 @@ namespace Microsoft.NET.Sdk.WebAssembly
             string resourceExtension = Path.GetExtension(resourceName);
             if (resourceName.StartsWith("dotnet.native.worker", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".mjs", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleWorker ??= new();
-            if (resourceName.StartsWith("dotnet.globalization", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
+            else if (resourceName.StartsWith("dotnet.globalization", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleGlobalization ??= new();
+            else if (resourceName.StartsWith("diagnostics-panel", StringComparison.OrdinalIgnoreCase))
+                return null;
             else if (resourceName.StartsWith("dotnet.native", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))
                 return bootConfig.resources.jsModuleNative ??= new();
             else if (resourceName.StartsWith("dotnet.runtime", StringComparison.OrdinalIgnoreCase) && string.Equals(resourceExtension, ".js", StringComparison.OrdinalIgnoreCase))

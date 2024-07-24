@@ -84,4 +84,9 @@ mwpm_alloc_range (size_t size, uint8_t zeroed);
 void
 mwpm_free_range (void *base, size_t size);
 
+// Computes stats on the state of pages managed by mwpm. Is not thread safe.
+// External pages are pages of memory allocated by something other than mwpm (i.e. emscripten malloc/mmap).
+void
+mwpm_compute_stats (uint32_t *in_use_pages, uint32_t *free_pages, uint32_t *external_pages, uint32_t *largest_free_chunk);
+
 #endif

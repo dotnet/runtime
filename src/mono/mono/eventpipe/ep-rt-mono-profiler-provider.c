@@ -1005,7 +1005,8 @@ buffer_gc_event_roots_callback (
 	MonoProfiler *prof,
 	uint64_t count,
 	const mono_byte *const * addresses,
-	MonoObject *const * objects)
+	MonoObject *const * objects,
+	const char *kind)
 {
 	EP_ASSERT (gc_in_progress ());
 
@@ -3111,7 +3112,7 @@ ep_rt_mono_profiler_provider_fini (void)
 		_gc_heap_dump_in_progress = 0;
 		_gc_heap_dump_trigger_count = 0;
 		_gc_state = 0;
-		
+
 		// We were cleaning up resources (mutexes, tls data, etc) here but it races with
 		// other threads on shutdown. Skipping cleanup to prevent failures. If unloading
 		// and not leaking these threads becomes a priority we will have to reimplement
