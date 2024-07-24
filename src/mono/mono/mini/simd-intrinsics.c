@@ -1154,7 +1154,7 @@ emit_vector_insert_element (
 {
 	int op = type_to_insert_op (type);
 
-	if (((is_zero_inited) || (ins->opcode == OP_XZERO)) && is_zero_const (element)) {
+	if (is_zero_inited && is_zero_const (element)) {
 		// element already set to zero
 		return ins;
 	}
@@ -1226,9 +1226,6 @@ emit_vector_insert_element (
 						g_assert_not_reached ();
 					}
 				}
-			}
-			if (ins->opcode == OP_XCONST) {
-				return emit_xconst_v128 (cfg, vklass, cns_vec);
 			}
 			return emit_xconst_v128 (cfg, vklass, cns_vec);
 		}
@@ -2702,23 +2699,24 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 		}
 		MonoInst *new_args[3];
-		new_args [0] = args [0];
 		if (COMPILE_LLVM (cfg)) {
 			if ((get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 0) == 0x300000002) &&
 				(get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 1) == 0x100000000)) {
-				etype = m_class_get_byval_arg (mono_defaults.uint64_class);
-				klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
-				new_args [1] = args [0];
+				MonoType *op_etype = m_class_get_byval_arg (mono_defaults.uint64_class);
+				MonoClass *op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", op_etype);
+				new_args [0] = emit_simd_ins (cfg, op_klass, OP_XCAST, args [0]->dreg, -1);
+				new_args [1] = new_args [0];
 				EMIT_NEW_ICONST (cfg, new_args [2], 1);
-				MonoInst* ins = emit_simd_ins (cfg, klass, OP_ARM64_EXT, new_args [0]->dreg, new_args [1]->dreg);
+				MonoInst *ins = emit_simd_ins (cfg, op_klass, OP_ARM64_EXT, new_args [0]->dreg, new_args [1]->dreg);
 				ins->inst_c0 = 0;
 				ins->inst_c1 = MONO_TYPE_U8;
 				ins->sreg3 = new_args [2]->dreg;
-				return ins;
+				return emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 			}
 		}
+		int vsize = mono_class_value_size (klass, NULL);
 		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-		int ecount = (vector_size / 8) / esize;
+		int ecount = vsize / esize;
 		guint64 value = 0;
 		guint8 vec_cns[16];
 		for (int index = 0; index < ecount; index++) {
@@ -2734,10 +2732,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				}
 			}
 		}
-		etype = m_class_get_byval_arg (mono_defaults.byte_class);
-		klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
-		new_args [1] = emit_xconst_v128 (cfg, klass, vec_cns);
-		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, new_args);
+		MonoType *op_etype = m_class_get_byval_arg (mono_defaults.byte_class);
+		MonoClass *op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", op_etype);
+		new_args [0] = emit_simd_ins (cfg, op_klass, OP_XCAST, args [0]->dreg, -1);
+		new_args [1] = emit_xconst_v128 (cfg, op_klass, vec_cns);
+		MonoInst *ins = emit_simd_ins_for_sig (cfg, op_klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, new_args);
+		return emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 #elif defined(TARGET_AMD64)
 		if (COMPILE_LLVM (cfg)) {
 			if (vector_size != 128) {
@@ -2746,8 +2746,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			if (!is_xconst (args [1])) {
 				return NULL;
 			}
+			MonoType *op_etype = etype;
+			MonoClass *op_klass = klass;
+			int vsize = mono_class_value_size (klass, NULL);
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
-			int ecount = (vector_size / 8) / esize;
+			int ecount = vsize / esize;
 			guint8 control = 0;
 			gboolean needs_zero = false;
 			guint64 value = 0;
@@ -2788,15 +2791,16 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				}
 			}
 			MonoInst *new_args[3];
-			new_args [0] = args [0];
 			if (needs_zero) {
 				if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSSE3)) {
 					return NULL;
 				}
-				etype = m_class_get_byval_arg (mono_defaults.byte_class);
-				klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
-				new_args [1] = emit_xconst_v128 (cfg, klass, vec_cns);
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, new_args);
+				op_etype = m_class_get_byval_arg (mono_defaults.byte_class);
+				op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", op_etype);
+				new_args [0] = emit_simd_ins (cfg, op_klass, OP_XCAST, args [0]->dreg, -1);
+				new_args [1] = emit_xconst_v128 (cfg, op_klass, vec_cns);
+				MonoInst *ins = emit_simd_ins_for_sig (cfg, op_klass, OP_XOP_X_X_X, INTRINS_SSE_PSHUFB, 0, fsig, new_args);
+				return emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
 			}
 			if ((arg0_type == MONO_TYPE_I8) || (arg0_type == MONO_TYPE_U8)) {
 				// TYP_LONG and TYP_ULONG don't have their own shuffle/permute instructions and so we'll
@@ -2804,17 +2808,24 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 				// down into a TYP_INT or TYP_UINT based shuffle, but that's additional complexity for no
 				// real benefit since shuffle gets its own port rather than using the fp specific ports.
 				arg0_type = MONO_TYPE_R8;
-				etype = m_class_get_byval_arg (mono_defaults.double_class);
-				klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
+				op_etype = m_class_get_byval_arg (mono_defaults.double_class);
+				op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", etype);
 			}
 			if ((arg0_type == MONO_TYPE_R4) || (arg0_type == MONO_TYPE_R8)) {
 				int opcode = (arg0_type == MONO_TYPE_R4) ? OP_SSE_SHUFPS : OP_SSE2_SHUFPD;
-				new_args [1] = args [0];
+				new_args [0] = args [0];
+				if (op_klass != klass) {
+					new_args [0] = emit_simd_ins (cfg, op_klass, OP_XCAST, new_args [0]->dreg, -1);
+				}
+				new_args [1] = new_args [0];
 				EMIT_NEW_ICONST (cfg, new_args [2], control);
-				MonoInst* ins = emit_simd_ins (cfg, klass, opcode, new_args [0]->dreg, new_args [1]->dreg);
+				MonoInst* ins = emit_simd_ins (cfg, op_klass, opcode, new_args [0]->dreg, new_args [1]->dreg);
 				ins->inst_c0 = 0;
 				ins->inst_c1 = arg0_type;
 				ins->sreg3 = new_args [2]->dreg;
+				if (op_klass != klass) {
+					ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
+				}
 				return ins;
 			} else {
 				g_assert ((arg0_type == MONO_TYPE_I4) || (arg0_type == MONO_TYPE_U4));
