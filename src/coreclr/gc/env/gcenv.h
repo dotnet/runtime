@@ -75,13 +75,6 @@
             LOG((facility, level, msg, data1, data2));                                  \
             } while(0)
 
-#define STRESS_LOG2_CHECK_EE_STARTED(facility, level, msg, data1, data2) do { \
-            if (g_fEEStarted)                                                 \
-                STRESS_LOG2(facility, level, msg, data1, data2);              \
-            else                                                              \
-                LOG((facility, level, msg, data1, data2));                    \
-            } while(0)
-
 #define STRESS_LOG3(facility, level, msg, data1, data2, data3) do {                             \
             if (StressLog::LogOn(facility, level))                                              \
                 StressLog::LogMsg(level, facility,                                              \

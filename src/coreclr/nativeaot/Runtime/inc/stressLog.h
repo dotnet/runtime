@@ -158,55 +158,6 @@ enum LogFacilitiesEnum: unsigned int {
                     (void*)(size_t)(data5), (void*)(size_t)(data6), (void*)(size_t)(data7));  \
             } WHILE_0
 
-#define STRESS_LOG_COND0(facility, level, msg) do {                                 \
-            if (StressLog::StressLogOn(facility, level) && (cond))                  \
-                StressLog::LogMsg(facility, 0, msg);                                \
-            } WHILE_0
-
-#define STRESS_LOG_COND1(facility, level, cond, msg, data1) do {                    \
-            if (StressLog::StressLogOn(facility, level) && (cond))                  \
-                StressLog::LogMsg(facility, 1, msg, (void*)(size_t)(data1));        \
-            } WHILE_0
-
-#define STRESS_LOG_COND2(facility, level, cond, msg, data1, data2) do {             \
-            if (StressLog::StressLogOn(facility, level) && (cond))                  \
-                StressLog::LogMsg(facility, 2, msg,                                 \
-                    (void*)(size_t)(data1), (void*)(size_t)(data2));                \
-            } WHILE_0
-
-#define STRESS_LOG_COND3(facility, level, cond, msg, data1, data2, data3) do {      \
-            if (StressLog::StressLogOn(facility, level) && (cond))                  \
-                StressLog::LogMsg(facility, 3, msg,                                 \
-                    (void*)(size_t)(data1),(void*)(size_t)(data2),(void*)(size_t)(data3));    \
-            } WHILE_0
-
-#define STRESS_LOG_COND4(facility, level, cond, msg, data1, data2, data3, data4) do {         \
-            if (StressLog::StressLogOn(facility, level) && (cond))                            \
-                StressLog::LogMsg(facility, 4, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4));    \
-            } WHILE_0
-
-#define STRESS_LOG_COND5(facility, level, cond, msg, data1, data2, data3, data4, data5) do {  \
-            if (StressLog::StressLogOn(facility, level) && (cond))                            \
-                StressLog::LogMsg(facility, 5, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),     \
-                    (void*)(size_t)(data5));                                                  \
-            } WHILE_0
-
-#define STRESS_LOG_COND6(facility, level, cond, msg, data1, data2, data3, data4, data5, data6) do {     \
-            if (StressLog::StressLogOn(facility, level) && (cond))                            \
-                StressLog::LogMsg(facility, 6, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),     \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6));                          \
-            } WHILE_0
-
-#define STRESS_LOG_COND7(facility, level, cond, msg, data1, data2, data3, data4, data5, data6, data7) do {  \
-            if (StressLog::StressLogOn(facility, level) && (cond))                            \
-                StressLog::LogMsg(facility, 7, msg, (void*)(size_t)(data1),                   \
-                    (void*)(size_t)(data2),(void*)(size_t)(data3),(void*)(size_t)(data4),     \
-                    (void*)(size_t)(data5), (void*)(size_t)(data6), (void*)(size_t)(data7));  \
-            } WHILE_0
-
 #define STRESS_LOG_RESERVE_MEM(numChunks) do {                                                \
             if (StressLog::StressLogOn(LF_ALL, LL_ALWAYS))                         \
                 {StressLog::ReserveStressLogChunks (numChunks);}                              \
