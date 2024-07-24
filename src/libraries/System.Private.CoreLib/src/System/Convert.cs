@@ -3015,7 +3015,7 @@ namespace System
                 }
 
                 result = OperationStatus.NeedMoreData;
-                destination = destination.Slice(0, source.Length * 2);
+                destination = destination.Slice(0, quotient);
             }
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))
