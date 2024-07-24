@@ -46,9 +46,6 @@ grammar = GetRegexAssemblerDirectives().Replace(grammar, m => $"'.{m.Groups[1].V
 grammar = GetRegexEllipsis().Replace(grammar, "'...'");
 grammar = GetRegexDcolon().Replace(grammar, "'::'");
 
-// Remove TODO comments
-grammar = GetRegexRemoveTodoComments().Replace(grammar, "\n");
-
 // Print the output header
 Console.Write(@"// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
@@ -98,7 +95,4 @@ internal static partial class Patterns
 
     [GeneratedRegex(@"\bDCOLON\b", RegexOptions.Singleline)]
     internal static partial Regex GetRegexDcolon();
-
-    [GeneratedRegex(@"\n\s*/\*[^\n]*TODO[^\n]*\*/\s*\n", RegexOptions.Singleline)]
-    internal static partial Regex GetRegexRemoveTodoComments();
 }
