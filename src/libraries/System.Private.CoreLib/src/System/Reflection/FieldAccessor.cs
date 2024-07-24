@@ -202,7 +202,7 @@ namespace System.Reflection
                         throw new FieldAccessException();
 
                     default:
-                        Debug.Assert(false, "Unknown enum value");
+                        Debug.Fail("Unknown enum value");
                         return null;
                 }
             }

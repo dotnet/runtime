@@ -14,12 +14,11 @@ namespace ILLink.Shared.TrimAnalysis
 	/// </summary>
 	internal partial record MethodParameterValue
 	{
-		public MethodParameterValue (TypeReference? staticType, ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
+		public MethodParameterValue (TypeReference? staticType, ParameterProxy param, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
 			StaticType = staticType == null ? null : new (staticType);
 			DynamicallyAccessedMemberTypes = dynamicallyAccessedMemberTypes;
 			Parameter = param;
-			_overrideIsThis = overrideIsThis;
 		}
 
 		public override DynamicallyAccessedMemberTypes DynamicallyAccessedMemberTypes { get; }

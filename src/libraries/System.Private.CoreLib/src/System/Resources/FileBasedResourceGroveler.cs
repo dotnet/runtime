@@ -93,8 +93,7 @@ namespace System.Resources
             }
             else
             {
-                object[] args = new object[1];
-                args[0] = file;
+                object[] args = [file];
                 try
                 {
                     return (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;

@@ -153,7 +153,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    Debug.Assert(false, $"{nameof(typedValue)} should never be null");
+                    Debug.Fail($"{nameof(typedValue)} should never be null");
                     return typedValue as string;
                 }
             }

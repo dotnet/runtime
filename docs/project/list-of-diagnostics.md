@@ -276,3 +276,20 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 | __`SYSLIBSUPPRESS0001`__ | CA1822                   | Do not offer to make methods static when the methods need to be instance methods for a custom marshaller shape. |
 | __`SYSLIBSUPPRESS0002`__ | IL2026                   | ConfigurationBindingGenerator: suppress RequiresUnreferencedCode diagnostic for binding call that has been intercepted by a generated static variant. |
 | __`SYSLIBSUPPRESS0003`__ | IL3050                   | ConfigurationBindingGenerator: suppress RequiresDynamicCode diagnostic for binding call that has been intercepted by a generated static variant. |
+
+## Experimental APIs
+
+APIs can be marked as `[Experimental]` if their shape or functionality is included in a release but not yet officially supported. Experimental APIs offer the opportunity to collect customer feedback on these APIs in a major release, usually refining the APIs and removing the `[Experimental]` attribute in the next release. The `[Experimental]` attribute differs from `[RequiresPreviewFeatures]`, wherein:
+
+* `[RequiresPreviewFeatures]` APIs require a corresponding preview feature in another product area such as the compiler or SDK
+* `[Experimental]` APIs are entirely self-contained within the libraries and do not require preview features in other parts of the product
+
+The diagnostic id values reserved for experimental APIs are `SYSLIB5001` through `SYSLIB5999`. When marking an API as `[Experimental]`, claim the next three-digit identifier in the `SYSLIB5###` sequence and add it to the list below. The URL template for all experimental APIs is `https://aka.ms/dotnet-warnings/{0}`. The `{0}` placeholder is replaced by the compiler with the `SYSLIB5###` identifier.
+
+### Experimental Diagnostics (`SYSLIB5001` - `SYSLIB5999`)
+
+Diagnostic id values for experimental APIs must not be recycled, as that could silently opt customers into new experimental APIs where they had previously suppressed the ID for a previous usage of the value.
+
+| Diagnostic ID     | Introduced | Removed | Description |
+| :---------------- | ---------: | ------: | :---------- |
+|  __`SYSLIB5001`__ |     .NET 9 |     TBD | `Tensor<T>` and related APIs in System.Numerics.Tensors are experimental in .NET 9 |
