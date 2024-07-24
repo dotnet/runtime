@@ -2318,33 +2318,38 @@ namespace System.Net.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public async Task SendHttpRequest_WhenDefaultMaximumErrorResponseLengthSet_Success()
         {
-            await RemoteExecutor.Invoke(async (async) =>
+            await RemoteExecutor.Invoke(async isAsync =>
             {
                 TaskCompletionSource tcs = new TaskCompletionSource();
                 await LoopbackServer.CreateClientAndServerAsync(
-                async (uri) =>
+                async uri =>
                 {
                     HttpWebRequest request = WebRequest.CreateHttp(uri);
-                    HttpWebRequest.DefaultMaximumErrorResponseLength = 5;
-                    var exception = 
-                        await Assert.ThrowsAsync<WebException>(() => bool.Parse(async) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
+                    HttpWebRequest.DefaultMaximumErrorResponseLength = 1; // 1 KB
+                    WebException exception =
+                        await Assert.ThrowsAsync<WebException>(() => bool.Parse(isAsync) ? request.GetResponseAsync() : Task.Run(() => request.GetResponse()));
                     tcs.SetResult();
                     Assert.NotNull(exception.Response);
-                    using (var responseStream = exception.Response.GetResponseStream())
+                    using (Stream responseStream = exception.Response.GetResponseStream())
                     {
-                        var buffer = new byte[10];
-                        int readLen = responseStream.Read(buffer, 0, buffer.Length);
-                        Assert.Equal(5, readLen);
-                        Assert.Equal(new string('a', 5), Encoding.UTF8.GetString(buffer[0..readLen]));
-                        Assert.Equal(0, responseStream.Read(buffer));
+                        byte[] buffer = new byte[10 * 1024];
+                        int totalReadLen = 0;
+                        int readLen = 0;
+                        while ((readLen = responseStream.Read(buffer, readLen, buffer.Length - readLen)) > 0)
+                        {
+                            totalReadLen += readLen;
+                        }
+
+                        Assert.Equal(1024, totalReadLen);
+                        Assert.Equal(new string('a', 1024), Encoding.UTF8.GetString(buffer[0..totalReadLen]));
                     }
                 },
-                async (server) =>
+                async server =>
                 {
                     await server.AcceptConnectionAsync(
                         async connection =>
                         {
-                            await connection.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10));
+                            await connection.SendResponseAsync(statusCode: HttpStatusCode.BadRequest, content: new string('a', 10 * 1024));
                             await tcs.Task;
                         });
                 });

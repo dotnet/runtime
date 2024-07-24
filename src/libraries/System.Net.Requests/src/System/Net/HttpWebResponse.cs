@@ -346,7 +346,7 @@ namespace System.Net
                     return contentStream;
                 }
 
-                return new TruncatedReadStream(contentStream, maxErrorResponseLength);
+                return new TruncatedReadStream(contentStream, maxErrorResponseLength * 1024);
             }
 
             return Stream.Null;
