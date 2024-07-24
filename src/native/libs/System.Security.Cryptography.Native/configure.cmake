@@ -1,8 +1,10 @@
 include(CheckLibraryExists)
 include(CheckFunctionExists)
+include(CheckSourceCompiles)
 
 set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
 set(CMAKE_REQUIRED_LIBRARIES ${OPENSSL_CRYPTO_LIBRARY} ${OPENSSL_SSL_LIBRARY})
+set(CMAKE_REQUIRED_DEFINITIONS -DOPENSSL_API_COMPAT=0x10100000L)
 
 check_function_exists(
     EC_GF2m_simple_method
@@ -21,6 +23,11 @@ check_function_exists(
     EVP_sha3_256
     HAVE_OPENSSL_SHA3
 )
+
+check_source_compiles(C "
+#include <openssl/engine.h>
+int main(void) { ENGINE_init(NULL); return 1; }"
+HAVE_OPENSSL_ENGINE)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/pal_crypto_config.h.in
