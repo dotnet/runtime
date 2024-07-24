@@ -407,9 +407,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
             <Issue>https://github.com/dotnet/runtime/issues/68690</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
-            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/regress/vsw/373472/**">
             <Issue>Allocates large contiguous array that is not consistently available on 32-bit platforms</Issue>
         </ExcludeList>
@@ -422,9 +419,6 @@
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' ">
         <ExcludeList Include="$(XunitTestBinBase)/profiler/eventpipe/eventpipe/*">
             <Issue>https://github.com/dotnet/runtime/issues/66174</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
-            <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
         </ExcludeList>
     </ItemGroup>
 

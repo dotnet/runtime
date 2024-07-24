@@ -62,6 +62,8 @@ namespace System.Diagnostics.Tracing
         private static unsafe void Callback(byte* sourceId, int isEnabled, byte level,
             long matchAnyKeywords, long matchAllKeywords, Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, void* callbackContext)
         {
+            System.Threading.Thread.Sleep(10);
+
             EventPipeEventProvider _this = (EventPipeEventProvider)GCHandle.FromIntPtr((IntPtr)callbackContext).Target!;
             if (_this._eventProvider.TryGetTarget(out EventProvider? target))
             {

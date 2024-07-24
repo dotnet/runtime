@@ -390,9 +390,13 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
-    OBJECTREF objRef;
+    OBJECTREF objRef = NULL;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
 
     objRef = ObjectFromHandle(handle);
+
+    HELPER_METHOD_FRAME_END();
 
     return *((LPVOID*)&objRef);
 }
