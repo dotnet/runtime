@@ -2683,8 +2683,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
 	}
 	case SN_Shuffle: {
-		MonoType *etype = fsig->params [0];
-		if (!is_element_type_primitive (etype))
+		MonoType *etype = get_vector_t_elem_type (fsig->ret);
+		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 #ifdef TARGET_WASM
 		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
