@@ -969,8 +969,8 @@ struct StressLogMsg
     template<typename... Ts>
     StressLogMsg(const char* format, Ts... args)
         : m_cArgs(sizeof...(args))
-        , m_format(format),
-        m_args{ ConvertArgument(args)... }
+        , m_format(format)
+        , m_args{ ConvertArgument(args)... }
     {
         static_assert_no_msg(sizeof...(args) <= ARRAY_SIZE(m_args));
     }
