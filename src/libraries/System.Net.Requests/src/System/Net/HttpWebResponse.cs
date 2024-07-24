@@ -381,7 +381,7 @@ namespace System.Net
 
         private static string GetHeaderValueAsString(IEnumerable<string> values) => string.Join(", ", values);
 
-        internal sealed class TruncatedReadStream(Stream innerStream, int maxSize) : Stream
+        internal sealed class TruncatedReadStream(Stream innerStream, long maxSize) : Stream
         {
             public override bool CanRead => true;
             public override bool CanSeek => false;
@@ -399,7 +399,7 @@ namespace System.Net
 
             public override int Read(Span<byte> buffer)
             {
-                int readBytes = innerStream.Read(buffer.Slice(0, Math.Min(buffer.Length, maxSize)));
+                int readBytes = innerStream.Read(buffer.Slice(0, (int)Math.Min(buffer.Length, maxSize)));
                 maxSize -= readBytes;
                 return readBytes;
             }
@@ -411,7 +411,7 @@ namespace System.Net
 
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
-                int readBytes = await innerStream.ReadAsync(buffer.Slice(0, Math.Min(buffer.Length, maxSize)), cancellationToken)
+                int readBytes = await innerStream.ReadAsync(buffer.Slice(0, (int)Math.Min(buffer.Length, maxSize)), cancellationToken)
                     .ConfigureAwait(false);
                 maxSize -= readBytes;
                 return readBytes;
