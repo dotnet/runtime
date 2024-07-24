@@ -356,6 +356,19 @@ void* StressLog::ConvertArgument(double arg)
 #else
 template<>
 void* StressLog::ConvertArgument(double arg) = delete;
+
+// COMPAT: Truncate 64-bit integer arguments to 32-bit
+template<>
+void* StressLog::ConvertArgument(uint64_t arg)
+{
+    return (void*)(size_t)arg;
+}
+
+template<>
+void* StressLog::ConvertArgument(int64_t arg)
+{
+    return (void*)(size_t)arg;
+}
 #endif
 
 //==========================================================================================
