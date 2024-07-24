@@ -14,7 +14,7 @@ The `constrained. callvirt` sequence is valid if a ByRefLike type is provided. A
 Throws `InvalidProgramException` when passed a ByRefLike type:
 - `box` &ndash; ByRefLike types cannot be allocated on the heap.
 
-Throws `TypeLoadException` when passed a ByRefLike type.
+Throws `TypeLoadException` when passed a ByRefLike type:
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
 - `newarr` / `stelem` / `ldelem` / `ldelema` &ndash; Arrays are not able to contain ByRefLike types.
     - `newobj` &ndash; For multi-dimensional array construction.
