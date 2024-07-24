@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers.Binary;
 using Internal.TypeSystem;
 
 namespace Internal.IL
@@ -22,7 +20,7 @@ namespace Internal.IL
 
         private byte ReadILByte()
         {
-            if (_currentOffset + 1 > _ilBytes.Length)
+            if (_currentOffset >= _ilBytes.Length)
                 ReportMethodEndInsideInstruction();
 
             return _ilBytes[_currentOffset++];
@@ -30,20 +28,22 @@ namespace Internal.IL
 
         private ushort ReadILUInt16()
         {
-            if (!BinaryPrimitives.TryReadUInt16LittleEndian(_ilBytes.AsSpan(_currentOffset), out ushort value))
+            if (_currentOffset + 1 >= _ilBytes.Length)
                 ReportMethodEndInsideInstruction();
 
-            _currentOffset += sizeof(ushort);
-            return value;
+            ushort val = (ushort)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8));
+            _currentOffset += 2;
+            return val;
         }
 
         private uint ReadILUInt32()
         {
-            if (!BinaryPrimitives.TryReadUInt32LittleEndian(_ilBytes.AsSpan(_currentOffset), out uint value))
+            if (_currentOffset + 3 >= _ilBytes.Length)
                 ReportMethodEndInsideInstruction();
 
-            _currentOffset += sizeof(uint);
-            return value;
+            uint val = (uint)(_ilBytes[_currentOffset] + (_ilBytes[_currentOffset + 1] << 8) + (_ilBytes[_currentOffset + 2] << 16) + (_ilBytes[_currentOffset + 3] << 24));
+            _currentOffset += 4;
+            return val;
         }
 
         private int ReadILToken()
@@ -53,29 +53,21 @@ namespace Internal.IL
 
         private ulong ReadILUInt64()
         {
-            if (!BinaryPrimitives.TryReadUInt64LittleEndian(_ilBytes.AsSpan(_currentOffset), out ulong value))
-                ReportMethodEndInsideInstruction();
-
-            _currentOffset += sizeof(ulong);
+            ulong value = ReadILUInt32();
+            value |= (((ulong)ReadILUInt32()) << 32);
             return value;
         }
 
-        private float ReadILFloat()
+        private unsafe float ReadILFloat()
         {
-            if (!BinaryPrimitives.TryReadSingleLittleEndian(_ilBytes.AsSpan(_currentOffset), out float value))
-                ReportMethodEndInsideInstruction();
-
-            _currentOffset += sizeof(float);
-            return value;
+            uint value = ReadILUInt32();
+            return *(float*)(&value);
         }
 
-        private double ReadILDouble()
+        private unsafe double ReadILDouble()
         {
-            if (!BinaryPrimitives.TryReadDoubleLittleEndian(_ilBytes.AsSpan(_currentOffset), out double value))
-                ReportMethodEndInsideInstruction();
-
-            _currentOffset += sizeof(double);
-            return value;
+            ulong value = ReadILUInt64();
+            return *(double*)(&value);
         }
 
         private void SkipIL(int bytes)

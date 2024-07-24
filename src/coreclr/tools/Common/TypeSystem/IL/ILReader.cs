@@ -80,7 +80,7 @@ namespace Internal.IL
             return value;
         }
 
-        public double ReadILDouble()
+        public unsafe double ReadILDouble()
         {
             if (!BinaryPrimitives.TryReadDoubleLittleEndian(_ilBytes.Slice(_currentOffset), out double value))
                 ThrowHelper.ThrowInvalidProgramException();
