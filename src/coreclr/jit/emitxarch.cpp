@@ -3610,7 +3610,7 @@ inline unsigned emitter::insEncodeReg012(const instrDesc* id, regNumber reg, emi
     {
         // We are assuming that we only use/encode SPL, BPL, SIL and DIL
         // not the corresponding AH, CH, DH, or BH
-        *code = AddRexPrefix(ins, *code); // REX
+        *code = hasRex2Prefix(*code) ? *code : AddRexPrefix(ins, *code); // REX
     }
 #endif // TARGET_AMD64
 
@@ -3660,7 +3660,7 @@ inline unsigned emitter::insEncodeReg345(const instrDesc* id, regNumber reg, emi
     {
         // We are assuming that we only use/encode SPL, BPL, SIL and DIL
         // not the corresponding AH, CH, DH, or BH
-        *code = AddRexPrefix(ins, *code); // REX
+        *code = hasRex2Prefix(*code) ? *code : AddRexPrefix(ins, *code); // REX
     }
 #endif // TARGET_AMD64
 
