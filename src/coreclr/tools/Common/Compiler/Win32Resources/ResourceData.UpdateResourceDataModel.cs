@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 
 #if HOST_MODEL
 namespace Microsoft.NET.HostModel.Win32Resources
@@ -102,7 +103,7 @@ namespace ILCompiler.Win32Resources
         private static string ToUpperForResource(string str)
         {
             // Undocumented semantic for Win32 Resource APIs
-            StringBuilder builder = new(str.Length);
+            System.Text.StringBuilder builder = new(str.Length);
             foreach (char c in str)
             {
                 builder.Append('a' <= c && c <= 'z' ? char.ToUpper(c) : c);
