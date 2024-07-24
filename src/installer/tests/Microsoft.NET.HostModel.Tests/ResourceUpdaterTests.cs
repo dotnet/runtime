@@ -79,6 +79,37 @@ public class ResourceUpdaterTests
     }
 
     [Fact]
+    void AddResource_DifferentCasingInAPIs()
+    {
+        using var tempFile = CreateTestPEFileWithoutRsrc();
+
+        using (var updater = new ResourceUpdater(tempFile.Stream, true))
+        {
+            updater.AddResource("Test Resource1"u8.ToArray(), "testtype1", 0);
+            updater.AddResource("Test Resource2"u8.ToArray(), "TESTTYPE2", 0);
+            updater.AddResource("Test Resource3"u8.ToArray(), "\u0165ESTTYPE3", 0);
+            updater.Update();
+        }
+
+        tempFile.Stream.Seek(0, SeekOrigin.Begin);
+
+        using (var reader = new PEReader(tempFile.Stream, PEStreamOptions.LeaveOpen))
+        {
+            var resourceReader = new ResourceData(reader);
+            byte[]? testType1 = resourceReader.FindResource(0, "TESTTYPE1", 0);
+            Assert.Equal("Test Resource1"u8.ToArray(), testType1);
+            byte[]? testType2 = resourceReader.FindResource(0, "testtype2", 0);
+            Assert.Equal("Test Resource2"u8.ToArray(), testType2);
+            byte[]? testType3 = resourceReader.FindResource(0, "\u0165esttype3", 0);
+            Assert.Equal("Test Resource3"u8.ToArray(), testType3);
+
+            // Characters out of 'a' - 'z' are left unaltered
+            byte[]? missing = resourceReader.FindResource(0, "\u0164ESTTYPE3", 0);
+            Assert.Null(missing);
+        }
+    }
+
+    [Fact]
     void AddResource_AddToExistingRsrc()
     {
         using var tempFile = GetCurrentAssemblyMemoryStream();
