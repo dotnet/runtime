@@ -116,7 +116,7 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile))]
         public void CpuTime()
         {
            using InstrumentRecorder<double> instrumentRecorder = new("dotnet.process.cpu.time");
@@ -125,7 +125,7 @@ namespace System.Diagnostics.Metrics.Tests
 
            bool[] foundCpuModes = [false, false];
 
-           foreach (Measurement<double> measurement in instrumentRecorder.GetMeasurements().Where(m => m.Value >= 0))
+           foreach (Measurement<double> measurement in instrumentRecorder.GetMeasurements())
            {
                var tags = measurement.Tags.ToArray();
                var tag = tags.SingleOrDefault(k => k.Key == "cpu.mode");
