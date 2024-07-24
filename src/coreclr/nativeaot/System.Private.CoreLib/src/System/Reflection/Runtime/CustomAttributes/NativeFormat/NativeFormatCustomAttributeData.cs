@@ -116,7 +116,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             }
             Handle[] ctorTypeHandles = parameterTypeSignatureHandles.ToArray();
 
-            LowLevelListWithIList<CustomAttributeTypedArgument> customAttributeTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
+            List<CustomAttributeTypedArgument> customAttributeTypedArguments = new List<CustomAttributeTypedArgument>(_customAttribute.FixedArguments.Count);
             foreach (Handle fixedArgumentHandle in _customAttribute.FixedArguments)
             {
                 Handle typeHandle = ctorTypeHandles[index];
@@ -155,7 +155,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
         //
         internal sealed override IList<CustomAttributeNamedArgument> GetNamedArguments(bool throwIfMissingMetadata)
         {
-            LowLevelListWithIList<CustomAttributeNamedArgument> customAttributeNamedArguments = new LowLevelListWithIList<CustomAttributeNamedArgument>();
+            List<CustomAttributeNamedArgument> customAttributeNamedArguments = new List<CustomAttributeNamedArgument>(_customAttribute.NamedArguments.Count);
             foreach (NamedArgumentHandle namedArgumentHandle in _customAttribute.NamedArguments)
             {
                 NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(_reader);

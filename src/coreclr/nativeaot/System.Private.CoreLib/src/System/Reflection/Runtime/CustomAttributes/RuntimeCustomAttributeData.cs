@@ -171,7 +171,7 @@ namespace System.Reflection.Runtime.CustomAttributes
                 if (!argumentType.IsArray)
                     throw new BadImageFormatException();
                 Type reportedElementType = argumentType.GetElementType()!;
-                LowLevelListWithIList<CustomAttributeTypedArgument> elementTypedArguments = new LowLevelListWithIList<CustomAttributeTypedArgument>();
+                List<CustomAttributeTypedArgument> elementTypedArguments = new List<CustomAttributeTypedArgument>();
                 foreach (object elementValue in enumerableValue)
                 {
                     CustomAttributeTypedArgument elementTypedArgument = WrapInCustomAttributeTypedArgument(elementValue, reportedElementType);
