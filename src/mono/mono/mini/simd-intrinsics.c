@@ -1338,9 +1338,103 @@ static MonoInst *
 emit_vector_create_elementwise (
 	MonoCompile *cfg, MonoClass *vklass, MonoType *etype, MonoInst **args, int param_count)
 {
-	MonoInst *ins = emit_xzero (cfg, vklass);
-	for (int i = 0; i < param_count; ++i)
-		ins = emit_vector_insert_element (cfg, vklass, ins, etype->type, args[i], i, TRUE);
+	// We want to handle constant inputs and create constant nodes so other import 
+	// optimizations can be enabled. This includes recognizing partial constants
+	// and only performing the minimal number of inserts required
+
+	gboolean all_const = true;
+	gboolean some_const = false;
+
+	guint8 cns_vec[16];
+	memset (cns_vec, 0x00, 16);
+
+	int vector_size = mono_class_value_size (vklass, NULL);
+	if (vector_size == 16) {
+		for (int i = 0; i < param_count; ++i) {
+			if (!is_const (args[i])) {
+				all_const = false;
+				break;
+			}
+
+			some_const = true;
+
+			if (type_enum_is_float (etype->type)) {
+				double cns_val;
+				if (args[i]->opcode == OP_R4CONST) {
+					cns_val = *(const float*)(args[i]->inst_p0);
+				} else {
+					g_assert (args[i]->opcode == OP_R8CONST);
+					cns_val = *(const double*)(args[i]->inst_p0);
+				}
+
+				switch (etype->type) {
+					case MONO_TYPE_R4: {
+						((float*)cns_vec) [i] = (float)cns_val;
+						break;
+					}
+					case MONO_TYPE_R8: {
+						((double*)cns_vec) [i] = (double)cns_val;
+						break;
+					}
+					default: {
+						g_assert_not_reached ();
+					}
+				}
+			} else {
+				gint64 cns_val;
+				if (args[i]->opcode == OP_ICONST) {
+					cns_val = GTMREG_TO_INT (args[i]->inst_c0);
+				} else {
+					g_assert (args[i]->opcode == OP_I8CONST);
+					cns_val = args[i]->inst_l;
+				}
+
+				switch (etype->type) {
+					case MONO_TYPE_I1:
+					case MONO_TYPE_U1: {
+						((guint8*)cns_vec) [i] = (guint8)cns_val;
+						break;
+					}
+					case MONO_TYPE_I2:
+					case MONO_TYPE_U2: {
+						((guint16*)cns_vec) [i] = (guint16)cns_val;
+						break;
+					}
+					case MONO_TYPE_I4:
+					case MONO_TYPE_U4: {
+						((guint32*)cns_vec) [i] = (guint32)cns_val;
+						break;
+					}
+					case MONO_TYPE_I8:
+					case MONO_TYPE_U8: {
+						((guint64*)cns_vec) [i] = (guint64)cns_val;
+						break;
+					}
+					default: {
+						g_assert_not_reached ();
+					}
+				}
+			}
+		}
+	}
+
+	if (all_const) {
+		return emit_xconst_v128 (cfg, vklass, (guint8*)cns_vec);
+	}
+
+	MonoInst *ins;
+
+	if (some_const) {
+		ins = emit_xconst_v128 (cfg, vklass, (guint8*)cns_vec);
+	} else {
+		ins = emit_xzero (cfg, vklass);
+	}
+
+	for (int i = 0; i < param_count; ++i) {
+		if (!is_const (args[i])) {
+			ins = emit_vector_insert_element (cfg, vklass, ins, etype->type, args[i], i, TRUE);
+		}
+	}
 
 	return ins;
 }
@@ -1357,11 +1451,72 @@ emit_vector_create_scalar (
 			if (is_unsafe) {
 				return emit_vector_create_broadcast (cfg, vklass, etype, arg0);
 			}
-			MonoInst *ins = emit_xzero (cfg, vklass);
-			ins = emit_vector_insert_element (cfg, vklass, ins, etype->type, arg0, 0, TRUE);
-			return ins;
+
+			guint8 cns_vec[16];
+			memset (cns_vec, 0x00, 16);
+
+			if (type_enum_is_float (etype->type)) {
+				double cns_val;
+				if (arg0->opcode == OP_R4CONST) {
+					cns_val = *(const float*)(arg0->inst_p0);
+				} else {
+					g_assert (arg0->opcode == OP_R8CONST);
+					cns_val = *(const double*)(arg0->inst_p0);
+				}
+
+				switch (etype->type) {
+					case MONO_TYPE_R4: {
+						((float*)cns_vec) [0] = (float)cns_val;
+						break;
+					}
+					case MONO_TYPE_R8: {
+						((double*)cns_vec) [0] = (double)cns_val;
+						break;
+					}
+					default: {
+						g_assert_not_reached ();
+					}
+				}
+			} else {
+				gint64 cns_val;
+				if (arg0->opcode == OP_ICONST) {
+					cns_val = GTMREG_TO_INT (arg0->inst_c0);
+				} else {
+					g_assert (arg0->opcode == OP_I8CONST);
+					cns_val = arg0->inst_l;
+				
+}
+				switch (etype->type) {
+					case MONO_TYPE_I1:
+					case MONO_TYPE_U1: {
+						((guint8*)cns_vec) [0] = (guint8)cns_val;
+						break;
+					}
+					case MONO_TYPE_I2:
+					case MONO_TYPE_U2: {
+						((guint16*)cns_vec) [0] = (guint16)cns_val;
+						break;
+					}
+					case MONO_TYPE_I4:
+					case MONO_TYPE_U4: {
+						((guint32*)cns_vec) [0] = (guint32)cns_val;
+						break;
+					}
+					case MONO_TYPE_I8:
+					case MONO_TYPE_U8: {
+						((guint64*)cns_vec) [0] = (guint64)cns_val;
+						break;
+					}
+					default: {
+						g_assert_not_reached ();
+					}
+				}
+			}
+
+			return emit_xconst_v128 (cfg, vklass, (guint8*)cns_vec);
 		}
 	}
+
 	int opcode = 0;
 	if (COMPILE_LLVM (cfg)) {
 		opcode = is_unsafe ? OP_CREATE_SCALAR_UNSAFE : OP_CREATE_SCALAR;
