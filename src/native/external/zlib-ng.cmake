@@ -8,6 +8,7 @@ set(ZLIB_COMPAT ON)
 set(ZLIB_ENABLE_TESTS OFF)
 set(ZLIBNG_ENABLE_TESTS OFF)
 set(Z_PREFIX ON)
+set(ZLIB_DEBUG OFF)
 
 # TODO: Turn back on when Linux kernels with proper RISC-V extension detection (>= 6.5) are more commonplace
 set(WITH_RVV OFF)
@@ -15,8 +16,6 @@ set(WITH_RVV OFF)
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-unused-command-line-argument>) # clang : error : argument unused during compilation: '-fno-semantic-interposition'
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-logical-op-parentheses>) # place parentheses around the '&&' expression to silence this warning
 add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4127>) # warning C4127: conditional expression is constant
-add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
-add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
 
 # 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
 if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
