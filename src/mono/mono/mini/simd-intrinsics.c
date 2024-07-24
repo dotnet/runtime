@@ -1228,8 +1228,7 @@ emit_vector_insert_element (
 				}
 			}
 			if (ins->opcode == OP_XCONST) {
-				memcpy (ins->inst_p0, cns_vec, 16);
-				return ins;
+				return emit_xconst_v128 (cfg, vklass, cns_vec);
 			}
 			return emit_xconst_v128 (cfg, vklass, cns_vec);
 		}
