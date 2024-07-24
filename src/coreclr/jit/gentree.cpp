@@ -7451,7 +7451,11 @@ GenTreeIntCon* Compiler::gtNewFalse()
 // return a new node representing the value in a physical register
 GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {
+#ifdef TARGET_ARM64
+    assert(genIsValidIntReg(reg) || (reg == REG_SPBASE) || (reg == REG_FFR));
+#else
     assert(genIsValidIntReg(reg) || (reg == REG_SPBASE));
+#endif
     GenTree* result = new (this, GT_PHYSREG) GenTreePhysReg(reg, type);
     return result;
 }
@@ -11557,6 +11561,12 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "GsCookie";
             }
+#ifdef TARGET_ARM64
+            else if (lclNum == lvaFfrRegister)
+            {
+                ilName = "FFReg";
+            }
+#endif
             else if (lclNum == lvaRetAddrVar)
             {
                 ilName = "ReturnAddress";
