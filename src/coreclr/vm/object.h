@@ -638,7 +638,19 @@ public:
 
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
+
+    template<typename T> friend struct ::cdac_offsets;
 };
+
+#ifndef DACCESS_COMPILE
+template<>
+struct cdac_offsets<ArrayBase>
+{
+    static constexpr size_t m_NumComponents = offsetof(ArrayBase, m_NumComponents);
+
+    static constexpr INT32* s_arrayBoundsZero = &ArrayBase::s_arrayBoundsZero;
+};
+#endif
 
 //
 // Template used to build all the non-object

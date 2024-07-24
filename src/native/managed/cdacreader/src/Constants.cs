@@ -27,5 +27,8 @@ internal static class Constants
         internal const string MiniMetaDataBuffMaxSize = nameof(MiniMetaDataBuffMaxSize);
 
         internal const string MethodDescAlignment = nameof(MethodDescAlignment);
+        internal const string ObjectHeaderSize = nameof(ObjectHeaderSize);
+
+        internal const string ArrayBoundsZero = nameof(ArrayBoundsZero);
     }
 }
