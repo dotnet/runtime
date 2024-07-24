@@ -138,7 +138,7 @@ namespace System.Reflection.Runtime.General
                         RuntimeTypeInfo? genericTypeDefinition = sig.GenericType.TryResolve(reader, typeContext, ref exception);
                         if (genericTypeDefinition == null)
                             return null;
-                        LowLevelList<RuntimeTypeInfo> genericTypeArguments = new LowLevelList<RuntimeTypeInfo>();
+                        ArrayBuilder<RuntimeTypeInfo> genericTypeArguments = new ArrayBuilder<RuntimeTypeInfo>(sig.GenericTypeArguments.Count);
                         foreach (Handle genericTypeArgumentHandle in sig.GenericTypeArguments)
                         {
                             RuntimeTypeInfo? genericTypeArgument = genericTypeArgumentHandle.TryResolve(reader, typeContext, ref exception);

@@ -195,36 +195,5 @@ namespace System.Collections.Generic
                 Capacity = newCapacity;
             }
         }
-
-#if !TYPE_LOADER_IMPLEMENTATION
-
-        // Inserts an element into this list at a given index. The size of the list
-        // is increased by one. If required, the capacity of the list is doubled
-        // before inserting the new element.
-        //
-        public void Insert(int index, T item)
-        {
-            // Note that insertions at the end are legal.
-            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)_size, nameof(index));
-
-            if (_size == _items.Length) EnsureCapacity(_size + 1);
-            if (index < _size)
-            {
-                Array.Copy(_items, index, _items, index + 1, _size - index);
-            }
-            _items[index] = item;
-            _size++;
-            _version++;
-        }
-
-        // ToArray returns a new Object array containing the contents of the List.
-        // This requires copying the List, which is an O(n) operation.
-        public T[] ToArray()
-        {
-            T[] array = new T[_size];
-            Array.Copy(_items, 0, array, 0, _size);
-            return array;
-        }
-#endif
     }
 }

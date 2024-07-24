@@ -15,6 +15,11 @@ namespace System.Collections.Generic
         private T[] _items;
         private int _count;
 
+        public ArrayBuilder(int capacity)
+        {
+            _items = new T[capacity];
+        }
+
         public T[] ToArray()
         {
             if (_items == null)
