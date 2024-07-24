@@ -2698,42 +2698,27 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_xconst (args [1])) {
 			return NULL;
 		}
-		MonoInst *new_args[3];
-		if (COMPILE_LLVM (cfg)) {
-			if ((get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 0) == 0x300000002) &&
-				(get_xconst_int_elem (cfg, args [1], MONO_TYPE_U8, 1) == 0x100000000)) {
-				MonoType *op_etype = m_class_get_byval_arg (mono_defaults.uint64_class);
-				MonoClass *op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", op_etype);
-				new_args [0] = emit_simd_ins (cfg, op_klass, OP_XCAST, args [0]->dreg, -1);
-				new_args [1] = new_args [0];
-				EMIT_NEW_ICONST (cfg, new_args [2], 1);
-				MonoInst *ins = emit_simd_ins (cfg, op_klass, OP_ARM64_EXT, new_args [0]->dreg, new_args [1]->dreg);
-				ins->inst_c0 = 0;
-				ins->inst_c1 = MONO_TYPE_U8;
-				ins->sreg3 = new_args [2]->dreg;
-				return emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
-			}
-		}
 		int vsize = mono_class_value_size (klass, NULL);
 		int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 		int ecount = vsize / esize;
+		g_assert ((ecount == 2) || (ecount == 4) || (ecount == 8) || (ecount == 16));
 		guint64 value = 0;
 		guint8 vec_cns[16];
 		for (int index = 0; index < ecount; index++) {
 			value = get_xconst_int_elem (cfg, args [1], arg0_type, index);
-
 			if (value < ecount) {
 				for (int i = 0; i < esize; i++) {
 					vec_cns [(index * esize) + i] = (guint8)((value * esize) + i);
 				}
 			} else {
 				for (int i = 0; i < esize; i++) {
-					vec_cns [(index * esize) + i] = 0xFF;
+					vec_cns [(index * esize) + i] = (guint8)0xFF;
 				}
 			}
 		}
 		MonoType *op_etype = m_class_get_byval_arg (mono_defaults.byte_class);
 		MonoClass *op_klass = create_class_instance ("System.Runtime.Intrinsics", "Vector128`1", op_etype);
+		MonoInst *new_args[2];
 		new_args [0] = emit_simd_ins (cfg, op_klass, OP_XCAST, args [0]->dreg, -1);
 		new_args [1] = emit_xconst_v128 (cfg, op_klass, vec_cns);
 		MonoInst *ins = emit_simd_ins_for_sig (cfg, op_klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, new_args);
@@ -2751,6 +2736,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			int vsize = mono_class_value_size (klass, NULL);
 			int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 			int ecount = vsize / esize;
+			g_assert ((ecount == 2) || (ecount == 4) || (ecount == 8) || (ecount == 16));
 			guint8 control = 0;
 			gboolean needs_zero = false;
 			guint64 value = 0;
@@ -2786,7 +2772,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 					// set, but we use 0xFF instead since that will be the equivalent of AllBitsSet
 
 					for (int i = 0; i < esize; i++) {
-						vec_cns [(index * esize) + i] = 0xFF;
+						vec_cns [(index * esize) + i] = (guint8)0xFF;
 					}
 				}
 			}
