@@ -144,13 +144,13 @@ namespace System
 
             if (actualElementType.ContainsGenericParameters)
             {
-                Attribute[] result = (Attribute[])Array.CreateInstance(actualElementType, attributes.Count);
-                attributes.AsSpan(0).CopyTo(result);
-                return result;
+                return attributes.ToArray();
             }
             else
             {
-                return attributes.ToArray();
+                Attribute[] result = (Attribute[])Array.CreateInstance(actualElementType, attributes.Count);
+                attributes.AsSpan(0).CopyTo(result);
+                return result;
             }
         }
     }
