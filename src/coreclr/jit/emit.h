@@ -3159,13 +3159,14 @@ public:
     /*    The following is used to distinguish helper vs non-helper calls   */
     /************************************************************************/
 
-    static bool emitNoGChelper(CorInfoHelpFunc helpFunc);
+private:
     static bool emitNoGChelper(CORINFO_METHOD_HANDLE methHnd);
 
     /************************************************************************/
     /*         The following logic keeps track of live GC ref values        */
     /************************************************************************/
 
+public:
     bool emitFullArgInfo; // full arg info (including non-ptr arg)?
     bool emitFullGCinfo;  // full GC pointer maps?
     bool emitFullyInt;    // fully interruptible code?
@@ -4212,6 +4213,10 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
             return EA_16BYTE;
         }
 
+        case INS_vbroadcastf32x8:
+        case INS_vbroadcasti32x8:
+        case INS_vbroadcasti64x4:
+        case INS_vbroadcastf64x4:
         case INS_vextractf32x8:
         case INS_vextracti32x8:
         case INS_vextractf64x4:

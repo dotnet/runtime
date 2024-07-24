@@ -123,8 +123,21 @@ namespace ILLink.RoslynAnalyzer
 					INamedTypeSymbol type)
 				{
 					foreach (var memberpair in type.GetMemberInterfaceImplementationPairs ()) {
+						var implementationType = memberpair.ImplementationMember switch {
+							IMethodSymbol method => method.ContainingType,
+							IPropertySymbol property => property.ContainingType,
+							IEventSymbol @event => @event.ContainingType,
+							_ => throw new NotSupportedException ()
+						};
+						ISymbol origin = memberpair.ImplementationMember;
+
+						// If this type implements an interface method through a base class, the origin of the warning is this type,
+						// not the member on the base class.
+						if (!implementationType.IsInterface () && !SymbolEqualityComparer.Default.Equals (implementationType, type))
+							origin = type;
+
 						if (HasMismatchingAttributes (memberpair.InterfaceMember, memberpair.ImplementationMember)) {
-							ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, memberpair.ImplementationMember, memberpair.InterfaceMember, isInterface: true);
+							ReportMismatchInAttributesDiagnostic (symbolAnalysisContext, memberpair.ImplementationMember, memberpair.InterfaceMember, isInterface: true, origin);
 						}
 					}
 				}
@@ -230,12 +243,13 @@ namespace ILLink.RoslynAnalyzer
 				ctor.GetDisplayName ()));
 		}
 
-		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false)
+		private void ReportMismatchInAttributesDiagnostic (SymbolAnalysisContext symbolAnalysisContext, ISymbol member, ISymbol baseMember, bool isInterface = false, ISymbol? origin = null)
 		{
+			origin ??= member;
 			string message = MessageFormat.FormatRequiresAttributeMismatch (member.HasAttribute (RequiresAttributeName), isInterface, RequiresAttributeName, member.GetDisplayName (), baseMember.GetDisplayName ());
 			symbolAnalysisContext.ReportDiagnostic (Diagnostic.Create (
 				RequiresAttributeMismatch,
-				member.Locations[0],
+				origin.Locations[0],
 				message));
 		}
 

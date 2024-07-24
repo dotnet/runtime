@@ -100,31 +100,31 @@ namespace System.Xml
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteTextNodeRaw<T>(XmlBinaryNodeType nodeType, T value)
+        private unsafe void WriteTextNodeRaw<T>(XmlBinaryNodeType nodeType, T value)
             where T : unmanaged
         {
-            // GetTextNodeBuffer performs bounds checks and ensures returned buffer has size of at least (1 + Unsafe.SizeOf<T>())
-            byte[] buffer = GetTextNodeBuffer(1 + Unsafe.SizeOf<T>(), out int offset);
+            // GetTextNodeBuffer performs bounds checks and ensures returned buffer has size of at least (1 + sizeof(T))
+            byte[] buffer = GetTextNodeBuffer(1 + sizeof(T), out int offset);
 
-            Debug.Assert(offset >= 0 && offset + 1 + Unsafe.SizeOf<T>() <= buffer.Length, "WriteTextNodeRaw");
+            Debug.Assert(offset >= 0 && offset + 1 + sizeof(T) <= buffer.Length, "WriteTextNodeRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
 
             bytePtr = (byte)nodeType;
             Unsafe.WriteUnaligned<T>(ref Unsafe.Add(ref bytePtr, 1), value);
-            Advance(1 + Unsafe.SizeOf<T>());
+            Advance(1 + sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteRaw<T>(T value)
+        private unsafe void WriteRaw<T>(T value)
             where T : unmanaged
         {
-            // GetBuffer performs bounds checks and ensures returned buffer has size of at least (Unsafe.SizeOf<T>())
-            byte[] buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset);
+            // GetBuffer performs bounds checks and ensures returned buffer has size of at least (sizeof(T))
+            byte[] buffer = GetBuffer(sizeof(T), out int offset);
 
-            Debug.Assert(offset >= 0 && offset + Unsafe.SizeOf<T>() <= buffer.Length, "WriteRaw");
+            Debug.Assert(offset >= 0 && offset + sizeof(T) <= buffer.Length, "WriteRaw");
             ref byte bytePtr = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), offset);
             Unsafe.WriteUnaligned<T>(ref bytePtr, value);
-            Advance(Unsafe.SizeOf<T>());
+            Advance(sizeof(T));
         }
 
         private void WriteTextNodeWithInt8(XmlBinaryNodeType nodeType, byte value)

@@ -133,8 +133,6 @@ static bool InitDLL(HANDLE hPalInstance)
 #endif
 #endif // !USE_PORTABLE_HELPERS
 
-    InitializeYieldProcessorNormalizedCrst();
-
 #ifdef STRESS_LOG
     uint32_t dwTotalStressLogSize = (uint32_t)g_pRhConfig->GetTotalStressLogSize();
     uint32_t dwStressLogLevel = (uint32_t)g_pRhConfig->GetStressLogLevel();

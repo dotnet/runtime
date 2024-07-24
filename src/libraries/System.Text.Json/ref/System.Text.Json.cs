@@ -4,6 +4,13 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+namespace System.Runtime.InteropServices
+{
+    public static partial class JsonMarshal
+    {
+        public static System.ReadOnlySpan<byte> GetRawUtf8Value(System.Text.Json.JsonElement element) { throw null; }
+    }
+}
 namespace System.Text.Json
 {
     public enum JsonCommentHandling : byte
@@ -41,6 +48,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonElement this[int index] { get { throw null; } }
         public System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
         public System.Text.Json.JsonElement Clone() { throw null; }
+        public static bool DeepEquals(System.Text.Json.JsonElement element1, System.Text.Json.JsonElement element2) { throw null; }
         public System.Text.Json.JsonElement.ArrayEnumerator EnumerateArray() { throw null; }
         public System.Text.Json.JsonElement.ObjectEnumerator EnumerateObject() { throw null; }
         public int GetArrayLength() { throw null; }
@@ -914,6 +922,7 @@ namespace System.Text.Json.Schema
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
+        public System.Text.Json.Serialization.Metadata.JsonTypeInfo? BaseTypeInfo { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonPropertyInfo? PropertyInfo { get { throw null; } }
         public System.ReadOnlySpan<string> Path { get { throw null; } }
         public System.Text.Json.Serialization.Metadata.JsonTypeInfo TypeInfo { get { throw null; } }
@@ -1154,6 +1163,12 @@ namespace System.Text.Json.Serialization
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) { }
         public sealed override bool CanConvert(System.Type typeToConvert) { throw null; }
         public sealed override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, AllowMultiple=false)]
+    public partial class JsonStringEnumMemberNameAttribute : System.Attribute
+    {
+        public JsonStringEnumMemberNameAttribute(string name) { }
+        public string Name { get { throw null; } }
     }
     public enum JsonUnknownDerivedTypeHandling
     {
