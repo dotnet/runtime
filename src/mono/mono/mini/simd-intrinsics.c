@@ -1431,7 +1431,7 @@ emit_vector_create_elementwise (
 	}
 
 	for (int i = 0; i < param_count; ++i) {
-		if (!is_const (args[i])) {
+		if (!is_const (args[i]) || (vector_size != 16)) {
 			ins = emit_vector_insert_element (cfg, vklass, ins, etype->type, args[i], i, TRUE);
 		}
 	}
