@@ -29,6 +29,15 @@ namespace System.Collections.Generic
             return _items;
         }
 
+        public void CopyTo(T[] destination)
+        {
+            if (_items != null)
+            {
+                // Use Array.Copy instead of Span.CopyTo to handle covariant destination
+                Array.Copy(_items, destination, _count);
+            }
+        }
+
         public void Add(T item)
         {
             if (_items == null || _count == _items.Length)

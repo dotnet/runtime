@@ -149,7 +149,7 @@ namespace System
             else
             {
                 Attribute[] result = (Attribute[])Array.CreateInstance(actualElementType, attributes.Count);
-                attributes.AsSpan(0).CopyTo(result);
+                attributes.CopyTo(result);
                 return result;
             }
         }

@@ -168,7 +168,7 @@ namespace System.Reflection.Runtime.General
             else
             {
                 object[] result = (object[])Array.CreateInstance(actualElementType, attributes.Count);
-                attributes.AsSpan(0).CopyTo(result);
+                attributes.CopyTo(result);
                 return result;
             }
         }
