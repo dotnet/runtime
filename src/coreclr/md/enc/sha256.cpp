@@ -11,6 +11,6 @@
 
 HRESULT Sha256Hash(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize)
 {
-    // TODO:
+    memset(pDst, 0, dstSize);
     return S_OK;
 }
