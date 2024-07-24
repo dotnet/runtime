@@ -135,7 +135,10 @@ EXTERN_C void QCALLTYPE RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWai
         // Wait for the finalizer thread to get back to us.
         g_FinalizerDoneEvent.Wait(INFINITE, false, allowReentrantWait);
 
-        if (desiredFullGcCount - g_fullGcCountSeenByFinalization > 0)
+        // we use unsigned math here as the collection counts, which are size_t internally,
+        // can in theory overflow an int and wrap around.
+        // unsigned math would have more defined/portable behavior in such case
+        if ((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization > 0)
         {
             // There were some Full GCs happening before we started waiting and possibly not seen by the
             // last finalization cycle. This is rare, but we need to be sure we have seen those,
