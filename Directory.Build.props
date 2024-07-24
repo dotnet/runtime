@@ -395,8 +395,6 @@
     <KeepNativeSymbols Condition="'$(KeepNativeSymbols)' == ''">false</KeepNativeSymbols>
     <!-- Used for launchSettings.json and runtime config files. -->
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <!-- By default the SDK produces ref assembly for 5.0 or later -->
-    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <!-- Define test projects and companions -->
@@ -441,6 +439,8 @@
     <DebugType>none</DebugType>
     <!-- Don't try to publish PDBs for ref assemblies that have none. -->
     <PublishWindowsPdb>false</PublishWindowsPdb>
+    <!-- Don't let the compiler automatically generate a reference assembly for reference assembly projects. -->
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
 
 
