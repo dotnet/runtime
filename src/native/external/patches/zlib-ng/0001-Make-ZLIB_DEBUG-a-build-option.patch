@@ -1,0 +1,57 @@
+From 2453cc7323cb5d5aad4abea889fc4ff412c8296c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Carlos=20S=C3=A1nchez=20L=C3=B3pez?=
+ <1175054+carlossanlop@users.noreply.github.com>
+Date: Wed, 24 Jul 2024 15:31:56 -0700
+Subject: [PATCH] Make ZLIB_DEBUG a build option
+
+---
+ src/native/external/zlib-ng/CMakeLists.txt | 6 +++++-
+ src/native/external/zlib-ng/README.md      | 1 +
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/native/external/zlib-ng/CMakeLists.txt b/src/native/external/zlib-ng/CMakeLists.txt
+index 8bcfaf7ea23..30170356c5e 100644
+--- a/src/native/external/zlib-ng/CMakeLists.txt
++++ b/src/native/external/zlib-ng/CMakeLists.txt
+@@ -76,6 +76,7 @@ option(WITH_GZFILEOP "Compile with support for gzFile related functions" ON)
+ option(ZLIB_COMPAT "Compile with zlib compatible API" OFF)
+ option(ZLIB_ENABLE_TESTS "Build test binaries" ON)
+ option(ZLIBNG_ENABLE_TESTS "Test zlib-ng specific API" ON)
++option(ZLIB_DEBUG "Compile using the ZLIB_DEBUG option when building using the Debug configuration" ON)
+ option(WITH_GTEST "Build gtest_zlib" ON)
+ option(WITH_FUZZERS "Build test/fuzz" OFF)
+ option(WITH_BENCHMARKS "Build test/benchmarks" OFF)
+@@ -486,7 +487,9 @@ if(NOT HAVE_PTRDIFF_T)
+     endif()
+ endif()
+ 
+-add_compile_options($<$<CONFIG:Debug>:-DZLIB_DEBUG>)
++if (ZLIB_DEBUG AND CMAKE_BUILD_TYPE STREQUAL "Debug")
++  add_definitions(-DZLIB_DEBUG)
++endif()
+ 
+ if(MSVC)
+     set(CMAKE_DEBUG_POSTFIX "d")
+@@ -1242,6 +1245,7 @@ add_feature_info(WITH_GZFILEOP WITH_GZFILEOP "Compile with support for gzFile re
+ add_feature_info(ZLIB_COMPAT ZLIB_COMPAT "Compile with zlib compatible API")
+ add_feature_info(ZLIB_ENABLE_TESTS ZLIB_ENABLE_TESTS "Build test binaries")
+ add_feature_info(ZLIBNG_ENABLE_TESTS ZLIBNG_ENABLE_TESTS "Test zlib-ng specific API")
++add_feature_info(ZLIB_DEBUG ZLIB_DEBUG "Compile using the ZLIB_DEBUG option when building using the Debug configuration")
+ add_feature_info(WITH_SANITIZER WITH_SANITIZER "Enable sanitizer support")
+ add_feature_info(WITH_GTEST WITH_GTEST "Build gtest_zlib")
+ add_feature_info(WITH_FUZZERS WITH_FUZZERS "Build test/fuzz")
+diff --git a/src/native/external/zlib-ng/README.md b/src/native/external/zlib-ng/README.md
+index 4f9fe09c691..a0b66ead591 100644
+--- a/src/native/external/zlib-ng/README.md
++++ b/src/native/external/zlib-ng/README.md
+@@ -98,6 +98,7 @@ Build Options
+ | CMake                    | configure                | Description                                                                           | Default |
+ |:-------------------------|:-------------------------|:--------------------------------------------------------------------------------------|---------|
+ | ZLIB_COMPAT              | --zlib-compat            | Compile with zlib compatible API                                                      | OFF     |
++| ZLIB_DEBUG               |                          | Compile using the ZLIB_DEBUG option when building using the Debug configuration       | ON      |
+ | ZLIB_ENABLE_TESTS        |                          | Build test binaries                                                                   | ON      |
+ | WITH_GZFILEOP            | --without-gzfileops      | Compile with support for gzFile related functions                                     | ON      |
+ | WITH_OPTIM               | --without-optimizations  | Build with optimisations                                                              | ON      |
+-- 
+2.45.2.windows.1
+
