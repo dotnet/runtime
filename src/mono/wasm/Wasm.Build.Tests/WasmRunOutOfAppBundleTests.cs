@@ -41,7 +41,7 @@ public class WasmRunOutOfAppBundleTests : TestMainJsTestBase
             indexHtmlPath = Path.Combine(outerDir, "index.html");
             if (!File.Exists(indexHtmlPath))
             {
-                var html = @"<!DOCTYPE html><html><body><script type=""module"" src=""./AppBundle/test-main.js""></script></body></html>";
+                var html = @"<!DOCTYPE html><html><body><script type=""module"" src=""./AppBundle/test-main.mjs""></script></body></html>";
                 File.WriteAllText(indexHtmlPath, html);
             }
         }
@@ -51,6 +51,6 @@ public class WasmRunOutOfAppBundleTests : TestMainJsTestBase
                             host: host,
                             id: id,
                             bundleDir: outerDir,
-                            jsRelativePath: "./AppBundle/test-main.js");
+                            jsRelativePath: "./AppBundle/test-main.mjs");
     }
 }
