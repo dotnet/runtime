@@ -22,6 +22,7 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/profiler.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -335,9 +336,13 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 	return mono_regression_test_step (verbose_level, image, NULL) ? 0 : 1;
 }
 
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_perform_heapshot ();
+
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
+	mono_wasm_perform_heapshot ();
 	if (exit_code == 0)
 	{
 		mono_jit_cleanup (root_domain);
@@ -558,4 +563,54 @@ mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
 	end:
 	MONO_EXIT_GC_UNSAFE;
 	return result;
+}
+
+struct _MonoProfiler {
+};
+
+static MonoProfiler heapshot_profiler;
+static MonoProfilerHandle heapshot_profiler_handle = NULL;
+
+extern void mono_wasm_heapshot_start ();
+extern void mono_wasm_heapshot_object (void *obj, void *klass, uint32_t size, uint32_t ref_count, void **refs);
+extern void mono_wasm_heapshot_end ();
+
+static int
+mono_wasm_on_gc_object (
+	MonoObject *obj,
+	MonoClass *klass,
+	uintptr_t size,
+	uintptr_t num,
+	MonoObject **refs,
+	uintptr_t *offsets,
+	void *data
+) {
+	mono_wasm_heapshot_object (obj, klass, (uint32_t)size, (uint32_t)num, (void **)refs);
+	return 0;
+}
+
+static void
+mono_wasm_on_gc_event (
+	MonoProfiler *prof,
+	MonoProfilerGCEvent gc_event,
+	uint32_t generation,
+	mono_bool serial
+) {
+	if (gc_event != MONO_GC_EVENT_PRE_START_WORLD)
+		return;
+
+	mono_gc_walk_heap (0, mono_wasm_on_gc_object, NULL);
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_perform_heapshot () {
+	if (!heapshot_profiler_handle) {
+		memset (&heapshot_profiler, 0, sizeof(MonoProfiler));
+		heapshot_profiler_handle = mono_profiler_create (&heapshot_profiler);
+	}
+	mono_wasm_heapshot_start ();
+	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, mono_wasm_on_gc_event);
+	mono_gc_collect (mono_gc_max_generation ());
+	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, NULL);
+	mono_wasm_heapshot_end();
 }
