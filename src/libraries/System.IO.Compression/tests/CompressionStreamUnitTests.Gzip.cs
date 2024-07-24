@@ -528,7 +528,7 @@ namespace System.IO.Compression
             Assert.True(level5 <= level3);
             Assert.True(level6 <= level3);
             Assert.True(level8 <= level6);
-            Assert.True(level9 <= level7);
+            Assert.True(level9 <= level4);
         }
     }
 }

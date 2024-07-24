@@ -36,7 +36,7 @@ namespace System.IO.Compression
             ZErrorCode errC;
             try
             {
-                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, options.CompressionLevel, windowBits, memLevel, options.CompressionStrategy);
+                errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, (ZLibNative.CompressionLevel)options.CompressionLevel, windowBits, memLevel, (ZLibNative.CompressionStrategy)options.CompressionStrategy);
             }
             catch (Exception cause)
             {
@@ -68,32 +68,32 @@ namespace System.IO.Compression
         }
 
 
-    internal Deflater(CompressionLevel compressionLevel, int windowBits)
+        internal Deflater(CompressionLevel compressionLevel, int windowBits)
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
-            int zlibCompressionLevel;
+            ZLibNative.CompressionLevel zlibCompressionLevel;
             int memLevel;
 
             switch (compressionLevel)
             {
                 // See the note in ZLibNative.CompressionLevel for the recommended combinations.
                 case CompressionLevel.Optimal:
-                    zlibCompressionLevel =ZLibNative.ZLibDefaultCompression;
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.DefaultCompression;
                     memLevel = ZLibNative.Deflate_DefaultMemLevel;
                     break;
 
                 case CompressionLevel.Fastest:
-                    zlibCompressionLevel = ZLibNative.ZLibBestSpeed;
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.BestSpeed;
                     memLevel = ZLibNative.Deflate_DefaultMemLevel;
                     break;
 
                 case CompressionLevel.NoCompression:
-                    zlibCompressionLevel = ZLibNative.ZLibNoCompression;
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.NoCompression;
                     memLevel = ZLibNative.Deflate_NoCompressionMemLevel;
                     break;
 
                 case CompressionLevel.SmallestSize:
-                    zlibCompressionLevel = ZLibNative.ZLibBestCompression;
+                    zlibCompressionLevel = ZLibNative.CompressionLevel.BestCompression;
                     memLevel = ZLibNative.Deflate_DefaultMemLevel;
                     break;
 
@@ -105,7 +105,7 @@ namespace System.IO.Compression
             try
             {
                 errC = ZLibNative.CreateZLibStreamForDeflate(out _zlibStream, zlibCompressionLevel,
-                                                             windowBits, memLevel, ZLibCompressionStrategy.Default);
+                                                             windowBits, memLevel, ZLibNative.CompressionStrategy.DefaultStrategy);
             }
             catch (Exception cause)
             {

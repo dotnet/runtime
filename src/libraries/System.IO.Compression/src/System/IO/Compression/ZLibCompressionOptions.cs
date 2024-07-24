@@ -26,6 +26,7 @@ namespace System.IO.Compression
             {
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 9);
+
                 _compressionLevel = value;
             }
         }
