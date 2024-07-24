@@ -26,6 +26,9 @@ namespace ILCompiler.Win32Resources
             }
             else
             {
+                Debug.Assert(type is string);
+                // Undocumented semantic for Win32 Resource APIs
+                type = ((string)type).ToUpperInvariant();
                 if (!_resTypeHeadName.TryGetValue((string)type, out resType))
                 {
                     resType = new ResType();
@@ -45,6 +48,9 @@ namespace ILCompiler.Win32Resources
             }
             else
             {
+                Debug.Assert(name is string);
+                // Undocumented semantic for Win32 Resource APIs
+                name = ((string)name).ToUpperInvariant();
                 if (!resType.NameHeadName.TryGetValue((string)name, out resName))
                 {
                     resName = new ResName();
@@ -63,8 +69,11 @@ namespace ILCompiler.Win32Resources
             {
                 _resTypeHeadID.TryGetValue((ushort)type, out resType);
             }
-            if (type is string)
+            else
             {
+                Debug.Assert(type is string);
+                // Undocumented semantic for Win32 Resource APIs
+                type = ((string)type).ToUpperInvariant();
                 _resTypeHeadName.TryGetValue((string)type, out resType);
             }
 
@@ -77,8 +86,11 @@ namespace ILCompiler.Win32Resources
             {
                 resType.NameHeadID.TryGetValue((ushort)name, out resName);
             }
-            if (name is string)
+            else
             {
+                Debug.Assert(name is string);
+                // Undocumented semantic for Win32 Resource APIs
+                name = ((string)name).ToUpperInvariant();
                 resType.NameHeadName.TryGetValue((string)name, out resName);
             }
 
