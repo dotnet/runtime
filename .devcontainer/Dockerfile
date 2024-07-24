@@ -6,7 +6,7 @@ ARG VARIANT="6.0-jammy"
 FROM mcr.microsoft.com/devcontainers/dotnet:0-${VARIANT}
 
 # Set up machine requirements to build the repo and the gh CLI
-# Clang-16 up is rquired but Ubuntu 22.04 comes with clang-14 highest, so add clang-18 sources
+# Clang-16 up is required but Ubuntu 22.04 comes with clang-14 highest, so add clang-18 sources
 RUN apt-get update \
     && wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - \
     && apt-get install software-properties-common -y \
