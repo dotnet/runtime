@@ -13,6 +13,7 @@
     <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(TestUsingWebcil)' == 'false'">$(WorkItemPrefix)NoWebcil-</WorkItemPrefix>
+    <WorkItemPrefix Condition="'$(TestUsingFingerprinting)' == 'false'">$(WorkItemPrefix)NoFingerprint-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' != 'true'">$(WorkItemPrefix)ST-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WasmEnableThreads)' == 'true'">$(WorkItemPrefix)MT-</WorkItemPrefix>
   </PropertyGroup>
@@ -49,7 +50,7 @@
 
     <!-- for testing with workloads, we use separate items -->
     <ItemGroup>
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Identity)')" Condition="'$(TestUsingWorkloads)' == 'true' and '$(TestUsingFingerprinting)' == 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
@@ -57,7 +58,7 @@
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+      <HelixWorkItem Include="$(WorkItemPrefix)Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true' or '$(TestUsingFingerprinting)' != 'true'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
