@@ -3007,11 +3007,15 @@ namespace System
                 quotient = destination.Length;
                 result = OperationStatus.DestinationTooSmall;
             }
-            else if (remainder == 1)
+            else if (destination.Length > quotient)
             {
-                source = source.Slice(0, source.Length - 1);
-                destination = destination.Slice(0, destination.Length - 1);
+                if (remainder == 1)
+                {
+                    source = source.Slice(0, source.Length - 1);
+                }
+
                 result = OperationStatus.NeedMoreData;
+                destination = destination.Slice(0, source.Length * 2);
             }
 
             if (!HexConverter.TryDecodeFromUtf16(source, destination, out charsConsumed))

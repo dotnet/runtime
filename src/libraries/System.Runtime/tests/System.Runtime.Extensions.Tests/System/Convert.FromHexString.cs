@@ -137,6 +137,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TooLongDestination()
+        {
+            string hex = Convert.ToHexString([255, 255, 255]);
+            byte[] buffer = new byte[100];
+            var status = Convert.FromHexString(hex, buffer, out int charsConsumed, out int bytesWritten);
+
+            Assert.Equal(OperationStatus.NeedMoreData, status);
+            Assert.Equal(hex.Length, charsConsumed);
+            Assert.Equal(hex.Length / 2, bytesWritten);
+        }
+
+        [Fact]
         public static void NeedMoreData_OrFormatException()
         {
             const int destinationSize = 10;
@@ -152,12 +164,22 @@ namespace System.Tests
             Assert.Equal(0, consumed);
             Assert.Equal(0, written);
 
+            // Odd length
             spanHex = hex.AsSpan(0, hex.Length - 1);
 
             var oneOffResult = Convert.FromHexString(spanHex, destination, out consumed, out written);
 
             Assert.Throws<FormatException>(() => Convert.FromHexString(hex.Substring(0, hex.Length - 1)));
             Assert.Equal(OperationStatus.NeedMoreData, oneOffResult);
+            Assert.Equal(spanHex.Length - 1, consumed);
+            Assert.Equal((spanHex.Length - 1) / 2, written);
+
+            // Even length
+            spanHex = hex.AsSpan(0, hex.Length - 2);
+
+            var twoOffResult = Convert.FromHexString(spanHex, destination, out consumed, out written);
+
+            Assert.Equal(OperationStatus.NeedMoreData, twoOffResult);
             Assert.Equal(spanHex.Length - 1, consumed);
             Assert.Equal((spanHex.Length - 1) / 2, written);
         }
