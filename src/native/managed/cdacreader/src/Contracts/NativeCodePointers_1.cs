@@ -53,9 +53,13 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
         internal NDirectImportPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.NDirectImport) { }
     }
 
-    internal sealed class FixupPrecode : StubPrecode
+    internal sealed class FixupPrecode : ValidPrecode
     {
         internal FixupPrecode(TargetPointer instrPointer) : base(instrPointer, KnownPrecodeType.Fixup) { }
+        internal override TargetPointer GetMethodDesc(Target target, PrecodeMachineDescriptor precodeMachineDescriptor)
+        {
+            throw new NotImplementedException(); // TODO(cdac)
+        }
     }
 
     internal sealed class ThisPtrRetBufPrecode : ValidPrecode // FIXME: is this a StubPrecode?
