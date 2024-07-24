@@ -138,7 +138,23 @@ try {
             break;
         case "LazyLoadingTest":
             if (params.get("loadRequiredAssembly") !== "false") {
-                await INTERNAL.loadLazyAssembly(`Json${assemblyExtension}`);
+                let lazyAssemblyExtension = assemblyExtension;
+                switch (params.get("lazyLoadingTestExtension")) {
+                    case "wasm":
+                        lazyAssemblyExtension = ".wasm";
+                        break;
+                    case "dll":
+                        lazyAssemblyExtension = ".dll";
+                        break;
+                    case "NoExtension":
+                        lazyAssemblyExtension = "";
+                        break;
+                    default:
+                        lazyAssemblyExtension = assemblyExtension;
+                        break;
+                }
+
+                await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
             }
             exports.LazyLoadingTest.Run();
             exit(0);
