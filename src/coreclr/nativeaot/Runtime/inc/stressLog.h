@@ -316,20 +316,6 @@ public:
         return (void*)(size_t)arg;
     }
 
-    template<>
-    void* ConvertArgument(float arg) = delete;
-
-#if TARGET_64BIT
-    template<>
-    void* ConvertArgument(double arg)
-    {
-        return (void*)(size_t)(*((uint64_t*)&arg));
-    }
-#else
-    template<>
-    void* ConvertArgument(double arg) = delete;
-#endif
-
     template<typename... Ts>
     static void LogMsgOL(const char* format, Ts... args)
     {
@@ -357,6 +343,20 @@ public:
     static StressLog theLog;    // We only have one log, and this is it
 };
 
+
+template<>
+void* StressLog::ConvertArgument(float arg) = delete;
+
+#if TARGET_64BIT
+template<>
+void* StressLog::ConvertArgument(double arg)
+{
+    return (void*)(size_t)(*((uint64_t*)&arg));
+}
+#else
+template<>
+void* StressLog::ConvertArgument(double arg) = delete;
+#endif
 
 //==========================================================================================
 // Private classes

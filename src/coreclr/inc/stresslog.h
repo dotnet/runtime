@@ -325,20 +325,6 @@ public:
         return (void*)(size_t)arg;
     }
 
-    template<>
-    void* ConvertArgument(float arg) = delete;
-
-#if TARGET_64BIT
-    template<>
-    void* ConvertArgument(double arg)
-    {
-        return (void*)(size_t)(*((uint64_t*)&arg));
-    }
-#else
-    template<>
-    void* ConvertArgument(double arg) = delete;
-#endif
-
 // Support functions for STRESS_LOG_VA
 // We disable the warning "conversion from 'type' to 'type' of greater size" since everything will
 // end up on the stack, and LogMsg will know the size of the variable based on the format string.
@@ -383,6 +369,21 @@ typedef USHORT
 // private: // static variables
     static StressLog theLog;    // We only have one log, and this is it
 };
+
+
+template<>
+void* StressLog::ConvertArgument(float arg) = delete;
+
+#if TARGET_64BIT
+template<>
+void* StressLog::ConvertArgument(double arg)
+{
+    return (void*)(size_t)(*((uint64_t*)&arg));
+}
+#else
+template<>
+void* StressLog::ConvertArgument(double arg) = delete;
+#endif
 
 #ifndef STRESS_LOG_ANALYZER
 typedef Holder<CRITSEC_COOKIE, StressLog::Enter, StressLog::Leave, 0, CompareDefault<CRITSEC_COOKIE>> StressLogLockHolder;

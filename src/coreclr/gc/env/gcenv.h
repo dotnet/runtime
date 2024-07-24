@@ -178,20 +178,6 @@ struct StressLogMsg
         return (void*)(size_t)arg;
     }
 
-    template<>
-    void* ConvertArgument(float arg) = delete;
-
-#if TARGET_64BIT
-    template<>
-    void* ConvertArgument(double arg)
-    {
-        return (void*)(size_t)(*((uint64_t*)&arg));
-    }
-#else
-    template<>
-    void* ConvertArgument(double arg) = delete;
-#endif
-
     StressLogMsg(const char* format) : m_cArgs(0), m_format(format)
     {
     }
@@ -205,6 +191,20 @@ struct StressLogMsg
         static_assert_no_msg(sizeof...(args) <= ARRAY_SIZE(m_args));
     }
 };
+
+template<>
+void* StressLogMsg::ConvertArgument(float arg) = delete;
+
+#if TARGET_64BIT
+template<>
+void* StressLogMsg::ConvertArgument(double arg)
+{
+    return (void*)(size_t)(*((uint64_t*)&arg));
+}
+#else
+template<>
+void* StressLogMsg::ConvertArgument(double arg) = delete;
+#endif
 
 class StressLog
 {
