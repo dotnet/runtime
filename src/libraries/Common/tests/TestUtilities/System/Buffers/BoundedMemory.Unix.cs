@@ -136,12 +136,12 @@ namespace System.Buffers
 
                 if (buffer == IntPtr.Zero)
                 {
-                    throw new InvalidOperationException("Memory allocation failed.");
+                    throw new InvalidOperationException($"Memory allocation failed with error {Marshal.GetLastPInvokeError()}.");
                 }
 
                 // Depending on the PoisonPagePlacement requirement (before/after) initialise the baseAddress and poisonPageAddress to point to the location
                 // in the buffer. Here the baseAddress points to the first valid allocation and poisonPageAddress points to the first invalid location.
-                // For PoisonPagePlacement.Before the first page is made inaccessible using mprotect and baseAddress points to the start of the second page.
+                // For `PoisonPagePlacement.Before` the first page is made inaccessible using mprotect and baseAddress points to the start of the second page.
                 // The allocation and protection is at the granularity of a page. Thus, `PoisonPagePlacement.Before` configuration has an additional accessible
                 // memory at the end of the page (bytes equivalent to `pageSize - (byteLength % pageSize)`).
                 // For `PoisonPagePlacement.After`, we adjust the baseAddress so that inaccessible memory is at the `byteLength` offset from the baseAddress.
@@ -156,7 +156,7 @@ namespace System.Buffers
                 // Protect the page before/after based on the poison page placement.
                 if (mprotect(poisonPageAddress, (ulong) pageSize, PROT_NONE) == -1)
                 {
-                    throw new InvalidOperationException("Failed to mark page as a poison page using mprotect.");
+                    throw new InvalidOperationException($"Failed to mark page as a poison page using mprotect with error :{Marshal.GetLastPInvokeError()}.");
                 }
 
                 AllocHGlobalHandle retVal = new AllocHGlobalHandle(buffer, (ulong)allocationSize);
@@ -168,9 +168,10 @@ namespace System.Buffers
 
             protected override bool ReleaseHandle()
             {
-                munmap(buffer, allocationSize);
-                return true;
+                return munmap(buffer, allocationSize) == 0;
             }
+
+             // Defined in <sys/mman.h>
             const int MAP_PRIVATE = 0x2;
             const int MAP_ANONYMOUS = 0x20;
             const int PROT_NONE = 0x0;
@@ -178,13 +179,13 @@ namespace System.Buffers
             const int PROT_WRITE = 0x2;
 
             [DllImport("libc", SetLastError = true)]
-            static extern IntPtr mmap(IntPtr addrress, ulong length, int prot, int flags, int fd, int offset);
+            static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
 
             [DllImport("libc", SetLastError = true)]
-            static extern IntPtr munmap(IntPtr addrress, ulong length);
+            static extern IntPtr munmap(IntPtr address, ulong length);
 
             [DllImport("libc", SetLastError = true)]
-            static extern int mprotect(IntPtr addr, ulong len, int prot);
+            static extern int mprotect(IntPtr address, ulong length, int prot);
         }
     }
 }
