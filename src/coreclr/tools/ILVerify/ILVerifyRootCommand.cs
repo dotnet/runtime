@@ -18,6 +18,8 @@ namespace ILVerify
             new("--system-module", "-s") { Description = "System module name (default: mscorlib)" };
         public CliOption<bool> SanityChecks { get; } =
             new("--sanity-checks", "-c") { Description = "Check for valid constructs that are likely mistakes" };
+        public CliOption<bool> SuppressUnverifiable { get; } =
+            new("--suppress-unverifiable") { Description = "Suppresses unverifiable construct errors" };
         public CliOption<string[]> Include { get; } =
             new("--include", "-i") { Description = "Use only methods/types/namespaces, which match the given regular expression(s)" };
         public CliOption<FileInfo> IncludeFile { get; } =
@@ -46,6 +48,7 @@ namespace ILVerify
             Options.Add(Reference);
             Options.Add(SystemModule);
             Options.Add(SanityChecks);
+            Options.Add(SuppressUnverifiable);
             Options.Add(Include);
             Options.Add(IncludeFile);
             Options.Add(Exclude);

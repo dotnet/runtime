@@ -207,6 +207,8 @@ namespace Internal.IL
 
         public bool SanityChecks { set; private get; }
 
+        public bool SuppressUnverifiable { set; private get; }
+
         public void Verify()
         {
             _instructionBoundaries = new bool[_ilBytes.Length];
@@ -1236,7 +1238,10 @@ namespace Internal.IL
 
         void Unverifiable()
         {
-            VerificationError(VerifierError.Unverifiable);
+            if (!SuppressUnverifiable)
+            {
+                VerificationError(VerifierError.Unverifiable);
+            }
         }
 
         TypeDesc GetWellKnownType(WellKnownType wellKnownType)
@@ -1538,7 +1543,10 @@ namespace Internal.IL
 
         void ImportCall(ILOpcode opcode, int token)
         {
-            FatalCheck(opcode != ILOpcode.calli, VerifierError.Unverifiable);
+            if (!SuppressUnverifiable)
+            {
+                FatalCheck(opcode != ILOpcode.calli, VerifierError.Unverifiable);
+            }
 
             TypeDesc constrained = null;
             bool tailCall = false;
