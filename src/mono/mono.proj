@@ -85,7 +85,7 @@
     <PackageReference Condition="'$(HostOS)' == 'windows'"
                       Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64"
                       PrivateAssets="all"
-                      Version="$(MicrosoftNETRuntimeEmscripten3134Pythonwinx64Version)"
+                      Version="$(MicrosoftNETRuntimeEmscripten3156Pythonwinx64Version)"
                       GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -259,7 +259,7 @@ JS_ENGINES = [NODE_JS]
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
-    
+
     <ItemGroup>
       <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
@@ -281,7 +281,7 @@ JS_ENGINES = [NODE_JS]
     <ReadLinesFromFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)">
       <Output TaskParameter="Lines" PropertyName="_EmsdkEnvFileText" />
     </ReadLinesFromFile>
-    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)" 
+    <WriteLinesToFile File="$(EMSDK_PATH)emsdk_env$(ScriptExt)"
                       Overwrite="true"
                       Lines="$(_EmsdkPaths);$(_EmsdkEnvFileText)" />
     <WriteLinesToFile File="$(EMSDK_PATH)emscripten/.emscripten"
@@ -299,7 +299,7 @@ JS_ENGINES = [NODE_JS]
 
     <PropertyGroup>
       <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
-    </PropertyGroup>    
+    </PropertyGroup>
   </Target>
 
   <!-- Sets up WASI SDK if you don't have the WASI_SDK_PATH env variable set -->
