@@ -2542,7 +2542,7 @@ DWORD DACGetNumComponents(TADDR addr, ICorDebugDataTarget* target)
 }
 
 HRESULT
-ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData)
+ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData* objectData)
 {
     if (addr == 0 || objectData == NULL)
         return E_INVALIDARG;
@@ -2550,21 +2550,56 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
     SOSDacEnter();
 
     ZeroMemory (objectData, sizeof(DacpObjectData));
-    TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr),m_pTarget);
-    if (mtTADDR==(TADDR)NULL)
-        hr = E_INVALIDARG;
-
-    BOOL bFree = FALSE;
-    PTR_MethodTable mt = NULL;
-    if (SUCCEEDED(hr))
+    if (m_cdacSos != NULL)
     {
-        mt = PTR_MethodTable(mtTADDR);
-        if (!DacValidateMethodTable(mt, bFree))
-            hr = E_INVALIDARG;
+        hr = m_cdacSos->GetObjectData(addr, objectData);
+        if (FAILED(hr))
+        {
+            hr = GetObjectDataImpl(addr, objectData);
+        }
+#ifdef _DEBUG
+        else
+        {
+            DacpObjectData objectDataLocal;
+            HRESULT hrLocal = GetObjectDataImpl(addr, &objectDataLocal);
+            _ASSERTE(hr == hrLocal);
+            _ASSERTE(objectData->MethodTable == objectDataLocal.MethodTable);
+            _ASSERTE(objectData->ObjectType == objectDataLocal.ObjectType);
+            _ASSERTE(objectData->Size == objectDataLocal.Size);
+            _ASSERTE(objectData->ElementTypeHandle == objectDataLocal.ElementTypeHandle);
+            _ASSERTE(objectData->ElementType == objectDataLocal.ElementType);
+            _ASSERTE(objectData->dwRank == objectDataLocal.dwRank);
+            _ASSERTE(objectData->dwNumComponents == objectDataLocal.dwNumComponents);
+            _ASSERTE(objectData->dwComponentSize == objectDataLocal.dwComponentSize);
+            _ASSERTE(objectData->ArrayDataPtr == objectDataLocal.ArrayDataPtr);
+            _ASSERTE(objectData->ArrayBoundsPtr == objectDataLocal.ArrayBoundsPtr);
+            _ASSERTE(objectData->ArrayLowerBoundsPtr == objectDataLocal.ArrayLowerBoundsPtr);
+            _ASSERTE(objectData->RCW == objectDataLocal.RCW);
+            _ASSERTE(objectData->CCW == objectDataLocal.CCW);
+        }
+#endif
+    }
+    else
+    {
+        hr = GetObjectDataImpl(addr, objectData);
     }
 
-    if (SUCCEEDED(hr))
-    {
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT
+ClrDataAccess::GetObjectDataImpl(CLRDATA_ADDRESS addr, struct DacpObjectData *objectData)
+{
+    TADDR mtTADDR = DACGetMethodTableFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr),m_pTarget);
+    if (mtTADDR==(TADDR)NULL)
+        return E_INVALIDARG;
+
+    BOOL bFree = FALSE;
+    PTR_MethodTable mt = PTR_MethodTable(mtTADDR);
+        if (!DacValidateMethodTable(mt, bFree))
+        return E_INVALIDARG;
+
         objectData->MethodTable = HOST_CDADDR(mt);
         objectData->Size = mt->GetBaseSize();
         if (mt->GetComponentSize())
@@ -2608,28 +2643,23 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
                 TADDR mtCurTADDR = thCur.AsTAddr();
                 if (!DacValidateMethodTable(PTR_MethodTable(mtCurTADDR), bFree))
                 {
-                    hr = E_INVALIDARG;
+                return E_INVALIDARG;
                 }
-                else
-                {
+
                     objectData->ElementTypeHandle = (CLRDATA_ADDRESS)(thElem.AsTAddr());
                     objectData->dwRank = mt->GetRank();
                     objectData->dwNumComponents = pArrayObj->GetNumComponents ();
                     objectData->ArrayDataPtr = PTR_CDADDR(pArrayObj->GetDataPtr (TRUE));
                     objectData->ArrayBoundsPtr = HOST_CDADDR(pArrayObj->GetBoundsPtr());
                     objectData->ArrayLowerBoundsPtr = HOST_CDADDR(pArrayObj->GetLowerBoundsPtr());
-                }
             }
             else
             {
                 objectData->ObjectType = OBJ_OTHER;
-            }
         }
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (SUCCEEDED(hr))
-    {
         EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
         {
             PTR_SyncBlock pSyncBlk = DACGetSyncBlockFromObjectPointer(CLRDATA_ADDRESS_TO_TADDR(addr), m_pTarget);
@@ -2645,12 +2675,9 @@ ClrDataAccess::GetObjectData(CLRDATA_ADDRESS addr, struct DacpObjectData *object
             }
         }
         EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY;
-    }
 #endif // FEATURE_COMINTEROP
 
-    SOSDacLeave();
-
-    return hr;
+    return S_OK;
 }
 
 HRESULT ClrDataAccess::GetAppDomainList(unsigned int count, CLRDATA_ADDRESS values[], unsigned int *fetched)
