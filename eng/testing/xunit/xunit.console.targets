@@ -1,9 +1,16 @@
 <Project>
+
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <TestResultsName>testResults.xml</TestResultsName>
     <UseXunitExcludesTxtFile Condition="'$(TargetOS)' == 'android' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">true</UseXunitExcludesTxtFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Configures xunit to not print out passing tests with output when diagnostic messages are enabled. -->
+    <SetScriptCommands Condition="'$(TargetOS)' == 'windows'" Include="set XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
+    <SetScriptCommands Condition="'$(TargetOS)' != 'windows'" Include="export XUNIT_HIDE_PASSING_OUTPUT_DIAGNOSTICS=1" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' != 'true' and '$(TestSingleFile)' != 'true'">
     <_depsFileArgument Condition="'$(GenerateDependencyFile)' == 'true'">--depsfile $(AssemblyName).deps.json</_depsFileArgument>
@@ -86,12 +93,4 @@
             Visible="false" />
     </ItemGroup>
 
-    <!-- Workaround for https://github.com/xunit/xunit/issues/1651 -->
-    <ItemGroup Condition="'$(ArchiveTests)' != 'true'">
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.utility.net452.dll" />
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\net452\xunit.runner.reporters.net452.dll" />
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.utility.netcoreapp10.dll" />
-      <None Remove="$(Pkgxunit_runner_visualstudio)\build\netcoreapp2.1\xunit.runner.reporters.netcoreapp10.dll" />
-    </ItemGroup>
-  </Target>
 </Project>
