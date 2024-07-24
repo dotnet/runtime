@@ -602,8 +602,6 @@ public:
     template <typename TArgVisitor>
     VNVisitResult VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
     {
-        JITDUMP("Starting VNVisitReachingVNs for " FMT_VN "\n", vn);
-
         ArrayStack<ValueNum> toVisit(m_alloc);
         toVisit.Push(vn);
 
@@ -625,10 +623,6 @@ public:
                     {
                         toVisit.Push(childVN);
                     }
-                    else
-                    {
-                        JITDUMP("Skipping already visited VN (cycle?) " FMT_VN "\n", childVN);
-                    }
                 }
             }
             else
@@ -640,8 +634,6 @@ public:
                 }
             }
         }
-
-        JITDUMP("Completed VNVisitReachingVNs successfully for " FMT_VN "\n", vn);
         return VNVisitResult::Completed;
     }
 
