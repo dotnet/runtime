@@ -318,6 +318,27 @@ public:
 
     static void AddModule(uint8_t* moduleBase);
 
+    template<typename T>
+    static void* ConvertArgument(T arg)
+    {
+        static_assert_no_msg(sizeof(T) <= sizeof(void*));
+        return (void*)(size_t)arg;
+    }
+
+    template<>
+    void* ConvertArgument(float arg) = delete;
+
+#if TARGET_64BIT
+    template<>
+    void* ConvertArgument(double arg)
+    {
+        return (void*)(size_t)(*((uint64_t*)&arg));
+    }
+#else
+    template<>
+    void* ConvertArgument(double arg) = delete;
+#endif
+
 // Support functions for STRESS_LOG_VA
 // We disable the warning "conversion from 'type' to 'type' of greater size" since everything will
 // end up on the stack, and LogMsg will know the size of the variable based on the format string.
@@ -332,13 +353,13 @@ public:
     template<typename... Ts>
     static void LogMsgOL(const char* format, Ts... args)
     {
-        LogMsg(LL_ALWAYS, LF_GC, sizeof...(args), format, StressLogMsg::ConvertArgument(args)...);
+        LogMsg(LL_ALWAYS, LF_GC, sizeof...(args), format, ConvertArgument(args)...);
     }
 
     template<typename... Ts>
     static void LogMsgOL(unsigned facility, unsigned level, const char* format, Ts... args)
     {
-        LogMsg(level, facility, sizeof...(args), format, StressLogMsg::ConvertArgument(args)...);
+        LogMsg(level, facility, sizeof...(args), format, ConvertArgument(args)...);
     }
 
 #ifdef _MSC_VER
@@ -830,27 +851,6 @@ struct StressLogMsg
     const char* m_format;
     void* m_args[16];
 
-    template<typename T>
-    static void* ConvertArgument(T arg)
-    {
-        static_assert_no_msg(sizeof(T) <= sizeof(void*));
-        return (void*)(size_t)arg;
-    }
-
-    template<>
-    static void* ConvertArgument(float arg) = delete;
-
-#if TARGET_64BIT
-    template<>
-    static void* ConvertArgument(double arg)
-    {
-        return (void*)(size_t)(*((uint64_t*)&arg));
-    }
-#else
-    template<>
-    static void* ConvertArgument(double arg) = delete;
-#endif
-
     StressLogMsg(const char* format) : m_cArgs(0), m_format(format)
     {
     }
@@ -859,7 +859,7 @@ struct StressLogMsg
     StressLogMsg(const char* format, Ts... args)
         : m_cArgs(sizeof...(args))
         , m_format(format)
-        , m_args{ ConvertArgument(args)... }
+        , m_args{ StressLog::ConvertArgument(args)... }
     {
         static_assert_no_msg(sizeof...(args) <= ARRAY_SIZE(m_args));
     }

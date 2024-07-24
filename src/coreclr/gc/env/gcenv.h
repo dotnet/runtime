@@ -179,17 +179,17 @@ struct StressLogMsg
     }
 
     template<>
-    static void* ConvertArgument(float arg) = delete;
+    void* ConvertArgument(float arg) = delete;
 
 #if TARGET_64BIT
     template<>
-    static void* ConvertArgument(double arg)
+    void* ConvertArgument(double arg)
     {
         return (void*)(size_t)(*((uint64_t*)&arg));
     }
 #else
     template<>
-    static void* ConvertArgument(double arg) = delete;
+    void* ConvertArgument(double arg) = delete;
 #endif
 
     StressLogMsg(const char* format) : m_cArgs(0), m_format(format)
