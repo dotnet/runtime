@@ -188,7 +188,7 @@ void ThreadFunc1()
 }
 
 // thread #2
-void ThreadFunc1()
+void ThreadFunc2()
 {
     while (true)
     {
@@ -197,7 +197,7 @@ void ThreadFunc1()
 }
 
 // thread #3
-void ThreadFunc2()
+void ThreadFunc3()
 {
     MyClass localObj = obj;
     if (localObj != null)

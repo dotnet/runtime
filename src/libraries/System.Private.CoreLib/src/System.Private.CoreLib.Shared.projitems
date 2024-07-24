@@ -290,7 +290,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Contracts\Contracts.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debug.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Debugger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerBrowsableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerDisableUserUnhandledExceptionsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerDisplayAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerHiddenAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebuggerNonUserCodeAttribute.cs" />
@@ -439,6 +441,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any1SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any2SearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\Any3SearchValues.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\AsciiWithSecondSetCharSearchValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\BitVector256.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticMapState.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\SearchValues\ProbabilisticWithAsciiCharSearchValues.cs" />

@@ -1725,6 +1725,14 @@ namespace System.Numerics.Tests
 #pragma warning restore 0169
 
         [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.CosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void CosSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector4 actualResult = Vector4.Cos(Vector4.Create(value));
+            AssertEqual(Vector4.Create(expectedResult), actualResult, Vector4.Create(variance));
+        }
+
+        [Theory]
         [MemberData(nameof(GenericMathTestMemberData.ExpSingle), MemberType = typeof(GenericMathTestMemberData))]
         public void ExpSingleTest(float value, float expectedResult, float variance)
         {
@@ -1897,6 +1905,23 @@ namespace System.Numerics.Tests
         {
             Vector4 actualResult = Vector4.Round(Vector4.Create(value), MidpointRounding.ToEven);
             AssertEqual(Vector4.Create(expectedResult), actualResult, Vector4.Zero);
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector4 actualResult = Vector4.Sin(Vector4.Create(value));
+            AssertEqual(Vector4.Create(expectedResult), actualResult, Vector4.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.SinCosSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void SinCosSingleTest(float value, float expectedResultSin, float expectedResultCos, float allowedVarianceSin, float allowedVarianceCos)
+        {
+            (Vector4 resultSin, Vector4 resultCos) = Vector4.SinCos(Vector4.Create(value));
+            AssertEqual(Vector4.Create(expectedResultSin), resultSin, Vector4.Create(allowedVarianceSin));
+            AssertEqual(Vector4.Create(expectedResultCos), resultCos, Vector4.Create(allowedVarianceCos));
         }
 
         [Theory]

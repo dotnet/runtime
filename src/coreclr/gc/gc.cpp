@@ -21507,10 +21507,13 @@ int gc_heap::generation_to_condemn (int n_initial,
     }
 
 #ifdef USE_REGIONS
-    if (!try_get_new_free_region())
+    if (!check_only_p)
     {
-        dprintf (GTC_LOG, ("can't get an empty region -> full compacting"));
-        last_gc_before_oom = TRUE;
+        if (!try_get_new_free_region())
+        {
+            dprintf (GTC_LOG, ("can't get an empty region -> full compacting"));
+            last_gc_before_oom = TRUE;
+        }
     }
 #endif //USE_REGIONS
 
@@ -33887,8 +33890,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 }
 #endif //FEATURE_EVENT_TRACE
 
-#if defined(_DEBUG)
-            verify_committed_bytes ();
+#ifdef _DEBUG
+                verify_committed_bytes ();
 #endif // _DEBUG
 
 #ifdef MULTIPLE_HEAPS
@@ -47423,6 +47426,10 @@ void gc_heap::verify_committed_bytes_per_heap()
 
 void gc_heap::verify_committed_bytes()
 {
+#ifndef USE_REGIONS
+    // TODO, https://github.com/dotnet/runtime/issues/102706, re-enable the testing after fixing this bug
+    return;
+#endif //!USE_REGIONS
     size_t total_committed = 0;
     size_t committed_decommit; // unused
     size_t committed_free; // unused

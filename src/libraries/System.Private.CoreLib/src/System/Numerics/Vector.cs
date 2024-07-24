@@ -537,6 +537,48 @@ namespace System.Numerics
             return result;
         }
 
+        internal static Vector<T> Cos<T>(Vector<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Cos(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Cos(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Cos(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosDouble<Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Cos<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Cos(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Cos(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.CosSingle<Vector<float>, Vector<int>, Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Cos<float>(vector);
+            }
+        }
+
         /// <inheritdoc cref="ISimdVector{TSelf, T}.CopySign(TSelf, TSelf)" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -807,7 +849,7 @@ namespace System.Numerics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.ExpDouble<Vector<double>, Vector<long>, Vector<ulong>>(vector);
+                return VectorMath.ExpDouble<Vector<double>, Vector<ulong>>(vector);
             }
             else
             {
@@ -1501,7 +1543,6 @@ namespace System.Numerics
             return false;
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The source from which the vector will be loaded.</param>
@@ -1540,7 +1581,6 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         public static Vector<T> LoadAlignedNonTemporal<T>(T* source) => LoadAligned(source);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Loads a vector from the given source.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2425,6 +2465,92 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static Vector<ulong> ShiftRightLogical(Vector<ulong> value, int shiftCount) => value >>> shiftCount;
 
+        internal static Vector<T> Sin<T>(Vector<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> result);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                T value = T.Sin(vector.GetElementUnsafe(index));
+                result.SetElementUnsafe(index, value);
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="Vector128.Sin(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<double> Sin(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinDouble<Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Sin<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.Sin(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<float> Sin(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinSingle<Vector<float>, Vector<int>, Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return Sin<float>(vector);
+            }
+        }
+
+        internal static (Vector<T> Sin, Vector<T> Cos) SinCos<T>(Vector<T> vector)
+            where T : ITrigonometricFunctions<T>
+        {
+            Unsafe.SkipInit(out Vector<T> sinResult);
+            Unsafe.SkipInit(out Vector<T> cosResult);
+
+            for (int index = 0; index < Vector<T>.Count; index++)
+            {
+                (T sinValue, T cosValue) = T.SinCos(vector.GetElementUnsafe(index));
+                sinResult.SetElementUnsafe(index, sinValue);
+                cosResult.SetElementUnsafe(index, cosValue);
+            }
+
+            return (sinResult, cosResult);
+        }
+
+        /// <inheritdoc cref="Vector128.SinCos(Vector128{double})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector<double> Sin, Vector<double> Cos) SinCos(Vector<double> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinCosDouble<Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return SinCos<double>(vector);
+            }
+        }
+
+        /// <inheritdoc cref="Vector128.SinCos(Vector128{float})" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static (Vector<float> Sin, Vector<float> Cos) SinCos(Vector<float> vector)
+        {
+            if (IsHardwareAccelerated)
+            {
+                return VectorMath.SinCosSingle<Vector<float>, Vector<int>, Vector<double>, Vector<long>>(vector);
+            }
+            else
+            {
+                return SinCos<float>(vector);
+            }
+        }
+
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
         /// <param name="value">The vector whose square root is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
@@ -2444,7 +2570,6 @@ namespace System.Numerics
             return result;
         }
 
-#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="source">The vector that will be stored.</param>
@@ -2483,7 +2608,6 @@ namespace System.Numerics
         [Intrinsic]
         [CLSCompliant(false)]
         public static void StoreAlignedNonTemporal<T>(this Vector<T> source, T* destination) => source.StoreAligned(destination);
-#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

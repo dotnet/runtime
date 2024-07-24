@@ -194,7 +194,7 @@ bool ReJITProfiler::FunctionSeen(FunctionID functionId)
 
             for (auto &&address : codeStartAddresses)
             {
-                if (address == NULL)
+                if (address == (UINT_PTR)NULL)
                 {
                     printf("Found NULL start address from GetNativeCodeStartAddresses.\n");
                     _failures++;
@@ -477,12 +477,12 @@ FunctionID ReJITProfiler::GetFunctionIDFromToken(ModuleID module, mdMethodDef to
 
 mdMethodDef ReJITProfiler::GetMethodDefForFunction(FunctionID functionId)
 {
-    ClassID classId = NULL;
-    ModuleID moduleId = NULL;
-    mdToken token = NULL;
-    ULONG32 nTypeArgs = NULL;
+    ClassID classId = 0;
+    ModuleID moduleId = 0;
+    mdToken token = 0;
+    ULONG32 nTypeArgs = 0;
     ClassID typeArgs[SHORT_LENGTH];
-    COR_PRF_FRAME_INFO frameInfo = NULL;
+    COR_PRF_FRAME_INFO frameInfo = 0;
 
     HRESULT hr = S_OK;
     hr = pCorProfilerInfo->GetFunctionInfo2(functionId,
@@ -505,12 +505,12 @@ mdMethodDef ReJITProfiler::GetMethodDefForFunction(FunctionID functionId)
 
 ModuleID ReJITProfiler::GetModuleIDForFunction(FunctionID functionId)
 {
-    ClassID classId = NULL;
-    ModuleID moduleId = NULL;
-    mdToken token = NULL;
-    ULONG32 nTypeArgs = NULL;
+    ClassID classId = 0;
+    ModuleID moduleId = 0;
+    mdToken token = 0;
+    ULONG32 nTypeArgs = 0;
     ClassID typeArgs[SHORT_LENGTH];
-    COR_PRF_FRAME_INFO frameInfo = NULL;
+    COR_PRF_FRAME_INFO frameInfo = 0;
 
     HRESULT hr = S_OK;
     hr = pCorProfilerInfo->GetFunctionInfo2(functionId,

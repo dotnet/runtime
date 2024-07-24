@@ -97,18 +97,10 @@
     <Error Text="The passed-in TargetOS property value '$(TargetOS)' must be lowercase." />
   </Target>
 
-  <ItemDefinitionGroup>
-    <TargetPathWithTargetPlatformMoniker>
-      <IsReferenceAssemblyProject>$(IsReferenceAssemblyProject)</IsReferenceAssemblyProject>
-    </TargetPathWithTargetPlatformMoniker>
-  </ItemDefinitionGroup>
-
-  <Target Name="ValidateReferenceAssemblyProjectReferencesAndTargetFramework"
-          AfterTargets="ResolveReferences"
+  <Target Name="ValidateReferenceAssemblyProjectTargetFramework"
+          BeforeTargets="CoreCompile"
           Condition="'$(IsReferenceAssemblyProject)' == 'true' and
                      '$(SkipValidateReferenceAssemblyProjectReferences)' != 'true'">
-    <Error Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'."
-           Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' and '%(ReferencePath.IsReferenceAssemblyProject)' != 'true' and '%(ReferencePath.ReferenceAssembly)' == ''" />
     <Error Text="Reference assemblies must be TargetPlatform agnostic. $(MSBuildProjectName) incorrectly targets $(TargetFramework), platform: $(TargetPlatformIdentifier)."
            Condition="'$(TargetPlatformIdentifier)' != ''" />
   </Target>

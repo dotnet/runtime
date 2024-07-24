@@ -1267,13 +1267,13 @@ namespace System.Diagnostics.Tests
                 FileName = tempFile
             };
 
-            int expected = ERROR_BAD_EXE_FORMAT;
-
-            // Windows Nano bug see https://github.com/dotnet/runtime/issues/17919
-            if (PlatformDetection.IsWindowsNanoServer)
-                expected = ERROR_SUCCESS;
-
-            Assert.Equal(expected, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
+            int errorCode = Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode;
+            
+            if (!PlatformDetection.IsWindowsNanoServer)
+            {
+                // We can not rely on the error code returned on Windows Nano https://github.com/dotnet/runtime/issues/17919
+                Assert.Equal(ERROR_BAD_EXE_FORMAT, errorCode);
+            }
         }
 
         [Fact]

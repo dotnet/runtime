@@ -75,6 +75,14 @@ To reduce startup time and increase the odds that your application will work on 
 
 This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
 
+### Maximum Memory Size
+When building an app targeting mobile device browsers, especially Safari on iOS, decreasing the maximum memory for the app may be required.
+
+The default value is `2,147,483,648 bytes`, which may be too large and result in the app failing to start, because the browser refuses to grant it.
+To set the maximum memory size, include the MSBuild property like `<EmccMaximumHeapSize>268435456<EmccMaximumHeapSize>`.
+
+This property requires the [wasm-tools workload](#wasm-tools-workload) to be installed.
+
 ### JITerpreter
 The JITerpreter is a browser-specific compiler which will optimize frequently executed code when running in interpreted (non-AOT) mode. While this significantly improves application performance, it will cause increased memory usage. You can disable it via `<BlazorWebAssemblyJiterpreter>false</BlazorWebAssemblyJiterpreter>`, and configure it in more detail via the use of runtime options.
 

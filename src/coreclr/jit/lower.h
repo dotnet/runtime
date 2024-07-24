@@ -157,7 +157,7 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void       LowerJmpMethod(GenTree* jmp);
     void       LowerRet(GenTreeOp* ret);
-    void       LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
+    GenTree*   LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void       LowerRetStruct(GenTreeUnOp* ret);
     void       LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);
     void       LowerCallStruct(GenTreeCall* call);
@@ -353,6 +353,8 @@ private:
     GenTree* LowerIndir(GenTreeIndir* ind);
     bool     OptimizeForLdpStp(GenTreeIndir* ind);
     bool     TryMakeIndirsAdjacent(GenTreeIndir* prevIndir, GenTreeIndir* indir);
+    bool     TryMoveAddSubRMWAfterIndir(GenTreeLclVarCommon* store);
+    bool     TryMakeIndirAndStoreAdjacent(GenTreeIndir* prevIndir, GenTreeLclVarCommon* store);
     void     MarkTree(GenTree* root);
     void     UnmarkTree(GenTree* root);
     GenTree* LowerStoreIndir(GenTreeStoreInd* node);
@@ -401,11 +403,11 @@ private:
     bool LowerRMWMemOp(GenTreeIndir* storeInd);
 #endif
 
-    void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
-    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
-    void LowerStoreLoc(GenTreeLclVarCommon* tree);
-    void LowerRotate(GenTree* tree);
-    void LowerShift(GenTreeOp* shift);
+    void     WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
+    bool     CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
+    GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
+    void     LowerRotate(GenTree* tree);
+    void     LowerShift(GenTreeOp* shift);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
