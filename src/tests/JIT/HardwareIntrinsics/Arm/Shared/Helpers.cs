@@ -8678,12 +8678,6 @@ namespace JIT.HardwareIntrinsics.Arm
                         {
                             return false;
                         }
-
-                        if (result[i] != T.Zero)
-                        {
-                            return false;
-                        }
-
                         hitFault = true;
                     }
                     else
