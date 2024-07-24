@@ -207,6 +207,8 @@ namespace Internal.IL
 
         public bool SanityChecks { set; private get; }
 
+        public bool SuppressTypeVerification { set; private get; }
+
         public void Verify()
         {
             _instructionBoundaries = new bool[_ilBytes.Length];
@@ -567,7 +569,7 @@ namespace Internal.IL
 
         void CheckIsNumeric(StackValue value)
         {
-            if (!Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.Float,
+            if (!SuppressTypeVerification && !Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.Float,
                 VerifierError.ExpectedNumericType, value))
             {
                 AbortBasicBlockVerification();
@@ -576,7 +578,7 @@ namespace Internal.IL
 
         void CheckIsInteger(StackValue value)
         {
-            if (!Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.NativeInt,
+            if (!SuppressTypeVerification && !Check(StackValueKind.Int32 <= value.Kind && value.Kind <= StackValueKind.NativeInt,
                 VerifierError.ExpectedIntegerType, value))
             {
                 AbortBasicBlockVerification();
@@ -585,7 +587,7 @@ namespace Internal.IL
 
         void CheckIsIndex(StackValue value)
         {
-            if (!Check(value.Kind == StackValueKind.Int32 || value.Kind == StackValueKind.NativeInt,
+            if (!SuppressTypeVerification && !Check(value.Kind == StackValueKind.Int32 || value.Kind == StackValueKind.NativeInt,
                 VerifierError.StackUnexpected /* TODO: ExpectedIndex */, value))
             {
                 AbortBasicBlockVerification();
@@ -594,7 +596,7 @@ namespace Internal.IL
 
         void CheckIsByRef(StackValue value)
         {
-            if (!Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value))
+            if (!SuppressTypeVerification && !Check(value.Kind == StackValueKind.ByRef, VerifierError.StackByRef, value))
             {
                 AbortBasicBlockVerification();
             }
@@ -602,13 +604,16 @@ namespace Internal.IL
 
         void CheckIsArray(StackValue value)
         {
-            Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray),
-                VerifierError.ExpectedArray /* , value */);
+            if (!SuppressTypeVerification)
+            {
+                Check((value.Kind == StackValueKind.ObjRef) && ((value.Type == null) || value.Type.IsSzArray),
+                    VerifierError.ExpectedArray /* , value */);
+            }
         }
 
         void CheckIsAssignable(StackValue src, StackValue dst, VerifierError error = VerifierError.StackUnexpected)
         {
-            if (!IsAssignable(src, dst))
+            if (!SuppressTypeVerification && !IsAssignable(src, dst))
                 VerificationError(error, src, dst);
         }
 
@@ -1026,7 +1031,7 @@ namespace Internal.IL
 
         void CheckIsAssignable(TypeDesc src, TypeDesc dst)
         {
-            if (!IsAssignable(src, dst))
+            if (!SuppressTypeVerification && !IsAssignable(src, dst))
             {
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
             }
@@ -1034,7 +1039,7 @@ namespace Internal.IL
 
         void CheckIsArrayElementCompatibleWith(TypeDesc src, TypeDesc dst)
         {
-            if (!IsAssignable(src, dst, true))
+            if (!SuppressTypeVerification && !IsAssignable(src, dst, true))
             {
                 // TODO: Better error message
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src));
@@ -1043,7 +1048,7 @@ namespace Internal.IL
 
         void CheckIsPointerElementCompatibleWith(TypeDesc src, TypeDesc dst)
         {
-            if (!(src == dst || IsSameReducedType(src, dst)))
+            if (!SuppressTypeVerification && !(src == dst || IsSameReducedType(src, dst)))
             {
                 // TODO: Better error message
                 // VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(src), TypeToStringForIsAssignable(dst));
@@ -1053,7 +1058,7 @@ namespace Internal.IL
 
         void CheckIsObjRef(TypeDesc type)
         {
-            if (!IsAssignable(type, GetWellKnownType(WellKnownType.Object), false))
+            if (!SuppressTypeVerification && !IsAssignable(type, GetWellKnownType(WellKnownType.Object), false))
             {
                 // TODO: Better error message
                 VerificationError(VerifierError.StackUnexpected, TypeToStringForIsAssignable(type));
@@ -1062,19 +1067,19 @@ namespace Internal.IL
 
         void CheckIsObjRef(StackValue value)
         {
-            if (value.Kind != StackValueKind.ObjRef)
+            if (!SuppressTypeVerification && value.Kind != StackValueKind.ObjRef)
                 VerificationError(VerifierError.StackObjRef, value);
         }
 
         private void CheckIsNotPointer(TypeDesc type)
         {
-            if (type.IsPointer)
+            if (!SuppressTypeVerification && type.IsPointer)
                 VerificationError(VerifierError.UnmanagedPointer);
         }
 
         void CheckIsComparable(StackValue a, StackValue b, ILOpcode op)
         {
-            if (!IsBinaryComparable(a, b, op))
+            if (!SuppressTypeVerification && !IsBinaryComparable(a, b, op))
             {
                 VerificationError(VerifierError.StackUnexpected, a, b);
             }
