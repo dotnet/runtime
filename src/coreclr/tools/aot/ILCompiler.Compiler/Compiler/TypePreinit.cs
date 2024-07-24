@@ -379,11 +379,11 @@ namespace ILCompiler
                                 // and resetting it would lead to unpredictable analysis durations.
                                 int baseInstructionCounter = instructionCounter;
                                 Status status = nestedPreinit.TryScanMethod(field.OwningType.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
+                                recursionProtect.Pop();
                                 if (!status.IsSuccessful)
                                 {
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
                                 }
-                                recursionProtect.Pop();
                                 Value value = nestedPreinit._fieldValues[field];
                                 if (value is ValueTypeValue)
                                     stack.PushFromLocation(field.FieldType, value);
@@ -489,17 +489,16 @@ namespace ILCompiler
                             }
 
                             Value retVal;
-                            if (!method.IsIntrinsic || !TryHandleIntrinsicCall(method, methodParams, out retVal))
+                            if (!method.IsIntrinsic || !TryHandleIntrinsicCall(context, method, methodParams, out retVal))
                             {
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
                                 Status callResult = TryScanMethod(method, methodParams, recursionProtect, ref instructionCounter, out retVal);
+                                recursionProtect.Pop();
                                 if (!callResult.IsSuccessful)
                                 {
-                                    recursionProtect.Pop();
                                     return callResult;
                                 }
-                                recursionProtect.Pop();
                             }
 
                             if (!methodSig.ReturnType.IsVoid)
@@ -665,13 +664,11 @@ namespace ILCompiler
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
                                 Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, ref instructionCounter, out _);
+                                recursionProtect.Pop();
                                 if (!ctorCallResult.IsSuccessful)
                                 {
-                                    recursionProtect.Pop();
                                     return ctorCallResult;
                                 }
-
-                                recursionProtect.Pop();
                             }
 
                             stack.PushFromLocation(owningType, instance);
@@ -824,6 +821,8 @@ namespace ILCompiler
                     case ILOpcode.conv_u2:
                     case ILOpcode.conv_u4:
                     case ILOpcode.conv_u8:
+                    case ILOpcode.conv_r4:
+                    case ILOpcode.conv_r8:
                         {
                             StackEntry popped = stack.Pop();
                             if (popped.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
@@ -863,6 +862,12 @@ namespace ILCompiler
                                     case ILOpcode.conv_u8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((uint)val));
                                         break;
+                                    case ILOpcode.conv_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
+                                        break;
+                                    case ILOpcode.conv_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(val));
+                                        break;
                                     default:
                                         return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
@@ -901,6 +906,12 @@ namespace ILCompiler
                                     case ILOpcode.conv_u8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(val));
                                         break;
+                                    case ILOpcode.conv_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
+                                        break;
+                                    case ILOpcode.conv_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(val));
+                                        break;
                                     default:
                                         return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
@@ -910,15 +921,47 @@ namespace ILCompiler
                                 double val = popped.Value.AsDouble();
                                 switch (opcode)
                                 {
+                                    case ILOpcode.conv_u:
+                                    case ILOpcode.conv_i:
+                                        stack.Push(StackValueKind.NativeInt,
+                                            context.Target.PointerSize == 8 ? ValueTypeValue.FromInt64((long)val) : ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_i1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((sbyte)val));
+                                        break;
+                                    case ILOpcode.conv_i2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((short)val));
+                                        break;
+                                    case ILOpcode.conv_i4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                        break;
                                     case ILOpcode.conv_i8:
                                         stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
+                                        break;
+                                    case ILOpcode.conv_u1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)val));
+                                        break;
+                                    case ILOpcode.conv_u2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)val));
+                                        break;
+                                    case ILOpcode.conv_u4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((int)val));
+                                        break;
+                                    case ILOpcode.conv_u8:
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64((long)val));
+                                        break;
+                                    case ILOpcode.conv_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble((float)val));
+                                        break;
+                                    case ILOpcode.conv_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(val));
                                         break;
                                     default:
                                         return Status.Fail(methodIL.OwningMethod, opcode);
                                 }
                             }
                             else if (popped.ValueKind == StackValueKind.ByRef
-                                && (opcode == ILOpcode.conv_i || opcode == ILOpcode.conv_u)
+                                && (opcode is ILOpcode.conv_i or ILOpcode.conv_u)
                                 && (reader.PeekILOpcode() is (>= ILOpcode.ldind_i1 and <= ILOpcode.ldind_ref) or ILOpcode.ldobj))
                             {
                                 // In the interpreter memory model, there's no conversion from a byref to an integer.
@@ -1379,13 +1422,29 @@ namespace ILCompiler
                             StackEntry value = stack.Pop();
                             if (value.ValueKind == StackValueKind.Int32)
                                 stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(-value.Value.AsInt32()));
+                            else if (value.ValueKind == StackValueKind.Int64)
+                                stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(-value.Value.AsInt64()));
+                            else
+                                return Status.Fail(methodIL.OwningMethod, opcode);
+                        }
+                        break;
+
+                    case ILOpcode.not:
+                        {
+                            StackEntry value = stack.Pop();
+                            if (value.ValueKind == StackValueKind.Int32)
+                                stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(~value.Value.AsInt32()));
+                            else if (value.ValueKind == StackValueKind.Int64)
+                                stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(~value.Value.AsInt64()));
                             else
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                         }
                         break;
 
                     case ILOpcode.or:
+                    case ILOpcode.xor:
                     case ILOpcode.shl:
+                    case ILOpcode.shr:
                     case ILOpcode.add:
                     case ILOpcode.sub:
                     case ILOpcode.mul:
@@ -1395,13 +1454,24 @@ namespace ILCompiler
                     case ILOpcode.rem:
                     case ILOpcode.rem_un:
                         {
-                            bool isDivRem = opcode == ILOpcode.div || opcode == ILOpcode.div_un
-                                || opcode == ILOpcode.rem || opcode == ILOpcode.rem_un;
+                            bool isDivRem = opcode is ILOpcode.div or ILOpcode.div_un
+                                or ILOpcode.rem or ILOpcode.rem_un;
 
                             StackEntry value2 = stack.Pop();
                             StackEntry value1 = stack.Pop();
 
                             bool isNint = value1.ValueKind == StackValueKind.NativeInt || value2.ValueKind == StackValueKind.NativeInt;
+                            if (isNint && context.Target.PointerSize == 8)
+                            {
+                                if (value1.ValueKind == StackValueKind.Int32)
+                                {
+                                    value1 = new StackEntry(StackValueKind.NativeInt, ValueTypeValue.FromInt64(value1.Value.AsInt32()));
+                                }
+                                else if (value2.ValueKind == StackValueKind.Int32)
+                                {
+                                    value2 = new StackEntry(StackValueKind.NativeInt, ValueTypeValue.FromInt64(value2.Value.AsInt32()));
+                                }
+                            }
 
                             if (value1.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32 && value2.ValueKind.WithNormalizedNativeInt(context) == StackValueKind.Int32)
                             {
@@ -1411,7 +1481,9 @@ namespace ILCompiler
                                 int result = opcode switch
                                 {
                                     ILOpcode.or => value1.Value.AsInt32() | value2.Value.AsInt32(),
+                                    ILOpcode.xor => value1.Value.AsInt32() ^ value2.Value.AsInt32(),
                                     ILOpcode.shl => value1.Value.AsInt32() << value2.Value.AsInt32(),
+                                    ILOpcode.shr => value1.Value.AsInt32() >> value2.Value.AsInt32(),
                                     ILOpcode.add => value1.Value.AsInt32() + value2.Value.AsInt32(),
                                     ILOpcode.sub => value1.Value.AsInt32() - value2.Value.AsInt32(),
                                     ILOpcode.and => value1.Value.AsInt32() & value2.Value.AsInt32(),
@@ -1433,6 +1505,7 @@ namespace ILCompiler
                                 long result = opcode switch
                                 {
                                     ILOpcode.or => value1.Value.AsInt64() | value2.Value.AsInt64(),
+                                    ILOpcode.xor => value1.Value.AsInt64() ^ value2.Value.AsInt64(),
                                     ILOpcode.add => value1.Value.AsInt64() + value2.Value.AsInt64(),
                                     ILOpcode.sub => value1.Value.AsInt64() - value2.Value.AsInt64(),
                                     ILOpcode.and => value1.Value.AsInt64() & value2.Value.AsInt64(),
@@ -1451,7 +1524,7 @@ namespace ILCompiler
                                 if (isDivRem && value2.Value.AsDouble() == 0)
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Division by zero");
 
-                                if (opcode == ILOpcode.or || opcode == ILOpcode.shl || opcode == ILOpcode.and || opcode == ILOpcode.div_un || opcode == ILOpcode.rem_un)
+                                if (opcode is ILOpcode.or or ILOpcode.xor or ILOpcode.shl or ILOpcode.shr or ILOpcode.and or ILOpcode.div_un or ILOpcode.rem_un)
                                     ThrowHelper.ThrowInvalidProgramException();
 
                                 double result = opcode switch
@@ -1467,9 +1540,14 @@ namespace ILCompiler
                                 stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(result));
                             }
                             else if (value1.ValueKind == StackValueKind.Int64 && value2.ValueKind == StackValueKind.Int32
-                                && opcode == ILOpcode.shl)
+                                && opcode is ILOpcode.shl or ILOpcode.shr)
                             {
-                                long result = value1.Value.AsInt64() << value2.Value.AsInt32();
+                                long result = opcode switch
+                                {
+                                    ILOpcode.shl => value1.Value.AsInt64() << value2.Value.AsInt32(),
+                                    ILOpcode.shr => value1.Value.AsInt64() >> value2.Value.AsInt32(),
+                                    _ => throw new NotImplementedException(), // unreachable
+                                };
                                 stack.Push(isNint ? StackValueKind.NativeInt : StackValueKind.Int64, ValueTypeValue.FromInt64(result));
                             }
                             else if ((value1.ValueKind == StackValueKind.ByRef && value2.ValueKind != StackValueKind.ByRef)
@@ -1679,6 +1757,8 @@ namespace ILCompiler
                     case ILOpcode.ldind_i4:
                     case ILOpcode.ldind_u4:
                     case ILOpcode.ldind_i8:
+                    case ILOpcode.ldind_r4:
+                    case ILOpcode.ldind_r8:
                         {
                             if (opcode == ILOpcode.ldobj)
                             {
@@ -1864,12 +1944,49 @@ namespace ILCompiler
             }
         }
 
-        private bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
+        private bool TryHandleIntrinsicCall(TypeSystemContext context, MethodDesc method, Value[] parameters, out Value retVal)
         {
             retVal = default;
 
             switch (method.Name)
             {
+                case "Memmove":
+                    if (method.OwningType is MetadataType spanHelpersType
+                        && spanHelpersType.Name == "SpanHelpers" && spanHelpersType.Namespace == "System"
+                        && spanHelpersType.Module == spanHelpersType.Context.SystemModule
+                        && parameters[0] is ByRefValue dest
+                        && parameters[1] is ByRefValue src
+                        && parameters[2] is ValueTypeValue len)
+                    {
+                        int length = context.Target.PointerSize == 8 ? checked ((int)len.AsInt64()) : len.AsInt32();
+                        var srcSpan = new Span<byte>(src.PointedToBytes, src.PointedToOffset, length);
+                        var dstSpan = new Span<byte>(dest.PointedToBytes, dest.PointedToOffset, length);
+                        srcSpan.CopyTo(dstSpan);
+                        return true;
+                    }
+                    return false;
+                case "IsReferenceOrContainsReferences":
+                    if (method.OwningType is MetadataType rtType
+                        && rtType.Name == "RuntimeHelpers" && rtType.Namespace == "System.Runtime.CompilerServices"
+                        && rtType.Module == rtType.Context.SystemModule
+                        && method.Instantiation.Length == 1)
+                    {
+                        var type = method.Instantiation[0];
+                        bool result = type.IsGCPointer || (type is DefType { ContainsGCPointers: true });
+                        retVal = ValueTypeValue.FromSByte(result ? (sbyte)1 : (sbyte)0);
+                        return true;
+                    }
+                    return false;
+                case "FastAllocateString":
+                    if (method.OwningType is MetadataType stringType
+                        && stringType.Name == "String" && stringType.Namespace == "System"
+                        && stringType.Module == stringType.Context.SystemModule
+                        && parameters[0] is ValueTypeValue strSize)
+                    {
+                        retVal = new StringInstance(context.GetWellKnownType(WellKnownType.String), new string('\0', strSize.AsInt32()));
+                        return true;
+                    }
+                    return false;
                 case "InitializeArray":
                     if (method.OwningType is MetadataType mdType
                         && mdType.Name == "RuntimeHelpers" && mdType.Namespace == "System.Runtime.CompilerServices"
