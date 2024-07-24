@@ -9,8 +9,6 @@
   <PropertyGroup>
     <ContractProject Condition="'$(ContractProject)' == ''">$(LibrariesProjectRoot)$(MSBuildProjectName)\ref\$(MSBuildProjectName).csproj</ContractProject>
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
-    <!-- Don't let the compiler automatically generate a reference assembly when we have a dedicated reference assembly project. -->
-    <ProduceReferenceAssembly Condition="'$(HasMatchingContract)' == 'true'">false</ProduceReferenceAssembly>
     <!-- Don't build against reference assemblies when projects are packable and the tfm is not the latest .NETCoreApp as
          such reference assemblies don't ship to customers and only exist for tooling scenarios. -->
     <AnnotateTargetPathWithContract Condition="'$(AnnotateTargetPathWithContract)' == '' and
@@ -22,6 +20,8 @@
                                                  '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'
                                                 )
                                                )">true</AnnotateTargetPathWithContract>
+    <!-- Don't let the compiler automatically generate a reference assembly when there's a dedicated reference assembly project that is being used. -->
+    <ProduceReferenceAssembly Condition="'$(AnnotateTargetPathWithContract)' == 'true'">false</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true' and '$(ContractProject)' != ''">
