@@ -62,7 +62,7 @@ namespace ILCompiler.Win32Resources
 
         private byte[] FindResourceInternal(object name, object type, ushort language)
         {
-            ResType resType = null;
+            ResType resType;
 
             if (type is ushort)
             {
