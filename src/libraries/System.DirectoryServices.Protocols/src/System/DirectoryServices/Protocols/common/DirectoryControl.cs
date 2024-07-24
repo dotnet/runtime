@@ -89,6 +89,11 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
+    // The encoding and decoding of LDAP directory controls interprets BER INTEGER values as 32-bit signed integers.
+    // Although BER INTEGERS can exceed this data type's maximum value, previous versions of DirectoryControl (and
+    // its derived classes) encoded and decoded these types by passing the "i" format specifier to BerConverter. The
+    // .NET Framework continues to do so. There is therefore historical precedent to justify limiting BER INTEGER
+    // values to this data type when using AsnDecoder and AsnWriter.
     public class DirectoryControl
     {
         // Scratch buffer allocations with sizes which are below this threshold should be made on the stack.
@@ -167,8 +172,8 @@ namespace System.DirectoryServices.Protocols
 
                     if (controls[i].Type == "1.2.840.113556.1.4.319")
                     {
-                        // The control is a PageControl, as described in RFC 2696.
-                        byte[] cookie = Array.Empty<byte>();
+                        // The control is a PageResultResponseControl. The structure of its value is described as a realSearchControlValue structure in RFC 2696.
+                        byte[] cookie;
 
                         AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
                         ThrowUnless(sequenceContentLength > 0);
@@ -178,14 +183,10 @@ namespace System.DirectoryServices.Protocols
                         ThrowUnless(asnReadSuccessful);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
-                        // If present, the remaining bytes in the control are expected to be an octet string.
-                        if (!asnSpan.IsEmpty)
-                        {
-                            // user expects cookie with length 0 as paged search is done. In this situation, there'll still be two bytes
-                            // for the ASN.1 tag.
-                            cookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
-                            asnSpan = asnSpan.Slice(bytesConsumed);
-                        }
+                        // The remaining bytes in the control are expected to be the cookie (an octet string.)
+                        // A cookie with length 0 will be sent when paged search is done. In this situation, the ASN.1 tag will still consume two bytes.
+                        cookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
+                        asnSpan = asnSpan.Slice(bytesConsumed);
                         ThrowUnless(asnSpan.IsEmpty);
 
                         PageResultResponseControl pageControl = new PageResultResponseControl(size, cookie, controls[i].IsCritical, value);
@@ -193,25 +194,27 @@ namespace System.DirectoryServices.Protocols
                     }
                     else if (controls[i].Type == "1.2.840.113556.1.4.1504")
                     {
-                        // The control is an AsqControl, as described in MS-ADTS section 3.1.1.3.4.1.18
+                        // The control is an AsqResponseControl. The structure of its value is described as an ASQResponseValue in MS-ADTS section 3.1.1.3.4.1.18.
+                        ResultCode result;
+
                         AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
                         ThrowUnless(sequenceContentLength > 0);
 
-                        ResultCode result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset, sequenceContentLength), AsnEncodingRules.BER, out _);
+                        result = AsnDecoder.ReadEnumeratedValue<ResultCode>(asnSpan.Slice(sequenceContentOffset, sequenceContentLength), AsnEncodingRules.BER, out _);
 
                         AsqResponseControl asq = new AsqResponseControl(result, controls[i].IsCritical, value);
                         controls[i] = asq;
                     }
                     else if (controls[i].Type == "1.2.840.113556.1.4.841")
                     {
-                        // The control is a DirSyncControl, as described in MS-ADTS section 3.1.1.3.4.1.3
+                        // The control is a DirSyncResponseControl. The structure of its value is described as a DirSyncResponseValue in MS-ADTS section 3.1.1.3.4.1.3.
                         byte[] dirsyncCookie;
 
                         AsnDecoder.ReadSequence(asnSpan, AsnEncodingRules.BER, out int sequenceContentOffset, out int sequenceContentLength, out _);
                         ThrowUnless(sequenceContentLength > 0);
                         asnSpan = asnSpan.Slice(sequenceContentOffset, sequenceContentLength);
 
-                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreData, out int bytesConsumed);
+                        asnReadSuccessful = AsnDecoder.TryReadInt32(asnSpan, AsnEncodingRules.BER, out int moreResults, out int bytesConsumed);
                         ThrowUnless(asnReadSuccessful);
                         asnSpan = asnSpan.Slice(bytesConsumed);
 
@@ -222,12 +225,12 @@ namespace System.DirectoryServices.Protocols
                         dirsyncCookie = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
                         ThrowUnless(asnSpan.Length == bytesConsumed);
 
-                        DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, moreData != 0, count, controls[i].IsCritical, value);
+                        DirSyncResponseControl dirsync = new DirSyncResponseControl(dirsyncCookie, moreResults != 0, count, controls[i].IsCritical, value);
                         controls[i] = dirsync;
                     }
                     else if (controls[i].Type == "1.2.840.113556.1.4.474")
                     {
-                        // The control is a SortControl, as described in RFC 2891.
+                        // The control is a SortResponseControl. The structure of its value is described as a SortResult in RFC 2891.
                         ResultCode result;
                         string attribute = null;
 
@@ -266,7 +269,7 @@ namespace System.DirectoryServices.Protocols
                     }
                     else if (controls[i].Type == "2.16.840.1.113730.3.4.10")
                     {
-                        // The control is a VlvResponseControl, as described in MS-ADTS 3.1.1.3.4.1.17
+                        // The control is a VlvResponseControl. The structure of its value is described as a VLVResponseValue in MS-ADTS 3.1.1.3.4.1.17.
                         ResultCode result;
                         byte[] context = null;
 
@@ -288,7 +291,7 @@ namespace System.DirectoryServices.Protocols
                         // If present, the remaining bytes in the control are expected to be an octet string.
                         if (!asnSpan.IsEmpty)
                         {
-                            // user expects cookie with length 0 as paged search is done. In this situation, there'll still be two bytes
+                            // The user expects cookie with length 0 as paged search is done. In this situation, there'll still be two bytes
                             // for the ASN.1 tag.
                             context = AsnDecoder.ReadOctetString(asnSpan, AsnEncodingRules.BER, out bytesConsumed);
                             asnSpan = asnSpan.Slice(bytesConsumed);
@@ -1126,7 +1129,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else
                 {
-                    using (AsnWriter.Scope innerSequence = writer.PushSequence(s_byOffsetChoiceTag))
+                    using (writer.PushSequence(s_byOffsetChoiceTag))
                     {
                         writer.WriteInteger(Offset);
                         writer.WriteInteger(EstimateCount);
