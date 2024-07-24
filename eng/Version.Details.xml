@@ -12,9 +12,9 @@
       <Uri>https://github.com/dotnet/wcf</Uri>
       <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64" Version="9.0.0-preview.7.24352.2">
+    <Dependency Name="Microsoft.NET.Runtime.Emscripten.3.1.56.Python.win-x64" Version="9.0.0-preview.7.24373.5">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>d3583522209829d1ed0440662ba136c7b7700b16</Sha>
+      <Sha>75567e63c265cb0a69bb11f8024349eda83f0878</Sha>
     </Dependency>
     <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="19.0.0-alpha.1.24370.2">
       <Uri>https://github.com/dotnet/llvm-project</Uri>
