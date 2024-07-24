@@ -198,12 +198,6 @@ namespace System.Collections.Generic
 
 #if !TYPE_LOADER_IMPLEMENTATION
 
-        public void CopyTo(T[] array, int arrayIndex)
-        {
-            // Delegate rest of error checking to Array.Copy.
-            Array.Copy(_items, 0, array, arrayIndex, _size);
-        }
-
         // Inserts an element into this list at a given index. The size of the list
         // is increased by one. If required, the capacity of the list is doubled
         // before inserting the new element.
