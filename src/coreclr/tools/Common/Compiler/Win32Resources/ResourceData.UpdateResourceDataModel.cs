@@ -78,7 +78,7 @@ namespace ILCompiler.Win32Resources
             if (resType == null)
                 return null;
 
-            ResName resName = null;
+            ResName resName;
 
             if (name is ushort)
             {
@@ -106,7 +106,7 @@ namespace ILCompiler.Win32Resources
             System.Text.StringBuilder builder = new(str.Length);
             foreach (char c in str)
             {
-                builder.Append('a' <= c && c <= 'z' ? char.ToUpper(c) : c);
+                builder.Append('a' <= c && c <= 'z' ? (char)(c + ('A' - 'a')) : c);
             }
             return builder.ToString();
         }
