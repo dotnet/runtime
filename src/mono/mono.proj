@@ -83,9 +83,9 @@
 
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">
     <PackageReference Condition="'$(HostOS)' == 'windows'"
-                      Include="Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-x64"
+                      Include="Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-x64"
                       PrivateAssets="all"
-                      Version="$(MicrosoftNETRuntimeEmscripten3156Pythonwinx64Version)"
+                      Version="$(EmsdkPackageVersion)"
                       GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -108,7 +108,7 @@
     Only wasi doesn't come with its own python and windows uses 32-bit python, so refer to the transport pack instead.
   -->
   <PropertyGroup Condition="'$(HostOS)' == 'windows' and '$(TargetsWasi)' == 'true'">
-    <PythonCmd>$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_34_Python_win-x64)', 'tools', 'python'))</PythonCmd>
+    <PythonCmd>$([MSBuild]::NormalizePath('$(PkgMicrosoft_NET_Runtime_Emscripten_3_1_56_Python_win-x64)', 'tools', 'python'))</PythonCmd>
   </PropertyGroup>
 
   <!-- CI specific build options -->
@@ -261,11 +261,11 @@ JS_ENGINES = [NODE_JS]
     <RemoveDir Directories="$(EMSDK_PATH)" />
 
     <ItemGroup>
-      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-$(BuildArchitecture)'"
+      <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
       <NodeFiles    Condition="'%(PackageReference.Identity)' == 'runtime.$(_portableHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Wasm.Node.Transport'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\$(_portableHostOS)-$(BuildArchitecture)\**" />
-      <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.3.1.34.Python.win-$(BuildArchitecture)'"
+      <PythonFiles  Condition="'$(HostOS)' == 'windows' and '%(PackageReference.Identity)' == 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
                     Include="$(NuGetPackageRoot)\$([System.String]::Copy(%(PackageReference.Identity)).ToLowerInvariant())\%(PackageReference.Version)\tools\**" />
     </ItemGroup>
 
