@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <!-- Reference all out-of-band generator projects. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\gen\**\*.*proj"
+                      Exclude="@(ProjectExclusions)" />
+  </ItemGroup>
+
+</Project>

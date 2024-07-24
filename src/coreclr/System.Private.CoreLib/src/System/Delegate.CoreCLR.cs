@@ -163,6 +163,7 @@ namespace System
 
             IRuntimeMethodInfo method = FindMethodHandle();
             RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
+
             // need a proper declaring type instance method on a generic type
             if (declaringType.IsGenericType)
             {
@@ -181,9 +182,9 @@ namespace System
                         // types at each step) until we find the declaring type. Since the declaring type
                         // we get from the method is probably shared and those in the hierarchy we're
                         // walking won't be we compare using the generic type definition forms instead.
-                        Type? currentType = _target!.GetType();
                         Type targetType = declaringType.GetGenericTypeDefinition();
-                        while (currentType != null)
+                        Type? currentType;
+                        for (currentType = _target!.GetType(); currentType != null; currentType = currentType.BaseType)
                         {
                             if (currentType.IsGenericType &&
                                 currentType.GetGenericTypeDefinition() == targetType)
@@ -191,13 +192,16 @@ namespace System
                                 declaringType = currentType as RuntimeType;
                                 break;
                             }
-                            currentType = currentType.BaseType;
                         }
 
                         // RCWs don't need to be "strongly-typed" in which case we don't find a base type
                         // that matches the declaring type of the method. This is fine because interop needs
                         // to work with exact methods anyway so declaringType is never shared at this point.
-                        Debug.Assert(currentType != null || _target.GetType().IsCOMObject, "The class hierarchy should declare the method");
+                        // The targetType may also be an interface with a Default interface method (DIM).
+                        Debug.Assert(
+                            currentType != null
+                            || _target.GetType().IsCOMObject
+                            || targetType.IsInterface, "The class hierarchy should declare the method or be a DIM");
                     }
                     else
                     {

@@ -1369,9 +1369,9 @@ namespace System.Reflection.Emit
 
         internal void Done(int endAddr)
         {
-            Debug.Assert(m_currentCatch > 0, "m_currentCatch > 0");
-            Debug.Assert(m_catchAddr[m_currentCatch - 1] > 0, "m_catchAddr[m_currentCatch-1] > 0");
-            Debug.Assert(m_catchEndAddr[m_currentCatch - 1] == -1, "m_catchEndAddr[m_currentCatch-1] == -1");
+            Debug.Assert(m_currentCatch > 0);
+            Debug.Assert(m_catchAddr[m_currentCatch - 1] > 0);
+            Debug.Assert(m_catchEndAddr[m_currentCatch - 1] == -1);
             m_catchEndAddr[m_currentCatch - 1] = endAddr;
             m_currentState = State_Done;
         }
@@ -1447,8 +1447,8 @@ namespace System.Reflection.Emit
         internal bool IsInner(__ExceptionInfo exc)
         {
             Debug.Assert(exc != null);
-            Debug.Assert(m_currentCatch > 0, "m_currentCatch > 0");
-            Debug.Assert(exc.m_currentCatch > 0, "exc.m_currentCatch > 0");
+            Debug.Assert(m_currentCatch > 0);
+            Debug.Assert(exc.m_currentCatch > 0);
 
             int exclast = exc.m_currentCatch - 1;
             int last = m_currentCatch - 1;
@@ -1458,8 +1458,7 @@ namespace System.Reflection.Emit
 
             if (exc.m_catchEndAddr[exclast] != m_catchEndAddr[last])
                 return false;
-            Debug.Assert(exc.GetEndAddress() != GetEndAddress(),
-                "exc.GetEndAddress() != GetEndAddress()");
+            Debug.Assert(exc.GetEndAddress() != GetEndAddress());
 
             return exc.GetEndAddress() > GetEndAddress();
         }
