@@ -61,7 +61,7 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
@@ -79,7 +79,7 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
@@ -97,7 +97,7 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
@@ -115,7 +115,7 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSMono
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
@@ -134,7 +134,7 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSNativeAOT
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
@@ -151,7 +151,7 @@ jobs:
       jobParameters:
         testGroup: perf
         runtimeType: iOSNativeAOT
-        projectFile: ios_scenarios.proj
+        projectFile: $(Build.SourcesDirectory)/eng/testing/performance/ios_scenarios.proj
         runKind: ios_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfiphone12mini'
