@@ -1727,7 +1727,7 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     // * Specifically, on FreeBSD with ZFS, f_type may return a value like 0xDE when emulating
     //   FreeBSD on macOS (e.g., FreeBSD-x64 on macOS ARM64). Therefore, we use f_fstypename to
     //   get the correct filesystem type.
-     return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
+    return MapFileSystemNameToEnum(statfsArgs.f_fstypename);
 #else
     // On Linux, f_type is signed. This causes some filesystem types to be represented as
     // negative numbers on 32-bit platforms. We cast to uint32_t to make them positive.
