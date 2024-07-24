@@ -9,7 +9,7 @@ Using ByRefLike types in Generic parameters is possible by building upon support
 
 Supporting ByRefLike types as Generic parameters will impact the following IL instructions.
 
-The `constrained. callvirt` sequence is valid if a ByRefLike type is provided. A `NotSupportedException` will be thrown at the callsite, if the target resolves to a method implemented on `object` or a default interface method.
+The `constrained. callvirt` sequence is valid if a ByRefLike type is provided. A `NotSupportedException` will be thrown at the call-site, if the target resolves to a method implemented on `object` or a default interface method.
 
 Throws `InvalidProgramException` when passed a ByRefLike type:
 - `box` &ndash; ByRefLike types cannot be allocated on the heap.
@@ -118,7 +118,7 @@ Enumerating of constructors/methods on `Span<T>` and `ReadOnlySpan<T>` may throw
 
 ## <a name="invalid_il_options"></a> Options for invalid IL
 
-There are two potential options below for how to address this issue.
+There are two potential options below for how to address this issue. Based on communication with the Roslyn team, option (1) is the current plan of record for .NET 10.
 
 The first indented IL sequences below represents the `is-type` sequence. Combining the first with the second indented section represents the "type pattern matching" scenario in C#. The below sequence performs a type check and then, if successful, consumes the unboxed instance.
 
