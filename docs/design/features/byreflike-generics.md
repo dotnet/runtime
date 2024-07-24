@@ -9,9 +9,10 @@ Using ByRefLike types in Generic parameters is possible by building upon support
 
 Supporting ByRefLike types as Generic parameters will impact the following IL instructions.
 
-Providing a ByRefLike type to the `box` instruction remains invalid and `InvalidProgramException` will be thrown when detected.
+The `constrained. callvirt` sequence is valid if a ByRefLike type is provided. A `NotSupportedException` will be thrown at the callsite, if the target resolves to a method implemented on `object` or a default interface method.
 
-The `constrained.callvirt` sequence is valid if a ByRefLike type is provided. A `NotSupportedException` will be thrown at the callsite, if the target resolves to a method implemented on `object` or a default interface method.
+Throws `InvalidProgramException` when passed a ByRefLike type:
+- `box` &ndash; ByRefLike types cannot be allocated on the heap.
 
 Throws `TypeLoadException` when passed a ByRefLike type.
 - `stsfld` / `ldsfld` &ndash; Type fields of a ByRefLike parameter cannot be marked `static`.
