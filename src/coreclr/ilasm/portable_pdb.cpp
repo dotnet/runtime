@@ -159,7 +159,7 @@ exit:
 
 HRESULT PortablePdbWriter::ComputeSha256PdbStreamChecksum(BYTE(&checksum)[32])
 {
-    return m_ilasmPdbWriter->ComputeSha256PdbStreamChecksum(Sha256Hash, checksum);
+    return m_ilasmPdbWriter->ComputeSha256PdbStreamChecksum(checksum);
 }
 
 HRESULT PortablePdbWriter::ChangePdbStreamGuid(REFGUID newGuid)

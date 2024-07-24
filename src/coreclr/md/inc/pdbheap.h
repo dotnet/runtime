@@ -22,7 +22,7 @@ public:
 
     __checkReturn HRESULT SetData(PORT_PDB_STREAM* data);
     __checkReturn HRESULT SetDataGuid(REFGUID newGuid);
-    __checkReturn HRESULT ComputeSha256Checksum(HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize), BYTE (&checksum)[32]);
+    __checkReturn HRESULT ComputeSha256Checksum(BYTE (&checksum)[32]);
     __checkReturn HRESULT SaveToStream(IStream* stream);
     BOOL    IsEmpty();
     ULONG   GetSize();

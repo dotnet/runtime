@@ -2119,13 +2119,12 @@ ErrExit:
 // ComputeSha256PdbStreamChecksum
 //*******************************************************************************
 STDMETHODIMP RegMeta::ComputeSha256PdbStreamChecksum(
-        HRESULT (*computeSha256)(BYTE* pSrc, DWORD srcSize, BYTE* pDst, DWORD dstSize),
         BYTE (&checksum)[32])
 {
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
-    return m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(computeSha256, checksum);
+    return m_pStgdb->m_pPdbHeap->ComputeSha256Checksum(checksum);
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 }
 
