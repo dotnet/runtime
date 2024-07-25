@@ -180,8 +180,8 @@ namespace System.Tests
             var twoOffResult = Convert.FromHexString(spanHex, destination, out consumed, out written);
 
             Assert.Equal(OperationStatus.NeedMoreData, twoOffResult);
-            Assert.Equal(spanHex.Length - 1, consumed);
-            Assert.Equal((spanHex.Length - 1) / 2, written);
+            Assert.Equal(spanHex.Length, consumed);
+            Assert.Equal(spanHex.Length / 2, written);
         }
     }
 }
