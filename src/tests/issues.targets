@@ -2617,8 +2617,8 @@
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' and '$(TargetArchitecture)' == 'x64'">
     </ItemGroup>
 
-    <!-- Disabled tests on Mono x64 fullAOT -->
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'x64' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot')">
+    <!-- Disabled tests on Mono x64 AOT and fullAOT -->
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'x64' and ('$(RuntimeVariant)' == 'llvmaot' or '$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'minifullaot')">
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Methodical/Methodical_d1/**">
             <Issue>https://github.com/dotnet/runtime/issues/105395</Issue>
         </ExcludeList>
