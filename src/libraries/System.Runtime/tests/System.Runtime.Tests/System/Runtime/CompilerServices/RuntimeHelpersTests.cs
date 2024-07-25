@@ -103,7 +103,6 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal("Hello", HasCctorReceiver.S);
             // Should not throw
             RuntimeHelpers.RunClassConstructor(typeof(GenericHasCctor<>).TypeHandle);
-            return;
         }
 
         internal class HasCctor
@@ -117,6 +116,14 @@ namespace System.Runtime.CompilerServices.Tests
         internal class HasCctorReceiver
         {
             public static string S;
+        }
+
+        internal class GenericHasCctor<T>
+        {
+            static GenericHasCctor()
+            {
+                Thread.Yield(); // Make sure the preinitialization optimization doesn't eat this.
+            }
         }
 
         [Fact]
