@@ -88,7 +88,7 @@ namespace System.ComponentModel
                         s_convertFromInvariantString = mi == null ? new object() : mi.CreateDelegate<Func<Type, string, object>>();
                     }
 
-                    if (!(s_convertFromInvariantString is Func<Type, string?, object> convertFromInvariantString))
+                    if (s_convertFromInvariantString is not Func<Type, string?, object> convertFromInvariantString)
                         return false;
 
                     try
@@ -260,7 +260,7 @@ namespace System.ComponentModel
             {
                 return true;
             }
-            if (!(obj is DefaultValueAttribute other))
+            if (obj is not DefaultValueAttribute other)
             {
                 return false;
             }
