@@ -93,7 +93,7 @@ namespace System.Reflection.Runtime.General
                 handleType = handle.HandleType;
             }
             while (handleType == HandleType.ModifiedType);
-            customModifiers.AsSpan(0).Reverse();
+            customModifiers.AsSpan().Reverse();
             return customModifiers.ToArray();
         }
 
