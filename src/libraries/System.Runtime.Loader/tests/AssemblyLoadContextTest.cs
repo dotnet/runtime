@@ -247,7 +247,35 @@ namespace System.Runtime.Loader.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
         public static void LoadRefEmitAssembly()
         {
-            AssemblyLoadContext alc = new RefEmitLoadContext();
+            RefEmitLoadContext alc = new();
+            alc.Resolving += (sender, assembly) => { Assert.Fail("Resolving event not expected"); return null; };
+            Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
+            Assert.IsType<InvalidOperationException>(error.InnerException);
+        }
+
+        class NonRuntimeAssemblyContext : AssemblyLoadContext
+        {
+            class NonRuntimeAssembly : Assembly
+            {
+                private AssemblyName _name;
+
+                public NonRuntimeAssembly(AssemblyName name) => _name = name;
+
+                public override AssemblyName GetName(bool copiedName) => _name;
+            }
+
+            protected override Assembly? Load(AssemblyName assemblyName)
+            {
+                return new NonRuntimeAssembly(assemblyName);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/31804", TestRuntimes.Mono)]
+        public static void LoadNonRuntimeAssembly()
+        {
+            NonRuntimeAssemblyContext alc = new();
+            alc.Resolving += (sender, assembly) => { Assert.Fail("Resolving event not expected"); return null; };
             Exception error = Assert.Throws<FileLoadException>(() => alc.LoadFromAssemblyName(new AssemblyName("MyAssembly")));
             Assert.IsType<InvalidOperationException>(error.InnerException);
         }

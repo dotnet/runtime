@@ -654,12 +654,12 @@ namespace System.Runtime.Loader
             RuntimeAssembly? runtimeAssembly = GetRuntimeAssembly(assembly);
             if (runtimeAssembly == null)
             {
-                throw new InvalidOperationException(SR.Argument_MustBeRuntimeAssembly);
+                throw new InvalidOperationException(SR.InvalidOperation_ResolvedAssemblyMustBeRuntimeAssembly);
             }
 
             if (!requestedSimpleName.Equals(runtimeAssembly.GetSimpleName(), StringComparison.InvariantCultureIgnoreCase))
             {
-                throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
+                throw new InvalidOperationException(SR.InvalidOperation_ResolvedAssemblyRequestedNameMismatch);
             }
 
             return runtimeAssembly;
