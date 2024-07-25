@@ -39,20 +39,27 @@ public unsafe class MethodTableTests
         }
     };
 
-    private static readonly (DataType Type, Target.TypeInfo Info)[] RTSTypes =
+    private static readonly Target.TypeInfo ArrayClassTypeInfo = new Target.TypeInfo()
+    {
+        Fields = {
+            { nameof (Data.ArrayClass.Rank), new () { Offset = 0x70, Type = DataType.uint8}},
+        }
+    };
+
+    internal static readonly (DataType Type, Target.TypeInfo Info)[] RTSTypes =
     [
         (DataType.MethodTable, MethodTableTypeInfo),
         (DataType.EEClass, EEClassTypeInfo),
+        (DataType.ArrayClass, ArrayClassTypeInfo),
     ];
 
-
-    private static readonly (string Name, ulong Value, string? Type)[] RTSGlobals =
+    internal static readonly (string Name, ulong Value, string? Type)[] RTSGlobals =
     [
         (nameof(Constants.Globals.FreeObjectMethodTable), TestFreeObjectMethodTableGlobalAddress, null),
         (nameof(Constants.Globals.MethodDescAlignment), 8, nameof(DataType.uint64)),
     ];
 
-    private static MockMemorySpace.Builder AddFreeObjectMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder)
+    internal static MockMemorySpace.Builder AddFreeObjectMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder)
     {
         MockMemorySpace.HeapFragment globalAddr = new() { Name = "Address of Free Object Method Table", Address = TestFreeObjectMethodTableGlobalAddress, Data = new byte[targetTestHelpers.PointerSize] };
         targetTestHelpers.WritePointer(globalAddr.Data, TestFreeObjectMethodTableAddress);
@@ -62,7 +69,7 @@ public unsafe class MethodTableTests
         ]);
     }
 
-    private static MockMemorySpace.Builder AddEEClass(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer eeClassPtr, string name, TargetPointer canonMTPtr, uint attr, ushort numMethods, ushort numNonVirtualSlots)
+    internal static MockMemorySpace.Builder AddEEClass(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer eeClassPtr, string name, TargetPointer canonMTPtr, uint attr, ushort numMethods, ushort numNonVirtualSlots)
     {
         MockMemorySpace.HeapFragment eeClassFragment = new() { Name = $"EEClass '{name}'", Address = eeClassPtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(EEClassTypeInfo)] };
         Span<byte> dest = eeClassFragment.Data;
@@ -71,10 +78,22 @@ public unsafe class MethodTableTests
         targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.NumMethods)].Offset), numMethods);
         targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.NumNonVirtualSlots)].Offset), numNonVirtualSlots);
         return builder.AddHeapFragment(eeClassFragment);
-
     }
 
-    private static MockMemorySpace.Builder AddMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer methodTablePtr, string name, TargetPointer eeClassOrCanonMT, uint mtflags, uint mtflags2, uint baseSize,
+    internal static MockMemorySpace.Builder AddArrayClass(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer eeClassPtr, string name, TargetPointer canonMTPtr, uint attr, ushort numMethods, ushort numNonVirtualSlots, byte rank)
+    {
+        int size = targetTestHelpers.SizeOfTypeInfo(EEClassTypeInfo) + targetTestHelpers.SizeOfTypeInfo(ArrayClassTypeInfo);
+        MockMemorySpace.HeapFragment eeClassFragment = new() { Name = $"ArrayClass '{name}'", Address = eeClassPtr, Data = new byte[size] };
+        Span<byte> dest = eeClassFragment.Data;
+        targetTestHelpers.WritePointer(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.MethodTable)].Offset), canonMTPtr);
+        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.CorTypeAttr)].Offset), attr);
+        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.NumMethods)].Offset), numMethods);
+        targetTestHelpers.Write(dest.Slice(EEClassTypeInfo.Fields[nameof(Data.EEClass.NumNonVirtualSlots)].Offset), numNonVirtualSlots);
+        targetTestHelpers.Write(dest.Slice(ArrayClassTypeInfo.Fields[nameof(Data.ArrayClass.Rank)].Offset), rank);
+        return builder.AddHeapFragment(eeClassFragment);
+    }
+
+    internal static MockMemorySpace.Builder AddMethodTable(TargetTestHelpers targetTestHelpers, MockMemorySpace.Builder builder, TargetPointer methodTablePtr, string name, TargetPointer eeClassOrCanonMT, uint mtflags, uint mtflags2, uint baseSize,
                                                         TargetPointer module, TargetPointer parentMethodTable, ushort numInterfaces, ushort numVirtuals)
     {
         MockMemorySpace.HeapFragment methodTableFragment = new() { Name = $"MethodTable '{name}'", Address = methodTablePtr, Data = new byte[targetTestHelpers.SizeOfTypeInfo(MethodTableTypeInfo)] };
