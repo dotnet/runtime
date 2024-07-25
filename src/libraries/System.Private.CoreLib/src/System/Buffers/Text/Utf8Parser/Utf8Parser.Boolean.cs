@@ -19,7 +19,7 @@ namespace System.Buffers.Text
         /// false if the string was not syntactically valid or an overflow or underflow occurred. "bytesConsumed" is set to 0.
         /// </returns>
         /// <remarks>
-        /// The parsing is case insensitive. The format parameter is validated to ensure it is supported; however, both formats are treated identically.
+        /// The parsing is case insensitive. The format parameter is validated to ensure it is supported; however, all supported formats are treated identically.
         /// </remarks>
         /// <exceptions>
         /// <cref>System.FormatException</cref> if the format is not valid for this data type.
