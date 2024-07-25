@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;
@@ -15,7 +16,7 @@ namespace RuntimeEventCounterTests
     {
         public RuntimeCounterListener()
         {
-            observedRuntimeCounters = new Dictionary<string, bool>() {
+            observedRuntimeCounters = new ConcurrentDictionary<string, bool>() {
                 { "cpu-usage" , false },
                 { "working-set", false },
                 { "gc-heap-size", false },
@@ -43,7 +44,7 @@ namespace RuntimeEventCounterTests
                 { "time-in-jit", false }
             };
         }
-        private Dictionary<string, bool> observedRuntimeCounters;
+        private ConcurrentDictionary<string, bool> observedRuntimeCounters;
 
         protected override void OnEventSourceCreated(EventSource source)
         {
@@ -59,7 +60,6 @@ namespace RuntimeEventCounterTests
 
         protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-
             for (int i = 0; i < eventData.Payload.Count; i++)
             {
                 IDictionary<string, object> eventPayload = eventData.Payload[i] as IDictionary<string, object>;
