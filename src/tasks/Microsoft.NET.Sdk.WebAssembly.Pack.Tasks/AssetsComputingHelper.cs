@@ -107,7 +107,9 @@ public class AssetsComputingHelper
         {
             fileName = Path.GetFileNameWithoutExtension(destinationSubPath);
             extension = Path.GetExtension(destinationSubPath);
-            subPath = destinationSubPath.Substring(0, destinationSubPath.Length - (fileName.Length + extension.Length)); ;
+            subPath = Path.GetDirectoryName(destinationSubPath);
+            if (!string.IsNullOrEmpty(subPath))
+                subPath += "/";
         }
 
         string relativePath;
