@@ -118,6 +118,14 @@ namespace System.Runtime.CompilerServices.Tests
             public static string S;
         }
 
+        internal class GenericHasCctor<T>
+        {
+            static GenericHasCctor()
+            {
+                Thread.Yield(); // Make sure the preinitialization optimization doesn't eat this.
+            }
+        }
+
         [Fact]
         public static void PrepareMethod()
         {
