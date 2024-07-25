@@ -6,6 +6,7 @@
 #include <altivec.h>
 #include "zbuild.h"
 #include "deflate.h"
+#include <assert.h>
 
 static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
     const vector unsigned short vmx_wsize = vec_splats(wsize);
@@ -24,7 +25,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
 }
 
 void Z_INTERNAL SLIDE_PPC(deflate_state *s) {
-    uint16_t wsize = s->w_size;
+    assert(s->w_size <= _UI16_MAX);
+    uint16_t wsize = (uint16_t)s->w_size;
 
     slide_hash_chain(s->head, HASH_SIZE, wsize);
     slide_hash_chain(s->prev, wsize, wsize);
