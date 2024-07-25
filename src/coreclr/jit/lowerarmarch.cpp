@@ -1536,10 +1536,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             bool     foundUse = BlockRange().TryGetUse(node, &use);
             if (foundUse)
             {
-                // Remove GetFfr and replace the GetFfr's use with the lvaFfrRegister lclVar.
-                CreateFFRDefIfNeeded(node);
-
-                GenTree* lclVar = comp->gtNewLclvNode(comp->lvaFfrRegister, TYP_MASK);
+                unsigned lclNum = comp->getFFRegisterVarNum();
+                GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
                 BlockRange().InsertBefore(node, lclVar);
                 use.ReplaceWith(lclVar);
                 GenTree* next = node->gtNext;
@@ -1555,8 +1553,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         }
         case NI_Sve_LoadVectorFirstFaulting:
         {
-            unsigned lclNum = comp->lvaFfrRegister;
-
             LIR::Use use;
             bool     foundUse = BlockRange().TryGetUse(node, &use);
 
@@ -3906,7 +3902,7 @@ void Lowering::CreateFFRDefIfNeeded(GenTreeHWIntrinsic* node)
             assert(!"Unexpected HWIntrinsicId");
     }
 #endif
-    unsigned lclNum = comp->getFFRegisterVarNum();
+    unsigned lclNum         = comp->getFFRegisterVarNum();
     GenTree* ffrReg         = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
     GenTree* storeFfrLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
     BlockRange().InsertBefore(node, ffrReg, storeFfrLclVar);

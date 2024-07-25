@@ -2841,7 +2841,7 @@ void LinearScan::buildIntervals()
 #ifdef HAS_MORE_THAN_64_REGISTERS
     else if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
-        actualRegistersMask  = regMaskTP(~RBM_NONE, availableMaskRegs);
+        actualRegistersMask = regMaskTP(~RBM_NONE, availableMaskRegs);
     }
 #endif
     else
