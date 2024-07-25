@@ -278,10 +278,10 @@ namespace System.Globalization
 
             if (secondaryGroupingSize == 0)
             {
-                return new int[] { primaryGroupingSize };
+                return [primaryGroupingSize];
             }
 
-            return new int[] { primaryGroupingSize, secondaryGroupingSize };
+            return [primaryGroupingSize, secondaryGroupingSize];
         }
 
         private string IcuGetTimeFormatString() => IcuGetTimeFormatString(shortFormat: false);
@@ -490,7 +490,7 @@ namespace System.Globalization
                         return ",,";
 
                     default:
-                        Debug.Assert(false, "[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
+                        Debug.Fail("[CultureData.IcuGetListSeparator] Unexpected ListSeparator value.");
                         break;
                 }
             }

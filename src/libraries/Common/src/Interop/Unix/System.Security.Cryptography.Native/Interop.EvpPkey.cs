@@ -13,36 +13,39 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyCreate")]
         internal static partial SafeEvpPKeyHandle EvpPkeyCreate();
 
-        [LibraryImport(Libraries.CryptoNative)]
-        private static partial SafeEvpPKeyHandle CryptoNative_EvpPKeyDuplicate(
-            SafeEvpPKeyHandle currentKey,
-            EvpAlgorithmId algorithmId);
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
+        internal static partial void EvpPkeyDestroy(IntPtr pkey, IntPtr extraHandle);
 
-        internal static SafeEvpPKeyHandle EvpPKeyDuplicate(
-            SafeEvpPKeyHandle currentKey,
-            EvpAlgorithmId algorithmId)
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyBits")]
+        internal static partial int EvpPKeyBits(SafeEvpPKeyHandle pkey);
+
+        internal static int GetEvpPKeySizeBytes(SafeEvpPKeyHandle pkey)
         {
-            SafeEvpPKeyHandle pkey = CryptoNative_EvpPKeyDuplicate(
-                currentKey,
-                algorithmId);
+            // EVP_PKEY_size returns the maximum suitable size for the output buffers for almost all operations that can be done with the key.
+            // For most of the OpenSSL 'default' provider keys it will return the same size as this method,
+            // but other providers such as 'tpm2' it may return larger size.
+            // Instead we will round up EVP_PKEY_bits result.
+            int keySizeBits = Interop.Crypto.EvpPKeyBits(pkey);
 
-            if (pkey.IsInvalid)
+            if (keySizeBits <= 0)
             {
-                pkey.Dispose();
-                throw CreateOpenSslCryptographicException();
+                Debug.Fail($"EVP_PKEY_bits returned non-positive value: {keySizeBits}");
+                throw new CryptographicException();
             }
 
-            return pkey;
+            return (keySizeBits + 7) / 8;
         }
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
-        internal static partial void EvpPkeyDestroy(IntPtr pkey);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeySize")]
-        internal static partial int EvpPKeySize(SafeEvpPKeyHandle pkey);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
-        internal static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle);
+        private static partial int UpRefEvpPkey(SafeEvpPKeyHandle handle, IntPtr extraHandle);
+
+        internal static int UpRefEvpPkey(SafeEvpPKeyHandle handle)
+        {
+            return UpRefEvpPkey(handle, handle.ExtraHandle);
+        }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPKeyType")]
+        internal static partial EvpAlgorithmId EvpPKeyType(SafeEvpPKeyHandle handle);
 
         [LibraryImport(Libraries.CryptoNative)]
         private static unsafe partial SafeEvpPKeyHandle CryptoNative_DecodeSubjectPublicKeyInfo(
@@ -217,7 +220,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_LoadPrivateKeyFromEngine(
             string engineName,
-            string keyName);
+            string keyName,
+            [MarshalAs(UnmanagedType.Bool)] out bool haveEngine);
 
         internal static SafeEvpPKeyHandle LoadPrivateKeyFromEngine(
             string engineName,
@@ -226,7 +230,13 @@ internal static partial class Interop
             Debug.Assert(engineName is not null);
             Debug.Assert(keyName is not null);
 
-            SafeEvpPKeyHandle pkey = CryptoNative_LoadPrivateKeyFromEngine(engineName, keyName);
+            SafeEvpPKeyHandle pkey = CryptoNative_LoadPrivateKeyFromEngine(engineName, keyName, out bool haveEngine);
+
+            if (!haveEngine)
+            {
+                pkey.Dispose();
+                throw new CryptographicException(SR.Cryptography_EnginesNotSupported);
+            }
 
             if (pkey.IsInvalid)
             {
@@ -240,7 +250,8 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
         private static partial SafeEvpPKeyHandle CryptoNative_LoadPublicKeyFromEngine(
             string engineName,
-            string keyName);
+            string keyName,
+            [MarshalAs(UnmanagedType.Bool)] out bool haveEngine);
 
         internal static SafeEvpPKeyHandle LoadPublicKeyFromEngine(
             string engineName,
@@ -249,7 +260,13 @@ internal static partial class Interop
             Debug.Assert(engineName is not null);
             Debug.Assert(keyName is not null);
 
-            SafeEvpPKeyHandle pkey = CryptoNative_LoadPublicKeyFromEngine(engineName, keyName);
+            SafeEvpPKeyHandle pkey = CryptoNative_LoadPublicKeyFromEngine(engineName, keyName, out bool haveEngine);
+
+            if (!haveEngine)
+            {
+                pkey.Dispose();
+                throw new CryptographicException(SR.Cryptography_EnginesNotSupported);
+            }
 
             if (pkey.IsInvalid)
             {
@@ -258,6 +275,42 @@ internal static partial class Interop
             }
 
             return pkey;
+        }
+
+        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial IntPtr CryptoNative_LoadKeyFromProvider(
+            string providerName,
+            string keyUri,
+            ref IntPtr extraHandle);
+
+        internal static SafeEvpPKeyHandle LoadKeyFromProvider(
+            string providerName,
+            string keyUri)
+        {
+            IntPtr extraHandle = IntPtr.Zero;
+            IntPtr evpPKeyHandle = IntPtr.Zero;
+
+            try
+            {
+                evpPKeyHandle = CryptoNative_LoadKeyFromProvider(providerName, keyUri, ref extraHandle);
+
+                if (evpPKeyHandle == IntPtr.Zero || extraHandle == IntPtr.Zero)
+                {
+                    Debug.Assert(evpPKeyHandle == IntPtr.Zero, "extraHandle should not be null if evpPKeyHandle is not null");
+                    throw CreateOpenSslCryptographicException();
+                }
+
+                return new SafeEvpPKeyHandle(evpPKeyHandle, extraHandle: extraHandle);
+            }
+            catch
+            {
+                if (evpPKeyHandle != IntPtr.Zero || extraHandle != IntPtr.Zero)
+                {
+                    EvpPkeyDestroy(evpPKeyHandle, extraHandle);
+                }
+
+                throw;
+            }
         }
 
         internal enum EvpAlgorithmId

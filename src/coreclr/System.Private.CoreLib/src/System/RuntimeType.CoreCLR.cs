@@ -83,7 +83,7 @@ namespace System
                 if (_count == 0)
                     return Array.Empty<T>();
                 if (_count == 1)
-                    return new T[1] { _item };
+                    return [_item];
 
                 Array.Resize(ref _items, _count);
                 _capacity = _count;
@@ -3569,7 +3569,7 @@ namespace System
                 }
                 catch (TypeLoadException e)
                 {
-                    ValidateGenericArguments(this, new[] { rt }, e);
+                    ValidateGenericArguments(this, [rt], e);
                     throw;
                 }
             }
@@ -4036,7 +4036,7 @@ namespace System
                     paramMod[i] = aArgsIsByRef[i];
                 }
 
-                aParamMod = new ParameterModifier[] { paramMod };
+                aParamMod = [paramMod];
                 if (aArgsWrapperTypes != null)
                 {
                     WrapArgsForInvokeCall(aArgs, aArgsWrapperTypes);
@@ -4124,11 +4124,11 @@ namespace System
                     ConstructorInfo wrapperCons;
                     if (isString)
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(string) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(string)])!;
                     }
                     else
                     {
-                        wrapperCons = wrapperType.GetConstructor(new Type[] { typeof(object) })!;
+                        wrapperCons = wrapperType.GetConstructor([typeof(object)])!;
                     }
 
                     // Wrap each of the elements of the array.
@@ -4136,11 +4136,11 @@ namespace System
                     {
                         if (isString)
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { (string?)oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([(string?)oldArray.GetValue(currElem)]);
                         }
                         else
                         {
-                            newArray[currElem] = wrapperCons.Invoke(new object?[] { oldArray.GetValue(currElem) });
+                            newArray[currElem] = wrapperCons.Invoke([oldArray.GetValue(currElem)]);
                         }
                     }
 

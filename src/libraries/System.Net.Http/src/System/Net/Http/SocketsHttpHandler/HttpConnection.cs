@@ -67,8 +67,7 @@ namespace System.Net.Http
         private bool _canRetry;
         private bool _connectionClose; // Connection: close was seen on last response
 
-        private const int Status_Disposed = 1;
-        private int _disposed;
+        private volatile bool _disposed;
 
         public HttpConnection(
             HttpConnectionPool pool,
@@ -98,7 +97,7 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            if (Interlocked.Exchange(ref _disposed, Status_Disposed) != Status_Disposed)
+            if (!Interlocked.Exchange(ref _disposed, true))
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
 
@@ -873,7 +872,7 @@ namespace System.Net.Http
                     // In case the connection is disposed, it's most probable that
                     // expect100Continue timer expired and request content sending failed.
                     // We're awaiting the task to propagate the exception in this case.
-                    if (Volatile.Read(ref _disposed) == Status_Disposed)
+                    if (_disposed)
                     {
                         try
                         {

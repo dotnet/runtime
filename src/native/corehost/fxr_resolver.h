@@ -12,7 +12,18 @@
 
 namespace fxr_resolver
 {
+    // Keep in sync with DotNetRootOptions.SearchLocation in HostWriter.cs
+    enum search_location : uint8_t
+    {
+        search_location_default = 0,
+        search_location_app_local = 1 << 0,             // Next to the app
+        search_location_app_relative = 1 << 1,          // Path relative to the app read from the app binary
+        search_location_environment_variable = 1 << 2,  // DOTNET_ROOT[_<arch>] environment variables
+        search_location_global = 1 << 3,                // Registered and default global locations
+    };
+
     bool try_get_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path);
+    bool try_get_path(const pal::string_t& root_path, search_location search, /*opt*/ pal::string_t* embedded_dotnet_root, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path);
     bool try_get_path_from_dotnet_root(const pal::string_t& dotnet_root, pal::string_t* out_fxr_path);
     bool try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_fxr_path);
 }

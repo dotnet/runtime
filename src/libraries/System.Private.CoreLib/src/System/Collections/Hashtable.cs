@@ -937,7 +937,7 @@ namespace System.Collections
 
         private void putEntry(Bucket[] newBuckets, object key, object? nvalue, int hashcode)
         {
-            Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
+            Debug.Assert(hashcode >= 0);  // make sure collision bit (sign bit) wasn't set.
 
             uint seed = (uint)hashcode;
             uint incr = unchecked((uint)(1 + ((seed * HashHelpers.HashPrime) % ((uint)newBuckets.Length - 1))));

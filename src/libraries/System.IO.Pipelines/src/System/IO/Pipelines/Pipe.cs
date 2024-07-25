@@ -132,7 +132,7 @@ namespace System.IO.Pipelines
 
             if (sizeHint < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sizeHint);
             }
 
             AllocateWriteHeadIfNeeded(sizeHint);
@@ -149,7 +149,7 @@ namespace System.IO.Pipelines
 
             if (sizeHint < 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.sizeHint);
             }
 
             AllocateWriteHeadIfNeeded(sizeHint);

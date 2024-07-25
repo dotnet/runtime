@@ -2265,7 +2265,6 @@ private:
         inline BOOL             IsMethodImpl();
         inline MethodClassification MethodType();
         inline bmtMDMethod     *GetMDMethod() const;
-        inline MethodDesc      *GetIntroducingMethodDesc();
         inline bmtMDMethod *    operator->();
         inline bmtMDMethod *    operator*() { WRAPPER_NO_CONTRACT; return GetMDMethod(); }
     };  // class DeclaredMethodIterator
