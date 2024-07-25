@@ -3768,7 +3768,6 @@ void MethodTable::CheckRunClassInitThrowing()
     if (IsSharedByGenericInstantiations())
         return;
 
-    // For back-compat reasons, act like it has already been initialized
     _ASSERTE(!ContainsGenericVariables());
 
     EnsureStaticDataAllocated();
