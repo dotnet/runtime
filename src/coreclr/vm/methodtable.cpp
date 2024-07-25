@@ -3769,8 +3769,7 @@ void MethodTable::CheckRunClassInitThrowing()
         return;
 
     // For back-compat reasons, act like it has already been initialized
-    if (ContainsGenericVariables())
-        return;
+    _ASSERTE(!ContainsGenericVariables());
 
     EnsureStaticDataAllocated();
     DoRunClassInitThrowing();
