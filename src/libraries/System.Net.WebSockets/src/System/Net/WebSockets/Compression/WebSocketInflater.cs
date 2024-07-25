@@ -56,6 +56,11 @@ namespace System.Net.WebSockets.Compression
 
         public Span<byte> Span => _buffer.AsSpan(_position + _available);
 
+        /// <summary>
+        /// How many unconsumed bytes are left in the inflate buffer.
+        /// </summary>
+        internal int UnconsumedCount => _available;
+
         public void Dispose()
         {
             _stream?.Dispose();

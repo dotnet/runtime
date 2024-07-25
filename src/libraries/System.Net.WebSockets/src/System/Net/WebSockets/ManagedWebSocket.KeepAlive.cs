@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,6 +12,8 @@ namespace System.Net.WebSockets
     internal sealed partial class ManagedWebSocket : WebSocket
     {
         private bool IsUnsolicitedPongKeepAlive => _keepAlivePingState is null;
+        private static bool IsValidSendState(WebSocketState state) => Array.IndexOf(s_validSendStates, state) != -1;
+        private static bool IsValidReceiveState(WebSocketState state) => Array.IndexOf(s_validReceiveStates, state) != -1;
 
         private void HeartBeat()
         {
@@ -31,38 +32,24 @@ namespace System.Net.WebSockets
             // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
             // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
             // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
-            ObserveWhenCompleted(
-                SendPongAsync());
+            FireAndForgetHelper.Observe(
+                TrySendKeepAliveFrameAsync(MessageOpcode.Pong));
         }
 
-        private static void ObserveWhenCompleted(ValueTask t)
+        private ValueTask TrySendKeepAliveFrameAsync(MessageOpcode opcode, ReadOnlyMemory<byte>? payload = null)
         {
-            if (t.IsCompletedSuccessfully)
-            {
-                t.GetAwaiter().GetResult();
-            }
-            else
-            {
-                ObserveExceptionWhenCompleted(t.AsTask());
-            }
-        }
+            Debug.Assert(opcode is MessageOpcode.Pong || !IsUnsolicitedPongKeepAlive && opcode is MessageOpcode.Ping);
 
-        // "Observe" any exception, ignoring it to prevent the unobserved exception event from being raised.
-        private static void ObserveExceptionWhenCompleted(Task t)
-        {
-            t.ContinueWith(static p => { _ = p.Exception; },
-                CancellationToken.None,
-                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default);
-        }
+            payload ??= ReadOnlyMemory<byte>.Empty;
 
-        private ValueTask SendPongAsync()
-            => SendFrameAsync(
-                MessageOpcode.Pong,
-                endOfMessage: true,
-                disableCompression: true,
-                ReadOnlyMemory<byte>.Empty,
-                CancellationToken.None);
+            if (!IsValidSendState(_state))
+            {
+                // we can't send any frames, but no need to throw as we are not observing errors anyway
+                return ValueTask.CompletedTask;
+            }
+
+            return SendFrameAsync(opcode, endOfMessage: true, disableCompression: true, payload.Value, CancellationToken.None);
+        }
 
         private void KeepAlivePingHeartBeat()
         {
@@ -99,75 +86,101 @@ namespace System.Net.WebSockets
                 throw new WebSocketException(WebSocketError.Faulted, SR.net_Websockets_KeepAlivePingTimeout);
             }
 
-            ObserveWhenCompleted(
-                TryIssueReadAheadAsync());
+            TryIssueReadAhead();
         }
 
-        private ValueTask TryIssueReadAheadAsync()
+        private void TryIssueReadAhead()
         {
             Debug.Assert(_readAheadState != null);
 
-            if (_receiveMutex.IsHeld)
+            if (!_receiveMutex.TryEnter())
             {
-                // Read (either user read, or previous read-ahead) is already in progress, no need to issue read-ahead
-                return ValueTask.CompletedTask;
+                // Read (either a user read, or a previous read-ahead)
+                // is already in progress, so there's no need to issue a read-ahead.
+                // If that read will not end up processing the pong response,
+                // we'll try again on the next heartbeat
+                return;
             }
 
-            Task lockTask = _receiveMutex.EnterAsync(CancellationToken.None);
+            bool shouldExitMutex = true;
 
-            if (lockTask.IsCompletedSuccessfully)
-            {
-                TryIssueReadAhead_LockTaken();
-                return ValueTask.CompletedTask;
-            }
-
-            return TryIssueReadAhead_Async(lockTask);
-        }
-
-        private void TryIssueReadAhead_LockTaken()
-        {
             try
             {
-                if (_readAheadState!.ReadAheadTask is not null) // previous read-ahead is not consumed yet
+                if (!IsValidReceiveState(_state))
                 {
-                    _receiveMutex.Exit();
+                    // we can't receive any frames, but no need to throw as we are not observing errors anyway
                     return;
                 }
 
-                _readAheadState!.ReadAheadTask = DoReadAheadAsync().AsTask(); //todo optimize to use value task??
-                // note: DoReadAheadAsync will handle releasing the mutex on this code path
+                if (_readAheadState!.ReadAheadTask is not null) // previous read-ahead is not consumed yet
+                {
+                    return;
+                }
+
+                _readAheadState!.ReadAheadTask = DoReadAheadAndExitMutexAsync(); // the task will release the mutex when completed
+                shouldExitMutex = false;
             }
-            catch
+            finally
             {
-                _receiveMutex.Exit();
-                throw;
+                if (shouldExitMutex)
+                {
+                    _receiveMutex.Exit();
+                }
             }
         }
 
-        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
-        private async ValueTask DoReadAheadAsync() // this is assigned to ReadAheadTask
+        private async Task DoReadAheadAndExitMutexAsync() // this is assigned to ReadAheadTask
         {
             Debug.Assert(_receiveMutex.IsHeld);
+            Debug.Assert(IsValidReceiveState(_state));
 
             try
             {
-                // issue zero-byte read first
-                await ReceiveAsyncPrivate_LockAquired<ValueWebSocketReceiveResult>(Array.Empty<byte>(), CancellationToken.None).ConfigureAwait(false);
+                // Issue a zero-byte read first.
+                // Note that if the other side never sends any data frames at all, this single call
+                // will continue draining all the (upcoming) pongs until the connection is closed
+                ValueWebSocketReceiveResult result = await ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(
+                    Array.Empty<byte>(),
+                    shouldEnterMutex: false, // we are already in the mutex
+                    shouldAbortOnCanceled: false, // we don't have a cancellation token
+                    CancellationToken.None).ConfigureAwait(false);
 
-                _readAheadState!.Buffer.EnsureAvailableSpace(ReadAheadState.ReadAheadBufferSize);
-                _readAheadState.BufferedResult = await ReceiveAsyncPrivate_LockAquired<ValueWebSocketReceiveResult>(_readAheadState.Buffer.ActiveMemory, CancellationToken.None).ConfigureAwait(false);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    _readAheadState!.BufferedResult = result;
+                    return;
+                }
+
+                Debug.Assert(IsValidReceiveState(_state));
+
+                // If, during a zero-byte read, Pong was available before a data frame,
+                // it will be already processed by now. However, let's still
+                // do the actual read, as we're already in the mutex and
+                // ReceiveAsyncPrivate has already read the next data frame header
+
+                Debug.Assert(!_lastReceiveHeader.Processed);
+
+                // (Remaining) PayloadLength can be 0 if the message is compressed and not fully inflated yet
+                // UnconsumedCount doesn't give us any information about the inflated size, but it's as good guess as any
+                int bufferSize = (int)Math.Min(
+                    Math.Max(_lastReceiveHeader.PayloadLength, _lastReceiveHeader.Compressed ? _inflater!.UnconsumedCount + 1 : 0),
+                    ReadAheadState.MaxReadAheadBufferSize);
+
+                Debug.Assert(bufferSize > 0);
+
+                // the buffer is returned to pool after read-ahead data is consumed by the user
+                _readAheadState!.Buffer.EnsureAvailableSpace(bufferSize);
+
+                _readAheadState.BufferedResult = await ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(
+                    _readAheadState.Buffer.ActiveMemory,
+                    shouldEnterMutex: false, // we are already in the mutex
+                    shouldAbortOnCanceled: false, // we don't have a cancellation token
+                    CancellationToken.None).ConfigureAwait(false);
             }
             finally
             {
                 _receiveMutex.Exit();
             }
-        }
-
-        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
-        private async ValueTask TryIssueReadAhead_Async(Task lockTask)
-        {
-            await lockTask.ConfigureAwait(false);
-            TryIssueReadAhead_LockTaken();
         }
 
         private void SendKeepAlivePingIfNeeded()
@@ -186,15 +199,11 @@ namespace System.Net.WebSockets
 
                 long pingPayload = Interlocked.Increment(ref _keepAlivePingState.PingPayload);
 
-                ObserveWhenCompleted(
+                FireAndForgetHelper.Observe(
                     SendPingAsync(pingPayload));
-
-                ObserveWhenCompleted(
-                    TryIssueReadAheadAsync());
             }
         }
 
-        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
         private async ValueTask SendPingAsync(long pingPayload)
         {
             Debug.Assert(_keepAlivePingState != null);
@@ -204,12 +213,12 @@ namespace System.Net.WebSockets
             BinaryPrimitives.WriteInt64BigEndian(pingPayloadBuffer, pingPayload);
             try
             {
-                await SendFrameAsync(
+                await TrySendKeepAliveFrameAsync(
                     MessageOpcode.Ping,
-                    endOfMessage: true,
-                    disableCompression: true,
-                    pingPayloadBuffer.AsMemory(0, sizeof(long)),
-                    CancellationToken.None).ConfigureAwait(false);
+                    pingPayloadBuffer.AsMemory(0, sizeof(long)))
+                    .ConfigureAwait(false);
+
+                TryIssueReadAhead();
             }
             finally
             {
@@ -283,7 +292,7 @@ namespace System.Net.WebSockets
 
         private sealed class ReadAheadState : IDisposable
         {
-            internal const int ReadAheadBufferSize = 16384; // TODO: 4096 ?
+            internal const int MaxReadAheadBufferSize = 16 * 1024 * 1024; // same as DefaultHttp2MaxStreamWindowSize
             internal ArrayBuffer Buffer;
             internal ValueWebSocketReceiveResult BufferedResult;
             internal Task? ReadAheadTask;
@@ -330,7 +339,7 @@ namespace System.Net.WebSockets
                     {
                         result = BufferedResult;
                         BufferedResult = default;
-                        Buffer.ClearAndReturnBuffer(); // TODO: should we return or keep the buffer??
+                        Buffer.ClearAndReturnBuffer();
                         return result;
                     }
 
@@ -359,7 +368,7 @@ namespace System.Net.WebSockets
 
                 if (ReadAheadTask is not null)
                 {
-                    ObserveExceptionWhenCompleted(ReadAheadTask);
+                    FireAndForgetHelper.ObserveException(ReadAheadTask);
                     ReadAheadTask = null;
                 }
                 BufferedResult = default;

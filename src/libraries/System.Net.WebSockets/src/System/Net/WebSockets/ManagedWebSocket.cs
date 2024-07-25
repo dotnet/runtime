@@ -341,7 +341,7 @@ namespace System.Net.WebSockets
             {
                 WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
-                return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken).AsTask();
+                return ReceiveAsyncPrivate<WebSocketReceiveResult>(buffer, cancellationToken: cancellationToken).AsTask();
             }
             catch (Exception exc)
             {
@@ -355,7 +355,7 @@ namespace System.Net.WebSockets
             {
                 WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
-                return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken);
+                return ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(buffer, cancellationToken: cancellationToken);
             }
             catch (Exception exc)
             {
@@ -670,31 +670,6 @@ namespace System.Net.WebSockets
             return maskOffset;
         }
 
-        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
-        private async ValueTask<TResult> ReceiveAsyncPrivate<TResult>(Memory<byte> payloadBuffer, CancellationToken cancellationToken)
-        {
-            CancellationTokenRegistration registration = cancellationToken.CanBeCanceled
-                ? cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this)
-                : default;
-
-            try
-            {
-                await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
-                try
-                {
-                    return await ReceiveAsyncPrivate_LockAquired<TResult>(payloadBuffer, cancellationToken).ConfigureAwait(false);
-                }
-                finally
-                {
-                    _receiveMutex.Exit();
-                }
-            }
-            finally
-            {
-                registration.Dispose();
-            }
-        }
-
         /// <summary>Writes a 4-byte random mask to the specified buffer at the specified offset.</summary>
         /// <param name="buffer">The buffer to which to write the mask.</param>
         /// <param name="offset">The offset into the buffer at which to write the mask.</param>
@@ -707,10 +682,16 @@ namespace System.Net.WebSockets
         /// as part of this operation, but data about them will not be returned.
         /// </summary>
         /// <param name="payloadBuffer">The buffer into which payload data should be written.</param>
+        /// <param name="shouldEnterMutex">If false, (dangerous!) the mutex is already held by the caller.</param>
+        /// <param name="shouldAbortOnCanceled">If false, the caller has already registered to Abort() on cancellation.</param>
         /// <param name="cancellationToken">The CancellationToken used to cancel the websocket.</param>
         /// <returns>Information about the received message.</returns>
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
-        private async ValueTask<TResult> ReceiveAsyncPrivate_LockAquired<TResult>(Memory<byte> payloadBuffer, CancellationToken cancellationToken)
+        private async ValueTask<TResult> ReceiveAsyncPrivate<TResult>(
+            Memory<byte> payloadBuffer,
+            bool shouldEnterMutex = true,
+            bool shouldAbortOnCanceled = true,
+            CancellationToken cancellationToken = default)
         {
             // This is a long method.  While splitting it up into pieces would arguably help with readability, doing so would
             // also result in more allocations, as each async method that yields ends up with multiple allocations.  The impact
@@ -720,10 +701,24 @@ namespace System.Net.WebSockets
             // those to be much less frequent (e.g. we should only get one close per websocket), and thus we can afford to pay
             // a bit more for readability and maintainability.
 
-            Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
+            Debug.Assert(
+                shouldEnterMutex || _receiveMutex.IsHeld,
+                $"If passing {nameof(shouldEnterMutex)}=false, the caller should hold the {nameof(_receiveMutex)}");
+
+            CancellationTokenRegistration registration = shouldAbortOnCanceled && cancellationToken.CanBeCanceled
+                ? cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this)
+                : default;
+
+            bool shouldExitMutex = false;
 
             try
             {
+                if (shouldEnterMutex)
+                {
+                    await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
+                    shouldExitMutex = true;
+                }
+
                 ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
                 _keepAlivePingState?.ThrowIfFaulted();
 
@@ -935,6 +930,23 @@ namespace System.Net.WebSockets
                 }
 
                 throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+            }
+            finally
+            {
+                registration.Dispose();
+
+                if (shouldExitMutex) // this is a user-issued read
+                {
+                    _receiveMutex.Exit();
+
+                    if (_keepAlivePingState is not null && _readAheadState is not null && // if we are using keep-alive pings
+                        _keepAlivePingState.AwaitingPong && // and we are still waiting for the pong response
+                        _readAheadState.ReadAheadTask is null && // and we've completely consumed the previous read-ahead
+                        _lastReceiveHeader.Processed) // and with the current read we've processed the entire data frame
+                    {
+                        TryIssueReadAhead(); // let's check in case the pong is just after the current message
+                    }
+                }
             }
         }
 
@@ -1318,46 +1330,40 @@ namespace System.Net.WebSockets
             {
                 // Wait until we've received a close response
                 byte[] closeBuffer = ArrayPool<byte>.Shared.Rent(MaxMessageHeaderLength + MaxControlPayloadLength);
+                CancellationTokenRegistration registration = default;
                 try
                 {
+                    if (cancellationToken.CanBeCanceled)
+                    {
+                        registration = cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this);
+                    }
+
                     // Loop until we've received a close frame.
                     while (!_receivedCloseFrame)
                     {
-                        // Enter the receive lock in order to get a consistent view of whether we've received a close
-                        // frame.  If we haven't, issue a receive.  Since that receive will try to take the same
-                        // non-entrant receive lock, we then exit the lock before waiting for the receive to complete,
-                        // as it will always complete asynchronously and only after we've exited the lock.
-                        ValueTask<ValueWebSocketReceiveResult> receiveTask = default;
+                        await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
                         try
                         {
-                            await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
-                            try
+                            if (!_receivedCloseFrame)
                             {
-                                if (!_receivedCloseFrame)
-                                {
-                                    receiveTask = ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(closeBuffer, cancellationToken);
-                                }
-                            }
-                            finally
-                            {
-                                _receiveMutex.Exit();
+                                await ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(
+                                    closeBuffer,
+                                    shouldEnterMutex: false, // we're already lolding the mutex
+                                    shouldAbortOnCanceled: false, // we've already registered for cancellation
+                                    cancellationToken)
+                                    .ConfigureAwait(false);
                             }
                         }
-                        catch (OperationCanceledException)
+                        finally
                         {
-                            // If waiting on the receive lock was canceled, abort the connection, as we would do
-                            // as part of the receive itself.
-                            Abort();
-                            throw;
+                            _receiveMutex.Exit();
                         }
-
-                        // Wait for the receive to complete if we issued one.
-                        await receiveTask.ConfigureAwait(false);
                     }
                 }
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(closeBuffer);
+                    registration.Dispose();
                 }
             }
 

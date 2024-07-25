@@ -46,6 +46,12 @@ namespace System.Threading
         /// <summary>Gets the object used to synchronize contended operations.</summary>
         private object SyncObj => this;
 
+        /// <summary>Attempts to syncronously enter the mutex.</summary>
+        /// <remarks>This will succeed in case the mutex is not currently held nor contended.</remarks>
+        /// <returns>Whether the mutex has been entered.</returns>
+        public bool TryEnter()
+            => Interlocked.CompareExchange(ref _gate, 0, 1) == 1;
+
         /// <summary>Asynchronously waits to enter the mutex.</summary>
         /// <param name="cancellationToken">The CancellationToken token to observe.</param>
         /// <returns>A task that will complete when the mutex has been entered or the enter canceled.</returns>

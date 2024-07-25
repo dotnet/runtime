@@ -14,6 +14,7 @@
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\WebSockets\AsyncMutex.cs" />
+    <Compile Include="System\Net\WebSockets\FireAndForgetHelper.cs" />
     <Compile Include="System\Net\WebSockets\Compression\WebSocketDeflater.cs" />
     <Compile Include="System\Net\WebSockets\Compression\WebSocketInflater.cs" />
     <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
