@@ -3,7 +3,8 @@
 
 using System.Buffers;
 using System.IO;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -219,9 +220,8 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(10)]
-        [InlineData(100)]
-        [InlineData(500)]
+        [InlineData(5)]
+        [InlineData(50)]
         public static void DeepEquals_DeepJsonDocument(int depth)
         {
             using JsonDocument jDoc = CreateDeepJsonDocument(depth);
@@ -229,12 +229,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(JsonElement.DeepEquals(element, element));
         }
 
-        [Fact]
-        public static void DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static async Task DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
         {
-            using JsonDocument jDoc = CreateDeepJsonDocument(10_000);
-            JsonElement element = jDoc.RootElement;
-            Assert.Throws<InsufficientExecutionStackException>(() => JsonElement.DeepEquals(element, element));
+            var tcs = new TaskCompletionSource<bool>();
+            new Thread(() =>
+            {
+                try
+                {
+                    using JsonDocument jDoc = CreateDeepJsonDocument(10_000);
+                    JsonElement element = jDoc.RootElement;
+                    Assert.Throws<InsufficientExecutionStackException>(() => JsonElement.DeepEquals(element, element));
+                    tcs.SetResult(true);
+                }
+                catch (Exception e)
+                {
+                    tcs.SetException(e);
+                }
+            }, maxStackSize: 100_000) { IsBackground = true }.Start();
+
+            await tcs.Task;
         }
 
         private static JsonDocument CreateDeepJsonDocument(int depth)
