@@ -1635,7 +1635,20 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
+    {
+        return true;
+    }
+
+    // TODO: we can recognize more non-null idioms here, e.g.
+    // ADD(IsKnownNonNull(op1), smallCns), etc.
+
+    return false;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -1731,6 +1744,14 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
 
         case CEA_Handle:
             m_defs = new (alloc) VNHandle[ChunkSize];
+            break;
+
+        case CEA_PhiDef:
+            m_defs = new (alloc) VNPhiDef[ChunkSize];
+            break;
+
+        case CEA_MemoryPhiDef:
+            m_defs = new (alloc) VNMemoryPhiDef[ChunkSize];
             break;
 
         case CEA_Func0:
@@ -2860,8 +2881,7 @@ ValueNum ValueNumStore::VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum 
 //
 // Return Value:     - Returns the ValueNum associated with 'func'('arg0VN','arg1VN','arg1VN)
 //
-// Note: - This method only handles Trinary operations
-//         We have to special case VNF_PhiDef, as it's first two arguments are not ValueNums
+// Note: - This method only handles ternary operations
 //
 ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN)
 {
@@ -2874,15 +2894,8 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 #ifdef DEBUG
     // Function arguments carry no exceptions.
     //
-    if (func != VNF_PhiDef)
-    {
-        // For a phi definition first and second argument are "plain" local/ssa numbers.
-        // (I don't know if having such non-VN arguments to a VN function is a good idea -- if we wanted to declare
-        // ValueNum to be "short" it would be a problem, for example.  But we'll leave it for now, with these explicit
-        // exceptions.)
-        assert(arg0VN == VNNormalValue(arg0VN));
-        assert(arg1VN == VNNormalValue(arg1VN));
-    }
+    assert(arg0VN == VNNormalValue(arg0VN));
+    assert(arg1VN == VNNormalValue(arg1VN));
     assert(arg2VN == VNNormalValue(arg2VN));
 #endif
 
@@ -2956,6 +2969,123 @@ ValueNum ValueNumStore::VNForFunc(
         *resultVN                               = c->m_baseVN + offsetWithinChunk;
     }
     return *resultVN;
+}
+
+// ----------------------------------------------------------------------------------------
+// VNForPhiDef - Return a new VN number for a phi definition.
+//
+// Arguments:
+//   type    - Type of the local
+//   lclNum  - Local corresponding to the phidef
+//   ssaDef  - SSA number representing the phi def
+//   ssaArgs - SSA numbers from the predecessors
+//
+// Return Value:
+//   New value number
+//
+ValueNum ValueNumStore::VNForPhiDef(var_types type, unsigned lclNum, unsigned ssaDef, ArrayStack<unsigned>& ssaArgs)
+{
+    unsigned* newSsaArgs = m_alloc.allocate<unsigned>((unsigned)ssaArgs.Height());
+    memcpy(newSsaArgs, ssaArgs.Data(), (unsigned)ssaArgs.Height() * sizeof(ValueNum));
+
+    Chunk* const c        = GetAllocChunk(type, CEA_PhiDef);
+    unsigned     index    = c->AllocVN();
+    VNPhiDef*    inserted = &static_cast<VNPhiDef*>(c->m_defs)[index];
+
+    inserted->LclNum  = lclNum;
+    inserted->SsaDef  = ssaDef;
+    inserted->SsaArgs = newSsaArgs;
+    inserted->NumArgs = (unsigned)ssaArgs.Height();
+
+    ValueNum newVN = c->m_baseVN + index;
+    return newVN;
+}
+
+// ----------------------------------------------------------------------------------------
+// GetPhiDef - Check if a VN represents a phi definition and if so, look up
+// information about it.
+//
+// Arguments:
+//   vn     - Value number
+//   phiDef - [out] Information about the phi definition
+//
+// Return Value:
+//   True if the VN is a phi def.
+//
+bool ValueNumStore::GetPhiDef(ValueNum vn, VNPhiDef* phiDef)
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+
+    Chunk*   c      = m_chunks.GetNoExpand(GetChunkNum(vn));
+    unsigned offset = ChunkOffset(vn);
+    assert(offset < c->m_numUsed);
+    if (c->m_attribs == CEA_PhiDef)
+    {
+        *phiDef = static_cast<VNPhiDef*>(c->m_defs)[offset];
+        return true;
+    }
+
+    return false;
+}
+
+// ----------------------------------------------------------------------------------------
+// VNForMemoryPhiDef - Return a new VN number for a memory phi definition.
+//
+// Arguments:
+//   block   - Block with the definition
+//   ssaArgs - SSA numbers from the predecessors
+//
+// Return Value:
+//   New value number
+//
+ValueNum ValueNumStore::VNForMemoryPhiDef(BasicBlock* block, ArrayStack<unsigned>& ssaArgs)
+{
+    unsigned* newSsaArgs = m_alloc.allocate<unsigned>((unsigned)ssaArgs.Height());
+    memcpy(newSsaArgs, ssaArgs.Data(), (unsigned)ssaArgs.Height() * sizeof(ValueNum));
+
+    Chunk* const    c        = GetAllocChunk(TYP_HEAP, CEA_MemoryPhiDef);
+    unsigned        index    = c->AllocVN();
+    VNMemoryPhiDef* inserted = &static_cast<VNMemoryPhiDef*>(c->m_defs)[index];
+
+    inserted->Block   = block;
+    inserted->SsaArgs = newSsaArgs;
+    inserted->NumArgs = (unsigned)ssaArgs.Height();
+
+    ValueNum newVN = c->m_baseVN + index;
+    return newVN;
+}
+
+// ----------------------------------------------------------------------------------------
+// GetMemoryPhiDef - Check if a VN represents a memory phi definition and if
+// so, look up information about it.
+//
+// Arguments:
+//   vn     - Value number
+//   phiDef - [out] Information about the memory phi definition
+//
+// Return Value:
+//   True if the VN is a memory phi def.
+//
+bool ValueNumStore::GetMemoryPhiDef(ValueNum vn, VNMemoryPhiDef* memoryPhiDef)
+{
+    if (vn == NoVN)
+    {
+        return false;
+    }
+
+    Chunk*   c      = m_chunks.GetNoExpand(GetChunkNum(vn));
+    unsigned offset = ChunkOffset(vn);
+    assert(offset < c->m_numUsed);
+    if (c->m_attribs == CEA_MemoryPhiDef)
+    {
+        *memoryPhiDef = static_cast<VNMemoryPhiDef*>(c->m_defs)[offset];
+        return true;
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -3074,81 +3204,81 @@ ValueNum ValueNumStore::VNForMapPhysicalSelect(
     return result;
 }
 
-typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
-
-class SmallValueNumSet
+bool ValueNumStore::SmallValueNumSet::Lookup(ValueNum vn)
 {
-    union
+    // O(N) lookup for inline elements
+    if (m_numElements <= ArrLen(m_inlineElements))
     {
-        ValueNum     m_inlineElements[4];
-        ValueNumSet* m_set;
-    };
-    unsigned m_numElements = 0;
+        for (unsigned i = 0; i < m_numElements; i++)
+        {
+            if (m_inlineElements[i] == vn)
+            {
+                return true;
+            }
+        }
 
-public:
-    unsigned Count()
-    {
-        return m_numElements;
+        // Not found
+        return false;
     }
 
-    template <typename Func>
-    void ForEach(Func func)
+    return m_set->Lookup(vn);
+}
+
+// Returns false if the value already exists
+bool ValueNumStore::SmallValueNumSet::Add(Compiler* comp, ValueNum vn)
+{
+    if (m_numElements <= ArrLen(m_inlineElements))
     {
-        if (m_numElements <= ArrLen(m_inlineElements))
+        for (unsigned i = 0; i < m_numElements; i++)
         {
-            for (unsigned i = 0; i < m_numElements; i++)
+            if (m_inlineElements[i] == vn)
             {
-                func(m_inlineElements[i]);
+                // Already exists
+                return false;
             }
+        }
+
+        if (m_numElements < ArrLen(m_inlineElements))
+        {
+            m_inlineElements[m_numElements] = vn;
+            m_numElements++;
         }
         else
         {
-            for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+            ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
+            for (ValueNum oldVn : m_inlineElements)
             {
-                func(vn);
+                set->Set(oldVn, true);
             }
+
+            set->Set(vn, true);
+
+            m_set = set;
+            m_numElements++;
+            assert(m_numElements == set->GetCount());
         }
+        return true;
     }
 
-    void Add(Compiler* comp, ValueNum vn)
-    {
-        if (m_numElements <= ArrLen(m_inlineElements))
-        {
-            for (unsigned i = 0; i < m_numElements; i++)
-            {
-                if (m_inlineElements[i] == vn)
-                {
-                    return;
-                }
-            }
+    bool exists   = m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
+    m_numElements = m_set->GetCount();
+    return !exists;
+}
 
-            if (m_numElements < ArrLen(m_inlineElements))
-            {
-                m_inlineElements[m_numElements] = vn;
-                m_numElements++;
-            }
-            else
-            {
-                ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
-                for (ValueNum oldVn : m_inlineElements)
-                {
-                    set->Set(oldVn, true);
-                }
-
-                set->Set(vn, true);
-
-                m_set = set;
-                m_numElements++;
-                assert(m_numElements == set->GetCount());
-            }
-        }
-        else
-        {
-            m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
-            m_numElements = m_set->GetCount();
-        }
-    }
-};
+//------------------------------------------------------------------------------
+// VNPhiDefToVN: Extracts the VN for a specific argument of a phi definition.
+//
+// Arguments:
+//    phiDef    - The phi definition
+//    ssaArgNum - The argument number to extract
+//
+// Return Value:
+//    The VN for the specified argument of the phi definition.
+//
+ValueNum ValueNumStore::VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum)
+{
+    return m_pComp->lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaArgs[ssaArgNum])->m_vnPair.Get(VNK_Conservative);
+}
 
 //------------------------------------------------------------------------------
 // VNForMapSelectInner: Select value from a map and record loop memory dependencies.
@@ -3440,141 +3570,110 @@ TailCall:
                 }
                 break;
 
-            case VNF_PhiDef:
-            case VNF_PhiMemoryDef:
-            {
-                unsigned  lclNum   = BAD_VAR_NUM;
-                bool      isMemory = false;
-                VNFuncApp phiFuncApp;
-                bool      defArgIsFunc = false;
-                if (funcApp.m_func == VNF_PhiDef)
-                {
-                    lclNum       = unsigned(funcApp.m_args[0]);
-                    defArgIsFunc = GetVNFunc(funcApp.m_args[2], &phiFuncApp);
-                }
-                else
-                {
-                    assert(funcApp.m_func == VNF_PhiMemoryDef);
-                    isMemory     = true;
-                    defArgIsFunc = GetVNFunc(funcApp.m_args[1], &phiFuncApp);
-                }
-                if (defArgIsFunc && phiFuncApp.m_func == VNF_Phi)
-                {
-                    // select(phi(m1, m2), x): if select(m1, x) == select(m2, x), return that, else new fresh.
-                    // Get the first argument of the phi.
-
-                    // We need to be careful about breaking infinite recursion.  Record the outer select.
-                    m_fixedPointMapSels.Push(VNDefFuncApp<2>(VNF_MapSelect, map, index));
-
-                    assert(IsVNConstant(phiFuncApp.m_args[0]));
-                    unsigned phiArgSsaNum = ConstantValue<unsigned>(phiFuncApp.m_args[0]);
-                    ValueNum phiArgVN;
-                    if (isMemory)
-                    {
-                        phiArgVN = m_pComp->GetMemoryPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
-                    }
-                    else
-                    {
-                        phiArgVN = m_pComp->lvaTable[lclNum].GetPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
-                    }
-                    if (phiArgVN != ValueNumStore::NoVN)
-                    {
-                        bool     allSame       = true;
-                        ValueNum argRest       = phiFuncApp.m_args[1];
-                        ValueNum sameSelResult = VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget,
-                                                                    pUsedRecursiveVN, recMemoryDependencies);
-
-                        // It is possible that we just now exceeded our budget, if so we need to force an early exit
-                        // and stop calling VNForMapSelectWork
-                        if (*pBudget <= 0)
-                        {
-                            // We don't have any budget remaining to verify that all phiArgs are the same
-                            // so setup the default failure case now.
-                            allSame = false;
-                        }
-
-                        while (allSame && argRest != ValueNumStore::NoVN)
-                        {
-                            ValueNum  cur = argRest;
-                            VNFuncApp phiArgFuncApp;
-                            if (GetVNFunc(argRest, &phiArgFuncApp) && phiArgFuncApp.m_func == VNF_Phi)
-                            {
-                                cur     = phiArgFuncApp.m_args[0];
-                                argRest = phiArgFuncApp.m_args[1];
-                            }
-                            else
-                            {
-                                argRest = ValueNumStore::NoVN; // Cause the loop to terminate.
-                            }
-                            assert(IsVNConstant(cur));
-                            phiArgSsaNum = ConstantValue<unsigned>(cur);
-                            if (isMemory)
-                            {
-                                phiArgVN = m_pComp->GetMemoryPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
-                            }
-                            else
-                            {
-                                phiArgVN = m_pComp->lvaTable[lclNum].GetPerSsaData(phiArgSsaNum)->m_vnPair.Get(vnk);
-                            }
-                            if (phiArgVN == ValueNumStore::NoVN)
-                            {
-                                allSame = false;
-                            }
-                            else
-                            {
-                                bool     usedRecursiveVN = false;
-                                ValueNum curResult       = VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget,
-                                                                              &usedRecursiveVN, recMemoryDependencies);
-
-                                *pUsedRecursiveVN |= usedRecursiveVN;
-                                if (sameSelResult == ValueNumStore::RecursiveVN)
-                                {
-                                    sameSelResult = curResult;
-                                }
-                                if (curResult != ValueNumStore::RecursiveVN && curResult != sameSelResult)
-                                {
-                                    allSame = false;
-                                }
-                            }
-                        }
-                        if (allSame && sameSelResult != ValueNumStore::RecursiveVN)
-                        {
-                            // Make sure we're popping what we pushed.
-                            assert(FixedPointMapSelsTopHasValue(map, index));
-                            m_fixedPointMapSels.Pop();
-
-                            // To avoid exponential searches, we make sure that this result is memo-ized.
-                            // The result is always valid for memoization if we didn't rely on RecursiveVN to get
-                            // it.
-                            // If RecursiveVN was used, we are processing a loop and we can't memo-ize this
-                            // intermediate
-                            // result if, e.g., this block is in a multi-entry loop.
-                            if (!*pUsedRecursiveVN)
-                            {
-                                entry.Result = sameSelResult;
-                                entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
-
-                                GetMapSelectWorkCache()->Set(fstruct, entry);
-                            }
-
-                            recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
-                                memoryDependencies.Add(m_pComp, vn);
-                            });
-
-                            return sameSelResult;
-                        }
-                        // Otherwise, fall through to creating the select(phi(m1, m2), x) function application.
-                    }
-                    // Make sure we're popping what we pushed.
-                    assert(FixedPointMapSelsTopHasValue(map, index));
-                    m_fixedPointMapSels.Pop();
-                }
-            }
-            break;
-
             default:
                 break;
         }
+    }
+    else
+    {
+        unsigned* ssaArgs    = nullptr;
+        unsigned  numSsaArgs = 0;
+        unsigned  lclNum     = BAD_VAR_NUM;
+
+        VNPhiDef       phiDef;
+        VNMemoryPhiDef memoryPhiDef;
+        if (GetPhiDef(map, &phiDef))
+        {
+            lclNum     = phiDef.LclNum;
+            ssaArgs    = phiDef.SsaArgs;
+            numSsaArgs = phiDef.NumArgs;
+        }
+        else if (GetMemoryPhiDef(map, &memoryPhiDef))
+        {
+            ssaArgs    = memoryPhiDef.SsaArgs;
+            numSsaArgs = memoryPhiDef.NumArgs;
+        }
+
+        if (ssaArgs != nullptr)
+        {
+            // select(phi(m1, m2), x): if select(m1, x) == select(m2, x), return that, else new fresh.
+            // Get the first argument of the phi.
+
+            // We need to be careful about breaking infinite recursion.  Record the outer select.
+            m_fixedPointMapSels.Push(VNDefFuncApp<2>(VNF_MapSelect, map, index));
+
+            ValueNum sameSelResult = ValueNumStore::RecursiveVN;
+            bool     allSame       = true;
+
+            for (unsigned i = 0; i < numSsaArgs; i++)
+            {
+                if (*pBudget <= 0)
+                {
+                    allSame = false;
+                    break;
+                }
+
+                ValueNum phiArgVN;
+                if (lclNum != BAD_VAR_NUM)
+                {
+                    phiArgVN = m_pComp->lvaGetDesc(lclNum)->GetPerSsaData(ssaArgs[i])->m_vnPair.Get(vnk);
+                }
+                else
+                {
+                    phiArgVN = m_pComp->GetMemoryPerSsaData(ssaArgs[i])->m_vnPair.Get(vnk);
+                }
+
+                if (phiArgVN == ValueNumStore::NoVN)
+                {
+                    allSame = false;
+                    break;
+                }
+
+                bool     usedRecursiveVN = false;
+                ValueNum curResult =
+                    VNForMapSelectWork(vnk, type, phiArgVN, index, pBudget, &usedRecursiveVN, recMemoryDependencies);
+
+                *pUsedRecursiveVN |= usedRecursiveVN;
+                if (sameSelResult == ValueNumStore::RecursiveVN)
+                {
+                    sameSelResult = curResult;
+                }
+                if ((curResult != ValueNumStore::RecursiveVN) && (curResult != sameSelResult))
+                {
+                    allSame = false;
+                    break;
+                }
+            }
+
+            // Make sure we're popping what we pushed.
+            assert(FixedPointMapSelsTopHasValue(map, index));
+            m_fixedPointMapSels.Pop();
+
+            if (allSame && (sameSelResult != ValueNumStore::RecursiveVN))
+            {
+                // To avoid exponential searches, we make sure that this result is memo-ized.
+                // The result is always valid for memoization if we didn't rely on RecursiveVN to get
+                // it.
+                // If RecursiveVN was used, we are processing a loop and we can't memo-ize this
+                // intermediate
+                // result if, e.g., this block is in a multi-entry loop.
+                if (!*pUsedRecursiveVN)
+                {
+                    entry.Result = sameSelResult;
+                    entry.SetMemoryDependencies(m_pComp, recMemoryDependencies);
+
+                    GetMapSelectWorkCache()->Set(fstruct, entry);
+                }
+
+                recMemoryDependencies.ForEach([this, &memoryDependencies](ValueNum vn) {
+                    memoryDependencies.Add(m_pComp, vn);
+                });
+
+                return sameSelResult;
+            }
+        }
+
+        // Otherwise, fall through to creating the select(phi(m1, m2), x) function application.
     }
 
     // We may have run out of budget and already assigned a result
@@ -6360,7 +6459,8 @@ var_types ValueNumStore::TypeOfVN(ValueNum vn) const
 //
 FlowGraphNaturalLoop* ValueNumStore::LoopOfVN(ValueNum vn)
 {
-    VNFuncApp funcApp;
+    VNFuncApp      funcApp;
+    VNMemoryPhiDef memoryPhiDef;
     if (GetVNFunc(vn, &funcApp))
     {
         if (funcApp.m_func == VNF_MemOpaque)
@@ -6383,11 +6483,10 @@ FlowGraphNaturalLoop* ValueNumStore::LoopOfVN(ValueNum vn)
 
             return m_pComp->m_loops->GetLoopByIndex(index);
         }
-        else if (funcApp.m_func == VNF_PhiMemoryDef)
-        {
-            BasicBlock* const block = reinterpret_cast<BasicBlock*>(ConstantValue<ssize_t>(funcApp.m_args[0]));
-            return m_pComp->m_blockToLoop->GetLoop(block);
-        }
+    }
+    else if (GetMemoryPhiDef(vn, &memoryPhiDef))
+    {
+        return m_pComp->m_blockToLoop->GetLoop(memoryPhiDef.Block);
     }
 
     return nullptr;
@@ -6427,68 +6526,75 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
-    assert(varTypeIsIntegral(TypeOfVN(vn)));
-
-    if (IsVNConstant(vn))
-    {
-        var_types vnTy = TypeOfVN(vn);
-        if (vnTy == TYP_INT)
+    auto vnVisitor = [this](ValueNum vn) -> VNVisit {
+        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
-            return GetConstantInt32(vn) >= 0;
-        }
-        else if (vnTy == TYP_LONG)
-        {
-            return GetConstantInt64(vn) >= 0;
+            return VNVisit::Abort;
         }
 
-        return false;
-    }
-
-    // Array length can never be negative.
-    if (IsVNArrLen(vn))
-    {
-        return true;
-    }
-
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
-    {
-        switch (funcApp.m_func)
+        if (IsVNConstant(vn))
         {
-            case VNF_GE_UN:
-            case VNF_GT_UN:
-            case VNF_LE_UN:
-            case VNF_LT_UN:
-            case VNF_COUNT:
-            case VNF_ADD_UN_OVF:
-            case VNF_SUB_UN_OVF:
-            case VNF_MUL_UN_OVF:
+            var_types vnTy = TypeOfVN(vn);
+            if (vnTy == TYP_INT)
+            {
+                return GetConstantInt32(vn) >= 0 ? VNVisit::Continue : VNVisit::Abort;
+            }
+            if (vnTy == TYP_LONG)
+            {
+                return GetConstantInt64(vn) >= 0 ? VNVisit::Continue : VNVisit::Abort;
+            }
+            return VNVisit::Abort;
+        }
+
+        // Array length can never be negative.
+        if (IsVNArrLen(vn))
+        {
+            return VNVisit::Continue;
+        }
+
+        // TODO-VN: Recognize Span.Length
+        // Handle more intrinsics such as Math.Max(neverNegative1, neverNegative2)
+
+        VNFuncApp funcApp;
+        if (GetVNFunc(vn, &funcApp))
+        {
+            switch (funcApp.m_func)
+            {
+                case VNF_GE_UN:
+                case VNF_GT_UN:
+                case VNF_LE_UN:
+                case VNF_LT_UN:
+                case VNF_COUNT:
+                case VNF_ADD_UN_OVF:
+                case VNF_SUB_UN_OVF:
+                case VNF_MUL_UN_OVF:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
-            case VNF_HWI_POPCNT_PopCount:
-            case VNF_HWI_POPCNT_X64_PopCount:
-            case VNF_HWI_LZCNT_LeadingZeroCount:
-            case VNF_HWI_LZCNT_X64_LeadingZeroCount:
-            case VNF_HWI_BMI1_TrailingZeroCount:
-            case VNF_HWI_BMI1_X64_TrailingZeroCount:
-                return true;
+                case VNF_HWI_POPCNT_PopCount:
+                case VNF_HWI_POPCNT_X64_PopCount:
+                case VNF_HWI_LZCNT_LeadingZeroCount:
+                case VNF_HWI_LZCNT_X64_LeadingZeroCount:
+                case VNF_HWI_BMI1_TrailingZeroCount:
+                case VNF_HWI_BMI1_X64_TrailingZeroCount:
+                    return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
-            case VNF_HWI_AdvSimd_PopCount:
-            case VNF_HWI_AdvSimd_LeadingZeroCount:
-            case VNF_HWI_AdvSimd_LeadingSignCount:
-            case VNF_HWI_ArmBase_LeadingZeroCount:
-            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
-            case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-                return true;
+                case VNF_HWI_AdvSimd_PopCount:
+                case VNF_HWI_AdvSimd_LeadingZeroCount:
+                case VNF_HWI_AdvSimd_LeadingSignCount:
+                case VNF_HWI_ArmBase_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
+                    return VNVisit::Continue;
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
-            default:
-                break;
+                default:
+                    break;
+            }
         }
-    }
-
-    return false;
+        return VNVisit::Abort;
+    };
+    return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
 
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)
@@ -6718,16 +6824,6 @@ const char* ValueNumStore::VNRelationString(VN_RELATION_KIND vrk)
 }
 #endif
 
-bool ValueNumStore::IsVNPhiDef(ValueNum vn)
-{
-    VNFuncApp funcAttr;
-    if (!GetVNFunc(vn, &funcAttr))
-    {
-        return false;
-    }
-
-    return funcAttr.m_func == VNF_PhiDef;
-}
 //------------------------------------------------------------------------
 // AreVNsEquivalent: returns true iff VNs represent the same value
 //
@@ -6748,24 +6844,14 @@ bool ValueNumStore::AreVNsEquivalent(ValueNum vn1, ValueNum vn2)
         return true;
     }
 
-    VNFuncApp funcAttr1;
-    if (!GetVNFunc(vn1, &funcAttr1))
+    VNPhiDef def1;
+    if (!GetPhiDef(vn1, &def1))
     {
         return false;
     }
 
-    if (funcAttr1.m_func != VNF_PhiDef)
-    {
-        return false;
-    }
-
-    VNFuncApp funcAttr2;
-    if (!GetVNFunc(vn2, &funcAttr2))
-    {
-        return false;
-    }
-
-    if (funcAttr2.m_func != VNF_PhiDef)
+    VNPhiDef def2;
+    if (!GetPhiDef(vn2, &def2))
     {
         return false;
     }
@@ -6773,16 +6859,16 @@ bool ValueNumStore::AreVNsEquivalent(ValueNum vn1, ValueNum vn2)
     // We have two PhiDefs. They may be equivalent, if
     // they come from Phis in the same block.
     //
-    const unsigned lclNum1    = unsigned(funcAttr1.m_args[0]);
-    const unsigned ssaDefNum1 = unsigned(funcAttr1.m_args[1]);
+    const unsigned lclNum1    = def1.LclNum;
+    const unsigned ssaDefNum1 = def1.SsaDef;
 
     LclVarDsc* const    varDsc1      = m_pComp->lvaGetDesc(lclNum1);
     LclSsaVarDsc* const varSsaDsc1   = varDsc1->GetPerSsaData(ssaDefNum1);
     GenTree* const      varDefTree1  = varSsaDsc1->GetDefNode();
     BasicBlock* const   varDefBlock1 = varSsaDsc1->GetBlock();
 
-    const unsigned lclNum2    = unsigned(funcAttr2.m_args[0]);
-    const unsigned ssaDefNum2 = unsigned(funcAttr2.m_args[1]);
+    const unsigned lclNum2    = def2.LclNum;
+    const unsigned ssaDefNum2 = def2.SsaDef;
 
     LclVarDsc* const    varDsc2      = m_pComp->lvaGetDesc(lclNum2);
     LclSsaVarDsc* const varSsaDsc2   = varDsc2->GetPerSsaData(ssaDefNum2);
@@ -6810,6 +6896,8 @@ bool ValueNumStore::AreVNsEquivalent(ValueNum vn1, ValueNum vn2)
 
     bool phiArgsAreEquivalent = true;
 
+    // TODO-CQ: This logic could walk the SSA nums in the VNPhiDef, which
+    // accounts for unreachable predecessors.
     for (; (treeIter1 != treeEnd1) && (treeIter2 != treeEnd2); ++treeIter1, ++treeIter2)
     {
         GenTreePhiArg* const treePhiArg1 = treeIter1->GetNode()->AsPhiArg();
@@ -9819,6 +9907,8 @@ bool ValueNumStore::VNIsValid(ValueNum vn)
 void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
 {
     printf(" {");
+    VNPhiDef       phiDef;
+    VNMemoryPhiDef memoryPhiDef;
     if (vn == NoVN)
     {
         printf("NoVN");
@@ -10057,6 +10147,24 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 }
                 printf(")");
         }
+    }
+    else if (GetPhiDef(vn, &phiDef))
+    {
+        printf("PhiDef(V%02u d:%u", phiDef.LclNum, phiDef.SsaDef);
+        for (unsigned i = 0; i < phiDef.NumArgs; i++)
+        {
+            printf(", u:%u", phiDef.SsaArgs[i]);
+        }
+        printf(")");
+    }
+    else if (GetMemoryPhiDef(vn, &memoryPhiDef))
+    {
+        printf("MemoryPhiDef(" FMT_BB, memoryPhiDef.Block->bbNum);
+        for (unsigned i = 0; i < memoryPhiDef.NumArgs; i++)
+        {
+            printf(", m:%u", memoryPhiDef.SsaArgs[i]);
+        }
+        printf(")");
     }
     else
     {
@@ -10905,10 +11013,32 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
     // First: visit phis and check to see if all phi args have the same value.
     for (; (stmt != nullptr) && stmt->IsPhiDefnStmt(); stmt = stmt->GetNextStmt())
     {
-        GenTreeLclVar* newSsaDef = stmt->GetRootNode()->AsLclVar();
-        fgValueNumberPhiDef(newSsaDef, blk);
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\n***** " FMT_BB ", " FMT_STMT "(before)\n", blk->bbNum, stmt->GetID());
+            gtDispTree(stmt->GetRootNode());
+            printf("\n");
+        }
+#endif
+
+        fgValueNumberPhiDef(stmt->GetRootNode()->AsLclVar(), blk);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\n***** " FMT_BB ", " FMT_STMT "(after)\n", blk->bbNum, stmt->GetID());
+            gtDispTree(stmt->GetRootNode());
+            printf("\n");
+            if (stmt->GetNextStmt() != nullptr)
+            {
+                printf("---------\n");
+            }
+        }
+#endif
     }
 
+    ArrayStack<unsigned> phiArgSsaNums(getAllocator(CMK_ValueNumber));
     // Now do the same for each MemoryKind.
     for (MemoryKind memoryKind : allMemoryKinds())
     {
@@ -10942,41 +11072,37 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
                 // There should be > 1 args to a phi.
                 // But OSR might leave around "dead" try entry blocks...
                 assert((phiArgs->m_nextArg != nullptr) || opts.IsOSR());
-                ValueNum phiAppVN = vnStore->VNForIntCon(phiArgs->GetSsaNum());
-                JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiAppVN, phiArgs->GetSsaNum());
-                bool     allSame = true;
-                ValueNum sameVN  = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
-                if (sameVN == ValueNumStore::NoVN)
-                {
-                    allSame = false;
-                }
-                phiArgs = phiArgs->m_nextArg;
+                phiArgSsaNums.Reset();
+
+                JITDUMP("  Building memory phi def for block " FMT_BB ".\n", blk->bbNum);
+                ValueNum sameVN = ValueNumStore::NoVN;
+
                 while (phiArgs != nullptr)
                 {
                     ValueNum phiArgVN = GetMemoryPerSsaData(phiArgs->GetSsaNum())->m_vnPair.GetLiberal();
-                    if (phiArgVN == ValueNumStore::NoVN || phiArgVN != sameVN)
+
+                    if (phiArgSsaNums.Height() == 0)
                     {
-                        allSame = false;
+                        sameVN = phiArgVN;
                     }
-#ifdef DEBUG
-                    ValueNum oldPhiAppVN = phiAppVN;
-#endif
-                    unsigned phiArgSSANum   = phiArgs->GetSsaNum();
-                    ValueNum phiArgSSANumVN = vnStore->VNForIntCon(phiArgSSANum);
-                    JITDUMP("  Building phi application: $%x = SSA# %d.\n", phiArgSSANumVN, phiArgSSANum);
-                    phiAppVN = vnStore->VNForFuncNoFolding(TYP_HEAP, VNF_Phi, phiArgSSANumVN, phiAppVN);
-                    JITDUMP("  Building phi application: $%x = phi($%x, $%x).\n", phiAppVN, phiArgSSANumVN,
-                            oldPhiAppVN);
+                    else
+                    {
+                        if ((phiArgVN == ValueNumStore::NoVN) || (phiArgVN != sameVN))
+                        {
+                            sameVN = ValueNumStore::NoVN;
+                        }
+                    }
+
+                    phiArgSsaNums.Push(phiArgs->GetSsaNum());
                     phiArgs = phiArgs->m_nextArg;
                 }
-                if (allSame)
+                if (sameVN != ValueNumStore::NoVN)
                 {
                     newMemoryVN = sameVN;
                 }
                 else
                 {
-                    newMemoryVN = vnStore->VNForFuncNoFolding(TYP_HEAP, VNF_PhiMemoryDef,
-                                                              vnStore->VNForHandle(ssize_t(blk), GTF_EMPTY), phiAppVN);
+                    newMemoryVN = vnStore->VNForMemoryPhiDef(blk, phiArgSsaNums);
                 }
             }
             GetMemoryPerSsaData(blk->bbMemorySsaNumIn[memoryKind])->m_vnPair.SetLiberal(newMemoryVN);
@@ -11054,7 +11180,7 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 }
 
 //------------------------------------------------------------------------
-// fgValueNumberRegisterConstFieldSeq: If a VN'd integer constant has a
+// fgValueNumberPhiDef: If a VN'd integer constant has a
 // field sequence we want to keep track of, then register it in the side table.
 //
 // Arguments:
@@ -11064,8 +11190,9 @@ void Compiler::fgValueNumberBlock(BasicBlock* blk)
 //
 void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bool isUpdate)
 {
+    ArrayStack<unsigned> phiArgSsaNums(getAllocator(CMK_ValueNumber));
+
     GenTreePhi*  phiNode = newSsaDef->AsLclVar()->Data()->AsPhi();
-    ValueNumPair phiVNP;
     ValueNumPair sameVNP;
 
     for (GenTreePhi::Use& use : phiNode->Uses())
@@ -11076,7 +11203,7 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
             JITDUMP("  Phi arg [%06u] is unnecessary; path through pred " FMT_BB " cannot be taken\n",
                     dspTreeID(phiArg), phiArg->gtPredBB->bbNum);
 
-            if ((use.GetNext() != nullptr) || (phiVNP.GetLiberal() != ValueNumStore::NoVN))
+            if ((use.GetNext() != nullptr) || (phiArgSsaNums.Height() > 0))
             {
                 continue;
             }
@@ -11085,31 +11212,28 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
             JITDUMP("  ..but no other path can, so we are using it anyway\n");
         }
 
-        ValueNum     phiArgSsaNumVN = vnStore->VNForIntCon(phiArg->GetSsaNum());
-        ValueNumPair phiArgVNP      = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
+        ValueNumPair phiArgVNP = lvaGetDesc(phiArg)->GetPerSsaData(phiArg->GetSsaNum())->m_vnPair;
 
-        if (isUpdate && (phiArgVNP != phiArg->gtVNPair))
+#ifdef DEBUG
+        if (verbose && isUpdate && (phiArgVNP != phiArg->gtVNPair))
         {
-            JITDUMP("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
-            JITDUMPEXEC(vnpPrint(phiArg->gtVNPair, 0));
-            JITDUMP(" to ");
-            JITDUMPEXEC(vnpPrint(phiArgVNP, 0));
-            JITDUMP("\n");
+            printf("Updating phi arg [%06u] VN from ", dspTreeID(phiArg));
+            vnpPrint(phiArg->gtVNPair, 0);
+            printf(" to ");
+            vnpPrint(phiArgVNP, 0);
+            printf("\n");
         }
+#endif
 
         phiArg->gtVNPair = phiArgVNP;
 
-        if (phiVNP.GetLiberal() == ValueNumStore::NoVN)
+        if (phiArgSsaNums.Height() == 0)
         {
             // This is the first PHI argument
-            phiVNP  = ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN);
             sameVNP = phiArgVNP;
         }
         else
         {
-            phiVNP = vnStore->VNPairForFuncNoFolding(newSsaDef->TypeGet(), VNF_Phi,
-                                                     ValueNumPair(phiArgSsaNumVN, phiArgSsaNumVN), phiVNP);
-
             if ((sameVNP.GetLiberal() != phiArgVNP.GetLiberal()) ||
                 (sameVNP.GetConservative() != phiArgVNP.GetConservative()))
             {
@@ -11119,13 +11243,12 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
                 sameVNP.SetBoth(ValueNumStore::NoVN);
             }
         }
+
+        phiArgSsaNums.Push(phiArg->GetSsaNum());
     }
 
-    // We should have visited at least one phi arg in the loop above
-    assert(phiVNP.GetLiberal() != ValueNumStore::NoVN);
-    assert(phiVNP.GetConservative() != ValueNumStore::NoVN);
-
-    ValueNumPair newSsaDefVNP;
+    LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
+    ValueNumPair  newSsaDefVNP = newSsaDefDsc->m_vnPair;
 
     if (sameVNP.BothDefined())
     {
@@ -11136,14 +11259,28 @@ void Compiler::fgValueNumberPhiDef(GenTreeLclVar* newSsaDef, BasicBlock* blk, bo
     else
     {
         // They were not the same; we need to create a phi definition.
-        ValueNum lclNumVN = ValueNum(newSsaDef->GetLclNum());
-        ValueNum ssaNumVN = ValueNum(newSsaDef->GetSsaNum());
 
-        newSsaDefVNP = vnStore->VNPairForFunc(newSsaDef->TypeGet(), VNF_PhiDef, ValueNumPair(lclNumVN, lclNumVN),
-                                              ValueNumPair(ssaNumVN, ssaNumVN), phiVNP);
+        bool newPhiDef = true;
+        if (isUpdate)
+        {
+            // For an update, the phi-def usually does not have any new
+            // information -- it is still just the list of SSA args from preds.
+            // The exception is if we were now able to prove that the block is
+            // unreachable from one of the preds.
+            VNPhiDef prevPhiDef;
+            if (vnStore->GetPhiDef(newSsaDefDsc->m_vnPair.GetLiberal(), &prevPhiDef) &&
+                (prevPhiDef.NumArgs == (unsigned)phiArgSsaNums.Height()))
+            {
+                newPhiDef = false;
+            }
+        }
+
+        if (newPhiDef)
+        {
+            newSsaDefVNP.SetBoth(vnStore->VNForPhiDef(newSsaDef->TypeGet(), newSsaDef->GetLclNum(),
+                                                      newSsaDef->GetSsaNum(), phiArgSsaNums));
+        }
     }
-
-    LclSsaVarDsc* newSsaDefDsc = lvaGetDesc(newSsaDef)->GetPerSsaData(newSsaDef->GetSsaNum());
 
 #ifdef DEBUG
     if (isUpdate)
@@ -14997,4 +15134,40 @@ CORINFO_CLASS_HANDLE ValueNumStore::GetObjectType(ValueNum vn, bool* pIsExact, b
     }
 
     return NO_CLASS_HANDLE;
+}
+
+//--------------------------------------------------------------------------------
+// PeelOffsets: Peel all additions with a constant offset away from the
+// specified VN.
+//
+// Arguments:
+//    vn     - [in, out] The VN. Will be modified to the base VN that the offsets are added to.
+//    offset - [out] The offsets peeled out of the VNF_ADD funcs.
+//
+void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
+{
+#ifdef DEBUG
+    var_types vnType = TypeOfVN(*vn);
+    assert((vnType == TYP_I_IMPL) || (vnType == TYP_REF) || (vnType == TYP_BYREF));
+#endif
+
+    *offset = 0;
+    VNFuncApp app;
+    while (GetVNFunc(*vn, &app) && (app.m_func == VNF_ADD))
+    {
+        if (IsVNConstantNonHandle(app.m_args[0]))
+        {
+            *offset += ConstantValue<target_ssize_t>(app.m_args[0]);
+            *vn = app.m_args[1];
+        }
+        else if (IsVNConstantNonHandle(app.m_args[1]))
+        {
+            *offset += ConstantValue<target_ssize_t>(app.m_args[1]);
+            *vn = app.m_args[0];
+        }
+        else
+        {
+            break;
+        }
+    }
 }

@@ -7820,6 +7820,40 @@ bool CEEInfo::haveSameMethodDefinition(
     return result;
 }
 
+CORINFO_CLASS_HANDLE CEEInfo::getTypeDefinition(CORINFO_CLASS_HANDLE type)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE result = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle th(type);
+
+    if (th.HasInstantiation() && !th.IsGenericTypeDefinition())
+    {
+        th = ClassLoader::LoadTypeDefThrowing(
+            th.GetModule(),
+            th.GetMethodTable()->GetCl(),
+            ClassLoader::ThrowIfNotFound,
+            ClassLoader::PermitUninstDefOrRef);
+
+        _ASSERTE(th.IsGenericTypeDefinition());
+    }
+
+    result = CORINFO_CLASS_HANDLE(th.AsPtr());
+
+    EE_TO_JIT_TRANSITION();    
+
+    _ASSERTE(result != NULL);
+
+    return result;
+}
+
 /*************************************************************
  * Check if the caller and calle are in the same assembly
  * i.e. do not inline across assemblies

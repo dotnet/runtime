@@ -3655,6 +3655,7 @@ public:
     bool gtMarkAddrMode(GenTree* addr, int* costEx, int* costSz, var_types type);
 
     unsigned gtSetEvalOrder(GenTree* tree);
+    unsigned gtSetEvalOrderMinOpts(GenTree* tree);
     bool gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree);
     bool gtTreeHasLocalRead(GenTree* tree, unsigned lclNum);
 
@@ -4589,6 +4590,7 @@ protected:
 #endif
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+    GenTree* impGetGenericTypeDefinition(GenTree* type);
 
     // Mirrors StringComparison.cs
     enum StringComparison
@@ -9984,6 +9986,8 @@ public:
 // Maximum number of locals before turning off the inlining
 #define MAX_LV_NUM_COUNT_FOR_INLINING 512
 
+        bool canUseTier0Opts;
+        bool canUseAllOpts;
         bool compMinOpts;
         bool compMinOptsIsSet;
 #ifdef DEBUG
@@ -10010,13 +10014,22 @@ public:
         }
 #endif // !DEBUG
 
+        // TODO: we should convert these into a single OptimizationLevel
+
         bool OptimizationDisabled() const
         {
-            return MinOpts() || compDbgCode;
+            assert(compMinOptsIsSet);
+            return !canUseAllOpts;
         }
         bool OptimizationEnabled() const
         {
-            return !OptimizationDisabled();
+            assert(compMinOptsIsSet);
+            return canUseAllOpts;
+        }
+        bool Tier0OptimizationEnabled() const
+        {
+            assert(compMinOptsIsSet);
+            return canUseTier0Opts;
         }
 
         void SetMinOpts(bool val)
@@ -10025,6 +10038,9 @@ public:
             assert(!compMinOptsIsSet || (compMinOpts == val));
             compMinOpts      = val;
             compMinOptsIsSet = true;
+
+            canUseTier0Opts = !compDbgCode && !jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+            canUseAllOpts   = canUseTier0Opts && !val;
         }
 
         // true if the CLFLG_* for an optimization is set.

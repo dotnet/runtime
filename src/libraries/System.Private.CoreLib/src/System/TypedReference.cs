@@ -27,10 +27,7 @@ namespace System
             RuntimeType targetType = (RuntimeType)target.GetType();
             for (int i = 0; i < flds.Length; i++)
             {
-                RuntimeFieldInfo? field = flds[i] as RuntimeFieldInfo;
-                if (field == null)
-                    throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
-
+                RuntimeFieldInfo field = flds[i] as RuntimeFieldInfo ?? throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
                 if (field.IsStatic)
                     throw new ArgumentException(SR.Format(SR.Argument_TypedReferenceInvalidField, field.Name));
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Diagnostics.Metrics
@@ -146,12 +147,14 @@ namespace System.Diagnostics.Metrics
             unit: "{cpu}",
             description: "The number of processors available to the process.");
 
-        // TODO - Uncomment once an implementation for https://github.com/dotnet/runtime/issues/104844 is available.
-        //private static readonly ObservableCounter<double> s_processCpuTime = s_meter.CreateObservableCounter(
-        //    "dotnet.process.cpu.time",
-        //    GetCpuTime,
-        //    unit: "s",
-        //    description: "CPU time used by the process as reported by the CLR.");
+        private static readonly ObservableCounter<double>? s_processCpuTime =
+                                    OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || (OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()) ?
+                                    null :
+                                    s_meter.CreateObservableCounter(
+                                        "dotnet.process.cpu.time",
+                                        GetCpuTime,
+                                        unit: "s",
+                                        description: "CPU time used by the process.");
 
         public static bool IsEnabled()
         {
@@ -172,8 +175,8 @@ namespace System.Diagnostics.Metrics
                 || s_threadPoolQueueLength.Enabled
                 || s_assembliesCount.Enabled
                 || s_exceptions.Enabled
-                || s_processCpuCount.Enabled;
-            //|| s_processCpuTime.Enabled;
+                || s_processCpuCount.Enabled
+                || s_processCpuTime?.Enabled is true;
         }
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
@@ -188,17 +191,20 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        // TODO - Uncomment once an implementation for https://github.com/dotnet/runtime/issues/104844 is available.
-        //private static IEnumerable<Measurement<double>> GetCpuTime()
-        //{
-        //    if (OperatingSystem.IsBrowser() || OperatingSystem.IsTvOS() || OperatingSystem.IsIOS())
-        //        yield break;
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
+        [SupportedOSPlatform("maccatalyst")]
+        private static IEnumerable<Measurement<double>> GetCpuTime()
+        {
+            Debug.Assert(s_processCpuTime is not null);
+            Debug.Assert(!OperatingSystem.IsBrowser() && !OperatingSystem.IsTvOS() && !(OperatingSystem.IsIOS() && !OperatingSystem.IsMacCatalyst()));
 
-        //    ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
+            Environment.ProcessCpuUsage processCpuUsage = Environment.CpuUsage;
 
-        //    yield return new(processCpuUsage.UserTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
-        //    yield return new(processCpuUsage.PrivilegedTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
-        //}
+            yield return new(processCpuUsage.UserTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "user")]);
+            yield return new(processCpuUsage.PrivilegedTime.TotalSeconds, [new KeyValuePair<string, object?>("cpu.mode", "system")]);
+        }
 
         private static IEnumerable<Measurement<long>> GetHeapSizes()
         {

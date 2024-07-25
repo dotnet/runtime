@@ -1553,7 +1553,7 @@ GenTree* Compiler::impThrowIfNull(GenTreeCall* call)
     assert(call->gtArgs.CountUserArgs() == 2);
     assert(call->TypeIs(TYP_VOID));
 
-    if (opts.compDbgCode || opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT))
+    if (!opts.Tier0OptimizationEnabled())
     {
         // Don't fold it for debug code or forced MinOpts
         return call;
@@ -3302,11 +3302,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     // Allow some lighweight intrinsics in Tier0 which can improve throughput
     // we're fine if intrinsic decides to not expand itself in this case unlike mustExpand.
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-
-    if (!mustExpand && tier0opts)
+    if (!mustExpand && opts.Tier0OptimizationEnabled())
     {
         switch (ni)
         {
@@ -3320,6 +3316,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_GetTypeFromHandle:
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
+
+            // This allows folding "typeof(...).GetGenericTypeDefinition() == typeof(...)"
+            case NI_System_Type_GetGenericTypeDefinition:
 
             // These may lead to early dead code elimination
             case NI_System_Type_get_IsValueType:
@@ -3853,6 +3852,14 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     // We'll try to expand it later.
                     isSpecial = true;
                 }
+                break;
+            }
+
+            case NI_System_Type_GetGenericTypeDefinition:
+            {
+                GenTree* type = impStackTop(0).val;
+
+                retNode = impGetGenericTypeDefinition(type);
                 break;
             }
 
@@ -10219,6 +10226,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "GetTypeFromHandle") == 0)
                         {
                             result = NI_System_Type_GetTypeFromHandle;
+                        }
+                        else if (strcmp(methodName, "GetGenericTypeDefinition") == 0)
+                        {
+                            result = NI_System_Type_GetGenericTypeDefinition;
                         }
                         else if (strcmp(methodName, "IsAssignableFrom") == 0)
                         {

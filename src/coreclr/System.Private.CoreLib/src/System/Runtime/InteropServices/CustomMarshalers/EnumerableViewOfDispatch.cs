@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             try
             {
                 object? resultAsObject = result.ToObject();
-                if (!(resultAsObject is IEnumVARIANT enumVariant))
+                if (resultAsObject is not IEnumVARIANT enumVariant)
                 {
                     throw new InvalidOperationException(SR.InvalidOp_InvalidNewEnumVariant);
                 }

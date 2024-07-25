@@ -53,10 +53,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
-            get
-            {
-                return TicksToTimeSpan(GetStat().stime);
-            }
+            get => IsCurrentProcess ? Environment.CpuUsage.PrivilegedTime : TicksToTimeSpan(GetStat().stime);
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
@@ -132,6 +129,11 @@ namespace System.Diagnostics
         {
             get
             {
+                if (IsCurrentProcess)
+                {
+                    return Environment.CpuUsage.TotalTime;
+                }
+
                 Interop.procfs.ParsedStat stat = GetStat();
                 return TicksToTimeSpan(stat.utime + stat.stime);
             }
@@ -146,10 +148,7 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
-            get
-            {
-                return TicksToTimeSpan(GetStat().utime);
-            }
+            get => IsCurrentProcess ? Environment.CpuUsage.UserTime : TicksToTimeSpan(GetStat().utime);
         }
 
         partial void EnsureHandleCountPopulated()

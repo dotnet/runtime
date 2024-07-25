@@ -2490,6 +2490,42 @@ GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// impGetGenericTypeDefinition: gets the generic type definition from a 'typeof' expression.
+//
+// Arguments:
+//    type - The 'GenTree' node to inspect.
+//
+// Notes:
+//    If successful, this method will call 'impPopStack()' before returning.
+//
+GenTree* Compiler::impGetGenericTypeDefinition(GenTree* type)
+{
+    // This intrinsic requires the first arg to be some `typeof()` expression,
+    // ie. it applies to cases such as `typeof(...).GetGenericTypeDefinition()`.
+    CORINFO_CLASS_HANDLE hClassType = NO_CLASS_HANDLE;
+    if (gtIsTypeof(type, &hClassType))
+    {
+        // Check that the 'typeof()' expression is being used on a type that is in fact generic.
+        // If that is not the case, we don't expand the intrinsic. This will end up using
+        // the usual Type.GetGenericTypeDefinition() at runtime, which will throw in this case.
+        if (info.compCompHnd->getTypeInstantiationArgument(hClassType, 0) != NO_CLASS_HANDLE)
+        {
+            CORINFO_CLASS_HANDLE hClassResult = info.compCompHnd->getTypeDefinition(hClassType);
+
+            GenTree* handle  = gtNewIconEmbClsHndNode(hClassResult);
+            GenTree* retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
+
+            // Drop the typeof(T) node
+            impPopStack();
+
+            return retNode;
+        }
+    }
+
+    return nullptr;
+}
+
 /*****************************************************************************
  * 'logMsg' is true if a log message needs to be logged. false if the caller has
  *   already logged it (presumably in a more detailed fashion than done here)
