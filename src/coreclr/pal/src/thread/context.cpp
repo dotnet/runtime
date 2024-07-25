@@ -817,7 +817,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
             //TODO-SVE: This only handles vector lengths of 128bits.
             if (CONTEXT_GetSveLengthFromOS() == 16)
             {
-                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_SVE) == XSTATE_MASK_SVE);
+                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE);
 
                 uint16_t vq = sve_vq_from_vl(lpContext->Vl);
 
@@ -1169,7 +1169,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 
                 uint16_t vq = sve_vq_from_vl(sve->vl);
 
-                lpContext->XStateFeaturesMask |= XSTATE_MASK_SVE;
+                lpContext->XStateFeaturesMask |= XSTATE_MASK_ARM64_SVE;
 
                 //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
                 lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
@@ -1715,6 +1715,18 @@ CONTEXT_GetThreadContextFromThreadState(
         {
             x86_float_state_t *pState = (x86_float_state_t *)threadState;
             CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->fsh.flavor, (thread_state_t)&pState->ufs, lpContext);
+        }
+        break;
+        case x86_AVX_STATE:
+        {
+            x86_avx_state_t *pState = (x86_avx_state_t *)threadState;
+            CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->ash.flavor, (thread_state_t)&pState->ufs, lpContext);
+        }
+        break;
+        case x86_AVX512_STATE:
+        {
+            x86_avx512_state_t *pState = (x86_avx512_state_t *)threadState;
+            CONTEXT_GetThreadContextFromThreadState((thread_state_flavor_t)pState->ash.flavor, (thread_state_t)&pState->ufs, lpContext);
         }
         break;
 #elif defined(HOST_ARM64)

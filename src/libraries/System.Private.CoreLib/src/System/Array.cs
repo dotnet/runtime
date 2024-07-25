@@ -12,8 +12,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System
 {
     [Serializable]
@@ -1067,9 +1065,9 @@ namespace System
 
         private static class EmptyArray<T>
         {
-#pragma warning disable CA1825 // this is the implementation of Array.Empty<T>()
+#pragma warning disable CA1825, IDE0300 // this is the implementation of Array.Empty<T>()
             internal static readonly T[] Value = new T[0];
-#pragma warning restore CA1825
+#pragma warning restore CA1825, IDE0300
         }
 
         public static T[] Empty<T>()

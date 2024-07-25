@@ -48,6 +48,9 @@ bool haveSameMethodDefinition(
           CORINFO_METHOD_HANDLE meth1Hnd,
           CORINFO_METHOD_HANDLE meth2Hnd) override;
 
+CORINFO_CLASS_HANDLE getTypeDefinition(
+          CORINFO_CLASS_HANDLE type) override;
+
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd) override;
@@ -124,9 +127,6 @@ bool satisfiesMethodConstraints(
           CORINFO_METHOD_HANDLE method) override;
 
 void methodMustBeLoadedBeforeCodeIsRun(
-          CORINFO_METHOD_HANDLE method) override;
-
-CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(
           CORINFO_METHOD_HANDLE method) override;
 
 void getGSCookie(

@@ -247,14 +247,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try
-                    {
-                        await client.GetAsync(ipv6Address);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(client.GetAsync(ipv6Address));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -299,14 +292,8 @@ namespace System.Net.Http.Functional.Tests
                         // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     }
-                    try
-                    {
-                        await client.GetAsync(url);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+
+                    await IgnoreExceptions(client.GetAsync(url));
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -909,18 +896,15 @@ namespace System.Net.Http.Functional.Tests
                     Task serverTask = server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestHeaderAndSendCustomResponseAsync("HTTP/1.1 200 OK\r\n" + LoopbackServer.CorsHeaders + "Transfer-Encoding: chunked\r\n\r\n");
-                        try
+
+                        await IgnoreExceptions(async () =>
                         {
                             while (!cts.IsCancellationRequested) // infinite to make sure implementation doesn't OOM
                             {
                                 await connection.WriteStringAsync(new string(' ', 10000));
                                 await Task.Delay(1);
                             }
-                        }
-                        catch (Exception ex)
-                        {
-                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                        }
+                        });
                     });
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
@@ -1437,6 +1421,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            // Tasks are stored and awaited outside of the CreateServerAsync callbacks
+            // to let server disposal abort any pending operations.
+            Task serverTask1 = null;
+            Task serverTask2 = null;
+
             await LoopbackServerFactory.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServerFactory.CreateServerAsync(async (server2, url2) =>
@@ -1446,13 +1435,13 @@ namespace System.Net.Http.Functional.Tests
                         var unblockServers = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
                         // First server connects but doesn't send any response yet
-                        Task serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
+                        serverTask1 = server1.AcceptConnectionAsync(async connection1 =>
                         {
                             await unblockServers.Task;
                         });
 
                         // Second server connects and sends some but not all headers
-                        Task serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
+                        serverTask2 = server2.AcceptConnectionAsync(async connection2 =>
                         {
                             await connection2.ReadRequestDataAsync();
                             await connection2.SendPartialResponseHeadersAsync(HttpStatusCode.OK);
@@ -1489,9 +1478,14 @@ namespace System.Net.Http.Functional.Tests
                         {
                             Assert.Equal("12345678901234567890", await response3.Content.ReadAsStringAsync());
                         }
+
+                        await serverTask3;
                     });
                 });
             });
+
+            await IgnoreExceptions(serverTask1);
+            await IgnoreExceptions(serverTask2);
         }
 
         [Theory]
@@ -1806,15 +1800,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    try
-                    {
-                        await connection.ReadRequestDataAsync(readBody: true);
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
-                    await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
+                    await IgnoreExceptions(connection.ReadRequestDataAsync(readBody: true));
                 });
             });
         }

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1598,12 +1599,30 @@ namespace System.Tests
         }
 
         [Fact]
+        public static unsafe void Copy_CompatiblePointers()
+        {
+            // Can copy between compatible pointers
+            uint*[] uintPointerArray = new uint*[1];
+            Array.ConstrainedCopy(new int*[1] { (int*)0x12345678 }, 0, uintPointerArray, 0, 1);
+            Assert.Equal((UIntPtr)0x12345678, (UIntPtr)uintPointerArray[0]);
+        }
+
+        [Fact]
         public static void Copy_SourceAndDestinationPointers_ThrowsArrayTypeMismatchException()
         {
             unsafe
             {
+                // Can't copy between pointer and object
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new void*[1], new object[1], 0));
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new object[1], new void*[1], 0));
+
+                // Can't copy between pointer and interface
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new IConvertible[1], 1));
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new IConvertible[1], new int*[1], 1));
+
+                // Can't copy between incompatible pointer types
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new bool*[1], 0));
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new int*[1], new void*[1], 0));
             }
         }
 

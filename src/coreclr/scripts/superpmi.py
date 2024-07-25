@@ -278,6 +278,7 @@ superpmi_common_parser.add_argument("--break_on_assert", action="store_true", he
 superpmi_common_parser.add_argument("--break_on_error", action="store_true", help=break_on_error_help)
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
+superpmi_common_parser.add_argument("--parallelism", help="Specify amount of parallelism")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
 superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
@@ -364,7 +365,6 @@ add_core_root_arguments(throughput_parser, "Release", throughput_build_type_help
 upload_parser = subparsers.add_parser("upload", description=upload_description, parents=[core_root_parser, target_parser])
 
 upload_parser.add_argument("-mch_files", metavar="MCH_FILE", required=True, nargs='+', help=upload_mch_files_help)
-upload_parser.add_argument("-az_storage_key", help="Key for the clrjit Azure Storage location. Default: use the value of the CLRJIT_AZ_KEY environment variable.")
 upload_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 upload_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 
@@ -1453,22 +1453,36 @@ class SuperPMICollect:
 # SuperPMI Replay helpers
 ################################################################################
 
-
-def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics):
-    """ Print a description of a superpmi return (error) code. If the return code is
-        zero, meaning success, don't print anything.
+def print_superpmi_error_result(return_code, coreclr_args):
+    """ Print a description of a superpmi return error code.
         Note that Python treats process return codes (at least on Windows) as
         unsigned integers, so compare against both signed and unsigned numbers for
         those return codes.
     """
+
     if return_code == 0:
-        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Overall"]["Successful compiles"]))
+        pass # Success
     elif return_code == -1 or return_code == 4294967295:
-        logging.error("General fatal error")
+        logging.error("General fatal error, please check the log for more details.")
     elif return_code == -2 or return_code == 4294967294:
-        logging.error("JIT failed to initialize")
+        logging.error("JIT failed to initialize, please check the log for more details.")
     elif return_code == 1:
         logging.warning("Compilation failures")
+    elif return_code == 2:
+        pass # Diffs
+    elif return_code == 3:
+        pass # Misses
+    elif return_code == 139 and coreclr_args.host_os != "windows":
+        logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault), please check the log for more details.")
+    else:
+        logging.error("Unknown error code %s, please check the log for more details.", return_code)
+
+def print_superpmi_success_result(return_code, base_metrics, diff_metrics):
+    """ Print a description of a superpmi return success code.
+    """
+
+    if return_code == 0:
+        logging.info("Clean SuperPMI {} ({} contexts processed)".format("replay" if diff_metrics is None else "diff", base_metrics["Overall"]["Successful compiles"]))
     elif return_code == 2:
         logging.warning("Asm diffs found")
     elif return_code == 3:
@@ -1483,12 +1497,6 @@ def print_superpmi_result(return_code, coreclr_args, base_metrics, diff_metrics)
                 logging.warning("SuperPMI encountered missing data for {} out of {} contexts".format(missing_base, total_contexts))
             else:
                 logging.warning("SuperPMI encountered missing data. Missing with base JIT: {}. Missing with diff JIT: {}. Total contexts: {}.".format(missing_base, missing_diff, total_contexts))
-
-    elif return_code == 139 and coreclr_args.host_os != "windows":
-        logging.error("Fatal error, SuperPMI has returned SIGSEGV (segmentation fault)")
-    else:
-        logging.error("Unknown error code %s", return_code)
-
 
 def print_fail_mcl_file_method_numbers(fail_mcl_file):
     """ Given a SuperPMI ".mcl" file (containing a list of failure indices), print out the method numbers.
@@ -1667,7 +1675,10 @@ class SuperPMIReplay:
                 repro_flags += [ "-target", self.coreclr_args.target_arch ]
 
             if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                common_flags += [ "-p" ]
+                if not self.coreclr_args.parallelism:
+                    common_flags += [ "-p" ]
+                else:
+                    common_flags += [ "-p", self.coreclr_args.parallelism ]
 
             if self.coreclr_args.break_on_assert:
                 common_flags += [ "-boa" ]
@@ -1719,9 +1730,10 @@ class SuperPMIReplay:
 
                 command = [self.superpmi_path] + flags + [self.jit_path, mch_file]
                 (return_code, replay_output) = run_and_log_return_output(command)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
                 replay_metrics = self.aggregate_replay_metrics(details_info_file)
-                print_superpmi_result(return_code, self.coreclr_args, replay_metrics, None)
+                print_superpmi_success_result(return_code, replay_metrics, None)
 
                 if return_code != 0:
                     # Don't report as replay failure missing data (return code 3).
@@ -2172,7 +2184,10 @@ class SuperPMIReplayAsmDiffs:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -2203,9 +2218,11 @@ class SuperPMIReplayAsmDiffs:
                     command = [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
-                print_superpmi_result(return_code, self.coreclr_args, base_metrics, diff_metrics)
+                (base_metrics, diff_metrics, diffs) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
+
                 artifacts_base_name = create_artifacts_base_name(self.coreclr_args, mch_file)
 
                 if return_code != 0:
@@ -2975,6 +2992,7 @@ class SuperPMIReplayThroughputDiff:
                 ]
                 flags = [
                     "-applyDiff",
+                    "-v", "ewi",
                     "-details", detailed_info_file,
                 ]
                 flags += target_flags
@@ -2982,7 +3000,10 @@ class SuperPMIReplayThroughputDiff:
                 flags += diff_option_flags
 
                 if not self.coreclr_args.sequential and not self.coreclr_args.compile:
-                    flags += [ "-p" ]
+                    if not self.coreclr_args.parallelism:
+                        flags += [ "-p" ]
+                    else:
+                        flags += [ "-p", self.coreclr_args.parallelism ]
 
                 if self.coreclr_args.break_on_assert:
                     flags += [ "-boa" ]
@@ -3006,11 +3027,10 @@ class SuperPMIReplayThroughputDiff:
                     command = [self.pin_path] + pin_options + ["--"] + [self.superpmi_path] + flags + [self.base_jit_path, self.diff_jit_path, mch_file]
                     return_code = run_and_log(command)
 
-                if return_code != 0:
-                    command_string = " ".join(command)
-                    logging.debug("'%s': Error return code: %s", command_string, return_code)
+                print_superpmi_error_result(return_code, self.coreclr_args)
 
                 (base_metrics, diff_metrics, _) = aggregate_diff_metrics(detailed_info_file)
+                print_superpmi_success_result(return_code, base_metrics, diff_metrics)
 
                 if base_metrics is not None and diff_metrics is not None:
                     base_instructions = base_metrics["Overall"]["Diff executed instructions"]
@@ -3563,14 +3583,14 @@ def list_superpmi_collections_container_via_azure_api(path_filter=lambda unused:
     """
 
     require_azure_storage_libraries()
-    from jitutil import ContainerClient, AzureCliCredential
+    from jitutil import ContainerClient, DefaultAzureCredential
 
     superpmi_container_url = az_blob_storage_superpmi_container_uri
 
     paths = []
     ok = True
     try:
-        az_credential = AzureCliCredential()
+        az_credential = DefaultAzureCredential()
         container = ContainerClient.from_container_url(superpmi_container_url, credential=az_credential)
         blob_name_prefix = az_collections_root_folder + "/"
         blob_list = container.list_blobs(name_starts_with=blob_name_prefix, retry_total=0)
@@ -3789,8 +3809,8 @@ def upload_mch(coreclr_args):
         coreclr_args (CoreclrArguments): parsed args
     """
 
-    require_azure_storage_libraries(need_azure_identity=False)
-    from jitutil import BlobServiceClient
+    require_azure_storage_libraries(need_azure_identity=True)
+    from jitutil import BlobServiceClient, DefaultAzureCredential
 
     def upload_blob(file, blob_name):
         blob_client = blob_service_client.get_blob_client(container=az_superpmi_container_name, blob=blob_name)
@@ -3826,7 +3846,9 @@ def upload_mch(coreclr_args):
     for item in files_to_upload:
         logging.info("  %s", item)
 
-    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=coreclr_args.az_storage_key)
+    default_credential = DefaultAzureCredential()
+
+    blob_service_client = BlobServiceClient(account_url=az_blob_storage_account_uri, credential=default_credential)
     blob_folder_name = "{}/{}/{}/{}".format(az_collections_root_folder, coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch)
 
     total_bytes_uploaded = 0
@@ -4449,6 +4471,11 @@ def setup_args(args):
                             "Unable to set sequential.")
 
         coreclr_args.verify(args,
+                            "parallelism",
+                            lambda unused: True,
+                            "Unable to set parallelism.")
+
+        coreclr_args.verify(args,
                             "error_limit",
                             lambda unused: True,
                             "Unable to set error_limit",
@@ -5006,12 +5033,6 @@ def setup_args(args):
         verify_jit_ee_version_arg()
 
         coreclr_args.verify(args,
-                            "az_storage_key",
-                            lambda item: item is not None,
-                            "Specify az_storage_key or set environment variable CLRJIT_AZ_KEY to the key to use.",
-                            modify_arg=lambda arg: os.environ["CLRJIT_AZ_KEY"] if arg is None and "CLRJIT_AZ_KEY" in os.environ else arg)
-
-        coreclr_args.verify(args,
                             "mch_files",
                             lambda unused: True,
                             "Unable to set mch_files")
@@ -5033,12 +5054,6 @@ def setup_args(args):
 
         if not os.path.isdir(coreclr_args.private_store):
             print("Error: private store directory '" + coreclr_args.private_store + "' not found.")
-            sys.exit(1)
-
-        # Safety measure: don't allow CLRJIT_AZ_KEY to be set if we are uploading to a private store.
-        # Note that this should be safe anyway, since we're publishing something private, not public.
-        if "CLRJIT_AZ_KEY" in os.environ:
-            print("Error: environment variable CLRJIT_AZ_KEY is set, but command is `upload-private`, not `upload`. That is not allowed.")
             sys.exit(1)
 
     elif coreclr_args.mode == "download":

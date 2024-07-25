@@ -200,19 +200,71 @@ namespace System
         // where the assumption of KeyDown-KeyUp pairing for a given key press
         // is invalid. For example in IME Unicode keyboard input, we often see
         // only KeyUp until the key is released.
-        private static bool IsKeyDownEvent(Interop.INPUT_RECORD ir)
+        private static bool IsReadKeyEvent(ref Interop.INPUT_RECORD ir)
         {
-            return (ir.EventType == Interop.KEY_EVENT && ir.keyEvent.bKeyDown != Interop.BOOL.FALSE);
-        }
+            if (ir.EventType != Interop.KEY_EVENT)
+            {
+                // Skip non key events.
+                return false;
+            }
 
-        private static bool IsModKey(Interop.INPUT_RECORD ir)
-        {
-            // We should also skip over Shift, Control, and Alt, as well as caps lock.
-            // Apparently we don't need to check for 0xA0 through 0xA5, which are keys like
-            // Left Control & Right Control. See the ConsoleKey enum for these values.
-            ushort keyCode = ir.keyEvent.wVirtualKeyCode;
-            return ((keyCode >= 0x10 && keyCode <= 0x12)
-                    || keyCode == 0x14 || keyCode == 0x90 || keyCode == 0x91);
+            if (ir.keyEvent.bKeyDown == Interop.BOOL.FALSE)
+            {
+                // The only keyup event we don't skip is Alt keyup with a synthesized unicode char,
+                // which is either the result of an Alt+Numpad key sequence, an IME-generated char,
+                // or a pasted char without a matching key.
+                return ir.keyEvent.wVirtualKeyCode == AltVKCode && ir.keyEvent.uChar != 0;
+            }
+            else
+            {
+                // Keydown event. Some of these we need to skip as well.
+                ushort keyCode = ir.keyEvent.wVirtualKeyCode;
+                if (keyCode is >= 0x10 and <= 0x12)
+                {
+                    // Skip modifier keys Shift, Control, Alt.
+                    return false;
+                }
+
+                if (keyCode is 0x14 or 0x90 or 0x91)
+                {
+                     // Skip CapsLock, NumLock, and ScrollLock keys,
+                    return false;
+                }
+
+                ControlKeyState keyState = (ControlKeyState)ir.keyEvent.dwControlKeyState;
+                if ((keyState & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0)
+                {
+                        // Possible Alt+NumPad unicode key sequence which surfaces by a subsequent
+                        // Alt keyup event with uChar (see above).
+                        ConsoleKey key = (ConsoleKey)keyCode;
+                        if (key is >= ConsoleKey.NumPad0 and <= ConsoleKey.NumPad9)
+                        {
+                            // Alt+Numpad keys (as received if NumLock is on).
+                            return false;
+                        }
+
+                        // If Numlock is off, the physical Numpad keys are received as navigation or
+                        // function keys. The EnhancedKey flag tells us whether these virtual keys
+                        // really originate from the numpad, or from the arrow pad / control pad.
+                        if ((keyState & ControlKeyState.EnhancedKey) == 0)
+                        {
+                            // If the EnhancedKey flag is not set, the following virtual keys originate
+                            // from the numpad.
+                            if (key is ConsoleKey.Clear or ConsoleKey.Insert)
+                            {
+                                // Skip Clear and Insert (usually mapped to Numpad 5 and 0).
+                                return false;
+                            }
+
+                            if (key is >= ConsoleKey.PageUp and <= ConsoleKey.DownArrow)
+                            {
+                                // Skip PageUp/Down, End/Home, and arrow keys.
+                                return false;
+                            }
+                        }
+                }
+                return true;
+            }
         }
 
         [Flags]
@@ -227,17 +279,6 @@ namespace System
             ScrollLockOn = 0x0040,
             CapsLockOn = 0x0080,
             EnhancedKey = 0x0100
-        }
-
-        // For tracking Alt+NumPad unicode key sequence. When you press Alt key down
-        // and press a numpad unicode decimal sequence and then release Alt key, the
-        // desired effect is to translate the sequence into one Unicode KeyPress.
-        // We need to keep track of the Alt+NumPad sequence and surface the final
-        // unicode char alone when the Alt key is released.
-        private static bool IsAltKeyDown(Interop.INPUT_RECORD ir)
-        {
-            return (((ControlKeyState)ir.keyEvent.dwControlKeyState)
-                              & (ControlKeyState.LeftAltPressed | ControlKeyState.RightAltPressed)) != 0;
         }
 
         private const int NumberLockVKCode = 0x90;
@@ -302,8 +343,8 @@ namespace System
                     if (numEventsRead == 0)
                         return false;
 
-                    // Skip non key-down && mod key events.
-                    if (!IsKeyDownEvent(ir) || IsModKey(ir))
+                    // Skip non-significant events.
+                    if (!IsReadKeyEvent(ref ir))
                     {
                         r = Interop.Kernel32.ReadConsoleInput(InputHandle, out _, 1, out _);
 
@@ -377,40 +418,7 @@ namespace System
                             continue;
                         }
 
-                        ushort keyCode = ir.keyEvent.wVirtualKeyCode;
-
-                        // First check for non-keyboard events & discard them. Generally we tap into only KeyDown events and ignore the KeyUp events
-                        // but it is possible that we are dealing with a Alt+NumPad unicode key sequence, the final unicode char is revealed only when
-                        // the Alt key is released (i.e when the sequence is complete). To avoid noise, when the Alt key is down, we should eat up
-                        // any intermediate key strokes (from NumPad) that collectively forms the Unicode character.
-
-                        if (!IsKeyDownEvent(ir))
-                        {
-                            // REVIEW: Unicode IME input comes through as KeyUp event with no accompanying KeyDown.
-                            if (keyCode != AltVKCode)
-                                continue;
-                        }
-
-                        char ch = ir.keyEvent.uChar;
-
-                        // In a Alt+NumPad unicode sequence, when the alt key is released uChar will represent the final unicode character, we need to
-                        // surface this. VirtualKeyCode for this event will be Alt from the Alt-Up key event. This is probably not the right code,
-                        // especially when we don't expose ConsoleKey.Alt, so this will end up being the hex value (0x12). VK_PACKET comes very
-                        // close to being useful and something that we could look into using for this purpose...
-
-                        if (ch == 0)
-                        {
-                            // Skip mod keys.
-                            if (IsModKey(ir))
-                                continue;
-                        }
-
-                        // When Alt is down, it is possible that we are in the middle of a Alt+NumPad unicode sequence.
-                        // Escape any intermediate NumPad keys whether NumLock is on or not (notepad behavior)
-                        ConsoleKey key = (ConsoleKey)keyCode;
-                        if (IsAltKeyDown(ir) && ((key >= ConsoleKey.NumPad0 && key <= ConsoleKey.NumPad9)
-                                             || (key == ConsoleKey.Clear) || (key == ConsoleKey.Insert)
-                                             || (key >= ConsoleKey.PageUp && key <= ConsoleKey.DownArrow)))
+                        if (!IsReadKeyEvent(ref ir))
                         {
                             continue;
                         }
@@ -677,9 +685,28 @@ namespace System
 
         public static void Beep()
         {
-            const int BeepFrequencyInHz = 800;
-            const int BeepDurationInMs = 200;
-            Interop.Kernel32.Beep(BeepFrequencyInHz, BeepDurationInMs);
+            if (!Console.IsOutputRedirected)
+            {
+                const string BellString = "\u0007"; // Windows doesn't use terminfo, so the codepoint is hardcoded.
+
+                Span<byte> bell = stackalloc byte[10];
+                if (Console.OutputEncoding.TryGetBytes(BellString, bell, out int bytesWritten))
+                {
+                    bell = bell.Slice(0, bytesWritten);
+                }
+                else
+                {
+                    bell = Console.OutputEncoding.GetBytes(BellString);
+                }
+
+                int errorCode = WindowsConsoleStream.WriteFileNative(OutputHandle, bell, useFileAPIs: Console.OutputEncoding.CodePage != UnicodeCodePage);
+                if (errorCode == Interop.Errors.ERROR_SUCCESS)
+                {
+                    return;
+                }
+            }
+
+            Interop.Kernel32.Beep(frequency: 800, duration: 200);
         }
 
         public static void Beep(int frequency, int duration)
@@ -1207,7 +1234,7 @@ namespace System
                 return errorCode;
             }
 
-            private static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
+            internal static unsafe int WriteFileNative(IntPtr hFile, ReadOnlySpan<byte> bytes, bool useFileAPIs)
             {
                 if (bytes.IsEmpty)
                     return Interop.Errors.ERROR_SUCCESS;

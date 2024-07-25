@@ -1064,7 +1064,7 @@ namespace System.Xml.XPath
             {
                 return schemaType.Validate(reader, null, schemas, validationEvent);
             }
-            Debug.Assert(schemas != null, "schemas != null");
+            Debug.Assert(schemas != null);
             XmlReaderSettings readerSettings = new XmlReaderSettings();
             readerSettings.ConformanceLevel = ConformanceLevel.Auto;
             readerSettings.ValidationType = ValidationType.Schema;

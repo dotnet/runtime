@@ -652,7 +652,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
             *(PVOID *)pArgDst = pStackCopy;
 
             // save the info into ValueClassInfo
-            if (pMT->ContainsPointers())
+            if (pMT->ContainsGCPointers())
             {
                 pValueClasses = new (_alloca(sizeof(ValueClassInfo))) ValueClassInfo(pStackCopy, pMT, pValueClasses);
             }

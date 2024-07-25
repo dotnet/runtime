@@ -100,6 +100,75 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved()
+        {
+            bool seenUnobservedExceptions = false;
+
+            EventHandler<UnobservedTaskExceptionEventArgs> eventHandler = (_, e) =>
+            {
+                if (e.Exception.InnerException?.Message == nameof(ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved))
+                {
+                    _output.WriteLine(e.Exception.ToString());
+                    seenUnobservedExceptions = true;
+                }
+            };
+
+            TaskScheduler.UnobservedTaskException += eventHandler;
+            try
+            {
+                const string FirstResponse = "HTTP/1.1 200 OK\r\nContent-Length: 3\r\n\r\nfoo";
+                int firstResponseOffset = 0;
+
+                TaskCompletionSource firstWriteCompleted = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                using var client = new HttpClient(new SocketsHttpHandler
+                {
+                    PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan,
+                    ConnectCallback = (_, _) =>
+                    {
+                        return ValueTask.FromResult<Stream>(new DelegateDelegatingStream(Stream.Null)
+                        {
+                            ReadAsyncMemoryFunc = async (buffer, ct) =>
+                            {
+                                if (firstResponseOffset < FirstResponse.Length)
+                                {
+                                    await firstWriteCompleted.Task.WaitAsync(ct);
+                                    int toWrite = Math.Min(buffer.Length, FirstResponse.Length - firstResponseOffset);
+                                    Assert.Equal(toWrite, Encoding.ASCII.GetBytes(FirstResponse.AsSpan(firstResponseOffset, toWrite), buffer.Span));
+                                    firstResponseOffset += toWrite;
+                                    return toWrite;
+                                }
+
+                                throw new Exception(nameof(ReadAheadTaskOnConnectionReuse_ExceptionsAreObserved));
+                            },
+                            WriteAsyncMemoryFunc = (_, _) =>
+                            {
+                                firstWriteCompleted.TrySetResult();
+                                return default;
+                            }
+                        });
+                    }
+                });
+
+                // The first request succeeds.
+                Assert.Equal("foo", await client.GetStringAsync("http://foo"));
+
+                // The connection throws an exception after the first request.
+                // No matter what happens with the second request, we should always be observing the connection exception.
+                await Assert.ThrowsAsync<Exception>(() => client.GetAsync("http://foo"));
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= eventHandler;
+            }
+
+            Assert.False(seenUnobservedExceptions);
+        }
+
+        [Fact]
         public async Task ExecutionContext_Suppressed_Success()
         {
             await LoopbackServerFactory.CreateClientAndServerAsync(
@@ -221,6 +290,14 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_DiagnosticsTest_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
+    }
+
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public sealed class SocketsHttpHandler_DiagnosticsTest_Http3 : DiagnosticsTest
+    {
+        public SocketsHttpHandler_DiagnosticsTest_Http3(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version30;
     }
 
     public sealed class SocketsHttpHandler_HttpClient_SelectedSites_Test : HttpClient_SelectedSites_Test
@@ -382,13 +459,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void MaxResponseDrainSize_SetAfterUse_Throws()
+        public async Task MaxResponseDrainSize_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxResponseDrainSize = 1;
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(1, handler.MaxResponseDrainSize);
                 Assert.Throws<InvalidOperationException>(() => handler.MaxResponseDrainSize = 1);
             }
@@ -425,13 +502,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void ResponseDrainTimeout_SetAfterUse_Throws()
+        public async Task ResponseDrainTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42);
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(TimeSpan.FromSeconds(42), handler.ResponseDrainTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ResponseDrainTimeout = TimeSpan.FromSeconds(42));
             }
@@ -1274,13 +1351,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void ConnectTimeout_SetAfterUse_Throws()
+        public async Task ConnectTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ConnectTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.ConnectTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.ConnectTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -1321,13 +1398,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public void Expect100ContinueTimeout_SetAfterUse_Throws()
+        public async Task Expect100ContinueTimeout_SetAfterUse_Throws()
         {
             using (var handler = new SocketsHttpHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
-                _ = client.GetAsync($"http://{Guid.NewGuid():N}"); // ignoring failure
+                await Assert.ThrowsAnyAsync<Exception>(() => client.GetAsync(InvalidUri));
                 Assert.Equal(TimeSpan.FromMilliseconds(int.MaxValue), handler.Expect100ContinueTimeout);
                 Assert.Throws<InvalidOperationException>(() => handler.Expect100ContinueTimeout = TimeSpan.FromMilliseconds(1));
             }
@@ -1633,8 +1710,8 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3 : SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Http3(ITestOutputHelper output) : base(output) { }
@@ -3811,14 +3888,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync(content: "foo"));
                 }, options: options);
         }
 
@@ -3848,14 +3918,7 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    try
-                    {
-                        await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
-                    }
-                    catch (Exception ex)
-                    {
-                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                    }
+                    await IgnoreExceptions(server.AcceptConnectionSendResponseAndCloseAsync(content: "foo"));
                 }, options: options);
         }
     }
@@ -4027,48 +4090,48 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3 : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3 : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3 : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3 : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3(ITestOutputHelper output) : base(output) { }
@@ -4200,14 +4263,7 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                try
-                {
-                    await server.HandleRequestAsync();
-                }
-                catch (Exception ex)
-                {
-                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-                }
+                await IgnoreExceptions(server.HandleRequestAsync());
 
                 // On HTTP/1.x, an exception being thrown while sending the request content will result in the connection being closed.
                 // This test is ensuring that a subsequent request can succeed on a new connection.
@@ -4232,8 +4288,8 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandler_RequestContentLengthMismatchTest_Http3 : SocketsHttpHandler_RequestContentLengthMismatchTest
     {
         public SocketsHttpHandler_RequestContentLengthMismatchTest_Http3(ITestOutputHelper output) : base(output) { }
@@ -4409,8 +4465,8 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3 : SocketsHttpHandler_SecurityTest
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http3(ITestOutputHelper output) : base(output) { }
@@ -4538,8 +4594,8 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
+    [Collection(nameof(DisableParallelization))]
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103703", typeof(PlatformDetection), nameof(PlatformDetection.IsArmProcess))]
     public sealed class SocketsHttpHandler_HttpRequestErrorTest_Http30 : SocketsHttpHandler_HttpRequestErrorTest
     {
         public SocketsHttpHandler_HttpRequestErrorTest_Http30(ITestOutputHelper output) : base(output) { }

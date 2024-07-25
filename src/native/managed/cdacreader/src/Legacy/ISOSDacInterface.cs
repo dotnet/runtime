@@ -42,7 +42,114 @@ internal struct DacpThreadData
     public ulong lastThrownObjectHandle;
     public ulong nextThread;
 }
+
+internal struct DacpModuleData
+{
+    public ulong Address;
+    public ulong PEAssembly; // Actually the module address in .NET 9+
+    public ulong ilBase;
+    public ulong metadataStart;
+    public ulong metadataSize;
+    public ulong Assembly; // Assembly pointer
+    public uint isReflection;
+    public uint isPEFile;
+
+    public ulong dwBaseClassIndex; // Always 0 - .NET no longer has this
+    public ulong dwModuleID; // Always 0 - .NET no longer has this
+
+    public uint dwTransientFlags;
+
+    public ulong TypeDefToMethodTableMap;
+    public ulong TypeRefToMethodTableMap;
+    public ulong MethodDefToDescMap;
+    public ulong FieldDefToDescMap;
+    public ulong MemberRefToDescMap;
+    public ulong FileReferencesMap;
+    public ulong ManifestModuleReferencesMap;
+
+    public ulong LoaderAllocator;
+    public ulong ThunkHeap;
+
+    public ulong dwModuleIndex; // Always 0 - .NET no longer has this
+}
+
+internal struct DacpMethodTableData
+{
+    public int bIsFree; // everything else is NULL if this is true.
+    public ulong module;
+    public ulong klass;
+    public ulong parentMethodTable;
+    public ushort wNumInterfaces;
+    public ushort wNumMethods;
+    public ushort wNumVtableSlots;
+    public ushort wNumVirtuals;
+    public uint baseSize;
+    public uint componentSize;
+    public uint /*mdTypeDef*/ cl; // Metadata token
+    public uint dwAttrClass; // cached metadata
+    public int bIsShared;  // Always false, preserved for backward compatibility
+    public int bIsDynamic;
+    public int bContainsGCPointers;
+}
+
+internal struct DacpUsefulGlobalsData
+{
+    public ulong ArrayMethodTable;
+    public ulong StringMethodTable;
+    public ulong ObjectMethodTable;
+    public ulong ExceptionMethodTable;
+    public ulong FreeMethodTable;
+}
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+internal struct DacpReJitData
+{
+    // FIXME[cdac]: the C++ definition enum doesn't have an explicit underlying type or constant values for the flags
+    public enum Flags : uint
+    {
+        kUnknown = 0,
+        kRequested = 1,
+        kActive = 2,
+        kReverted = 3,
+    };
+
+    public ulong /*CLRDATA_ADDRESS*/ rejitID;
+    public Flags flags; /* = Flags::kUnknown*/
+    public ulong /*CLRDATA_ADDRESS*/ NativeCodeAddr;
+};
+
+internal struct DacpMethodDescData
+{
+    public int bHasNativeCode;
+    public int bIsDynamic;
+    public ushort wSlotNumber;
+    public ulong /*CLRDATA_ADDRESS*/ NativeCodeAddr;
+    // Useful for breaking when a method is jitted.
+    public ulong /*CLRDATA_ADDRESS*/ AddressOfNativeCodeSlot;
+
+    public ulong /*CLRDATA_ADDRESS*/ MethodDescPtr;
+    public ulong /*CLRDATA_ADDRESS*/ MethodTablePtr;
+    public ulong /*CLRDATA_ADDRESS*/ ModulePtr;
+
+    public uint /*mdToken*/ MDToken;
+    public ulong /*CLRDATA_ADDRESS*/ GCInfo;
+    public ulong /*CLRDATA_ADDRESS*/ GCStressCodeCopy;
+
+    // This is only valid if bIsDynamic is true
+    public ulong /*CLRDATA_ADDRESS*/ managedDynamicMethodObject;
+
+    public ulong /*CLRDATA_ADDRESS*/ requestedIP;
+
+    // Gives info for the single currently active version of a method
+    public DacpReJitData rejitDataCurrent;
+
+    // Gives info corresponding to requestedIP (for !ip2md)
+    public DacpReJitData rejitDataRequested;
+
+    // Total number of rejit versions that have been jitted
+    public uint /*ULONG*/ cJittedRejitVersions;
+
+}
 
 [GeneratedComInterface]
 [Guid("436f00f2-b42a-4b9f-870c-e73db66ae930")]
@@ -79,7 +186,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetModule(ulong addr, /*IXCLRDataModule*/ void** mod);
     [PreserveSig]
-    int GetModuleData(ulong moduleAddr, /*struct DacpModuleData*/ void* data);
+    int GetModuleData(ulong moduleAddr, DacpModuleData* data);
     [PreserveSig]
     int TraverseModuleMap(/*ModuleMapType*/ int mmt, ulong moduleAddr, /*MODULEMAPTRAVERSE*/ void* pCallback, void* token);
     [PreserveSig]
@@ -97,7 +204,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // MethodDescs
     [PreserveSig]
-    int GetMethodDescData(ulong methodDesc, ulong ip, /*struct DacpMethodDescData*/ void* data, uint cRevertedRejitVersions, /*struct DacpReJitData*/ void* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
+    int GetMethodDescData(ulong methodDesc, ulong ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData);
     [PreserveSig]
     int GetMethodDescPtrFromIP(ulong ip, ulong* ppMD);
     [PreserveSig]
@@ -139,7 +246,7 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetMethodTableName(ulong mt, uint count, char* mtName, uint* pNeeded);
     [PreserveSig]
-    int GetMethodTableData(ulong mt, /*struct DacpMethodTableData*/ void* data);
+    int GetMethodTableData(ulong mt, DacpMethodTableData* data);
     [PreserveSig]
     int GetMethodTableSlot(ulong mt, uint slot, ulong* value);
     [PreserveSig]
@@ -231,7 +338,7 @@ internal unsafe partial interface ISOSDacInterface
 
     // Other
     [PreserveSig]
-    int GetUsefulGlobals(/*struct DacpUsefulGlobalsData */ void* data);
+    int GetUsefulGlobals(DacpUsefulGlobalsData* data);
     [PreserveSig]
     int GetClrWatsonBuckets(ulong thread, void* pGenericModeBlock);
     [PreserveSig]
@@ -284,6 +391,30 @@ internal unsafe partial interface ISOSDacInterface
     [PreserveSig]
     int GetFailedAssemblyDisplayName(ulong assembly, uint count, char* name, uint* pNeeded);
 };
+
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
+internal struct DacpExceptionObjectData
+{
+    public ulong Message;
+    public ulong InnerException;
+    public ulong StackTrace;
+    public ulong WatsonBuckets;
+    public ulong StackTraceString;
+    public ulong RemoteStackTraceString;
+    public int HResult;
+    public int XCode;
+}
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+[GeneratedComInterface]
+[Guid("A16026EC-96F4-40BA-87FB-5575986FB7AF")]
+internal unsafe partial interface ISOSDacInterface2
+{
+    [PreserveSig]
+    int GetObjectExceptionData(ulong objectAddress, DacpExceptionObjectData* data);
+    [PreserveSig]
+    int IsRCWDCOMProxy(ulong rcwAddress, int* inDCOMProxy);
+}
 
 [GeneratedComInterface]
 [Guid("4eca42d8-7e7b-4c8a-a116-7bfbf6929267")]

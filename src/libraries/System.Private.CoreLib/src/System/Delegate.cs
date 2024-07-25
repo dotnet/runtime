@@ -72,7 +72,7 @@ namespace System
 
         protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
 
-        public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
+        public virtual Delegate[] GetInvocationList() => [this];
 
         /// <summary>
         /// Gets a value that indicates whether the <see cref="Delegate"/> has a single invocation target.

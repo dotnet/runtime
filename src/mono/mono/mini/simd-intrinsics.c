@@ -355,10 +355,16 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				instc0 = OP_FDIV;
 				break;
 			}
+#ifdef TARGET_ARM64
 			case SN_Max:
+#endif
+			case SN_MaxNative:
 				instc0 = OP_FMAX;
 				break;
+#ifdef TARGET_ARM64
 			case SN_Min:
+#endif
+			case SN_MinNative:
 				instc0 = OP_FMIN;
 				break;
 			case SN_Multiply:
@@ -396,6 +402,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Division:
 				return NULL;
 			case SN_Max:
+			case SN_MaxNative:
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMAX_UN : OP_IMAX;
 #ifdef TARGET_AMD64
 				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMAX_UN)
@@ -403,6 +410,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 #endif
 				break;
 			case SN_Min:
+			case SN_MinNative:
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMIN_UN : OP_IMIN;
 #ifdef TARGET_AMD64
 				if (!COMPILE_LLVM (cfg) && instc0 == OP_IMIN_UN)
@@ -1187,11 +1195,16 @@ static guint16 sri_vector_methods [] = {
 	SN_AsInt64,
 	SN_AsNInt,
 	SN_AsNUInt,
+	SN_AsPlane,
+	SN_AsQuaternion,
 	SN_AsSByte,
 	SN_AsSingle,
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
+	SN_AsVector,
+	SN_AsVector128,
+	SN_AsVector4,
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
 	SN_Ceiling,
@@ -1221,6 +1234,11 @@ static guint16 sri_vector_methods [] = {
 	SN_GreaterThanOrEqual,
 	SN_GreaterThanOrEqualAll,
 	SN_GreaterThanOrEqualAny,
+	SN_IsNaN,
+	SN_IsNegative,
+	SN_IsPositive,
+	SN_IsPositiveInfinity,
+	SN_IsZero,
 	SN_LessThan,
 	SN_LessThanAll,
 	SN_LessThanAny,
@@ -1228,8 +1246,11 @@ static guint16 sri_vector_methods [] = {
 	SN_LessThanOrEqualAll,
 	SN_LessThanOrEqualAny,
 	SN_Max,
+	SN_MaxNative,
 	SN_Min,
+	SN_MinNative,
 	SN_Multiply,
+	SN_MultiplyAddEstimate,
 	SN_Narrow,
 	SN_Negate,
 	SN_OnesComplement,
@@ -1590,12 +1611,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_BitwiseOr:
 	case SN_Divide:
 	case SN_Max:
+	case SN_MaxNative:
 	case SN_Min:
+	case SN_MinNative:
 	case SN_Multiply:
 	case SN_Subtract:
 	case SN_Xor:
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+#ifndef TARGET_ARM64
+		if (((id == SN_Max) || (id == SN_Min)) && type_enum_is_float(arg0_type))
+			return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 	case SN_AndNot: {
 		if (!is_element_type_primitive (fsig->params [0]))
@@ -1614,6 +1641,40 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 	}
+	case SN_MultiplyAddEstimate: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		int mul_op;
+		int add_op;
+
+		if (type_enum_is_float (arg0_type)) {
+			mul_op = OP_FMUL;
+			add_op = OP_FADD;
+		} else {
+			mul_op = OP_IMUL;
+			add_op = OP_IADD;
+
+#ifdef TARGET_ARM64
+			if (!COMPILE_LLVM (cfg) && (arg0_type == MONO_TYPE_I8 || arg0_type == MONO_TYPE_U8 || arg0_type == MONO_TYPE_I || arg0_type == MONO_TYPE_U))
+				return NULL;
+#endif
+#ifdef TARGET_AMD64
+			if (!COMPILE_LLVM (cfg))
+				return NULL;
+#endif
+		}
+
+		MonoInst *mul_ins = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, args [1]->dreg);
+		mul_ins->inst_c0 = mul_op;
+		mul_ins->inst_c1 = arg0_type;
+
+		MonoInst *add_ins = emit_simd_ins (cfg, klass, OP_XBINOP, mul_ins->dreg, args [2]->dreg);
+		add_ins->inst_c0 = add_op;
+		add_ins->inst_c1 = arg0_type;
+
+		return add_ins;
+	}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
@@ -1622,6 +1683,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_AsInt64:
 	case SN_AsNInt:
 	case SN_AsNUInt:
+	case SN_AsPlane:
+	case SN_AsQuaternion:
 	case SN_AsSByte:
 	case SN_AsSingle:
 	case SN_AsUInt16:
@@ -1630,6 +1693,23 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+	}
+	case SN_AsVector:
+	case SN_AsVector128:
+	case SN_AsVector4: {
+		if (!is_element_type_primitive (fsig->ret) || !is_element_type_primitive (fsig->params [0]))
+			return NULL;
+
+		MonoClass *ret_class = mono_class_from_mono_type_internal (fsig->ret);
+		int ret_size = mono_class_value_size (ret_class, NULL);
+
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int arg_size = mono_class_value_size (arg_class, NULL);
+
+		if (arg_size == ret_size)
+			return emit_simd_ins (cfg, klass, OP_XCAST, args [0]->dreg, -1);
+
+		return NULL;
 	}
 	case SN_Ceiling:
 	case SN_Floor: {
@@ -2122,6 +2202,88 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			ret->inst_c1 = mono_class_value_size (klass, NULL);
 			return ret;
 		}
+	}
+	case SN_IsNaN: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (!type_enum_is_float(arg0_type))
+			return emit_xzero (cfg, klass);
+		int op = -1;
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		op = OP_ONES_COMPLEMENT;
+#elif defined(TARGET_WASM)
+		op = OP_WASM_ONESCOMPLEMENT;
+#endif
+		if (op == -1)
+			return NULL;
+		MonoInst *xcmp = emit_xcompare (cfg, klass, arg0_type, args [0], args [0]);
+		MonoInst *xnot = emit_simd_ins (cfg, klass, op, xcmp->dreg, -1);
+		xnot->inst_c1 = arg0_type;
+		return xnot;
+	}
+	case SN_IsNegative:
+	case SN_IsPositive: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (type_enum_is_unsigned(arg0_type)) {
+			if (id == SN_IsNegative) {
+				return emit_xzero (cfg, klass);
+			} else {
+				return emit_xones (cfg, klass);
+			}
+		}
+
+		MonoInst *arg0 = args [0];
+		MonoClass *op_klass = klass;
+
+		if (type_enum_is_float (arg0_type)) {
+			if (arg0_type == MONO_TYPE_R4) {
+				arg0_type = MONO_TYPE_I4;
+				op_klass = mono_defaults.int32_class;
+			} else {
+				arg0_type = MONO_TYPE_I8;
+				op_klass = mono_defaults.int64_class;
+			}
+			op_klass = create_class_instance (m_class_get_name_space (klass), m_class_get_name (klass), m_class_get_byval_arg (op_klass));
+			arg0 = emit_simd_ins (cfg, op_klass, OP_XCAST, arg0->dreg, -1);
+		}
+
+		int cmpId = (id == SN_IsNegative) ? SN_LessThan : SN_GreaterThanOrEqual;
+		MonoInst *ins = emit_xcompare_for_intrinsic (cfg, op_klass, cmpId, arg0_type, arg0, emit_xzero (cfg, op_klass));
+
+		if (op_klass != klass) {
+			ins = emit_simd_ins (cfg, klass, OP_XCAST, ins->dreg, -1);
+		}
+		return ins;
+	}
+	case SN_IsPositiveInfinity: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		if (arg0_type == MONO_TYPE_R4) {
+			guint32 value[4];
+
+			value [0] = 0x7F800000;
+			value [1] = 0x7F800000;
+			value [2] = 0x7F800000;
+			value [3] = 0x7F800000;
+
+			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
+			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
+		} else if (arg0_type == MONO_TYPE_R8) {
+			guint64 value[2];
+
+			value [0] = 0x7FF0000000000000;
+			value [1] = 0x7FF0000000000000;
+
+			MonoInst *arg1 = emit_xconst_v128 (cfg, klass, (guint8*)value);
+			return emit_xcompare (cfg, klass, arg0_type, args [0], arg1);
+		}
+		return emit_xzero (cfg, klass);
+	}
+	case SN_IsZero: {
+		if (!is_element_type_primitive (fsig->params [0]))
+			return NULL;
+		return emit_xcompare (cfg, klass, arg0_type, args [0], emit_xzero (cfg, klass));
 	}
 	case SN_Narrow: {
 		if (!is_element_type_primitive (fsig->params [0]))
@@ -2689,6 +2851,7 @@ static guint16 vector_2_3_4_methods[] = {
 	SN_Abs,
 	SN_Add,
 	SN_Clamp,
+	SN_ClampNative,
 	SN_Conjugate,
 	SN_CopyTo,
 	SN_Distance,
@@ -2699,7 +2862,9 @@ static guint16 vector_2_3_4_methods[] = {
 	SN_LengthSquared,
 	SN_Lerp,
 	SN_Max,
+	SN_MaxNative,
 	SN_Min,
+	SN_MinNative,
 	SN_Multiply,
 	SN_Negate,
 	SN_Normalize,
@@ -2920,10 +3085,8 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		float value[4];
 		value [0] = 1.0f;
 		value [1] = 1.0f;
-		value [2] = 1.0f;
-		value [3] = 1.0f;
-		if (len == 3)
-			value [3] = 0.0f;
+		value [2] = (len > 2) ? 1.0f : 0.0f;
+		value [3] = (len > 3) ? 1.0f : 0.0f;
 		return emit_xconst_v128 (cfg, klass, (guint8*)value);
 	}
 	case SN_set_Item: {
@@ -2994,11 +3157,17 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_op_Multiply:
 	case SN_op_Subtraction:
 	case SN_Max:
-	case SN_Min: {
+	case SN_MaxNative:
+	case SN_Min:
+	case SN_MinNative: {
 		const char *klass_name = m_class_get_name (klass);
 		// FIXME https://github.com/dotnet/runtime/issues/82408
 		if ((id == SN_op_Multiply || id == SN_Multiply || id == SN_op_Division || id == SN_Divide) && !strcmp (klass_name, "Quaternion"))
 			return NULL;
+#ifndef TARGET_ARM64
+		if ((id == SN_Max) || (id == SN_Min))
+			return NULL;
+#endif
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, MONO_TYPE_R4, id);
 	}
 	case SN_Dot: {
@@ -3055,9 +3224,14 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	}
 	case SN_CopyTo:
 		return NULL;
-	case SN_Clamp: {
+	case SN_Clamp:
+	case SN_ClampNative: {
 		if (!(!fsig->hasthis && fsig->param_count == 3 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type) && mono_metadata_type_equal (fsig->params [2], type)))
 			return NULL;
+#ifndef TARGET_ARM64
+		if (id == SN_Clamp)
+			return NULL;
+#endif
 
 		MonoInst *max = emit_simd_ins (cfg, klass, OP_XBINOP, args[0]->dreg, args[1]->dreg);
 		max->inst_c0 = OP_FMAX;
@@ -3128,26 +3302,44 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 #endif
 	}
 	case SN_Lerp: {
-#if defined (TARGET_ARM64)
-		MonoInst* v1 = args [1];
 		if (!strcmp ("Quaternion", m_class_get_name (klass))) 
 			return NULL;
-		
 
-		MonoInst *diffs = emit_simd_ins (cfg, klass, OP_XBINOP, v1->dreg, args [0]->dreg);
-		diffs->inst_c0 = OP_FSUB;
-		diffs->inst_c1 = MONO_TYPE_R4;
+		float value[4];
+		value [0] = 1.0f;
+		value [1] = 1.0f;
+		value [2] = (len > 2) ? 1.0f : 0.0f;
+		value [3] = (len > 3) ? 1.0f : 0.0f;
+		MonoInst *ins_one = emit_xconst_v128 (cfg, klass, (guint8*)value);
 
-		MonoInst *scaled_diffs = handle_mul_div_by_scalar (cfg, klass, MONO_TYPE_R4, args [2]->dreg, diffs->dreg, OP_FMUL);
-		
-		MonoInst *result = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, scaled_diffs->dreg);
+		MonoInst *ins_amount = args [2];
+
+		if (!type_is_simd_vector (fsig->params [2])) {
+			ins_amount = emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), ins_amount->dreg, -1);
+			ins_amount->inst_c1 = MONO_TYPE_R4;
+		}
+
+		// diff = 1.0 - amount
+		MonoInst *ins_diff = emit_simd_ins (cfg, klass, OP_XBINOP, ins_one->dreg, ins_amount->dreg);
+		ins_diff->inst_c0 = OP_FSUB;
+		ins_diff->inst_c1 = MONO_TYPE_R4;
+
+		// prodx = x * diff
+		MonoInst *ins_prodx = emit_simd_ins (cfg, klass, OP_XBINOP, args [0]->dreg, ins_diff->dreg);
+		ins_prodx->inst_c0 = OP_FMUL;
+		ins_prodx->inst_c1 = MONO_TYPE_R4;
+
+		// prody = y * amount
+		MonoInst *ins_prody = emit_simd_ins (cfg, klass, OP_XBINOP, args [1]->dreg, ins_amount->dreg);
+		ins_prody->inst_c0 = OP_FMUL;
+		ins_prody->inst_c1 = MONO_TYPE_R4;
+
+		// result = prodx + prody
+		MonoInst *result = emit_simd_ins (cfg, klass, OP_XBINOP, ins_prodx->dreg, ins_prody->dreg);
 		result->inst_c0 = OP_FADD;
 		result->inst_c1 = MONO_TYPE_R4;
 
 		return result;
-#else
-		return NULL;
-#endif
 	}
 	case SN_Normalize: {
 #if defined (TARGET_ARM64)
