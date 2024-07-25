@@ -188,14 +188,17 @@ namespace HttpStress
             Console.WriteLine("Query Parameters: " + config.MaxParameters);
             Console.WriteLine();
 
-            TaskScheduler.UnobservedTaskException += (_, e) =>
+            if (config.RunMode.HasFlag(RunMode.client))
             {
-                lock (s_unobservedExceptions)
+                TaskScheduler.UnobservedTaskException += (_, e) =>
                 {
-                    string text = e.Exception.ToString();
-                    s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
-                }
-            };
+                    lock (s_unobservedExceptions)
+                    {
+                        string text = e.Exception.ToString();
+                        s_unobservedExceptions[text] = s_unobservedExceptions.GetValueOrDefault(text) + 1;
+                    }
+                };
+            }
 
             StressServer? server = null;
             if (config.RunMode.HasFlag(RunMode.server))
