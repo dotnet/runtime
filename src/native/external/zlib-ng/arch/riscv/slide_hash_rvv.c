@@ -26,7 +26,7 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
 }
 
 Z_INTERNAL void slide_hash_rvv(deflate_state *s) {
-    assert(s->w_size <= UINT16_MAX);
+    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
     uint16_t wsize = (uint16_t)s->w_size;
 
     slide_hash_chain(s->head, HASH_SIZE, wsize);
