@@ -230,7 +230,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/105490", TestRuntimes.Mono)]
         public static async Task DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
         {
             var tcs = new TaskCompletionSource<bool>();
@@ -247,7 +246,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     tcs.SetException(e);
                 }
-            }, maxStackSize: 100_000) { IsBackground = true }.Start();
+            }, maxStackSize: 128 * 1024) { IsBackground = true }.Start();
 
             await tcs.Task;
         }
