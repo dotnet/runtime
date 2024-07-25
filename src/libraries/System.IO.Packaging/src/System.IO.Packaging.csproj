@@ -6,6 +6,8 @@
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
     <IsPackable>true</IsPackable>
     <PackageDescription>Provides classes that support storage of multiple data objects in a single container.</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->

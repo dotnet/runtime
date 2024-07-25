@@ -6,6 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPackable>true</IsPackable>
     <PackageDescription>EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

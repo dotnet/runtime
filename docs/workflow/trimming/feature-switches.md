@@ -2,41 +2,18 @@
 
 Starting with .NET 5 there are several [feature-switches](https://github.com/dotnet/designs/blob/master/accepted/2020/feature-switch.md) available which
 can be used to control the size of the final binary. They are available in all
-configurations but their defaults might vary as any SDK can set the defaults differently.
+configurations but their defaults might vary as any SDK can set the defaults differently. Publicly documented feature switches can be found on the [official docs](https://learn.microsoft.com/en-us/dotnet/core/deploying/trimming/trimming-options#trimming-framework-library-features). Non-public feature switches that impact the runtime libraries can be found in the following table.
 
 ## Available Feature Switches
 
 | MSBuild Property Name | AppContext Setting | Description |
 |-|-|-|
-| DebuggerSupport | System.Diagnostics.Debugger.IsSupported | Any dependency that enables better debugging experience to be trimmed when set to false |
-| EnableUnsafeUTF7Encoding | System.Text.Encoding.EnableUnsafeUTF7Encoding | Insecure UTF-7 encoding is trimmed when set to false |
-| EnableUnsafeBinaryFormatterSerialization | System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization | BinaryFormatter serialization support is trimmed when set to false |
-| EventSourceSupport | System.Diagnostics.Tracing.EventSource.IsSupported | Any EventSource related code or logic is trimmed when set to false |
-| InvariantGlobalization | System.Globalization.Invariant | All globalization specific code and data is trimmed when set to true |
-| MetricsSupport | System.Diagnostics.Metrics.Meter.IsSupported | Any Metrics related code or logic is trimmed when set to false |
-| PredefinedCulturesOnly | System.Globalization.PredefinedCulturesOnly |  Don't allow creating a culture for which the platform does not have data |
-| HybridGlobalization | System.Globalization.Hybrid |  Properties connected with the mixed: platform-specific + icu-based globalization will be trimmed  |
-| UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
-| HttpActivityPropagationSupport | System.Net.Http.EnableActivityPropagation | Any dependency related to diagnostics support for System.Net.Http is trimmed when set to false |
-| UseNativeHttpHandler | System.Net.Http.UseNativeHttpHandler | HttpClient uses by default platform native implementation of HttpMessageHandler if set to true. |
-| StartupHookSupport | System.StartupHookProvider.IsSupported | Startup hooks are disabled when set to false. Startup hook related functionality can be trimmed. |
-| AutoreleasePoolSupport | System.Threading.Thread.EnableAutoreleasePool | When set to true, creates an NSAutoreleasePool for each thread and thread pool work item on applicable platforms. |
-| CustomResourceTypesSupport | System.Resources.ResourceManager.AllowCustomResourceTypes | Use of custom resource types is disabled when set to false. ResourceManager code paths that use reflection for custom types can be trimmed. |
-| EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | BinaryFormatter serialization support is trimmed when set to false. |
-| BuiltInComInteropSupport | System.Runtime.InteropServices.BuiltInComInterop.IsSupported | Built-in COM support is trimmed when set to false. |
-| EnableCppCLIHostActivation | System.Runtime.InteropServices.EnableCppCLIHostActivation | C++/CLI host activation code is disabled when set to false and related functionality can be trimmed. |
-| MetadataUpdaterSupport | System.Reflection.Metadata.MetadataUpdater.IsSupported | Metadata update related code to be trimmed when set to false |
-| _EnableConsumingManagedCodeFromNativeHosting | System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
-| VerifyDependencyInjectionOpenGenericServiceTrimmability | Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability | When set to true, DependencyInjection will verify trimming annotations applied to open generic services are correct |
-| DisableDependencyInjectionDynamicEngine | Microsoft.Extensions.DependencyInjection.DisableDynamicEngine | When set to true, DependencyInjection will avoid using System.Reflection.Emit when realizing services |
-| DynamicCodeSupport | System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported | Changes RuntimeFeature.IsDynamicCodeSupported to false to allow testing AOT-safe fallback code without publishing for Native AOT. |
 | _AggressiveAttributeTrimming | System.AggressiveAttributeTrimming | When set to true, aggressively trims attributes to allow for the most size savings possible, even if it could result in runtime behavior changes |
-| JsonSerializerIsReflectionEnabledByDefault | System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault | When set to false, disables using reflection as the default contract resolver in System.Text.Json |
-| EnableGeneratedComInterfaceComImportInterop | System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop | When set to true, enables casting source-generated COM object wrappers to built-in COM-based COM interfaces. |
-| _UseManagedNtlm | System.Net.Security.UseManagedNtlm | When set to true, uses built-in managed implementation of NTLM and SPNEGO algorithm for HTTP, SMTP authentication, and NegotiateAuthentication API instead of system provided GSSAPI implementation. |
 | _ComObjectDescriptorSupport | System.ComponentModel.TypeDescriptor.IsComObjectDescriptorSupported | When set to true, supports creating a TypeDescriptor based view of COM objects. |
-| _DesignerHostSupport | System.ComponentModel.Design.IDesignerHost.IsSupported | When set to true, supports creating design components at runtime. |
 | _DefaultValueAttributeSupport | System.ComponentModel.DefaultValueAttribute.IsSupported | When set to true, supports creating a DefaultValueAttribute at runtime. |
+| _DesignerHostSupport | System.ComponentModel.Design.IDesignerHost.IsSupported | When set to true, supports creating design components at runtime. |
+| _EnableConsumingManagedCodeFromNativeHosting | System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
+| _UseManagedNtlm | System.Net.Security.UseManagedNtlm | When set to true, uses built-in managed implementation of NTLM and SPNEGO algorithm for HTTP, SMTP authentication, and NegotiateAuthentication API instead of system provided GSSAPI implementation. |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name

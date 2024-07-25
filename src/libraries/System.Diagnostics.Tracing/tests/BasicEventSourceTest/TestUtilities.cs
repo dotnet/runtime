@@ -1,15 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if USE_MDT_EVENTSOURCE
-using Microsoft.Diagnostics.Tracing;
-#else
 using System.Diagnostics.Tracing;
-#endif
 using System.Diagnostics;
-using Xunit;
-using System;
 using System.Collections.Generic;
+using Xunit;
 
 namespace BasicEventSourceTests
 {
