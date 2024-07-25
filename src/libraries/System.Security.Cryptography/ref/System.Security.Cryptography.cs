@@ -121,9 +121,9 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-    [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
     [System.Runtime.Versioning.SupportedOSPlatform("ios13.0")]
     [System.Runtime.Versioning.SupportedOSPlatform("tvos13.0")]
+    [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
     public sealed partial class AesGcm : System.IDisposable
     {
         [System.ObsoleteAttribute("AesGcm should indicate the required tag size for encryption and decryption. Use a constructor that accepts the tag size.", DiagnosticId="SYSLIB0053", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -287,9 +287,9 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
-    [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
     [System.Runtime.Versioning.SupportedOSPlatform("ios13.0")]
     [System.Runtime.Versioning.SupportedOSPlatform("tvos13.0")]
+    [System.Runtime.Versioning.SupportedOSPlatform("maccatalyst")]
     public sealed partial class ChaCha20Poly1305 : System.IDisposable
     {
         public ChaCha20Poly1305(byte[] key) { }

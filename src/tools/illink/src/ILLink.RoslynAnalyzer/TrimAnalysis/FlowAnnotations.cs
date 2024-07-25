@@ -109,6 +109,9 @@ namespace ILLink.Shared.TrimAnalysis
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, bool isNewObj)
 			=> GetMethodReturnValue (method, isNewObj, GetMethodReturnValueAnnotation (method.Method));
 
+		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+			=> new GenericParameterValue (genericParameter.TypeParameterSymbol, dynamicallyAccessedMemberTypes);
+
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
 			=> new GenericParameterValue (genericParameter.TypeParameterSymbol);
 
@@ -117,14 +120,6 @@ namespace ILLink.Shared.TrimAnalysis
 			if (!method.HasImplicitThis ())
 				throw new InvalidOperationException ($"Cannot get 'this' parameter of method {method.GetDisplayName ()} with no 'this' parameter.");
 			return GetMethodParameterValue (new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes);
-		}
-
-		// overrideIsThis is needed for backwards compatibility with MakeGenericType/Method https://github.com/dotnet/linker/issues/2428
-		internal MethodParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes, bool overrideIsThis = false)
-		{
-			if (!method.HasImplicitThis () && !overrideIsThis)
-				throw new InvalidOperationException ($"Cannot get 'this' parameter of method {method.GetDisplayName ()} with no 'this' parameter.");
-			return new MethodParameterValue (new ParameterProxy (method, (ParameterIndex) 0), dynamicallyAccessedMemberTypes, overrideIsThis);
 		}
 
 		internal partial MethodParameterValue GetMethodThisParameterValue (MethodProxy method)

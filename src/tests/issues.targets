@@ -430,6 +430,12 @@
 
     <!-- OSX x64 on CoreCLR Runtime -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TargetsOSX)' == 'true' and '$(TargetArchitecture)' == 'x64' and '$(RuntimeFlavor)' == 'coreclr' ">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/simple/ParallelCrashMainThread/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/unhandled/unhandledTester/*">
+            <Issue>https://github.com/dotnet/runtime/issues/80356</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- OSX arm64 on CoreCLR Runtime -->
