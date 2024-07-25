@@ -429,7 +429,6 @@ private:
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     void LowerModPow2(GenTree* node);
     bool TryLowerAddForPossibleContainment(GenTreeOp* node, GenTree** next);
-    void CreateFFRDefIfNeeded(GenTreeHWIntrinsic* node);
     void StoreFFRValue(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
