@@ -103,7 +103,6 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal("Hello", HasCctorReceiver.S);
             // Should not throw
             RuntimeHelpers.RunClassConstructor(typeof(GenericHasCctor<>).TypeHandle);
-            return;
         }
 
         internal class HasCctor
