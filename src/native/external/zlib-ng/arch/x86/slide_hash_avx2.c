@@ -32,7 +32,7 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, const __m256i 
 }
 
 Z_INTERNAL void slide_hash_avx2(deflate_state *s) {
-    assert(s->w_size <= _UI16_MAX);
+    assert(s->w_size <= UINT16_MAX);
     uint16_t wsize = (uint16_t)s->w_size;
     const __m256i ymm_wsize = _mm256_set1_epi16((short)wsize);
 

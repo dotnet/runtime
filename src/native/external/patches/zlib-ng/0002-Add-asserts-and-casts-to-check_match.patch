@@ -20,8 +20,8 @@ index 3184aa718c7..6c6e227136b 100644
  
          if (match_len >= WANT_MIN_MATCH) {
 -            check_match(s, s->strstart, s->match_start, match_len);
-+            Assert(s->strstart <= _UI16_MAX,"strstart should fit in uint16_t");
-+            Assert(s->match_start <= _UI16_MAX,"match_start should fit in uint16_t");
++            Assert(s->strstart <= UINT16_MAX,"strstart should fit in uint16_t");
++            Assert(s->match_start <= UINT16_MAX,"match_start should fit in uint16_t");
 +            check_match(s, (Pos)s->strstart, (Pos)s->match_start, match_len);
  
              bflush = zng_tr_tally_dist(s, s->strstart - s->match_start, match_len - STD_MIN_MATCH);
@@ -35,7 +35,7 @@ index df5a17b9e66..8dd32ae32a9 100644
                              match_len = STD_MAX_MATCH;
  
 -                        check_match(s, s->strstart, hash_head, match_len);
-+                        Assert(s->strstart <= _UI16_MAX,"strstart should fit in uint16_t");
++                        Assert(s->strstart <= UINT16_MAX,"strstart should fit in uint16_t");
 +                        check_match(s, (Pos)s->strstart, hash_head, match_len);
  
                          zng_tr_emit_dist(s, static_ltree, static_dtree, match_len - STD_MIN_MATCH, (uint32_t)dist);
@@ -49,8 +49,8 @@ index cd085099460..cf1f3bf4bba 100644
          /* Emit match if have run of STD_MIN_MATCH or longer, else emit literal */
          if (match_len >= STD_MIN_MATCH) {
 -            check_match(s, s->strstart, s->strstart - 1, match_len);
-+            Assert(s->strstart <= _UI16_MAX,"strstart should fit in uint16_t");
-+            Assert(s->match_start <= _UI16_MAX,"match_start should fit in uint16_t");
++            Assert(s->strstart <= UINT16_MAX,"strstart should fit in uint16_t");
++            Assert(s->match_start <= UINT16_MAX,"match_start should fit in uint16_t");
 +            check_match(s, (Pos)s->strstart, (Pos)s->strstart - 1, match_len);
  
              bflush = zng_tr_tally_dist(s, 1, match_len - STD_MIN_MATCH);
@@ -64,7 +64,7 @@ index 9f1c913467b..b71c0e5a331 100644
              /* Do not insert strings in hash table beyond this. */
  
 -            check_match(s, s->strstart-1, s->prev_match, s->prev_length);
-+            Assert((s->strstart-1) <= _UI16_MAX,"strstart-1 should fit in uint16_t");
++            Assert((s->strstart-1) <= UINT16_MAX,"strstart-1 should fit in uint16_t");
 +            check_match(s, (Pos)(s->strstart-1), s->prev_match, s->prev_length);
  
              bflush = zng_tr_tally_dist(s, s->strstart -1 - s->prev_match, s->prev_length - STD_MIN_MATCH);
