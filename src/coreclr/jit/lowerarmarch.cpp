@@ -1560,35 +1560,35 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LIR::Use use;
             bool     foundUse = BlockRange().TryGetUse(node, &use);
 
+            if (m_ffrTrashed)
+            {
+                // Consume the FFR register value from local variable to simulate "use" of FFR,
+                // only if it was trashed. If it was not trashed, we do not have to reload the
+                // contents of the FFR register.
+
+                CreateFFRDefIfNeeded(node);
+
+                GenTree* lclVar = comp->gtNewLclvNode(comp->lvaFfrRegister, TYP_MASK);
+                BlockRange().InsertBefore(node, lclVar);
+                LowerNode(lclVar);
+
+                node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
+            }
+
             if (foundUse)
             {
-                if (m_ffrTrashed)
-                {
-                    // Consume the FFR register value from local variable to simulate "use" of FFR,
-                    // only if it was trashed. If it was not trashed, we do not have to reload the
-                    // contents of the FFR register.
-
-                    CreateFFRDefIfNeeded(node);
-
-                    GenTree* lclVar = comp->gtNewLclvNode(comp->lvaFfrRegister, TYP_MASK);
-                    BlockRange().InsertBefore(node, lclVar);
-                    LowerNode(lclVar);
-
-                    node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
-                }
                 unsigned   tmpNum    = comp->lvaGrabTemp(true DEBUGARG("Return value result/FFR"));
                 LclVarDsc* tmpVarDsc = comp->lvaGetDesc(tmpNum);
                 tmpVarDsc->lvType    = node->TypeGet();
                 GenTree* storeLclVar;
                 use.ReplaceWithLclVar(comp, tmpNum, &storeLclVar);
-
-                StoreFFRValue(node);
             }
             else
             {
                 node->SetUnusedValue();
             }
 
+            StoreFFRValue(node);
             break;
         }
         default:
@@ -3906,16 +3906,12 @@ void Lowering::CreateFFRDefIfNeeded(GenTreeHWIntrinsic* node)
             assert(!"Unexpected HWIntrinsicId");
     }
 #endif
-    unsigned lclNum = comp->lvaFfrRegister;
-    if (lclNum == BAD_VAR_NUM)
-    {
-        lclNum                  = comp->getFFRegisterVarNum();
-        GenTree* ffrReg         = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
-        GenTree* storeFfrLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
-        BlockRange().InsertBefore(node, ffrReg, storeFfrLclVar);
-        LowerNode(ffrReg);
-        LowerNode(storeFfrLclVar);
-    }
+    unsigned lclNum = comp->getFFRegisterVarNum();
+    GenTree* ffrReg         = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
+    GenTree* storeFfrLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
+    BlockRange().InsertBefore(node, ffrReg, storeFfrLclVar);
+    LowerNode(ffrReg);
+    LowerNode(storeFfrLclVar);
 }
 #endif
 
