@@ -46,7 +46,7 @@ namespace System.Collections.Generic
         }
 
 #if NET
-        public readonly Span<T> AsSpan(int start) => _items.AsSpan(start);
+        public readonly Span<T> AsSpan(int start) => _items.AsSpan(start, _count);
 
         public Span<T> AppendSpan(int length)
         {
