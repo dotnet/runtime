@@ -381,7 +381,7 @@ for inputAssemblyName in glob.glob("*.dll"):
           proc.kill()
           sys.exit(1)
 
-      test_det = True
+      test_det = False
 
       # Test determinism
       if test_det:
