@@ -105,7 +105,7 @@ It is possible to use LLVM in AOT mode. This is implemented by compiling methods
 
 ### Full AOT mode
 
-Some platforms like the iphone prohibit JITted code, using technical and/or legal means. This is a significant problem for the mono runtime, since it generates a lot of code dynamically, using either the JIT or more low-level code generation macros. To solve this, the AOT compiler is able to function in full-aot or aot-only mode, where it generates and saves all the neccesary code in the aot image, so at runtime, no code needs to be generated. There are two kinds of code which needs to be considered:
+Some platforms like the iphone prohibit JITted code, using technical and/or legal means. This is a significant problem for the mono runtime, since it generates a lot of code dynamically, using either the JIT or more low-level code generation macros. To solve this, the AOT compiler is able to function in full-aot or aot-only mode, where it generates and saves all the necessary code in the aot image, so at runtime, no code needs to be generated. There are two kinds of code which needs to be considered:
 
 -   wrapper methods, that is methods whose IL is generated dynamically by the runtime. They are handled by generating them in the add_wrappers () function, then emitting them as 'extra' methods.
 -   trampolines and other small hand generated pieces of code. They are handled in an ad-hoc way in the emit_trampolines () function.
