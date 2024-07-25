@@ -474,7 +474,7 @@ namespace System.Runtime.InteropServices
             }
             if (sizeof(T) > source.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             return Unsafe.ReadUnaligned<T>(ref GetReference(source));
         }
@@ -513,7 +513,7 @@ namespace System.Runtime.InteropServices
             }
             if ((uint)sizeof(T) > (uint)destination.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             Unsafe.WriteUnaligned(ref GetReference(destination), value);
         }
@@ -555,7 +555,7 @@ namespace System.Runtime.InteropServices
             }
             if (sizeof(T) > (uint)span.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             return ref Unsafe.As<byte, T>(ref GetReference(span));
         }
@@ -577,7 +577,7 @@ namespace System.Runtime.InteropServices
             }
             if (sizeof(T) > (uint)span.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ThrowHelper.ThrowArgumentOutOfRangeException();
             }
             return ref Unsafe.As<byte, T>(ref GetReference(span));
         }
