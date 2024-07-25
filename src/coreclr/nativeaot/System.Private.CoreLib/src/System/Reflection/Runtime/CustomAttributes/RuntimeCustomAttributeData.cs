@@ -171,13 +171,13 @@ namespace System.Reflection.Runtime.CustomAttributes
                 if (!argumentType.IsArray)
                     throw new BadImageFormatException();
                 Type reportedElementType = argumentType.GetElementType()!;
-                List<CustomAttributeTypedArgument> elementTypedArguments = new List<CustomAttributeTypedArgument>();
+                ArrayBuilder<CustomAttributeTypedArgument> elementTypedArguments = default;
                 foreach (object elementValue in enumerableValue)
                 {
                     CustomAttributeTypedArgument elementTypedArgument = WrapInCustomAttributeTypedArgument(elementValue, reportedElementType);
                     elementTypedArguments.Add(elementTypedArgument);
                 }
-                return new CustomAttributeTypedArgument(argumentType, new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments));
+                return new CustomAttributeTypedArgument(argumentType, new ReadOnlyCollection<CustomAttributeTypedArgument>(elementTypedArguments.ToArray()));
             }
             else
             {
