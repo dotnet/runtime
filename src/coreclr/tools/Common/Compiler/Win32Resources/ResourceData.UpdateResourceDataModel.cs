@@ -28,7 +28,6 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(type is string);
-                type = ToUpperForResource((string)type);
                 if (!_resTypeHeadName.TryGetValue((string)type, out resType))
                 {
                     resType = new ResType();
@@ -49,7 +48,6 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(name is string);
-                name = ToUpperForResource((string)name);
                 if (!resType.NameHeadName.TryGetValue((string)name, out resName))
                 {
                     resName = new ResName();
@@ -71,7 +69,6 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(type is string);
-                type = ToUpperForResource((string)type);
                 _resTypeHeadName.TryGetValue((string)type, out resType);
             }
 
@@ -87,7 +84,6 @@ namespace ILCompiler.Win32Resources
             else
             {
                 Debug.Assert(name is string);
-                name = ToUpperForResource((string)name);
                 resType.NameHeadName.TryGetValue((string)name, out resName);
             }
 
@@ -98,19 +94,6 @@ namespace ILCompiler.Win32Resources
                 return null;
 
             return (byte[])resLanguage.DataEntry.Clone();
-        }
-
-        private static string ToUpperForResource(string str)
-        {
-            // Undocumented semantic for Win32 Resource APIs
-            // This ToUpper logic should only be applied to the
-            // latin range from 'a' to 'z'.
-            System.Text.StringBuilder builder = new(str.Length);
-            foreach (char c in str)
-            {
-                builder.Append('a' <= c && c <= 'z' ? (char)(c + ('A' - 'a')) : c);
-            }
-            return builder.ToString();
         }
     }
 }
