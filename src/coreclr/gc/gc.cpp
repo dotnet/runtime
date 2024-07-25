@@ -2863,6 +2863,10 @@ uint64_t gc_heap::last_suspended_end_time = 0;
 uint64_t gc_heap::change_heap_count_time = 0;
 size_t gc_heap::gc_index_full_gc_end = 0;
 
+#ifdef BACKGROUND_GC
+bool gc_heap::trigger_bgc_for_rethreading_p = false;
+#endif //BACKGROUND_GC
+
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
 int gc_heap::heaps_in_this_gc = 0;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
@@ -21064,6 +21068,34 @@ int gc_heap::joined_generation_to_condemn (BOOL should_evaluate_elevation,
 #endif //STRESS_HEAP
 
 #ifdef BACKGROUND_GC
+#ifdef DYNAMIC_HEAP_COUNT
+    if (trigger_bgc_for_rethreading_p)
+    {
+        if (background_running_p())
+        {
+            // trigger_bgc_for_rethreading_p being true indicates we did not change gen2 FL items when we changed HC.
+            // So some heaps could have no FL at all which means if we did a gen1 GC during this BGC we would increase
+            // gen2 size. We chose to prioritize not increasing gen2 size so we disallow gen1 GCs.
+            if (n != 0)
+            {
+                n = 0;
+            }
+        }
+        else
+        {
+            dprintf (6666, ("was going to be g%d %s GC, HC change request this GC to be a BGC unless it's an NGC2",
+                n, (*blocking_collection_p ? "blocking" : "non blocking")));
+
+            // If we already decided to do a blocking gen2 which would also achieve the purpose of building up a new
+            // gen2 FL, let it happen; otherwise we want to trigger a BGC.
+            if (!((n == max_generation) && *blocking_collection_p))
+            {
+                n = max_generation;
+            }
+        }
+    }
+    else
+#endif //DYNAMIC_HEAP_COUNT
     if ((n == max_generation) && background_running_p())
     {
         n = max_generation - 1;
@@ -21415,7 +21447,7 @@ size_t gc_heap::generation_unusable_fragmentation (generation* inst, int hn)
             unusable_frag = fo_space + (condemned_allocated * generation_free_list_space (inst) / total_plan_allocated);
         }
 
-        dprintf (6666, ("h%d g%d FLa: %Id, ESa: %Id, Ca: %Id | FO: %Id, FL %Id, fl effi %.3f, unusable fl is %Id",
+        dprintf (3, ("h%d g%d FLa: %Id, ESa: %Id, Ca: %Id | FO: %Id, FL %Id, fl effi %.3f, unusable fl is %Id",
             hn, inst->gen_num,
             generation_free_list_allocated (inst), generation_end_seg_allocated (inst), (size_t)condemned_allocated,
             fo_space, generation_free_list_space (inst),
@@ -22584,7 +22616,7 @@ void gc_heap::gc1()
                                        generation_free_obj_space (generation_of (older_gen_idx));
 
 #ifdef BACKGROUND_GC
-            if (current_c_gc_state != c_gc_state_planning)
+            if ((older_gen_idx != max_generation) || (current_c_gc_state != c_gc_state_planning))
 #endif //BACKGROUND_GC
             {
                 if (settings.promotion)
@@ -22954,6 +22986,10 @@ void gc_heap::gc1()
 
 #ifdef DYNAMIC_HEAP_COUNT
             update_total_soh_stable_size();
+            if ((settings.condemned_generation == max_generation) && trigger_bgc_for_rethreading_p)
+            {
+                trigger_bgc_for_rethreading_p = false;
+            }
 #endif //DYNAMIC_HEAP_COUNT
 
             fire_pevents();
@@ -24445,6 +24481,14 @@ void gc_heap::garbage_collect (int n)
 
                     settings.init_mechanisms();
                     settings.condemned_generation = gen;
+
+#ifdef DYNAMIC_HEAP_COUNT
+                    if (trigger_bgc_for_rethreading_p)
+                    {
+                        settings.condemned_generation = 0;
+                    }
+#endif //DYNAMIC_HEAP_COUNT
+
                     settings.gc_index = (size_t)dd_collection_count (dynamic_data_of (0)) + 2;
                     do_pre_gc();
 
@@ -25302,7 +25346,7 @@ void gc_heap::recommission_heap()
 //  mark_stack_array_length             = 0;
 //  mark_stack_array                    = nullptr;
 
-    generation_skip_ratio               = 0;
+    generation_skip_ratio               = 100;
     gen0_must_clear_bricks              = 0;
 
     freeable_uoh_segment                = nullptr;
@@ -26295,25 +26339,35 @@ bool gc_heap::change_heap_count (int new_n_heaps)
         gc_t_join.join (this, gc_join_merge_temp_fl);
         if (gc_t_join.joined ())
         {
+#ifdef BACKGROUND_GC
+            // For now I'm always setting it to true. This should be set based on heuristics like the number of
+            // FL items. I'm currently rethreading all generations' FL except gen2's. When the next GC happens,
+            // it will be a BGC (unless it's a blocking gen2 which also works). And when BGC sweep starts we will
+            // build the gen2 FL from scratch.
+            trigger_bgc_for_rethreading_p = true;
+#endif //BACKGROUND_GC
             gc_t_join.restart ();
         }
 
         // rethread the free lists
         for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
         {
-            if (heap_number < old_n_heaps)
+            if (gen_idx != max_generation)
             {
-                dprintf (3, ("h%d calling per heap work!", heap_number));
-                rethread_fl_items (gen_idx);
-            }
+                if (heap_number < old_n_heaps)
+                {
+                    dprintf (3, ("h%d calling per heap work!", heap_number));
+                    rethread_fl_items (gen_idx);
+                }
 
-            // join for merging the free lists
-            gc_t_join.join (this, gc_join_merge_temp_fl);
-            if (gc_t_join.joined ())
-            {
-                merge_fl_from_other_heaps (gen_idx, new_n_heaps, old_n_heaps);
+                // join for merging the free lists
+                gc_t_join.join (this, gc_join_merge_temp_fl);
+                if (gc_t_join.joined ())
+                {
+                    merge_fl_from_other_heaps (gen_idx, new_n_heaps, old_n_heaps);
 
-                gc_t_join.restart ();
+                    gc_t_join.restart ();
+                }
             }
         }
 
@@ -26371,8 +26425,17 @@ bool gc_heap::change_heap_count (int new_n_heaps)
                 generation* gen = hp->generation_of (gen_idx);
                 size_t gen_size = hp->generation_size (gen_idx);
                 dd_fragmentation (dd) = generation_free_list_space (gen);
-                assert (gen_size >= dd_fragmentation (dd));
-                dd_current_size (dd) = gen_size - dd_fragmentation (dd);
+                if (gen_idx == max_generation)
+                {
+                    // Just set it to 0 so it doesn't cause any problems. The next GC which will be a gen2 will update it to the correct value.
+                    dd_current_size (dd) = 0;
+                }
+                else
+                {
+                    // We cannot assert this for gen2 because we didn't actually rethread gen2 FL.
+                    assert (gen_size >= dd_fragmentation (dd));
+                    dd_current_size (dd) = gen_size - dd_fragmentation (dd);
+                }
 
                 dprintf (3, ("h%d g%d: budget: %zd, left in budget: %zd, generation_size: %zd fragmentation: %zd current_size: %zd",
                     i,
@@ -39578,6 +39641,13 @@ void gc_heap::bgc_thread_function()
             fire_pevents();
 #endif //MULTIPLE_HEAPS
 
+#ifdef DYNAMIC_HEAP_COUNT
+            if (trigger_bgc_for_rethreading_p)
+            {
+                trigger_bgc_for_rethreading_p = false;
+            }
+#endif //DYNAMIC_HEAP_COUNT
+
             c_write (settings.concurrent, FALSE);
             gc_background_running = FALSE;
             keep_bgc_threads_p = FALSE;
@@ -45864,20 +45934,41 @@ void gc_heap::background_sweep()
     concurrent_print_time_delta ("Sw");
     dprintf (2, ("---- (GC%zu)Background Sweep Phase ----", VolatileLoad(&settings.gc_index)));
 
+    bool rebuild_maxgen_fl_p = true;
+
+#ifdef DOUBLY_LINKED_FL
+#ifdef DYNAMIC_HEAP_COUNT
+    rebuild_maxgen_fl_p = trigger_bgc_for_rethreading_p;
+#else
+    rebuild_maxgen_fl_p = false;
+#endif //DYNAMIC_HEAP_COUNT
+#endif //DOUBLY_LINKED_FL
+
     for (int i = 0; i <= max_generation; i++)
     {
         generation* gen_to_reset = generation_of (i);
+
+        bool clear_fl_p = true;
+
 #ifdef DOUBLY_LINKED_FL
         if (i == max_generation)
         {
-            dprintf (2, ("h%d: gen2 still has FL: %zd, FO: %zd",
+            clear_fl_p = rebuild_maxgen_fl_p;
+
+            dprintf (6666, ("h%d: gen2 still has FL: %zd, FO: %zd, clear gen2 FL %s",
                 heap_number,
                 generation_free_list_space (gen_to_reset),
-                generation_free_obj_space (gen_to_reset)));
+                generation_free_obj_space (gen_to_reset),
+                (clear_fl_p ? "yes" : "no")));
         }
-        else
 #endif //DOUBLY_LINKED_FL
+
+        if (clear_fl_p)
         {
+            if (i == max_generation)
+            {
+                dprintf (6666, ("clearing g2 FL for h%d!", heap_number));
+            }
             generation_allocator (gen_to_reset)->clear();
             generation_free_list_space (gen_to_reset) = 0;
             generation_free_obj_space (gen_to_reset) = 0;
@@ -46138,7 +46229,7 @@ void gc_heap::background_sweep()
                     next_sweep_obj = o + size_o;
 
 #ifdef DOUBLY_LINKED_FL
-                    if (gen != large_object_generation)
+                    if ((i == max_generation) && !rebuild_maxgen_fl_p)
                     {
                         if (method_table (o) == g_gc_pFreeObjectMethodTable)
                         {
