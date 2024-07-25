@@ -130,9 +130,9 @@ internal unsafe class TargetTestHelpers
         return $"\"{name}\":{{{string.Join(',', fields)}}}";
     }
 
-    public static string MakeTypesJson(IEnumerable<(DataType Type, Target.TypeInfo Info)> types)
+    public static string MakeTypesJson(IDictionary<DataType, Target.TypeInfo> types)
     {
-        return string.Join(',', types.Select(t => GetTypeJson(t.Type.ToString(), t.Info)));
+        return string.Join(',', types.Select(t => GetTypeJson(t.Key.ToString(), t.Value)));
     }
 
     public static string MakeGlobalsJson(IEnumerable<(string Name, ulong Value, string? Type)> globals)

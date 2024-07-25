@@ -21,7 +21,7 @@ public class DacStreamsTests
 
     const uint MiniMetaDataStreamsHeaderSize = 12;
 
-    private static readonly (DataType Type, Target.TypeInfo Info)[] DacStreamsTypes =
+    private static readonly Dictionary<DataType, Target.TypeInfo> DacStreamsTypes =
     [
     ];
 
