@@ -13,7 +13,6 @@
 #include "../../deflate.h"
 
 #include <immintrin.h>
-#include <assert.h>
 
 static inline void slide_hash_chain(Pos *table, uint32_t entries, const __m256i wsize) {
     table += entries;

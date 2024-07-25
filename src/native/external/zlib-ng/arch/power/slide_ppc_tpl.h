@@ -6,7 +6,6 @@
 #include <altivec.h>
 #include "zbuild.h"
 #include "deflate.h"
-#include <assert.h>
 
 static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
     const vector unsigned short vmx_wsize = vec_splats(wsize);

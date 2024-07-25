@@ -10,7 +10,6 @@
 
 #include "../../zbuild.h"
 #include "../../deflate.h"
-#include <assert.h>
 
 static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
     size_t vl;
