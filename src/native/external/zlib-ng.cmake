@@ -8,7 +8,6 @@ set(ZLIB_COMPAT ON)
 set(ZLIB_ENABLE_TESTS OFF)
 set(ZLIBNG_ENABLE_TESTS OFF)
 set(Z_PREFIX ON)
-set(ZLIB_DEBUG OFF)
 
 # TODO: Turn back on when Linux kernels with proper RISC-V extension detection (>= 6.5) are more commonplace
 set(WITH_RVV OFF)
