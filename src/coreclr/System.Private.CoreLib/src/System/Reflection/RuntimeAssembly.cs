@@ -103,12 +103,7 @@ namespace System.Reflection
                     throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
                 }
 
-                string? codeBase = GetCodeBase();
-                if (codeBase is null)
-                {
-                    // Not supported if the assembly was loaded from single-file bundle.
-                    throw new NotSupportedException(SR.NotSupported_CodeBase);
-                }
+                string? codeBase = GetCodeBase() ?? throw new NotSupportedException(SR.NotSupported_CodeBase);
                 if (codeBase.Length == 0)
                 {
                     // For backward compatibility, return CoreLib codebase for assemblies loaded from memory.
