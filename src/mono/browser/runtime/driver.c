@@ -634,6 +634,7 @@ sgen_try_reveal_pointer (void *hidden, GCHandleType handle_type);
 typedef void (*SgenRootIterateCallback) (void *start, void *end, MonoGCRootSource source, int root_type, const char *msg, void *user);
 
 void sgen_registered_root_iterate (SgenRootIterateCallback callback, void *user_data, int root_type);
+int32_t sgen_object_is_live (void *obj);
 
 extern uint32_t sgen_los_memory_usage, sgen_los_memory_usage_total;
 
@@ -712,9 +713,9 @@ mono_wasm_each_root (void *_start, void *_end, MonoGCRootSource source, int root
     int buf_count = 0;
     memset (buf, 0, sizeof(buf));
 
-    MonoObject **current = _start, **end = _end;
-    while (current != end) {
-        MonoObject *obj = *current;
+    size_t *current = _start, *end = _end;
+    while (current < end) {
+        MonoObject *obj = (MonoObject *)(*current & ~((size_t)7));
         if (obj) {
             if (buf_count >= 63) {
                 mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
@@ -748,8 +749,8 @@ mono_wasm_on_gc_event (
         in_use_pages, free_pages, external_pages, largest_free_chunk, (int)sgen_los_memory_usage, (int)sgen_gc_get_total_heap_allocation ()
     );
 	mono_gc_walk_heap (0, mono_wasm_on_gc_object, NULL);
-    for (int rt = 0; rt < ROOT_TYPE_NUM; rt++)
-        sgen_registered_root_iterate (mono_wasm_each_root, prof, rt);
+    sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_NORMAL);
+    sgen_registered_root_iterate (mono_wasm_each_root, prof, ROOT_TYPE_PINNED);
     for (int ht = HANDLE_TYPE_MIN; ht < HANDLE_TYPE_MAX; ht++)
         sgen_gchandle_iterate ((GCHandleType)ht, 2, mono_wasm_each_gchandle, prof);
 }
