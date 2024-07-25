@@ -9,9 +9,9 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
     [UnsupportedOSPlatform("tvos")]
-    [SupportedOSPlatform("maccatalyst")]
     [SupportedOSPlatform("ios13.0")]
     [SupportedOSPlatform("tvos13.0")]
+    [SupportedOSPlatform("maccatalyst")]
     public sealed partial class ChaCha20Poly1305 : IDisposable
     {
         // Per https://tools.ietf.org/html/rfc7539, ChaCha20Poly1305 AEAD requires a 256-bit key and 96-bit nonce,
