@@ -97,7 +97,7 @@ namespace ILLink.Tasks.Tests
 					new XElement ("type", new XAttribute ("fullname", "TestNS.TestAlwaysException"),
 						new XElement ("method", new XAttribute ("name", ".ctor"))),
 					new XElement ("type", new XAttribute ("fullname", "TestNS.TestFeatureOnException"),
-						new XElement ("method", new XAttribute ("name", ".ctor"))),
+						new XElement ("method", new XAttribute ("name", ".ctor")))
 					)).ToString ();
 			Assert.Equal (expectedXml, output.Root.ToString ());
 		}
