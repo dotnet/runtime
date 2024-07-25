@@ -1,0 +1,230 @@
+From 41b4be7c8bcb8bca05ce6cf2d659336218055492 Mon Sep 17 00:00:00 2001
+From: carlossanlop <1175054+carlossanlop@users.noreply.github.com>
+Date: Thu, 25 Jul 2024 16:26:18 -0700
+Subject: [PATCH] zlib-ng: avoid suppressing WD4242 and WD4244
+
+    WD4242 and WD4244 are compiler warnings that should not be suppressed because the warn about possible loss of data.
+
+    WD4242 shows up in zlib-ng/arch/*/slide_hash*.c files and comes from the arguments passed to the slide_hash_chain method.
+    WD4244 happens in Windows when building in Debug configuration, in various zlib-ng/deflate*.c files, and comes from the arguments passed to the check_match method.
+
+    Fixed by:
+
+    - Adding asserts to verify the values are below the maximum allowed for their type.
+    - Casting them the proper type before passing them as arguments to their methods.
+    - Casting them the proper type before passing them as arguments to their methods.
+    - Removing the WD suppressions, which unfortunately also propagated to other unrelated cmake files.
+    - Fixed a similar loss of data error in an unrelated mono file where the warning suppression was propagated due to this.
+
+    - Casting them the proper type before passing them as arguments to their methods.
+    - Removing the WD suppressions, which unfortunately also propagated to other unrelated cmake files.
+    - Fixed a similar loss of data error in an unrelated mono file where the warning suppression was propagated due to this.
+---
+ src/mono/mono/metadata/class-internals.h                | 2 +-
+ src/native/external/zlib-ng-version.txt                 | 2 ++
+ src/native/external/zlib-ng.cmake                       | 9 +++------
+ src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c | 3 ++-
+ src/native/external/zlib-ng/arch/arm/slide_hash_neon.c  | 3 ++-
+ src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h  | 3 ++-
+ src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c | 1 +
+ src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c  | 1 +
+ src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c  | 1 +
+ src/native/external/zlib-ng/deflate_fast.c              | 4 +++-
+ src/native/external/zlib-ng/deflate_quick.c             | 3 ++-
+ src/native/external/zlib-ng/deflate_rle.c               | 3 ++-
+ src/native/external/zlib-ng/deflate_slow.c              | 3 ++-
+ 13 files changed, 24 insertions(+), 14 deletions(-)
+
+diff --git a/src/mono/mono/metadata/class-internals.h b/src/mono/mono/metadata/class-internals.h
+index fc967bb0adb..e44ba4c7b49 100644
+--- a/src/mono/mono/metadata/class-internals.h
++++ b/src/mono/mono/metadata/class-internals.h
+@@ -1467,7 +1467,7 @@ mono_method_has_unmanaged_callers_only_attribute (MonoMethod *method);
+ 
+ typedef struct _MonoVarianceSearchTableEntry {
+     MonoClass *klass;
+-    guint16 offset;
++    int offset;
+ } MonoVarianceSearchTableEntry;
+ 
+ MonoVarianceSearchTableEntry *
+diff --git a/src/native/external/zlib-ng-version.txt b/src/native/external/zlib-ng-version.txt
+index 1b6fdae17b3..4292d95a0fc 100644
+--- a/src/native/external/zlib-ng-version.txt
++++ b/src/native/external/zlib-ng-version.txt
+@@ -8,3 +8,5 @@ We have removed the following folders from our local copy as these files are not
+ - zlib-ng/docs/
+ - zlib-ng/test/
+ - zlib-ng/arch/s390/self-hosted-builder/
++
++Apply https://github.com/dotnet/runtime/pull/105433.patch
+\ No newline at end of file
+diff --git a/src/native/external/zlib-ng.cmake b/src/native/external/zlib-ng.cmake
+index c9829842c45..08f7356f27e 100644
+--- a/src/native/external/zlib-ng.cmake
++++ b/src/native/external/zlib-ng.cmake
+@@ -1,3 +1,5 @@
++# IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects
++
+ include(FetchContent)
+ 
+ FetchContent_Declare(
+@@ -12,12 +14,6 @@ set(Z_PREFIX ON)
+ # TODO: Turn back on when Linux kernels with proper RISC-V extension detection (>= 6.5) are more commonplace
+ set(WITH_RVV OFF)
+ 
+-add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-unused-command-line-argument>) # clang : error : argument unused during compilation: '-fno-semantic-interposition'
+-add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-logical-op-parentheses>) # place parentheses around the '&&' expression to silence this warning
+-add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4127>) # warning C4127: conditional expression is constant
+-add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4242>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
+-add_compile_options($<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4244>) # 'function': conversion from 'unsigned int' to 'Pos', possible loss of data, in various deflate_*.c files
+-
+ # 'aligned_alloc' is not available in browser/wasi, yet it is set by zlib-ng/CMakeLists.txt.
+ if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
+   set(HAVE_ALIGNED_ALLOC FALSE CACHE BOOL "have aligned_alloc" FORCE)
+@@ -31,6 +27,7 @@ set(SKIP_INSTALL_ALL OFF)
+ set_property(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/zlib-ng PROPERTY MSVC_WARNING_LEVEL 3) # Set the MSVC warning level for all zlib-ng targets to 3.
+ target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-unused-command-line-argument>) # Make sure MacOS respects ignoring unused CLI arguments
+ target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,Clang,AppleClang>:-Wno-logical-op-parentheses>) # place parentheses around the '&&' expression to silence this warning
++target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/wd4127>) # warning C4127: conditional expression is constant
+ target_compile_options(zlib PRIVATE $<$<COMPILE_LANG_AND_ID:C,MSVC>:/guard:cf>) # Enable CFG always for zlib-ng so we don't need to build two flavors.
+ 
+ set_target_properties(zlib PROPERTIES DEBUG_POSTFIX "") # Workaround: zlib's debug lib name is zlibd.lib
+diff --git a/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c b/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c
+index 0a2eeccf926..3a715a1551d 100644
+--- a/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c
++++ b/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c
+@@ -39,7 +39,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ Z_INTERNAL void slide_hash_armv6(deflate_state *s) {
+-    unsigned int wsize = s->w_size;
++    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
++    uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+     slide_hash_chain(s->prev, wsize, wsize);
+diff --git a/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c b/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c
+index a96ca11799b..2889e9c0460 100644
+--- a/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c
++++ b/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c
+@@ -38,7 +38,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ Z_INTERNAL void slide_hash_neon(deflate_state *s) {
+-    unsigned int wsize = s->w_size;
++    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
++    uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+     slide_hash_chain(s->prev, wsize, wsize);
+diff --git a/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h b/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h
+index 5c17e38fb31..680a7f8e2af 100644
+--- a/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h
++++ b/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h
+@@ -24,7 +24,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ void Z_INTERNAL SLIDE_PPC(deflate_state *s) {
+-    uint16_t wsize = s->w_size;
++    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
++    uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+     slide_hash_chain(s->prev, wsize, wsize);
+diff --git a/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c b/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c
+index 1164e89ba25..b70a44b63e0 100644
+--- a/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c
++++ b/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c
+@@ -25,6 +25,7 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ Z_INTERNAL void slide_hash_rvv(deflate_state *s) {
++    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
+     uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+diff --git a/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c b/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c
+index 94fe10c7bf4..39254204ef4 100644
+--- a/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c
++++ b/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c
+@@ -31,6 +31,7 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, const __m256i
+ }
+ 
+ Z_INTERNAL void slide_hash_avx2(deflate_state *s) {
++    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
+     uint16_t wsize = (uint16_t)s->w_size;
+     const __m256i ymm_wsize = _mm256_set1_epi16((short)wsize);
+ 
+diff --git a/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c b/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c
+index 5daac4a7398..5e75aedba5e 100644
+--- a/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c
++++ b/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c
+@@ -52,6 +52,7 @@ next_chain:
+ }
+ 
+ Z_INTERNAL void slide_hash_sse2(deflate_state *s) {
++    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
+     uint16_t wsize = (uint16_t)s->w_size;
+     const __m128i xmm_wsize = _mm_set1_epi16((short)wsize);
+ 
+diff --git a/src/native/external/zlib-ng/deflate_fast.c b/src/native/external/zlib-ng/deflate_fast.c
+index 3184aa718c7..eada7b46e32 100644
+--- a/src/native/external/zlib-ng/deflate_fast.c
++++ b/src/native/external/zlib-ng/deflate_fast.c
+@@ -58,7 +58,9 @@ Z_INTERNAL block_state deflate_fast(deflate_state *s, int flush) {
+         }
+ 
+         if (match_len >= WANT_MIN_MATCH) {
+-            check_match(s, s->strstart, s->match_start, match_len);
++            Assert(s->strstart <= UINT16_MAX, "strstart should fit in uint16_t");
++            Assert(s->match_start <= UINT16_MAX, "match_start should fit in uint16_t");
++            check_match(s, (Pos)s->strstart, (Pos)s->match_start, match_len);
+ 
+             bflush = zng_tr_tally_dist(s, s->strstart - s->match_start, match_len - STD_MIN_MATCH);
+ 
+diff --git a/src/native/external/zlib-ng/deflate_quick.c b/src/native/external/zlib-ng/deflate_quick.c
+index df5a17b9e66..6dfd35df510 100644
+--- a/src/native/external/zlib-ng/deflate_quick.c
++++ b/src/native/external/zlib-ng/deflate_quick.c
+@@ -102,7 +102,8 @@ Z_INTERNAL block_state deflate_quick(deflate_state *s, int flush) {
+                         if (UNLIKELY(match_len > STD_MAX_MATCH))
+                             match_len = STD_MAX_MATCH;
+ 
+-                        check_match(s, s->strstart, hash_head, match_len);
++                        Assert(s->strstart <= UINT16_MAX, "strstart should fit in uint16_t");
++                        check_match(s, (Pos)s->strstart, hash_head, match_len);
+ 
+                         zng_tr_emit_dist(s, static_ltree, static_dtree, match_len - STD_MIN_MATCH, (uint32_t)dist);
+                         s->lookahead -= match_len;
+diff --git a/src/native/external/zlib-ng/deflate_rle.c b/src/native/external/zlib-ng/deflate_rle.c
+index cd085099460..b23a275c426 100644
+--- a/src/native/external/zlib-ng/deflate_rle.c
++++ b/src/native/external/zlib-ng/deflate_rle.c
+@@ -58,7 +58,8 @@ Z_INTERNAL block_state deflate_rle(deflate_state *s, int flush) {
+ 
+         /* Emit match if have run of STD_MIN_MATCH or longer, else emit literal */
+         if (match_len >= STD_MIN_MATCH) {
+-            check_match(s, s->strstart, s->strstart - 1, match_len);
++            Assert((s->strstart - 1) <= UINT16_MAX, "strstart-1 should fit in uint16_t");
++            check_match(s, (Pos)s->strstart, (Pos)(s->strstart - 1), match_len);
+ 
+             bflush = zng_tr_tally_dist(s, 1, match_len - STD_MIN_MATCH);
+ 
+diff --git a/src/native/external/zlib-ng/deflate_slow.c b/src/native/external/zlib-ng/deflate_slow.c
+index 9f1c913467b..913d828928b 100644
+--- a/src/native/external/zlib-ng/deflate_slow.c
++++ b/src/native/external/zlib-ng/deflate_slow.c
+@@ -78,7 +78,8 @@ Z_INTERNAL block_state deflate_slow(deflate_state *s, int flush) {
+             unsigned int max_insert = s->strstart + s->lookahead - STD_MIN_MATCH;
+             /* Do not insert strings in hash table beyond this. */
+ 
+-            check_match(s, s->strstart-1, s->prev_match, s->prev_length);
++            Assert((s->strstart - 1) <= UINT16_MAX, "strstart-1 should fit in uint16_t");
++            check_match(s, (Pos)(s->strstart - 1), s->prev_match, s->prev_length);
+ 
+             bflush = zng_tr_tally_dist(s, s->strstart -1 - s->prev_match, s->prev_length - STD_MIN_MATCH);
+ 
+-- 
+2.45.2.windows.1
+
