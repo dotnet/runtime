@@ -686,43 +686,43 @@ get_xconst_int_elem (MonoCompile *cfg, MonoInst *ins, MonoTypeEnum etype, int in
 	}
 	g_assert (index >= 0);
 	switch (etype) {
-		case MONO_TYPE_I1: {
-			g_assert (index < 16);
-			return ((gint8*)cns_vec) [index];
-		}
-		case MONO_TYPE_U1: {
-			g_assert (index < 16);
-			return ((guint8*)cns_vec) [index];
-		}
-		case MONO_TYPE_I2: {
-			g_assert (index < 8);
-			return ((gint16*)cns_vec) [index];
-		}
-		case MONO_TYPE_U2: {
-			g_assert (index < 8);
-			return ((guint16*)cns_vec) [index];
-		}
-		case MONO_TYPE_I4:
-		case MONO_TYPE_R4: {
-			g_assert (index < 4);
-			return ((gint32*)cns_vec) [index];
-		}
-		case MONO_TYPE_U4: {
-			g_assert (index < 4);
-			return ((guint32*)cns_vec) [index];
-		}
-		case MONO_TYPE_I8:
-		case MONO_TYPE_R8: {
-			g_assert (index < 2);
-			return ((gint64*)cns_vec) [index];
-		}
-		case MONO_TYPE_U8: {
-			g_assert (index < 2);
-			return ((guint64*)cns_vec) [index];
-		}
-		default: {
-			g_assert_not_reached ();
-		}
+	case MONO_TYPE_I1: {
+		g_assert (index < 16);
+		return ((gint8*)cns_vec) [index];
+	}
+	case MONO_TYPE_U1: {
+		g_assert (index < 16);
+		return ((guint8*)cns_vec) [index];
+	}
+	case MONO_TYPE_I2: {
+		g_assert (index < 8);
+		return ((gint16*)cns_vec) [index];
+	}
+	case MONO_TYPE_U2: {
+		g_assert (index < 8);
+		return ((guint16*)cns_vec) [index];
+	}
+	case MONO_TYPE_I4:
+	case MONO_TYPE_R4: {
+		g_assert (index < 4);
+		return ((gint32*)cns_vec) [index];
+	}
+	case MONO_TYPE_U4: {
+		g_assert (index < 4);
+		return ((guint32*)cns_vec) [index];
+	}
+	case MONO_TYPE_I8:
+	case MONO_TYPE_R8: {
+		g_assert (index < 2);
+		return ((gint64*)cns_vec) [index];
+	}
+	case MONO_TYPE_U8: {
+		g_assert (index < 2);
+		return ((guint64*)cns_vec) [index];
+	}
+	default: {
+		g_assert_not_reached ();
+	}
 	}
 }
 
@@ -1181,17 +1181,17 @@ emit_vector_insert_element (
 					cns_val = *(const double*)(element->inst_p0);
 				}
 				switch (type) {
-					case MONO_TYPE_R4: {
-						((float*)cns_vec) [index] = (float)cns_val;
-						break;
-					}
-					case MONO_TYPE_R8: {
-						((double*)cns_vec) [index] = (double)cns_val;
-						break;
-					}
-					default: {
-						g_assert_not_reached ();
-					}
+				case MONO_TYPE_R4: {
+					((float*)cns_vec) [index] = (float)cns_val;
+					break;
+				}
+				case MONO_TYPE_R8: {
+					((double*)cns_vec) [index] = (double)cns_val;
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			} else {
 				gint64 cns_val;
@@ -1202,29 +1202,29 @@ emit_vector_insert_element (
 					cns_val = element->inst_l;
 				}
 				switch (type) {
-					case MONO_TYPE_I1:
-					case MONO_TYPE_U1: {
-						((guint8*)cns_vec) [index] = (guint8)cns_val;
-						break;
-					}
-					case MONO_TYPE_I2:
-					case MONO_TYPE_U2: {
-						((guint16*)cns_vec) [index] = (guint16)cns_val;
-						break;
-					}
-					case MONO_TYPE_I4:
-					case MONO_TYPE_U4: {
-						((guint32*)cns_vec) [index] = (guint32)cns_val;
-						break;
-					}
-					case MONO_TYPE_I8:
-					case MONO_TYPE_U8: {
-						((guint64*)cns_vec) [index] = (guint64)cns_val;
-						break;
-					}
-					default: {
-						g_assert_not_reached ();
-					}
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1: {
+					((guint8*)cns_vec) [index] = (guint8)cns_val;
+					break;
+				}
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2: {
+					((guint16*)cns_vec) [index] = (guint16)cns_val;
+					break;
+				}
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: {
+					((guint32*)cns_vec) [index] = (guint32)cns_val;
+					break;
+				}
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: {
+					((guint64*)cns_vec) [index] = (guint64)cns_val;
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			}
 			return emit_xconst_v128 (cfg, vklass, cns_vec);
@@ -1268,21 +1268,21 @@ emit_vector_create_broadcast (
 					cns_val = *(const double*)(arg0->inst_p0);
 				}
 				switch (etype->type) {
-					case MONO_TYPE_R4: {
-						for (int i = 0; i < vector_size / 4; i++) {
-							((float*)cns_vec) [i] = (float)cns_val;
-						}
-						break;
+				case MONO_TYPE_R4: {
+					for (int i = 0; i < vector_size / 4; i++) {
+						((float*)cns_vec) [i] = (float)cns_val;
 					}
-					case MONO_TYPE_R8: {
-						for (int i = 0; i < vector_size / 8; i++) {
-							((double*)cns_vec) [i] = (double)cns_val;
-						}
-						break;
+					break;
+				}
+				case MONO_TYPE_R8: {
+					for (int i = 0; i < vector_size / 8; i++) {
+						((double*)cns_vec) [i] = (double)cns_val;
 					}
-					default: {
-						g_assert_not_reached ();
-					}
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			} else {
 				gint64 cns_val;
@@ -1293,37 +1293,37 @@ emit_vector_create_broadcast (
 					cns_val = arg0->inst_l;
 				}
 				switch (etype->type) {
-					case MONO_TYPE_I1:
-					case MONO_TYPE_U1: {
-						for (int i = 0; i < vector_size / 1; i++) {
-							((guint8*)cns_vec) [i] = (guint8)cns_val;
-						}
-						break;
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1: {
+					for (int i = 0; i < vector_size / 1; i++) {
+						((guint8*)cns_vec) [i] = (guint8)cns_val;
 					}
-					case MONO_TYPE_I2:
-					case MONO_TYPE_U2: {
-						for (int i = 0; i < vector_size / 2; i++) {
-							((guint16*)cns_vec) [i] = (guint16)cns_val;
-						}
-						break;
+					break;
+				}
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2: {
+					for (int i = 0; i < vector_size / 2; i++) {
+						((guint16*)cns_vec) [i] = (guint16)cns_val;
 					}
-					case MONO_TYPE_I4:
-					case MONO_TYPE_U4: {
-						for (int i = 0; i < vector_size / 4; i++) {
-							((guint32*)cns_vec) [i] = (guint32)cns_val;
-						}
-						break;
+					break;
+				}
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: {
+					for (int i = 0; i < vector_size / 4; i++) {
+						((guint32*)cns_vec) [i] = (guint32)cns_val;
 					}
-					case MONO_TYPE_I8:
-					case MONO_TYPE_U8: {
-						for (int i = 0; i < vector_size / 8; i++) {
-							((guint64*)cns_vec) [i] = (guint64)cns_val;
-						}
-						break;
+					break;
+				}
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: {
+					for (int i = 0; i < vector_size / 8; i++) {
+						((guint64*)cns_vec) [i] = (guint64)cns_val;
 					}
-					default: {
-						g_assert_not_reached ();
-					}
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			}
 			return emit_xconst_v128 (cfg, vklass, (guint8*)cns_vec);
@@ -1368,17 +1368,17 @@ emit_vector_create_elementwise (
 				}
 
 				switch (etype->type) {
-					case MONO_TYPE_R4: {
-						((float*)cns_vec) [i] = (float)cns_val;
-						break;
-					}
-					case MONO_TYPE_R8: {
-						((double*)cns_vec) [i] = (double)cns_val;
-						break;
-					}
-					default: {
-						g_assert_not_reached ();
-					}
+				case MONO_TYPE_R4: {
+					((float*)cns_vec) [i] = (float)cns_val;
+					break;
+				}
+				case MONO_TYPE_R8: {
+					((double*)cns_vec) [i] = (double)cns_val;
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			} else {
 				gint64 cns_val;
@@ -1390,29 +1390,29 @@ emit_vector_create_elementwise (
 				}
 
 				switch (etype->type) {
-					case MONO_TYPE_I1:
-					case MONO_TYPE_U1: {
-						((guint8*)cns_vec) [i] = (guint8)cns_val;
-						break;
-					}
-					case MONO_TYPE_I2:
-					case MONO_TYPE_U2: {
-						((guint16*)cns_vec) [i] = (guint16)cns_val;
-						break;
-					}
-					case MONO_TYPE_I4:
-					case MONO_TYPE_U4: {
-						((guint32*)cns_vec) [i] = (guint32)cns_val;
-						break;
-					}
-					case MONO_TYPE_I8:
-					case MONO_TYPE_U8: {
-						((guint64*)cns_vec) [i] = (guint64)cns_val;
-						break;
-					}
-					default: {
-						g_assert_not_reached ();
-					}
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1: {
+					((guint8*)cns_vec) [i] = (guint8)cns_val;
+					break;
+				}
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2: {
+					((guint16*)cns_vec) [i] = (guint16)cns_val;
+					break;
+				}
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: {
+					((guint32*)cns_vec) [i] = (guint32)cns_val;
+					break;
+				}
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: {
+					((guint64*)cns_vec) [i] = (guint64)cns_val;
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			}
 		}
@@ -1465,17 +1465,17 @@ emit_vector_create_scalar (
 				}
 
 				switch (etype->type) {
-					case MONO_TYPE_R4: {
-						((float*)cns_vec) [0] = (float)cns_val;
-						break;
-					}
-					case MONO_TYPE_R8: {
-						((double*)cns_vec) [0] = (double)cns_val;
-						break;
-					}
-					default: {
-						g_assert_not_reached ();
-					}
+				case MONO_TYPE_R4: {
+					((float*)cns_vec) [0] = (float)cns_val;
+					break;
+				}
+				case MONO_TYPE_R8: {
+					((double*)cns_vec) [0] = (double)cns_val;
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			} else {
 				gint64 cns_val;
@@ -1487,29 +1487,29 @@ emit_vector_create_scalar (
 				
 }
 				switch (etype->type) {
-					case MONO_TYPE_I1:
-					case MONO_TYPE_U1: {
-						((guint8*)cns_vec) [0] = (guint8)cns_val;
-						break;
-					}
-					case MONO_TYPE_I2:
-					case MONO_TYPE_U2: {
-						((guint16*)cns_vec) [0] = (guint16)cns_val;
-						break;
-					}
-					case MONO_TYPE_I4:
-					case MONO_TYPE_U4: {
-						((guint32*)cns_vec) [0] = (guint32)cns_val;
-						break;
-					}
-					case MONO_TYPE_I8:
-					case MONO_TYPE_U8: {
-						((guint64*)cns_vec) [0] = (guint64)cns_val;
-						break;
-					}
-					default: {
-						g_assert_not_reached ();
-					}
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1: {
+					((guint8*)cns_vec) [0] = (guint8)cns_val;
+					break;
+				}
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2: {
+					((guint16*)cns_vec) [0] = (guint16)cns_val;
+					break;
+				}
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: {
+					((guint32*)cns_vec) [0] = (guint32)cns_val;
+					break;
+				}
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: {
+					((guint64*)cns_vec) [0] = (guint64)cns_val;
+					break;
+				}
+				default: {
+					g_assert_not_reached ();
+				}
 				}
 			}
 
