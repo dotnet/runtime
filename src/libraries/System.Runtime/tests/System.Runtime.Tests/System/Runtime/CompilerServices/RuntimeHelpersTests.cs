@@ -101,6 +101,8 @@ namespace System.Runtime.CompilerServices.Tests
             RuntimeTypeHandle t = typeof(HasCctor).TypeHandle;
             RuntimeHelpers.RunClassConstructor(t);
             Assert.Equal("Hello", HasCctorReceiver.S);
+            // Should not throw
+            RuntimeHelpers.RunClassConstructor(typeof(GenericHasCctor<>).TypeHandle);
             return;
         }
 
