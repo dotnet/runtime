@@ -568,6 +568,23 @@ mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
 int
 mono_class_update_heapshot_scratch_byte (MonoClass *klass, char new_value);
 
+typedef enum {
+	HANDLE_TYPE_MIN = 0,
+	HANDLE_WEAK = HANDLE_TYPE_MIN,
+	HANDLE_WEAK_TRACK,
+	HANDLE_NORMAL,
+	HANDLE_PINNED,
+	HANDLE_WEAK_FIELDS,
+	HANDLE_TYPE_MAX
+} GCHandleType;
+
+enum {
+	ROOT_TYPE_NORMAL = 0, /* "normal" roots */
+	ROOT_TYPE_PINNED = 1, /* roots without a GC descriptor */
+	ROOT_TYPE_WBARRIER = 2, /* roots with a write barrier */
+	ROOT_TYPE_NUM
+};
+
 struct _MonoProfiler {
 };
 
@@ -575,10 +592,50 @@ static char next_heapshot_scratch_byte = 1;
 static MonoProfiler heapshot_profiler;
 static MonoProfilerHandle heapshot_profiler_handle = NULL;
 
-extern void mono_wasm_heapshot_start ();
-extern void mono_wasm_heapshot_class (void *klass, const char *namespace, const char *name, int kind, int gparam_count, void **gparams);
-extern void mono_wasm_heapshot_object (void *obj, void *klass, uint32_t size, uint32_t ref_count, void **refs);
-extern void mono_wasm_heapshot_end ();
+extern void
+mono_wasm_heapshot_start ();
+extern void
+mono_wasm_heapshot_class (
+    MonoClass *klass, MonoClass *element_klass, const char *namespace, const char *name,
+    int rank, int kind, int gparam_count, MonoClass **gparams
+);
+extern void
+mono_wasm_heapshot_object (
+    MonoObject *obj, MonoClass *klass, uint32_t size, uint32_t ref_count, MonoObject **refs
+);
+extern void
+mono_wasm_heapshot_gchandle (MonoObject *obj, int handle_type);
+extern void
+mono_wasm_heapshot_roots (
+    MonoObject **objs, int obj_count, MonoGCRootSource source, int root_type, const char *msg
+);
+extern void
+mono_wasm_heapshot_stats (
+    int in_use_pages, int free_pages, int external_pages, int largest_free_chunk,
+    int sgen_los_size, int sgen_heap_capacity
+);
+extern void
+mono_wasm_heapshot_end ();
+
+void
+mwpm_compute_stats (uint32_t *in_use_pages, uint32_t *free_pages, uint32_t *external_pages, uint32_t *largest_free_chunk);
+
+typedef void * (*SgenGCHandleIterateCallback) (void *hidden, GCHandleType handle_type, int max_generation, void *user);
+
+size_t
+sgen_gc_get_total_heap_allocation (void);
+
+void
+sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, SgenGCHandleIterateCallback callback, void *user);
+
+void *
+sgen_try_reveal_pointer (void *hidden, GCHandleType handle_type);
+
+typedef void (*SgenRootIterateCallback) (void *start, void *end, MonoGCRootSource source, int root_type, const char *msg, void *user);
+
+void sgen_registered_root_iterate (SgenRootIterateCallback callback, void *user_data, int root_type);
+
+extern uint32_t sgen_los_memory_usage, sgen_los_memory_usage_total;
 
 static const int MONO_CLASS_GINST = 3;
 
@@ -586,13 +643,18 @@ static void
 mono_wasm_on_gc_class (
     MonoClass *klass
 ) {
+    MonoClass *info_klass = klass;
     char namespace_buffer[1024];
+    // If we're looking at an array, examine the element type instead and specify the rank
+    int rank = mono_class_get_rank (klass);
+    if (rank > 0) {
+        info_klass = mono_class_get_element_class (klass);
+        if (mono_class_update_heapshot_scratch_byte (info_klass, next_heapshot_scratch_byte))
+            mono_wasm_on_gc_class (info_klass);
+    }
     // HACK: Nested types have no namespace, so extract it from the class it's nested in
-    MonoClass *nesting_type = mono_class_get_nesting_type (klass);
-    // If we're looking at an array, the element class will be the one nested into a class
-    if (mono_class_get_rank (klass) > 0)
-        nesting_type = mono_class_get_nesting_type (mono_class_get_element_class (klass));
-    const char *namespace = mono_class_get_namespace (klass);
+    MonoClass *nesting_type = mono_class_get_nesting_type (info_klass);
+    const char *namespace = mono_class_get_namespace (info_klass);
     if (nesting_type) {
         // We need to construct a fake namespace from {outer.namespace}.{outer.name}
         // FIXME: Do this more efficiently
@@ -606,9 +668,15 @@ mono_wasm_on_gc_class (
         namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
         namespace = namespace_buffer;
     }
+
     MonoClass *gparams[64];
     int gparam_count = mono_class_get_generic_params (klass, gparams, sizeof(gparams) / sizeof(gparams[0]));
-    mono_wasm_heapshot_class (klass, namespace, mono_class_get_name (klass), mono_class_get_kind (klass), gparam_count, gparam_count ? (void **)gparams : NULL);
+    for (int i = 0; i < gparam_count; i++) {
+        if (mono_class_update_heapshot_scratch_byte (gparams[i], next_heapshot_scratch_byte))
+            mono_wasm_on_gc_class (gparams[i]);
+    }
+
+    mono_wasm_heapshot_class (klass, mono_class_get_element_class (klass), namespace, mono_class_get_name (info_klass), rank, mono_class_get_kind (klass), gparam_count, gparam_count ? gparams : NULL);
 }
 
 // NOTE: for objects (like arrays) containing more than 128 refs, this will get invoked multiple times
@@ -624,8 +692,44 @@ mono_wasm_on_gc_object (
 ) {
 	if (mono_class_update_heapshot_scratch_byte (klass, next_heapshot_scratch_byte))
         mono_wasm_on_gc_class (klass);
-	mono_wasm_heapshot_object (obj, klass, (uint32_t)size, (uint32_t)num, (void **)refs);
+	mono_wasm_heapshot_object (obj, klass, (uint32_t)size, (uint32_t)num, refs);
 	return 0;
+}
+
+static void *
+mono_wasm_each_gchandle (void *hidden, GCHandleType handle_type, int max_generation, void *user)
+{
+    MonoObject *obj = sgen_try_reveal_pointer (hidden, handle_type);
+    if (obj)
+        mono_wasm_heapshot_gchandle (obj, handle_type);
+    return hidden;
+}
+
+static void
+mono_wasm_each_root (void *_start, void *_end, MonoGCRootSource source, int root_type, const char *msg, void *user)
+{
+    MonoObject *buf[64];
+    int buf_count = 0;
+    memset (buf, 0, sizeof(buf));
+
+    MonoObject **current = _start, **end = _end;
+    while (current != end) {
+        MonoObject *obj = *current;
+        if (obj) {
+            if (buf_count >= 63) {
+                mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
+                buf_count = 0;
+            }
+
+            buf[buf_count] = obj;
+            buf_count++;
+        }
+        current++;
+    }
+
+    if (buf_count > 0)
+        mono_wasm_heapshot_roots (buf, buf_count, source, root_type, msg);
+    memset (buf, 0, sizeof(buf));
 }
 
 static void
@@ -638,7 +742,16 @@ mono_wasm_on_gc_event (
 	if (gc_event != MONO_GC_EVENT_PRE_START_WORLD)
 		return;
 
+    uint32_t in_use_pages, free_pages, external_pages, largest_free_chunk;
+    mwpm_compute_stats (&in_use_pages, &free_pages, &external_pages, &largest_free_chunk);
+    mono_wasm_heapshot_stats (
+        in_use_pages, free_pages, external_pages, largest_free_chunk, (int)sgen_los_memory_usage, (int)sgen_gc_get_total_heap_allocation ()
+    );
 	mono_gc_walk_heap (0, mono_wasm_on_gc_object, NULL);
+    for (int rt = 0; rt < ROOT_TYPE_NUM; rt++)
+        sgen_registered_root_iterate (mono_wasm_each_root, prof, rt);
+    for (int ht = HANDLE_TYPE_MIN; ht < HANDLE_TYPE_MAX; ht++)
+        sgen_gchandle_iterate ((GCHandleType)ht, 2, mono_wasm_each_gchandle, prof);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -653,5 +766,5 @@ mono_wasm_perform_heapshot () {
 	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, mono_wasm_on_gc_event);
 	mono_gc_collect (mono_gc_max_generation ());
 	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, NULL);
-	mono_wasm_heapshot_end();
+	mono_wasm_heapshot_end ();
 }

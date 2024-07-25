@@ -707,7 +707,7 @@ mono_class_get_generic_params (MonoClass *klass, MonoClass **result, int result_
 				result[i] = NULL;
 		}
 	}
-	return (int)inst->type_argc;
+	return (int)MIN(inst->type_argc, result_capacity);
 }
 
 #ifdef MONO_CLASS_DEF_PRIVATE
