@@ -25461,8 +25461,6 @@ void gc_heap::calculate_new_heap_count ()
     int extra_heaps = (n_max_heaps >= 16) + (n_max_heaps >= 64);
     int actual_n_max_heaps = n_max_heaps - extra_heaps;
 
-    size_t num_gen2s_since_last_change = 0;
-
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     // quick hack for initial testing
     int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
@@ -25592,6 +25590,8 @@ void gc_heap::calculate_new_heap_count ()
             (uint8_t)adj_metric);
     }
 
+    size_t num_gen2s_since_last_change = 0;
+
     if ((new_n_heaps == n_heaps) && !process_eph_samples_p && process_gen2_samples_p)
     {
         num_gen2s_since_last_change = dynamic_heap_count_data.current_gen2_samples_count - dynamic_heap_count_data.gen2_last_changed_sample_count;
@@ -25633,7 +25633,6 @@ void gc_heap::calculate_new_heap_count ()
 
     assert (new_n_heaps >= 1);
     assert (new_n_heaps <= actual_n_max_heaps);
-#endif //STRESS_DYNAMIC_HEAP_COUNT
 
     if (process_eph_samples_p)
     {
@@ -25659,6 +25658,8 @@ void gc_heap::calculate_new_heap_count ()
         dprintf (6666, ("processed gen2 samples, updating processed %Id -> %Id", dynamic_heap_count_data.processed_gen2_samples_count, dynamic_heap_count_data.current_gen2_samples_count));
         dynamic_heap_count_data.processed_gen2_samples_count = dynamic_heap_count_data.current_gen2_samples_count;
     }
+
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 
     if (new_n_heaps != n_heaps)
     {
