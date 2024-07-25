@@ -52,6 +52,7 @@ next_chain:
 }
 
 Z_INTERNAL void slide_hash_sse2(deflate_state *s) {
+    Assert(s->w_size <= UINT16_MAX, "w_size should fit in uint16_t");
     uint16_t wsize = (uint16_t)s->w_size;
     const __m128i xmm_wsize = _mm_set1_epi16((short)wsize);
 

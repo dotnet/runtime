@@ -78,8 +78,10 @@ static inline int zng_tr_tally_dist(deflate_state* s, uint32_t dist, uint32_t le
     /* dist: distance of matched string */
     /* len: match length-STD_MIN_MATCH */
 #ifdef LIT_MEM
-    s->d_buf[s->sym_next] = dist;
-    s->l_buf[s->sym_next++] = len;
+    Assert(dist <= UINT16_MAX, "dist should fit in uint16_t");
+    Assert(len <= UINT8_MAX, "len should fit in uint8_t");
+    s->d_buf[s->sym_next] = (uint16_t)dist;
+    s->l_buf[s->sym_next++] = (uint8_t)len;
 #else
     s->sym_buf[s->sym_next++] = (uint8_t)(dist);
     s->sym_buf[s->sym_next++] = (uint8_t)(dist >> 8);
