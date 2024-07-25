@@ -1958,7 +1958,21 @@ namespace ILCompiler
                         && parameters[1] is ByRefValue src
                         && parameters[2] is ValueTypeValue len)
                     {
-                        int length = context.Target.PointerSize == 8 ? checked ((int)len.AsInt64()) : len.AsInt32();
+                        int length;
+                        if (context.Target.PointerSize == 8)
+                        {
+                            long longLength = len.AsInt64();
+                            if (longLength > int.MaxValue || longLength < int.MinValue)
+                            {
+                                return false;
+                            }
+
+                            length = (int)longLength;
+                        }
+                        else
+                        {
+                            length = len.AsInt32();
+                        }
                         var srcSpan = new Span<byte>(src.PointedToBytes, src.PointedToOffset, length);
                         var dstSpan = new Span<byte>(dest.PointedToBytes, dest.PointedToOffset, length);
                         srcSpan.CopyTo(dstSpan);
