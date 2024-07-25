@@ -565,16 +565,53 @@ mono_wasm_read_as_bool_or_null_unsafe (PVOLATILE(MonoObject) obj) {
 	return result;
 }
 
+int
+mono_class_update_heapshot_scratch_byte (MonoClass *klass, char new_value);
+
 struct _MonoProfiler {
 };
 
+static char next_heapshot_scratch_byte = 1;
 static MonoProfiler heapshot_profiler;
 static MonoProfilerHandle heapshot_profiler_handle = NULL;
 
 extern void mono_wasm_heapshot_start ();
+extern void mono_wasm_heapshot_class (void *klass, const char *namespace, const char *name, int kind, int gparam_count, void **gparams);
 extern void mono_wasm_heapshot_object (void *obj, void *klass, uint32_t size, uint32_t ref_count, void **refs);
 extern void mono_wasm_heapshot_end ();
 
+static const int MONO_CLASS_GINST = 3;
+
+static void
+mono_wasm_on_gc_class (
+    MonoClass *klass
+) {
+    char namespace_buffer[1024];
+    // HACK: Nested types have no namespace, so extract it from the class it's nested in
+    MonoClass *nesting_type = mono_class_get_nesting_type (klass);
+    // If we're looking at an array, the element class will be the one nested into a class
+    if (mono_class_get_rank (klass) > 0)
+        nesting_type = mono_class_get_nesting_type (mono_class_get_element_class (klass));
+    const char *namespace = mono_class_get_namespace (klass);
+    if (nesting_type) {
+        // We need to construct a fake namespace from {outer.namespace}.{outer.name}
+        // FIXME: Do this more efficiently
+        strncpy (namespace_buffer, mono_class_get_namespace (nesting_type), sizeof(namespace_buffer));
+        namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
+        // strcat could overrun by 1 byte so just do it manually
+        namespace_buffer[strlen(namespace_buffer)] = '.';
+        namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
+        // imagine if strlcat was available here
+        strncat (namespace_buffer, mono_class_get_name (nesting_type), sizeof(namespace_buffer) - strlen(namespace_buffer) - 1);
+        namespace_buffer[sizeof(namespace_buffer) - 1] = 0;
+        namespace = namespace_buffer;
+    }
+    MonoClass *gparams[64];
+    int gparam_count = mono_class_get_generic_params (klass, gparams, sizeof(gparams) / sizeof(gparams[0]));
+    mono_wasm_heapshot_class (klass, namespace, mono_class_get_name (klass), mono_class_get_kind (klass), gparam_count, gparam_count ? (void **)gparams : NULL);
+}
+
+// NOTE: for objects (like arrays) containing more than 128 refs, this will get invoked multiple times
 static int
 mono_wasm_on_gc_object (
 	MonoObject *obj,
@@ -585,6 +622,8 @@ mono_wasm_on_gc_object (
 	uintptr_t *offsets,
 	void *data
 ) {
+	if (mono_class_update_heapshot_scratch_byte (klass, next_heapshot_scratch_byte))
+        mono_wasm_on_gc_class (klass);
 	mono_wasm_heapshot_object (obj, klass, (uint32_t)size, (uint32_t)num, (void **)refs);
 	return 0;
 }
@@ -608,6 +647,8 @@ mono_wasm_perform_heapshot () {
 		memset (&heapshot_profiler, 0, sizeof(MonoProfiler));
 		heapshot_profiler_handle = mono_profiler_create (&heapshot_profiler);
 	}
+	// intentional wraparound
+	next_heapshot_scratch_byte = (char)((int)next_heapshot_scratch_byte + 1);
 	mono_wasm_heapshot_start ();
 	mono_profiler_set_gc_event_callback (heapshot_profiler_handle, mono_wasm_on_gc_event);
 	mono_gc_collect (mono_gc_max_generation ());

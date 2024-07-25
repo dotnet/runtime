@@ -79,6 +79,9 @@ struct _MonoClass {
 
 	/* next byte */
 	guint8 min_align;
+#ifdef HOST_BROWSER
+	char heapshot_scratch_byte;
+#endif
 
 	MonoClass  *parent;
 	MonoClass  *nested_in;
