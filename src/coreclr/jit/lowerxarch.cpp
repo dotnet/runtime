@@ -1570,6 +1570,21 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                                     op2->SetUnusedValue();
                                 }
 
+                                // Since we have a double negation, it's possible that gtNext
+                                // is op1 or user. If it is op1, then it's also possible the
+                                // subsequent gtNext is user. We need to make sure to skip both
+                                // in such a scenario since we're removing them.
+
+                                if (nextNode == op1)
+                                {
+                                    nextNode = nextNode->gtNext;
+                                }
+
+                                if (nextNode == user)
+                                {
+                                    nextNode = nextNode->gtNext;
+                                }
+
                                 BlockRange().Remove(op3);
                                 BlockRange().Remove(op1);
                                 BlockRange().Remove(user);
