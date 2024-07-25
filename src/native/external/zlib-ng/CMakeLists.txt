@@ -486,7 +486,7 @@ if(NOT HAVE_PTRDIFF_T)
     endif()
 endif()
 
-add_compile_options($<$<CONFIG:Debug>:-DZLIB_DEBUG>) 
+add_compile_options($<$<CONFIG:Debug>:-DZLIB_DEBUG>)
 
 if(MSVC)
     set(CMAKE_DEBUG_POSTFIX "d")
