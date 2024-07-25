@@ -1910,7 +1910,7 @@ struct CORINFO_FPSTRUCT_LOWERING
     bool byIntegerCallConv;
     // Types of lowered struct fields.
     // Note: the integer field is denoted with a signed type reflecting size only so e.g. ushort is reported
-    // as CORINFO_TYPE_SHORT and Object or string is reported as CORINFO_TYPE_LONG.
+    // as CORINFO_TYPE_SHORT and object or string is reported as CORINFO_TYPE_LONG.
     CorInfoType loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
     // Offsets of lowered struct fields.
     uint32_t offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
