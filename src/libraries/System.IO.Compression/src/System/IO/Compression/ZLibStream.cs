@@ -51,6 +51,7 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written.</param>
         /// <param name="compressionOptions">The ZLib options for fine tuning the compression stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <see langword="false" />.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
         public ZLibStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false)
         {
             _deflateStream = new DeflateStream(stream, compressionOptions, leaveOpen, ZLibNative.ZLib_DefaultWindowBits);

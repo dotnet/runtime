@@ -18,6 +18,7 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new GZipStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new GZipStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new GZipStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) => new GZipStream(stream, options, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((GZipStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("GZipTestData", Path.GetFileName(uncompressedPath) + ".gz");
 
@@ -442,60 +443,8 @@ namespace System.IO.Compression
         }
 
         [Theory]
-        [MemberData(nameof(ZLibOptionsRoundTripTestData))]
-        public async Task RoundTripWithOptions(string testFile, ZLibCompressionOptions options)
-        {
-            var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
-            var compressedStream = CompressTestFile(uncompressedStream, options);
-            using var decompressor = new GZipStream(compressedStream, mode: CompressionMode.Decompress);
-            var decompressorOutput = new MemoryStream();
-            int _bufferSize = 1024;
-            var bytes = new byte[_bufferSize];
-            bool finished = false;
-            int retCount;
-            while (!finished)
-            {
-                retCount = await decompressor.ReadAsync(bytes, 0, _bufferSize);
-
-                if (retCount != 0)
-                    await decompressorOutput.WriteAsync(bytes, 0, retCount);
-                else
-                    finished = true;
-            }
-            decompressor.Dispose();
-            decompressorOutput.Position = 0;
-            uncompressedStream.Position = 0;
-
-            byte[] uncompressedStreamBytes = uncompressedStream.ToArray();
-            byte[] decompressorOutputBytes = decompressorOutput.ToArray();
-
-            Assert.Equal(uncompressedStreamBytes.Length, decompressorOutputBytes.Length);
-            for (int i = 0; i < uncompressedStreamBytes.Length; i++)
-            {
-                Assert.Equal(uncompressedStreamBytes[i], decompressorOutputBytes[i]);
-            }
-        }
-
-        private MemoryStream CompressTestFile(LocalMemoryStream testStream, ZLibCompressionOptions options)
-        {
-            var compressorOutput = new MemoryStream();
-            using (var compressionStream = new GZipStream(compressorOutput, options, leaveOpen: true))
-            {
-                var buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = testStream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    compressionStream.Write(buffer, 0, bytesRead);
-                }
-            }
-
-            compressorOutput.Position = 0;
-            return compressorOutput;
-        }
-
-        [Theory]
-        [MemberData(nameof(UncompressedTestFiles))]
-        public async void GZipCompression_SizeInOrder(string testFile)
+        [MemberData(nameof(UncompressedTestFilesZLib))]
+        public async void ZLibCompressionLevel_SizeInOrder(string testFile)
         {
             using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
 
@@ -520,15 +469,15 @@ namespace System.IO.Compression
             long level8 = await GetLengthAsync(8);
             long level9 = await GetLengthAsync(9);
 
-            // Depending on the file type the higher compression level is not always produce higher compressed size, especially when the levels are close.
             Assert.True(level1 <= level0);
             Assert.True(level2 <= level1);
             Assert.True(level3 <= level2);
-            Assert.True(level4 <= level2);
-            Assert.True(level5 <= level3);
-            Assert.True(level6 <= level3);
-            Assert.True(level8 <= level6);
-            Assert.True(level9 <= level4);
+            Assert.True(level4 <= level3);
+            Assert.True(level5 <= level4);
+            Assert.True(level6 <= level5);
+            Assert.True(level7 <= level6);
+            Assert.True(level8 <= level7);
+            Assert.True(level9 <= level8);
         }
     }
 }

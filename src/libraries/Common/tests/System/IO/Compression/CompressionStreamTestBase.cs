@@ -27,9 +27,16 @@ namespace System.IO.Compression
             yield return new object[] { Path.Combine("UncompressedTestFiles", "sum") };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "xargs.1") };
         }
+        public static IEnumerable<object[]> UncompressedTestFilesZLib()
+        {
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.doc") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.docx") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.pdf") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "sum") };
+        }
         public static IEnumerable<object[]> ZLibOptionsRoundTripTestData()
         {
-            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.doc"), new ZLibCompressionOptions() { CompressionLevel = -1, CompressionStrategy = ZLibCompressionStrategy.Default } };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.doc"), new ZLibCompressionOptions() { CompressionLevel = 0, CompressionStrategy = ZLibCompressionStrategy.Default } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.docx"), new ZLibCompressionOptions() { CompressionLevel = 3, CompressionStrategy = ZLibCompressionStrategy.Filtered } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.pdf"), new ZLibCompressionOptions() { CompressionLevel = 5, CompressionStrategy = ZLibCompressionStrategy.RunLengthEncoding } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.txt"), new ZLibCompressionOptions() { CompressionLevel = 7, CompressionStrategy = ZLibCompressionStrategy.HuffmanOnly } };
@@ -38,7 +45,7 @@ namespace System.IO.Compression
             yield return new object[] { Path.Combine("UncompressedTestFiles", "cp.html"), new ZLibCompressionOptions() { CompressionLevel = 4, CompressionStrategy = ZLibCompressionStrategy.Default } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "fields.c"), new ZLibCompressionOptions() { CompressionLevel = 6, CompressionStrategy = ZLibCompressionStrategy.HuffmanOnly } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "grammar.lsp"), new ZLibCompressionOptions() { CompressionLevel = 8, CompressionStrategy = ZLibCompressionStrategy.Default } };
-            yield return new object[] { Path.Combine("UncompressedTestFiles", "kennedy.xls"), new ZLibCompressionOptions() { CompressionLevel = -1, CompressionStrategy = ZLibCompressionStrategy.Fixed } };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "kennedy.xls"), new ZLibCompressionOptions() { CompressionLevel = 1, CompressionStrategy = ZLibCompressionStrategy.Fixed } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "lcet10.txt"), new ZLibCompressionOptions() { CompressionLevel = 1, CompressionStrategy = ZLibCompressionStrategy.Filtered } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "plrabn12.txt"), new ZLibCompressionOptions() { CompressionLevel = 2, CompressionStrategy = ZLibCompressionStrategy.RunLengthEncoding } };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "ptt5"), new ZLibCompressionOptions() { CompressionLevel = 3, CompressionStrategy = ZLibCompressionStrategy.Default } };
@@ -55,6 +62,7 @@ namespace System.IO.Compression
         public abstract Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen);
         public abstract Stream CreateStream(Stream stream, CompressionLevel level);
         public abstract Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen);
+        public abstract Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen);
         public abstract Stream BaseStream(Stream stream);
         public virtual int BufferSize { get => 8192; }
 

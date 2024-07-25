@@ -15,9 +15,24 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new BrotliStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new BrotliStream(stream, level);
         public override Stream CreateStream(Stream stream, CompressionLevel level, bool leaveOpen) => new BrotliStream(stream, level, leaveOpen);
+        public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) =>
+            new BrotliStream(stream, options == null ? null : new BrotliCompressionOptions() { Quality = options.CompressionLevel }, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((BrotliStream)stream).BaseStream;
 
         protected override bool FlushGuaranteesAllDataWritten => false;
+
+        public static IEnumerable<object[]> UncompressedTestFilesBrotli()
+        {
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "alice29.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "asyoulik.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "cp.html") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "fields.c") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "lcet10.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "plrabn12.txt") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "sum") };
+            yield return new object[] { Path.Combine("UncompressedTestFiles", "xargs.1") };
+        }
 
         // The tests are relying on an implementation detail of BrotliStream, using knowledge of its internal buffer size
         // in various test calculations.  Currently the implementation is using the ArrayPool, which will round up to a
@@ -77,55 +92,8 @@ namespace System.IO.Compression
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = 12);
         }
 
-        public static IEnumerable<object[]> BrotliOptionsRoundTripTestData()
-        {
-            yield return new object[] { 1000, new BrotliCompressionOptions() { Quality = 0 } };
-            yield return new object[] { 900, new BrotliCompressionOptions() { Quality = 3 } };
-            yield return new object[] { 1200, new BrotliCompressionOptions() { Quality = 5 } };
-            yield return new object[] { 2000, new BrotliCompressionOptions() { Quality = 6 } };
-            yield return new object[] { 3000, new BrotliCompressionOptions() { Quality = 2 } };
-            yield return new object[] { 1500, new BrotliCompressionOptions() { Quality = 7 } };
-            yield return new object[] { 500, new BrotliCompressionOptions() { Quality = 9 } };
-            yield return new object[] { 1000, new BrotliCompressionOptions() { Quality = 11 } };
-        }
-
         [Theory]
-        [MemberData(nameof(BrotliOptionsRoundTripTestData))]
-        public static void Roundtrip_WriteByte_ReadByte_DifferentQuality_Success(int totalLength, BrotliCompressionOptions options)
-        {
-            byte[] correctUncompressedBytes = Enumerable.Range(0, totalLength).Select(i => (byte)i).ToArray();
-
-            byte[] compressedBytes;
-            using (var ms = new MemoryStream())
-            {
-                var bs = new BrotliStream(ms, options);
-                foreach (byte b in correctUncompressedBytes)
-                {
-                    bs.WriteByte(b);
-                }
-                bs.Dispose();
-                compressedBytes = ms.ToArray();
-            }
-
-            byte[] decompressedBytes = new byte[correctUncompressedBytes.Length];
-            using (var ms = new MemoryStream(compressedBytes))
-            using (var bs = new BrotliStream(ms, CompressionMode.Decompress))
-            {
-                for (int i = 0; i < decompressedBytes.Length; i++)
-                {
-                    int b = bs.ReadByte();
-                    Assert.InRange(b, 0, 255);
-                    decompressedBytes[i] = (byte)b;
-                }
-                Assert.Equal(-1, bs.ReadByte());
-                Assert.Equal(-1, bs.ReadByte());
-            }
-
-            Assert.Equal<byte>(correctUncompressedBytes, decompressedBytes);
-        }
-
-        [Theory]
-        [MemberData(nameof(UncompressedTestFiles))]
+        [MemberData(nameof(UncompressedTestFilesBrotli))]
         public async void BrotliCompressionQuality_SizeInOrder(string testFile)
         {
             using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
@@ -156,11 +124,11 @@ namespace System.IO.Compression
 
             Assert.True(quality1 <= quality0);
             Assert.True(quality2 <= quality1);
-            Assert.True(quality3 <= quality1);
-            Assert.True(quality4 <= quality2);
-            Assert.True(quality5 <= quality1);
-            Assert.True(quality6 <= quality1);
-            Assert.True(quality7 <= quality4);
+            Assert.True(quality3 <= quality2);
+            Assert.True(quality4 <= quality3);
+            Assert.True(quality5 <= quality4);
+            Assert.True(quality6 <= quality5);
+            Assert.True(quality7 <= quality6);
             Assert.True(quality8 <= quality7);
             Assert.True(quality9 <= quality8);
             Assert.True(quality10 <= quality9);

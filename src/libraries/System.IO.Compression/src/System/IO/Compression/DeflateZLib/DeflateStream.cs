@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.IO.Compression.ZLibNative;
 
 namespace System.IO.Compression
 {
@@ -51,6 +52,7 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to which compressed data is written.</param>
         /// <param name="compressionOptions">The options for fine tuning the compression stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="DeflateStream"/> object; otherwise, <see langword="false" /></param>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> or <paramref name="compressionOptions"/> is <see langword="null" />.</exception>
         public DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen = false) : this(stream, compressionOptions, leaveOpen, ZLibNative.Deflate_DefaultWindowBits)
         {
         }
@@ -58,23 +60,9 @@ namespace System.IO.Compression
         internal DeflateStream(Stream stream, ZLibCompressionOptions compressionOptions, bool leaveOpen, int windowBits)
         {
             ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(compressionOptions);
 
-            _stream = stream;
-            _mode = CompressionMode.Compress;
-            _leaveOpen = leaveOpen;
-            InitializeDeflater(stream, compressionOptions, windowBits);
-        }
-
-        internal void InitializeDeflater(Stream stream, ZLibCompressionOptions compressionOptions, int windowBits)
-        {
-            Debug.Assert(stream != null);
-            if (!stream.CanWrite)
-            {
-                throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
-            }
-
-            _deflater = new Deflater(compressionOptions, windowBits);
-            InitializeBuffer();
+            InitializeDeflater(stream, (ZLibNative.CompressionLevel)compressionOptions.CompressionLevel, (CompressionStrategy)compressionOptions.CompressionStrategy, leaveOpen,  windowBits);
         }
 
         /// <summary>
@@ -98,7 +86,7 @@ namespace System.IO.Compression
                     break;
 
                 case CompressionMode.Compress:
-                    InitializeDeflater(stream, leaveOpen, windowBits, CompressionLevel.Optimal);
+                    InitializeDeflater(stream, ZLibNative.CompressionLevel.DefaultCompression, CompressionStrategy.DefaultStrategy, leaveOpen, windowBits);
                     break;
 
                 default:
@@ -107,32 +95,44 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Internal constructor to specify the compressionlevel as well as the windowbits
+        /// Internal constructor to specify the compressionLevel as well as the windowBits
         /// </summary>
         internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
             ArgumentNullException.ThrowIfNull(stream);
 
-            InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
+            InitializeDeflater(stream, GetZLibNativeCompressionLevel(compressionLevel), CompressionStrategy.DefaultStrategy, leaveOpen, windowBits);
         }
 
         /// <summary>
         /// Sets up this DeflateStream to be used for Zlib Deflation/Compression
         /// </summary>
         [MemberNotNull(nameof(_stream))]
-        internal void InitializeDeflater(Stream stream, bool leaveOpen, int windowBits, CompressionLevel compressionLevel)
+        internal void InitializeDeflater(Stream stream, ZLibNative.CompressionLevel compressionLevel, CompressionStrategy strategy, bool leaveOpen, int windowBits)
         {
             Debug.Assert(stream != null);
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
-            _deflater = new Deflater(compressionLevel, windowBits);
+            _deflater = new Deflater(compressionLevel, strategy, windowBits, GetMemLevel(compressionLevel));
 
             _stream = stream;
             _mode = CompressionMode.Compress;
             _leaveOpen = leaveOpen;
             InitializeBuffer();
         }
+
+        private static ZLibNative.CompressionLevel GetZLibNativeCompressionLevel(CompressionLevel compressionLevel) =>
+            compressionLevel switch
+            {
+                CompressionLevel.Optimal => ZLibNative.CompressionLevel.DefaultCompression,
+                CompressionLevel.Fastest => ZLibNative.CompressionLevel.BestSpeed,
+                CompressionLevel.NoCompression => ZLibNative.CompressionLevel.NoCompression,
+                CompressionLevel.SmallestSize => ZLibNative.CompressionLevel.BestCompression,
+                _ => throw new ArgumentOutOfRangeException(nameof(compressionLevel)),
+            };
+
+        private static int GetMemLevel(ZLibNative.CompressionLevel level) => level == ZLibNative.CompressionLevel.NoCompression ? Deflate_NoCompressionMemLevel : Deflate_DefaultMemLevel;
 
         [MemberNotNull(nameof(_buffer))]
         private void InitializeBuffer()
