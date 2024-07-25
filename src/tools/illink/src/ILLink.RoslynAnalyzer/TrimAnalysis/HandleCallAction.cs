@@ -113,6 +113,8 @@ namespace ILLink.Shared.TrimAnalysis
 							// where a parameter is annotated and if something in the method sets a specific known type to it
 							// we will also make it just work, even if the annotation doesn't match the usage.
 							AddReturnValue (new SystemTypeValue (new (staticType)));
+						} else if (staticType.IsTypeOf ("System", "Enum")) {
+							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, DynamicallyAccessedMemberTypes.PublicFields));
 						} else {
 							var annotation = FlowAnnotations.GetTypeAnnotation (staticType);
 							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, annotation));

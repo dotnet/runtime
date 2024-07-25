@@ -97,7 +97,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class EnumTypeSatisfiesPublicFields
 		{
 			[Kept]
-			[ExpectedWarning ("IL2072")]
 			static void ParameterType (Enum instance)
 			{
 				instance.GetType ().RequiresPublicFields ();
@@ -113,7 +112,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				public FieldType (Enum instance) => field = instance;
 
 				[Kept]
-				[ExpectedWarning ("IL2072")]
 				public void Test ()
 				{
 					field.GetType ().RequiresPublicFields ();
@@ -134,10 +132,27 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2072")]
 			static void TestReturnType ()
 			{
 				ReturnType ().GetType ().RequiresPublicFields ();
+			}
+
+			[Kept]
+			static void OutParameter (out Enum value)
+			{
+				value = EnumType.Value;
+			}
+
+			[Kept]
+			// Analyzer doesn't assign a value to the out parameter after calling the OutParameter method,
+			// so when it looks up the value of the local 'value', it returns an empty value, and the
+			// GetType intrinsic handling can't see that the out param satisfies the public fields requirement.
+			// Similar for the other cases below.
+			[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
+			static void TestOutParameter ()
+			{
+				OutParameter (out var value);
+				value.GetType ().RequiresPublicFields ();
 			}
 
 			[Kept]
@@ -146,6 +161,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				ParameterType (EnumType.Value);
 				new FieldType (EnumType.Value).Test ();
 				TestReturnType ();
+				TestOutParameter ();
 			}
 		}
 
@@ -173,10 +189,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			// Note: this doesn't warn for ILLink as a consequence of https://github.com/dotnet/runtime/issues/105345.
 			// ILLink sees the field type as a generic parameter, whereas the other tools see it as System.Enum.
-			// The special handling that treats Enum as satisfying PublicFields only applies to generic parameter constraints,
-			// so ILLink doesn't warn here. Once this 105345 is fixed, ILLink should match the warning behavior of ILC
-			// here and in the similar cases below.
-			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/105345")]
+			// The other tools don't warn because of the built-in handling for variables of type System.Enum,
+			// and ILLink doesn't warn because this goes through the case that handles generic parameters constrained to be Enum.
+			// When https://github.com/dotnet/runtime/issues/105345 is fixed this should go through the built-in handling for
+			// System.Enum, like it does for ILC and the analyzer.
 			static void TestAccessTypeGenericParameterAsField ()
 			{
 				TypeGenericParameterAsField<Enum>.field.GetType ().RequiresPublicFields ();
@@ -214,7 +230,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/105345")]
+			// Note: this happens to work for ILLink due to https://github.com/dotnet/runtime/issues/105345.
 			static void TestAccessTypeGenericParameterAsReturnType ()
 			{
 				TypeGenericParameterAsReturnType<Enum>.Method ().GetType ().RequiresPublicFields ();
@@ -230,7 +246,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 
 				[Kept]
-				[ExpectedWarning ("IL2072")]
+				[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 				public static void TestAccessFromType ()
 				{
 					Method (out var instance);
@@ -238,7 +254,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				}
 			}
 
-			[ExpectedWarning ("IL2072")]
+			[ExpectedWarning ("IL2072", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/101734")]
 			static void TestAccessTypeGenericParameterAsOutParam ()
 			{
 				TypeGenericParameterAsOutParam<Enum>.Method (out var instance);
@@ -259,7 +275,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			[ExpectedWarning ("IL2072", Tool.NativeAot | Tool.Analyzer, "https://github.com/dotnet/runtime/issues/105345")]
+			// Note: this happens to work for ILLink due to https://github.com/dotnet/runtime/issues/105345.
 			static void TestMethodGenericParameterAsReturnType ()
 			{
 				MethodGenericParameterAsReturnType<Enum> ().GetType ().RequiresPublicFields ();
