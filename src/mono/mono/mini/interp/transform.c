@@ -4516,7 +4516,7 @@ interp_method_compute_offsets (TransformData *td, InterpMethod *imethod, MonoMet
 #ifdef MONO_ARCH_HAVE_SWIFTCALL
 	if (swift_error_index < 0 && mono_method_signature_has_ext_callconv (sig, MONO_EXT_CALLCONV_SWIFTCALL)) {
 		MonoClass *swift_error = mono_class_try_get_swift_error_class ();
-		MonoClass *swift_error_ptr = mono_class_create_ptr (m_class_get_this_arg (swift_error));
+		MonoClass *swift_error_ptr = swift_error ? mono_class_create_ptr (m_class_get_this_arg (swift_error)) : NULL;
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		if (klass == swift_error_ptr)
 			swift_error_index = i;
