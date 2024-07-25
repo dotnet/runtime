@@ -5065,7 +5065,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
-        doOptimizeIVs             = doValueNum && (JitConfig.JitDoOptimizeIVs() != 0);
+        doOptimizeIVs             = doAssertionProp && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 #endif // defined(OPT_CONFIG)
 
@@ -5273,7 +5273,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #ifdef DEBUG
     // Stash the current estimate of the function's size if necessary.
-    if (verbose)
+    if (verbose && opts.OptimizationEnabled())
     {
         compSizeEstimate  = 0;
         compCycleEstimate = 0;

@@ -586,6 +586,8 @@ DEFINE_METASIG_T(SM(RefDec_RetVoid, r(g(DECIMAL)), v))
 
 DEFINE_METASIG(GM(RefT_T_T_RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(M(0)) M(0) M(0), M(0)))
 DEFINE_METASIG(SM(RefObject_Object_Object_RetObject, r(j) j j, j))
+DEFINE_METASIG(SM(RefByte_Byte_Byte_RetByte, r(b) b b, b))
+DEFINE_METASIG(SM(RefUShrt_UShrt_UShrt_RetUShrt, r(H) H H, H))
 
 DEFINE_METASIG_T(SM(RefCleanupWorkListElement_RetVoid, r(C(CLEANUP_WORK_LIST_ELEMENT)), v))
 DEFINE_METASIG_T(SM(RefCleanupWorkListElement_SafeHandle_RetIntPtr, r(C(CLEANUP_WORK_LIST_ELEMENT)) C(SAFE_HANDLE), I))

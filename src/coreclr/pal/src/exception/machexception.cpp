@@ -689,7 +689,7 @@ HijackFaultingThread(
 
     void **targetSP = (void **)threadContext.Rsp;
 #elif defined(HOST_ARM64)
-    threadContext.ContextFlags = CONTEXT_FLOATING_POINT;
+    threadContext.ContextFlags = CONTEXT_FLOATING_POINT | CONTEXT_XSTATE;
     CONTEXT_GetThreadContextFromThreadState(ARM_NEON_STATE64, (thread_state_t)&exceptionInfo.FloatState, &threadContext);
 
     threadContext.ContextFlags |= CONTEXT_CONTROL | CONTEXT_INTEGER;

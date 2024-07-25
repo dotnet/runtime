@@ -202,7 +202,7 @@ CDAC_TYPE_FIELD(Module, /*pointer*/, TypeDefToMethodTableMap, cdac_offsets<Modul
 CDAC_TYPE_FIELD(Module, /*pointer*/, TypeRefToMethodTableMap, cdac_offsets<Module>::TypeRefToMethodTableMap)
 CDAC_TYPE_END(Module)
 
-// Metadata
+// RuntimeTypeSystem
 
 CDAC_TYPE_BEGIN(MethodTable)
 CDAC_TYPE_INDETERMINATE(MethodTable)
@@ -223,6 +223,7 @@ CDAC_TYPE_FIELD(EEClass, /*pointer*/, MethodTable, cdac_offsets<EEClass>::Method
 CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumMethods, cdac_offsets<EEClass>::NumMethods)
 CDAC_TYPE_FIELD(EEClass, /*uint32*/, CorTypeAttr, cdac_offsets<EEClass>::CorTypeAttr)
 CDAC_TYPE_FIELD(EEClass, /*uint8*/, InternalCorElementType, cdac_offsets<EEClass>::InternalCorElementType)
+CDAC_TYPE_FIELD(EEClass, /*uint16*/, NumNonVirtualSlots, cdac_offsets<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_END(EEClass)
 
 CDAC_TYPE_BEGIN(ArrayClass)
@@ -263,6 +264,21 @@ CDAC_TYPE_FIELD(DynamicMetadata, /*uint32*/, Size, cdac_offsets<DynamicMetadata>
 CDAC_TYPE_FIELD(DynamicMetadata, /*inline byte array*/, Data, cdac_offsets<DynamicMetadata>::Data)
 CDAC_TYPE_END(DynamicMetadata)
 
+CDAC_TYPE_BEGIN(MethodDesc)
+CDAC_TYPE_INDETERMINATE(MethodDesc)
+CDAC_TYPE_FIELD(MethodDesc, /*uint8*/, ChunkIndex, cdac_offsets<MethodDesc>::ChunkIndex)
+CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Slot, cdac_offsets<MethodDesc>::Slot)
+CDAC_TYPE_FIELD(MethodDesc, /*uint16*/, Flags, cdac_offsets<MethodDesc>::Flags)
+CDAC_TYPE_END(MethodDesc)
+
+CDAC_TYPE_BEGIN(MethodDescChunk)
+CDAC_TYPE_SIZE(sizeof(MethodDescChunk))
+CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, MethodTable, cdac_offsets<MethodDescChunk>::MethodTable)
+CDAC_TYPE_FIELD(MethodDescChunk, /*pointer*/, Next, cdac_offsets<MethodDescChunk>::Next)
+CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Size, cdac_offsets<MethodDescChunk>::Size)
+CDAC_TYPE_FIELD(MethodDescChunk, /*uint8*/, Count, cdac_offsets<MethodDescChunk>::Count)
+CDAC_TYPE_END(MethodDescChunk)
+
 CDAC_TYPES_END()
 
 CDAC_GLOBALS_BEGIN()
@@ -282,7 +298,11 @@ CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1 | 1 << 2)
 CDAC_GLOBAL(ObjectToMethodTableUnmask, uint8, 1 | 1 << 1)
 #endif //TARGET_64BIT
 CDAC_GLOBAL(SOSBreakingChangeVersion, uint8, SOS_BREAKING_CHANGE_VERSION)
+CDAC_GLOBAL(MethodDescAlignment, uint64, MethodDesc::ALIGNMENT)
+CDAC_GLOBAL_POINTER(ExceptionMethodTable, &::g_pExceptionClass)
 CDAC_GLOBAL_POINTER(FreeObjectMethodTable, &::g_pFreeObjectMethodTable)
+CDAC_GLOBAL_POINTER(ObjectMethodTable, &::g_pObjectClass)
+CDAC_GLOBAL_POINTER(ObjectArrayMethodTable, &::g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT])
 CDAC_GLOBAL_POINTER(StringMethodTable, &::g_pStringClass)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)

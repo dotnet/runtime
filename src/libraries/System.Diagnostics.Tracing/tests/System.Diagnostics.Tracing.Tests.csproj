@@ -29,14 +29,12 @@
     <Compile Include="BasicEventSourceTest\TestEventCounter.cs" />
     <Compile Include="BasicEventSourceTest\TestFilter.cs" />
     <Compile Include="BasicEventSourceTest\TestNotSupported.cs" />
-    <Compile Include="BasicEventSourceTest\TestShutdown.cs" />
     <Compile Include="BasicEventSourceTest\TestsEventSourceLifetime.cs" />
     <Compile Include="BasicEventSourceTest\TestsManifestGeneration.cs" />
     <Compile Include="BasicEventSourceTest\TestsManifestNegative.cs" />
     <Compile Include="BasicEventSourceTest\TestsTraits.cs" />
     <Compile Include="BasicEventSourceTest\TestsWriteEvent.cs" />
     <Compile Include="BasicEventSourceTest\TestsWriteEventToListener.cs" />
-    <Compile Include="BasicEventSourceTest\EventSourceTestParser.cs" />
     <Compile Include="BasicEventSourceTest\LoudListener.cs" />
     <Compile Include="BasicEventSourceTest\TestsWrite.cs" />
     <Compile Include="BasicEventSourceTest\TestsUserErrors.cs" />
