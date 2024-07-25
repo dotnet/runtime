@@ -191,14 +191,14 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
 #else
         handle_signal(SIGTRAP, sigtrap_handler, &g_previous_sigtrap);
         int additionalFlagsForSigSegv = 0;
-#ifndef HOST_SUNOS
+#ifndef TARGET_SUNOS
         // On platforms that support it,
         // SIGSEGV handler runs on a separate stack so that we can handle stack overflow
         additionalFlagsForSigSegv |= SA_ONSTACK;
 #endif
         handle_signal(SIGSEGV, sigsegv_handler, &g_previous_sigsegv, additionalFlagsForSigSegv);
 
-#ifndef HOST_SUNOS
+#ifndef TARGET_SUNOS
         if (!pthrCurrent->EnsureSignalAlternateStack())
         {
             return FALSE;
@@ -343,7 +343,7 @@ Return :
 --*/
 bool IsRunningOnAlternateStack(void *context)
 {
-#if HAVE_MACH_EXCEPTIONS || defined(HOST_SUNOS)
+#if HAVE_MACH_EXCEPTIONS || defined(TARGET_SUNOS)
     return false;
 #else
     bool isRunningOnAlternateStack;
@@ -651,7 +651,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
         // hardware signal handler on the original stack.
 
-#ifndef HOST_SUNOS
+#ifndef TARGET_SUNOS
         if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
         {
             if (SwitchStackAndExecuteHandler(code, siginfo, context, 0 /* sp */)) // sp == 0 indicates execution on the original stack
