@@ -56,6 +56,11 @@ namespace System.Runtime.Caching
         public void Dispose()
         {
             Target.Dispose();
+            FreeHandle();
+        }
+
+        internal void FreeHandle()
+        {
             // Safe to call Dispose more than once but not thread-safe
             if (_handle.IsAllocated)
             {
