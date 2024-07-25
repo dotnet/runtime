@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Contains(FwlinkId, ce.Message);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [MemberData(nameof(GetCertsWith_IterationCountExceedingDefaultLimit_MemberData))]
         public void ImportWithPasswordOrFileName_IterationCountLimitExceeded(string name, string password, bool usesPbes2, byte[] blob, long iterationCount, bool usesRC2)
         {
