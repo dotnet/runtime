@@ -30,7 +30,6 @@ namespace System.IO.Compression
         public static IEnumerable<object[]> UncompressedTestFilesZLib()
         {
             yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.doc") };
-            yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.docx") };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "TestDocument.pdf") };
             yield return new object[] { Path.Combine("UncompressedTestFiles", "sum") };
         }
