@@ -1389,6 +1389,7 @@ CallArgs::CallArgs()
     , m_hasRetBuffer(false)
     , m_isVarArgs(false)
     , m_abiInformationDetermined(false)
+    , m_newAbiInformationDetermined(false)
     , m_hasRegArgs(false)
     , m_hasStackArgs(false)
     , m_argsComplete(false)
@@ -1484,11 +1485,6 @@ CallArg* CallArgs::GetThisArg()
 //   argument has special treatment. Notably on standard ARM64 calling
 //   convention it is passed in x8 (see `CallArgs::GetCustomRegister` for the
 //   exact conditions).
-//
-//   Some jit helpers may have "out buffers" that are _not_ classified as the
-//   ret buffer. These are normal arguments that function similarly to ret
-//   buffers, but they do not have the special ABI treatment of ret buffers.
-//   See `GenTreeCall::TreatAsShouldHaveRetBufArg` for more details.
 //
 CallArg* CallArgs::GetRetBufferArg()
 {
@@ -2403,56 +2399,6 @@ int GenTreeCall::GetNonStandardAddedArgCount(Compiler* compiler) const
 }
 
 //-------------------------------------------------------------------------
-// TreatAsShouldHaveRetBufArg:
-//
-// Return Value:
-//     Returns true if we treat the call as if it has a retBuf argument
-//     This method may actually have a retBuf argument
-//     or it could be a JIT helper that we are still transforming during
-//     the importer phase.
-//
-// Notes:
-//     On ARM64 marking the method with the GTF_CALL_M_RETBUFFARG flag
-//     will make HasRetBufArg() return true, but will also force the
-//     use of register x8 to pass the RetBuf argument.
-//
-//     These two Jit Helpers that we handle here by returning true
-//     aren't actually defined to return a struct, so they don't expect
-//     their RetBuf to be passed in x8, instead they  expect it in x0.
-//
-bool GenTreeCall::TreatAsShouldHaveRetBufArg() const
-{
-    if (ShouldHaveRetBufArg())
-    {
-        return true;
-    }
-
-    // If we see a Jit helper call that returns a TYP_STRUCT we may
-    // transform it as if it has a Return Buffer Argument
-    //
-    if (IsHelperCall() && (gtReturnType == TYP_STRUCT))
-    {
-        // There are two helpers that return structs through an argument,
-        // ignoring the ABI, but where we want to handle them during import as
-        // if they have return buffers:
-        //   - CORINFO_HELP_GETFIELDSTRUCT
-        //   - CORINFO_HELP_UNBOX_NULLABLE
-        //
-        // Other TYP_STRUCT returning helpers follow the ABI normally and
-        // should return true for `ShouldHaveRetBufArg` if they need a retbuf
-        // arg, so when we get here, those cases never need retbufs. They
-        // include:
-        //   - CORINFO_HELP_PINVOKE_CALLI
-        //   - CORINFO_HELP_DISPATCH_INDIRECT_CALL
-        //
-        CorInfoHelpFunc helpFunc = Compiler::eeGetHelperNum(gtCallMethHnd);
-
-        return (helpFunc == CORINFO_HELP_GETFIELDSTRUCT) || (helpFunc == CORINFO_HELP_UNBOX_NULLABLE);
-    }
-    return false;
-}
-
-//-------------------------------------------------------------------------
 // IsHelperCall: Determine if this GT_CALL node is a specific helper call.
 //
 // Arguments:
@@ -2623,6 +2569,8 @@ bool GenTreeCall::Equals(GenTreeCall* c1, GenTreeCall* c2)
 //
 void CallArgs::ResetFinalArgsAndABIInfo()
 {
+    m_newAbiInformationDetermined = false;
+
     if (!IsAbiInformationDetermined())
     {
         return;
@@ -3983,8 +3931,10 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     int      costSz = 1;
     unsigned level  = 0;
 
+    bool optsEnabled = opts.OptimizationEnabled();
+
 #if defined(FEATURE_HW_INTRINSICS)
-    if (multiOp->OperIs(GT_HWINTRINSIC))
+    if (multiOp->OperIs(GT_HWINTRINSIC) && optsEnabled)
     {
         GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
 #if defined(TARGET_XARCH)
@@ -4104,8 +4054,12 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             level += 1;
         }
 
-        costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
-        costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+        if (optsEnabled)
+        {
+            // We don't need/have costs in MinOpts
+            costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
+            costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+        }
     }
     else
     {
@@ -4116,12 +4070,19 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
             level = max(lvl, level + 1);
 
-            costEx += op->GetCostEx();
-            costSz += op->GetCostSz();
+            if (optsEnabled)
+            {
+                // We don't need/have costs in MinOpts
+                costEx += op->GetCostEx();
+                costSz += op->GetCostSz();
+            }
         }
     }
 
-    multiOp->SetCosts(costEx, costSz);
+    if (optsEnabled)
+    {
+        multiOp->SetCosts(costEx, costSz);
+    }
     return level;
 }
 #endif
@@ -4875,6 +4836,44 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     return false;
 }
 
+static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool* allowReversal)
+{
+    assert(store->OperIs(GT_STORE_BLK, GT_STOREIND));
+
+    GenTree* addr  = store->Addr();
+    GenTree* data  = store->Data();
+    *allowReversal = true;
+
+    if (addr->IsInvariant())
+    {
+        *allowReversal = false;
+        store->SetReverseOp();
+        return;
+    }
+
+    if ((addr->gtFlags & GTF_ALL_EFFECT) != 0)
+    {
+        return;
+    }
+
+    // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
+    if (comp->gtMayHaveStoreInterference(data, addr))
+    {
+        // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
+        *allowReversal = false;
+        return;
+    }
+
+    // If op2 is simple then evaluate op1 first
+    if (data->OperIsLeaf())
+    {
+        return;
+    }
+
+    *allowReversal = false;
+    store->SetReverseOp();
+}
+
 /*****************************************************************************
  *
  *  Given a tree, figure out the order in which its sub-operands should be
@@ -4899,6 +4898,11 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 {
     assert(tree);
+
+    if (opts.OptimizationDisabled())
+    {
+        return gtSetEvalOrderMinOpts(tree);
+    }
 
 #ifdef DEBUG
     /* Clear the GTF_DEBUG_NODE_MORPHED flag as well */
@@ -5890,33 +5894,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-ASG-Cleanup: this logic emulated the ASG case below. See how of much of it can be deleted.
                 if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
                 {
-                    if (op1->IsInvariant())
-                    {
-                        allowReversal = false;
-                        tree->SetReverseOp();
-                        break;
-                    }
-                    if ((op1->gtFlags & GTF_ALL_EFFECT) != 0)
-                    {
-                        break;
-                    }
-
-                    // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                    if (gtMayHaveStoreInterference(op2, op1))
-                    {
-                        // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
-                        allowReversal = false;
-                        break;
-                    }
-
-                    // If op2 is simple then evaluate op1 first
-                    if (op2->OperIsLeaf())
-                    {
-                        break;
-                    }
-
-                    allowReversal = false;
-                    tree->SetReverseOp();
+                    SetIndirectStoreEvalOrder(this, tree->AsIndir(), &allowReversal);
                 }
                 break;
 
@@ -6263,6 +6241,149 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// gtSetEvalOrderMinOpts: A MinOpts specific version of gtSetEvalOrder. We don't
+//    need to set costs, but we're looking for opportunities to swap operands.
+//
+// Arguments:
+//    tree - The tree for which we are setting the evaluation order.
+//
+// Return Value:
+//    the Sethi 'complexity' estimate for this tree (the higher
+//    the number, the higher is the tree's resources requirement)
+//
+unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
+{
+    assert(tree);
+    if (fgOrder == FGOrderLinear)
+    {
+        // We don't re-order operands in LIR anyway.
+        return 0;
+    }
+
+    if (tree->OperIsLeaf())
+    {
+        // Nothing to do for leaves, report as having Sethi 'complexity' of 0
+        return 0;
+    }
+
+    unsigned level = 1;
+    if (tree->OperIsSimple())
+    {
+        GenTree* op1 = tree->AsOp()->gtOp1;
+        GenTree* op2 = tree->gtGetOp2IfPresent();
+
+        // Only GT_LEA may have a nullptr op1 and a non-nullptr op2
+        if (tree->OperIs(GT_LEA) && (op1 == nullptr))
+        {
+            std::swap(op1, op2);
+        }
+
+        // Check for a nilary operator
+        if (op1 == nullptr)
+        {
+            // E.g. void GT_RETURN, GT_RETFIT
+            assert(op2 == nullptr);
+            return 0;
+        }
+
+        if (op2 == nullptr)
+        {
+            gtSetEvalOrderMinOpts(op1);
+            return 1;
+        }
+
+        level             = gtSetEvalOrderMinOpts(op1);
+        unsigned levelOp2 = gtSetEvalOrderMinOpts(op2);
+
+        bool allowSwap = true;
+        // TODO: Introduce a function to check whether we can swap the order of its operands or not.
+        switch (tree->OperGet())
+        {
+            case GT_COMMA:
+            case GT_BOUNDS_CHECK:
+            case GT_INTRINSIC:
+            case GT_QMARK:
+            case GT_COLON:
+                // We're not going to swap operands in these
+                allowSwap = false;
+                break;
+
+            case GT_STORE_BLK:
+            case GT_STOREIND:
+                SetIndirectStoreEvalOrder(this, tree->AsIndir(), &allowSwap);
+                break;
+
+            default:
+                break;
+        }
+
+        const bool shouldSwap = tree->IsReverseOp() ? level > levelOp2 : level < levelOp2;
+        if (shouldSwap && allowSwap)
+        {
+            // Can we swap the order by commuting the operands?
+            const bool canSwap = tree->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
+            if (canSwap)
+            {
+                if (tree->OperIsCmpCompare())
+                {
+                    genTreeOps oper = tree->OperGet();
+                    if (GenTree::SwapRelop(oper) != oper)
+                    {
+                        tree->SetOper(GenTree::SwapRelop(oper));
+                    }
+                    std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
+                }
+                else if (tree->OperIsCommutative())
+                {
+                    std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
+                }
+                else
+                {
+                    // Mark the operand's evaluation order to be swapped.
+                    tree->gtFlags ^= GTF_REVERSE_OPS;
+                }
+            }
+        }
+
+        // Swap the level counts
+        if (tree->IsReverseOp())
+        {
+            std::swap(level, levelOp2);
+        }
+
+        // Compute the sethi number for this binary operator
+        if (level < 1)
+        {
+            level = levelOp2;
+        }
+        else if (level == levelOp2)
+        {
+            level++;
+        }
+    }
+    else if (tree->IsCall())
+    {
+        // We ignore late args - they don't bring any noticeable benefits
+        // according to asmdiffs/tpdiff
+        for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
+        {
+            gtSetEvalOrderMinOpts(arg.GetEarlyNode());
+        }
+        level = 3;
+    }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (tree->OperIsHWIntrinsic())
+    {
+        return gtSetMultiOpOrder(tree->AsMultiOp());
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    // NOTE: we skip many operators here in order to maintain a good trade-off between CQ and TP.
+
+    return level;
+}
 
 //------------------------------------------------------------------------
 // gtMayHaveStoreInterference: Check if two trees may interfere because of a
@@ -7571,8 +7692,6 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
 
     if (isInvariant)
     {
-        assert(GenTree::HandleKindDataIsInvariant(iconFlags));
-
         // This indirection also is invariant.
         indirFlags |= GTF_IND_INVARIANT;
 
@@ -10631,8 +10750,7 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
 
 //------------------------------------------------------------------------------
 // HandleKindDataIsInvariant: Returns true if the data referred to by a handle
-// address is guaranteed to be invariant. Note that GTF_ICON_FTN_ADDR handles may
-// or may not point to invariant data.
+// address is guaranteed to be invariant.
 //
 // Arguments:
 //    flags - GenTree flags for handle.
@@ -10643,11 +10761,32 @@ bool GenTree::HandleKindDataIsInvariant(GenTreeFlags flags)
     GenTreeFlags handleKind = flags & GTF_ICON_HDL_MASK;
     assert(handleKind != GTF_EMPTY);
 
-    // All handle types are assumed invariant except those specifically listed here.
-
-    return (handleKind != GTF_ICON_STATIC_HDL) && // Pointer to a mutable class Static variable
-           (handleKind != GTF_ICON_BBC_PTR) &&    // Pointer to a mutable basic block count value
-           (handleKind != GTF_ICON_GLOBAL_PTR);   // Pointer to mutable data from the VM state
+    switch (handleKind)
+    {
+        case GTF_ICON_SCOPE_HDL:
+        case GTF_ICON_CLASS_HDL:
+        case GTF_ICON_METHOD_HDL:
+        case GTF_ICON_FIELD_HDL:
+        case GTF_ICON_STR_HDL:
+        case GTF_ICON_CONST_PTR:
+        case GTF_ICON_VARG_HDL:
+        case GTF_ICON_PINVKI_HDL:
+        case GTF_ICON_TOKEN_HDL:
+        case GTF_ICON_TLS_HDL:
+        case GTF_ICON_CIDMID_HDL:
+        case GTF_ICON_FIELD_SEQ:
+        case GTF_ICON_STATIC_ADDR_PTR:
+        case GTF_ICON_SECREL_OFFSET:
+        case GTF_ICON_TLSGD_OFFSET:
+            return true;
+        case GTF_ICON_FTN_ADDR:
+        case GTF_ICON_GLOBAL_PTR:
+        case GTF_ICON_STATIC_HDL:
+        case GTF_ICON_BBC_PTR:
+        case GTF_ICON_STATIC_BOX_PTR:
+        default:
+            return false;
+    }
 }
 
 #ifdef DEBUG
@@ -13374,10 +13513,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
@@ -13436,9 +13572,15 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         }
         else if (op1->OperIsConst() || op2->OperIsConst())
         {
-            /* at least one is a constant - see if we have a
-             * special operator that can use only one constant
-             * to fold - e.g. booleans */
+            // At least one is a constant - see if we have a
+            // special operator that can use only one constant
+            // to fold - e.g. booleans
+
+            if (opts.OptimizationDisabled())
+            {
+                // Too heavy for tier0
+                return tree;
+            }
 
             return gtFoldExprSpecial(tree);
         }
@@ -15225,10 +15367,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2IfPresent();
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
@@ -16548,14 +16687,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         if (access & CORINFO_ACCESS_SET)
         {
             assert(value != nullptr);
-            // helper needs pointer to struct, not struct itself
-            if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
-            {
-                // TODO-Bug?: verify if flags matter here
-                GenTreeFlags indirFlags = GTF_EMPTY;
-                value                   = impGetNodeAddr(value, CHECK_SPILL_ALL, &indirFlags);
-            }
-            else if (lclTyp == TYP_DOUBLE && value->TypeGet() == TYP_FLOAT)
+            if ((lclTyp == TYP_DOUBLE) && (value->TypeGet() == TYP_FLOAT))
             {
                 value = gtNewCastNode(TYP_DOUBLE, value, false, TYP_DOUBLE);
             }
@@ -16570,20 +16702,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         else if (access & CORINFO_ACCESS_GET)
         {
             helperType = lclTyp;
-
-            // The calling convention for the helper does not take into
-            // account optimization of primitive structs.
-            if ((pFieldInfo->helper == CORINFO_HELP_GETFIELDSTRUCT) && !varTypeIsStruct(lclTyp))
-            {
-                helperType = TYP_STRUCT;
-            }
         }
-    }
-
-    if (pFieldInfo->helper == CORINFO_HELP_GETFIELDSTRUCT || pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
-    {
-        assert(pFieldInfo->structType != nullptr);
-        args[nArgs++] = gtNewIconEmbClsHndNode(pFieldInfo->structType);
     }
 
     GenTree* fieldHnd = impTokenToHandle(pResolvedToken);
@@ -16622,23 +16741,10 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 
     if (pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
     {
-        if (access & CORINFO_ACCESS_GET)
+        if (((access & CORINFO_ACCESS_GET) != 0) && varTypeIsSmall(lclTyp))
         {
-            if (pFieldInfo->helper == CORINFO_HELP_GETFIELDSTRUCT)
-            {
-                if (!varTypeIsStruct(lclTyp))
-                {
-                    // get the result as primitive type
-                    GenTreeFlags indirFlags = GTF_EMPTY;
-                    result                  = impGetNodeAddr(result, CHECK_SPILL_ALL, &indirFlags);
-                    result                  = gtNewIndir(lclTyp, result, indirFlags);
-                }
-            }
-            else if (varTypeIsSmall(lclTyp))
-            {
-                // The helper does not extend the small return types.
-                result = gtNewCastNode(genActualType(lclTyp), result, false, lclTyp);
-            }
+            // The helper does not extend the small return types.
+            result = gtNewCastNode(genActualType(lclTyp), result, false, lclTyp);
         }
     }
     else if ((access & CORINFO_ACCESS_ADDRESS) == 0) // OK, now do the indirection
@@ -30328,10 +30434,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(tree->OperIsHWIntrinsic());
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
@@ -30437,10 +30540,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #if defined(TARGET_XARCH)
         tryHandle = op->OperIsHWIntrinsic();
 #elif defined(TARGET_ARM64)
-        if (op->OperIsHWIntrinsic() && op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
+        if (op->OperIsHWIntrinsic(NI_Sve_CreateTrueMaskAll))
         {
             op        = op2;
-            tryHandle = true;
+            tryHandle = op->OperIsHWIntrinsic();
         }
 #endif // TARGET_ARM64
 
@@ -31010,6 +31113,32 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 }
 #endif
 
+                case NI_Vector128_op_Equality:
+#if defined(TARGET_ARM64)
+                case NI_Vector64_op_Equality:
+#elif defined(TARGET_XARCH)
+                case NI_Vector256_op_Equality:
+                case NI_Vector512_op_Equality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+                {
+                    cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_EQ, isScalar, simdBaseType, otherNode->AsVecCon());
+                    resultNode = gtNewIconNode(cnsNode->AsVecCon()->IsAllBitsSet() ? 1 : 0, retType);
+                    break;
+                }
+
+                case NI_Vector128_op_Inequality:
+#if defined(TARGET_ARM64)
+                case NI_Vector64_op_Inequality:
+#elif defined(TARGET_XARCH)
+                case NI_Vector256_op_Inequality:
+                case NI_Vector512_op_Inequality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+                {
+                    cnsNode->AsVecCon()->EvaluateBinaryInPlace(GT_NE, isScalar, simdBaseType, otherNode->AsVecCon());
+                    resultNode = gtNewIconNode(cnsNode->AsVecCon()->IsZero() ? 0 : 1, retType);
+                    break;
+                }
+
                 default:
                 {
                     break;
@@ -31449,6 +31578,48 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                 break;
             }
 #endif
+
+            case NI_Vector128_op_Equality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Equality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Equality:
+            case NI_Vector512_op_Equality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x == NaN) == false` and `(NaN == x) == false` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtNewIconNode(0, retType);
+                        resultNode = gtWrapWithSideEffects(resultNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case NI_Vector128_op_Inequality:
+#if defined(TARGET_ARM64)
+            case NI_Vector64_op_Inequality:
+#elif defined(TARGET_XARCH)
+            case NI_Vector256_op_Inequality:
+            case NI_Vector512_op_Inequality:
+#endif // !TARGET_ARM64 && !TARGET_XARCH
+            {
+                if (varTypeIsFloating(simdBaseType))
+                {
+                    // Handle `(x != NaN) == true` and `(NaN != x) == true` for floating-point types
+                    if (cnsNode->IsVectorNaN(simdBaseType))
+                    {
+                        resultNode = gtNewIconNode(1, retType);
+                        resultNode = gtWrapWithSideEffects(resultNode, otherNode, GTF_ALL_EFFECT);
+                        break;
+                    }
+                }
+                break;
+            }
 
             default:
             {
