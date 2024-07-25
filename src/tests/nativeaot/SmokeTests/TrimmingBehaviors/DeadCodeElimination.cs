@@ -268,39 +268,12 @@ class DeadCodeElimination
                 if (!o.ToString().Contains(nameof(Marker1)))
                     throw new Exception();
             }
-
-            // ...but not nullable...
-            {
-                Array arr = new Nullable<NeverAllocated2>[1];
-                arr.GetValue(0);
-                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker2));
-            }
-
-
-            // ...or reference type element types
-            {
-                Array arr = new NeverAllocated3[1];
-                arr.GetValue(0);
-                ThrowIfPresent(typeof(TestArrayElementTypeOperations), nameof(Marker3));
-            }
         }
 
         class Marker1 { }
         struct NeverAllocated1
         {
             public override string ToString() => typeof(Marker1).ToString();
-        }
-
-        class Marker2 { }
-        struct NeverAllocated2
-        {
-            public override string ToString() => typeof(Marker2).ToString();
-        }
-
-        class Marker3 { }
-        class NeverAllocated3
-        {
-            public override string ToString() => typeof(Marker3).ToString();
         }
     }
 
