@@ -1,0 +1,136 @@
+From e2106cd3e5771690867d826e525e4ad80619d76b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Carlos=20S=C3=A1nchez=20L=C3=B3pez?=
+ <1175054+carlossanlop@users.noreply.github.com>
+Date: Wed, 24 Jul 2024 18:43:38 -0700
+Subject: [PATCH 1/2] Add aserts and casts to slide_hash*
+
+---
+ src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c | 4 +++-
+ src/native/external/zlib-ng/arch/arm/slide_hash_neon.c  | 4 +++-
+ src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h  | 4 +++-
+ src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c | 2 ++
+ src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c  | 2 ++
+ src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c  | 1 +
+ 6 files changed, 14 insertions(+), 3 deletions(-)
+
+diff --git a/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c b/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c
+index 0a2eeccf926..ef226fad5d4 100644
+--- a/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c
++++ b/src/native/external/zlib-ng/arch/arm/slide_hash_armv6.c
+@@ -7,6 +7,7 @@
+ #include "acle_intrins.h"
+ #include "../../zbuild.h"
+ #include "../../deflate.h"
++#include <assert.h>
+ 
+ /* SIMD version of hash_chain rebase */
+ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
+@@ -39,7 +40,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ Z_INTERNAL void slide_hash_armv6(deflate_state *s) {
+-    unsigned int wsize = s->w_size;
++    assert(s->w_size <= _UI16_MAX);
++    uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+     slide_hash_chain(s->prev, wsize, wsize);
+diff --git a/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c b/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c
+index a96ca11799b..b9574a308e0 100644
+--- a/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c
++++ b/src/native/external/zlib-ng/arch/arm/slide_hash_neon.c
+@@ -12,6 +12,7 @@
+ #include "neon_intrins.h"
+ #include "../../zbuild.h"
+ #include "../../deflate.h"
++#include <assert.h>
+ 
+ /* SIMD version of hash_chain rebase */
+ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
+@@ -38,7 +39,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ Z_INTERNAL void slide_hash_neon(deflate_state *s) {
+-    unsigned int wsize = s->w_size;
++    assert(s->w_size <= _UI16_MAX);
++    uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+     slide_hash_chain(s->prev, wsize, wsize);
+diff --git a/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h b/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h
+index 5c17e38fb31..44c61c27da1 100644
+--- a/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h
++++ b/src/native/external/zlib-ng/arch/power/slide_ppc_tpl.h
+@@ -6,6 +6,7 @@
+ #include <altivec.h>
+ #include "zbuild.h"
+ #include "deflate.h"
++#include <assert.h>
+ 
+ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
+     const vector unsigned short vmx_wsize = vec_splats(wsize);
+@@ -24,7 +25,8 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ void Z_INTERNAL SLIDE_PPC(deflate_state *s) {
+-    uint16_t wsize = s->w_size;
++    assert(s->w_size <= _UI16_MAX);
++    uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+     slide_hash_chain(s->prev, wsize, wsize);
+diff --git a/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c b/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c
+index 1164e89ba25..2e758742373 100644
+--- a/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c
++++ b/src/native/external/zlib-ng/arch/riscv/slide_hash_rvv.c
+@@ -10,6 +10,7 @@
+ 
+ #include "../../zbuild.h"
+ #include "../../deflate.h"
++#include <assert.h>
+ 
+ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize) {
+     size_t vl;
+@@ -25,6 +26,7 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, uint16_t wsize
+ }
+ 
+ Z_INTERNAL void slide_hash_rvv(deflate_state *s) {
++    assert(s->w_size <= _UI16_MAX);
+     uint16_t wsize = (uint16_t)s->w_size;
+ 
+     slide_hash_chain(s->head, HASH_SIZE, wsize);
+diff --git a/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c b/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c
+index 94fe10c7bf4..144b5672940 100644
+--- a/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c
++++ b/src/native/external/zlib-ng/arch/x86/slide_hash_avx2.c
+@@ -13,6 +13,7 @@
+ #include "../../deflate.h"
+ 
+ #include <immintrin.h>
++#include <assert.h>
+ 
+ static inline void slide_hash_chain(Pos *table, uint32_t entries, const __m256i wsize) {
+     table += entries;
+@@ -31,6 +32,7 @@ static inline void slide_hash_chain(Pos *table, uint32_t entries, const __m256i
+ }
+ 
+ Z_INTERNAL void slide_hash_avx2(deflate_state *s) {
++    assert(s->w_size <= _UI16_MAX);
+     uint16_t wsize = (uint16_t)s->w_size;
+     const __m256i ymm_wsize = _mm256_set1_epi16((short)wsize);
+ 
+diff --git a/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c b/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c
+index 5daac4a7398..04db335e3de 100644
+--- a/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c
++++ b/src/native/external/zlib-ng/arch/x86/slide_hash_sse2.c
+@@ -52,6 +52,7 @@ next_chain:
+ }
+ 
+ Z_INTERNAL void slide_hash_sse2(deflate_state *s) {
++    assert(s->w_size <= _UI16_MAX);
+     uint16_t wsize = (uint16_t)s->w_size;
+     const __m128i xmm_wsize = _mm_set1_epi16((short)wsize);
+ 
+-- 
+2.45.2.windows.1
+
