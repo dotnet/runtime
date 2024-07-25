@@ -124,7 +124,7 @@ namespace System.IO
                 Interop.Errors.ERROR_INVALID_PARAMETER or
                 Interop.Errors.ERROR_NETWORK_UNREACHABLE or
                 Interop.Errors.ERROR_NETWORK_ACCESS_DENIED or
-                Interop.Errors.ERROR_INVALID_HANDLE or
-                Interop.Errors.ERROR_FILENAME_EXCED_RANGE;
+                Interop.Errors.ERROR_INVALID_HANDLE or     // eg from \\.\CON
+                Interop.Errors.ERROR_FILENAME_EXCED_RANGE; // Path is too long
     }
 }

@@ -69,7 +69,8 @@ namespace Internal.Runtime.InteropServices
         [RequiresUnreferencedCode("C++/CLI is not trim-compatible", Url = "https://aka.ms/dotnet-illink/nativehost")]
         private static void LoadInMemoryAssemblyInContextImpl(IntPtr moduleHandle, IntPtr assemblyPath, AssemblyLoadContext? alc = null)
         {
-            string assemblyPathString = Marshal.PtrToStringUni(assemblyPath) ?? throw new ArgumentOutOfRangeException(nameof(assemblyPath));
+            string assemblyPathString = Marshal.PtrToStringUni(assemblyPath) ??
+                throw new ArgumentOutOfRangeException(nameof(assemblyPath));
 
             // We don't cache the ALCs or resolvers here since each IJW assembly will call this method at most once
             // (the load process rewrites the stubs that call here to call the actual methods they're supposed to)

@@ -85,7 +85,6 @@ namespace System
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
 
-
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj == null || !InternalEqualTypes(this, obj))
@@ -107,9 +106,11 @@ namespace System
             {
                 if (d._methodPtrAux != IntPtr.Zero)
                     return false; // different delegate kind
+
                 // they are both closed over the first arg
                 if (_target != d._target)
                     return false;
+
                 // fall through method handle check
             }
             else
@@ -121,19 +122,20 @@ namespace System
                 /*
                 if (_methodPtr != d._methodPtr)
                     return false;
-                    */
+                */
 
                 if (_methodPtrAux == d._methodPtrAux)
                     return true;
+
                 // fall through method handle check
             }
 
             // method ptrs don't match, go down long path
-            //
-            if (_methodBase == null || d._methodBase == null || _methodBase is not MethodInfo || d._methodBase is not MethodInfo)
-                return InternalEqualMethodHandles(this, d);
-            else
+
+            if (_methodBase is MethodInfo && d._methodBase is MethodInfo)
                 return _methodBase.Equals(d._methodBase);
+            else
+                return InternalEqualMethodHandles(this, d);
         }
 
         public override int GetHashCode()

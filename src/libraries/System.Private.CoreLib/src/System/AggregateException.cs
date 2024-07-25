@@ -190,8 +190,8 @@ namespace System
         protected AggregateException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {
-            _innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[] ??
-                throw new SerializationException(SR.AggregateException_DeserializationFailure); // Do not rename (binary serialization);
+            _innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[] ?? // Do not rename (binary serialization);
+                throw new SerializationException(SR.AggregateException_DeserializationFailure);
         }
 
         /// <summary>

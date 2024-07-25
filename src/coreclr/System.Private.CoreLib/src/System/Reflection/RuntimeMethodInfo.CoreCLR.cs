@@ -380,12 +380,14 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(delegateType);
 
-            RuntimeType rtType = delegateType as RuntimeType ?? throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
+            RuntimeType rtType = delegateType as RuntimeType ??
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
+
             if (!rtType.IsDelegate())
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(delegateType));
 
-            Delegate d = Delegate.CreateDelegateInternal(rtType, this, firstArgument, bindingFlags) ?? throw new ArgumentException(SR.Arg_DlgtTargMeth);
-            return d;
+            return Delegate.CreateDelegateInternal(rtType, this, firstArgument, bindingFlags) ??
+                throw new ArgumentException(SR.Arg_DlgtTargMeth);
         }
 
         #endregion

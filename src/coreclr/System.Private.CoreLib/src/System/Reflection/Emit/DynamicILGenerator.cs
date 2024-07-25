@@ -61,20 +61,24 @@ namespace System.Reflection.Emit
             DynamicMethod? dynMeth = meth as DynamicMethod;
             if (dynMeth == null)
             {
-                RuntimeMethodInfo rtMeth = meth as RuntimeMethodInfo ?? throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(meth));
+                RuntimeMethodInfo rtMeth = meth as RuntimeMethodInfo ??
+                    throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(meth));
+
                 RuntimeType declaringType = rtMeth.GetRuntimeType();
-                if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
-                    token = GetTokenFor(rtMeth, declaringType);
-                else
-                    token = GetTokenFor(rtMeth);
+                token = declaringType != null && (declaringType.IsGenericType || declaringType.IsArray) ?
+                    GetTokenFor(rtMeth, declaringType) :
+                    GetTokenFor(rtMeth);
             }
             else
             {
                 // rule out not allowed operations on DynamicMethods
-                if (opcode.Equals(OpCodes.Ldtoken) || opcode.Equals(OpCodes.Ldftn) || opcode.Equals(OpCodes.Ldvirtftn))
+                if (opcode.Equals(OpCodes.Ldtoken) ||
+                    opcode.Equals(OpCodes.Ldftn) ||
+                    opcode.Equals(OpCodes.Ldvirtftn))
                 {
                     throw new ArgumentException(SR.Argument_InvalidOpCodeOnDynamicMethod);
                 }
+
                 token = GetTokenFor(dynMeth);
             }
 
@@ -106,15 +110,13 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(con);
 
-            RuntimeConstructorInfo rtConstructor = con as RuntimeConstructorInfo ?? throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(con));
-            RuntimeType declaringType = rtConstructor.GetRuntimeType();
-            int token;
+            RuntimeConstructorInfo rtConstructor = con as RuntimeConstructorInfo ??
+                throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(con));
 
-            if (declaringType != null && (declaringType.IsGenericType || declaringType.IsArray))
-                // need to sort out the stack size story
-                token = GetTokenFor(rtConstructor, declaringType);
-            else
-                token = GetTokenFor(rtConstructor);
+            RuntimeType declaringType = rtConstructor.GetRuntimeType();
+            int token = declaringType != null && (declaringType.IsGenericType || declaringType.IsArray) ?
+                GetTokenFor(rtConstructor, declaringType) : // need to sort out the stack size story
+                GetTokenFor(rtConstructor);
 
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -139,12 +141,12 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(field);
 
-            RuntimeFieldInfo runtimeField = field as RuntimeFieldInfo ?? throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(field));
-            int token;
-            if (field.DeclaringType == null)
-                token = GetTokenFor(runtimeField);
-            else
-                token = GetTokenFor(runtimeField, runtimeField.GetRuntimeType());
+            RuntimeFieldInfo runtimeField = field as RuntimeFieldInfo ??
+                throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(field));
+
+            int token = field.DeclaringType == null ?
+                GetTokenFor(runtimeField) :
+                GetTokenFor(runtimeField, runtimeField.GetRuntimeType());
 
             EnsureCapacity(7);
             InternalEmit(opcode);

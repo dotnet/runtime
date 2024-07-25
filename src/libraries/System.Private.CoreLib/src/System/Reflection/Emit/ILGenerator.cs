@@ -119,18 +119,18 @@ namespace System.Reflection.Emit
             // one of the types for which Console.WriteLine implements overloads. (e.g.
             // we do *not* call ToString on the locals.
 
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo prop = consoleType.GetMethod("get_Out")!;
-            Emit(OpCodes.Call, prop);
+            Emit(OpCodes.Call, Type.GetType(ConsoleTypeFullName, throwOnError: true)!.GetMethod("get_Out")!);
             Emit(OpCodes.Ldloc, localBuilder);
-            Type[] parameterTypes = new Type[1];
+
             Type cls = localBuilder.LocalType;
-            if (cls is TypeBuilder || cls is EnumBuilder)
+            if (cls is TypeBuilder or EnumBuilder)
             {
                 throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
-            parameterTypes[0] = cls;
-            MethodInfo mi = typeof(IO.TextWriter).GetMethod("WriteLine", parameterTypes) ?? throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
+
+            MethodInfo mi = typeof(IO.TextWriter).GetMethod("WriteLine", [cls]) ??
+                throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
+
             Emit(OpCodes.Callvirt, mi);
         }
 
@@ -142,9 +142,7 @@ namespace System.Reflection.Emit
             // an error to call EmitWriteLine with a fld which is not of
             // one of the types for which Console.WriteLine implements overloads. (e.g.
             // we do *not* call ToString on the fields.
-            Type consoleType = Type.GetType(ConsoleTypeFullName, throwOnError: true)!;
-            MethodInfo prop = consoleType.GetMethod("get_Out")!;
-            Emit(OpCodes.Call, prop);
+            Emit(OpCodes.Call, Type.GetType(ConsoleTypeFullName, throwOnError: true)!.GetMethod("get_Out")!);
 
             if ((fld.Attributes & FieldAttributes.Static) != 0)
             {
@@ -155,14 +153,16 @@ namespace System.Reflection.Emit
                 Emit(OpCodes.Ldarg_0); // Load the this ref.
                 Emit(OpCodes.Ldfld, fld);
             }
-            Type[] parameterTypes = new Type[1];
+
             Type cls = fld.FieldType;
-            if (cls is TypeBuilder || cls is EnumBuilder)
+            if (cls is TypeBuilder or EnumBuilder)
             {
                 throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
-            parameterTypes[0] = cls;
-            MethodInfo mi = typeof(IO.TextWriter).GetMethod("WriteLine", parameterTypes) ?? throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));
+
+            MethodInfo mi = typeof(IO.TextWriter).GetMethod("WriteLine", [cls]) ??
+                throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));
+
             Emit(OpCodes.Callvirt, mi);
         }
 

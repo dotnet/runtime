@@ -33,12 +33,11 @@ namespace System.Reflection
             RuntimeTypeHandle[] typeHandleArgs = new RuntimeTypeHandle[size];
             for (int i = 0; i < size; i++)
             {
-                Type typeArg = genericArguments[i] ?? throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                typeArg = typeArg.UnderlyingSystemType;
-                if (typeArg == null)
-                    throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
+                Type? typeArg = genericArguments[i]?.UnderlyingSystemType;
+
                 if (typeArg is not System.RuntimeType)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
+
                 typeHandleArgs[i] = typeArg.TypeHandle;
             }
             return typeHandleArgs;

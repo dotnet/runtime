@@ -164,8 +164,8 @@ namespace System.Globalization
             ArgumentNullException.ThrowIfNull(name);
 
             // Get our data providing record
-            CultureData cultureData = CultureData.GetCultureData(name, useUserOverride) ?? throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
-            _cultureData = cultureData;
+            _cultureData = CultureData.GetCultureData(name, useUserOverride) ??
+                throw new CultureNotFoundException(nameof(name), name, GetCultureNotSupportedExceptionMessage());
             _name = _cultureData.CultureName;
             _isInherited = GetType() != typeof(CultureInfo);
         }

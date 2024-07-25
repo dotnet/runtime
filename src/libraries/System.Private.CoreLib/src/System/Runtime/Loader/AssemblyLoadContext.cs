@@ -562,7 +562,9 @@ namespace System.Runtime.Loader
             if (activating == null)
                 return new ContextualReflectionScope(null);
 
-            AssemblyLoadContext assemblyLoadContext = GetLoadContext(activating) ?? throw new ArgumentException(SR.Arg_MustBeRuntimeAssembly, nameof(activating));
+            AssemblyLoadContext assemblyLoadContext = GetLoadContext(activating) ??
+                throw new ArgumentException(SR.Arg_MustBeRuntimeAssembly, nameof(activating));
+
             return assemblyLoadContext.EnterContextualReflection();
         }
 

@@ -2730,7 +2730,9 @@ namespace System
 
             ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType ifaceRtType = interfaceType as RuntimeType ?? throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
+            RuntimeType ifaceRtType = interfaceType as RuntimeType ??
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
+
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
 
             TypeHandle.VerifyInterfaceIsImplemented(ifaceRtTypeHandle);

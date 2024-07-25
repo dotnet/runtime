@@ -37,7 +37,9 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(t);
 
-            FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) ?? throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.FullName), nameof(fieldName));
+            FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) ??
+                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.FullName), nameof(fieldName));
+
             if (f is not RtFieldInfo rtField)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
