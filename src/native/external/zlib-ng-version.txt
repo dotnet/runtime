@@ -8,5 +8,3 @@ We have removed the following folders from our local copy as these files are not
 - zlib-ng/docs/
 - zlib-ng/test/
 - zlib-ng/arch/s390/self-hosted-builder/
-
-We have also applied the custom patches under the patches/zlib-ng/ folder.
