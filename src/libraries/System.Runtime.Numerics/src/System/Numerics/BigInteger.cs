@@ -544,7 +544,7 @@ namespace System.Numerics
                 isNegative = true;
                 length = value.LastIndexOfAnyExcept(uint.MaxValue) + 1;
 
-                if ((length == 0) || ((int)value[length - 1] > 0))
+                if ((length == 0) || ((int)value[length - 1] >= 0))
                 {
                     // We ne need to preserve the sign bit
                     length++;
