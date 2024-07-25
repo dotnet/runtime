@@ -58,6 +58,7 @@
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Atanh.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.AtanPi.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.BitwiseAnd.cs" />
+    <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.BitwiseAndNot.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.BitwiseOr.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Cbrt.cs" />
     <Compile Include="System\Numerics\Tensors\netcore\TensorPrimitives.Ceiling.cs" />
