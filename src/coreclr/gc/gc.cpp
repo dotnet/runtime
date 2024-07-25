@@ -25461,6 +25461,8 @@ void gc_heap::calculate_new_heap_count ()
     int extra_heaps = (n_max_heaps >= 16) + (n_max_heaps >= 64);
     int actual_n_max_heaps = n_max_heaps - extra_heaps;
 
+    size_t num_gen2s_since_last_change = 0;
+
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     // quick hack for initial testing
     int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
@@ -25589,8 +25591,6 @@ void gc_heap::calculate_new_heap_count ()
             (uint16_t)hc_freq_reason,
             (uint8_t)adj_metric);
     }
-
-    size_t num_gen2s_since_last_change = 0;
 
     if ((new_n_heaps == n_heaps) && !process_eph_samples_p && process_gen2_samples_p)
     {
