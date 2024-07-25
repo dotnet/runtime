@@ -2375,12 +2375,14 @@ int         gc_heap::conserve_mem_setting = 0;
 bool        gc_heap::spin_count_unit_config_p = false;
 
 uint64_t    gc_heap::suspended_start_time = 0;
-uint64_t    gc_heap::change_heap_count_time = 0;
 uint64_t    gc_heap::end_gc_time = 0;
 uint64_t    gc_heap::total_suspended_time = 0;
 uint64_t    gc_heap::process_start_time = 0;
 last_recorded_gc_info gc_heap::last_ephemeral_gc_info;
 last_recorded_gc_info gc_heap::last_full_blocking_gc_info;
+
+uint64_t    gc_heap::last_alloc_reset_suspended_end_time = 0;
+size_t      gc_heap::max_peak_heap_size = 0;
 
 #ifdef BACKGROUND_GC
 last_recorded_gc_info gc_heap::last_bgc_info[2];
@@ -2858,6 +2860,7 @@ int gc_heap::dynamic_adaptation_mode = dynamic_adaptation_default;
 gc_heap::dynamic_heap_count_data_t SVR::gc_heap::dynamic_heap_count_data;
 size_t gc_heap::current_total_soh_stable_size = 0;
 uint64_t gc_heap::last_suspended_end_time = 0;
+uint64_t gc_heap::change_heap_count_time = 0;
 size_t gc_heap::gc_index_full_gc_end = 0;
 
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
@@ -3309,8 +3312,11 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
             if (elevate_p)
             {
                 ret = (dd_fragmentation (dynamic_data_of (max_generation)) >= dd_max_size(dd));
-                dprintf (GTC_LOG, ("h%d: frag is %zd, max size is %zd",
-                    heap_number, dd_fragmentation (dd), dd_max_size(dd)));
+                if (ret)
+                {
+                    dprintf (6666, ("h%d: frag is %zd, max size is %zd",
+                        heap_number, dd_fragmentation (dd), dd_max_size(dd)));
+                }
             }
             else
             {
@@ -3334,10 +3340,13 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
                     fragmentation_burden = (gen_size ? ((float)fr / (float)gen_size) : 0.0f);
                     ret = (fragmentation_burden > dd_v_fragmentation_burden_limit (dd));
                 }
-                dprintf (GTC_LOG, ("h%d: gen%d, frag is %zd, alloc effi: %zu%%, unusable frag is %zd, ratio is %d",
-                    heap_number, gen_number, dd_fragmentation (dd),
-                    generation_allocator_efficiency_percent (generation_of (gen_number)),
-                    fr, (int)(fragmentation_burden*100)));
+                if (ret)
+                {
+                    dprintf (6666, ("h%d: gen%d, frag is %zd, alloc effi: %zu%%, unusable frag is %zd, ratio is %d",
+                        heap_number, gen_number, dd_fragmentation (dd),
+                        generation_allocator_efficiency_percent (generation_of (gen_number)),
+                        fr, (int)(fragmentation_burden * 100)));
+                }
             }
             break;
         }
@@ -3367,8 +3376,28 @@ gc_heap::dt_estimate_reclaim_space_p (gc_tuning_point tp, int gen_number)
 #endif //MULTIPLE_HEAPS
 
                 size_t min_frag_th = min_reclaim_fragmentation_threshold (num_heaps);
-                dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
                 ret = (est_maxgen_free >= min_frag_th);
+
+                if (ret)
+                {
+                    {
+                        dynamic_data* dd = dynamic_data_of (gen_number);
+                        size_t gen_allocated = (dd_desired_allocation (dd) - dd_new_allocation (dd));
+                        size_t gen_total_size = gen_allocated + dd_current_size (dd);
+                        size_t est_gen_surv = (size_t)((float)(gen_total_size)*dd_surv (dd));
+                        size_t est_gen_free = gen_total_size - est_gen_surv + dd_fragmentation (dd);
+
+                        dprintf (6666, ("h%d gen%d total size: %zd, est dead space: %zd (s: %d, allocated: %zd), frag: %zd",
+                            heap_number, gen_number,
+                            gen_total_size,
+                            est_gen_free,
+                            (int)(dd_surv (dd) * 100),
+                            gen_allocated,
+                            dd_fragmentation (dd)));
+                    }
+
+                    dprintf (6666, ("h%d, est max frag: %zd >= min frag is %zd", heap_number, est_maxgen_free, min_frag_th));
+                }
             }
             else
             {
@@ -3414,13 +3443,6 @@ gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t a
                 }
 
                 size_t est_frag = (dd_fragmentation (dd) + (size_t)((dd_desired_allocation (dd) - dd_new_allocation (dd)) * est_frag_ratio));
-                dprintf (GTC_LOG, ("h%d: gen%d: current_size is %zd, frag is %zd, est_frag_ratio is %d%%, estimated frag is %zd",
-                    heap_number,
-                    gen_number,
-                    dd_current_size (dd),
-                    dd_fragmentation (dd),
-                    (int)(est_frag_ratio*100),
-                    est_frag));
 
                 uint32_t num_heaps = 1;
 
@@ -3430,6 +3452,17 @@ gc_heap::dt_estimate_high_frag_p (gc_tuning_point tp, int gen_number, uint64_t a
                 uint64_t min_frag_th = min_high_fragmentation_threshold(available_mem, num_heaps);
                 //dprintf (GTC_LOG, ("h%d, min frag is %zd", heap_number, min_frag_th));
                 ret = (est_frag >= min_frag_th);
+
+                if (ret)
+                {
+                    dprintf (GTC_LOG, ("h%d: gen%d: current_size is %zd, frag is %zd, est_frag_ratio is %d%%, estimated frag is %zd >= min frag %zd",
+                        heap_number,
+                        gen_number,
+                        dd_current_size (dd),
+                        dd_fragmentation (dd),
+                        (int)(est_frag_ratio * 100),
+                        est_frag, min_frag_th));
+                }
             }
             else
             {
@@ -21075,9 +21108,11 @@ size_t gc_heap::get_total_survived_size()
     return total_surv_size;
 }
 
-size_t gc_heap::get_total_allocated_since_last_gc()
+void gc_heap::get_total_allocated_since_last_gc (size_t* oh_allocated)
 {
+    memset (oh_allocated, 0, (total_oh_count * sizeof (size_t)));
     size_t total_allocated_size = 0;
+
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
@@ -21086,11 +21121,12 @@ size_t gc_heap::get_total_allocated_since_last_gc()
     {
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
-        hp->allocated_since_last_gc[0] = 0;
-        hp->allocated_since_last_gc[1] = 0;
+        for (int oh_idx = 0; oh_idx < total_oh_count; oh_idx++)
+        {
+            oh_allocated[oh_idx] += hp->allocated_since_last_gc[oh_idx];
+            hp->allocated_since_last_gc[oh_idx] = 0;
+        }
     }
-    return total_allocated_size;
 }
 
 // Gets what's allocated on both SOH, LOH, etc that hasn't been collected.
@@ -21440,7 +21476,7 @@ int gc_heap::generation_to_condemn (int n_initial,
     int n_alloc = n;
     if (heap_number == 0)
     {
-        dprintf (GTC_LOG, ("init: %d(%d)", n_initial, settings.reason));
+        dprintf (6666, ("init: %d(%d)", n_initial, settings.reason));
     }
     int i = 0;
     int temp_gen = 0;
@@ -21480,10 +21516,13 @@ int gc_heap::generation_to_condemn (int n_initial,
         for (i = 0; i < total_generation_count; i++)
         {
             dynamic_data* dd = dynamic_data_of (i);
-            dprintf (GTC_LOG, ("h%d: g%d: l: %zd (%zd)",
-                heap_number, i,
-                dd_new_allocation (dd),
-                dd_desired_allocation (dd)));
+            if ((dd_new_allocation (dd) < 0) && (i >= 2))
+            {
+                dprintf (6666, ("h%d: g%d: l: %zd (%zd)",
+                    heap_number, i,
+                    dd_new_allocation (dd),
+                    dd_desired_allocation (dd)));
+            }
             dd_gc_new_allocation (dd) = dd_new_allocation (dd);
         }
 
@@ -21541,7 +21580,10 @@ int gc_heap::generation_to_condemn (int n_initial,
         local_condemn_reasons->set_gen (gen_alloc_budget, n);
     }
 
-    dprintf (GTC_LOG, ("h%d: g%d budget", heap_number, ((get_new_allocation (loh_generation) <= 0) ? 3 : n)));
+    if (n > 0)
+    {
+        dprintf (6666, ("h%d: g%d budget", heap_number, ((get_new_allocation (loh_generation) <= 0) ? 3 : n)));
+    }
 
     n_alloc = n;
 
@@ -21595,11 +21637,13 @@ int gc_heap::generation_to_condemn (int n_initial,
 
     if (n < (max_generation - 1))
     {
+        dprintf (6666, ("h%d: skip %d", heap_number, generation_skip_ratio));
+
         if (dt_low_card_table_efficiency_p (tuning_deciding_condemned_gen))
         {
             n = max (n, max_generation - 1);
             local_settings->promotion = TRUE;
-            dprintf (GTC_LOG, ("h%d: skip %d, c %d",
+            dprintf (2, ("h%d: skip %d, c %d",
                         heap_number, generation_skip_ratio, n));
             local_condemn_reasons->set_condition (gen_low_card_p);
         }
@@ -21636,7 +21680,7 @@ int gc_heap::generation_to_condemn (int n_initial,
                 {
                     high_fragmentation = TRUE;
                     local_condemn_reasons->set_condition (gen_max_high_frag_e_p);
-                    dprintf (GTC_LOG, ("heap%d: gen1 frag", heap_number));
+                    dprintf (6666, ("heap%d: gen1 frag", heap_number));
                 }
             }
         }
@@ -21659,7 +21703,7 @@ int gc_heap::generation_to_condemn (int n_initial,
     {
         if (dt_high_frag_p (tuning_deciding_condemned_gen, i))
         {
-            dprintf (GTC_LOG, ("h%d g%d too frag", heap_number, i));
+            dprintf (6666, ("h%d g%d too frag", heap_number, i));
             n = i;
         }
         else
@@ -21754,6 +21798,8 @@ int gc_heap::generation_to_condemn (int n_initial,
 
             if (high_fragmentation)
             {
+                dprintf (6666, ("h%d high frag true!! mem load %d", heap_number, memory_load));
+
                 if (high_memory_load)
                 {
                     local_condemn_reasons->set_condition (gen_max_high_frag_m_p);
@@ -21898,7 +21944,7 @@ int gc_heap::generation_to_condemn (int n_initial,
     {
         if (dt_high_frag_p (tuning_deciding_condemned_gen, n))
         {
-            dprintf (GTC_LOG, ("h%d: g%d too frag", heap_number, n));
+            dprintf (6666, ("h%d: g%d too frag", heap_number, n));
             local_condemn_reasons->set_condition (gen_max_high_frag_p);
             if (local_settings->pause_mode != pause_sustained_low_latency)
             {
@@ -22301,6 +22347,8 @@ void gc_heap::update_end_gc_time_per_heap()
 void gc_heap::update_end_ngc_time()
 {
     end_gc_time = GetHighPrecisionTimeStamp();
+    last_alloc_reset_suspended_end_time = end_gc_time;
+
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     last_gc_end_time_us = end_gc_time;
     dprintf (HEAP_BALANCE_LOG, ("[GC#%zd-%zd-%zd]", settings.gc_index,
@@ -23002,7 +23050,7 @@ void gc_heap::update_total_soh_stable_size()
 
             dynamic_data* dd = hp->dynamic_data_of (max_generation);
             current_total_soh_stable_size += dd_current_size (dd) + dd_desired_allocation (dd);
-            dprintf (6666, ("current size is %.3fmb, budget %.3fmb, total -> %.3fmb", mb (dd_current_size (dd)), mb (dd_desired_allocation (dd)), mb (current_total_soh_stable_size)));
+            dprintf (2, ("current size is %.3fmb, budget %.3fmb, total -> %.3fmb", mb (dd_current_size (dd)), mb (dd_desired_allocation (dd)), mb (current_total_soh_stable_size)));
         }
     }
 }
@@ -25780,6 +25828,7 @@ void gc_heap::calculate_new_heap_count ()
         dprintf (6666, ("processed gen2 samples, updating processed %Id -> %Id", dynamic_heap_count_data.processed_gen2_samples_count, dynamic_heap_count_data.current_gen2_samples_count));
         dynamic_heap_count_data.processed_gen2_samples_count = dynamic_heap_count_data.current_gen2_samples_count;
     }
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 
 #endif //STRESS_DYNAMIC_HEAP_COUNT
 
@@ -29241,13 +29290,16 @@ BOOL gc_heap::decide_on_promotion_surv (size_t threshold)
 #else //MULTIPLE_HEAPS
     {
         gc_heap* hp = pGenGCHeap;
+        int i = 0;
 #endif //MULTIPLE_HEAPS
         dynamic_data* dd = hp->dynamic_data_of (min ((int)(settings.condemned_generation + 1), (int)max_generation));
         size_t older_gen_size = dd_current_size (dd) + (dd_desired_allocation (dd) - dd_new_allocation (dd));
 
         size_t promoted = hp->total_promoted_bytes;
-        dprintf (2, ("promotion threshold: %zd, promoted bytes: %zd size n+1: %zd",
-            threshold, promoted, older_gen_size));
+
+        dprintf (6666, ("h%d promotion threshold: %zd, promoted bytes: %zd size n+1: %zd -> %s",
+            i, threshold, promoted, older_gen_size,
+            (((threshold > (older_gen_size)) || (promoted > threshold)) ? "promote" : "don't promote")));
 
         if ((threshold > (older_gen_size)) || (promoted > threshold))
         {
@@ -29881,8 +29933,14 @@ void gc_heap::mark_phase (int condemned_gen_number)
                                          (int)(((float)n_gen_loh / (float)n_eph_loh) * 100) : 100);
 
         generation_skip_ratio = min (generation_skip_ratio_soh, generation_skip_ratio_loh);
-        dprintf (2, ("h%d skip ratio soh: %d, loh: %d", heap_number,
-            generation_skip_ratio_soh, generation_skip_ratio_loh));
+        dprintf (6666, ("h%d skip ratio soh: %d (n_gen_soh: %Id, n_eph_soh: %Id), loh: %d (n_gen_loh: %Id, n_eph_loh: %Id), size 0: %Id-%Id, 1: %Id-%Id, 2: %Id-%Id, 3: %Id-%Id",
+            heap_number,
+            generation_skip_ratio_soh, VolatileLoadWithoutBarrier (&n_gen_soh), VolatileLoadWithoutBarrier (&n_eph_soh),
+            generation_skip_ratio_loh, VolatileLoadWithoutBarrier (&n_gen_loh), VolatileLoadWithoutBarrier (&n_eph_loh),
+            generation_size (0), dd_fragmentation (dynamic_data_of (0)),
+            generation_size (1), dd_fragmentation (dynamic_data_of (1)),
+            generation_size (2), dd_fragmentation (dynamic_data_of (2)),
+            generation_size (3), dd_fragmentation (dynamic_data_of (3))));
     }
 #endif // FEATURE_CARD_MARKING_STEALING
 
@@ -33363,7 +33421,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
     plan_generation_starts (consing_gen);
 #endif //!USE_REGIONS
 
-    descr_generations ("AP");
+    //descr_generations ("AP");
 
     print_free_and_plug ("AP");
 
@@ -38179,6 +38237,7 @@ void gc_heap::background_mark_phase ()
 
         assert (dont_restart_ee_p);
         dont_restart_ee_p = FALSE;
+        last_alloc_reset_suspended_end_time = GetHighPrecisionTimeStamp();
 
         restart_vm();
         GCToOSInterface::YieldThread (0);
@@ -48786,6 +48845,12 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
     if (hr == S_OK)
     {
+#ifdef MULTIPLE_HEAPS
+        dprintf (6666, ("conserve mem %d, concurent %d, max heap %d", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent, gc_heap::n_heaps));
+#else
+        dprintf (6666, ("conserve mem %d, concurent %d, WKS", gc_heap::conserve_mem_setting, gc_heap::gc_can_use_concurrent));
+#endif
+
 #ifdef DYNAMIC_HEAP_COUNT
         // if no heap count was specified, and we are told to adjust heap count dynamically ...
         if (gc_heap::dynamic_adaptation_mode == dynamic_adaptation_to_application_sizes)
@@ -50009,22 +50074,39 @@ void gc_heap::do_pre_gc()
 #endif //BACKGROUND_GC
 
 #ifdef TRACE_GC
-    size_t total_allocated_since_last_gc = get_total_allocated_since_last_gc();
+    size_t total_allocated_since_last_gc[total_oh_count];
+    get_total_allocated_since_last_gc (total_allocated_since_last_gc);
+
 #ifdef BACKGROUND_GC
-    dprintf (1, (ThreadStressLog::gcDetailedStartMsg(),
+    size_t heap_size_before = get_total_heap_size();
+    uint64_t start_gc_time = GetHighPrecisionTimeStamp();
+    uint64_t elapsed_since_last_gc_us = start_gc_time - last_alloc_reset_suspended_end_time;
+    max_peak_heap_size = max (max_peak_heap_size, heap_size_before);
+
+    dprintf (6666, (ThreadStressLog::gcDetailedStartMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
-        total_allocated_since_last_gc,
+        (elapsed_since_last_gc_us / 1000.0),
+        total_allocated_since_last_gc[gc_oh_num::soh],
+        (dd_desired_allocation (hp->dynamic_data_of (0)) * n_heaps),
+        dd_desired_allocation (hp->dynamic_data_of (0)),
+        (elapsed_since_last_gc_us ? (total_allocated_since_last_gc[gc_oh_num::soh] / 1000.0 / elapsed_since_last_gc_us) : 0),
+        total_allocated_since_last_gc[gc_oh_num::loh],
+        (elapsed_since_last_gc_us ? (total_allocated_since_last_gc[gc_oh_num::loh] / 1000.0 / elapsed_since_last_gc_us) : 0),
+        total_allocated_since_last_gc[gc_oh_num::poh],
+        (elapsed_since_last_gc_us ? (total_allocated_since_last_gc[gc_oh_num::poh] / 1000.0 / elapsed_since_last_gc_us) : 0),
         (settings.concurrent ? "BGC" : (gc_heap::background_running_p() ? "FGC" : "NGC")),
         settings.b_state,
-        n_heaps));
+        n_heaps,
+        (heap_size_before / 1000.0 / 1000.0),
+        (max_peak_heap_size / 1000.0 / 1000.0)));
 #else
     dprintf (1, ("*GC* %d(gen0:%d)(%d)(alloc: %zd)",
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         settings.condemned_generation,
-        total_allocated_since_last_gc));
+        (total_allocated_since_last_gc[0] + total_allocated_since_last_gc[1] + total_allocated_since_last_gc[2])));
 #endif //BACKGROUND_GC
 
     if (heap_hard_limit)
@@ -50450,10 +50532,10 @@ void gc_heap::do_post_gc()
     const char* str_gc_type = "NGC";
 #endif //BACKGROUND_GC
 
-    dprintf (1, (ThreadStressLog::gcDetailedEndMsg(),
+    dprintf (6666, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad (&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
-        (size_t)(GetHighPrecisionTimeStamp () / 1000),
+        (get_total_heap_size() / 1000.0 / 1000.0),
         settings.condemned_generation,
         str_gc_type,
         (settings.compaction ? "C" : "S"),

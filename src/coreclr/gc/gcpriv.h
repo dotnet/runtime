@@ -154,7 +154,7 @@ inline void FATAL_GC_ERROR()
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // can only change heap count with regions
 #define DYNAMIC_HEAP_COUNT
-//#define STRESS_DYNAMIC_HEAP_COUNT
+#define STRESS_DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS && MULTIPLE_HEAPS
 
 #ifdef USE_REGIONS
@@ -3107,7 +3107,7 @@ private:
                             size_t allocated_size,
                             size_t* etw_allocation_amount);
     // this also resets allocated_since_last_gc
-    PER_HEAP_ISOLATED_METHOD size_t get_total_allocated_since_last_gc();
+    PER_HEAP_ISOLATED_METHOD void get_total_allocated_since_last_gc (size_t oh_allocated[total_oh_count]);
     PER_HEAP_METHOD size_t get_current_allocated();
     PER_HEAP_ISOLATED_METHOD size_t get_total_allocated();
     PER_HEAP_ISOLATED_METHOD size_t get_total_promoted();
@@ -3677,13 +3677,16 @@ private:
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_loh_size_increased;
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     bgc_poh_size_increased;
 
-
     // Updated by the allocator and reinit-ed in each BGC
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_soh_alloc_count;
     PER_HEAP_FIELD_SINGLE_GC_ALLOC size_t     background_uoh_alloc_count;
 
     PER_HEAP_FIELD_SINGLE_GC_ALLOC VOLATILE(int32_t) uoh_alloc_thread_count;
 #endif //BACKGROUND_GC
+
+#ifdef STRESS_DYNAMIC_HEAP_COUNT
+    PER_HEAP_FIELD_SINGLE_GC_ALLOC bool uoh_msl_before_gc_p;
+#endif //STRESS_DYNAMIC_HEAP_COUNT
 
     /************************************/
     // PER_HEAP_FIELD_MAINTAINED fields //
@@ -5081,6 +5084,7 @@ private:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED dynamic_heap_count_data_t dynamic_heap_count_data;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t current_total_soh_stable_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t change_heap_count_time;
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t gc_index_full_gc_end;
@@ -5275,14 +5279,15 @@ private:
     // at the beginning of a BGC and the PM triggered full GCs
     // fall into this case.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
-    // Right now this is diag only but may be used functionally later.
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t change_heap_count_time;
-    // TEMP END
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_ephemeral_gc_info;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_full_blocking_gc_info;
+
+    // The following fields are for the dprintf in do_pre_gc.
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t last_alloc_reset_suspended_end_time;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t max_peak_heap_size;
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY gc_history_global bgc_data_global;
@@ -5387,10 +5392,6 @@ private:
 #ifdef HEAP_ANALYZE
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY BOOL heap_analyze_enabled;
 #endif //HEAP_ANALYZE
-
-#if defined(MULTIPLE_HEAPS) && defined(STRESS_DYNAMIC_HEAP_COUNT)
-    PER_HEAP_FIELD bool uoh_msl_before_gc_p;
-#endif //MULTIPLE_HEAPS && STRESS_DYNAMIC_HEAP_COUNT
 
     /***************************************************/
     // Fields that don't fit into the above categories //
