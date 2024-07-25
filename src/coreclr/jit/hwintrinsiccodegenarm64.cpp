@@ -303,7 +303,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     emitAttr emitSize;
     insOpts  opt;
-    bool     unspilledFfr = false;
 
     if (HWIntrinsicInfo::SIMDScalar(intrin.id))
     {
@@ -319,39 +318,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         emitSize = EA_SCALABLE;
         opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
-
-        switch (intrin.id)
-        {
-            case NI_Sve_GetFfrByte:
-            case NI_Sve_GetFfrInt16:
-            case NI_Sve_GetFfrInt32:
-            case NI_Sve_GetFfrInt64:
-            case NI_Sve_GetFfrSByte:
-            case NI_Sve_GetFfrUInt16:
-            case NI_Sve_GetFfrUInt32:
-            case NI_Sve_GetFfrUInt64:
-            {
-                if ((intrin.op1 != nullptr) && ((intrin.op1->gtFlags & GTF_SPILLED) != 0))
-                {
-                    // If there was a op1 for this intrinsic, it means FFR is consumed here
-                    // and we need to unspill.
-                    unspilledFfr = true;
-                }
-                break;
-            }
-            case NI_Sve_LoadVectorFirstFaulting:
-            {
-                if ((intrin.op3 != nullptr) && ((intrin.op3->gtFlags & GTF_SPILLED) != 0))
-                {
-                    // If there was a op3 for this intrinsic, it means FFR is consumed here
-                    // and we need to unspill.
-                    unspilledFfr = true;
-                }
-                break;
-            }
-            default:
-                break;
-        }
     }
     else if (intrin.category == HW_Category_Special)
     {
@@ -2402,9 +2368,9 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_LoadVectorFirstFaulting:
             {
-                if (unspilledFfr)
+                if (intrin.numOperands == 3)
                 {
-                    // We have unspilled the FFR in op1Reg. Restore it back in FFR register.
+                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR register.
                     assert(op3Reg != REG_NA);
                     GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
                 }
@@ -2414,25 +2380,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_GetFfrByte:
-            case NI_Sve_GetFfrInt16:
-            case NI_Sve_GetFfrInt32:
-            case NI_Sve_GetFfrInt64:
-            case NI_Sve_GetFfrSByte:
-            case NI_Sve_GetFfrUInt16:
-            case NI_Sve_GetFfrUInt32:
-            case NI_Sve_GetFfrUInt64:
-            {
-                if (unspilledFfr)
-                {
-                    // We have unspilled the FFR in op1Reg. Restore it back in FFR register.
-                    assert(op1Reg != REG_NA);
-                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op1Reg, opt);
-                }
-
-                GetEmitter()->emitIns_R(ins, emitSize, targetReg, INS_OPTS_SCALABLE_B);
-                break;
-            }
             case NI_Sve_SetFfr:
             {
                 assert(targetReg == REG_NA);

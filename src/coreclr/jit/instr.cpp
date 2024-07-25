@@ -721,7 +721,7 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
-    assert(GetEmitter()->emitInsIsStore(ins));
+    assert(GetEmitter()->emitInsIsStore(ins) || (ins == INS_sve_str));
 #endif
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
 }

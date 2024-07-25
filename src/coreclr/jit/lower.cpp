@@ -479,6 +479,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             {
                 return newNode;
             }
+#ifdef TARGET_ARM64
+            m_ffrTrashed = true;
+#endif
         }
         break;
 
@@ -7902,6 +7905,7 @@ void Lowering::LowerBlock(BasicBlock* block)
     m_block = block;
 #ifdef TARGET_ARM64
     m_blockIndirs.Reset();
+    m_ffrTrashed = true;
 #endif
 
     // NOTE: some of the lowering methods insert calls before the node being

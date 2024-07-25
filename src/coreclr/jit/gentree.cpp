@@ -11537,6 +11537,14 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilKind = "cse";
             ilNum  = lclNum - optCSEstart;
         }
+#ifdef TARGET_ARM64
+        else if (lclNum == lvaFfrRegister)
+        {
+            // We introduce this LclVar in lowering, hence special case the printing of
+            // it instead of handling it in "rationalizer" below.
+            ilName = "FFReg";
+        }
+#endif
         else if (lclNum >= optCSEstart)
         {
             // Currently any new LclVar's introduced after the CSE phase
@@ -11558,12 +11566,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "GsCookie";
             }
-#ifdef TARGET_ARM64
-            else if (lclNum == lvaFfrRegister)
-            {
-                ilName = "FFReg";
-            }
-#endif
             else if (lclNum == lvaRetAddrVar)
             {
                 ilName = "ReturnAddress";
