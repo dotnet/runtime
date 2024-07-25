@@ -2509,8 +2509,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(OBJECTREF throwable)
     RealCOMPlusThrow(throwable, FALSE);
 }
 
-#ifdef USE_CHECKED_OBJECTREFS
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
+VOID DECLSPEC_NORETURN PropagateExceptionThroughNativeFrames(Object *exceptionObj)
 {
     CONTRACTL
     {
@@ -2523,7 +2522,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(Object *exceptionObj)
     OBJECTREF throwable = ObjectToOBJECTREF(exceptionObj);
     RealCOMPlusThrowWorker(throwable, FALSE);
 }
-#endif // USE_CHECKED_OBJECTREFS
 
 // this function finds the managed callback to get a resource
 // string from the then current local domain and calls it
