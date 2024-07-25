@@ -289,7 +289,7 @@ namespace CorUnix
         // Limit address of the stack of this thread
         void* m_stackLimit;
 
-#if !HAVE_MACH_EXCEPTIONS && !defined(__sun)
+#if !HAVE_MACH_EXCEPTIONS && !defined(HOST_SUNOS)
         // Signal handler's alternate stack to help with stack overflow
         void* m_alternateStack;
 #endif
@@ -347,7 +347,7 @@ namespace CorUnix
             m_fStartStatusSet(FALSE),
             m_stackBase(NULL),
             m_stackLimit(NULL)
-#if !HAVE_MACH_EXCEPTIONS && !defined(__sun)
+#if !HAVE_MACH_EXCEPTIONS && !defined(HOST_SUNOS)
             ,m_alternateStack(NULL)
 #endif
         {
@@ -593,7 +593,7 @@ namespace CorUnix
             m_pNext = pNext;
         };
 
-#if !HAVE_MACH_EXCEPTIONS && !defined(__sun)
+#if !HAVE_MACH_EXCEPTIONS && !defined(HOST_SUNOS)
         BOOL
         EnsureSignalAlternateStack(
             void
