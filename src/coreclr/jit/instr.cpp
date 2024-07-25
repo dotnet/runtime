@@ -721,7 +721,13 @@ void CodeGen::inst_TT_RV(instruction ins, emitAttr size, GenTree* tree, regNumbe
     unsigned varNum = tree->AsLclVarCommon()->GetLclNum();
     assert(varNum < compiler->lvaCount);
 #if CPU_LOAD_STORE_ARCH
+#ifdef TARGET_ARM64
+    // Workaround until https://github.com/dotnet/runtime/issues/105512 is fixed.
     assert(GetEmitter()->emitInsIsStore(ins) || (ins == INS_sve_str));
+#else
+    assert(GetEmitter()->emitInsIsStore(ins));
+#endif
+
 #endif
     GetEmitter()->emitIns_S_R(ins, size, reg, varNum, 0);
 }
