@@ -1,3 +1,5 @@
+ # IMPORTANT: do not use add_compile_options(), add_definitions() or similar functions here since it will leak to the including projects 
+
 include(FetchContent)
 
 FetchContent_Declare(
