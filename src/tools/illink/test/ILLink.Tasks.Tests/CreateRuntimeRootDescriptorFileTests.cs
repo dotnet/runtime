@@ -92,12 +92,12 @@ namespace ILLink.Tasks.Tests
 						new XElement ("method", new XAttribute ("name", "TestMethodIfNotBoth")),
 						new XElement ("method", new XAttribute ("name", "TestMethodIfNotBothForILLink")),
 						new XElement ("method", new XAttribute ("name", "TestMethodForILLink"))),
+					new XElement ("type", new XAttribute("fullname", "TestNS.TestClass/Nested"),
+						new XElement ("method", new XAttribute("name", "TestMethod")))
 					new XElement ("type", new XAttribute ("fullname", "TestNS.TestAlwaysException"),
 						new XElement ("method", new XAttribute ("name", ".ctor"))),
 					new XElement ("type", new XAttribute ("fullname", "TestNS.TestFeatureOnException"),
 						new XElement ("method", new XAttribute ("name", ".ctor"))),
-					new XElement ("type", new XAttribute("fullname", "TestNS.TestClass/Nested"),
-						new XElement ("method", new XAttribute("name", "TestMethod")))
 					)).ToString ();
 			Assert.Equal (expectedXml, output.Root.ToString ());
 		}
