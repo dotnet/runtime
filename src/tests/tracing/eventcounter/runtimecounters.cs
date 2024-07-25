@@ -16,33 +16,36 @@ namespace RuntimeEventCounterTests
     {
         public RuntimeCounterListener()
         {
-            observedRuntimeCounters = new ConcurrentDictionary<string, bool>() {
-                { "cpu-usage" , false },
-                { "working-set", false },
-                { "gc-heap-size", false },
-                { "gen-0-gc-count", false },
-                { "gen-1-gc-count", false },
-                { "gen-2-gc-count", false },
-                { "threadpool-thread-count", false },
-                { "monitor-lock-contention-count", false },
-                { "threadpool-queue-length", false },
-                { "threadpool-completed-items-count", false },
-                { "alloc-rate", false },
-                { "active-timer-count", false },
-                { "gc-fragmentation", false },
-                { "gc-committed", false },
-                { "exception-count", false },
-                { "time-in-gc", false },
-                { "gen-0-size", false },
-                { "gen-1-size", false },
-                { "gen-2-size", false },
-                { "loh-size", false },
-                { "poh-size", false },
-                { "assembly-count", false },
-                { "il-bytes-jitted", false },
-                { "methods-jitted-count", false },
-                { "time-in-jit", false }
-            };
+            observedRuntimeCounters = new ConcurrentDictionary<string, bool>();
+            foreach (string counter in new string[] {
+                "cpu-usage",
+                "working-set",
+                "gc-heap-size",
+                "gen-0-gc-count",
+                "gen-1-gc-count",
+                "gen-2-gc-count",
+                "threadpool-thread-count",
+                "monitor-lock-contention-count",
+                "threadpool-queue-length",
+                "threadpool-completed-items-count",
+                "alloc-rate",
+                "active-timer-count",
+                "gc-fragmentation",
+                "gc-committed",
+                "exception-count",
+                "time-in-gc",
+                "gen-0-size",
+                "gen-1-size",
+                "gen-2-size",
+                "loh-size",
+                "poh-size",
+                "assembly-count",
+                "il-bytes-jitted",
+                "methods-jitted-count",
+                "time-in-jit" })
+            {
+                observedRuntimeCounters[counter] = false;
+            }
         }
         private ConcurrentDictionary<string, bool> observedRuntimeCounters;
 
