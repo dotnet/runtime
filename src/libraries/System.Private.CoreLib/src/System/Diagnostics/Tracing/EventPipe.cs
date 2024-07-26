@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tracing
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct EventPipeProviderConfiguration
+    internal readonly struct EventPipeProviderConfiguration
     {
         [MarshalAs(UnmanagedType.LPWStr)]
         private readonly string m_providerName;

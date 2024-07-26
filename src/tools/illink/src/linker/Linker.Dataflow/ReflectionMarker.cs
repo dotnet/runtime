@@ -24,9 +24,12 @@ namespace Mono.Linker.Dataflow
 			_enabled = enabled;
 		}
 
-		internal void MarkTypeForDynamicallyAccessedMembers (in MessageOrigin origin, TypeDefinition typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
+		internal void MarkTypeForDynamicallyAccessedMembers (in MessageOrigin origin, TypeReference type, DynamicallyAccessedMemberTypes requiredMemberTypes, DependencyKind dependencyKind, bool declaredOnly = false)
 		{
 			if (!_enabled)
+				return;
+
+			if (type.ResolveToTypeDefinition (_context) is not TypeDefinition typeDefinition)
 				return;
 
 			foreach (var member in typeDefinition.GetDynamicallyAccessedMembers (_context, requiredMemberTypes, declaredOnly)) {
@@ -104,9 +107,12 @@ namespace Mono.Linker.Dataflow
 			}
 		}
 
-		internal void MarkType (in MessageOrigin origin, TypeDefinition type, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
+		internal void MarkType (in MessageOrigin origin, TypeReference typeRef, DependencyKind dependencyKind = DependencyKind.AccessedViaReflection)
 		{
 			if (!_enabled)
+				return;
+
+			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
 				return;
 
 			_markStep.MarkTypeVisibleToReflection (type, type, new DependencyInfo (dependencyKind, origin.Provider), origin);
@@ -152,45 +158,60 @@ namespace Mono.Linker.Dataflow
 			_markStep.MarkInterfaceImplementation (interfaceImplementation, origin, new DependencyInfo (dependencyKind, origin.Provider));
 		}
 
-		internal void MarkConstructorsOnType (in MessageOrigin origin, TypeDefinition type, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
+		internal void MarkConstructorsOnType (in MessageOrigin origin, TypeReference typeRef, Func<MethodDefinition, bool>? filter, BindingFlags? bindingFlags = null)
 		{
 			if (!_enabled)
+				return;
+
+			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
 				return;
 
 			foreach (var ctor in type.GetConstructorsOnType (filter, bindingFlags))
 				MarkMethod (origin, ctor);
 		}
 
-		internal void MarkFieldsOnTypeHierarchy (in MessageOrigin origin, TypeDefinition type, Func<FieldDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		internal void MarkFieldsOnTypeHierarchy (in MessageOrigin origin, TypeReference typeRef, Func<FieldDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			if (!_enabled)
+				return;
+
+			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
 				return;
 
 			foreach (var field in type.GetFieldsOnTypeHierarchy (_context, filter, bindingFlags))
 				MarkField (origin, field);
 		}
 
-		internal void MarkPropertiesOnTypeHierarchy (in MessageOrigin origin, TypeDefinition type, Func<PropertyDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		internal void MarkPropertiesOnTypeHierarchy (in MessageOrigin origin, TypeReference typeRef, Func<PropertyDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			if (!_enabled)
+				return;
+
+			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
 				return;
 
 			foreach (var property in type.GetPropertiesOnTypeHierarchy (_context, filter, bindingFlags))
 				MarkProperty (origin, property);
 		}
 
-		internal void MarkEventsOnTypeHierarchy (in MessageOrigin origin, TypeDefinition type, Func<EventDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
+		internal void MarkEventsOnTypeHierarchy (in MessageOrigin origin, TypeReference typeRef, Func<EventDefinition, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
 		{
 			if (!_enabled)
+				return;
+
+			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
 				return;
 
 			foreach (var @event in type.GetEventsOnTypeHierarchy (_context, filter, bindingFlags))
 				MarkEvent (origin, @event);
 		}
 
-		internal void MarkStaticConstructor (in MessageOrigin origin, TypeDefinition type)
+		internal void MarkStaticConstructor (in MessageOrigin origin, TypeReference typeRef)
 		{
 			if (!_enabled)
+				return;
+
+			if (typeRef.ResolveToTypeDefinition (_context) is not TypeDefinition type)
 				return;
 
 			_markStep.MarkStaticConstructorVisibleToReflection (type, new DependencyInfo (DependencyKind.AccessedViaReflection, origin.Provider), origin);

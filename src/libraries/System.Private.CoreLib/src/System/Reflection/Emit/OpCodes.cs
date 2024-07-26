@@ -2526,16 +2526,10 @@ namespace System.Reflection.Emit
         );
 
 
-        public static bool TakesSingleByteArgument(OpCode inst)
-        {
-            switch (inst.OperandType)
-            {
-                case OperandType.ShortInlineBrTarget:
-                case OperandType.ShortInlineI:
-                case OperandType.ShortInlineVar:
-                    return true;
-            }
-            return false;
-        }
+        public static bool TakesSingleByteArgument(OpCode inst) =>
+            inst.OperandType is
+                OperandType.ShortInlineBrTarget or
+                OperandType.ShortInlineI or
+                OperandType.ShortInlineVar;
     }
 }

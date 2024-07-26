@@ -1190,4 +1190,7 @@ bool CastFromFloatOverflows(float fromValue, var_types toType);
 bool CastFromDoubleOverflows(double fromValue, var_types toType);
 } // namespace CheckedOps
 
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x)  STRINGIFY_(x)
+
 #endif // _UTILS_H_

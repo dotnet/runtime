@@ -80,6 +80,7 @@ namespace System.Buffers.Text.Tests
 
                 Span<char> source = new char[numBytes];
                 Base64TestHelper.InitializeUrlDecodableChars(source, numBytes);
+                source[numBytes - 1] = 'A'; // make sure unused bits set 0
 
                 Span<byte> decodedBytes = new byte[Base64Url.GetMaxDecodedLength(source.Length)];
                 Assert.Equal(OperationStatus.Done, Base64Url.DecodeFromChars(source, decodedBytes, out int consumed, out int decodedByteCount));
@@ -262,45 +263,46 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
-        public static void PartialRoundtripWithoutPadding()
+        public static void RoundtripWithoutPadding()
         {
-            string input = "ab";
+            string input = "ag";
             Verify(input, result =>
             {
                 Assert.Equal(1, result.Length);
 
                 string roundtrippedString = Base64Url.EncodeToString(result);
-                Assert.NotEqual(input, roundtrippedString);
-                Assert.Equal(input[0], roundtrippedString[0]);
+                Assert.Equal(input, roundtrippedString);
             });
         }
 
         [Fact]
-        public static void PartialRoundtripWithPadding2()
+        public static void RoundtripWithPadding2()
         {
-            string input = "ab==";
+            string input = "ag==";
             Verify(input, result =>
             {
                 Assert.Equal(1, result.Length);
 
                 string roundtrippedString = Base64Url.EncodeToString(result);
-                Assert.NotEqual(input, roundtrippedString);
+                Assert.NotEqual(input, roundtrippedString); // Padding character omitted
                 Assert.Equal(input[0], roundtrippedString[0]);
+                Assert.Equal(input[1], roundtrippedString[1]);
             });
         }
 
         [Fact]
-        public static void PartialRoundtripWithPadding1()
+        public static void RoundtripWithPadding1()
         {
-            string input = "789=";
+            string input = "788=";
             Verify(input, result =>
             {
                 Assert.Equal(2, result.Length);
 
                 string roundtrippedString = Base64Url.EncodeToString(result);
-                Assert.NotEqual(input, roundtrippedString);
+                Assert.NotEqual(input, roundtrippedString); // Padding character omitted
                 Assert.Equal(input[0], roundtrippedString[0]);
                 Assert.Equal(input[1], roundtrippedString[1]);
+                Assert.Equal(input[2], roundtrippedString[2]);
             });
         }
 
