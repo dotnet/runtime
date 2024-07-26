@@ -17,7 +17,7 @@ public class Program
     {
         if (Sve.IsSupported)
         {
-            var vr1 = Vector128.CreateScalar(10).AsVector();
+            var vr1 = Vector128.CreateScalar((double)10).AsVector();
             s_3 = Sve.FusedMultiplyAdd(vr1, s_3, s_3);
         }
     }
