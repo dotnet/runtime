@@ -494,8 +494,17 @@ HRESULT DacMethodTableSlotEnumerator::Init(PTR_MethodTable mTable)
     for (WORD slot = 0; slot < numVtableSlots; slot++)
     {
         SOSMethodData methodData = {0, 0, 0, 0, 0, 0};
+        MethodDesc* pMD = nullptr;
 
-        MethodDesc* pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        EX_TRY
+        {
+            pMD = mTable->GetMethodDescForSlot_NoThrow(slot);
+        }
+        EX_CATCH
+        {
+        }
+        EX_END_CATCH(SwallowAllExceptions)
+
         if (pMD != nullptr)
         {
             methodData.MethodDesc = HOST_CDADDR(pMD);

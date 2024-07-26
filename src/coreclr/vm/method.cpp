@@ -2624,26 +2624,18 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
     }
     CONTRACT_END;
 
-    MethodDesc *  pMD = NULL;
+    MethodDesc* pMD = NULL;
 
-    EX_TRY
+    // Otherwise this must be some kind of precode
+    //
+    PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
+    PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
+    if (pPrecode != NULL)
     {
-        // Otherwise this must be some kind of precode
-        //
-        PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
-        PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
-        if (pPrecode != NULL)
-        {
-            pMD = pPrecode->GetMethodDesc(fSpeculative);
-            RETURN(pMD);
-        }
+        pMD = pPrecode->GetMethodDesc(fSpeculative);
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(SwallowAllExceptions)
 
-    RETURN(NULL); // Not found
+    RETURN(pMD);
 }
 
 //*******************************************************************************
