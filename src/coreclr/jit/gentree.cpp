@@ -30912,7 +30912,8 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                             int64_t shiftAmount = otherNode->AsVecCon()->GetElementIntegral(TYP_LONG, 0);
 
-                            if ((uint64_t)shiftAmount >= ((uint64_t)genTypeSize(simdBaseType) * BITS_PER_BYTE))
+                            if (static_cast<uint64_t>(shiftAmount) >=
+                                (static_cast<uint64_t>(genTypeSize(simdBaseType)) * BITS_PER_BYTE))
                             {
                                 // Set to -1 to indicate an explicit overshift
                                 shiftAmount = -1;
