@@ -522,7 +522,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
                     // destination using /Z.
 
-                    assert(targetReg != embMaskOp2Reg);
+                    assert((targetReg != embMaskOp2Reg) || (embMaskOp1Reg == embMaskOp2Reg));
                     assert(intrin.op3->isContained() || !intrin.op1->IsMaskAllBitsSet());
                     GetEmitter()->emitInsSve_R_R_R(INS_sve_movprfx, emitSize, targetReg, maskReg, embMaskOp1Reg, opt);
                 }
@@ -806,7 +806,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
                     if (HWIntrinsicInfo::IsFmaIntrinsic(intrinEmbMask.id))
                     {
-                        assert(falseReg != embMaskOp3Reg);
                         // For FMA, the operation we are trying to perform is:
                         //      result = op1 + (op2 * op3)
                         //
