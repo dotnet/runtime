@@ -9,7 +9,7 @@ namespace System.Text.Json.Tests
     {
         public static IEnumerable<object[]> ValidBase64Tests()
         {
-            yield return new object[] { "\"ABC=\"" };
+            yield return new object[] { "\"ABA=\"" };
             yield return new object[] { "\"AB+D\"" };
             yield return new object[] { "\"ABCD\"" };
             yield return new object[] { "\"ABC/\"" };
@@ -19,9 +19,9 @@ namespace System.Text.Json.Tests
 
         public static IEnumerable<object[]> InvalidBase64Tests()
         {
-            yield return new object[] { "\"ABC===\"" };
-            yield return new object[] { "\"ABC\"" };
-            yield return new object[] { "\"ABC!\"" };
+            yield return new object[] { "\"ABA===\"" };
+            yield return new object[] { "\"ABA\"" };
+            yield return new object[] { "\"ABA!\"" };
             yield return new object[] { GenerateRandomInvalidLargeString(includeEscapedCharacter: true) };
             yield return new object[] { GenerateRandomInvalidLargeString(includeEscapedCharacter: false) };
         }
