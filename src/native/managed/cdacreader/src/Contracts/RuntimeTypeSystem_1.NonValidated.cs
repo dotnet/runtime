@@ -101,15 +101,60 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             private bool HasFlag(MethodDescFlags flag) => (_desc.Flags & (ushort)flag) != 0;
             private bool HasFlag(MethodDescEntryPointFlags flag) => (_desc.EntryPointFlags & (byte)flag) != 0;
 
+            private bool HasFlag(MethodDescFlags3 flag) => (_desc.Flags3AndTokenRemainder & (ushort)flag) != 0;
+
             internal byte ChunkIndex => _desc.ChunkIndex;
             internal TargetPointer MethodTable => _chunk.MethodTable;
             internal ushort Slot => _desc.Slot;
             internal bool HasNonVtableSlot => HasFlag(MethodDescFlags.HasNonVtableSlot);
+            internal bool HasMethodImpl => HasFlag(MethodDescFlags.HasMethodImpl);
+            internal bool HasNativeCodeSlot => HasFlag(MethodDescFlags.HasNativeCodeSlot);
 
             internal bool TemporaryEntryPointAssigned => HasFlag(MethodDescEntryPointFlags.TemporaryEntryPointAssigned);
 
             internal TargetPointer CodeData => _desc.CodeData;
+
+            internal MethodClassification Classification => (MethodClassification)(_desc.Flags & (ushort)MethodDescFlags.ClassificationMask);
+            internal bool IsFCall => Classification == MethodClassification.FCall;
+
+            #region Additional Pointers
+            private int AdditionalPointersHelper(MethodDescFlags extraFlags)
+                => int.PopCount(_desc.Flags & (ushort)extraFlags);
+
+            // non-vtable slot, native code slot and MethodImpl slots are stored after the MethodDesc itself, packed tightly
+            // in the order: [non-vtable; native code; method-impl].
+            internal int NonVtableSlotIndex => HasNonVtableSlot ? 0 : throw new InvalidOperationException("no non-vtable slot");
+            internal int MethodImplIndex
+            {
+                get
+                {
+                    if (!HasMethodImpl)
+                    {
+                        throw new InvalidOperationException("no method impl slot");
+                    }
+                    return 1 + AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot);
+                }
+            }
+            internal int NativeCodeSlotIndex
+            {
+                get
+                {
+                    if (!HasNativeCodeSlot)
+                    {
+                        throw new InvalidOperationException("no native code slot");
+                    }
+                    return 1 + AdditionalPointersHelper(MethodDescFlags.HasNonVtableSlot | MethodDescFlags.HasNativeCodeSlot);
+                }
+            }
+
+            internal int AdditionalPointersCount => AdditionalPointersHelper(MethodDescFlags.MethodDescAdditionalPointersMask);
+            #endregion Additional Pointers
+
+            internal bool HasStableEntryPoint => HasFlag(MethodDescFlags3.HasStableEntryPoint);
+            internal bool HasPrecode => HasFlag(MethodDescFlags3.HasPrecode);
+
         }
+
 
         internal static MethodTable GetMethodTableData(Target target, TargetPointer methodTablePointer)
         {
@@ -259,6 +304,103 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return codeData.TemporaryEntryPoint;
     }
 
+    private TargetPointer GetAddrOfNativeCodeSlot(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
+    {
+        uint offset = MethodDescAdditioinalPointersOffset(umd);
+        offset += (uint)(_target.PointerSize * umd.NativeCodeSlotIndex);
+        return methodDescPointer.Value + offset;
+    }
+
+    private TargetPointer GetAddresOfNonVtableSlot(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
+    {
+        uint offset = MethodDescAdditioinalPointersOffset(umd);
+        offset += (uint)(_target.PointerSize * umd.NonVtableSlotIndex);
+        return methodDescPointer.Value + offset;
+    }
+
+    private TargetCodePointer GetCodePointer(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
+    {
+        // TODO(cdac): _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
+        if (umd.HasNativeCodeSlot)
+        {
+            // When profiler is enabled, profiler may ask to rejit a code even though we
+            // we have ngen code for this MethodDesc.  (See MethodDesc::DoPrestub).
+            // This means that *ppCode is not stable. It can turn from non-zero to zero.
+            TargetPointer ppCode = GetAddrOfNativeCodeSlot(methodDescPointer, umd);
+            TargetCodePointer pCode = _target.ReadCodePointer(ppCode);
+
+            // if arm32, set the thumb bit
+            Data.PrecodeMachineDescriptor precodeMachineDescriptor = _target.ProcessedData.GetOrAdd<Data.PrecodeMachineDescriptor>(_target.ReadGlobalPointer(Constants.Globals.PrecodeMachineDescriptor));
+            pCode = (TargetCodePointer)(pCode.Value | precodeMachineDescriptor.CodePointerToInstrPointerMask.Value);
+
+            return pCode;
+        }
+
+        if (!umd.HasStableEntryPoint || umd.HasPrecode)
+            return TargetCodePointer.Null;
+
+        return GetStableEntryPoint(methodDescPointer, umd);
+    }
+
+    private TargetCodePointer GetStableEntryPoint(TargetPointer methodDescPointer, NonValidated.MethodDesc umd)
+    {
+        // TODO(cdac): _ASSERTE(HasStableEntryPoint());
+        // TODO(cdac): _ASSERTE(!IsVersionableWithVtableSlotBackpatch());
+
+        return GetMethodEntryPointIfExists(methodDescPointer, umd);
+    }
+
+    private TargetCodePointer GetMethodEntryPointIfExists(TargetPointer methodDescAddress, NonValidated.MethodDesc umd)
+    {
+        if (umd.HasNonVtableSlot)
+        {
+            TargetPointer pSlot = GetAddresOfNonVtableSlot(methodDescAddress, umd);
+
+            return _target.ReadCodePointer(pSlot);
+        }
+
+        TargetPointer methodTablePointer = umd.MethodTable;
+        TypeHandle typeHandle = GetTypeHandle(methodTablePointer);
+        // TODO: cdac:  _ASSERTE(GetMethodTable()->IsCanonicalMethodTable());
+        TargetPointer addrOfSlot = GetAddressOfSlot(typeHandle, umd.Slot);
+        return _target.ReadCodePointer(addrOfSlot);
+    }
+
+    private uint MethodDescAdditioinalPointersOffset(NonValidated.MethodDesc umd)
+    {
+        MethodClassification cls = umd.Classification;
+        switch (cls)
+        {
+            case MethodClassification.IL:
+                return _target.GetTypeInfo(DataType.MethodDesc).Size ?? throw new InvalidOperationException("size of MethodDesc not known");
+            case MethodClassification.FCall:
+                throw new NotImplementedException();
+            case MethodClassification.NDirect:
+                throw new NotImplementedException();
+            case MethodClassification.EEImpl:
+                throw new NotImplementedException();
+            case MethodClassification.Array:
+                throw new NotImplementedException();
+            case MethodClassification.Instantiated:
+                throw new NotImplementedException();
+            case MethodClassification.ComInterop:
+                throw new NotImplementedException();
+            case MethodClassification.Dynamic:
+                throw new NotImplementedException();
+            default:
+                throw new InvalidOperationException($"Unexpected method classification 0x{cls:x2} for MethodDesc");
+        }
+    }
+
+    internal uint GetMethodDescBaseSize(NonValidated.MethodDesc umd)
+    {
+        uint baseSize = MethodDescAdditioinalPointersOffset(umd);
+        baseSize += (uint)(_target.PointerSize * umd.AdditionalPointersCount);
+        return baseSize;
+    }
+
+    private bool HasNativeCode(TargetPointer methodDescPointer, NonValidated.MethodDesc umd) => GetCodePointer(methodDescPointer, umd) != TargetCodePointer.Null;
+
     private bool ValidateMethodDescPointer(TargetPointer methodDescPointer, [NotNullWhen(true)] out TargetPointer methodDescChunkPointer)
     {
         methodDescChunkPointer = TargetPointer.Null;
@@ -291,28 +433,15 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             }
             // TODO: request.cpp
             // TODO[cdac]: needs MethodDesc::GetNativeCode and MethodDesc::GetMethodEntryPoint()
-#if false
-        if (retval && pMD->HasNativeCode() && !pMD->IsFCall())
-        {
-            PCODE jitCodeAddr = pMD->GetNativeCode();
-
-            MethodDesc *pMDCheck = ExecutionManager::GetCodeMethodDesc(jitCodeAddr);
-            if (pMDCheck)
+            if (HasNativeCode(methodDescPointer, umd) && !umd.IsFCall)
             {
-                // Check that the given MethodDesc matches the MethodDesc from
-                // the CodeHeader
-                if (PTR_HOST_TO_TADDR(pMD) != PTR_HOST_TO_TADDR(pMDCheck))
+                TargetCodePointer jitCodeAddr = GetCodePointer(methodDescPointer, umd);
+                TargetPointer methodDescCheckAddress = _target.Contracts.NativeCodePointers.MethodDescFromStubAddress(jitCodeAddr);
+                if (methodDescCheckAddress == TargetPointer.Null || methodDescCheckAddress != methodDescPointer)
                 {
-                    retval = FALSE;
+                    return false;
                 }
             }
-            else
-            {
-                retval = FALSE;
-            }
-        }
-#endif
-
         }
         catch (System.Exception)
         {
@@ -324,4 +453,5 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
         return true;
     }
+
 }

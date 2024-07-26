@@ -90,7 +90,36 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     internal enum MethodDescFlags : ushort
     {
         ClassificationMask = 0x7,
+        #region Additional pointers
+        // The below flags each imply that there's an extra pointer-sized piece of data after the MethodDesc in the MethodDescChunk
         HasNonVtableSlot = 0x0008,
+        HasMethodImpl = 0x0010,
+        HasNativeCodeSlot = 0x0020,
+        // Mask for the above flags
+        MethodDescAdditionalPointersMask = 0x0038,
+        #endregion Additional pointers
+    }
+
+    [Flags]
+    internal enum MethodDescFlags3 : ushort
+    {
+        // HasPrecode implies that HasStableEntryPoint is set.
+        HasStableEntryPoint = 0x1000, // The method entrypoint is stable (either precode or actual code)
+        HasPrecode = 0x2000, // Precode has been allocated for this method
+    }
+
+    internal enum MethodClassification
+    {
+        IL = 0, // IL
+        FCall = 1, // FCall (also includes tlbimped ctor, Delegate ctor)
+        NDirect = 2, // N/Direct
+        EEImpl = 3, // special method; implementation provided by EE (like Delegate Invoke)
+        Array = 4, // Array ECall
+        Instantiated = 5, // Instantiated generic methods, including descriptors
+                          // for both shared and unshared code (see InstantiatedMethodDesc)
+
+        ComInterop = 6, // if FEATURE_COMINTEROP
+        Dynamic = 7, // for method desc with no metadata behind
     }
 
     internal enum InstantiatedMethodDescFlags2 : ushort
@@ -775,4 +804,34 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
         return AsDynamicMethodDesc(methodDesc).IsILStub;
     }
+
+    // FIXME: move to RuntimeT
+    private TargetPointer GetAddressOfSlot(TypeHandle typeHandle, uint slotNum)
+    {
+        if (!typeHandle.IsMethodTable())
+            throw new InvalidOperationException("typeHandle is not a MethodTable");
+        MethodTable mt = _methodTables[typeHandle.Address];
+        // MethodTable::GetSlotPtrRaw
+        // TODO(cdac): CONSISTENCY_CHECK(slotNum < GetNumVtableSlots());
+
+        if (slotNum < mt.NumVirtuals)
+        {
+            // Virtual slots live in chunks pointed to by vtable indirections
+#if false
+            return GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum);
+#endif
+            throw new NotImplementedException(); // TODO(cdac):
+        }
+        else
+        {
+            // Non-virtual slots < GetNumVtableSlots live before the MethodTableAuxiliaryData. The array grows backwards
+            // TODO(cdac): _ASSERTE(HasNonVirtualSlots());
+#if false
+            return MethodTableAuxiliaryData::GetNonVirtualSlotsArray(GetAuxiliaryDataForWrite()) - (1 + (slotNum - GetNumVirtuals()));
+#endif
+            throw new NotImplementedException(); // TODO(cdac):
+        }
+
+    }
+
 }
