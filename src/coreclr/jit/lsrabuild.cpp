@@ -3878,6 +3878,35 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
     return srcCount;
 }
 
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// BuildDelayFreeUses: Build Use RefPositions for an operand that might be contained,
+//                     and which may need to be marked delayRegFree with respect to
+//                     two RMW nodes.
+//
+// Arguments:
+//    node              - The node of interest
+//    rmwNode1          - The node that has RMW semantics (if applicable)
+//    rmwNode2          - The node that has RMW semantics (if applicable)
+//    candidates        - The set of candidates for the uses
+//
+// Return Value:
+//    The number of source registers used by the *parent* of this node.
+//
+int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode1, GenTree* rmwNode2, SingleTypeRegSet candidates)
+{
+    RefPosition* useRefPosition = nullptr;
+    int srcCount = BuildDelayFreeUses(node, rmwNode1, candidates, &useRefPosition);
+
+    if ((useRefPosition != nullptr) && !useRefPosition->delayRegFree)
+    {
+        AddDelayFreeUses(useRefPosition, rmwNode2);
+    }
+
+    return srcCount;
+}
+#endif // TARGET_ARM64
+
 //------------------------------------------------------------------------
 // BuildBinaryUses: Get the RefInfoListNodes for the operands of the
 //                  given node, and build uses for them.
