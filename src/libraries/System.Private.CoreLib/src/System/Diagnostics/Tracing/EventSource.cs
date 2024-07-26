@@ -1641,9 +1641,6 @@ namespace System.Diagnostics.Tracing
                 m_eventPipeProvider = eventPipeProvider;
 #endif
                 Debug.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.
-                // We are logically completely initialized at this point, but set m_completelyInited after
-                // doing deferred commands under the EventListenersLock to avoid a race with SendCommand which
-                // can clear deferred commands before they are done.
             }
             catch (Exception e)
             {
@@ -2583,12 +2580,8 @@ namespace System.Diagnostics.Tracing
 
             // PRECONDITION: We should be holding the EventListener.EventListenersLock
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
-            // We defer commands until we are completely inited.  This allows error messages to be sent.
-            // Technically, by this point initialization should be complete, but m_completelyInited
-            // is only set after processing deferred commands at the end of Initialize to
-            // avoid possibly double invoking the m_eventCommandExecuted callback should EventCommandExecuted
-            // be set during OnEventCommand.
 
+            // We defer commands until we can send error messages.
             if (m_etwProvider == null)     // If we failed to construct
                 return;
 
