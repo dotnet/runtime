@@ -104,9 +104,9 @@
       <Sha>6ed73280a6d70f7e7ac39c86f2abe8c10983f0bb</Sha>
       <SourceBuild RepoName="source-build-reference-packages" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.24269.1">
+    <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-externals" Version="8.0.0-alpha.1.24372.2">
       <Uri>https://github.com/dotnet/source-build-externals</Uri>
-      <Sha>4f2151df120194f0268944f1b723c14820738fc8</Sha>
+      <Sha>e3059b2fc5aad4cf8de79f0d5d78dab2fbd6074c</Sha>
       <SourceBuild RepoName="source-build-externals" ManagedOnly="true" />
     </Dependency>
   </ProductDependencies>
