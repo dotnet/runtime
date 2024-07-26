@@ -45,6 +45,7 @@ HELPER(READYTORUN_HELPER_Box_Nullable,              CORINFO_HELP_BOX_NULLABLE,  
 HELPER(READYTORUN_HELPER_Unbox,                     CORINFO_HELP_UNBOX,                             )
 HELPER(READYTORUN_HELPER_Unbox_Nullable,            CORINFO_HELP_UNBOX_NULLABLE,                    )
 HELPER(READYTORUN_HELPER_NewMultiDimArr,            CORINFO_HELP_NEW_MDARR,                         )
+HELPER(READYTORUN_HELPER_Unbox_TypeTest,            CORINFO_HELP_UNBOX_TYPETEST,                    )
 
 HELPER(READYTORUN_HELPER_NewObject,                 CORINFO_HELP_NEWFAST,                           )
 HELPER(READYTORUN_HELPER_NewArray,                  CORINFO_HELP_NEWARR_1_DIRECT,                   )

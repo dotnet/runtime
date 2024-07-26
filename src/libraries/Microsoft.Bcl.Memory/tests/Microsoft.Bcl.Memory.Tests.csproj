@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetFrameworkMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\System.Memory\tests\AllocationHelper.cs">
+      <Link>System\Memory\AllocationHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Memory\tests\Base64\Base64TestBase.cs">
+      <Link>System\Memory\Base64\Base64TestBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Memory\tests\Base64\Base64TestHelper.cs">
+      <Link>System\Memory\Base64\Base64TestHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Memory\tests\Base64Url\Base64UrlDecoderUnitTests.cs">
+      <Link>System\Memory\Base64Url\Base64UrlDecoderUnitTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Memory\tests\Base64Url\Base64UrlEncoderUnitTests.cs">
+      <Link>System\Memory\Base64Url\Base64UrlEncoderUnitTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Memory\tests\Base64Url\Base64UrlValidationUnitTests.cs">
+      <Link>System\Memory\Base64Url\Base64UrlValidationUnitTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\RangeTests.cs">
+      <Link>System\RangeTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Runtime\tests\System.Runtime.Tests\System\IndexTests.cs">
+      <Link>System\IndexTests.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <!-- Targetting  NetFramework & Netstandard 2.0 -->
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
+    <Compile Include="..\..\Common\tests\System\Runtime\CompilerServices\RuntimeHelpers.cs">
+      <Link>System\Runtime\CompilerServices\RuntimeHelpers.cs</Link>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.Bcl.Memory.csproj" />
+  </ItemGroup>
+
+</Project>

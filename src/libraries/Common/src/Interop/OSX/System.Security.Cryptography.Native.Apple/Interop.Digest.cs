@@ -38,6 +38,9 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestReset")]
         internal static partial int DigestReset(SafeDigestCtxHandle ctx);
+
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestClone")]
+        internal static partial SafeDigestCtxHandle DigestClone(SafeDigestCtxHandle ctx);
     }
 }
 

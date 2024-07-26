@@ -49,8 +49,9 @@ namespace ILLink.RoslynAnalyzer
 			case IntrinsicId.Type_MakeGenericType: {
 					if (!instance.IsEmpty ()) {
 						foreach (var value in instance.AsEnumerable ()) {
-							if (value is SystemTypeValue) {
-								if (!IsKnownInstantiation (arguments[0])) {
+							if (value is SystemTypeValue typeValue) {
+								if (!IsKnownInstantiation (arguments[0])
+									&& !IsConstrainedToBeReferenceTypes(typeValue.RepresentedType.GetGenericParameters())) {
 									return false;
 								}
 							} else {
@@ -64,7 +65,8 @@ namespace ILLink.RoslynAnalyzer
 					if (!instance.IsEmpty ()) {
 						foreach (var methodValue in instance.AsEnumerable ()) {
 							if (methodValue is SystemReflectionMethodBaseValue methodBaseValue) {
-								if (!IsKnownInstantiation (arguments[0])) {
+								if (!IsKnownInstantiation (arguments[0])
+									&& !IsConstrainedToBeReferenceTypes(methodBaseValue.RepresentedMethod.GetGenericParameters())) {
 									return false;
 								}
 							} else {
@@ -108,6 +110,14 @@ namespace ILLink.RoslynAnalyzer
 					}
 				}
 
+				return true;
+			}
+
+			static bool IsConstrainedToBeReferenceTypes(ImmutableArray<GenericParameterProxy> parameters)
+			{
+				foreach (GenericParameterProxy param in parameters)
+					if (!param.TypeParameterSymbol.HasReferenceTypeConstraint)
+						return false;
 				return true;
 			}
 		}

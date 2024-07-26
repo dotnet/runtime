@@ -25,6 +25,8 @@
     <Compile Remove="CommandLine\Dependencies\CustomApplyPreserveStep.cs" />
     <Compile Remove="Logging\Dependencies\LogStep.cs" />
     <Compile Remove="Extensibility\Dependencies\*.cs" />
+    <Compile Include="Extensibility\Dependencies\InterfaceType.cs" />
+    <Compile Include="Extensibility\Dependencies\InterfaceImplementation.cs" />
     <Compile Remove="DynamicDependencies\Dependencies\FacadeAssembly.cs" />
     <Compile Remove="Warnings\Dependencies\CustomStep.cs" />
   </ItemGroup>

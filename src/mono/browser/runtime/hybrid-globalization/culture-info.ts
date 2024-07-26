@@ -4,7 +4,19 @@
 import { VoidPtrNull } from "../types/internal";
 import { runtimeHelpers } from "./module-exports";
 import { Int32Ptr, VoidPtr } from "../types/emscripten";
-import { OUTER_SEPARATOR, normalizeLocale, normalizeSpaces } from "./helpers";
+import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
+
+const NO_PREFIX_24H = "H";
+const PREFIX_24H = "HH";
+const NO_PREFIX_12H = "h";
+const PREFIX_12H = "hh";
+const SECONDS_CODE = "ss";
+const MINUTES_CODE = "mm";
+const DESIGNATOR_CODE = "tt";
+// Note: wrapSubstrings
+// The character "h" can be ambiguous as it might represent an hour code hour code and a fixed (quoted) part of the format.
+// Special Case for "fr-CA": Always recognize "HH" as a keyword and do not quote it, to avoid formatting issues.
+const keyWords = [SECONDS_CODE, MINUTES_CODE, DESIGNATOR_CODE, PREFIX_24H];
 
 export function mono_wasm_get_culture_info (culture: number, cultureLength: number, dst: number, dstMaxLength: number, dstLength: Int32Ptr): VoidPtr {
     try {
@@ -74,7 +86,7 @@ function getLongTimePattern (locale: string | undefined, designators: any): stri
     const shortPmStyle = shortTime.format(pmTime); // 12:15:30 PM
     const minutes = pmTime.toLocaleTimeString(locale, { minute: "numeric" }); // 15
     const seconds = pmTime.toLocaleTimeString(locale, { second: "numeric" }); // 30
-    let pattern = shortPmStyle.replace(designators.pm, "tt").replace(minutes, "mm").replace(seconds, "ss"); // 12:mm:ss tt
+    let pattern = shortPmStyle.replace(designators.pm, DESIGNATOR_CODE).replace(minutes, MINUTES_CODE).replace(seconds, SECONDS_CODE); // 12:mm:ss tt
 
     const isISOStyle = pattern.includes(localizedHour24); // 24h or 12h pattern?
     const localized0 = (0).toLocaleString(locale);
@@ -84,22 +96,22 @@ function getLongTimePattern (locale: string | undefined, designators: any): stri
     let hourPattern;
     if (isISOStyle) { // 24h
         const hasPrefix = h12Style.includes(hour12WithPrefix);
-        hourPattern = hasPrefix ? "HH" : "H";
+        hourPattern = hasPrefix ? PREFIX_24H : NO_PREFIX_24H;
         pattern = pattern.replace(localizedHour24, hourPattern);
     } else { // 12h
         const hasPrefix = h12Style.includes(hour12WithPrefix);
-        hourPattern = hasPrefix ? "hh" : "h";
+        hourPattern = hasPrefix ? PREFIX_12H : NO_PREFIX_12H;
         pattern = pattern.replace(hasPrefix ? hour12WithPrefix : localizedHour12, hourPattern);
     }
-    return normalizeSpaces(pattern);
+    return wrapSubstrings(pattern);
 }
 
 function getShortTimePattern (pattern: string): string {
     // remove seconds:
     // short dotnet pattern does not contain seconds while JS's pattern always contains them
-    const secondsIdx = pattern.indexOf("ss");
+    const secondsIdx = pattern.indexOf(SECONDS_CODE);
     if (secondsIdx > 0) {
-        const secondsWithSeparator = `${pattern[secondsIdx - 1]}ss`;
+        const secondsWithSeparator = `${pattern[secondsIdx - 1]}${SECONDS_CODE}`;
         // en-US: 12:mm:ss tt -> 12:mm tt;
         // fr-CA: 12 h mm min ss s -> 12 h mm min s
         const shortPatternNoSecondsDigits = pattern.replace(secondsWithSeparator, "");
@@ -110,4 +122,18 @@ function getShortTimePattern (pattern: string): string {
         }
     }
     return pattern;
+}
+
+// wraps all substrings in the format in quotes, except for key words
+// transform e.g. "HH h mm min ss s" into "HH 'h' mm 'min' ss 's'"
+function wrapSubstrings (str: string) {
+    const words = str.split(/\s+/);
+
+    for (let i = 0; i < words.length; i++) {
+        if (!words[i].includes(":") && !words[i].includes(".") && !keyWords.includes(words[i])) {
+            words[i] = `'${words[i]}'`;
+        }
+    }
+
+    return words.join(" ");
 }

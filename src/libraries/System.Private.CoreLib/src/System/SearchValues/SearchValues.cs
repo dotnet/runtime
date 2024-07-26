@@ -159,10 +159,19 @@ namespace System.Buffers
 
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && minInclusive < 128)
             {
-                // If we have both ASCII and non-ASCII characters, use an implementation that
-                // does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
+                // We have a mix of ASCII and non-ASCII characters.
 
-                return (Ssse3.IsSupported || PackedSimd.IsSupported) && values.Contains('\0')
+                if (IndexOfAnyAsciiSearcher.TryComputeAsciiWithSecondSetState(values, maxInclusive, out IndexOfAnyAsciiSearcher.AsciiWithSecondSetState state))
+                {
+                    // All of the non-ASCII values fit within a range of 128 characters.
+                    // Use an implementation that checks against two 128-bit bitmaps, with the second one at a variable offset to the start of the non-ASCII set.
+                    return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
+                        ? new AsciiWithSecondSetCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(state)
+                        : new AsciiWithSecondSetCharSearchValues<IndexOfAnyAsciiSearcher.Default>(state);
+                }
+
+                // Use an implementation that does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && minInclusive == 0
                     ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(values, maxInclusive)
                     : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(values, maxInclusive);
             }

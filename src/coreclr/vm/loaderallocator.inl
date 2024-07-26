@@ -131,7 +131,7 @@ FORCEINLINE BOOL LoaderAllocator::GetHandleValueFastPhase2(LOADERHANDLE handle, 
         return FALSE;
 
     LOADERALLOCATORREF loaderAllocator = dac_cast<LOADERALLOCATORREF>(loaderAllocatorAsObjectRef);
-    PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
+    PTRARRAYREF handleTable = loaderAllocator->DangerousGetHandleTable();
     UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
     *pValue = handleTable->GetAt(index);
 
@@ -149,7 +149,7 @@ FORCEINLINE OBJECTREF LoaderAllocator::GetHandleValueFastCannotFailType2(LOADERH
     /* This is lockless access to the handle table, be careful */
     OBJECTREF loaderAllocatorAsObjectRef = ObjectFromHandle(m_hLoaderAllocatorObjectHandle);
     LOADERALLOCATORREF loaderAllocator = dac_cast<LOADERALLOCATORREF>(loaderAllocatorAsObjectRef);
-    PTRARRAYREF handleTable = loaderAllocator->GetHandleTable();
+    PTRARRAYREF handleTable = loaderAllocator->DangerousGetHandleTable();
     UINT_PTR index = (((UINT_PTR)handle) >> 1) - 1;
 
     return handleTable->GetAt(index);

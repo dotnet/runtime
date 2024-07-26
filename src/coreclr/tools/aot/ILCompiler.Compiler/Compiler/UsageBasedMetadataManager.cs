@@ -784,13 +784,15 @@ namespace ILCompiler
             return true;
         }
 
-        public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
+        public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod, TypeSystemEntity origin)
         {
             baseMethod = baseMethod.GetTypicalMethodDefinition();
             overridingMethod = overridingMethod.GetTypicalMethodDefinition();
 
             if (baseMethod == overridingMethod)
                 return;
+
+            origin ??= overridingMethod;
 
             bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
             foreach (var requiresAttribute in _requiresAttributeMismatchNameAndId)
@@ -803,7 +805,7 @@ namespace ILCompiler
                     string message = MessageFormat.FormatRequiresAttributeMismatch(overridingMethod.DoesMethodRequire(requiresAttribute.AttributeName, out _),
                         baseMethodTypeIsInterface, requiresAttribute.AttributeName, overridingMethodName, baseMethodName);
 
-                    Logger.LogWarning(overridingMethod, requiresAttribute.Id, message);
+                    Logger.LogWarning(origin, requiresAttribute.Id, message);
                 }
             }
 
@@ -811,7 +813,7 @@ namespace ILCompiler
             bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresVirtualMethodDataflowAnalysis(overridingMethod);
             if (baseMethodRequiresDataflow || overridingMethodRequiresDataflow)
             {
-                FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod);
+                FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod, origin);
             }
         }
 
@@ -893,28 +895,10 @@ namespace ILCompiler
                 }
             }
 
-            var rootedCctorContexts = new List<MetadataType>();
-            foreach (NonGCStaticsNode cctorContext in GetCctorContextMapping())
-            {
-                // If we generated a static constructor and the owning type, this might be something
-                // that gets fed to RuntimeHelpers.RunClassConstructor. RunClassConstructor
-                // also works on reflection blocked types and there is a possibility that we
-                // wouldn't have generated the cctor otherwise.
-                //
-                // This is a heuristic and we'll possibly root more cctor contexts than
-                // strictly necessary, but it's not worth introducing a new node type
-                // in the compiler just so we can propagate this knowledge from dataflow analysis
-                // (that detects RunClassConstructor usage) and this spot.
-                if (!TypeGeneratesEEType(cctorContext.Type))
-                    continue;
-
-                rootedCctorContexts.Add(cctorContext.Type);
-            }
-
             return new AnalysisBasedMetadataManager(
                 _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
-                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, rootedCctorContexts, _options);
+                reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _options);
         }
 
         private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)

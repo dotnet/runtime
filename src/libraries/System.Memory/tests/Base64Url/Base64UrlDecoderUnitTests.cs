@@ -802,6 +802,29 @@ namespace System.Buffers.Text.Tests
         }
 
         [Theory]
+        [InlineData(new char[] { '\r', '\r', '-', '-' }, 251)]
+        [InlineData(new char[] { '\r', '_', '\r', '-' }, 255)]
+        [InlineData(new char[] { '_', '_', '\r', '\r' }, 255)]
+        [InlineData(new char[] { 'p', '\r', 'a', '\r' }, 165)]
+        [InlineData(new char[] { '\r', 'p', '\r', 'a', '\r' }, 165)]
+        [InlineData(new char[] { 'p', '\r', 'a', '\r', '=', '=' }, 165)]
+        public void DecodingLessThan4CharsWithWhiteSpaces(char[] utf8Bytes, byte decoded)
+        {
+            Assert.True(Base64Url.IsValid(utf8Bytes, out int decodedLength));
+            Assert.Equal(1, decodedLength);
+            Span<byte> decodedSpan = new byte[decodedLength];
+            OperationStatus status = Base64Url.DecodeFromChars(utf8Bytes, decodedSpan, out int bytesRead, out int bytesDecoded);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(utf8Bytes.Length, bytesRead);
+            Assert.Equal(decodedLength, bytesDecoded);
+            Assert.Equal(decoded, decodedSpan[0]);
+            decodedSpan.Clear();
+            Assert.True(Base64Url.TryDecodeFromChars(utf8Bytes, decodedSpan, out bytesDecoded));
+            Assert.Equal(decodedLength, bytesDecoded);
+            Assert.Equal(decoded, decodedSpan[0]);
+        }
+
+        [Theory]
         [InlineData(new byte[] { 0x4a, 0x74, 0xa, 0x4a, 0x4a, 0x74, 0xa, 0x4a }, new byte[] { 38, 210, 73, 180 })]
         [InlineData(new byte[] { 0xa, 0x2d, 0x56, 0xa, 0xa, 0xa, 0x2d, 0x4a, 0x4a, 0x4a, }, new byte[] { 249, 95, 137, 36 })]
         public void DecodingNotMultipleOf4WithWhiteSpace(byte[] utf8Bytes, byte[] decoded)
@@ -813,14 +836,33 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(OperationStatus.Done, status);
             Assert.Equal(utf8Bytes.Length, bytesRead);
             Assert.Equal(decodedLength, bytesDecoded);
-            Assert.Equal(decoded, decodedSpan);
+            Assert.True(decodedSpan.SequenceEqual(decoded));
             decodedSpan.Clear();
             Assert.True(Base64Url.TryDecodeFromUtf8(utf8Bytes, decodedSpan, out bytesDecoded));
             Assert.Equal(decodedLength, bytesDecoded);
-            Assert.Equal(decoded, decodedSpan);
+            Assert.True(decodedSpan.SequenceEqual(decoded));
             bytesDecoded = Base64Url.DecodeFromUtf8InPlace(utf8Bytes);
             Assert.Equal(decodedLength, bytesDecoded);
-            Assert.Equal(decoded, utf8Bytes.AsSpan().Slice(0, bytesDecoded));
+            Assert.True(utf8Bytes.AsSpan().Slice(0, bytesDecoded).SequenceEqual(decoded));
+        }
+
+        [Theory]
+        [InlineData(new char[] { 'J', 't', '\r', 'J', 'J', 't', '\r', 'J' }, new byte[] { 38, 210, 73, 180 })]
+        [InlineData(new char[] { '\r', '-', 'V', '\r', '\r', '\r', '-', 'J', 'J', 'J', }, new byte[] { 249, 95, 137, 36 })]
+        public void DecodingNotMultipleOf4CharsWithWhiteSpace(char[] utf8Bytes, byte[] decoded)
+        {
+            Assert.True(Base64Url.IsValid(utf8Bytes, out int decodedLength));
+            Assert.Equal(4, decodedLength);
+            Span<byte> decodedSpan = new byte[decodedLength];
+            OperationStatus status = Base64Url.DecodeFromChars(utf8Bytes, decodedSpan, out int bytesRead, out int bytesDecoded);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(utf8Bytes.Length, bytesRead);
+            Assert.Equal(decodedLength, bytesDecoded);
+            Assert.True(decodedSpan.SequenceEqual(decoded));
+            decodedSpan.Clear();
+            Assert.True(Base64Url.TryDecodeFromChars(utf8Bytes, decodedSpan, out bytesDecoded));
+            Assert.Equal(decodedLength, bytesDecoded);
+            Assert.True(decodedSpan.SequenceEqual(decoded));
         }
 
         [Theory]

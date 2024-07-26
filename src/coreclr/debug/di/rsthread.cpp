@@ -5903,7 +5903,7 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
         // we should definitely have an ambient-sp. If this is null, then the jit
         // likely gave us an inconsistent data.
         TADDR taAmbient = this->GetAmbientESP();
-        _ASSERTE(taAmbient != NULL);
+        _ASSERTE(taAmbient != (TADDR)NULL);
 
         pRemoteValue = PTR_TO_CORDB_ADDRESS(taAmbient + offset);
     }

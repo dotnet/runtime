@@ -170,6 +170,7 @@ FUNCTIONS
     void getMethodSig(        CORINFO_METHOD_HANDLE      ftn,        CORINFO_SIG_INFO          *sig,        CORINFO_CLASS_HANDLE      memberParent         );
     bool getMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context);
     bool haveSameMethodDefinition(CORINFO_METHOD_HANDLE meth1Hnd, CORINFO_METHOD_HANDLE meth2Hnd);
+    CORINFO_CLASS_HANDLE getTypeDefinition(CORINFO_CLASS_HANDLE type);
     CorInfoInline canInline(        CORINFO_METHOD_HANDLE       callerHnd,        CORINFO_METHOD_HANDLE       calleeHnd);
     void beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,        CORINFO_METHOD_HANDLE inlineeHnd);
     void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,        CORINFO_METHOD_HANDLE inlineeHnd,        CorInfoInline inlineResult,        const char * reason);
@@ -188,7 +189,6 @@ FUNCTIONS
     bool pInvokeMarshalingRequired(        CORINFO_METHOD_HANDLE       method,        CORINFO_SIG_INFO*           callSiteSig        );
     bool satisfiesMethodConstraints(        CORINFO_CLASS_HANDLE        parent,        CORINFO_METHOD_HANDLE       method        );
     void methodMustBeLoadedBeforeCodeIsRun(        CORINFO_METHOD_HANDLE       method        );
-    CORINFO_METHOD_HANDLE mapMethodDeclToMethodImpl(        CORINFO_METHOD_HANDLE       method        );
     void getGSCookie(        GSCookie * pCookieVal,        GSCookie ** ppCookieVal        );
     void setPatchpointInfo(PatchpointInfo* patchpointInfo);
     PatchpointInfo* getOSRInfo(unsigned * ilOffset);
@@ -227,6 +227,7 @@ FUNCTIONS
     CorInfoHelpFunc getCastingHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fThrowing)
     CorInfoHelpFunc getSharedCCtorHelper(CORINFO_CLASS_HANDLE clsHnd)
     CORINFO_CLASS_HANDLE getTypeForBox(CORINFO_CLASS_HANDLE cls)
+    CORINFO_CLASS_HANDLE getTypeForBoxOnStack(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     CORINFO_OBJECT_HANDLE getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)

@@ -513,7 +513,7 @@ namespace System.Diagnostics.Tracing
                         {
                             // EncodeObject advanced userDataPtr to the next empty slot
                             int idx = (int)(userDataPtr - userData - 1);
-                            if (!(supportedRefObj is string))
+                            if (supportedRefObj is not string)
                             {
                                 if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
                                 {
@@ -902,16 +902,12 @@ namespace System.Diagnostics.Tracing
                 userDataCount,
                 userData);
 
-            switch (error)
+            return error switch
             {
-                case Interop.Errors.ERROR_ARITHMETIC_OVERFLOW:
-                case Interop.Errors.ERROR_MORE_DATA:
-                    return EventProvider.WriteEventErrorCode.EventTooBig;
-                case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                    return EventProvider.WriteEventErrorCode.NoFreeBuffers;
-            }
-
-            return EventProvider.WriteEventErrorCode.NoError;
+                Interop.Errors.ERROR_ARITHMETIC_OVERFLOW or Interop.Errors.ERROR_MORE_DATA => EventProvider.WriteEventErrorCode.EventTooBig,
+                Interop.Errors.ERROR_NOT_ENOUGH_MEMORY => EventProvider.WriteEventErrorCode.NoFreeBuffers,
+                _ => EventProvider.WriteEventErrorCode.NoError,
+            };
         }
 
         // Get or set the per-thread activity ID.

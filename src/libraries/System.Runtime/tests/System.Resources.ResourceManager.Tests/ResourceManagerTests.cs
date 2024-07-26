@@ -392,7 +392,7 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, set.GetObject(key.ToLower(), true));
         }
 
-        public static bool IsDrawingSupportedAndAllowsCustomResourceTypes => PlatformDetection.IsDrawingSupported && AllowsCustomResourceTypes;
+        public static bool IsDrawingSupportedAndAllowsCustomResourceTypes => PlatformDetection.IsDrawingSupported && AllowsCustomResourceTypes && PlatformDetection.IsBinaryFormatterSupported;
 
         [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]

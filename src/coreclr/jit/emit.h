@@ -2525,8 +2525,11 @@ private:
 #if defined(TARGET_XARCH)
     CORINFO_FIELD_HANDLE emitSimd32Const(simd32_t constValue);
     CORINFO_FIELD_HANDLE emitSimd64Const(simd64_t constValue);
-    CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
 #endif // TARGET_XARCH
+
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    CORINFO_FIELD_HANDLE emitSimdMaskConst(simdmask_t constValue);
+#endif // FEATURE_MASKED_HW_INTRINSICS
 #endif // FEATURE_SIMD
     regNumber emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src);
     regNumber emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2);
@@ -3156,13 +3159,14 @@ public:
     /*    The following is used to distinguish helper vs non-helper calls   */
     /************************************************************************/
 
-    static bool emitNoGChelper(CorInfoHelpFunc helpFunc);
+private:
     static bool emitNoGChelper(CORINFO_METHOD_HANDLE methHnd);
 
     /************************************************************************/
     /*         The following logic keeps track of live GC ref values        */
     /************************************************************************/
 
+public:
     bool emitFullArgInfo; // full arg info (including non-ptr arg)?
     bool emitFullGCinfo;  // full GC pointer maps?
     bool emitFullyInt;    // fully interruptible code?
@@ -4209,6 +4213,10 @@ emitAttr emitter::emitGetBaseMemOpSize(instrDesc* id) const
             return EA_16BYTE;
         }
 
+        case INS_vbroadcastf32x8:
+        case INS_vbroadcasti32x8:
+        case INS_vbroadcasti64x4:
+        case INS_vbroadcastf64x4:
         case INS_vextractf32x8:
         case INS_vextracti32x8:
         case INS_vextractf64x4:

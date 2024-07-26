@@ -29,6 +29,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasi.Build.Tests", "..\..\w
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WasmTestRunner", "..\..\..\libraries\Common\tests\WasmTestRunner\WasmTestRunner.csproj", "{2BBE4AA8-5424-44AB-933C-66554B688872}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WorkloadBuildTasks", "..\..\..\tasks\WorkloadBuildTasks\WorkloadBuildTasks.csproj", "{680C730D-C257-4F65-9CD9-6B9A161844B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,10 @@ Global
 		{2BBE4AA8-5424-44AB-933C-66554B688872}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2BBE4AA8-5424-44AB-933C-66554B688872}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2BBE4AA8-5424-44AB-933C-66554B688872}.Release|Any CPU.Build.0 = Release|Any CPU
+		{680C730D-C257-4F65-9CD9-6B9A161844B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{680C730D-C257-4F65-9CD9-6B9A161844B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{680C730D-C257-4F65-9CD9-6B9A161844B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{680C730D-C257-4F65-9CD9-6B9A161844B0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

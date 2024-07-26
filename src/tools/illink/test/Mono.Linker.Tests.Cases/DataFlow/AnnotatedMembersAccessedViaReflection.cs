@@ -333,8 +333,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLambdaTriggersLamdaAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLocalMethodTriggersLocalMethodAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 			static void DynamicallyAccessedMembersAll1 ()
 			{
 				typeof (AnnotatedMethodParameters).RequiresAll ();
@@ -347,8 +345,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[ExpectedWarning ("IL2111", nameof (MethodWithSingleAnnotatedParameter))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
 			[ExpectedWarning ("IL2111", nameof (IWithAnnotatedMethod.AnnotatedMethod))]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLambdaTriggersLamdaAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
-			[UnexpectedWarning ("IL2118", nameof (LdftnOnLocalMethodTriggersLocalMethodAnalysis), Tool.Trimmer, "https://github.com/dotnet/runtime/issues/85042")]
 			static void DynamicallyAccessedMembersAll2 ()
 			{
 				typeof (AnnotatedMethodParameters).RequiresAll ();
@@ -743,8 +739,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				typeof (AnnotatedGenerics).RequiresPublicMethods ();
 			}
 
-			// This should produce IL2071 https://github.com/dotnet/linker/issues/2144
-			[ExpectedWarning ("IL2070", "MakeGenericMethod")]
+			[ExpectedWarning ("IL2071", "'T'")]
 			static void InstantiateGeneric (Type type = null)
 			{
 				// This should warn due to MakeGenericMethod - in this case the generic parameter is unannotated type

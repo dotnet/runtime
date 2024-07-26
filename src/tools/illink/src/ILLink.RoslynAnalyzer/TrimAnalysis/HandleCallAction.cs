@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILLink.RoslynAnalyzer;
 using ILLink.RoslynAnalyzer.DataFlow;
@@ -78,16 +79,23 @@ namespace ILLink.Shared.TrimAnalysis
 						// In this case to get correct results, trimmer would have to mark all public methods on Derived. Which
 						// currently it won't do.
 
-						// To emulate IL tools behavior (trimmer, NativeAOT compiler), we're going to intentionally "forget" the static type
-						// if it is a generic argument type.
-
 						ITypeSymbol? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
-						if (staticType?.TypeKind == TypeKind.TypeParameter)
-							staticType = null;
+						ITypeSymbol? staticTypeDef = staticType?.OriginalDefinition;
+						if (staticType is null || staticTypeDef is null || staticType is ITypeParameterSymbol) {
+							DynamicallyAccessedMemberTypes annotation = default;
+							if (staticType is ITypeParameterSymbol genericParam) {
+								foreach (var constraintType in genericParam.ConstraintTypes) {
+									if (constraintType.IsTypeOf ("System", "Enum"))
+										annotation = DynamicallyAccessedMemberTypes.PublicFields;
+								}
+							}
 
-						if (staticType is null) {
-							// We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-							AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj));
+							if (annotation != default) {
+								AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj, annotation));
+							} else {
+								// We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
+								AddReturnValue (FlowAnnotations.Instance.GetMethodReturnValue (calledMethod, _isNewObj));
+							}
 						} else if (staticType.IsSealed || staticType.IsTypeOf ("System", "Delegate") || staticType.TypeKind == TypeKind.Array) {
 							// We can treat this one the same as if it was a typeof() expression
 

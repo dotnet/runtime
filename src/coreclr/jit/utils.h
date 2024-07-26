@@ -590,6 +590,8 @@ private:
     bool m_isAllocator[CORINFO_HELP_COUNT];
     bool m_mutatesHeap[CORINFO_HELP_COUNT];
     bool m_mayRunCctor[CORINFO_HELP_COUNT];
+    bool m_isNoEscape[CORINFO_HELP_COUNT];
+    bool m_isNoGC[CORINFO_HELP_COUNT];
 
     void init();
 
@@ -646,6 +648,20 @@ public:
         assert(helperId > CORINFO_HELP_UNDEF);
         assert(helperId < CORINFO_HELP_COUNT);
         return m_mayRunCctor[helperId];
+    }
+
+    bool IsNoEscape(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_isNoEscape[helperId];
+    }
+
+    bool IsNoGC(CorInfoHelpFunc helperId)
+    {
+        assert(helperId > CORINFO_HELP_UNDEF);
+        assert(helperId < CORINFO_HELP_COUNT);
+        return m_isNoGC[helperId];
     }
 };
 

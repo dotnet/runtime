@@ -14,7 +14,8 @@ This is a list of additions and edits to be made in ECMA-335 specifications. It 
 - [Covariant Return Types](#covariant-return-types)
 - [Function Pointer Type Identity](#function-pointer-type-identity)
 - [Unsigned data conversion with overflow detection](#unsigned-data-conversion-with-overflow-detection)
-- [Ref field support](#ref-fields)
+- [Ref fields support](#ref-fields)
+- [ByRefLike types in generics](#byreflike-generics)
 - [Rules for IL rewriters](#rules-for-il-rewriters)
 - [Checked user-defined operators](#checked-user-defined-operators)
 - [Atomic reads and writes](#atomic-reads-and-writes)
@@ -1025,6 +1026,31 @@ Changes to signatures:
 - Remove the sentence "Managed pointers cannot be null."
 - Add a bullet point
   - Managed pointers which point at null, the address just past the end of an object, or the address where an element just past the end of an array would be stored, are permitted but not dereferenceable.
+
+## <a name="byreflike-generics"></a> ByRefLike types in generics
+
+ByRefLike types, defined in C# with the `ref struct` syntax, represent types that cannot escape to the managed heap and must remain on the stack. It is possible for these types to be used as generic parameters, but in order to improve utility certain affordances are required.
+
+### II.10.1.7
+An additional IL keyword, `byreflike`, is introduced to indicate use of ByRefLike types is permitted. This expands the set of permissible types used by this parameters, but limits the potential instructions that can be used on instances of this generic parameter type.
+
+### II.23.1.7
+Update the `SpecialConstraintMask` flag value and description, and add a new flag, `AllowByRefLike`.
+
+| Flag | Value | Description |
+| ---  | ----- | ----------- |
+| `SpecialConstraintMask` | `0x3C` | These 4 bits contain one of the following values: |
+| ... | ... | ... |
+| `AllowByRefLike`        | `0x20` | The generic parameter is allowed to be ByRefLike |
+
+### III.2.1
+The following case is added as the **third** cases in the "if _thisType_" sequence.
+
+> If _thisType_ is ByRefLike and _thisType_ does not implement _method_ then; a `NotSupportedException` is thrown at the callsite.
+
+The following is added to the paragraph starting with "This last case can only occur when _method_ was defined on `System.Object`, `System.ValueType`, or `System.Enum`".
+
+> The third case can only occur when _method_ was defined on `System.Object` or is a Default Interface Method.
 
 ## Rules for IL Rewriters
 

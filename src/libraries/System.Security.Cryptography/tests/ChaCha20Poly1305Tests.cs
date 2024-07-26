@@ -473,9 +473,9 @@ namespace System.Security.Cryptography.Tests
                 // OpenSSL is present, and a high enough version,
                 // but the distro build options turned off ChaCha/Poly.
             }
-            else if (PlatformDetection.IsOSX)
+            else if (PlatformDetection.IsOSX || PlatformDetection.UsesMobileAppleCrypto)
             {
-                // CryptoKit is supported on macOS 10.15+, which is lower than our minimum target.
+                // CryptoKit is supported on macOS 10.15+, which is our minimum target. On iOS/tvOS, it was added in 13.0 but we can expect that version in our testing environments.
                 expectedIsSupported = true;
             }
             else if (PlatformDetection.OpenSslPresentOnSystem && PlatformDetection.IsOpenSslSupported)

@@ -546,7 +546,7 @@ namespace Internal.JitInterface
     {
         CORINFO_ACCESS_ANY = 0x0000, // Normal access
         CORINFO_ACCESS_THIS = 0x0001, // Accessed via the this reference
-        // CORINFO_ACCESS_UNUSED = 0x0002,
+        CORINFO_ACCESS_PREFER_SLOT_OVER_TEMPORARY_ENTRYPOINT = 0x0002, // Prefer access to a method via slot over using the temporary entrypoint
 
         CORINFO_ACCESS_NONNULL = 0x0004, // Instance is guaranteed non-null
 
@@ -1391,15 +1391,13 @@ namespace Internal.JitInterface
     // These are error codes returned by CompileMethod
     public enum CorJitResult
     {
-        // Note that I dont use FACILITY_NULL for the facility number,
-        // we may want to get a 'real' facility number
-        CORJIT_OK = 0 /*NO_ERROR*/,
-        CORJIT_BADCODE = unchecked((int)0x80000001)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 1)*/,
-        CORJIT_OUTOFMEM = unchecked((int)0x80000002)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 2)*/,
-        CORJIT_INTERNALERROR = unchecked((int)0x80000003)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 3)*/,
-        CORJIT_SKIPPED = unchecked((int)0x80000004)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 4)*/,
-        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005)/*MAKE_HRESULT(SEVERITY_ERROR, FACILITY_NULL, 5)*/,
-        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006)/*MAKE_HRESULT(SEVERITY_ERROR,FACILITY_NULL, 6)*/,
+        CORJIT_OK = 0,
+        CORJIT_BADCODE = unchecked((int)0x80000001),
+        CORJIT_OUTOFMEM = unchecked((int)0x80000002),
+        CORJIT_INTERNALERROR = unchecked((int)0x80000003),
+        CORJIT_SKIPPED = unchecked((int)0x80000004),
+        CORJIT_RECOVERABLEERROR = unchecked((int)0x80000005),
+        CORJIT_IMPLLIMITATION = unchecked((int)0x80000006),
     };
 
     public enum TypeCompareState
@@ -1502,7 +1500,7 @@ namespace Internal.JitInterface
         public bool hasSignificantPadding { get => _hasSignificantPadding != 0; set => _hasSignificantPadding = value ? (byte)1 : (byte)0; }
     }
 
-    public struct CORINFO_SWIFT_LOWERING
+    public struct CORINFO_SWIFT_LOWERING : IEquatable<CORINFO_SWIFT_LOWERING>
     {
         private byte _byReference;
         public bool byReference { get => _byReference != 0; set => _byReference = value ? (byte)1 : (byte)0; }
@@ -1530,6 +1528,47 @@ namespace Internal.JitInterface
         public Span<uint> Offsets => _offsets;
 
         public nint numLoweredElements;
+
+        public override bool Equals(object obj)
+        {
+            return obj is CORINFO_SWIFT_LOWERING other && Equals(other);
+        }
+
+        public bool Equals(CORINFO_SWIFT_LOWERING other)
+        {
+            if (byReference != other.byReference)
+            {
+                return false;
+            }
+
+            // If both are by-ref, the rest of the bits mean nothing.
+            if (byReference)
+            {
+                return true;
+            }
+
+            return LoweredElements.Slice(0, (int)numLoweredElements).SequenceEqual(other.LoweredElements.Slice(0, (int)other.numLoweredElements))
+                && Offsets.Slice(0, (int)numLoweredElements).SequenceEqual(other.Offsets.Slice(0, (int)other.numLoweredElements));
+        }
+
+        public override int GetHashCode()
+        {
+            HashCode code = default;
+            code.Add(byReference);
+
+            if (byReference)
+            {
+                return code.ToHashCode();
+            }
+
+            for (int i = 0; i < numLoweredElements; i++)
+            {
+                code.Add(LoweredElements[i]);
+                code.Add(Offsets[i]);
+            }
+
+            return code.ToHashCode();
+        }
 
         // Override for a better unit test experience
         public override string ToString()

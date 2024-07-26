@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using ILCompiler;
 using ILCompiler.Dataflow;
@@ -89,6 +90,10 @@ namespace ILLink.Shared.TrimAnalysis
                                             }
                                         }
                                     }
+                                    else if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                    {
+                                        // This will always succeed thanks to the runtime type loader
+                                    }
                                     else
                                     {
                                         triggersWarning = true;
@@ -147,6 +152,10 @@ namespace ILLink.Shared.TrimAnalysis
                                                 _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
                                             }
                                         }
+                                    }
+                                    else if (methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                    {
+                                        // This will always succeed thanks to the runtime type loader
                                     }
                                     else
                                     {
@@ -369,8 +378,7 @@ namespace ILLink.Shared.TrimAnalysis
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
                             //   void Method<T>(T instance) { instance.GetType().... }
-                            // Currently this case will end up with null StaticType - since there's no typedef for the generic argument type.
-                            // But it could be that T is annotated with for example PublicMethods:
+                            // It could be that T is annotated with for example PublicMethods:
                             //   void Method<[DAM(PublicMethods)] T>(T instance) { instance.GetType().GetMethod("Test"); }
                             // In this case it's in theory possible to handle it, by treating the T basically as a base class
                             // for the actual type of "instance". But the analysis for this would be pretty complicated (as the marking
@@ -384,8 +392,28 @@ namespace ILLink.Shared.TrimAnalysis
                             TypeDesc? staticType = (valueNode as IValueWithStaticType)?.StaticType?.Type;
                             if (staticType is null || (!staticType.IsDefType && !staticType.IsArray))
                             {
-                                // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
-                                AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
+                                DynamicallyAccessedMemberTypes annotation = default;
+                                if (staticType is GenericParameterDesc genericParam)
+                                {
+                                    foreach (TypeDesc constraint in genericParam.TypeConstraints)
+                                    {
+                                        if (constraint.IsWellKnownType(Internal.TypeSystem.WellKnownType.Enum))
+                                        {
+                                            annotation = DynamicallyAccessedMemberTypes.PublicFields;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (annotation != default)
+                                {
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj, annotation));
+                                }
+                                else
+                                {
+                                    // We don't know anything about the type GetType was called on. Track this as a usual "result of a method call without any annotations"
+                                    AddReturnValue(_reflectionMarker.Annotations.GetMethodReturnValue(calledMethod, _isNewObj));
+                                }
                             }
                             else if (staticType.IsSealed() || staticType.IsTypeOf("System", "Delegate"))
                             {
@@ -675,5 +703,17 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
+    }
+
+    file static class Extensions
+    {
+        public static bool IsConstrainedToBeReferenceTypes(this Instantiation inst)
+        {
+            foreach (GenericParameterDesc param in inst)
+                if (!param.HasReferenceTypeConstraint)
+                    return false;
+
+            return true;
+        }
     }
 }

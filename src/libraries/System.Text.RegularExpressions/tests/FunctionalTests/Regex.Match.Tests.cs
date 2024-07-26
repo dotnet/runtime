@@ -870,6 +870,11 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty);
                 yield return ("aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty);
                 yield return ("abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def");
+                yield return (@"^says?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^says?$", "say", RegexOptions.RightToLeft, 0, 3, true, "say");
+                yield return (@"^say(s?)$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(say)s?$", "says", RegexOptions.RightToLeft, 0, 4, true, "says");
+                yield return (@"^(.+?) (says?),\s'(.+)'$", "User says, 'adventure'", RegexOptions.RightToLeft, 0, 22, true, "User says, 'adventure'");
 
                 // .* : RTL, Case-sensitive
                 yield return (@".*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");
@@ -1397,7 +1402,7 @@ namespace System.Text.RegularExpressions.Tests
         {
             // This constant must be at least as large as the one in the implementation that sets the maximum number
             // of innermost loop iterations between timeout checks.
-            const int CharsToTriggerTimeoutCheck = 10000;
+            const int CharsToTriggerTimeoutCheck = 200_000;
             // Check that it is indeed large enough to trigger timeouts. If this fails the constant above needs to be larger.
             Assert.Throws<RegexMatchTimeoutException>(() => new Regex("a*", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromTicks(1))
                 .Match(new string('a', CharsToTriggerTimeoutCheck)));
@@ -2646,6 +2651,26 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { engine, RegexOptions.Multiline, @"^\w{10,}\b", "this is a\ncomplicated word in a\nnontrivial sentence", new (int, int)[] { (10, 11), (32, 10) } };
                 yield return new object[] { engine, RegexOptions.None, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}\b", "date 10/12/1966 and 10/12/66 are the same", new (int, int)[] { (5, 10), (20, 8) } };
                 yield return new object[] { engine, RegexOptions.Multiline, @"\b\d{1,2}\/\d{1,2}\/\d{2,4}$", "date 10/12/1966\nand 10/12/66\nare the same", new (int, int)[] { (5, 10), (20, 8) } };
+            }
+        }
+
+        [Fact]
+        public async Task MatchNonBacktrackingOver255Minterms()
+        {
+            // While valid on all engines, this test in particular is designed to exercise the rare case
+            // of more than 255 unique minterms case in the non-backtracking engine's minterm classifier.
+
+            IEnumerable<char> chars = Enumerable.Range(128, 400 - 128).Select(i => (char)i);
+            string patternString = string.Concat(chars.Select(c => $"{c}{c}?")); // adding an optional char as well just so it's not a string literal
+            string inputString = string.Concat(chars);
+
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            {
+                Regex r = await RegexHelpers.GetRegexAsync(engine, patternString);
+                MatchCollection ms = r.Matches(inputString);
+                Assert.Equal(1, ms.Count);
+                Assert.Equal(0, ms[0].Index);
+                Assert.Equal(272, ms[0].Length);
             }
         }
     }

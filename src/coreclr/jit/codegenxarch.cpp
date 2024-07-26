@@ -232,10 +232,11 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         {
             GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
         }
-        GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
         if (block->HasFlag(BBF_RETLESS_CALL))
         {
+            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
+
             // We have a retless call, and the last instruction generated was a call.
             // If the next block is in a different EH region (or is the end of the code
             // block), then we need to generate a breakpoint here (since it will never
@@ -253,13 +254,14 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 #ifndef JIT32_GCENCODER
             // Because of the way the flowgraph is connected, the liveness info for this one instruction
             // after the call is not (can not be) correct in cases where a variable has a last use in the
-            // handler.  So turn off GC reporting for this single instruction.
+            // handler.  So turn off GC reporting once we execute the call and reenable after the jmp/nop
             GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
 
-            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
+            GetEmitter()->emitIns_J(INS_call, block->GetTarget());
 
             // Now go to where the finally funclet needs to return to.
+            BasicBlock* const finallyContinuation = nextBlock->GetFinallyContinuation();
             if (nextBlock->NextIs(finallyContinuation) &&
                 !compiler->fgInDifferentRegions(nextBlock, finallyContinuation))
             {
@@ -485,6 +487,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD12:
         {
             simd12_t val12 = *(simd12_t*)val;
@@ -514,6 +517,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD16:
         {
             simd16_t val16 = *(simd16_t*)val;
@@ -541,6 +545,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD32:
         {
             simd32_t val32 = *(simd32_t*)val;
@@ -568,6 +573,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         case TYP_SIMD64:
         {
             simd64_t val64 = *(simd64_t*)val;
@@ -593,10 +599,41 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             break;
         }
+
         default:
         {
             unreached();
         }
+    }
+}
+
+//----------------------------------------------------------------------------------
+// genSetRegToConst: generate code to set target SIMD register to a given constant value
+//
+// Arguments:
+//    targetReg  - target SIMD register
+//    targetType - target's type
+//    simdmask_t - constant data (its width depends on type)
+//
+void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simdmask_t* val)
+{
+    assert(varTypeIsMask(targetType));
+
+    emitter* emit = GetEmitter();
+    emitAttr attr = emitTypeSize(targetType);
+
+    if (val->IsAllBitsSet())
+    {
+        emit->emitIns_SIMD_R_R_R(INS_kxnorq, EA_8BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+    }
+    else if (val->IsZero())
+    {
+        emit->emitIns_SIMD_R_R_R(INS_kxorq, EA_8BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+    }
+    else
+    {
+        CORINFO_FIELD_HANDLE hnd = emit->emitSimdMaskConst(*val);
+        emit->emitIns_R_C(ins_Load(targetType), attr, targetReg, hnd, 0);
     }
 }
 #endif // FEATURE_SIMD
@@ -604,7 +641,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
 /***********************************************************************************
  *
  * Generate code to set a register 'targetReg' of type 'targetType' to the constant
- * specified by the constant (GT_CNS_INT, GT_CNS_DBL, or GT_CNS_VEC) in 'tree'. This
+ * specified by the constant (GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC, or GT_CNS_MSK) in 'tree'. This
  * does not call genProduceReg() on the target register.
  */
 void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTree* tree)
@@ -692,6 +729,17 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 #if defined(FEATURE_SIMD)
             GenTreeVecCon* vecCon = tree->AsVecCon();
             genSetRegToConst(vecCon->GetRegNum(), targetType, &vecCon->gtSimdVal);
+#else
+            unreached();
+#endif
+            break;
+        }
+
+        case GT_CNS_MSK:
+        {
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+            GenTreeMskCon* mskCon = tree->AsMskCon();
+            genSetRegToConst(mskCon->GetRegNum(), targetType, &mskCon->gtSimdMaskVal);
 #else
             unreached();
 #endif
@@ -1858,11 +1906,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             FALLTHROUGH;
 
         case GT_CNS_DBL:
-            genSetRegToConst(targetReg, targetType, treeNode);
-            genProduceReg(treeNode);
-            break;
-
         case GT_CNS_VEC:
+        case GT_CNS_MSK:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;
@@ -5936,56 +5981,7 @@ void CodeGen::genCall(GenTreeCall* call)
         }
     }
 
-    // Consume all the arg regs
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        CallArgABIInformation& abiInfo = arg.AbiInfo;
-        GenTree*               argNode = arg.GetLateNode();
-
-        if (abiInfo.GetRegNum() == REG_STK)
-        {
-            continue;
-        }
-
-#ifdef UNIX_AMD64_ABI
-        // Deal with multi register passed struct args.
-        if (argNode->OperGet() == GT_FIELD_LIST)
-        {
-            unsigned regIndex = 0;
-            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
-            {
-                GenTree* putArgRegNode = use.GetNode();
-                assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-                regNumber argReg = abiInfo.GetRegNum(regIndex++);
-
-                genConsumeReg(putArgRegNode);
-
-                // Validate the putArgRegNode has the right type.
-                assert(varTypeUsesFloatReg(putArgRegNode->TypeGet()) == genIsValidFloatReg(argReg));
-                inst_Mov_Extend(putArgRegNode->TypeGet(), /* srcInReg */ false, argReg, putArgRegNode->GetRegNum(),
-                                /* canSkip */ true, emitActualTypeSize(TYP_I_IMPL));
-            }
-        }
-        else
-#endif // UNIX_AMD64_ABI
-        {
-            regNumber argReg = abiInfo.GetRegNum();
-            genConsumeReg(argNode);
-            inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ false, argReg, argNode->GetRegNum(), /* canSkip */ true,
-                            emitActualTypeSize(TYP_I_IMPL));
-        }
-
-        // In the case of a varargs call,
-        // the ABI dictates that if we have floating point args,
-        // we must pass the enregistered arguments in both the
-        // integer and floating point registers so, let's do that.
-        if (compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
-        {
-            regNumber srcReg    = argNode->GetRegNum();
-            regNumber targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
-            inst_Mov(TYP_LONG, targetReg, srcReg, /* canSkip */ false, emitActualTypeSize(TYP_I_IMPL));
-        }
-    }
+    genCallPlaceRegArgs(call);
 
 #if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
     // The call will pop its arguments.
@@ -6565,7 +6561,7 @@ void CodeGen::genJmpPlaceVarArgs()
         const ABIPassingInformation& abiInfo = compiler->lvaGetParameterABIInfo(varNum);
         for (unsigned i = 0; i < abiInfo.NumSegments; i++)
         {
-            const ABIPassingSegment& segment = abiInfo.Segments[i];
+            const ABIPassingSegment& segment = abiInfo.Segment(i);
             if (segment.IsPassedOnStack())
             {
                 continue;

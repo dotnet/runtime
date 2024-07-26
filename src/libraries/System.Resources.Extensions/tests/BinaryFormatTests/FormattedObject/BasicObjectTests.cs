@@ -37,6 +37,6 @@ public class BasicObjectTests : Common.BasicObjectTests<FormattedObjectSerialize
         serialized.Position = 0;
 
         // Now compare the two streams to ensure they are identical
-        deserializedSerialized.Length.Should().Be(serialized.Length);
+        Assert.Equal(serialized.Length, deserializedSerialized.Length);
     }
 }

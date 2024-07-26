@@ -39,6 +39,7 @@
         '$(Scenario)' == 'gcstress0xc_jitminopts_heapverify1'">06:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetsAppleMobile)' == 'true'">01:15:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'android'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(_workItemTimeout)' == '' and '$(TargetOS)' == 'browser'">00:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">00:45:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' != '' and '$(_workItemTimeout)' == '' and ('$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm')">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == '' and '$(_workItemTimeout)' == '' and ('$(TestScope)' == 'outerloop' or '$(TestScope)' == 'all')">00:20:00</_workItemTimeout>
@@ -156,6 +157,7 @@
     <HelixCommandPrefixEnvVarItem Include="DOTNET_CLI_TELEMETRY_OPTOUT=1" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWorkloads)' == 'true'" Include="TEST_USING_WORKLOADS=true" />
     <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingWebcil)' == 'false'" Include="TEST_USING_WEBCIL=false" />
+    <HelixCommandPrefixEnvVarItem Condition="'$(TestUsingFingerprinting)' == 'false'" Include="TEST_USING_FINGERPRINTING=false" />
     <HelixCommandPrefixEnvVarItem Condition="'$(WorkloadsTestPreviousVersions)' == 'true'" Include="WORKLOADS_TEST_PREVIOUS_VERSIONS=true" />
   </ItemGroup>
 
@@ -345,7 +347,7 @@
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil)" />
+             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads), TestUsingWebcil: $(TestUsingWebcil), TestUsingFingerprinting: $(TestUsingFingerprinting)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">

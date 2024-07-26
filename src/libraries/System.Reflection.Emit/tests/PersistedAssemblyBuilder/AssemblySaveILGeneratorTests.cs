@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using Xunit;
 
 namespace System.Reflection.Emit.Tests
@@ -2696,6 +2697,47 @@ internal class Dummy
                 MethodInfo method = typeFromDisk.GetMethod("Test")!;
                 method.Invoke(null, null); // just make sure token works
                 tlc.Unload();
+            }
+        }
+
+        [Fact]
+        public void ValueTypeParentTest()
+        {
+            using (MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver()))
+            {
+                Assembly coreAssembly = mlc.CoreAssembly!;
+                Type valueTypeType = coreAssembly.GetType("System.ValueType")!;
+                PersistedAssemblyBuilder ab = new PersistedAssemblyBuilder(new AssemblyName("MyAssemblyWithValueType"), coreAssembly);
+                ModuleBuilder mob = ab.DefineDynamicModule("MyModule");
+
+                TypeBuilder valueTb = mob.DefineType("MyValueType", 0, valueTypeType);
+                MethodBuilder vMeb = valueTb.DefineMethod("Method", MethodAttributes.Public, typeof(int), null);
+                ILGenerator il = vMeb.GetILGenerator();
+                il.Emit(OpCodes.Ldc_I4_1);
+                il.Emit(OpCodes.Ret);
+                valueTb.CreateType();
+                Assert.True(valueTb.IsValueType);
+
+                TypeBuilder tb = mob.DefineType("MyType", TypeAttributes.Public | TypeAttributes.Class);
+                MethodBuilder meb = tb.DefineMethod("MyMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(int), null);
+                il = meb.GetILGenerator();
+                il.BeginScope();
+                il.DeclareLocal(valueTb);
+                il.Emit(OpCodes.Ldloca_S, 0);
+                il.Emit(OpCodes.Initobj, valueTb);
+                il.Emit(OpCodes.Ldloca_S, 0);
+                il.Emit(OpCodes.Call, valueTb.GetMethod("Method"));
+                il.EndScope();
+                il.Emit(OpCodes.Ret);
+                tb.CreateType();
+
+                using var stream = new MemoryStream();
+                ab.Save(stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var assembly = AssemblyLoadContext.Default.LoadFromStream(stream);
+                var method = assembly.GetType("MyType")!.GetMethod("MyMethod");
+                int result = (int)method!.Invoke(null, null);
+                Assert.Equal(1, result);
             }
         }
     }

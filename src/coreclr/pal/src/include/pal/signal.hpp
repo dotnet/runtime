@@ -117,4 +117,14 @@ Function :
 --*/
 void SEHCleanupSignals();
 
+/*++
+Function :
+    UnmaskActivationSignal
+
+    Unmask the INJECT_ACTIVATION_SIGNAL for the current thread
+
+    (no parameters, no return value)
+--*/
+void UnmaskActivationSignal();
+
 #endif /* _PAL_SIGNAL_HPP_ */

@@ -65,14 +65,13 @@ struct ThrowCallbackType
     int     dHandler;       // the index of the handler whose filter returned catch indication
     BOOL    bIsUnwind;      // are we currently unwinding an exception
     BOOL    bUnwindStack;   // reset the stack before calling the handler? (Stack overflow only)
-    BOOL    bAllowAllocMem; // are we allowed to allocate memory?
     BOOL    bDontCatch;     // can we catch this exception?
     BYTE    *pStack;
     Frame * pTopFrame;
     Frame * pBottomFrame;
     MethodDesc * pProfilerNotify;   // Context for profiler callbacks -- see COMPlusFrameHandler().
-    BOOL    bReplaceStack;  // Used to pass info to SaveStackTrace call
-    BOOL    bSkipLastElement;// Used to pass info to SaveStackTrace call
+    BOOL    bIsNewException;
+    BOOL    bSkipLastElement;// Used to skip calling StackTraceInfo::AppendElement
 #ifdef _DEBUG
     void * pCurrentExceptionRecord;
     void * pPrevExceptionRecord;
@@ -86,13 +85,12 @@ struct ThrowCallbackType
         dHandler = 0;
         bIsUnwind = FALSE;
         bUnwindStack = FALSE;
-        bAllowAllocMem = TRUE;
         bDontCatch = FALSE;
         pStack = NULL;
         pTopFrame = (Frame *)-1;
         pBottomFrame = (Frame *)-1;
         pProfilerNotify = NULL;
-        bReplaceStack = FALSE;
+        bIsNewException = FALSE;
         bSkipLastElement = FALSE;
 #ifdef _DEBUG
         pCurrentExceptionRecord = 0;
@@ -286,7 +284,9 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind  reKind, UINT resID
 // passed as the first substitution string (%1).
 //==========================================================================
 
+#ifdef FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, IErrorInfo* pErrInfo, Exception * pInnerException = NULL);
+#endif // FEATURE_COMINTEROP
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg1 = NULL, LPCWSTR wszArg2 = NULL,
                                           LPCWSTR wszArg3 = NULL, LPCWSTR wszArg4 = NULL, LPCWSTR wszArg5 = NULL,
@@ -359,7 +359,9 @@ void ExceptionPreserveStackTrace(OBJECTREF throwable);
 // Create an exception object for an HRESULT
 //==========================================================================
 
+#ifdef FEATURE_COMINTEROP
 void GetExceptionForHR(HRESULT hr, IErrorInfo* pErrInfo, OBJECTREF* pProtectedThrowable);
+#endif // FEATURE_COMINTEROP
 void GetExceptionForHR(HRESULT hr, OBJECTREF* pProtectedThrowable);
 HRESULT GetHRFromThrowable(OBJECTREF throwable);
 

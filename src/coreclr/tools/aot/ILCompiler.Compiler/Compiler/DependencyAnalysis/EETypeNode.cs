@@ -534,7 +534,8 @@ namespace ILCompiler.DependencyAnalysis
                                 result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(interfaceMethod), factory.VariantInterfaceMethodUse(typicalInterfaceMethod), "Interface method"));
                             }
 
-                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
+                            TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
+                            factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
                             factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
                         }
@@ -623,6 +624,19 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_type.IsInterface)
                 dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
+
+            // Array types that don't have generic interface methods can be created out of thin air
+            // at runtime by the type loader. We should never emit non-constructed forms of these MethodTables.
+            // There's similar logic for generic types, but that one is a conditional dependency conditioned
+            // on the presence of the type loader template for the canonical form of the type.
+            if (_type.IsArrayTypeWithoutGenericInterfaces())
+            {
+                IEETypeNode maximallyConstructableType = factory.MaximallyConstructableType(_type);
+                if (maximallyConstructableType != this)
+                {
+                    dependencies.Add(maximallyConstructableType, "Type is template-loadable");
+                }
+            }
 
             if (EmitVirtualSlots)
             {

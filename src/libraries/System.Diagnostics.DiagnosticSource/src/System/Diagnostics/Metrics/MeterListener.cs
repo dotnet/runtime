@@ -33,6 +33,14 @@ namespace System.Diagnostics.Metrics
         private MeasurementCallback<double>  _doubleMeasurementCallback  = (instrument, measurement, tags, state) => { /* no-op */ };
         private MeasurementCallback<decimal> _decimalMeasurementCallback = (instrument, measurement, tags, state) => { /* no-op */ };
 
+        static MeterListener()
+        {
+#if NET9_0_OR_GREATER
+            // This ensures that the static Meter gets created before any listeners exist.
+            _ = RuntimeMetrics.IsEnabled();
+#endif
+        }
+
         /// <summary>
         /// Creates a MeterListener object.
         /// </summary>
@@ -285,7 +293,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        // Publish is called from Instrument.Publish
+        // GetAllListeners is called from Instrument.Publish inside Instrument.SyncObject lock.
         internal static List<MeterListener>? GetAllListeners() => s_allStartedListeners.Count == 0 ? null : new List<MeterListener>(s_allStartedListeners);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -56,7 +56,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void Constructor_Value_Success()
         {
             const string value = "foo";
@@ -220,7 +219,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void CompareTo()
         {
             Assert.True(_test1.CompareTo(_test3) < 0);
@@ -261,7 +259,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void EqualsMethods()
         {
             Assert.False(_test1.Equals(_test2));
@@ -278,7 +275,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void Greaters()
         {
             // GreateThan ()
@@ -293,7 +289,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void Lessers()
         {
             // LessThan()
@@ -309,7 +304,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void NotEquals()
         {
             Assert.True(SqlString.NotEquals(_test1, _test2).Value);
@@ -320,7 +314,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void Concat()
         {
             _test1 = new SqlString("First TestString");
@@ -332,7 +325,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void Clone()
         {
             SqlString testSqlString = _test1.Clone();
@@ -352,7 +344,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void UnicodeBytes()
         {
             Assert.Equal((byte)105, _test1.GetNonUnicodeBytes()[1]);
@@ -549,7 +540,6 @@ namespace System.Data.Tests.SqlTypes
         // OPERATORS
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void ArithmeticOperators()
         {
             SqlString testString = new SqlString("...Testing...");
@@ -558,7 +548,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/95195", typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnApplePlatform))]
         public void ThanOrEqualOperators()
         {
             // == -operator
