@@ -1123,15 +1123,10 @@ DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_MANAGED, ConvertToManaged, SM_Ptr
 DEFINE_METHOD(UTF8STRINGMARSHALLER, CONVERT_TO_UNMANAGED, ConvertToUnmanaged, SM_Str_RetPtrByte)
 DEFINE_METHOD(UTF8STRINGMARSHALLER, FREE, Free, SM_PtrByte_RetVoid)
 
-// The generator for the ILLink XML doesn't understand inner classes so generation
-// needs to skip the following type.
-// See https://github.com/dotnet/runtime/issues/71847
-#ifndef FOR_ILLINK
 DEFINE_CLASS(UTF8STRINGMARSHALLER_IN, Marshalling, Utf8StringMarshaller+ManagedToUnmanagedIn)
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FROM_MANAGED, FromManaged, IM_Str_SpanOfByte_RetVoid)
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, TO_UNMANAGED, ToUnmanaged, IM_RetPtrByte)
 DEFINE_METHOD(UTF8STRINGMARSHALLER_IN, FREE, Free, IM_RetVoid)
-#endif // FOR_ILLINK
 
 DEFINE_CLASS(UTF8BUFFERMARSHALER, StubHelpers, UTF8BufferMarshaler)
 DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_NATIVE, ConvertToNative, NoSig)
@@ -1180,9 +1175,7 @@ DEFINE_CLASS(EXCEPTIONSERVICES_INTERNALCALLS, ExceptionServices, InternalCalls)
 DEFINE_CLASS(STACKFRAMEITERATOR, Runtime, StackFrameIterator)
 #endif // FEATURE_EH_FUNCLETS
 
-#ifndef FOR_ILLINK
 DEFINE_CLASS(EXINFO, Runtime, EH+ExInfo)
-#endif // FOR_ILLINK
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

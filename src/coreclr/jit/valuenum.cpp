@@ -1635,7 +1635,20 @@ bool ValueNumStore::IsKnownNonNull(ValueNum vn)
     }
 
     VNFuncApp funcAttr;
-    return GetVNFunc(vn, &funcAttr) && (s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0;
+    if (!GetVNFunc(vn, &funcAttr))
+    {
+        return false;
+    }
+
+    if ((s_vnfOpAttribs[funcAttr.m_func] & VNFOA_KnownNonNull) != 0)
+    {
+        return true;
+    }
+
+    // TODO: we can recognize more non-null idioms here, e.g.
+    // ADD(IsKnownNonNull(op1), smallCns), etc.
+
+    return false;
 }
 
 bool ValueNumStore::IsSharedStatic(ValueNum vn)
@@ -3191,81 +3204,81 @@ ValueNum ValueNumStore::VNForMapPhysicalSelect(
     return result;
 }
 
-typedef JitHashTable<ValueNum, JitSmallPrimitiveKeyFuncs<ValueNum>, bool> ValueNumSet;
-
-class SmallValueNumSet
+bool ValueNumStore::SmallValueNumSet::Lookup(ValueNum vn)
 {
-    union
+    // O(N) lookup for inline elements
+    if (m_numElements <= ArrLen(m_inlineElements))
     {
-        ValueNum     m_inlineElements[4];
-        ValueNumSet* m_set;
-    };
-    unsigned m_numElements = 0;
+        for (unsigned i = 0; i < m_numElements; i++)
+        {
+            if (m_inlineElements[i] == vn)
+            {
+                return true;
+            }
+        }
 
-public:
-    unsigned Count()
-    {
-        return m_numElements;
+        // Not found
+        return false;
     }
 
-    template <typename Func>
-    void ForEach(Func func)
+    return m_set->Lookup(vn);
+}
+
+// Returns false if the value already exists
+bool ValueNumStore::SmallValueNumSet::Add(Compiler* comp, ValueNum vn)
+{
+    if (m_numElements <= ArrLen(m_inlineElements))
     {
-        if (m_numElements <= ArrLen(m_inlineElements))
+        for (unsigned i = 0; i < m_numElements; i++)
         {
-            for (unsigned i = 0; i < m_numElements; i++)
+            if (m_inlineElements[i] == vn)
             {
-                func(m_inlineElements[i]);
+                // Already exists
+                return false;
             }
+        }
+
+        if (m_numElements < ArrLen(m_inlineElements))
+        {
+            m_inlineElements[m_numElements] = vn;
+            m_numElements++;
         }
         else
         {
-            for (ValueNum vn : ValueNumSet::KeyIteration(m_set))
+            ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
+            for (ValueNum oldVn : m_inlineElements)
             {
-                func(vn);
+                set->Set(oldVn, true);
             }
+
+            set->Set(vn, true);
+
+            m_set = set;
+            m_numElements++;
+            assert(m_numElements == set->GetCount());
         }
+        return true;
     }
 
-    void Add(Compiler* comp, ValueNum vn)
-    {
-        if (m_numElements <= ArrLen(m_inlineElements))
-        {
-            for (unsigned i = 0; i < m_numElements; i++)
-            {
-                if (m_inlineElements[i] == vn)
-                {
-                    return;
-                }
-            }
+    bool exists   = m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
+    m_numElements = m_set->GetCount();
+    return !exists;
+}
 
-            if (m_numElements < ArrLen(m_inlineElements))
-            {
-                m_inlineElements[m_numElements] = vn;
-                m_numElements++;
-            }
-            else
-            {
-                ValueNumSet* set = new (comp, CMK_ValueNumber) ValueNumSet(comp->getAllocator(CMK_ValueNumber));
-                for (ValueNum oldVn : m_inlineElements)
-                {
-                    set->Set(oldVn, true);
-                }
-
-                set->Set(vn, true);
-
-                m_set = set;
-                m_numElements++;
-                assert(m_numElements == set->GetCount());
-            }
-        }
-        else
-        {
-            m_set->Set(vn, true, ValueNumSet::SetKind::Overwrite);
-            m_numElements = m_set->GetCount();
-        }
-    }
-};
+//------------------------------------------------------------------------------
+// VNPhiDefToVN: Extracts the VN for a specific argument of a phi definition.
+//
+// Arguments:
+//    phiDef    - The phi definition
+//    ssaArgNum - The argument number to extract
+//
+// Return Value:
+//    The VN for the specified argument of the phi definition.
+//
+ValueNum ValueNumStore::VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum)
+{
+    return m_pComp->lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaArgs[ssaArgNum])->m_vnPair.Get(VNK_Conservative);
+}
 
 //------------------------------------------------------------------------------
 // VNForMapSelectInner: Select value from a map and record loop memory dependencies.
@@ -6513,68 +6526,75 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
-    assert(varTypeIsIntegral(TypeOfVN(vn)));
-
-    if (IsVNConstant(vn))
-    {
-        var_types vnTy = TypeOfVN(vn);
-        if (vnTy == TYP_INT)
+    auto vnVisitor = [this](ValueNum vn) -> VNVisit {
+        if ((vn == NoVN) || !varTypeIsIntegral(TypeOfVN(vn)))
         {
-            return GetConstantInt32(vn) >= 0;
-        }
-        else if (vnTy == TYP_LONG)
-        {
-            return GetConstantInt64(vn) >= 0;
+            return VNVisit::Abort;
         }
 
-        return false;
-    }
-
-    // Array length can never be negative.
-    if (IsVNArrLen(vn))
-    {
-        return true;
-    }
-
-    VNFuncApp funcApp;
-    if (GetVNFunc(vn, &funcApp))
-    {
-        switch (funcApp.m_func)
+        if (IsVNConstant(vn))
         {
-            case VNF_GE_UN:
-            case VNF_GT_UN:
-            case VNF_LE_UN:
-            case VNF_LT_UN:
-            case VNF_COUNT:
-            case VNF_ADD_UN_OVF:
-            case VNF_SUB_UN_OVF:
-            case VNF_MUL_UN_OVF:
+            var_types vnTy = TypeOfVN(vn);
+            if (vnTy == TYP_INT)
+            {
+                return GetConstantInt32(vn) >= 0 ? VNVisit::Continue : VNVisit::Abort;
+            }
+            if (vnTy == TYP_LONG)
+            {
+                return GetConstantInt64(vn) >= 0 ? VNVisit::Continue : VNVisit::Abort;
+            }
+            return VNVisit::Abort;
+        }
+
+        // Array length can never be negative.
+        if (IsVNArrLen(vn))
+        {
+            return VNVisit::Continue;
+        }
+
+        // TODO-VN: Recognize Span.Length
+        // Handle more intrinsics such as Math.Max(neverNegative1, neverNegative2)
+
+        VNFuncApp funcApp;
+        if (GetVNFunc(vn, &funcApp))
+        {
+            switch (funcApp.m_func)
+            {
+                case VNF_GE_UN:
+                case VNF_GT_UN:
+                case VNF_LE_UN:
+                case VNF_LT_UN:
+                case VNF_COUNT:
+                case VNF_ADD_UN_OVF:
+                case VNF_SUB_UN_OVF:
+                case VNF_MUL_UN_OVF:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
-            case VNF_HWI_POPCNT_PopCount:
-            case VNF_HWI_POPCNT_X64_PopCount:
-            case VNF_HWI_LZCNT_LeadingZeroCount:
-            case VNF_HWI_LZCNT_X64_LeadingZeroCount:
-            case VNF_HWI_BMI1_TrailingZeroCount:
-            case VNF_HWI_BMI1_X64_TrailingZeroCount:
-                return true;
+                case VNF_HWI_POPCNT_PopCount:
+                case VNF_HWI_POPCNT_X64_PopCount:
+                case VNF_HWI_LZCNT_LeadingZeroCount:
+                case VNF_HWI_LZCNT_X64_LeadingZeroCount:
+                case VNF_HWI_BMI1_TrailingZeroCount:
+                case VNF_HWI_BMI1_X64_TrailingZeroCount:
+                    return VNVisit::Continue;
 #elif defined(TARGET_ARM64)
-            case VNF_HWI_AdvSimd_PopCount:
-            case VNF_HWI_AdvSimd_LeadingZeroCount:
-            case VNF_HWI_AdvSimd_LeadingSignCount:
-            case VNF_HWI_ArmBase_LeadingZeroCount:
-            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
-            case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
-                return true;
+                case VNF_HWI_AdvSimd_PopCount:
+                case VNF_HWI_AdvSimd_LeadingZeroCount:
+                case VNF_HWI_AdvSimd_LeadingSignCount:
+                case VNF_HWI_ArmBase_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+                case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
+                    return VNVisit::Continue;
 #endif
 #endif // FEATURE_HW_INTRINSICS
 
-            default:
-                break;
+                default:
+                    break;
+            }
         }
-    }
-
-    return false;
+        return VNVisit::Abort;
+    };
+    return VNVisitReachingVNs(vn, vnVisitor) == VNVisit::Continue;
 }
 
 GenTreeFlags ValueNumStore::GetHandleFlags(ValueNum vn)

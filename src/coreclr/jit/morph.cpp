@@ -2122,7 +2122,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             if (arg.NewAbiInfo.HasAnyFloatingRegisterSegment())
             {
                 // Struct passed according to hardware floating-point calling convention
-                assert(arg.NewAbiInfo.NumSegments <= 2);
                 assert(!arg.NewAbiInfo.HasAnyStackSegment());
                 if (arg.NewAbiInfo.NumSegments == 2)
                 {
@@ -3289,8 +3288,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     bool                 found        = false;
 
     // Attempt to find a local we have already used for an outgoing struct and reuse it.
-    // We do not reuse within a statement.
-    if (!opts.MinOpts())
+    // We do not reuse within a statement and we don't reuse if we're in LIR
+    if (!opts.MinOpts() && (fgOrder == FGOrderTree))
     {
         found = ForEachHbvBitSet(*fgAvailableOutgoingArgTemps, [&](indexType lclNum) {
             LclVarDsc*   varDsc = lvaGetDesc((unsigned)lclNum);

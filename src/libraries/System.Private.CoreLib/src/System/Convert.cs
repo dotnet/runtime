@@ -133,7 +133,7 @@ namespace System
                 return null;
             }
 
-            if (!(value is IConvertible v))
+            if (value is not IConvertible v)
             {
                 throw new InvalidCastException(SR.InvalidCast_IConvertible);
             }
@@ -239,7 +239,7 @@ namespace System
                 return null;
             }
 
-            if (!(value is IConvertible ic))
+            if (value is not IConvertible ic)
             {
                 if (value.GetType() == conversionType)
                 {

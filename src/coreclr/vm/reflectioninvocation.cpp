@@ -497,7 +497,13 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 #ifdef CALLDESCR_REGTYPEMAP
     callDescrData.dwRegTypeMap = 0;
 #endif
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Temporary conversion to old flags, CallDescrWorker needs to be overhauled anyway
+    // to work with arbitrary field offsets and sizes, and support struct size > 16 on RISC-V.
+    callDescrData.fpReturnSize = FpStructInRegistersInfo{FpStruct::Flags(argit.GetFPReturnSize())}.ToOldFlags();
+#else
     callDescrData.fpReturnSize = argit.GetFPReturnSize();
+#endif
 
     // This is duplicated logic from MethodDesc::GetCallTarget
     PCODE pTarget;
@@ -632,7 +638,6 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
         UINT structSize = argit.GetArgSize();
 
-        bool needsStackCopy = false;
         ArgDestination argDest(pTransitionBlock, ofs, argit.GetArgLocDescForStructInRegs());
 
 #ifdef ENREGISTERED_PARAMTYPE_MAXSIZE
@@ -1306,7 +1311,8 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
         return;
 
     MethodTable *pMT = typeHnd.AsMethodTable();
-    if (pMT->IsClassInited())
+    // The ContainsGenericVariables check is to preserve back-compat where we assume the generic type is already initialized
+    if (pMT->IsClassInited() || pMT->ContainsGenericVariables())
         return;
 
     BEGIN_QCALL;
