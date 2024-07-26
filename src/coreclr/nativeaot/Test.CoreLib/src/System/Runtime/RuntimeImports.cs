@@ -104,15 +104,5 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhBulkMoveWithWriteBarrier")]
         internal static extern unsafe void RhBulkMoveWithWriteBarrier(ref byte dmem, ref byte smem, nuint size);
-
-        // Get maximum GC generation number.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetMaxGcGeneration")]
-        internal static extern int RhGetMaxGcGeneration();
-
-        // Get count of collections so far.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhGetGcCollectionCount")]
-        internal static extern int RhGetGcCollectionCount(int generation, bool getSpecialGCCount);
     }
 }

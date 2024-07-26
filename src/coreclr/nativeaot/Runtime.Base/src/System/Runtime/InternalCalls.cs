@@ -276,7 +276,7 @@ namespace System.Runtime
 
         // Indicate that the current round of finalizations is complete.
         [DllImport(Redhawk.BaseName)]
-        internal static extern void RhpSignalFinalizationComplete(uint fCount, int observedFullGcCount);
+        internal static extern void RhpSignalFinalizationComplete(uint fCount);
 
         [DllImport(Redhawk.BaseName)]
         internal static extern ulong RhpGetTickCount64();
