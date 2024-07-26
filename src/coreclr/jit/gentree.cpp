@@ -26732,6 +26732,18 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
                 addr = Op(3);
                 break;
 
+            case NI_Sve_GatherVector:
+            case NI_Sve_GatherVectorByteZeroExtend:
+            case NI_Sve_GatherVectorFirstFaulting:
+            case NI_Sve_GatherVectorInt16SignExtend:
+            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorInt32SignExtend:
+            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
+            case NI_Sve_GatherVectorSByteSignExtend:
+            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt16ZeroExtend:
+            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
+            case NI_Sve_GatherVectorUInt32ZeroExtend:
             case NI_Sve_GatherVectorWithByteOffsets:
             case NI_Sve_LoadVector:
             case NI_Sve_LoadVectorNonTemporal:
@@ -26764,21 +26776,6 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoad(GenTree** pAddr) const
             case NI_Sve_Load2xVectorAndUnzip:
             case NI_Sve_Load3xVectorAndUnzip:
             case NI_Sve_Load4xVectorAndUnzip:
-                addr = Op(2);
-                break;
-
-            case NI_Sve_GatherVector:
-            case NI_Sve_GatherVectorByteZeroExtend:
-            case NI_Sve_GatherVectorFirstFaulting:
-            case NI_Sve_GatherVectorInt16SignExtend:
-            case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtend:
-            case NI_Sve_GatherVectorInt32SignExtend:
-            case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtend:
-            case NI_Sve_GatherVectorSByteSignExtend:
-            case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtend:
-            case NI_Sve_GatherVectorUInt16ZeroExtend:
-            case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
-            case NI_Sve_GatherVectorUInt32ZeroExtend:
                 addr = Op(2);
                 break;
 
