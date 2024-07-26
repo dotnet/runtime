@@ -475,9 +475,14 @@ namespace System.Numerics
             AssertValid();
         }
 
-        internal BigInteger(int n, uint[]? rgu)
+        internal BigInteger(int n, uint[]? rgu) : this(n, rgu, false)
         {
-            if ((rgu is not null) && (rgu.Length > MaxLength))
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private BigInteger(int n, uint[]? rgu, bool bypassBitsLengthCheck)
+        {
+            if (!bypassBitsLengthCheck && (rgu is not null) && (rgu.Length > MaxLength))
             {
                 ThrowHelper.ThrowOverflowException();
             }
@@ -708,7 +713,9 @@ namespace System.Numerics
 
         public static BigInteger Abs(BigInteger value)
         {
-            return (value >= Zero) ? value : -value;
+            value.AssertValid();
+
+            return new BigInteger(unchecked((int)NumericsHelpers.Abs(value._sign)), value._bits, true);
         }
 
         public static BigInteger Add(BigInteger left, BigInteger right)
@@ -1694,7 +1701,7 @@ namespace System.Numerics
             }
 
             if (bitsFromPool != null)
-                    ArrayPool<uint>.Shared.Return(bitsFromPool);
+                ArrayPool<uint>.Shared.Return(bitsFromPool);
 
             return result;
         }
@@ -2629,7 +2636,7 @@ namespace System.Numerics
 
             if (zdFromPool != null)
                 ArrayPool<uint>.Shared.Return(zdFromPool);
-        exit:
+            exit:
             if (xdFromPool != null)
                 ArrayPool<uint>.Shared.Return(xdFromPool);
 
@@ -2644,7 +2651,7 @@ namespace System.Numerics
         public static BigInteger operator -(BigInteger value)
         {
             value.AssertValid();
-            return new BigInteger(-value._sign, value._bits);
+            return new BigInteger(-value._sign, value._bits, true);
         }
 
         public static BigInteger operator +(BigInteger value)
@@ -4097,20 +4104,12 @@ namespace System.Numerics
             x.AssertValid();
             y.AssertValid();
 
-            BigInteger ax = Abs(x);
-            BigInteger ay = Abs(y);
-
-            if (ax > ay)
+            return Abs(x).CompareTo(Abs(y)) switch
             {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? y : x;
-            }
-
-            return y;
+                < 0 => y,
+                0 when IsNegative(x) => y,
+                _ => x
+            };
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
@@ -4122,20 +4121,12 @@ namespace System.Numerics
             x.AssertValid();
             y.AssertValid();
 
-            BigInteger ax = Abs(x);
-            BigInteger ay = Abs(y);
-
-            if (ax < ay)
+            return Abs(x).CompareTo(Abs(y)) switch
             {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? x : y;
-            }
-
-            return y;
+                < 0 => x,
+                0 when IsNegative(x) => x,
+                _ => y
+            };
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
