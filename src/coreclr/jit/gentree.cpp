@@ -27288,13 +27288,6 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
         }
     }
 
-#if defined(TARGET_ARM64)
-    if (HWIntrinsicInfo::HasImmediateOperandRange(intrinsicId))
-    {
-        return true;
-    }
-#endif // TARGET_ARM64
-
     return IsUserCall();
 }
 
