@@ -1619,8 +1619,8 @@ bool DisAssembler::InitCoredistoolsLibrary()
     s_disCoreDisToolsLibraryInitialized    = true;  // we only initialize once, even if it fails.
     s_disCoreDisToolsLibraryLoadSuccessful = false; // assume the worst
 
-    const WCHAR* coreDisToolsLibraryNameW = MAKEDLLNAME_W("D:\\git\\jitutils\\obj\\win-x64\\Debug\\bin\\coredistools");
-    const CHAR*  coreDisToolsLibraryNameA = MAKEDLLNAME_A("D:\\git\\jitutils\\obj\\win-x64\\Debug\\bin\\coredistools");
+    const WCHAR* coreDisToolsLibraryNameW = MAKEDLLNAME_W("coredistools");
+    const CHAR*  coreDisToolsLibraryNameA = MAKEDLLNAME_A("coredistools");
 
     HMODULE hCoreDisToolsLib = NULL;
 
