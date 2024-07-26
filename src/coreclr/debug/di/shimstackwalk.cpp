@@ -22,14 +22,13 @@ static const ULONG32 REGISTER_AMD64_MAX = REGISTER_AMD64_XMM15 + 1;
 static const ULONG32 MAX_MASK_COUNT     = (REGISTER_AMD64_MAX + 7) >> 3;
 #endif
 
-ShimStackWalk::ShimStackWalk(ShimProcess * pProcess, ICorDebugThread * pThread, bool fIsHijacked)
+ShimStackWalk::ShimStackWalk(ShimProcess * pProcess, ICorDebugThread * pThread)
   : m_pChainEnumList(NULL),
     m_pFrameEnumList(NULL)
 {
     // The following assignments increment the ref count.
     m_pProcess.Assign(pProcess);
     m_pThread.Assign(pThread);
-    m_isHijacked = fIsHijacked;
 
     Populate();
 }
@@ -156,7 +155,13 @@ BOOL ShimStackWalk::ShouldTrackUMChain(StackWalkInfo * pswInfo)
     // returning false above. We need to check the exception state to make sure we don't
     // track the chain in this case. Since we know the type of Frame we are dealing with, 
     // we can make a more accurate determination of whether we should track the chain.
-    if (!m_isHijacked && GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION) 
+    // However if we are interop debugging and the thread is hijacked, we should track the chain.
+    if (
+#ifdef FEATURE_INTEROP_DEBUGGING
+        !m_pProcess->IsUnmanagedThreadHijacked(m_pThread) && 
+#endif
+        GetInternalFrameType(pswInfo->GetCurrentInternalFrame()) == STUBFRAME_EXCEPTION
+    ) 
         return FALSE;
 
     return TRUE;

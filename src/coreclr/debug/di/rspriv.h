@@ -2880,7 +2880,9 @@ public:
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
 
+#ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
+#endif
 };
 
 
