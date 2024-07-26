@@ -3768,6 +3768,8 @@ void MethodTable::CheckRunClassInitThrowing()
     if (IsSharedByGenericInstantiations())
         return;
 
+    _ASSERTE(!ContainsGenericVariables());
+
     EnsureStaticDataAllocated();
     DoRunClassInitThrowing();
 }
