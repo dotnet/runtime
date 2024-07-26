@@ -438,19 +438,16 @@ namespace System
             return FreeGCHandle(new QCallTypeHandle(ref nativeHandle), objHandle);
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetNumVirtuals")]
-        private static partial int GetNumVirtuals(QCallTypeHandle type, Interop.BOOL includeStaticVirtuals);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetNumVirtuals(RuntimeType type);
 
-        internal static int GetNumVirtuals(RuntimeType type)
-        {
-            Debug.Assert(type != null);
-            return GetNumVirtuals(new QCallTypeHandle(ref type), includeStaticVirtuals: Interop.BOOL.FALSE);
-        }
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetNumVirtualsAndStaticVirtuals")]
+        private static partial int GetNumVirtualsAndStaticVirtuals(QCallTypeHandle type);
 
         internal static int GetNumVirtualsAndStaticVirtuals(RuntimeType type)
         {
             Debug.Assert(type != null);
-            return GetNumVirtuals(new QCallTypeHandle(ref type), includeStaticVirtuals: Interop.BOOL.TRUE);
+            return GetNumVirtualsAndStaticVirtuals(new QCallTypeHandle(ref type));
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_VerifyInterfaceIsImplemented")]
