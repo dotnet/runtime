@@ -3057,52 +3057,22 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     // call could over-write the stack arg that is setup earlier.
     ArrayStack<GenTree*> putargs(comp->getAllocator(CMK_ArrayStack));
 
-    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    for (CallArg& arg : call->gtArgs.Args())
     {
-        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
+        if (arg.GetNode()->OperIs(GT_PUTARG_STK))
         {
-            putargs.Push(arg.GetEarlyNode());
-        }
-    }
-
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
-        {
-            putargs.Push(arg.GetLateNode());
+            putargs.Push(arg.GetNode());
         }
     }
 
     GenTree* startNonGCNode = nullptr;
-    if (!putargs.Empty())
+    if (putargs.Height() > 0)
     {
-        // Get the earliest operand of the first PUTARG_STK node. We will make
-        // the required copies of args before this node.
-        bool     unused;
-        GenTree* insertionPoint = BlockRange().GetTreeRange(putargs.Bottom(), &unused).FirstNode();
-        // Insert GT_START_NONGC node before we evaluate the PUTARG_STK args.
-        // Note that if there are no args to be setup on stack, no need to
-        // insert GT_START_NONGC node.
-        startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
-        BlockRange().InsertBefore(insertionPoint, startNonGCNode);
-
-        // Gc-interruptability in the following case:
-        //     foo(a, b, c, d, e) { bar(a, b, c, d, e); }
-        //     bar(a, b, c, d, e) { foo(a, b, d, d, e); }
-        //
-        // Since the instruction group starting from the instruction that sets up first
-        // stack arg to the end of the tail call is marked as non-gc interruptible,
-        // this will form a non-interruptible tight loop causing gc-starvation. To fix
-        // this we insert GT_NO_OP as embedded stmt before GT_START_NONGC, if the method
-        // has a single basic block and is not a GC-safe point.  The presence of a single
-        // nop outside non-gc interruptible region will prevent gc starvation.
-        if ((comp->fgBBcount == 1) && !comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT))
+        GenTree* firstPutargStk = putargs.Bottom(0);
+        for (int i = 1; i < putargs.Height(); i++)
         {
-            assert(comp->fgFirstBB == comp->compCurBB);
-            GenTree* noOp = new (comp, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
-            BlockRange().InsertBefore(startNonGCNode, noOp);
+            firstPutargStk = LIR::FirstNode(firstPutargStk, putargs.Bottom(i));
         }
-
         // Since this is a fast tailcall each PUTARG_STK will place the argument in the
         // _incoming_ arg space area. This will effectively overwrite our already existing
         // incoming args that live in that area. If we have later uses of those args, this
@@ -3172,10 +3142,10 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 GenTree* lookForUsesFrom = put->gtNext;
                 if (overwrittenStart != argStart)
                 {
-                    lookForUsesFrom = insertionPoint;
+                    lookForUsesFrom = firstPutargStk;
                 }
 
-                RehomeArgForFastTailCall(callerArgLclNum, insertionPoint, lookForUsesFrom, call);
+                RehomeArgForFastTailCall(callerArgLclNum, firstPutargStk, lookForUsesFrom, call);
                 // The above call can introduce temps and invalidate the pointer.
                 callerArgDsc = comp->lvaGetDesc(callerArgLclNum);
 
@@ -3189,9 +3159,32 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 unsigned int fieldsEnd   = fieldsFirst + callerArgDsc->lvFieldCnt;
                 for (unsigned int j = fieldsFirst; j < fieldsEnd; j++)
                 {
-                    RehomeArgForFastTailCall(j, insertionPoint, lookForUsesFrom, call);
+                    RehomeArgForFastTailCall(j, firstPutargStk, lookForUsesFrom, call);
                 }
             }
+        }
+
+        // Now insert GT_START_NONGC node before we evaluate the first PUTARG_STK.
+        // Note that if there are no args to be setup on stack, no need to
+        // insert GT_START_NONGC node.
+        startNonGCNode = new (comp, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
+        BlockRange().InsertBefore(firstPutargStk, startNonGCNode);
+
+        // Gc-interruptability in the following case:
+        //     foo(a, b, c, d, e) { bar(a, b, c, d, e); }
+        //     bar(a, b, c, d, e) { foo(a, b, d, d, e); }
+        //
+        // Since the instruction group starting from the instruction that sets up first
+        // stack arg to the end of the tail call is marked as non-gc interruptible,
+        // this will form a non-interruptible tight loop causing gc-starvation. To fix
+        // this we insert GT_NO_OP as embedded stmt before GT_START_NONGC, if the method
+        // has a single basic block and is not a GC-safe point.  The presence of a single
+        // nop outside non-gc interruptible region will prevent gc starvation.
+        if ((comp->fgBBcount == 1) && !comp->compCurBB->HasFlag(BBF_GC_SAFE_POINT))
+        {
+            assert(comp->fgFirstBB == comp->compCurBB);
+            GenTree* noOp = new (comp, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+            BlockRange().InsertBefore(startNonGCNode, noOp);
         }
     }
 
