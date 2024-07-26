@@ -501,23 +501,11 @@ namespace System.IO.Compression
         [MemberData(nameof(ZLibOptionsRoundTripTestData))]
         public async Task RoundTripWithZLibCompressionOptions(string testFile, ZLibCompressionOptions options)
         {
-            var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
             var compressedStream = CompressTestFile(uncompressedStream, options);
             using var decompressor = CreateStream(compressedStream, mode: CompressionMode.Decompress);
-            var decompressorOutput = new MemoryStream();
-            int _bufferSize = 1024;
-            var bytes = new byte[_bufferSize];
-            bool finished = false;
-            int retCount;
-            while (!finished)
-            {
-                retCount = await decompressor.ReadAsync(bytes, 0, _bufferSize);
-
-                if (retCount != 0)
-                    await decompressorOutput.WriteAsync(bytes, 0, retCount);
-                else
-                    finished = true;
-            }
+            using var decompressorOutput = new MemoryStream();
+            await decompressor.CopyToAsync(decompressorOutput);
             decompressor.Dispose();
             decompressorOutput.Position = 0;
             uncompressedStream.Position = 0;
@@ -547,6 +535,29 @@ namespace System.IO.Compression
 
             compressorOutput.Position = 0;
             return compressorOutput;
+        }
+
+        protected async void CompressionLevel_SizeInOrderBase(string testFile)
+        {
+            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
+
+            async Task<long> GetLengthAsync(int compressionLevel)
+            {
+                uncompressedStream.Position = 0;
+                using var mms = new MemoryStream();
+                using var compressor = CreateStream(mms, new ZLibCompressionOptions() { CompressionLevel = compressionLevel, CompressionStrategy = ZLibCompressionStrategy.Default }, leaveOpen: false);
+                await uncompressedStream.CopyToAsync(compressor);
+                await compressor.FlushAsync();
+                return mms.Length;
+            }
+
+            long prev = await GetLengthAsync(0);
+            for (int i = 1; i < 10; i++)
+            {
+                long cur = await GetLengthAsync(i);
+                Assert.True(cur <= prev, $"Expected {cur} <= {prev} for quality {i}");
+                prev = cur;
+            }
         }
     }
 

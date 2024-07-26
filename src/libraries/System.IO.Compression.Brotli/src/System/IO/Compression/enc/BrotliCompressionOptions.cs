@@ -8,7 +8,7 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class BrotliCompressionOptions
     {
-        private int _quality;
+        private int _quality = BrotliUtils.Quality_Default;
 
         /// <summary>
         /// Gets or sets the compression quality for a Brotli compression stream.

@@ -444,40 +444,9 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFilesZLib))]
-        public async void ZLibCompressionLevel_SizeInOrder(string testFile)
+        public void ZLibCompressionLevel_SizeInOrder(string testFile)
         {
-            using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
-
-            async Task<long> GetLengthAsync(int compressionLevel)
-            {
-                uncompressedStream.Position = 0;
-                using var mms = new MemoryStream();
-                using var compressor = new GZipStream(mms, new ZLibCompressionOptions() { CompressionLevel = compressionLevel, CompressionStrategy = ZLibCompressionStrategy.Default }, leaveOpen: false);
-                await uncompressedStream.CopyToAsync(compressor);
-                await compressor.FlushAsync();
-                return mms.Length;
-            }
-
-            long level0 = await GetLengthAsync(0);
-            long level1 = await GetLengthAsync(1);
-            long level2 = await GetLengthAsync(2);
-            long level3 = await GetLengthAsync(3);
-            long level4 = await GetLengthAsync(4);
-            long level5 = await GetLengthAsync(5);
-            long level6 = await GetLengthAsync(6);
-            long level7 = await GetLengthAsync(7);
-            long level8 = await GetLengthAsync(8);
-            long level9 = await GetLengthAsync(9);
-
-            Assert.True(level1 <= level0);
-            Assert.True(level2 <= level1);
-            Assert.True(level3 <= level2);
-            Assert.True(level4 <= level3);
-            Assert.True(level5 <= level4);
-            Assert.True(level6 <= level5);
-            Assert.True(level7 <= level6);
-            Assert.True(level8 <= level7);
-            Assert.True(level9 <= level8);
+             CompressionLevel_SizeInOrderBase(testFile);
         }
     }
 }

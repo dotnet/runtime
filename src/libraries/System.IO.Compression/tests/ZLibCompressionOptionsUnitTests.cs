@@ -30,9 +30,15 @@ namespace System.IO.Compression
         [Fact]
         public void ZLibCompressionOptionsValidOptions()
         {
-            ZLibCompressionOptions options = new() { CompressionLevel = -1, CompressionStrategy = ZLibCompressionStrategy.HuffmanOnly };
+            ZLibCompressionOptions options = new();
 
-            Assert.Equal( -1, options.CompressionLevel);
+            Assert.Equal(-1, options.CompressionLevel);
+            Assert.Equal(ZLibCompressionStrategy.Default, options.CompressionStrategy);
+
+            options.CompressionLevel = 5;
+            options.CompressionStrategy = ZLibCompressionStrategy.HuffmanOnly;
+
+            Assert.Equal(5, options.CompressionLevel);
             Assert.Equal(ZLibCompressionStrategy.HuffmanOnly, options.CompressionStrategy);
         }
     }

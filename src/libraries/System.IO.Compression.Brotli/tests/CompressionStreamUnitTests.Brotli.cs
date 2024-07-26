@@ -88,6 +88,7 @@ namespace System.IO.Compression
         {
             BrotliCompressionOptions options = new();
 
+            Assert.Equal(4, options.Quality); // default value
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = -1);
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.Quality = 12);
         }

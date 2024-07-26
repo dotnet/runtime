@@ -8,7 +8,7 @@ namespace System.IO.Compression
     /// </summary>
     public sealed class ZLibCompressionOptions
     {
-        private int _compressionLevel;
+        private int _compressionLevel = -1;
         private ZLibCompressionStrategy _strategy;
 
         /// <summary>
