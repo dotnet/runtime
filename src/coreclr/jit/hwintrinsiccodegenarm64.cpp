@@ -319,39 +319,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         emitSize = EA_SCALABLE;
         opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
-
-        switch (intrin.id)
-        {
-            case NI_Sve_GetFfrByte:
-            case NI_Sve_GetFfrInt16:
-            case NI_Sve_GetFfrInt32:
-            case NI_Sve_GetFfrInt64:
-            case NI_Sve_GetFfrSByte:
-            case NI_Sve_GetFfrUInt16:
-            case NI_Sve_GetFfrUInt32:
-            case NI_Sve_GetFfrUInt64:
-            {
-                if ((intrin.op1 != nullptr) && ((intrin.op1->gtFlags & GTF_SPILLED) != 0))
-                {
-                    // If there was a op1 for this intrinsic, it means FFR is consumed here
-                    // and we need to unspill.
-                    unspilledFfr = true;
-                }
-                break;
-            }
-            case NI_Sve_LoadVectorFirstFaulting:
-            {
-                if ((intrin.op3 != nullptr) && ((intrin.op3->gtFlags & GTF_SPILLED) != 0))
-                {
-                    // If there was a op3 for this intrinsic, it means FFR is consumed here
-                    // and we need to unspill.
-                    unspilledFfr = true;
-                }
-                break;
-            }
-            default:
-                break;
-        }
     }
     else if (intrin.category == HW_Category_Special)
     {
