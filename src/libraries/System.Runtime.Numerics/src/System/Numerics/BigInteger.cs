@@ -4104,12 +4104,8 @@ namespace System.Numerics
             x.AssertValid();
             y.AssertValid();
 
-            return Abs(x).CompareTo(Abs(y)) switch
-            {
-                < 0 => y,
-                0 when IsNegative(x) => y,
-                _ => x
-            };
+            int compareResult = Abs(x).CompareTo(Abs(y));
+            return compareResult > 0 || (compareResult == 0 && IsPositive(x)) ? x : y;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
@@ -4121,12 +4117,8 @@ namespace System.Numerics
             x.AssertValid();
             y.AssertValid();
 
-            return Abs(x).CompareTo(Abs(y)) switch
-            {
-                < 0 => x,
-                0 when IsNegative(x) => x,
-                _ => y
-            };
+            int compareResult = Abs(x).CompareTo(Abs(y));
+            return compareResult < 0 || (compareResult == 0 && IsNegative(x)) ? x : y;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
