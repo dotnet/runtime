@@ -222,9 +222,9 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFilesZLib))]
-        public void ZLibCompressionLevel_SizeInOrder(string testFile)
+        public async Task ZLibCompressionLevel_SizeInOrder(string testFile)
         {
-            CompressionLevel_SizeInOrderBase(testFile);
+            await CompressionLevel_SizeInOrderBase(testFile);
         }
     }
 }

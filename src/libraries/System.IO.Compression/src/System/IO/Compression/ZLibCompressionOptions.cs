@@ -50,7 +50,7 @@ namespace System.IO.Compression
     }
 
     /// <summary>
-    /// Specifies the compression algorithm to use for compression stream.
+    /// Defines  the compression algorithms that can be used for <see cref="DeflateStream"/>, <see cref="GZipStream"/> or <see cref="ZLibStream"/>.
     /// </summary>
     public enum ZLibCompressionStrategy
     {

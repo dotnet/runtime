@@ -502,11 +502,11 @@ namespace System.IO.Compression
         public async Task RoundTripWithZLibCompressionOptions(string testFile, ZLibCompressionOptions options)
         {
             using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
-            var compressedStream = CompressTestFile(uncompressedStream, options);
+            var compressedStream = await CompressTestFile(uncompressedStream, options);
             using var decompressor = CreateStream(compressedStream, mode: CompressionMode.Decompress);
             using var decompressorOutput = new MemoryStream();
             await decompressor.CopyToAsync(decompressorOutput);
-            decompressor.Dispose();
+            await decompressor.DisposeAsync();
             decompressorOutput.Position = 0;
             uncompressedStream.Position = 0;
 
@@ -520,16 +520,16 @@ namespace System.IO.Compression
             }
         }
 
-        private MemoryStream CompressTestFile(LocalMemoryStream testStream, ZLibCompressionOptions options)
+        private async Task<MemoryStream> CompressTestFile(LocalMemoryStream testStream, ZLibCompressionOptions options)
         {
             var compressorOutput = new MemoryStream();
             using (var compressionStream = CreateStream(compressorOutput, options, leaveOpen: true))
             {
                 var buffer = new byte[4096];
                 int bytesRead;
-                while ((bytesRead = testStream.Read(buffer, 0, buffer.Length)) > 0)
+                while ((bytesRead = await testStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                 {
-                    compressionStream.Write(buffer, 0, bytesRead);
+                    await compressionStream.WriteAsync(buffer, 0, bytesRead);
                 }
             }
 
@@ -537,7 +537,7 @@ namespace System.IO.Compression
             return compressorOutput;
         }
 
-        protected async void CompressionLevel_SizeInOrderBase(string testFile)
+        protected async Task CompressionLevel_SizeInOrderBase(string testFile)
         {
             using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
 

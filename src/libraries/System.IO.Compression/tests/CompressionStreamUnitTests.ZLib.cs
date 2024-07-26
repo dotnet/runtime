@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO.Compression.Tests;
 using System.Linq;
 using System.Threading.Tasks;
@@ -155,9 +153,9 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFilesZLib))]
-        public void ZLibCompressionLevel_SizeInOrder(string testFile)
+        public async Task ZLibCompressionLevel_SizeInOrder(string testFile)
         {
-            CompressionLevel_SizeInOrderBase(testFile);
+            await CompressionLevel_SizeInOrderBase(testFile);
         }
     }
 }
