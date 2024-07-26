@@ -97,7 +97,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 					public static void PublicMethod () { }
 					static void PrivateMethod () { }
 
-					[Kept(By = Tool.Trimmer)]
+					[Kept]
 					public void Use () { }
 				}
 
