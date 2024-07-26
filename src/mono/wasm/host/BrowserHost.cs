@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
 using Microsoft.WebAssembly.Diagnostics;
@@ -135,20 +136,21 @@ internal sealed class BrowserHost
             // If we have main assembly name, try to find static web assets manifest by precise name.
 
             var mainAssemblyPath = Path.Combine(appPath, args.CommonConfig.HostProperties.MainAssembly);
+            var endpointsManifest = Path.ChangeExtension(mainAssemblyPath, ".staticwebassets.endpoints.json");
             var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
             if (File.Exists(staticWebAssetsPath))
             {
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
             }
             else
             {
                 staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV1Extension);
                 if (File.Exists(staticWebAssetsPath))
-                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
             }
 
             if (devServerOptions == null)
-                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(urls, mainAssemblyPath, endpointsManifest, onConsoleConnected);
         }
         else
         {
@@ -157,8 +159,10 @@ internal sealed class BrowserHost
             var staticWebAssetsPath = FindFirstFileWithExtension(appPath, staticWebAssetsV2Extension)
                 ?? FindFirstFileWithExtension(appPath, staticWebAssetsV1Extension);
 
+            var endpointsManifest = FindFirstFileWithExtension(appPath, ".staticwebassets.endpoints.json");
+
             if (staticWebAssetsPath != null)
-                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, endpointsManifest, onConsoleConnected);
 
             if (devServerOptions == null)
                 throw new CommandLineException($"Please, provide mainAssembly in hostProperties of runtimeconfig. Alternatively leave the static web assets manifest ('*{staticWebAssetsV2Extension}') in the build output directory '{appPath}' .");
@@ -167,10 +171,11 @@ internal sealed class BrowserHost
         return devServerOptions;
     }
 
-    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, string? endpointsManifest, Func<WebSocket, Task>? onConsoleConnected) => new
     (
         OnConsoleConnected: onConsoleConnected,
         StaticWebAssetsPath: staticWebAssetsPath,
+        StaticWebAssetsEndpointsPath: endpointsManifest,
         WebServerUseCors: true,
         WebServerUseCrossOriginPolicy: true,
         Urls: urls

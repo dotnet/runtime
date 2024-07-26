@@ -11,6 +11,7 @@ internal sealed record DevServerOptions
 (
     Func<WebSocket, Task>? OnConsoleConnected,
     string? StaticWebAssetsPath,
+    string? StaticWebAssetsEndpointsPath,
     bool WebServerUseCors,
     bool WebServerUseCrossOriginPolicy,
     string[] Urls,
