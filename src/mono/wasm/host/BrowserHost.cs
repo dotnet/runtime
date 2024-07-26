@@ -13,7 +13,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost.DevServer;
 using Microsoft.WebAssembly.Diagnostics;
