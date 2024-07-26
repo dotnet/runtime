@@ -7872,7 +7872,7 @@ extern "C" void * QCALLTYPE CallCatchFunclet(QCall::ObjectHandleOnStack exceptio
 #elif defined(HOST_RISCV) || defined(HOST_LOONGARCH64)
         pvRegDisplay->pCurrentContext->Ra = GetIP(pvRegDisplay->pCurrentContext);
 #endif
-        SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))RealCOMPlusThrow);
+        SetIP(pvRegDisplay->pCurrentContext, (PCODE)(void (*)(Object*))PropagateExceptionThroughNativeFrames);
 #if defined(HOST_AMD64)
         SetSP(pvRegDisplay->pCurrentContext, targetSp - 8);
 #elif defined(HOST_X86)
