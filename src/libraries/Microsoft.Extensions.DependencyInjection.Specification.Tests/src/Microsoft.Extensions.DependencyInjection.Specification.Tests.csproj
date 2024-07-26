@@ -15,6 +15,8 @@
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
     <!-- this assembly doesn't need to be binplaced -->
     <EnableBinPlacing>false</EnableBinPlacing>
+    <!-- TODO: Add package README file: https://github.com/dotnet/runtime/issues/99358 -->
+    <EnableDefaultPackageReadmeFile>false</EnableDefaultPackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

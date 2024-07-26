@@ -79,6 +79,15 @@ bool WrapICorJitInfo::haveSameMethodDefinition(
     return temp;
 }
 
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    API_ENTER(getTypeDefinition);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeDefinition(type);
+    API_LEAVE(getTypeDefinition);
+    return temp;
+}
+
 CorInfoInline WrapICorJitInfo::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)
@@ -256,15 +265,6 @@ void WrapICorJitInfo::methodMustBeLoadedBeforeCodeIsRun(
     API_ENTER(methodMustBeLoadedBeforeCodeIsRun);
     wrapHnd->methodMustBeLoadedBeforeCodeIsRun(method);
     API_LEAVE(methodMustBeLoadedBeforeCodeIsRun);
-}
-
-CORINFO_METHOD_HANDLE WrapICorJitInfo::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    API_ENTER(mapMethodDeclToMethodImpl);
-    CORINFO_METHOD_HANDLE temp = wrapHnd->mapMethodDeclToMethodImpl(method);
-    API_LEAVE(mapMethodDeclToMethodImpl);
-    return temp;
 }
 
 void WrapICorJitInfo::getGSCookie(
@@ -632,6 +632,15 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBox(
     API_ENTER(getTypeForBox);
     CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBox(cls);
     API_LEAVE(getTypeForBox);
+    return temp;
+}
+
+CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getTypeForBoxOnStack);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getTypeForBoxOnStack(cls);
+    API_LEAVE(getTypeForBoxOnStack);
     return temp;
 }
 
@@ -1229,22 +1238,13 @@ void WrapICorJitInfo::getSwiftLowering(
     API_LEAVE(getSwiftLowering);
 }
 
-uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void WrapICorJitInfo::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    API_ENTER(getLoongArch64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getLoongArch64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getLoongArch64PassStructInRegisterFlags);
-    return temp;
-}
-
-uint32_t WrapICorJitInfo::getRISCV64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    API_ENTER(getRISCV64PassStructInRegisterFlags);
-    uint32_t temp = wrapHnd->getRISCV64PassStructInRegisterFlags(structHnd);
-    API_LEAVE(getRISCV64PassStructInRegisterFlags);
-    return temp;
+    API_ENTER(getFpStructLowering);
+    wrapHnd->getFpStructLowering(structHnd, pLowering);
+    API_LEAVE(getFpStructLowering);
 }
 
 uint32_t WrapICorJitInfo::getThreadTLSIndex(

@@ -29,17 +29,20 @@ namespace System.Runtime
                 // otherwise memory is low and we should initiate a collection.
                 if (InternalCalls.RhpWaitForFinalizerRequest() != 0)
                 {
+                    int observedFullGcCount = RuntimeImports.RhGetGcCollectionCount(RuntimeImports.RhGetMaxGcGeneration(), false);
                     uint finalizerCount = DrainQueue();
 
-                    // Tell anybody that's interested that the finalization pass is complete (there is a race condition here
-                    // where we might immediately signal a new request as complete, but this is acceptable).
-                    InternalCalls.RhpSignalFinalizationComplete(finalizerCount);
+                    // Anyone waiting to drain the Q can now wake up.  Note that there is a
+                    // race in that another thread starting a drain, as we leave a drain, may
+                    // consider itself satisfied by the drain that just completed.
+                    // Thus we include the Full GC count that we have certaily observed.
+                    InternalCalls.RhpSignalFinalizationComplete(finalizerCount, observedFullGcCount);
                 }
                 else
                 {
                     // RhpWaitForFinalizerRequest() returned false and indicated that memory is low. We help
                     // out by initiating a garbage collection and then go back to waiting for another request.
-                    InternalCalls.RhCollect(-1, InternalGCCollectionMode.Blocking);
+                    InternalCalls.RhCollect(0, InternalGCCollectionMode.Blocking, lowMemoryP: true);
                 }
             }
         }

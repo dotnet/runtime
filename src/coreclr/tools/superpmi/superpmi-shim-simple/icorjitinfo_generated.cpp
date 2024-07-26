@@ -60,6 +60,12 @@ bool interceptor_ICJI::haveSameMethodDefinition(
     return original_ICorJitInfo->haveSameMethodDefinition(meth1Hnd, meth2Hnd);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeDefinition(
+          CORINFO_CLASS_HANDLE type)
+{
+    return original_ICorJitInfo->getTypeDefinition(type);
+}
+
 CorInfoInline interceptor_ICJI::canInline(
           CORINFO_METHOD_HANDLE callerHnd,
           CORINFO_METHOD_HANDLE calleeHnd)
@@ -190,12 +196,6 @@ void interceptor_ICJI::methodMustBeLoadedBeforeCodeIsRun(
           CORINFO_METHOD_HANDLE method)
 {
     original_ICorJitInfo->methodMustBeLoadedBeforeCodeIsRun(method);
-}
-
-CORINFO_METHOD_HANDLE interceptor_ICJI::mapMethodDeclToMethodImpl(
-          CORINFO_METHOD_HANDLE method)
-{
-    return original_ICorJitInfo->mapMethodDeclToMethodImpl(method);
 }
 
 void interceptor_ICJI::getGSCookie(
@@ -456,6 +456,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBox(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->getTypeForBox(cls);
+}
+
+CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeForBoxOnStack(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getTypeForBoxOnStack(cls);
 }
 
 CorInfoHelpFunc interceptor_ICJI::getBoxHelper(
@@ -883,16 +889,11 @@ void interceptor_ICJI::getSwiftLowering(
     original_ICorJitInfo->getSwiftLowering(structHnd, pLowering);
 }
 
-uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
+void interceptor_ICJI::getFpStructLowering(
+          CORINFO_CLASS_HANDLE structHnd,
+          CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
-    return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
-}
-
-uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(
-          CORINFO_CLASS_HANDLE structHnd)
-{
-    return original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
+    original_ICorJitInfo->getFpStructLowering(structHnd, pLowering);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

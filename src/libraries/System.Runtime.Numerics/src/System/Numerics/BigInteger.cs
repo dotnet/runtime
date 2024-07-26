@@ -494,7 +494,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value">The absolute value of the number</param>
         /// <param name="negative">The bool indicating the sign of the value.</param>
-        private BigInteger(ReadOnlySpan<uint> value, bool negative)
+        internal BigInteger(ReadOnlySpan<uint> value, bool negative)
         {
             // Try to conserve space as much as possible by checking for wasted leading span entries
             // sometimes the span has leading zeros from bit manipulation operations & and ^
@@ -637,15 +637,10 @@ namespace System.Numerics
 
                 if (_sign != 1)
                     return false;
+
                 int iu = _bits.Length - 1;
-                if (!BitOperations.IsPow2(_bits[iu]))
-                    return false;
-                while (--iu >= 0)
-                {
-                    if (_bits[iu] != 0)
-                        return false;
-                }
-                return true;
+
+                return BitOperations.IsPow2(_bits[iu]) && !_bits.AsSpan(0, iu).ContainsAnyExcept(0u);
             }
         }
 

@@ -120,30 +120,46 @@ namespace System.Net.Quic.Tests
             return QuicConnection.ConnectAsync(clientOptions);
         }
 
-        internal QuicListenerOptions CreateQuicListenerOptions(IPAddress address = null)
+        internal QuicListenerOptions CreateQuicListenerOptions(IPAddress address = null, Action<QuicServerConnectionOptions> changeServerOptions = null)
         {
             address ??= IPAddress.Loopback;
             return new QuicListenerOptions()
             {
                 ListenEndPoint = new IPEndPoint(address, 0),
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var options = CreateQuicServerOptions();
+                    if (changeServerOptions is not null)
+                    {
+                        changeServerOptions(options);
+                    }
+                    return ValueTask.FromResult(options);
+                }
             };
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(IPAddress address = null)
+        internal ValueTask<QuicListener> CreateQuicListener(IPAddress address = null, Action<QuicServerConnectionOptions> changeServerOptions = null)
         {
-            var options = CreateQuicListenerOptions(address);
+            var options = CreateQuicListenerOptions(address, changeServerOptions);
             return CreateQuicListener(options);
         }
 
-        internal ValueTask<QuicListener> CreateQuicListener(IPEndPoint endpoint)
+        internal ValueTask<QuicListener> CreateQuicListener(IPEndPoint endpoint, Action<QuicServerConnectionOptions> changeServerOptions = null)
         {
             var options = new QuicListenerOptions()
             {
                 ListenEndPoint = endpoint,
                 ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol },
-                ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(CreateQuicServerOptions())
+                ConnectionOptionsCallback = (_, _, _) =>
+                {
+                    var options = CreateQuicServerOptions();
+                    if (changeServerOptions is not null)
+                    {
+                        changeServerOptions(options);
+                    }
+                    return ValueTask.FromResult(options);
+                }
             };
             return CreateQuicListener(options);
         }

@@ -20,7 +20,9 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public AssemblyQualifiedToken (string? assemblyName, int token) => (AssemblyName, Token) = (assemblyName, token);
 
-		public AssemblyQualifiedToken (TypeSystemEntity entity) =>
+		public AssemblyQualifiedToken (TypeSystemEntity entity) {
+			if (entity is MethodForInstantiatedType instantiatedMethod)
+				entity = instantiatedMethod.GetTypicalMethodDefinition ();
 			(AssemblyName, Token) = entity switch {
 				EcmaType type => (type.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (type.Handle)),
 				EcmaMethod method => (method.Module.Assembly.GetName ().Name, MetadataTokens.GetToken (method.Handle)),
@@ -31,6 +33,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				MetadataType mt when mt.GetType().Name == "BoxedValueType" => (null, 0),
 				_ => throw new NotSupportedException ($"The infra doesn't support getting a token for {entity} yet.")
 			};
+		}
 
 		public AssemblyQualifiedToken (IMemberDefinition member) =>
 			(AssemblyName, Token) = member switch {

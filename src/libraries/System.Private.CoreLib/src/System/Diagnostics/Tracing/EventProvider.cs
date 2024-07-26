@@ -87,10 +87,7 @@ namespace System.Diagnostics.Tracing
         // Because callbacks happen on registration, and we need the callbacks for those setup
         // we can't call Register in the constructor.
         //
-        // Note that EventProvider should ONLY be used by EventSource.  In particular because
-        // it registers a callback from native code you MUST dispose it BEFORE shutdown, otherwise
-        // you may get native callbacks during shutdown when we have destroyed the delegate.
-        // EventSource has special logic to do this, no one else should be calling EventProvider.
+        // Note that EventProvider should ONLY be used by EventSource.
         internal EventProvider(EventProviderType providerType)
         {
             _eventProvider = providerType switch
@@ -106,9 +103,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// This method registers the controlGuid of this class with ETW. We need to be running on
-        /// Vista or above. If not a PlatformNotSupported exception will be thrown. If for some
-        /// reason the ETW Register call failed a NotSupported exception will be thrown.
+        /// This method registers the controlGuid of this class with ETW.
         /// </summary>
         internal unsafe void Register(EventSource eventSource)
         {
@@ -513,7 +508,7 @@ namespace System.Diagnostics.Tracing
                         {
                             // EncodeObject advanced userDataPtr to the next empty slot
                             int idx = (int)(userDataPtr - userData - 1);
-                            if (!(supportedRefObj is string))
+                            if (supportedRefObj is not string)
                             {
                                 if (eventPayload.Length + idx + 1 - index > EtwMaxNumberArguments)
                                 {
@@ -902,16 +897,12 @@ namespace System.Diagnostics.Tracing
                 userDataCount,
                 userData);
 
-            switch (error)
+            return error switch
             {
-                case Interop.Errors.ERROR_ARITHMETIC_OVERFLOW:
-                case Interop.Errors.ERROR_MORE_DATA:
-                    return EventProvider.WriteEventErrorCode.EventTooBig;
-                case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                    return EventProvider.WriteEventErrorCode.NoFreeBuffers;
-            }
-
-            return EventProvider.WriteEventErrorCode.NoError;
+                Interop.Errors.ERROR_ARITHMETIC_OVERFLOW or Interop.Errors.ERROR_MORE_DATA => EventProvider.WriteEventErrorCode.EventTooBig,
+                Interop.Errors.ERROR_NOT_ENOUGH_MEMORY => EventProvider.WriteEventErrorCode.NoFreeBuffers,
+                _ => EventProvider.WriteEventErrorCode.NoError,
+            };
         }
 
         // Get or set the per-thread activity ID.

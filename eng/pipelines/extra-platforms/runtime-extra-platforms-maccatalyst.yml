@@ -77,3 +77,77 @@ jobs:
             creator: dotnet-bot
             interpreter: true
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+
+#
+# Build the whole product using Native AOT and run runtime tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
+    platforms:
+      - maccatalyst_x64
+      - maccatalyst_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_NativeAOT_RuntimeTests
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+      timeoutInMinutes: 180
+      # extra steps, run tests
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: innerloop
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+
+#
+# Build the whole product using Native AOT with the App Sandbox entitlement and run runtime tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: coreclr
+    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
+    platforms:
+      - maccatalyst_x64
+      - maccatalyst_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_NativeAOT_RuntimeTests_AppSandbox
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+      timeoutInMinutes: 180
+      # extra steps, run tests
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+          parameters:
+            testGroup: innerloop
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testBuildArgs: tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true /p:DevTeamProvisioning=adhoc /p:EnableAppSandbox=true
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)

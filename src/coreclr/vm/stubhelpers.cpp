@@ -547,6 +547,7 @@ FCIMPL3(SIZE_T, StubHelpers::ProfilerBeginTransitionCallback, SIZE_T pSecretPara
     }
 
     {
+        _ASSERTE(pThread != nullptr);
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
         ProfilerManagedToUnmanagedTransitionMD(pRealMD, COR_PRF_TRANSITION_CALL);
@@ -577,6 +578,7 @@ FCIMPL2(void, StubHelpers::ProfilerEndTransitionCallback, MethodDesc* pRealMD, T
     // and the transition requires us to set up a HMF.
     HELPER_METHOD_FRAME_BEGIN_0();
     {
+        _ASSERTE(pThread != nullptr);
         GCX_PREEMP_THREAD_EXISTS(pThread);
 
         ProfilerUnmanagedToManagedTransitionMD(pRealMD, COR_PRF_TRANSITION_RETURN);
@@ -808,14 +810,12 @@ FCIMPL1(DWORD, StubHelpers::CalcVaListSize, VARARGS *varargs)
 }
 FCIMPLEND
 
-#ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {
     FCALL_CONTRACT;
     FCUnique(0xa5);
 }
 FCIMPLEND
-#endif // FEATURE_MULTICASTSTUB_AS_IL
 
 FCIMPL0(void*, StubHelpers::NextCallReturnAddress)
 {

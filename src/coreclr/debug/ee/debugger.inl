@@ -74,7 +74,7 @@ inline DebuggerModule::DebuggerModule(Module *      pRuntimeModule,
 
     // Dynamic modules must receive ClassLoad callbacks in order to receive metadata updates as the module
     // evolves. So we force this on here and refuse to change it for all dynamic modules.
-    if (pRuntimeModule->IsReflection())
+    if (pRuntimeModule->IsReflectionEmit())
     {
         EnableClassLoadCallbacks(TRUE);
     }

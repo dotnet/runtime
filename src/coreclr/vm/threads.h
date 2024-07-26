@@ -139,8 +139,6 @@ class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
-class     CRWLock;
-struct    LockEntry;
 class     PrepareCodeConfig;
 class     NativeCodeVersion;
 
@@ -378,16 +376,6 @@ EXTERN_C void ThrowControlForThread(
         FaultingExceptionFrame *pfef
 #endif // FEATURE_EH_FUNCLETS
         );
-
-// RWLock state inside TLS
-struct LockEntry
-{
-    LockEntry *pNext;    // next entry
-    LockEntry *pPrev;    // prev entry
-    LONG dwULockID;
-    LONG dwLLockID;         // owning lock
-    WORD wReaderLevel;      // reader nesting level
-};
 
 #if defined(_DEBUG)
 BOOL MatchThreadHandleToOsId ( HANDLE h, DWORD osId );
@@ -952,11 +940,6 @@ public:
     // in the object header to store it.
     DWORD                m_ThreadId;
 
-
-    // RWLock state
-    LockEntry           *m_pHead;
-    LockEntry            m_embeddedEntry;
-
 #ifndef DACCESS_COMPILE
     Frame* NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvLimitSP);
 #endif // DACCESS_COMPILE
@@ -1179,6 +1162,8 @@ public:
     void            BaseCoUninitialize();
     void            BaseWinRTUninitialize();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
+
+    void        CooperativeCleanup();
 
     void        OnThreadTerminate(BOOL holdingLock);
 
@@ -3339,12 +3324,6 @@ public:
     SpinLock m_TlsSpinLock;
     PTR_ThreadLocalData GetThreadLocalDataPtr() { LIMITED_METHOD_DAC_CONTRACT; return m_ThreadLocalDataPtr; }
 
-public:
-
-    // Called during Thread death to clean up all structures
-    // associated with thread statics
-    void DeleteThreadStaticData();
-
 private:
     TailCallTls m_tailCallTls;
 
@@ -3361,6 +3340,13 @@ public:
 
         return *retAddrSlot;
     }
+
+#ifdef FEATURE_HIJACK
+    void* GetHijackedReturnAddress()
+    {
+        return m_pvHJRetAddr;
+    }
+#endif
 
 #ifdef _DEBUG
 private:

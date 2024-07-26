@@ -3,9 +3,11 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics.Tensors
 {
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public interface IReadOnlyTensor<TSelf, T> : IEnumerable<T>
         where TSelf : IReadOnlyTensor<TSelf, T>
     {
@@ -28,9 +30,11 @@ namespace System.Numerics.Tensors
         void CopyTo(scoped TensorSpan<T> destination);
         void FlattenTo(scoped Span<T> destination);
 
-        // These are not properties so that structs can implement the interface without allocating:
-        void GetLengths(scoped Span<nint> destination);
-        void GetStrides(scoped Span<nint> destination);
+        [UnscopedRef]
+        ReadOnlySpan<nint> Lengths { get; }
+
+        [UnscopedRef]
+        ReadOnlySpan<nint> Strides { get; }
 
         ref readonly T GetPinnableReference();
         TSelf Slice(params scoped ReadOnlySpan<nint> start);

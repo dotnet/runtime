@@ -22,7 +22,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		[KeptAttributeAttribute (typeof (KeepsPublicFieldsAttribute))]
 		[KeptAttributeAttribute (typeof (TypeArrayAttribute))]
 		[KeepsPublicConstructor (typeof (ClassWithKeptPublicConstructor))]
-		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods")]
+		[KeepsPublicMethods ("Mono.Linker.Tests.Cases.DataFlow.AttributeConstructorDataflow+ClassWithKeptPublicMethods, test")]
 		[KeepsPublicFields (null, null)]
 		[TypeArray (new Type[] { typeof (AttributeConstructorDataflow) })]
 		[ExpectedWarning ("IL2026", "--ClassWithKeptPublicMethods--", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2273")]

@@ -133,6 +133,8 @@ namespace ILLink.Shared.TrimAnalysis
 							=> new SystemTypeValue (typeHandle.RepresentedType),
 						RuntimeTypeHandleForGenericParameterValue genericParam
 							=> _annotations.GetGenericParameterValue (genericParam.GenericParameter),
+						RuntimeTypeHandleForValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
+							=> valueWithDynamicallyAccessedMembers.UnderlyingTypeValue,
 						_ => annotatedMethodReturnValue
 					});
 				}
@@ -157,6 +159,8 @@ namespace ILLink.Shared.TrimAnalysis
 								=> new RuntimeTypeHandleValue (typeHandle.RepresentedType),
 							GenericParameterValue genericParam
 								=> new RuntimeTypeHandleForGenericParameterValue (genericParam.GenericParameter),
+							ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers
+								=> new RuntimeTypeHandleForValueWithDynamicallyAccessedMembers(valueWithDynamicallyAccessedMembers),
 							_ => annotatedMethodReturnValue
 						});
 					else
@@ -286,6 +290,9 @@ namespace ILLink.Shared.TrimAnalysis
 				foreach (var typeHandleValue in argumentValues[0].AsEnumerable ()) {
 					if (typeHandleValue is RuntimeTypeHandleValue runtimeTypeHandleValue) {
 						MarkStaticConstructor (runtimeTypeHandleValue.RepresentedType);
+					} else if (typeHandleValue is RuntimeTypeHandleForValueWithDynamicallyAccessedMembers damAnnotatedHandle
+						&& (damAnnotatedHandle.UnderlyingTypeValue.DynamicallyAccessedMemberTypes & DynamicallyAccessedMemberTypes.NonPublicConstructors) != 0) {
+						// No action needed, NonPublicConstructors keeps the static constructor on the type
 					} else {
 						_diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedTypeInRuntimeHelpersRunClassConstructor, calledMethod.GetDisplayName ());
 					}
@@ -902,7 +909,7 @@ namespace ILLink.Shared.TrimAnalysis
 						} else {
 							// Any other type - perform generic parameter validation
 							var genericParameterValues = GetGenericParameterValues (typeValue.RepresentedType.GetGenericParameters ());
-							if (!AnalyzeGenericInstantiationTypeArray (argumentValues[0], calledMethod, genericParameterValues)) {
+							if (!AnalyzeGenericInstantiationTypeArray (argumentValues[0], genericParameterValues)) {
 								_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericType, calledMethod.GetDisplayName ());
 							}
 						}
@@ -1235,7 +1242,7 @@ namespace ILLink.Shared.TrimAnalysis
 				yield return NullValue.Instance;
 		}
 
-		private bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
+		private bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, ImmutableArray<GenericParameterValue> genericParameters)
 		{
 			bool hasRequirements = false;
 			foreach (var genericParameter in genericParameters) {
@@ -1273,10 +1280,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 				for (int i = 0; i < size.Value; i++) {
 					if (array.TryGetValueByIndex (i, out MultiValue value)) {
-						// https://github.com/dotnet/linker/issues/2428
-						// We need to report the target as "this" - as that was the previous behavior
-						// but with the annotation from the generic parameter.
-						var targetValue = _annotations.GetMethodThisParameterValue (calledMethod, GetGenericParameterEffectiveMemberTypes (genericParameters[i]), overrideIsThis: true);
+						var targetValue = _annotations.GetGenericParameterValue (genericParameters[i].GenericParameter, GetGenericParameterEffectiveMemberTypes (genericParameters[i]));
 						_requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 					}
 				}
@@ -1308,7 +1312,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 
 			var genericParameterValues = GetGenericParameterValues (genericMethod.GetGenericParameters ());
-			if (!AnalyzeGenericInstantiationTypeArray (genericParametersArray, reflectionMethod, genericParameterValues)) {
+			if (!AnalyzeGenericInstantiationTypeArray (genericParametersArray, genericParameterValues)) {
 				_diagnosticContext.AddDiagnostic (DiagnosticId.MakeGenericMethod, reflectionMethod.GetDisplayName ());
 			}
 		}

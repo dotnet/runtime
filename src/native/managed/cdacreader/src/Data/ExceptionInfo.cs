@@ -13,7 +13,10 @@ internal sealed class ExceptionInfo : IData<ExceptionInfo>
         Target.TypeInfo type = target.GetTypeInfo(DataType.ExceptionInfo);
 
         PreviousNestedInfo = target.ReadPointer(address + (ulong)type.Fields[nameof(PreviousNestedInfo)].Offset);
+        ThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(
+            target.ReadPointer(address + (ulong)type.Fields[nameof(ThrownObject)].Offset));
     }
 
     public TargetPointer PreviousNestedInfo { get; init; }
+    public ObjectHandle ThrownObject { get; init; }
 }

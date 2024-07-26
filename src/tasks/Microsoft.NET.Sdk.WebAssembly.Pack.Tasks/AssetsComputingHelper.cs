@@ -71,7 +71,8 @@ public class AssetsComputingHelper
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
             ".map" when !emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => "source map file is not published",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
-            ".js" when assetType == "native" && !(dotnetJsSingleThreadNames.Contains(fileName) || (enableThreads && fileName == "dotnet.native.worker")) => $"{fileName}{extension} is not used by Blazor",
+            ".js" when assetType == "native" && !dotnetJsSingleThreadNames.Contains(fileName) => $"{fileName}{extension} is not used by Blazor",
+            ".mjs" when assetType == "native" && !(enableThreads && fileName == "dotnet.native.worker") => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",
             ".symbols" when fromMonoPackage => "extension .symbols is not required.",
             _ => null
@@ -92,20 +93,51 @@ public class AssetsComputingHelper
         return monoPackageIds.Contains(packageId, StringComparer.Ordinal);
     }
 
-    public static string GetCandidateRelativePath(ITaskItem candidate)
+    public static string GetCandidateRelativePath(ITaskItem candidate, bool fingerprintAssets, bool fingerprintDotNetJs)
     {
+        const string optionalFingerprint = "#[.{fingerprint}]?";
+        const string requiredFingerprint = "#[.{fingerprint}]!";
+
+        string fileName = candidate.GetMetadata("FileName");
+        string extension = candidate.GetMetadata("Extension");
+        string subPath = string.Empty;
+
         var destinationSubPath = candidate.GetMetadata("DestinationSubPath");
         if (!string.IsNullOrEmpty(destinationSubPath))
-            return $"_framework/{destinationSubPath}";
+        {
+            fileName = Path.GetFileNameWithoutExtension(destinationSubPath);
+            extension = Path.GetExtension(destinationSubPath);
+            subPath = Path.GetDirectoryName(destinationSubPath);
+            if (!string.IsNullOrEmpty(subPath))
+                subPath += "/";
+        }
 
-        var relativePath = candidate.GetMetadata("FileName") + candidate.GetMetadata("Extension");
-        return $"_framework/{relativePath}";
+        string relativePath;
+        if (fingerprintAssets)
+        {
+            relativePath = (fileName, extension) switch
+            {
+                ("dotnet", ".js") => string.Concat(fileName, fingerprintDotNetJs ? requiredFingerprint : optionalFingerprint, extension),
+                ("dotnet.runtime", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.native", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.native.worker", ".mjs") => string.Concat(fileName, requiredFingerprint, extension),
+                ("dotnet.globalization", ".js") => string.Concat(fileName, requiredFingerprint, extension),
+                ("segmentation-rules", ".json") => string.Concat(fileName, requiredFingerprint, extension),
+                _ => string.Concat(fileName, extension)
+            };
+        }
+        else
+        {
+            relativePath = string.Concat(fileName, extension);
+        }
+
+        return $"_framework/{subPath}{relativePath}";
     }
 
-    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate)
+    public static ITaskItem GetCustomIcuAsset(ITaskItem candidate, bool fingerprintAssets)
     {
         var customIcuCandidate = new TaskItem(candidate);
-        var relativePath = GetCandidateRelativePath(customIcuCandidate);
+        var relativePath = GetCandidateRelativePath(customIcuCandidate, fingerprintAssets, false);
         customIcuCandidate.SetMetadata("RelativePath", relativePath);
         customIcuCandidate.SetMetadata("AssetTraitName", "BlazorWebAssemblyResource");
         customIcuCandidate.SetMetadata("AssetTraitValue", "native");

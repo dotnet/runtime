@@ -62,7 +62,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <IlcOutputFileExt Condition="$(IlcOutputFileExt) == ''">$(NativeObjectExt)</IlcOutputFileExt>
 
-    <IsNativeExecutable Condition="'$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe'">true</IsNativeExecutable>
+    <IsNativeExecutable Condition="('$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe') and '$(NativeLib)' == ''">true</IsNativeExecutable>
 
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetOS)' == 'win'">.exe</NativeBinaryExt>
     <NativeBinaryExt Condition="'$(IsNativeExecutable)' == 'true' and '$(_targetOS)' != 'win'"></NativeBinaryExt>
@@ -290,7 +290,6 @@ The .NET Foundation licenses this file to you under the MIT license.
 
       <!-- The managed debugging support in libraries is unused - trim it -->
       <IlcArg Condition="'$(DebuggerSupport)' != 'true'" Include="--feature:System.Diagnostics.Debugger.IsSupported=false" />
-      <IlcArg Condition="'$(UseWindowsThreadPool)' != '' and '$(_targetOS)' == 'win'" Include="--feature:System.Threading.ThreadPool.UseWindowsThreadPool=$(UseWindowsThreadPool)" />
     </ItemGroup>
 
     <MakeDir Directories="$(NativeIntermediateOutputPath)" />
