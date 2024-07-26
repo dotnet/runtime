@@ -561,17 +561,9 @@ public:
     unsigned char lvIsLastUseCopyOmissionCandidate : 1;
 #endif // FEATURE_IMPLICIT_BYREFS
 
-#if defined(TARGET_LOONGARCH64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for LA-ABI64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_LOONGARCH64)
-
-#if defined(TARGET_RISCV64)
-    unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for RISCV64.
-    unsigned char lvIs4Field2 : 1; // Set if the 2nd field is int or float within struct for RISCV64.
-    unsigned char lvIsSplit   : 1; // Set if the argument is splited.
-#endif                             // defined(TARGET_RISCV64)
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    unsigned char lvIsSplit : 1; // Set if the argument is split across last integer register and stack.
+#endif                           // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 
     unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
                                    // updates
@@ -11496,6 +11488,11 @@ public:
     void GetStructTypeOffset(
         CORINFO_CLASS_HANDLE typeHnd, var_types* type0, var_types* type1, uint8_t* offset0, uint8_t* offset1);
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    typedef JitHashTable<CORINFO_CLASS_HANDLE, JitPtrKeyFuncs<struct CORINFO_CLASS_STRUCT_>, CORINFO_FPSTRUCT_LOWERING*>
+                                     FpStructLoweringMap;
+    FpStructLoweringMap*             m_fpStructLoweringCache;
+    const CORINFO_FPSTRUCT_LOWERING* GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle);
 #endif // defined(UNIX_AMD64_ABI)
 
     void     fgMorphMultiregStructArgs(GenTreeCall* call);
