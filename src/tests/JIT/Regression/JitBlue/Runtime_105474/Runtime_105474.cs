@@ -31,6 +31,10 @@ public class Runtime_105474_A
             {
 
             }
+            catch (Exception)
+            {
+                throw new Exception("Expected an ArgumentOutOfRangeException.");
+            }
         }
     }
 
