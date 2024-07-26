@@ -3066,7 +3066,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
     }
 
     GenTree* startNonGCNode = nullptr;
-    if (putargs.Height() > 0)
+    if (!putargs.Empty())
     {
         GenTree* firstPutargStk = putargs.Bottom(0);
         for (int i = 1; i < putargs.Height(); i++)
