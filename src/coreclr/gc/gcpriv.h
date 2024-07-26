@@ -154,7 +154,7 @@ inline void FATAL_GC_ERROR()
 #if defined(USE_REGIONS) && defined(MULTIPLE_HEAPS)
 // can only change heap count with regions
 #define DYNAMIC_HEAP_COUNT
-#define STRESS_DYNAMIC_HEAP_COUNT
+//#define STRESS_DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS && MULTIPLE_HEAPS
 
 #ifdef USE_REGIONS
@@ -1684,6 +1684,11 @@ private:
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
     PER_HEAP_ISOLATED_METHOD void compute_gc_and_ephemeral_range (int condemned_gen_number, bool end_of_gc_p);
+
+    PER_HEAP_ISOLATED_METHOD void distribute_free_regions();
+
+    PER_HEAP_ISOLATED_METHOD void age_free_regions (const char* msg);
+
 #ifdef STRESS_REGIONS
     PER_HEAP_METHOD void pin_by_gc (uint8_t* object);
 #endif //STRESS_REGIONS
@@ -2386,11 +2391,23 @@ private:
                                       );
     PER_HEAP_METHOD void reset_heap_segment_pages (heap_segment* seg);
     PER_HEAP_METHOD void decommit_heap_segment_pages (heap_segment* seg, size_t extra_space);
+
 #if defined(MULTIPLE_HEAPS)
     PER_HEAP_METHOD size_t decommit_ephemeral_segment_pages_step ();
 #endif //MULTIPLE_HEAPS
     PER_HEAP_METHOD size_t decommit_heap_segment_pages_worker (heap_segment* seg, uint8_t *new_committed);
+
+#if !defined(USE_REGIONS) || defined(MULTIPLE_HEAPS)
+    PER_HEAP_METHOD uint8_t* get_smoothed_decommit_target (uint8_t* previous_decommit_target,
+        uint8_t* new_decommit_target, heap_segment* seg);
+
+    PER_HEAP_METHOD void decommit_ephemeral_segment_pages();
+#endif //!USE_REGIONS || MULTIPLE_HEAPS
+
+#if defined(MULTIPLE_HEAPS) || defined(USE_REGIONS)
     PER_HEAP_ISOLATED_METHOD bool decommit_step (uint64_t step_milliseconds);
+#endif //MULTIPLE_HEAPS || USE_REGIONS
+
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD size_t decommit_region (heap_segment* region, int bucket, int h_number);
 #endif //USE_REGIONS
@@ -2413,8 +2430,6 @@ private:
     PER_HEAP_METHOD void rearrange_heap_segments(BOOL compacting);
 #endif //!USE_REGIONS
     PER_HEAP_METHOD void delay_free_segments();
-    PER_HEAP_ISOLATED_METHOD void distribute_free_regions();
-    PER_HEAP_ISOLATED_METHOD void age_free_regions(const char* label);
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED_METHOD void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED_METHOD void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
@@ -2594,6 +2609,8 @@ private:
     PER_HEAP_METHOD bool change_heap_count (int new_n_heaps);
 
     PER_HEAP_ISOLATED_METHOD void get_msl_wait_time (size_t* soh_msl_wait_time, size_t* uoh_msl_wait_time);
+
+    PER_HEAP_ISOLATED_METHOD void process_datas_sample();
 #endif //DYNAMIC_HEAP_COUNT
 #endif //USE_REGIONS
 
@@ -3076,8 +3093,6 @@ private:
     PER_HEAP_METHOD void trim_youngest_desired_low_memory();
 
     PER_HEAP_METHOD ptrdiff_t estimate_gen_growth (int gen);
-
-    PER_HEAP_METHOD void decommit_ephemeral_segment_pages();
 
 #ifdef HOST_64BIT
     PER_HEAP_ISOLATED_METHOD size_t trim_youngest_desired (uint32_t memory_load,
@@ -4152,9 +4167,13 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint8_t* gc_high; // high end of the highest region being condemned
 #endif //USE_REGIONS
 
+#ifdef DYNAMIC_HEAP_COUNT
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC uint64_t before_distribute_free_regions_time;
+
 #ifdef STRESS_DYNAMIC_HEAP_COUNT
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC int heaps_in_this_gc;
 #endif //STRESS_DYNAMIC_HEAP_COUNT
+#endif //DYNAMIC_HEAP_COUNT
 
     /**************************************************/
     // PER_HEAP_ISOLATED_FIELD_SINGLE_GC_ALLOC fields //
@@ -4978,12 +4997,15 @@ private:
             size_t total_budget_old_gen = compute_total_gen0_budget (total_soh_stable_size);
             size_t budget_old_gen_per_heap = total_budget_old_gen / n_heaps;
             budget_old_gen_per_heap = Align (budget_old_gen_per_heap, get_alignment_constant (TRUE));
-
-            dprintf (6666, ("-> %Id / heap (% .3fmb)",
-                budget_old_gen_per_heap, ((double)budget_old_gen_per_heap / 1000.0 / 1000.0)));
+            size_t saved_budget_old_gen_per_heap = budget_old_gen_per_heap;
 
             budget_old_gen_per_heap = min (max_gen0_new_allocation, budget_old_gen_per_heap);
             budget_old_gen_per_heap = max (min_gen0_new_allocation, budget_old_gen_per_heap);
+
+            dprintf (6666, ("BCD: %Id/heap (%.3fmb) -> %.3fmb, BCS %Id/heap (%.3fmb)",
+                saved_budget_old_gen_per_heap, ((double)saved_budget_old_gen_per_heap / 1000.0 / 1000.0),
+                ((double)budget_old_gen_per_heap / 1000.0 / 1000.0),
+                bcs_per_heap, ((double)bcs_per_heap / 1000.0 / 1000.0)));
 
             // We want to return a number between bcs and bcd
             if (bcs_per_heap < budget_old_gen_per_heap)
@@ -5053,6 +5075,7 @@ private:
             // Recording the gen2 GC indices so we know how far apart they are. Currently unused
             // but we should consider how much value there is if they are very far apart.
             size_t gc_index;
+            uint64_t gc_duration; 
             // This is (gc_elapsed_time / time inbetween this and the last gen2 GC)
             float gc_percent;
         };
@@ -5063,6 +5086,19 @@ private:
         size_t          current_gen2_samples_count;
         size_t          processed_gen2_samples_count;
         size_t          gen2_last_changed_sample_count;
+
+        gen2_sample& get_last_gen2_sample()
+        {
+            int last_sample_index = (gen2_sample_index + sample_size - 1) % sample_size;
+            gen2_sample& s = gen2_samples[last_sample_index];
+            return s;
+        }
+
+        gen2_sample& get_current_gen2_sample()
+        {
+            gen2_sample& s = gen2_samples[gen2_sample_index];
+            return s;
+        }
 
         int             new_n_heaps;
         // the heap count we changed from
@@ -5086,10 +5122,12 @@ private:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t current_total_soh_stable_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t last_suspended_end_time;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint64_t change_heap_count_time;
+
     // If the last full GC is blocking, this is that GC's index; for BGC, this is the settings.gc_index
     // when the BGC ended.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t gc_index_full_gc_end;
 
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED bool trigger_initial_gen2_p;
 #ifdef BACKGROUND_GC
     // This is set when change_heap_count wants the next GC to be a BGC for rethreading gen2 FL
     // and reset during that BGC.
@@ -6001,12 +6039,15 @@ public:
     uint8_t*        background_allocated;
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(USE_REGIONS)
     uint8_t*        saved_committed;
     size_t          saved_desired_allocation;
-#endif // _DEBUG
+#endif //_DEBUG && ! USE_REGIONS
 #endif //MULTIPLE_HEAPS
+
+#if !defined(USE_REGIONS) || defined(MULTIPLE_HEAPS)
     uint8_t*        decommit_target;
+#endif //!USE_REGIONS || MULTIPLE_HEAPS
     uint8_t*        plan_allocated;
     // In the plan phase we change the allocated for a seg but we need this
     // value to correctly calculate how much space we can reclaim in
@@ -6310,11 +6351,13 @@ uint8_t*& heap_segment_committed (heap_segment* inst)
 {
   return inst->committed;
 }
+#if !defined(USE_REGIONS) || defined(MULTIPLE_HEAPS)
 inline
 uint8_t*& heap_segment_decommit_target (heap_segment* inst)
 {
     return inst->decommit_target;
 }
+#endif //!USE_REGIONS || MULTIPLE_HEAPS
 inline
 uint8_t*& heap_segment_used (heap_segment* inst)
 {
