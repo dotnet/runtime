@@ -217,6 +217,38 @@ namespace System.Diagnostics.Metrics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         [OuterLoop("Slow and has lots of console spew")]
+        public void SingleListener_Wildcard()
+        {
+            using Meter meter = new Meter("TestMeter1");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+
+            using Meter meter2 = new Meter("TestMeter2", null, new TagList() { { "Mk1", "Mv1" } }, new object());
+            Counter<int> c2 = meter2.CreateCounter<int>("counter2");
+
+            using Meter meter3 = new Meter("TestMeter3", null, new TagList() { { "MMk1", null }, { "MMk2", null } }, new object());
+            Counter<int> c3 = meter3.CreateCounter<int>("counter3");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, "*"))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                c.Add(5);
+                c2.Add(10);
+                c3.Add(20);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                events = listener.Events.ToArray();
+            }
+
+            AssertBeginInstrumentReportingEventsPresent(events, c, c2, c3);
+            AssertInitialEnumerationCompleteEventPresent(events);
+            AssertCounterEventsPresent(events, meter.Name, c.Name, "", "", ("5", "5"));
+            AssertCounterEventsPresent(events, meter2.Name, c2.Name, "", "", ("10", "10"));
+            AssertCounterEventsPresent(events, meter3.Name, c3.Name, "", "", ("20", "20"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 2);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
         public void MultipleListeners_OverlappingListeners()
         {
             using Meter meter = new Meter("TestMeter1", null, new TagList() { { "Mk1", "Mv1" } }, new object());
