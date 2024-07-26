@@ -3468,7 +3468,7 @@ public:
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
 
-    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset, ClassLayout* layout = nullptr);
+    GenTreeLclFld* gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset);
     GenTreeRetExpr* gtNewInlineCandidateReturnExpr(GenTreeCall* inlineCandidate, var_types type);
 
     GenTreeFieldAddr* gtNewFieldAddrNode(var_types            type,
@@ -4512,10 +4512,7 @@ protected:
         MakeInlineObservation = 2,
     };
 
-    GenTree* impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls,
-        GenTree* value);
     GenTree* impInlineUnboxNullable(CORINFO_CLASS_HANDLE nullableCls, GenTree* nullableClsNode, GenTree* obj);
-    void impLoadNullableFields(GenTree* nullableObj, CORINFO_CLASS_HANDLE nullableCls, GenTree** hasValueFld, GenTree** valueFld);
 
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
