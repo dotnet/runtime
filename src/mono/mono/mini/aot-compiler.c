@@ -1236,7 +1236,7 @@ arch_init (MonoAotCompile *acfg)
 	acfg->flags = (MonoAotFileFlags)(acfg->flags | MONO_AOT_FILE_FLAG_CODE_EXEC_ONLY);
 #endif
 #endif
-	g_string_append (acfg->llc_args, " -enable-implicit-null-checks -disable-fault-maps");
+	g_string_append (acfg->llc_args, " -disable-fault-maps");
 
 	if (mono_use_fast_math) {
 		// same parameters are passed to opt and LLVM JIT

@@ -3205,7 +3205,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	/* coop requires loop detection to happen */
 	if (mini_safepoints_enabled ())
 		cfg->opt |= MONO_OPT_LOOP;
-	cfg->disable_llvm_implicit_null_checks = mini_debug_options.llvm_disable_implicit_null_checks;
+	cfg->disable_llvm_implicit_null_checks = TRUE; // mini_debug_options.llvm_disable_implicit_null_checks;
 	if (cfg->backend->explicit_null_checks || mini_debug_options.explicit_null_checks) {
 		/* some platforms have null pages, so we can't SIGSEGV */
 		cfg->explicit_null_checks = TRUE;
