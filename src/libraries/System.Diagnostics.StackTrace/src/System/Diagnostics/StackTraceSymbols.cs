@@ -58,12 +58,11 @@ namespace System.Diagnostics
             sourceLine = 0;
             sourceColumn = 0;
 
-            MetadataReader? reader = TryGetReader(assembly, assemblyPath, loadedPeAddress, loadedPeSize, isFileLayout, inMemoryPdbAddress, inMemoryPdbSize);
-            if (reader != null)
+            Handle handle = MetadataTokens.Handle(methodToken);
+            if (!handle.IsNil && handle.Kind == HandleKind.MethodDefinition)
             {
-                Handle handle = MetadataTokens.Handle(methodToken);
-
-                if (!handle.IsNil && handle.Kind == HandleKind.MethodDefinition)
+                MetadataReader? reader = TryGetReader(assembly, assemblyPath, loadedPeAddress, loadedPeSize, isFileLayout, inMemoryPdbAddress, inMemoryPdbSize);
+                if (reader != null)
                 {
                     MethodDebugInformationHandle methodDebugHandle = ((MethodDefinitionHandle)handle).ToDebugInformationHandle();
                     MethodDebugInformation methodInfo = reader.GetMethodDebugInformation(methodDebugHandle);
