@@ -3012,6 +3012,12 @@ GenTree* Compiler::impStoreNullableFields(CORINFO_CLASS_HANDLE nullableCls, GenT
     ClassLayout* layout        = valueType == TYP_STRUCT ? typGetObjLayout(valueStructCls) : nullptr;
     GenTree*     valueStore    = gtNewStoreLclFldNode(resultTmp, valueType, layout, valueOffset, value);
 
+    // ABI handling for struct values
+    if (varTypeIsStruct(valueStore))
+    {
+        valueStore = impStoreStruct(valueStore, CHECK_SPILL_ALL);
+    }
+
     impAppendTree(hasValueStore, CHECK_SPILL_ALL, impCurStmtDI);
     impAppendTree(valueStore, CHECK_SPILL_ALL, impCurStmtDI);
     return gtNewLclvNode(resultTmp, TYP_STRUCT);
@@ -3152,7 +3158,6 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              (info.compCompHnd->isNullableType(unboxResolvedToken.hClass) == TypeCompareState::Must) &&
                              (info.compCompHnd->getTypeForBox(unboxResolvedToken.hClass) == pResolvedToken->hClass))
                     {
-                        impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
                         GenTree* result = impStoreNullableFields(unboxResolvedToken.hClass, impPopStack().val);
                         impPushOnStack(result, typeInfo(result->TypeGet()));
                         optimize = true;
