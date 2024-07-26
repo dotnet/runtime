@@ -191,10 +191,10 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        [SupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("browser")]
+        [SupportedOSPlatform("maccatalyst")]
         private static IEnumerable<Measurement<double>> GetCpuTime()
         {
             Debug.Assert(s_processCpuTime is not null);
