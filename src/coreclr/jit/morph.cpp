@@ -3288,8 +3288,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     bool                 found        = false;
 
     // Attempt to find a local we have already used for an outgoing struct and reuse it.
-    // We do not reuse within a statement.
-    if (!opts.MinOpts())
+    // We do not reuse within a statement and we don't reuse if we're in LIR
+    if (!opts.MinOpts() && (fgOrder == FGOrderTree))
     {
         found = ForEachHbvBitSet(*fgAvailableOutgoingArgTemps, [&](indexType lclNum) {
             LclVarDsc*   varDsc = lvaGetDesc((unsigned)lclNum);
