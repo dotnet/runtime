@@ -2730,9 +2730,7 @@ namespace System
 
             ArgumentNullException.ThrowIfNull(interfaceType);
 
-            RuntimeType? ifaceRtType = interfaceType as RuntimeType;
-
-            if (ifaceRtType == null)
+            RuntimeType ifaceRtType = interfaceType as RuntimeType ??
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(interfaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.TypeHandle;
@@ -3312,7 +3310,7 @@ namespace System
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo([NotNullWhen(true)] Type? other)
         {
-            if (!(other is RuntimeType otherRtType))
+            if (other is not RuntimeType otherRtType)
             {
                 return false;
             }
@@ -3580,10 +3578,7 @@ namespace System
             bool foundNonRuntimeType = false;
             for (int i = 0; i < instantiation.Length; i++)
             {
-                Type instantiationElem = instantiation[i];
-                if (instantiationElem == null)
-                    throw new ArgumentNullException();
-
+                Type instantiationElem = instantiation[i] ?? throw new ArgumentNullException();
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
                 if (rtInstantiationElem == null)
@@ -4327,7 +4322,7 @@ namespace System.Reflection
         private static int GetHashCodeHelper(K key)
         {
             // For strings we don't want the key to differ across domains as CerHashtable might be shared.
-            if (!(key is string sKey))
+            if (key is not string sKey)
             {
                 return key.GetHashCode();
             }

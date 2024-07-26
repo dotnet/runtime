@@ -145,8 +145,8 @@ unsigned Compiler::getFFRegisterVarNum()
 {
     if (lvaFfrRegister == BAD_VAR_NUM)
     {
-        lvaFfrRegister                  = lvaGrabTempWithImplicitUse(false DEBUGARG("Save the FFR value."));
-        lvaTable[lvaFfrRegister].lvType = TYP_MASK;
+        lvaFfrRegister                                 = lvaGrabTemp(false DEBUGARG("Save the FFR value."));
+        lvaTable[lvaFfrRegister].lvType                = TYP_MASK;
         lvaTable[lvaFfrRegister].lvUsedInSIMDIntrinsic = true;
     }
     return lvaFfrRegister;

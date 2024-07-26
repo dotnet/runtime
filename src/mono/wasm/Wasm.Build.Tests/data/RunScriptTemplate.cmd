@@ -56,6 +56,11 @@ if [%TEST_USING_WEBCIL%] == [false] (
 ) else (
    set USE_WEBCIL_FOR_TESTS=true
 )
+if [%TEST_USING_FINGERPRINTING%] == [false] (
+   set USE_FINGERPRINTING_FOR_TESTS=false
+) else (
+   set USE_FINGERPRINTING_FOR_TESTS=true
+)
 
 if [%HELIX_CORRELATION_PAYLOAD%] NEQ [] (
     robocopy /mt /np /nfl /NDL /nc /e %BASE_DIR%\%SDK_DIR_NAME% %EXECUTION_DIR%\%SDK_DIR_NAME%

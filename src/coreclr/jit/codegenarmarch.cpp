@@ -1512,7 +1512,7 @@ void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
     if (varTypeIsMask(targetType))
     {
         assert(tree->gtSrcReg == REG_FFR);
-        GetEmitter()->emitIns_R(INS_sve_rdffr, EA_SCALABLE, REG_FFR);
+        GetEmitter()->emitIns_R(INS_sve_rdffr, EA_SCALABLE, targetReg);
     }
     else
 #endif

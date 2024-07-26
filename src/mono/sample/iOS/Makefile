@@ -1,8 +1,11 @@
-MONO_CONFIG?=Debug
-MONO_ARCH?=x64
-DOTNET := ../../../../dotnet.sh
+.DEFAULT_GOAL := all
+
+TOP=../../../../
+
+BUILD_CONFIG?=Debug
+TARGET_ARCH?=$(shell . $(TOP)eng/common/native/init-os-and-arch.sh && echo $${arch})
+TARGET_OS?=iossimulator
 USE_LLVM=true
-TARGET?=iossimulator
 DEPLOY_AND_RUN?=true
 APP_SANDBOX?=false
 STRIP_DEBUG_SYMBOLS?=false # only used when measuring SOD via build-appbundle make target
@@ -15,22 +18,26 @@ HYBRID_GLOBALIZATION?=true
 #DIAGNOSTIC_PORTS=127.0.0.1:9000,suspend
 #DIAGNOSTIC_PORTS=$(DOTNET_DiagnosticPorts)
 
+REPO_DIR=$(realpath $(TOP))
+TASKS_DIR=$(REPO_DIR)/src/tasks
+DOTNET=$(REPO_DIR)/dotnet.sh
+BUILD_SCRIPT=$(REPO_DIR)/build.sh
+
 all: runtimepack run
 
-TOOLS_DIR=../../../tasks
 appbuilder:
-	$(DOTNET) build -c Debug $(TOOLS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
-	$(DOTNET) build -c Debug $(TOOLS_DIR)/MonoTargetsTasks/MonoTargetsTasks.csproj
-	$(DOTNET) build -c Debug $(TOOLS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
+	$(DOTNET) build -c $(BUILD_CONFIG) $(TASKS_DIR)/AotCompilerTask/MonoAOTCompiler.csproj
+	$(DOTNET) build -c $(BUILD_CONFIG) $(TASKS_DIR)/MonoTargetsTasks/MonoTargetsTasks.csproj
+	$(DOTNET) build -c $(BUILD_CONFIG) $(TASKS_DIR)/AppleAppBuilder/AppleAppBuilder.csproj
 
 runtimepack:
-	../../../../build.sh mono+libs -os $(TARGET) -arch $(MONO_ARCH) -c $(MONO_CONFIG)
+	$(BUILD_SCRIPT) mono+libs -os $(TARGET_OS) -arch $(TARGET_ARCH) -c $(BUILD_CONFIG)
 
 build-appbundle: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
-	/p:TargetOS=$(TARGET) \
-	/p:TargetArchitecture=$(MONO_ARCH) \
+	-c $(BUILD_CONFIG) \
+	/p:TargetOS=$(TARGET_OS) \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:StripDebugSymbols=$(STRIP_DEBUG_SYMBOLS) \
 	/p:DeployAndRun=false \
@@ -39,9 +46,9 @@ build-appbundle: clean appbuilder
 
 run: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
+	-c $(BUILD_CONFIG) \
 	/p:TargetOS=ios \
-	/p:TargetArchitecture=$(MONO_ARCH) \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	'/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)"' \
@@ -49,9 +56,9 @@ run: clean appbuilder
 
 run-sim: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
+	-c $(BUILD_CONFIG) \
 	/p:TargetOS=iossimulator \
-	/p:TargetArchitecture=$(MONO_ARCH) \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
@@ -60,9 +67,9 @@ run-sim: clean appbuilder
 
 run-sim-interp: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
+	-c $(BUILD_CONFIG) \
 	/p:TargetOS=iossimulator \
-	/p:TargetArchitecture=$(MONO_ARCH) \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
 	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
@@ -71,9 +78,9 @@ run-sim-interp: clean appbuilder
 
 run-catalyst: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
+	-c $(BUILD_CONFIG) \
 	/p:TargetOS=maccatalyst \
-	/p:TargetArchitecture=$(MONO_ARCH) \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
 	/p:MonoEnableLLVM=false \
 	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
@@ -82,9 +89,9 @@ run-catalyst: clean appbuilder
 
 run-catalyst-interp: clean appbuilder
 	$(DOTNET) publish \
-	-c $(MONO_CONFIG) \
+	-c $(BUILD_CONFIG) \
 	/p:TargetOS=maccatalyst \
-	/p:TargetArchitecture=$(MONO_ARCH) \
+	/p:TargetArchitecture=$(TARGET_ARCH) \
 	/p:MonoEnableLLVM=false \
 	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
@@ -92,4 +99,4 @@ run-catalyst-interp: clean appbuilder
 	/bl
 
 clean:
-	rm -rf bin
+	rm -rf obj bin *.binlog

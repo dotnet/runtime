@@ -1744,12 +1744,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCndSel(node);
         case NI_Sve_SetFfr:
         {
-            // Create physReg FFR definition to store FFR register.
-            unsigned lclNum      = comp->getFFRegisterVarNum();
-            GenTree* ffrReg      = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
-            GenTree* storeLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
-            BlockRange().InsertAfter(node, ffrReg, storeLclVar);
-
+            StoreFFRValue(node);
             break;
         }
         case NI_Sve_GetFfrByte:
@@ -1761,17 +1756,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Sve_GetFfrUInt32:
         case NI_Sve_GetFfrUInt64:
         {
-            unsigned lclNum = comp->lvaFfrRegister;
-            if (lclNum != BAD_VAR_NUM)
+            LIR::Use use;
+            bool     foundUse = BlockRange().TryGetUse(node, &use);
+            if (foundUse)
             {
-                // Consume the FFR register value from local variable to simulate "use" of FFR,
-                // only if we saw its definition earlier.
+                unsigned lclNum = comp->getFFRegisterVarNum();
                 GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
                 BlockRange().InsertBefore(node, lclVar);
-                LowerNode(lclVar);
-
-                node->ResetHWIntrinsicId(intrinsicId, lclVar);
+                use.ReplaceWith(lclVar);
+                GenTree* next = node->gtNext;
+                BlockRange().Remove(node);
+                return next;
             }
+            else
+            {
+                node->SetUnusedValue();
+            }
+
             break;
         }
         case NI_Sve_LoadVectorFirstFaulting:
@@ -1779,12 +1780,13 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             LIR::Use use;
             bool     foundUse = BlockRange().TryGetUse(node, &use);
 
-            unsigned lclNum = comp->lvaFfrRegister;
-            if (lclNum != BAD_VAR_NUM)
+            if (m_ffrTrashed)
             {
                 // Consume the FFR register value from local variable to simulate "use" of FFR,
-                // only if we saw its definition earlier.
-                GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
+                // only if it was trashed. If it was not trashed, we do not have to reload the
+                // contents of the FFR register.
+
+                GenTree* lclVar = comp->gtNewLclvNode(comp->lvaFfrRegister, TYP_MASK);
                 BlockRange().InsertBefore(node, lclVar);
                 LowerNode(lclVar);
 
@@ -1799,14 +1801,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* storeLclVar;
                 use.ReplaceWithLclVar(comp, tmpNum, &storeLclVar);
             }
+            else
+            {
+                node->SetUnusedValue();
+            }
 
-            // Create physReg FFR definition to store FFR register.
-            lclNum                  = comp->getFFRegisterVarNum();
-            GenTree* ffrReg         = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
-            GenTree* storeFfrLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
-
-            BlockRange().InsertAfter(node, ffrReg, storeFfrLclVar);
-
+            StoreFFRValue(node);
             break;
         }
         default:
@@ -4068,6 +4068,37 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* cndSelNode)
     ContainCheckHWIntrinsic(cndSelNode);
     return cndSelNode->gtNext;
 }
+
+#if defined(TARGET_ARM64)
+//----------------------------------------------------------------------------------------------
+// StoreFFRValue: For hwintrinsic that produce a first faulting register (FFR) value, create
+// nodes to save its value to a local variable.
+//
+// Arguments:
+//     node - The node before which the pseudo definition is needed
+//
+void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
+{
+#ifdef DEBUG
+    switch (node->GetHWIntrinsicId())
+    {
+        case NI_Sve_SetFfr:
+        case NI_Sve_LoadVectorFirstFaulting:
+            break;
+        default:
+            assert(!"Unexpected HWIntrinsicId");
+    }
+#endif
+
+    // Create physReg FFR definition to store FFR register.
+    unsigned lclNum      = comp->getFFRegisterVarNum();
+    GenTree* ffrReg      = comp->gtNewPhysRegNode(REG_FFR, TYP_MASK);
+    GenTree* storeLclVar = comp->gtNewStoreLclVarNode(lclNum, ffrReg);
+    BlockRange().InsertAfter(node, ffrReg, storeLclVar);
+    m_ffrTrashed = false;
+}
+#endif // TARGET_ARM64
+
 #endif // FEATURE_HW_INTRINSICS
 
 #endif // TARGET_ARMARCH
