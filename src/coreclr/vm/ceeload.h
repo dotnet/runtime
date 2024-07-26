@@ -951,7 +951,6 @@ public:
 #ifndef DACCESS_COMPILE
     VOID EnsureActive();
     VOID EnsureAllocated();
-    VOID EnsureLibraryLoaded();
 #endif
 
     CHECK CheckActivated();
