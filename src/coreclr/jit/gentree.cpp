@@ -30917,6 +30917,10 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                                 // Ensure we don't lose track the the amount is an overshift
                                 shiftAmount = -1;
                             }
+
+                            // Ensure we broadcast to the right vector size
+                            otherNode->gtType = retType;
+
                             otherNode->AsVecCon()->EvaluateBroadcastInPlace(simdBaseType, shiftAmount);
                         }
                     }
