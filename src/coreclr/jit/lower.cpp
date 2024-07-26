@@ -479,6 +479,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             {
                 return newNode;
             }
+#ifdef TARGET_ARM64
+            m_ffrTrashed = true;
+#endif
         }
         break;
 
@@ -632,8 +635,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             FALLTHROUGH;
 
         case GT_STORE_LCL_FLD:
-            LowerStoreLocCommon(node->AsLclVarCommon());
-            break;
+            return LowerStoreLocCommon(node->AsLclVarCommon());
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_CMPXCHG:
@@ -4783,7 +4785,10 @@ void Lowering::LowerRet(GenTreeOp* ret)
 // Arguments:
 //     lclStore - The store lcl node to lower.
 //
-void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
+// Returns:
+//   Next node to lower.
+//
+GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 {
     assert(lclStore->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
     JITDUMP("lowering store lcl var/field (before):\n");
@@ -4872,8 +4877,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 lclStore->gtOp1            = spilledCall;
                 src                        = lclStore->gtOp1;
                 JITDUMP("lowering store lcl var/field has to spill call src.\n");
-                LowerStoreLocCommon(lclStore);
-                return;
+                return LowerStoreLocCommon(lclStore);
             }
 #endif // !WINDOWS_AMD64_ABI
             convertToStoreObj = false;
@@ -4968,7 +4972,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             DISPTREERANGE(BlockRange(), objStore);
             JITDUMP("\n");
 
-            return;
+            return objStore->gtNext;
         }
     }
 
@@ -4986,11 +4990,13 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         ContainCheckBitCast(bitcast);
     }
 
-    LowerStoreLoc(lclStore);
+    GenTree* next = LowerStoreLoc(lclStore);
 
     JITDUMP("lowering store lcl var/field (after):\n");
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
+
+    return next;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -7694,8 +7700,6 @@ PhaseStatus Lowering::DoPhase()
     }
 #endif
 
-    FinalizeOutgoingArgSpace();
-
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
@@ -7908,6 +7912,7 @@ void Lowering::LowerBlock(BasicBlock* block)
     m_block = block;
 #ifdef TARGET_ARM64
     m_blockIndirs.Reset();
+    m_ffrTrashed = true;
 #endif
 
     // NOTE: some of the lowering methods insert calls before the node being
@@ -10036,7 +10041,7 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
     GenTree* result = comp->gtNewSimdCreateScalarUnsafeNode(simdType, op1, simdBaseJitType, simdSize);
     BlockRange().InsertAfter(op1, result);
 
-    if (result->IsVectorConst())
+    if (result->IsCnsVec())
     {
         BlockRange().Remove(op1);
     }

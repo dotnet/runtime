@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Unicode;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -1452,7 +1453,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private static int CombineMaskBytes(Span<byte> buffer, int maskOffset) =>
+        private static int CombineMaskBytes(ReadOnlySpan<byte> buffer, int maskOffset) =>
             BitConverter.ToInt32(buffer.Slice(maskOffset));
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>
@@ -1544,24 +1545,33 @@ namespace System.Net.WebSockets
         // From https://github.com/aspnet/WebSockets/blob/aa63e27fce2e9202698053620679a9a1059b501e/src/Microsoft.AspNetCore.WebSockets.Protocol/Utilities.cs#L75
         // Performs a stateful validation of UTF-8 bytes.
         // It checks for valid formatting, overlong encodings, surrogates, and value ranges.
-        private static bool TryValidateUtf8(Span<byte> span, bool endOfMessage, Utf8MessageState state)
+        private static bool TryValidateUtf8(ReadOnlySpan<byte> span, bool endOfMessage, Utf8MessageState state)
         {
+            // If no prior segment spilled over and this one is the last, we can validate it efficiently as a complete message.
+            if (endOfMessage && !state.SequenceInProgress)
+            {
+                return Utf8.IsValid(span);
+            }
+
             for (int i = 0; i < span.Length;)
             {
                 // Have we started a character sequence yet?
                 if (!state.SequenceInProgress)
                 {
+                    // Skip past ASCII bytes.
+                    int firstNonAscii = span.Slice(i).IndexOfAnyExceptInRange((byte)0, (byte)127);
+                    if (firstNonAscii < 0)
+                    {
+                        break;
+                    }
+                    i += firstNonAscii;
+
                     // The first byte tells us how many bytes are in the sequence.
                     state.SequenceInProgress = true;
                     byte b = span[i];
                     i++;
-                    if ((b & 0x80) == 0) // 0bbbbbbb, single byte
-                    {
-                        state.AdditionalBytesExpected = 0;
-                        state.CurrentDecodeBits = b & 0x7F;
-                        state.ExpectedValueMin = 0;
-                    }
-                    else if ((b & 0xC0) == 0x80)
+                    Debug.Assert((b & 0x80) != 0, "Should have already skipped past ASCII");
+                    if ((b & 0xC0) == 0x80)
                     {
                         // Misplaced 10bbbbbb continuation byte. This cannot be the first byte.
                         return false;
@@ -1589,6 +1599,7 @@ namespace System.Net.WebSockets
                         return false;
                     }
                 }
+
                 while (state.AdditionalBytesExpected > 0 && i < span.Length)
                 {
                     byte b = span[i];
@@ -1608,12 +1619,14 @@ namespace System.Net.WebSockets
                         // This is going to end up in the range of 0xD800-0xDFFF UTF-16 surrogates that are not allowed in UTF-8;
                         return false;
                     }
+
                     if (state.AdditionalBytesExpected == 2 && state.CurrentDecodeBits >= 0x110)
                     {
                         // This is going to be out of the upper Unicode bound 0x10FFFF.
                         return false;
                     }
                 }
+
                 if (state.AdditionalBytesExpected == 0)
                 {
                     state.SequenceInProgress = false;
@@ -1624,11 +1637,8 @@ namespace System.Net.WebSockets
                     }
                 }
             }
-            if (endOfMessage && state.SequenceInProgress)
-            {
-                return false;
-            }
-            return true;
+
+            return !endOfMessage || !state.SequenceInProgress;
         }
 
         private sealed class Utf8MessageState

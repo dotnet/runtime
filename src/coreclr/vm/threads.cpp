@@ -1178,7 +1178,7 @@ void InitThreadManager()
 
 #ifdef _DEBUG
     // Randomize OBJREF_HASH to handle hash collision.
-    Thread::OBJREF_HASH = OBJREF_TABSIZE - (DbgGetEXETimeStamp()%10);
+    Thread::OBJREF_HASH = OBJREF_TABSIZE - GetRandomInt(10);
 #endif // _DEBUG
 
     ThreadSuspend::Initialize();
@@ -1329,14 +1329,6 @@ Thread::Thread()
 #endif
 
     m_dwForbidSuspendThread = 0;
-
-    // Initialize lock state
-    m_pHead = &m_embeddedEntry;
-    m_embeddedEntry.pNext = m_pHead;
-    m_embeddedEntry.pPrev = m_pHead;
-    m_embeddedEntry.dwLLockID = 0;
-    m_embeddedEntry.dwULockID = 0;
-    m_embeddedEntry.wReaderLevel = 0;
 
     m_pBlockingLock = NULL;
 
@@ -2322,7 +2314,6 @@ int Thread::DecExternalCount(BOOL holdingLock)
         if (!HasValidThreadHandle())
         {
             SelfDelete = this == pCurThread;
-            m_ExceptionState.FreeAllStackTraces();
             if (SelfDelete) {
                 SetThread(NULL);
             }
@@ -4240,7 +4231,10 @@ void Thread::SetLastThrownObject(OBJECTREF throwable, BOOL isUnhandled)
     }
     CONTRACTL_END;
 
-    STRESS_LOG_COND1(LF_EH, LL_INFO100, OBJECTREFToObject(throwable) != NULL, "in Thread::SetLastThrownObject: obj = %p\n", OBJECTREFToObject(throwable));
+    if (OBJECTREFToObject(throwable) != NULL)
+    {
+        STRESS_LOG1(LF_EH, LL_INFO100, "in Thread::SetLastThrownObject: obj = %p\n", OBJECTREFToObject(throwable));
+    }
 
     // you can't have a NULL unhandled exception
     _ASSERTE(!(throwable == NULL && isUnhandled));
@@ -8066,6 +8060,15 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
             frame->EnumMemoryRegions(flags);
             frame = frame->m_Next;
         }
+    }
+
+    //
+    // Add the thread local variables like alloc_context, etc.
+    //
+
+    if (m_pRuntimeThreadLocals.IsValid())
+    {
+        m_pRuntimeThreadLocals.EnumMem();
     }
 
     //

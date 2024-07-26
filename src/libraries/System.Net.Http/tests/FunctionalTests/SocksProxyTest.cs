@@ -109,14 +109,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(exceptionMessage, innerException.Message);
             Assert.Equal("SocksException", innerException.GetType().Name);
 
-            try
-            {
-                await proxy.DisposeAsync();
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
-            }
+            await IgnoreExceptions(proxy.DisposeAsync().AsTask());
         }
     }
 

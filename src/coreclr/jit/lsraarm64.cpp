@@ -607,9 +607,24 @@ int LinearScan::BuildNode(GenTree* tree)
     switch (tree->OperGet())
     {
         default:
+        {
             srcCount = BuildSimple(tree);
             break;
-
+        }
+        case GT_PHYSREG:
+        {
+            srcCount = 0;
+            if (varTypeIsMask(tree))
+            {
+                assert(tree->AsPhysReg()->gtSrcReg == REG_FFR);
+                BuildDef(tree, getSingleTypeRegMask(tree->AsPhysReg()->gtSrcReg, TYP_MASK));
+            }
+            else
+            {
+                BuildSimple(tree);
+            }
+            break;
+        }
         case GT_LCL_VAR:
             // We make a final determination about whether a GT_LCL_VAR is a candidate or contained
             // after liveness. In either case we don't build any uses or defs. Otherwise, this is a
@@ -709,6 +724,29 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTreeVecCon* vecCon = tree->AsVecCon();
 
             if (vecCon->IsAllBitsSet() || vecCon->IsZero())
+            {
+                // Directly encode constant to instructions.
+            }
+            else
+            {
+                // Reserve int to load constant from memory (IF_LARGELDC)
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+
+            srcCount = 0;
+            assert(dstCount == 1);
+
+            RefPosition* def               = BuildDef(tree);
+            def->getInterval()->isConstant = true;
+            break;
+        }
+
+        case GT_CNS_MSK:
+        {
+            GenTreeMskCon* mskCon = tree->AsMskCon();
+
+            if (mskCon->IsAllBitsSet() || mskCon->IsZero())
             {
                 // Directly encode constant to instructions.
             }
@@ -1450,6 +1488,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     case NI_Sve_PrefetchInt32:
                     case NI_Sve_PrefetchInt64:
                     case NI_Sve_ExtractVector:
+                    case NI_Sve_TrigonometricMultiplyAddCoefficient:
                         needBranchTargetReg = !intrin.op3->isContainedIntOrIImmed();
                         break;
 
@@ -1506,7 +1545,23 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         // Can only avoid generating a table if both immediates are constant.
                         assert(intrin.op2->isContainedIntOrIImmed() == intrin.op3->isContainedIntOrIImmed());
                         needBranchTargetReg = !intrin.op2->isContainedIntOrIImmed();
-                        // Ensure that internal does not collide with desination.
+                        // Ensure that internal does not collide with destination.
+                        setInternalRegsDelayFree = true;
+                        break;
+
+                    case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
+                        // This API has two immediates, one of which is used to index pairs of floats in a vector.
+                        // For a vector width of 128 bits, this means the index's range is [0, 1],
+                        // which means we will skip the above jump table register check,
+                        // even though we might need a jump table for the second immediate.
+                        // Thus, this API is special-cased, and does not use the HW_Category_SIMDByIndexedElement path.
+                        // Also, only one internal register is needed for the jump table;
+                        // we will combine the two immediates into one jump table.
+
+                        // Can only avoid generating a table if both immediates are constant.
+                        assert(intrin.op4->isContainedIntOrIImmed() == intrin.op5->isContainedIntOrIImmed());
+                        needBranchTargetReg = !intrin.op4->isContainedIntOrIImmed();
+                        // Ensure that internal does not collide with destination.
                         setInternalRegsDelayFree = true;
                         break;
 
@@ -1618,7 +1673,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             }
             else
             {
-                SingleTypeRegSet predMask = RBM_ALLMASK.GetPredicateRegSet();
+                bool             tgtPrefEmbOp2 = false;
+                SingleTypeRegSet predMask      = RBM_ALLMASK.GetPredicateRegSet();
                 if (intrin.id == NI_Sve_ConditionalSelect)
                 {
                     // If this is conditional select, make sure to check the embedded
@@ -1634,6 +1690,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                         {
                             predMask = RBM_LOWMASK.GetPredicateRegSet();
                         }
+
+                        // Special-case, CreateBreakPropagateMask's op2 is the RMW node.
+                        if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
+                        {
+                            assert(embOp2Node->isRMWHWIntrinsic(compiler));
+                            assert(!tgtPrefOp1);
+                            assert(!tgtPrefOp2);
+                            tgtPrefEmbOp2 = true;
+                        }
                     }
                 }
                 else if (HWIntrinsicInfo::IsLowMaskedOperation(intrin.id))
@@ -1641,9 +1706,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                     predMask = RBM_LOWMASK.GetPredicateRegSet();
                 }
 
-                if (tgtPrefOp2)
+                if (tgtPrefOp2 || tgtPrefEmbOp2)
                 {
-                    srcCount += BuildDelayFreeUses(intrin.op1, intrin.op2, predMask);
+                    assert(!tgtPrefOp1);
+                    srcCount += BuildDelayFreeUses(intrin.op1, nullptr, predMask);
                 }
                 else
                 {
@@ -1919,19 +1985,66 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         }
         else
         {
-            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3));
-            tgtPrefUse = BuildUse(embOp2Node->Op(1));
-            srcCount += 1;
+            const bool embHasImmediateOperand = HWIntrinsicInfo::HasImmediateOperand(intrinEmb.id);
+            assert((numArgs == 1) || (numArgs == 2) || (numArgs == 3) || (embHasImmediateOperand && (numArgs == 4)));
 
-            for (size_t argNum = 2; argNum <= numArgs; argNum++)
+            // Special handling for embedded intrinsics with immediates:
+            // We might need an additional register to hold branch targets into the switch table
+            // that encodes the immediate
+            bool needsInternalRegister;
+            switch (intrinEmb.id)
             {
-                srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), embOp2Node->Op(1));
+                case NI_Sve_ShiftRightArithmeticForDivide:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 2);
+                    needsInternalRegister = !embOp2Node->Op(2)->isContainedIntOrIImmed();
+                    break;
+
+                case NI_Sve_AddRotateComplex:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 3);
+                    needsInternalRegister = !embOp2Node->Op(3)->isContainedIntOrIImmed();
+                    break;
+
+                case NI_Sve_MultiplyAddRotateComplex:
+                    assert(embHasImmediateOperand);
+                    assert(numArgs == 4);
+                    needsInternalRegister = !embOp2Node->Op(4)->isContainedIntOrIImmed();
+                    break;
+
+                default:
+                    assert(!embHasImmediateOperand);
+                    needsInternalRegister = false;
+                    break;
             }
 
-            srcCount += BuildDelayFreeUses(intrin.op3, embOp2Node->Op(1));
+            if (needsInternalRegister)
+            {
+                buildInternalIntRegisterDefForNode(embOp2Node);
+            }
+
+            size_t prefUseOpNum = 1;
+            if (intrinEmb.id == NI_Sve_CreateBreakPropagateMask)
+            {
+                prefUseOpNum = 2;
+            }
+            GenTree* prefUseNode = embOp2Node->Op(prefUseOpNum);
+            for (size_t argNum = 1; argNum <= numArgs; argNum++)
+            {
+                if (argNum == prefUseOpNum)
+                {
+                    tgtPrefUse = BuildUse(prefUseNode);
+                    srcCount += 1;
+                }
+                else
+                {
+                    srcCount += BuildDelayFreeUses(embOp2Node->Op(argNum), prefUseNode);
+                }
+            }
+
+            srcCount += BuildDelayFreeUses(intrin.op3, prefUseNode);
         }
     }
-
     else if (intrin.op2 != nullptr)
     {
         // RMW intrinsic operands doesn't have to be delayFree when they can be assigned the same register as op1Reg
@@ -1942,56 +2055,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         bool             forceOp2DelayFree   = false;
         SingleTypeRegSet lowVectorCandidates = RBM_NONE;
         size_t           lowVectorOperandNum = 0;
-        if ((intrin.id == NI_Vector64_GetElement) || (intrin.id == NI_Vector128_GetElement))
-        {
-            if (!intrin.op2->IsCnsIntOrI() && (!intrin.op1->isContained() || intrin.op1->OperIsLocal()))
-            {
-                // If the index is not a constant and the object is not contained or is a local
-                // we will need a general purpose register to calculate the address
-                // internal register must not clobber input index
-                // TODO-Cleanup: An internal register will never clobber a source; this code actually
-                // ensures that the index (op2) doesn't interfere with the target.
-                buildInternalIntRegisterDefForNode(intrinsicTree);
-                forceOp2DelayFree = true;
-            }
 
-            if (!intrin.op2->IsCnsIntOrI() && !intrin.op1->isContained())
-            {
-                // If the index is not a constant or op1 is in register,
-                // we will use the SIMD temp location to store the vector.
-                var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
-                compiler->getSIMDInitTempVarNum(requiredSimdTempType);
-            }
-        }
-        else if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
+        if (HWIntrinsicInfo::IsLowVectorOperation(intrin.id))
         {
             getLowVectorOperandAndCandidates(intrin, &lowVectorOperandNum, &lowVectorCandidates);
         }
 
-        if ((intrin.id == NI_Sve_ConditionalSelect) && (intrin.op2->IsEmbMaskOp()) &&
-            (intrin.op2->isRMWHWIntrinsic(compiler)))
-        {
-            // For ConditionalSelect, if there is an embedded operation, and the operation has RMW semantics
-            // then record delay-free for them.
-            GenTreeHWIntrinsic* intrinEmbOp2 = intrin.op2->AsHWIntrinsic();
-            size_t              numArgs      = intrinEmbOp2->GetOperandCount();
-            assert((numArgs == 1) || (numArgs == 2));
-            const HWIntrinsic intrinEmb(intrinEmbOp2);
-            if (HWIntrinsicInfo::IsLowVectorOperation(intrinEmb.id))
-            {
-                getLowVectorOperandAndCandidates(intrinEmb, &lowVectorOperandNum, &lowVectorCandidates);
-            }
-
-            tgtPrefUse = BuildUse(intrinEmbOp2->Op(1));
-            srcCount += 1;
-
-            for (size_t argNum = 2; argNum <= numArgs; argNum++)
-            {
-                srcCount += BuildDelayFreeUses(intrinEmbOp2->Op(argNum), intrinEmbOp2->Op(1),
-                                               (argNum == lowVectorOperandNum) ? lowVectorCandidates : RBM_NONE);
-            }
-        }
-        else if (tgtPrefOp2)
+        if (tgtPrefOp2)
         {
             if (!intrin.op2->isContained())
             {
@@ -2011,18 +2081,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_LoadVectorNonTemporal:
                 case NI_Sve_LoadVector128AndReplicateToVector:
                 case NI_Sve_StoreAndZip:
-                case NI_Sve_PrefetchBytes:
-                case NI_Sve_PrefetchInt16:
-                case NI_Sve_PrefetchInt32:
-                case NI_Sve_PrefetchInt64:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
                     srcCount += BuildAddrUses(intrin.op2);
                     break;
 
-                case NI_Sve_GatherPrefetch8Bit:
-                case NI_Sve_GatherPrefetch16Bit:
-                case NI_Sve_GatherPrefetch32Bit:
-                case NI_Sve_GatherPrefetch64Bit:
                 case NI_Sve_GatherVector:
                 case NI_Sve_GatherVectorByteZeroExtend:
                 case NI_Sve_GatherVectorInt16SignExtend:
@@ -2035,6 +2097,16 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtend:
                 case NI_Sve_GatherVectorUInt32ZeroExtend:
                     assert(intrinsicTree->OperIsMemoryLoadOrStore());
+                    FALLTHROUGH;
+
+                case NI_Sve_PrefetchBytes:
+                case NI_Sve_PrefetchInt16:
+                case NI_Sve_PrefetchInt32:
+                case NI_Sve_PrefetchInt64:
+                case NI_Sve_GatherPrefetch8Bit:
+                case NI_Sve_GatherPrefetch16Bit:
+                case NI_Sve_GatherPrefetch32Bit:
+                case NI_Sve_GatherPrefetch64Bit:
                     if (!varTypeIsSIMD(intrin.op2->gtType))
                     {
                         srcCount += BuildAddrUses(intrin.op2);
@@ -2046,7 +2118,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 {
                     SingleTypeRegSet candidates = lowVectorOperandNum == 2 ? lowVectorCandidates : RBM_NONE;
 
-                    if (intrin.op2->gtType == TYP_MASK)
+                    if (intrin.op2->OperIsHWIntrinsic(NI_Sve_ConvertVectorToMask))
                     {
                         assert(lowVectorOperandNum != 2);
                         candidates = RBM_ALLMASK.GetPredicateRegSet();
@@ -2084,6 +2156,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 assert(lowVectorOperandNum != 4);
                 assert(!tgtPrefOp2);
                 srcCount += isRMW ? BuildDelayFreeUses(intrin.op4, intrin.op1) : BuildOperandUses(intrin.op4);
+
+                if (intrin.op5 != nullptr)
+                {
+                    assert(isRMW);
+                    srcCount += BuildDelayFreeUses(intrin.op5, intrin.op1);
+                }
             }
         }
     }
@@ -2405,6 +2483,7 @@ void LinearScan::getLowVectorOperandAndCandidates(HWIntrinsic intrin, size_t* op
         case NI_Sve_DotProductBySelectedScalar:
         case NI_Sve_FusedMultiplyAddBySelectedScalar:
         case NI_Sve_FusedMultiplySubtractBySelectedScalar:
+        case NI_Sve_MultiplyAddRotateComplexBySelectedScalar:
             *operandNum = 3;
             break;
         case NI_Sve_MultiplyBySelectedScalar:

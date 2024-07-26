@@ -240,7 +240,7 @@ namespace System.IO
             if (n < 0)
                 n = 0;
 
-            Debug.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
+            Debug.Assert(_position + n >= 0);  // len is less than 2^31 -1.
             _position += n;
             return n;
         }
@@ -327,7 +327,7 @@ namespace System.IO
             if (n <= 0)
                 return 0;
 
-            Debug.Assert(_position + n >= 0, "_position + n >= 0");  // len is less than 2^31 -1.
+            Debug.Assert(_position + n >= 0);  // len is less than 2^31 -1.
 
             if (n <= 8)
             {
@@ -493,7 +493,7 @@ namespace System.IO
                 return Task.CompletedTask;
 
             // If destination is not a memory stream, write there asynchronously:
-            if (!(destination is MemoryStream memStrDest))
+            if (destination is not MemoryStream memStrDest)
                 return destination.WriteAsync(_buffer, pos, n, cancellationToken);
 
             try
@@ -530,7 +530,7 @@ namespace System.IO
                 throw new IOException(SR.IO_SeekBeforeBegin);
             _position = tempPosition;
 
-            Debug.Assert(_position >= _origin, "_position >= _origin");
+            Debug.Assert(_position >= _origin);
             return _position - _origin;
         }
 

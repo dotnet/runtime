@@ -25,7 +25,7 @@ namespace System.Formats.Tar
 
             archiveStream.ReadExactly(buffer);
 
-            TarHeader? header = TryReadAttributes(initialFormat, buffer);
+            TarHeader? header = TryReadAttributes(initialFormat, buffer, archiveStream);
             if (header != null && processDataBlock)
             {
                 header.ProcessDataBlock(archiveStream, copyData);
@@ -47,7 +47,7 @@ namespace System.Formats.Tar
 
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
-            TarHeader? header = TryReadAttributes(initialFormat, buffer.Span);
+            TarHeader? header = TryReadAttributes(initialFormat, buffer.Span, archiveStream);
             if (header != null && processDataBlock)
             {
                 await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
@@ -58,7 +58,7 @@ namespace System.Formats.Tar
             return header;
         }
 
-        private static TarHeader? TryReadAttributes(TarEntryFormat initialFormat, Span<byte> buffer)
+        private static TarHeader? TryReadAttributes(TarEntryFormat initialFormat, ReadOnlySpan<byte> buffer, Stream archiveStream)
         {
             // Confirms if v7 or pax, or tentatively selects ustar
             TarHeader? header = TryReadCommonAttributes(buffer, initialFormat);
@@ -86,6 +86,8 @@ namespace System.Formats.Tar
                     }
                     // In PAX, there is nothing to read in this section (empty space)
                 }
+                // Finished reading the header metadata, next byte belongs to the data section, save the position
+                SetDataOffset(header, archiveStream);
             }
             return header;
         }
@@ -357,12 +359,12 @@ namespace System.Formats.Tar
         // Attempts to read the fields shared by all formats and stores them in their expected data type.
         // Throws if any data type conversion fails.
         // Returns true on success, false if checksum is zero.
-        private static TarHeader? TryReadCommonAttributes(Span<byte> buffer, TarEntryFormat initialFormat)
+        private static TarHeader? TryReadCommonAttributes(ReadOnlySpan<byte> buffer, TarEntryFormat initialFormat)
         {
             // Start by collecting fields that need special checks that return early when data is wrong
 
             // Empty checksum means this is an invalid (all blank) entry, finish early
-            Span<byte> spanChecksum = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
+            ReadOnlySpan<byte> spanChecksum = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
             if (TarHelpers.IsAllNullBytes(spanChecksum))
             {
                 return null;
@@ -424,9 +426,9 @@ namespace System.Formats.Tar
 
         // Reads fields only found in ustar format or above and converts them to their expected data type.
         // Throws if any conversion fails.
-        private void ReadMagicAttribute(Span<byte> buffer)
+        private void ReadMagicAttribute(ReadOnlySpan<byte> buffer)
         {
-            Span<byte> magic = buffer.Slice(FieldLocations.Magic, FieldLengths.Magic);
+            ReadOnlySpan<byte> magic = buffer.Slice(FieldLocations.Magic, FieldLengths.Magic);
 
             // If at this point the magic value is all nulls, we definitely have a V7
             if (TarHelpers.IsAllNullBytes(magic))
@@ -458,14 +460,14 @@ namespace System.Formats.Tar
 
         // Reads the version string and determines the format depending on its value.
         // Throws if converting the bytes to string fails or if an unexpected version string is found.
-        private void ReadVersionAttribute(Span<byte> buffer)
+        private void ReadVersionAttribute(ReadOnlySpan<byte> buffer)
         {
             if (_format == TarEntryFormat.V7)
             {
                 return;
             }
 
-            Span<byte> version = buffer.Slice(FieldLocations.Version, FieldLengths.Version);
+            ReadOnlySpan<byte> version = buffer.Slice(FieldLocations.Version, FieldLengths.Version);
             switch (_format)
             {
                 case TarEntryFormat.Ustar or TarEntryFormat.Pax:
@@ -512,7 +514,7 @@ namespace System.Formats.Tar
 
         // Reads the attributes shared by the POSIX and GNU formats.
         // Throws if converting the bytes to their expected data type fails.
-        private void ReadPosixAndGnuSharedAttributes(Span<byte> buffer)
+        private void ReadPosixAndGnuSharedAttributes(ReadOnlySpan<byte> buffer)
         {
             // Convert the byte arrays
             _uName = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.UName, FieldLengths.UName));
@@ -532,7 +534,7 @@ namespace System.Formats.Tar
 
         // Reads attributes specific to the GNU format.
         // Throws if any conversion fails.
-        private void ReadGnuAttributes(Span<byte> buffer)
+        private void ReadGnuAttributes(ReadOnlySpan<byte> buffer)
         {
             // Convert byte arrays
             long aTime = TarHelpers.ParseNumeric<long>(buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
@@ -546,7 +548,7 @@ namespace System.Formats.Tar
 
         // Reads the ustar prefix attribute.
         // Throws if a conversion to an expected data type fails.
-        private void ReadUstarAttributes(Span<byte> buffer)
+        private void ReadUstarAttributes(ReadOnlySpan<byte> buffer)
         {
             _prefix = TarHelpers.GetTrimmedUtf8String(buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
 

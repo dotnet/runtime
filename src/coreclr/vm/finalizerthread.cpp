@@ -404,13 +404,15 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
         LOG((LF_GC, LL_INFO100, "***** Calling Finalizers\n"));
 
+        int observedFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
         FinalizeAllObjects();
 
         // Anyone waiting to drain the Q can now wake up.  Note that there is a
         // race in that another thread starting a drain, as we leave a drain, may
-        // consider itself satisfied by the drain that just completed.  This is
-        // acceptable.
-        SignalFinalizationDone();
+        // consider itself satisfied by the drain that just completed.
+        // Thus we include the Full GC count that we have certaily observed.
+        SignalFinalizationDone(observedFullGcCount);
     }
 
     if (s_InitializedFinalizerThreadForPlatform)
@@ -538,10 +540,13 @@ void FinalizerThread::FinalizerThreadCreate()
     }
 }
 
-void FinalizerThread::SignalFinalizationDone()
+static int g_fullGcCountSeenByFinalization;
+
+void FinalizerThread::SignalFinalizationDone(int observedFullGcCount)
 {
     WRAPPER_NO_CONTRACT;
 
+    g_fullGcCountSeenByFinalization = observedFullGcCount;
     hEventFinalizerDone->Set();
 }
 
@@ -555,6 +560,13 @@ void FinalizerThread::FinalizerThreadWait()
     // Can't call this from within a finalized method.
     if (!IsCurrentThreadFinalizer())
     {
+        // We may see a completion of finalization cycle that might not see objects that became
+        // F-reachable in recent GCs. In such case we want to wait for a completion of another cycle.
+        // However, since an object cannot be prevented from promoting, one can only rely on Full GCs
+        // to collect unreferenced objects deterministically. Thus we only care about Full GCs here.
+        int desiredFullGcCount =
+            GCHeapUtilities::GetGCHeap()->CollectionCount(GCHeapUtilities::GetGCHeap()->GetMaxGeneration());
+
         GCX_PREEMP();
 
 #ifdef FEATURE_COMINTEROP
@@ -565,8 +577,8 @@ void FinalizerThread::FinalizerThreadWait()
             g_pRCWCleanupList->CleanupWrappersInCurrentCtxThread();
 #endif // FEATURE_COMINTEROP
 
+    tryAgain:
         hEventFinalizerDone->Reset();
-
         EnableFinalization();
 
         // Under GC stress the finalizer queue may never go empty as frequent
@@ -580,6 +592,18 @@ void FinalizerThread::FinalizerThreadWait()
 
         DWORD status;
         status = hEventFinalizerDone->Wait(INFINITE,TRUE);
+
+        // we use unsigned math here as the collection counts, which are size_t internally,
+        // can in theory overflow an int and wrap around.
+        // unsigned math would have more defined/portable behavior in such case
+        if ((int)((unsigned int)desiredFullGcCount - (unsigned int)g_fullGcCountSeenByFinalization) > 0)
+        {
+            // There were some Full GCs happening before we started waiting and possibly not seen by the
+            // last finalization cycle. This is rare, but we need to be sure we have seen those,
+            // so we try one more time.
+            goto tryAgain;
+        }
+
         _ASSERTE(status == WAIT_OBJECT_0);
     }
 }

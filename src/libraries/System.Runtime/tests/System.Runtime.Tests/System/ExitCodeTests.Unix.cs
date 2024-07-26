@@ -16,7 +16,6 @@ namespace System.Tests
         private static extern int kill(int pid, int sig);
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/31656", TestRuntimes.Mono)]
         [InlineData(null)]
         [InlineData(0)]
         [InlineData(42)]

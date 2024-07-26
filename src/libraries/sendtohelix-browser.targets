@@ -139,6 +139,7 @@
     <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(TestUsingFingerprinting)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -242,16 +243,10 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <!--
-          These WASM tests are problematic and slow right now, in this section it's about nodejs and chrome.
-          Below is same section for V8. There is also Xharness timeout override in the test project.
-        -->
-        <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Memory.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests'">01:20:00</Timeout>
+        <Timeout Condition="'$(Scenario)' == 'WasmTestOnNodeJS' and '%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
+        <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
+        <Timeout Condition="'%(FileName)' == 'System.IO.FileSystem.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
       </HelixWorkItem>
     </ItemGroup>
 
@@ -277,13 +272,9 @@
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
-        <!-- These WASM tests are problematic and slow right now, in this section it's about V8. Above is same section for nodejs and chrome -->
-        <Timeout Condition="'%(FileName)' == 'System.Text.Json.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Collections.Immutable.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.WebSockets.Client.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Net.Http.Functional.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Memory.Tests'">01:20:00</Timeout>
-        <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests'">01:20:00</Timeout>
+        <!-- VSF is emulated on the UI thread and all calls are slow because they are marshaled -->
+        <Timeout Condition="'%(FileName)' == 'System.IO.FileSystem.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
+        <Timeout Condition="'%(FileName)' == 'System.Private.Xml.Tests' and '$(WasmEnableThreads)' == 'true'">01:20:00</Timeout>
       </HelixWorkItem>
 
     </ItemGroup>

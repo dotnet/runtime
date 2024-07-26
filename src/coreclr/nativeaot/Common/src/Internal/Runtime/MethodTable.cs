@@ -1362,7 +1362,7 @@ namespace Internal.Runtime
                 return cbOffset;
             }
 
-            Debug.Assert(false, "Unknown MethodTable field type");
+            Debug.Fail("Unknown MethodTable field type");
             return 0;
         }
 

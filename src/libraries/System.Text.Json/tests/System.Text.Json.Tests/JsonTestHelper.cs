@@ -186,6 +186,12 @@ namespace System.Text.Json
             return new ReadOnlySequence<byte>(firstSegment, 0, thirdSegment, thirdMem.Length);
         }
 
+        public static ReadOnlySequence<byte> GetSequence(string json, int segmentSize)
+        {
+            byte[] encoding = Encoding.UTF8.GetBytes(json);
+            return GetSequence(encoding, segmentSize);
+        }
+
         public static ReadOnlySequence<byte> GetSequence(byte[] dataUtf8, int segmentSize)
         {
             int numberOfSegments = dataUtf8.Length / segmentSize + 1;

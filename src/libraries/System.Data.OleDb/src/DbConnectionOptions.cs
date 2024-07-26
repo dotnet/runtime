@@ -879,13 +879,13 @@ namespace System.Data.Common
                 }
                 else
                 {
-                    Debug.Assert(false, $"ParseInternal code vs regex throw mismatch {f.Message}");
+                    Debug.Fail($"ParseInternal code vs regex throw mismatch {f.Message}");
                 }
                 e = null;
             }
             if (null != e)
             {
-                Debug.Assert(false, "ParseInternal code threw exception vs regex mismatch");
+                Debug.Fail("ParseInternal code threw exception vs regex mismatch");
             }
         }
 #endif

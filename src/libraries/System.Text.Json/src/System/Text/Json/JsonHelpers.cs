@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
@@ -37,43 +39,72 @@ namespace System.Text.Json
             // No read-ahead necessary if we're at the final block of JSON data.
             bool readAhead = requiresReadAhead && !reader.IsFinalBlock;
             return readAhead ? TryAdvanceWithReadAhead(ref reader) : reader.Read();
+        }
 
-            // The read-ahead method is not inlined
-            static bool TryAdvanceWithReadAhead(scoped ref Utf8JsonReader reader)
+        /// <summary>
+        /// Attempts to read ahead to the next root-level JSON value, if it exists.
+        /// </summary>
+        public static bool TryAdvanceToNextRootLevelValueWithOptionalReadAhead(this scoped ref Utf8JsonReader reader, bool requiresReadAhead, out bool isAtEndOfStream)
+        {
+            Debug.Assert(reader.AllowMultipleValues, "only supported by readers that support multiple values.");
+            Debug.Assert(reader.CurrentDepth == 0, "should only invoked for top-level values.");
+
+            Utf8JsonReader checkpoint = reader;
+            if (!reader.Read())
             {
-                // When we're reading ahead we always have to save the state
-                // as we don't know if the next token is a start object or array.
-                Utf8JsonReader restore = reader;
+                // If the reader didn't return any tokens and it's the final block,
+                // then there are no other JSON values to be read.
+                isAtEndOfStream = reader.IsFinalBlock;
+                reader = checkpoint;
+                return false;
+            }
 
-                if (!reader.Read())
+            // We found another JSON value, read ahead accordingly.
+            isAtEndOfStream = false;
+            if (requiresReadAhead && !reader.IsFinalBlock)
+            {
+                // Perform full read-ahead to ensure the full JSON value has been buffered.
+                reader = checkpoint;
+                return TryAdvanceWithReadAhead(ref reader);
+            }
+
+            return true;
+        }
+
+        private static bool TryAdvanceWithReadAhead(scoped ref Utf8JsonReader reader)
+        {
+            // When we're reading ahead we always have to save the state
+            // as we don't know if the next token is a start object or array.
+            Utf8JsonReader restore = reader;
+
+            if (!reader.Read())
+            {
+                return false;
+            }
+
+            // Perform the actual read-ahead.
+            JsonTokenType tokenType = reader.TokenType;
+            if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+            {
+                // Attempt to skip to make sure we have all the data we need.
+                bool complete = reader.TrySkipPartial();
+
+                // We need to restore the state in all cases as we need to be positioned back before
+                // the current token to either attempt to skip again or to actually read the value.
+                reader = restore;
+
+                if (!complete)
                 {
+                    // Couldn't read to the end of the object, exit out to get more data in the buffer.
                     return false;
                 }
 
-                // Perform the actual read-ahead.
-                JsonTokenType tokenType = reader.TokenType;
-                if (tokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
-                {
-                    // Attempt to skip to make sure we have all the data we need.
-                    bool complete = reader.TrySkipPartial();
-
-                    // We need to restore the state in all cases as we need to be positioned back before
-                    // the current token to either attempt to skip again or to actually read the value.
-                    reader = restore;
-
-                    if (!complete)
-                    {
-                        // Couldn't read to the end of the object, exit out to get more data in the buffer.
-                        return false;
-                    }
-
-                    // Success, requeue the reader to the start token.
-                    reader.ReadWithVerify();
-                    Debug.Assert(tokenType == reader.TokenType);
-                }
-
-                return true;
+                // Success, requeue the reader to the start token.
+                reader.ReadWithVerify();
+                Debug.Assert(tokenType == reader.TokenType);
             }
+
+            return true;
         }
 
 #if !NET
@@ -183,6 +214,41 @@ namespace System.Text.Json
 #endif
         }
 
+        public static bool TryLookupUtf8Key<TValue>(
+            this Dictionary<string, TValue> dictionary,
+            ReadOnlySpan<byte> utf8Key,
+            [MaybeNullWhen(false)] out TValue result)
+        {
+#if NET9_0_OR_GREATER
+            Debug.Assert(dictionary.Comparer is IAlternateEqualityComparer<ReadOnlySpan<char>, string>);
+
+            Dictionary<string, TValue>.AlternateLookup<ReadOnlySpan<char>> spanLookup =
+                dictionary.GetAlternateLookup<string, TValue, ReadOnlySpan<char>>();
+
+            char[]? rentedBuffer = null;
+
+            Span<char> charBuffer = utf8Key.Length <= JsonConstants.StackallocCharThreshold ?
+                stackalloc char[JsonConstants.StackallocCharThreshold] :
+                (rentedBuffer = ArrayPool<char>.Shared.Rent(utf8Key.Length));
+
+            int charsWritten = Encoding.UTF8.GetChars(utf8Key, charBuffer);
+            Span<char> decodedKey = charBuffer[0..charsWritten];
+
+            bool success = spanLookup.TryGetValue(decodedKey, out result);
+
+            if (rentedBuffer != null)
+            {
+                decodedKey.Clear();
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+
+            return success;
+#else
+            string key = Utf8GetString(utf8Key);
+            return dictionary.TryGetValue(key, out result);
+#endif
+        }
+
         /// <summary>
         /// Emulates Dictionary(IEnumerable{KeyValuePair}) on netstandard.
         /// </summary>
@@ -251,7 +317,7 @@ namespace System.Text.Json
         /// Gets a Regex instance for recognizing integer representations of enums.
         /// </summary>
         public static readonly Regex IntegerRegex = CreateIntegerRegex();
-        private const string IntegerRegexPattern = @"^\s*(\+|\-)?[0-9]+\s*$";
+        private const string IntegerRegexPattern = @"^\s*(?:\+|\-)?[0-9]+\s*$";
         private const int IntegerRegexTimeoutMs = 200;
 
 #if NET
@@ -260,5 +326,249 @@ namespace System.Text.Json
 #else
         private static Regex CreateIntegerRegex() => new(IntegerRegexPattern, RegexOptions.Compiled, TimeSpan.FromMilliseconds(IntegerRegexTimeoutMs));
 #endif
+
+        /// <summary>
+        /// Compares two valid UTF-8 encoded JSON numbers for decimal equality.
+        /// </summary>
+        public static bool AreEqualJsonNumbers(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right)
+        {
+            Debug.Assert(left.Length > 0 && right.Length > 0);
+
+            ParseNumber(left,
+                out bool leftIsNegative,
+                out ReadOnlySpan<byte> leftIntegral,
+                out ReadOnlySpan<byte> leftFractional,
+                out int leftExponent);
+
+            ParseNumber(right,
+                out bool rightIsNegative,
+                out ReadOnlySpan<byte> rightIntegral,
+                out ReadOnlySpan<byte> rightFractional,
+                out int rightExponent);
+
+            int nDigits;
+            if (leftIsNegative != rightIsNegative ||
+                leftExponent != rightExponent ||
+                (nDigits = (leftIntegral.Length + leftFractional.Length)) !=
+                            rightIntegral.Length + rightFractional.Length)
+            {
+                return false;
+            }
+
+            // Need to check that the concatenated integral and fractional parts are equal;
+            // break each representation into three parts such that their lengths exactly match.
+            ReadOnlySpan<byte> leftFirst;
+            ReadOnlySpan<byte> leftMiddle;
+            ReadOnlySpan<byte> leftLast;
+
+            ReadOnlySpan<byte> rightFirst;
+            ReadOnlySpan<byte> rightMiddle;
+            ReadOnlySpan<byte> rightLast;
+
+            int diff = leftIntegral.Length - rightIntegral.Length;
+            switch (diff)
+            {
+                case < 0:
+                    leftFirst = leftIntegral;
+                    leftMiddle = leftFractional.Slice(0, -diff);
+                    leftLast = leftFractional.Slice(-diff);
+                    int rightOffset = rightIntegral.Length + diff;
+                    rightFirst = rightIntegral.Slice(0, rightOffset);
+                    rightMiddle = rightIntegral.Slice(rightOffset);
+                    rightLast = rightFractional;
+                    break;
+
+                case 0:
+                    leftFirst = leftIntegral;
+                    leftMiddle = default;
+                    leftLast = leftFractional;
+                    rightFirst = rightIntegral;
+                    rightMiddle = default;
+                    rightLast = rightFractional;
+                    break;
+
+                case > 0:
+                    int leftOffset = leftIntegral.Length - diff;
+                    leftFirst = leftIntegral.Slice(0, leftOffset);
+                    leftMiddle = leftIntegral.Slice(leftOffset);
+                    leftLast = leftFractional;
+                    rightFirst = rightIntegral;
+                    rightMiddle = rightFractional.Slice(0, diff);
+                    rightLast = rightFractional.Slice(diff);
+                    break;
+            }
+
+            Debug.Assert(leftFirst.Length == rightFirst.Length);
+            Debug.Assert(leftMiddle.Length == rightMiddle.Length);
+            Debug.Assert(leftLast.Length == rightLast.Length);
+            return leftFirst.SequenceEqual(rightFirst) &&
+                leftMiddle.SequenceEqual(rightMiddle) &&
+                leftLast.SequenceEqual(rightLast);
+
+            static void ParseNumber(
+                ReadOnlySpan<byte> span,
+                out bool isNegative,
+                out ReadOnlySpan<byte> integral,
+                out ReadOnlySpan<byte> fractional,
+                out int exponent)
+            {
+                // Parses a JSON number into its integral, fractional, and exponent parts.
+                // The returned components use a normal-form decimal representation:
+                //
+                //   Number := sign * <integral + fractional> * 10^exponent
+                //
+                // where integral and fractional are sequences of digits whose concatenation
+                // represents the significand of the number without leading or trailing zeros.
+                // Two such normal-form numbers are treated as equal if and only if they have
+                // equal signs, significands, and exponents.
+
+                bool neg;
+                ReadOnlySpan<byte> intg;
+                ReadOnlySpan<byte> frac;
+                int exp;
+
+                Debug.Assert(span.Length > 0);
+
+                if (span[0] == '-')
+                {
+                    neg = true;
+                    span = span.Slice(1);
+                }
+                else
+                {
+                    Debug.Assert(char.IsDigit((char)span[0]), "leading plus not allowed in valid JSON numbers.");
+                    neg = false;
+                }
+
+                int i = span.IndexOfAny((byte)'.', (byte)'e', (byte)'E');
+                if (i < 0)
+                {
+                    intg = span;
+                    frac = default;
+                    exp = 0;
+                    goto Normalize;
+                }
+
+                intg = span.Slice(0, i);
+
+                if (span[i] == '.')
+                {
+                    span = span.Slice(i + 1);
+                    i = span.IndexOfAny((byte)'e', (byte)'E');
+                    if (i < 0)
+                    {
+                        frac = span;
+                        exp = 0;
+                        goto Normalize;
+                    }
+
+                    frac = span.Slice(0, i);
+                }
+                else
+                {
+                    frac = default;
+                }
+
+                Debug.Assert(span[i] is (byte)'e' or (byte)'E');
+                if (!Utf8Parser.TryParse(span.Slice(i + 1), out exp, out _))
+                {
+                    Debug.Assert(span.Length >= 10);
+                    ThrowHelper.ThrowArgumentOutOfRangeException_JsonNumberExponentTooLarge(nameof(exponent));
+                }
+
+            Normalize: // Calculates the normal form of the number.
+
+                if (IndexOfFirstTrailingZero(frac) is >= 0 and int iz)
+                {
+                    // Trim trailing zeros from the fractional part.
+                    // e.g. 3.1400 -> 3.14
+                    frac = frac.Slice(0, iz);
+                }
+
+                if (intg[0] == '0')
+                {
+                    Debug.Assert(intg.Length == 1, "Leading zeros not permitted in JSON numbers.");
+
+                    if (IndexOfLastLeadingZero(frac) is >= 0 and int lz)
+                    {
+                        // Trim leading zeros from the fractional part
+                        // and update the exponent accordingly.
+                        // e.g. 0.000123 -> 0.123e-3
+                        frac = frac.Slice(lz + 1);
+                        exp -= lz + 1;
+                    }
+
+                    // Normalize "0" to the empty span.
+                    intg = default;
+                }
+
+                if (frac.IsEmpty && IndexOfFirstTrailingZero(intg) is >= 0 and int fz)
+                {
+                    // There is no fractional part, trim trailing zeros from
+                    // the integral part and increase the exponent accordingly.
+                    // e.g. 1000 -> 1e3
+                    exp += intg.Length - fz;
+                    intg = intg.Slice(0, fz);
+                }
+
+                // Normalize the exponent by subtracting the length of the fractional part.
+                // e.g. 3.14 -> 314e-2
+                exp -= frac.Length;
+
+                if (intg.IsEmpty && frac.IsEmpty)
+                {
+                    // Normalize zero representations.
+                    neg = false;
+                    exp = 0;
+                }
+
+                // Copy to out parameters.
+                isNegative = neg;
+                integral = intg;
+                fractional = frac;
+                exponent = exp;
+
+                static int IndexOfLastLeadingZero(ReadOnlySpan<byte> span)
+                {
+#if NET
+                    int firstNonZero = span.IndexOfAnyExcept((byte)'0');
+                    return firstNonZero < 0 ? span.Length - 1 : firstNonZero - 1;
+#else
+                    for (int i = 0; i < span.Length; i++)
+                    {
+                        if (span[i] != '0')
+                        {
+                            return i - 1;
+                        }
+                    }
+
+                    return span.Length - 1;
+#endif
+                }
+
+                static int IndexOfFirstTrailingZero(ReadOnlySpan<byte> span)
+                {
+#if NET
+                    int lastNonZero = span.LastIndexOfAnyExcept((byte)'0');
+                    return lastNonZero == span.Length - 1 ? -1 : lastNonZero + 1;
+#else
+                    if (span.IsEmpty)
+                    {
+                        return -1;
+                    }
+
+                    for (int i = span.Length - 1; i >= 0; i--)
+                    {
+                        if (span[i] != '0')
+                        {
+                            return i == span.Length - 1 ? -1 : i + 1;
+                        }
+                    }
+
+                    return 0;
+#endif
+                }
+            }
+        }
     }
 }

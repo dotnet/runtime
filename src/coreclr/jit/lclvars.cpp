@@ -63,6 +63,9 @@ void Compiler::lvaInit()
 #endif // JIT32_GCENCODER
     lvaNewObjArrayArgs  = BAD_VAR_NUM;
     lvaGSSecurityCookie = BAD_VAR_NUM;
+#ifdef TARGET_ARM64
+    lvaFfrRegister = BAD_VAR_NUM;
+#endif
 #ifdef TARGET_X86
     lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
 #endif // TARGET_X86
@@ -2346,9 +2349,15 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
     if (fieldsSize != treeNodes[0].size)
     {
         structPromotionInfo.containsHoles = true;
-    }
 
-    structPromotionInfo.anySignificantPadding = treeNodes[0].hasSignificantPadding && structPromotionInfo.containsHoles;
+        if (treeNodes[0].hasSignificantPadding)
+        {
+            // Struct has significant data not covered by fields we would promote;
+            // this would typically result in dependent promotion, so leave this
+            // struct to physical promotion.
+            return false;
+        }
+    }
 
     // Cool, this struct is promotable.
 
@@ -2539,9 +2548,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
         return false;
     }
 
-    if (varDsc->IsAddressExposed())
+    if (varDsc->lvDoNotEnregister)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked address exposed\n", lclNum);
+        // Promoting structs that are marked DNER will result in dependent
+        // promotion. Allow physical promotion to handle these.
+        JITDUMP("  struct promotion of V%02u is disabled because it has already been marked DNER\n", lclNum);
         return false;
     }
 
@@ -2691,11 +2702,6 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
                 structPromotionInfo.fieldCnt, varDsc->lvFieldAccessed);
         shouldPromote = false;
     }
-    else if (varDsc->lvIsMultiRegRet && structPromotionInfo.anySignificantPadding)
-    {
-        JITDUMP("Not promoting multi-reg returned struct local V%02u with significant padding.\n", lclNum);
-        shouldPromote = false;
-    }
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     else if ((structPromotionInfo.fieldCnt == 2) && (varTypeIsFloating(structPromotionInfo.fields[0].fldType) ||
                                                      varTypeIsFloating(structPromotionInfo.fields[1].fldType)))
@@ -2714,13 +2720,8 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
         // multiple registers?
         if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
         {
-            if (structPromotionInfo.anySignificantPadding)
-            {
-                JITDUMP("Not promoting multi-reg struct local V%02u with significant padding.\n", lclNum);
-                shouldPromote = false;
-            }
-            else if ((structPromotionInfo.fieldCnt != 2) &&
-                     !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
+            if ((structPromotionInfo.fieldCnt != 2) &&
+                !((structPromotionInfo.fieldCnt == 1) && varTypeIsSIMD(structPromotionInfo.fields[0].fldType)))
             {
                 JITDUMP("Not promoting multireg struct local V%02u, because lvIsParam is true, #fields != 2 and it's "
                         "not a single SIMD.\n",
@@ -2809,11 +2810,10 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     assert(varDsc->GetLayout()->GetClassHandle() == structPromotionInfo.typeHnd);
     assert(structPromotionInfo.canPromote);
 
-    varDsc->lvFieldCnt              = structPromotionInfo.fieldCnt;
-    varDsc->lvFieldLclStart         = compiler->lvaCount;
-    varDsc->lvPromoted              = true;
-    varDsc->lvContainsHoles         = structPromotionInfo.containsHoles;
-    varDsc->lvAnySignificantPadding = structPromotionInfo.anySignificantPadding;
+    varDsc->lvFieldCnt      = structPromotionInfo.fieldCnt;
+    varDsc->lvFieldLclStart = compiler->lvaCount;
+    varDsc->lvPromoted      = true;
+    varDsc->lvContainsHoles = structPromotionInfo.containsHoles;
 
 #ifdef DEBUG
     // Don't stress this in LCL_FLD stress.
@@ -3046,12 +3046,6 @@ void Compiler::lvaSetVarAddrExposed(unsigned varNum DEBUGARG(AddressExposedReaso
 //    *do not* mark the local address-exposed and treat the call much like a local store node throughout
 //    the compilation.
 //
-//    TODO-ADDR-Bug: currently, we rely on these locals not being present in call argument lists,
-//    outside of the buffer address argument itself, as liveness - currently - treats the location node
-//    associated with the address itself as the definition point, and call arguments can be reordered
-//    rather arbitrarily. We should fix liveness to treat the call as the definition point instead and
-//    enable this optimization for "!lvIsTemp" locals.
-//
 void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
@@ -3153,7 +3147,6 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             break;
         case DoNotEnregisterReason::HiddenBufferStructArg:
             JITDUMP("it is hidden buffer struct arg\n");
-            assert(varDsc->IsHiddenBufferStructArg());
             break;
         case DoNotEnregisterReason::DontEnregStructs:
             JITDUMP("struct enregistration is disabled\n");

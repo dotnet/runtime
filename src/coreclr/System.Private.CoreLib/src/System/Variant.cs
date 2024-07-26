@@ -257,14 +257,14 @@ namespace System
             {
                 vt = VarEnum.VT_ERROR;
                 obj = (object)(((ErrorWrapper)obj).ErrorCode);
-                Debug.Assert(obj != null, "obj != null");
+                Debug.Assert(obj != null);
             }
 #pragma warning disable 0618 // CurrencyWrapper is obsolete
             else if (obj is CurrencyWrapper)
             {
                 vt = VarEnum.VT_CY;
                 obj = (object)(((CurrencyWrapper)obj).WrappedObject);
-                Debug.Assert(obj != null, "obj != null");
+                Debug.Assert(obj != null);
             }
 #pragma warning restore 0618
             else if (obj is BStrWrapper)
@@ -370,7 +370,7 @@ namespace System
         // updated object back to the original type.
         internal static void MarshalHelperCastVariant(object pValue, int vt, ref Variant v)
         {
-            if (!(pValue is IConvertible iv))
+            if (pValue is not IConvertible iv)
             {
                 switch (vt)
                 {
