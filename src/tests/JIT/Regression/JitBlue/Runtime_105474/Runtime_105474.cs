@@ -11,33 +11,18 @@ using Xunit;
 
 public class Runtime_105474_A
 {
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void Method1()
+    private void Method0()
     {
         Vector128<ulong> vr0 = Vector128.CreateScalar(1698800584428641629UL);
         AdvSimd.ShiftLeftLogicalSaturate(vr0, 229);
     }
 
-    private void Method0()
+    [Fact]
+    public static void TestEntryPoint()
     {
         if (AdvSimd.IsSupported)
         {
-            try
-            {
-                Method1();
-                throw new Exception("Expected an ArgumentOutOfRangeException.");
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-
-            }
-            catch (Exception)
-            {
-                throw new Exception("Expected an ArgumentOutOfRangeException.");
-            }
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Runtime_105474_A().Method0());`
         }
     }
-
-    [Fact]
-    public static void TestEntryPoint() => new Runtime_105474_A().Method0();
 }
