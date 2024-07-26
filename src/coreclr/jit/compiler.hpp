@@ -4357,8 +4357,12 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CNS_LNG:
         case GT_CNS_DBL:
         case GT_CNS_STR:
+#if defined(FEATURE_SIMD)
         case GT_CNS_VEC:
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
         case GT_CNS_MSK:
+#endif // FEATURE_MASKED_HW_INTRINSICS
         case GT_MEMORYBARRIER:
         case GT_JMP:
         case GT_JCC:

@@ -8327,7 +8327,14 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
     assert(treeNode->IsReuseRegVal());
 
     // For now, this is only used for constant nodes.
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
     assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC, GT_CNS_MSK));
+#elif defined(FEATURE_SIMD)
+    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
+#else
+    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL));
+#endif
+
     JITDUMP("  TreeNode is marked ReuseReg\n");
 
     if (treeNode->IsIntegralConst(0) && GetEmitter()->emitCurIGnonEmpty())
