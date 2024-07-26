@@ -1775,7 +1775,19 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             break;
         }
+
+        case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorFirstFaulting:
+        case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
+        case NI_Sve_LoadVectorFirstFaulting:
         {
             LIR::Use use;
             bool     foundUse = BlockRange().TryGetUse(node, &use);
@@ -1800,40 +1812,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(node->GetOperandCount() == 2);
                     node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
                 }
-            }
-
-            if (foundUse)
-            {
-                unsigned   tmpNum    = comp->lvaGrabTemp(true DEBUGARG("Return value result/FFR"));
-                LclVarDsc* tmpVarDsc = comp->lvaGetDesc(tmpNum);
-                tmpVarDsc->lvType    = node->TypeGet();
-                GenTree* storeLclVar;
-                use.ReplaceWithLclVar(comp, tmpNum, &storeLclVar);
-            }
-            else
-            {
-                node->SetUnusedValue();
-            }
-
-            StoreFFRValue(node);
-            break;
-        }
-        case NI_Sve_LoadVectorFirstFaulting:
-        {
-            LIR::Use use;
-            bool     foundUse = BlockRange().TryGetUse(node, &use);
-
-            if (m_ffrTrashed)
-            {
-                // Consume the FFR register value from local variable to simulate "use" of FFR,
-                // only if it was trashed. If it was not trashed, we do not have to reload the
-                // contents of the FFR register.
-
-                GenTree* lclVar = comp->gtNewLclvNode(comp->lvaFfrRegister, TYP_MASK);
-                BlockRange().InsertBefore(node, lclVar);
-                LowerNode(lclVar);
-
-                node->ResetHWIntrinsicId(intrinsicId, comp, node->Op(1), node->Op(2), lclVar);
             }
 
             if (foundUse)
@@ -4125,7 +4103,17 @@ void Lowering::StoreFFRValue(GenTreeHWIntrinsic* node)
 #ifdef DEBUG
     switch (node->GetHWIntrinsicId())
     {
+        case NI_Sve_GatherVectorByteZeroExtendFirstFaulting:
         case NI_Sve_GatherVectorFirstFaulting:
+        case NI_Sve_GatherVectorInt16SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt16WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32SignExtendFirstFaulting:
+        case NI_Sve_GatherVectorInt32WithByteOffsetsSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorSByteSignExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt16ZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32WithByteOffsetsZeroExtendFirstFaulting:
+        case NI_Sve_GatherVectorUInt32ZeroExtendFirstFaulting:
         case NI_Sve_LoadVectorFirstFaulting:
         case NI_Sve_SetFfr:
 
