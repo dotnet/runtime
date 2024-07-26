@@ -336,13 +336,9 @@ mono_wasm_exec_regression (int verbose_level, char *image)
 	return mono_regression_test_step (verbose_level, image, NULL) ? 0 : 1;
 }
 
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_perform_heapshot ();
-
 EMSCRIPTEN_KEEPALIVE int
 mono_wasm_exit (int exit_code)
 {
-	mono_wasm_perform_heapshot ();
 	if (exit_code == 0)
 	{
 		mono_jit_cleanup (root_domain);

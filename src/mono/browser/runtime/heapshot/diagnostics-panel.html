@@ -27,7 +27,7 @@
                     case "heapshotText":
                         this.log += data.text + "\r\n";
                         if (getSelectedTab() === this)
-                            document.querySelector("#selectedSnapshot").textContent = this.log;
+                            document.querySelector("#log").textContent = this.log;
                         break;
                 }
             }
@@ -103,9 +103,6 @@
                     tabObj.channel.postMessage({ cmd: "takeSnapshot", sender: tabId });
             }
 
-            function saveSelectedSnapshot_click () {
-            }
-
             function tabs_change () {
                 const tabObj = getSelectedTab();
                 if (tabObj)
@@ -114,7 +111,7 @@
                     document.querySelector("#takeSnapshot").setAttribute("disabled", true);
 
                 if (tabObj)
-                    document.querySelector("#selectedSnapshot").textContent = tabObj.log;
+                    document.querySelector("#log").textContent = tabObj.log;
             }
 
             function snapshots_change () {
@@ -124,11 +121,15 @@
     <body onload="onLoad()">
         <select id="tabs" size="2"></select><br>
         <button id="refreshTabs">Refresh</button><br>
+        <!--
         <canvas id="heapGraph"></canvas><br>
+        -->
         <button id="takeSnapshot" disabled>Take Snapshot</button>
+        <!--
         <button id="saveSelectedSnapshot" disabled>Save Snapshot</button><br>
         <select id="snapshots" size="6"></select>
-        <pre id="selectedSnapshot">
+        -->
+        <pre id="log">
         </pre>
     </body>
 </html>

@@ -63,7 +63,7 @@ export function mono_wasm_heapshot_class (klass: VoidPtr, elementKlass: VoidPtr,
         }
         className += ">";
     }
-    mono_log_info(
+    heapshot_log(
         rank > 0
             ? `new array: ${klass} ${elementKlass}[] ${kindName} ${className}[${",".repeat(rank - 1)}]`
             : `new class: ${klass} ${kindName} ${className}`
@@ -80,21 +80,21 @@ export function mono_wasm_heapshot_gchandle (pObj: ManagedPointer, handleType: n
     if (handleType == 1)
         return;
     const handleTypeName = handleTypes[handleType] || "unknown";
-    mono_log_info(`  ${handleTypeName} handle -> ${pObj}`);
+    heapshot_log(`  ${handleTypeName} handle -> ${pObj}`);
 }
 
 export function mono_wasm_heapshot_roots (pObjs: VoidPtr, numObjs: number, source: number, rootType: number, msg: CharPtr): void {
     const message = msg ? utf8ToString(msg) : "";
-    mono_log_info(`root type=${rootType} source=${source} x${numObjs} objects ${message}`);
+    heapshot_log(`root type=${rootType} source=${source} x${numObjs} objects ${message}`);
     for (let i = 0; i < numObjs; i++) {
         const obj = getU32(<any>pObjs + (i * 4));
-        mono_log_info(`  ${obj}`);
+        heapshot_log(`  ${obj}`);
     }
 }
 
 export function mono_wasm_heapshot_start (): void {
     heapshotStartedWhen = performance.now();
-    mono_log_info("heapshot starting");
+    heapshot_log("heapshot starting");
 }
 
 function pagesToMegabytes (pages: number) {
@@ -105,6 +105,12 @@ function bytesToMegabytes (bytes: number) {
     return (bytes / (1024 * 1024)).toFixed(1);
 }
 
+function heapshot_log (text: string) {
+    mono_log_info(text);
+    if (tabChannel)
+        tabChannel.postMessage({ cmd: "heapshotText", sender: tabId, text });
+}
+
 export function mono_wasm_heapshot_stats (
     pagesInUse: number, pagesFree: number, pagesUnknown: number,
     largestFreeChunk: number, largeObjectHeapSize: number, sgenHeapCapacity: number
@@ -112,15 +118,11 @@ export function mono_wasm_heapshot_stats (
     const totalPages = pagesInUse + pagesFree;
     const line1 = `mwpm: ${pagesToMegabytes(totalPages)}MB allocated; ${(pagesInUse / totalPages * 100.0).toFixed(1)}% in use; largest free block: ${pagesToMegabytes(largestFreeChunk)}MB; unknown pages: ${pagesToMegabytes(pagesUnknown)}MB`;
     const line2 = `sgen: heap capacity ${bytesToMegabytes(sgenHeapCapacity)}MB; LOS size ${bytesToMegabytes(largeObjectHeapSize)}MB`;
-    mono_log_info(line1);
-    mono_log_info(line2);
-    if (tabChannel) {
-        tabChannel.postMessage({ cmd: "heapshotText", sender: tabId, text: line1 });
-        tabChannel.postMessage({ cmd: "heapshotText", sender: tabId, text: line2 });
-    }
+    heapshot_log(line1);
+    heapshot_log(line2);
 }
 
 export function mono_wasm_heapshot_end (): void {
     const elapsedMs = performance.now() - heapshotStartedWhen;
-    mono_log_info(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);
+    heapshot_log(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);
 }
