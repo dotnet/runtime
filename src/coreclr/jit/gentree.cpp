@@ -7624,7 +7624,11 @@ GenTreeIntCon* Compiler::gtNewFalse()
 // return a new node representing the value in a physical register
 GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {
+#ifdef TARGET_ARM64
+    assert(genIsValidIntReg(reg) || (reg == REG_SPBASE) || (reg == REG_FFR));
+#else
     assert(genIsValidIntReg(reg) || (reg == REG_SPBASE));
+#endif
     GenTree* result = new (this, GT_PHYSREG) GenTreePhysReg(reg, type);
     return result;
 }
@@ -11709,6 +11713,14 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilKind = "cse";
             ilNum  = lclNum - optCSEstart;
         }
+#ifdef TARGET_ARM64
+        else if (lclNum == lvaFfrRegister)
+        {
+            // We introduce this LclVar in lowering, hence special case the printing of
+            // it instead of handling it in "rationalizer" below.
+            ilName = "FFReg";
+        }
+#endif
         else if (lclNum >= optCSEstart)
         {
             // Currently any new LclVar's introduced after the CSE phase
