@@ -119,6 +119,7 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
+gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -2938,6 +2939,11 @@ mono_jit_compile_method_jit_only (MonoMethod *method, MonoError *error)
 static gpointer
 get_ftnptr_for_method (MonoMethod *method, gboolean need_unbox, MonoError *error)
 {
+	if (method->is_generic || mono_class_is_gtd (method->klass)) {
+		mono_error_set_generic_error (error, "System", "InvalidOperationException", "");
+		return NULL;
+	}
+
 	if (!mono_llvm_only) {
 		gpointer res = mono_jit_compile_method (method, error);
 		res = mini_add_method_trampoline (method, res, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
@@ -3756,6 +3762,17 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 		mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 		return;
 	}
+}
+
+MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
+{
+	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
+
+	mono_term_signaled = TRUE;
+
+	mono_gc_finalize_notify ();
+
+	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 }
 
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)

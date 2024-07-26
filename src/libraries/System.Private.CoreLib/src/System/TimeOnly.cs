@@ -26,8 +26,8 @@ namespace System
         // MinTimeTicks is the ticks for the midnight time 00:00:00.000 AM
         private const long MinTimeTicks = 0;
 
-        // MaxTimeTicks is the max tick value for the time in the day. It is calculated using DateTime.Today.AddTicks(-1).TimeOfDay.Ticks.
-        private const long MaxTimeTicks = 863_999_999_999;
+        // MaxTimeTicks is the max tick value for the time in the day.
+        private const long MaxTimeTicks = TimeSpan.TicksPerDay - 1;
 
         /// <summary>
         /// Represents the smallest possible value of TimeOnly.
@@ -921,28 +921,24 @@ namespace System
 
             if (format.Length == 1)
             {
-                switch (format[0] | 0x20)
+                return (format[0] | 0x20) switch
                 {
-                    case 'o':
-                        return string.Create(16, this, (destination, value) =>
-                        {
-                            DateTimeFormat.TryFormatTimeOnlyO(value.Hour, value.Minute, value.Second, value._ticks % TimeSpan.TicksPerSecond, destination, out int charsWritten);
-                            Debug.Assert(charsWritten == destination.Length);
-                        });
+                    'o' => string.Create(16, this, (destination, value) =>
+                           {
+                               DateTimeFormat.TryFormatTimeOnlyO(value.Hour, value.Minute, value.Second, value._ticks % TimeSpan.TicksPerSecond, destination, out int charsWritten);
+                               Debug.Assert(charsWritten == destination.Length);
+                           }),
 
-                    case 'r':
-                        return string.Create(8, this, (destination, value) =>
-                        {
-                            DateTimeFormat.TryFormatTimeOnlyR(value.Hour, value.Minute, value.Second, destination, out int charsWritten);
-                            Debug.Assert(charsWritten == destination.Length);
-                        });
+                    'r' => string.Create(8, this, (destination, value) =>
+                           {
+                               DateTimeFormat.TryFormatTimeOnlyR(value.Hour, value.Minute, value.Second, destination, out int charsWritten);
+                               Debug.Assert(charsWritten == destination.Length);
+                           }),
 
-                    case 't':
-                        return DateTimeFormat.Format(ToDateTime(), format, provider);
+                    't' => DateTimeFormat.Format(ToDateTime(), format, provider),
 
-                    default:
-                        throw new FormatException(SR.Format_InvalidString);
-                }
+                    _ => throw new FormatException(SR.Format_InvalidString),
+                };
             }
 
             DateTimeFormat.IsValidCustomTimeOnlyFormat(format.AsSpan(), throwOnError: true);

@@ -384,14 +384,13 @@ namespace System.Runtime.InteropServices
 
         internal static int CallICustomQueryInterface(object customQueryInterfaceMaybe, ref Guid iid, out IntPtr ppObject)
         {
-            var customQueryInterface = customQueryInterfaceMaybe as ICustomQueryInterface;
-            if (customQueryInterface is null)
+            if (customQueryInterfaceMaybe is ICustomQueryInterface customQueryInterface)
             {
-                ppObject = IntPtr.Zero;
-                return -1; // See TryInvokeICustomQueryInterfaceResult
+                return (int)customQueryInterface.GetInterface(ref iid, out ppObject);
             }
 
-            return (int)customQueryInterface.GetInterface(ref iid, out ppObject);
+            ppObject = IntPtr.Zero;
+            return -1; // See TryInvokeICustomQueryInterfaceResult
         }
     }
 }

@@ -72,7 +72,7 @@ namespace System
         // Number of days from 1/1/0001 to 12/31/1969
         internal const int DaysTo1970 = DaysPer400Years * 4 + DaysPer100Years * 3 + DaysPer4Years * 17 + DaysPerYear; // 719,162
         // Number of days from 1/1/0001 to 12/31/9999
-        private const int DaysTo10000 = DaysPer400Years * 25 - 366;  // 3652059
+        internal const int DaysTo10000 = DaysPer400Years * 25 - 366;  // 3652059
 
         internal const long MinTicks = 0;
         internal const long MaxTicks = DaysTo10000 * TimeSpan.TicksPerDay - 1;

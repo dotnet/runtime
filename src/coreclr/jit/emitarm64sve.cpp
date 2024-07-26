@@ -4410,7 +4410,6 @@ void emitter::emitInsSve_R_R_R(instruction     ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing three registers and a constant.
- *  Do not call this directly. Use 'emitIns_R_R_R_I' instead.
  */
 
 void emitter::emitInsSve_R_R_R_I(instruction     ins,
@@ -5577,7 +5576,7 @@ void emitter::emitInsSve_R_R_R_I(instruction     ins,
             assert(isLowPredicateRegister(reg2));
             assert(isVectorRegister(reg3));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm90_or_270(imm);
+            assert(emitIsValidEncodedRotationImm90_or_270(imm));
             fmt = IF_SVE_GP_3A;
             break;
 
@@ -5826,14 +5825,13 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 
         case INS_sve_fcmla:
             assert(opt == INS_OPTS_SCALABLE_S);
-            assert(isVectorRegister(reg1));    // ddddd
-            assert(isVectorRegister(reg2));    // nnnnn
-            assert(isLowVectorRegister(reg3)); // mmmm
-            assert(isValidUimm<1>(imm1));      // i
-            assert(isValidRot(imm2));          // rr
+            assert(isVectorRegister(reg1));                      // ddddd
+            assert(isVectorRegister(reg2));                      // nnnnn
+            assert(isLowVectorRegister(reg3));                   // mmmm
+            assert(isValidUimm<1>(imm1));                        // i
+            assert(emitIsValidEncodedRotationImm0_to_270(imm2)); // rr
 
-            // Convert imm2 from rotation value (0-270) to bitwise representation (0-3)
-            imm = (imm1 << 2) | emitEncodeRotationImm0_to_270(imm2);
+            imm = (imm1 << 2) | imm2;
             fmt = IF_SVE_GV_3A;
             break;
 
@@ -5860,7 +5858,6 @@ void emitter::emitInsSve_R_R_R_I_I(instruction ins,
 /*****************************************************************************
  *
  *  Add a SVE instruction referencing four registers.
- *  Do not call this directly. Use 'emitIns_R_R_R_R' instead.
  */
 
 void emitter::emitInsSve_R_R_R_R(instruction     ins,
@@ -6991,7 +6988,7 @@ void emitter::emitInsSve_R_R_R_R_I(instruction ins,
             assert(isVectorRegister(reg3));
             assert(isVectorRegister(reg4));
             assert(isScalableVectorSize(size));
-            imm = emitEncodeRotationImm0_to_270(imm);
+            assert(emitIsValidEncodedRotationImm0_to_270(imm));
             fmt = IF_SVE_GT_4A;
             break;
 
@@ -9798,7 +9795,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm90_or_270(ssize_t imm)
 {
-    return (imm == 0) || (imm == 1);
+    return isValidUimm<1>(imm);
 }
 
 /************************************************************************
@@ -9867,7 +9864,7 @@ void emitter::emitIns_PRFOP_R_R_I(instruction ins,
 
 /*static*/ bool emitter::emitIsValidEncodedRotationImm0_to_270(ssize_t imm)
 {
-    return (imm >= 0) && (imm <= 3);
+    return isValidUimm<2>(imm);
 }
 
 /*****************************************************************************

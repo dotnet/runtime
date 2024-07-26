@@ -150,6 +150,7 @@ native_binaries_to_ignore = [
     "e_sqlite3.dll",
     "FileCheck.exe",
     "ilasm.exe",
+    "ilc.exe",
     "ildasm.exe",
     "jitinterface_arm.dll",
     "jitinterface_arm64.dll",
@@ -453,7 +454,7 @@ def main(main_args):
     ci = True
 
     # Determine the Helix queue name to use when running jobs.
-    # Note that we run in the 'internal', not 'public', instance, so we must use 'internal' queues.
+    # Note that we run in the 'internal', not 'public', instance, so we must use 'internal' queues defined in helix-queues-setup.yml.
     if platform_name == "windows":
         helix_queue = "Windows.11.Arm64" if arch == "arm64" else "Windows.10.Amd64.X86.Rt"
     elif platform_name == "linux":

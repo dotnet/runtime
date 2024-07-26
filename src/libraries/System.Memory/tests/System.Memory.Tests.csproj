@@ -6,11 +6,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
-    <!-- This WASM test is problematic and slow right now. This sets the xharness timeout but there is also override in sendtohelix-browser.targets -->
-    <WasmXHarnessTestsTimeout>01:15:00</WasmXHarnessTestsTimeout>
-  </PropertyGroup>
-  
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
@@ -191,6 +186,7 @@
     <Compile Include="ReadOnlySpan\SequenceEqual.long.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.T.cs" />
     <Compile Include="ReadOnlySpan\Slice.cs" />
+    <Compile Include="ReadOnlySpan\Split.T.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.long.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />

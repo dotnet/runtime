@@ -214,7 +214,7 @@ namespace System.Reflection
 
         public override bool Equals(object? obj)
         {
-            if (!(obj is MetadataImport))
+            if (obj is not MetadataImport)
                 return false;
             return Equals((MetadataImport)obj);
         }
