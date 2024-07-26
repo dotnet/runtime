@@ -63,6 +63,9 @@ void Compiler::lvaInit()
 #endif // JIT32_GCENCODER
     lvaNewObjArrayArgs  = BAD_VAR_NUM;
     lvaGSSecurityCookie = BAD_VAR_NUM;
+#ifdef TARGET_ARM64
+    lvaFfrRegister = BAD_VAR_NUM;
+#endif
 #ifdef TARGET_X86
     lvaVarargsBaseOfStkArgs = BAD_VAR_NUM;
 #endif // TARGET_X86
