@@ -44,9 +44,9 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
             public static T Invoke(T x, T y) => x & ~y;
-            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x & ~y;
-            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x & ~y;
-            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => x & ~y;
+            public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => Vector128.AndNot(x, y);
+            public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => Vector256.AndNot(x, y);
+            public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y) => Vector512.AndNot(x, y);
         }
     }
 }
