@@ -132,7 +132,10 @@ namespace System.IO.Compression
                 _ => throw new ArgumentOutOfRangeException(nameof(compressionLevel)),
             };
 
-        private static int GetMemLevel(ZLibNative.CompressionLevel level) => level == ZLibNative.CompressionLevel.NoCompression ? Deflate_NoCompressionMemLevel : Deflate_DefaultMemLevel;
+        private static int GetMemLevel(ZLibNative.CompressionLevel level) => 
+            level == ZLibNative.CompressionLevel.NoCompression ?
+                Deflate_NoCompressionMemLevel :
+                Deflate_DefaultMemLevel;
 
         [MemberNotNull(nameof(_buffer))]
         private void InitializeBuffer()

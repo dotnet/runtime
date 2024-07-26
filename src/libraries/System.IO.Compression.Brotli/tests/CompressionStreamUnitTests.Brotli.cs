@@ -109,30 +109,13 @@ namespace System.IO.Compression
                 return mms.Length;
             }
 
-            long quality0 = await GetLengthAsync(0);
-            long quality1 = await GetLengthAsync(1);
-            long quality2 = await GetLengthAsync(2);
-            long quality3 = await GetLengthAsync(3);
-            long quality4 = await GetLengthAsync(4);
-            long quality5 = await GetLengthAsync(5);
-            long quality6 = await GetLengthAsync(6);
-            long quality7 = await GetLengthAsync(7);
-            long quality8 = await GetLengthAsync(8);
-            long quality9 = await GetLengthAsync(9);
-            long quality10 = await GetLengthAsync(10);
-            long quality11 = await GetLengthAsync(11);
-
-            Assert.True(quality1 <= quality0);
-            Assert.True(quality2 <= quality1);
-            Assert.True(quality3 <= quality2);
-            Assert.True(quality4 <= quality3);
-            Assert.True(quality5 <= quality4);
-            Assert.True(quality6 <= quality5);
-            Assert.True(quality7 <= quality6);
-            Assert.True(quality8 <= quality7);
-            Assert.True(quality9 <= quality8);
-            Assert.True(quality10 <= quality9);
-            Assert.True(quality11 <= quality10);
+            long prev = await GetLengthAsync(0);
+            for (int i = 1; i < 12; i++)
+            {
+                long cur = await GetLengthAsync(i);
+                Assert.True(cur <= prev, $"Expected {cur} <= {prev} for quality {i}");
+                prev = cur;
+            }
         }
 
         [Fact]
