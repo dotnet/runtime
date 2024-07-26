@@ -149,7 +149,7 @@ namespace System.Runtime.Serialization.Tests
         {
             // Check whether the XName is the same, this can be done by comparing the two XNames.
 
-            if ((baselineXElement == null && actualXElement != null) || !baselineXElement.Name.Equals(actualXElement.Name))
+            if (!(baselineXElement?.Name.Equals(actualXElement?.Name) ?? false))
             {
                 // Two nodes could be same even if their localName is not the same.
                 // For example-
@@ -257,6 +257,8 @@ namespace System.Runtime.Serialization.Tests
                             // Check if they both have the same namespace.
                             XNamespace deskns = baselineXElement.GetNamespaceOfPrefix(deskPrefix);
                             XNamespace coreclrns = actualXElement.GetNamespaceOfPrefix(coreCLRPrefix);
+                            // If here, then both elements are prefixed. They should both have a namespace that corresponds to their prefix.
+                            // Either NS being null here would have failed the next check anyway, whether gracefully or not.
                             if ((deskns == null) || (coreclrns == null))
                             {
                                 Debug.WriteLine("Either expected {0} or actual {1} attribute value doesn't have namespace :", deskAtrs[i].Value, coreCLRAtrs[i].Value);

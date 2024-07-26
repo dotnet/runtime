@@ -240,7 +240,7 @@ namespace System.Runtime.Serialization.Schema.Tests
         internal static XsdDataContractImporter CreateImporterWithOptions(ImportOptions opts = null)
         {
             XsdDataContractImporter importer = new XsdDataContractImporter();
-            importer.Options ??= new ImportOptions();
+            importer.Options = opts ?? new ImportOptions();
             return importer;
         }
 

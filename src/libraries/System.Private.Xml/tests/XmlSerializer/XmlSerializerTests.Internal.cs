@@ -45,7 +45,7 @@ public static partial class XmlSerializerTests
         Assert.Equal(dClass.BoolValue, fromBase.BoolValue);
 
         // Derived class does not apply XmlRoot attribute to force itself to be emitted with the base class element name, so update expected xml accordingly.
-        // Since we can't smartly emit xsi:type during serialization though, it is still there even thout it isn't needed.
+        // Since we can't smartly emit xsi:type during serialization though, it is still there even though it isn't needed.
         expectedXml = WithXmlHeader(@"<DerivedIXmlSerializable xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:type=""DerivedIXmlSerializable"" AttributeString=""derivedIXmlSerTest"" DateTimeValue=""12/31/1999 12:00:00 AM"" BoolValue=""True"" />");
         var fromDerived = SerializeAndDeserialize(dClass, expectedXml, () => new XmlSerializer(typeof(XmlSerializableDerivedClass)));
         Assert.Equal(dClass.AttributeString, fromDerived.AttributeString);
