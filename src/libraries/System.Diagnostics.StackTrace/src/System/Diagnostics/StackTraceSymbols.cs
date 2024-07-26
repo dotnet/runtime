@@ -63,7 +63,7 @@ namespace System.Diagnostics
             {
                 Handle handle = MetadataTokens.Handle(methodToken);
 
-                if (handle.Kind == HandleKind.MethodDefinition)
+                if (!handle.IsNil && handle.Kind == HandleKind.MethodDefinition)
                 {
                     MethodDebugInformationHandle methodDebugHandle = ((MethodDefinitionHandle)handle).ToDebugInformationHandle();
                     MethodDebugInformation methodInfo = reader.GetMethodDebugInformation(methodDebugHandle);
