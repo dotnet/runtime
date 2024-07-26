@@ -20,6 +20,11 @@ namespace System.Diagnostics.Metrics
 
         private static readonly int s_maxGenerations = Math.Min(GC.GetGCMemoryInfo().GenerationInfo.Length, s_genNames.Length);
 
+        public static void EnsureInitialized()
+        {
+            // Dummy method to ensure that the static constructor have run and created the meters
+        }
+
         static RuntimeMetrics()
         {
             AppDomain.CurrentDomain.FirstChanceException += (source, e) =>
@@ -32,6 +37,8 @@ namespace System.Diagnostics.Metrics
                 t_handlingFirstChanceException = false;
             };
         }
+
+#pragma warning disable CA1823 // suppress unused fields warning, as the fields are used to keep the meters alive
 
         private static readonly ObservableCounter<long> s_gcCollections = s_meter.CreateObservableCounter(
             "dotnet.gc.collections",
@@ -156,28 +163,7 @@ namespace System.Diagnostics.Metrics
                                         unit: "s",
                                         description: "CPU time used by the process.");
 
-        public static bool IsEnabled()
-        {
-            return s_gcCollections.Enabled
-                || s_processWorkingSet.Enabled
-                || s_gcHeapTotalAllocated.Enabled
-                || s_gcLastCollectionMemoryCommitted.Enabled
-                || s_gcLastCollectionHeapSize.Enabled
-                || s_gcLastCollectionFragmentationSize.Enabled
-                || s_gcPauseTime.Enabled
-                || s_jitCompiledSize.Enabled
-                || s_jitCompiledMethodCount.Enabled
-                || s_jitCompilationTime.Enabled
-                || s_monitorLockContention.Enabled
-                || s_timerCount.Enabled
-                || s_threadPoolThreadCount.Enabled
-                || s_threadPoolCompletedWorkItems.Enabled
-                || s_threadPoolQueueLength.Enabled
-                || s_assembliesCount.Enabled
-                || s_exceptions.Enabled
-                || s_processCpuCount.Enabled
-                || s_processCpuTime?.Enabled is true;
-        }
+#pragma warning restore CA1823
 
         private static IEnumerable<Measurement<long>> GetGarbageCollectionCounts()
         {
