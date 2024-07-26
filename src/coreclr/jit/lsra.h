@@ -1991,8 +1991,8 @@ private:
                             GenTree*         rmwNode        = nullptr,
                             SingleTypeRegSet candidates     = RBM_NONE,
                             RefPosition**    useRefPosition = nullptr);
-    int BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
-    int BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
+    int  BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
+    int  BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
 
     RefPosition* BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);
