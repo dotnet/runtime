@@ -7249,7 +7249,6 @@ bool GenTree::OperMayThrow(Compiler* comp)
     }
 #endif // FEATURE_HW_INTRINSICS
 
-
     return OperExceptions(comp) != ExceptionSetFlags::None;
 }
 
