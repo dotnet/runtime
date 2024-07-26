@@ -644,7 +644,7 @@ protected:
 class ShimStackWalk
 {
 public:
-    ShimStackWalk(ShimProcess * pProcess, ICorDebugThread * pThread);
+    ShimStackWalk(ShimProcess * pProcess, ICorDebugThread * pThread, bool fIsHijacked);
     ~ShimStackWalk();
 
     // These functions do not adjust the reference count.
@@ -844,6 +844,8 @@ private:
     // the thread on which we are doing a stackwalk, i.e. the "owning" thread
     RSExtSmartPtr<ShimProcess>     m_pProcess;
     RSExtSmartPtr<ICorDebugThread> m_pThread;
+
+    BOOL m_isHijacked;
 };
 
 

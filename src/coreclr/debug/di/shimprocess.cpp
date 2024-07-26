@@ -1487,7 +1487,8 @@ ShimStackWalk * ShimProcess::LookupOrCreateShimStackWalk(ICorDebugThread * pThre
     if (pSW == NULL)
     {
         // create one if it's not found and add it to the hash table
-        NewHolder<ShimStackWalk> pNewSW(new ShimStackWalk(this, pThread));
+        bool fIsHijacked = m_pProcess->IsUnmanagedThreadHijacked(pThread);
+        NewHolder<ShimStackWalk> pNewSW(new ShimStackWalk(this, pThread, fIsHijacked));
 
         {
             // Do the lookup again under the Shim lock, and only add the new ShimStackWalk if no other thread

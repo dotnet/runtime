@@ -2879,6 +2879,8 @@ public:
     virtual void RequestSyncAtEvent()= 0;
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
+
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 };
 
 
@@ -3462,6 +3464,8 @@ public:
         _ASSERTE(ThreadHoldsProcessLock());
         return m_unmanagedThreads.GetBase(dwThreadId);
     }
+
+    virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread);
 #endif // FEATURE_INTEROP_DEBUGGING
 
     /*
