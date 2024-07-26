@@ -303,7 +303,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     emitAttr emitSize;
     insOpts  opt;
-    bool     unspilledFfr = false;
 
     if (HWIntrinsicInfo::SIMDScalar(intrin.id))
     {
