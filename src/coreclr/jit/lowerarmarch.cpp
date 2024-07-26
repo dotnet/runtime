@@ -1786,7 +1786,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // only if it was trashed. If it was not trashed, we do not have to reload the
                 // contents of the FFR register.
 
-                GenTree* lclVar = comp->gtNewLclvNode(comp->lvaFfrRegister, TYP_MASK);
+                unsigned lclNum = comp->getFFRegisterVarNum();
+                GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
                 BlockRange().InsertBefore(node, lclVar);
                 LowerNode(lclVar);
 
@@ -1829,7 +1830,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                 // only if it was trashed. If it was not trashed, we do not have to reload the
                 // contents of the FFR register.
 
-                GenTree* lclVar = comp->gtNewLclvNode(comp->lvaFfrRegister, TYP_MASK);
+                unsigned lclNum = comp->getFFRegisterVarNum();
+                GenTree* lclVar = comp->gtNewLclvNode(lclNum, TYP_MASK);
                 BlockRange().InsertBefore(node, lclVar);
                 LowerNode(lclVar);
 
