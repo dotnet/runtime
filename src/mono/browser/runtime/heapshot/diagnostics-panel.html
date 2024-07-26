@@ -19,6 +19,17 @@
 
             function tab_message (evt) {
                 console.log("tab_message", evt, evt.data);
+                const data = evt.data;
+                if ((typeof (data) !== "object") || (typeof (data.cmd) !== "string"))
+                    return;
+
+                switch (data.cmd) {
+                    case "heapshotText":
+                        this.log += data.text + "\r\n";
+                        if (getSelectedTab() === this)
+                            document.querySelector("#selectedSnapshot").textContent = this.log;
+                        break;
+                }
             }
 
             function channel_message (evt) {
@@ -38,7 +49,7 @@
                             elt.setAttribute("tabId", data.sender);
                             const tabListElt = document.querySelector("#tabs");
                             tabListElt.appendChild(elt);
-                            if (tabListElt.childElementCount === 1) {
+                            if (tabListElt.childElementCount === 0) {
                                 tabListElt.selectedOptions.length = 1;
                                 tabListElt.selectedOptions[0] = elt;
                             }
@@ -46,9 +57,10 @@
                         elt.textContent = `.NET Runtime ${data.version} | tab ${data.sender}`;
                         elt.removeAttribute("disabled");
                         const tabChannel = new BroadcastChannel(`.NET Runtime Diagnostics|${data.sender}`);
-                        tabChannel.addEventListener("message", tab_message);
+                        const tabObj = { tabId: data.sender, elt, origin: evt.origin, channel: tabChannel, log: "" };
+                        tabChannel.addEventListener("message", tab_message.bind(tabObj));
                         elt.setAttribute("tabListIndex", tabList.length);
-                        tabList.push({ tabId: data.sender, elt, origin: evt.origin, channel: tabChannel });
+                        tabList.push(tabObj);
                         break;
                 }
             }
@@ -75,27 +87,34 @@
                 channel.postMessage({ cmd: "whosThere", sender: tabId });
             }
 
-            function takeSnapshot_click () {
+            function getSelectedTab () {
                 const tabListElt = document.querySelector("#tabs");
                 const selectedTabElt = tabListElt.selectedOptions[0];
                 if (!selectedTabElt)
                     return;
                 const tabListIndex = parseInt(selectedTabElt.getAttribute("tabListIndex"));
                 const tabObj = tabList[tabListIndex];
-                tabObj.channel.postMessage({ cmd: "takeSnapshot", sender: tabId });
+                return tabObj;
+            }
+
+            function takeSnapshot_click () {
+                const tabObj = getSelectedTab();
+                if (tabObj)
+                    tabObj.channel.postMessage({ cmd: "takeSnapshot", sender: tabId });
             }
 
             function saveSelectedSnapshot_click () {
             }
 
             function tabs_change () {
-                const tabListElt = document.querySelector("#tabs");
-                const selectedTabElt = tabListElt.selectedOptions[0];
-                const enable = selectedTabElt !== undefined;
-                if (enable)
+                const tabObj = getSelectedTab();
+                if (tabObj)
                     document.querySelector("#takeSnapshot").removeAttribute("disabled");
                 else
                     document.querySelector("#takeSnapshot").setAttribute("disabled", true);
+
+                if (tabObj)
+                    document.querySelector("#selectedSnapshot").textContent = tabObj.log;
             }
 
             function snapshots_change () {
@@ -109,8 +128,7 @@
         <button id="takeSnapshot" disabled>Take Snapshot</button>
         <button id="saveSelectedSnapshot" disabled>Save Snapshot</button><br>
         <select id="snapshots" size="6"></select>
-        <div id="selectedSnapshot">
-            <div id="snapshotCounters"></div>
-        </div>
+        <pre id="selectedSnapshot">
+        </pre>
     </body>
 </html>
