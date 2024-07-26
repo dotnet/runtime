@@ -4243,7 +4243,8 @@ bool Compiler::fgVarIsNeverZeroInitializedInProlog(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
     bool       result = varDsc->lvIsParam || lvaIsOSRLocal(varNum) || (varNum == lvaGSSecurityCookie) ||
-                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) || (varNum == lvaRetAddrVar);
+                  (varNum == lvaInlinedPInvokeFrameVar) || (varNum == lvaStubArgumentVar) ||
+                  (varNum == lvaRetAddrVar) || (varNum == lvaFfrRegister);
 
 #if FEATURE_FIXED_OUT_ARGS
     result = result || (varNum == lvaOutgoingArgSpaceVar);
