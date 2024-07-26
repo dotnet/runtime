@@ -431,7 +431,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <DevTeamProvisioning>-</DevTeamProvisioning>
+      <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
       <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
       <GenerateXcodeProject>true</GenerateXcodeProject>
       <AppleBundleDir>$(AppDir)</AppleBundleDir>
@@ -460,14 +460,15 @@
 
   <!-- This target moves app bundles to the payload directory -->
   <Target Name="AfterAppleBuild">
-    <!-- Apparently MSBuild cannot move directories and recursively copying a
-         a directory requires writing some sort of recursive traversal
-         logic yourself. -->
+    <!-- MSBuild cannot move directories or recursively copy content. -->
     <ItemGroup>
-      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
+      <BundleContent Include="$(AppBundlePath)/**/*.*" />
     </ItemGroup>
     <MakeDir Directories="$(FinalPath)" />
-    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
+    <!-- MacCatalyst requires Contents/Info.plist and Contents/MacOS/ApplicationBinary -->
+    <Copy Condition="'$(TargetOS)' == 'maccatalyst' AND '%(BundleContent.Filename)%(BundleContent.Extension)' == 'Info.plist'" SourceFiles="@(BundleContent)" DestinationFolder="$(FinalPath)/Contents/%(RecursiveDir)" />
+    <Copy Condition="'$(TargetOS)' == 'maccatalyst' AND '%(BundleContent.Filename)%(BundleContent.Extension)' != 'Info.plist'" SourceFiles="@(BundleContent)" DestinationFolder="$(FinalPath)/Contents/MacOS/%(RecursiveDir)" />
+    <Copy Condition="'$(TargetOS)' != 'maccatalyst'" SourceFiles="@(BundleContent)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
     <RemoveDir Directories="$(AppBundlePath)" />
     <Message Importance="High" Text="Final app: $(FinalPath)" />
   </Target>

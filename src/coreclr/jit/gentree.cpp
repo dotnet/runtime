@@ -3931,8 +3931,10 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
     int      costSz = 1;
     unsigned level  = 0;
 
+    bool optsEnabled = opts.OptimizationEnabled();
+
 #if defined(FEATURE_HW_INTRINSICS)
-    if (multiOp->OperIs(GT_HWINTRINSIC))
+    if (multiOp->OperIs(GT_HWINTRINSIC) && optsEnabled)
     {
         GenTreeHWIntrinsic* hwTree = multiOp->AsHWIntrinsic();
 #if defined(TARGET_XARCH)
@@ -4052,8 +4054,12 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
             level += 1;
         }
 
-        costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
-        costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+        if (optsEnabled)
+        {
+            // We don't need/have costs in MinOpts
+            costEx += (multiOp->Op(1)->GetCostEx() + multiOp->Op(2)->GetCostEx());
+            costSz += (multiOp->Op(1)->GetCostSz() + multiOp->Op(2)->GetCostSz());
+        }
     }
     else
     {
@@ -4064,12 +4070,19 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
             level = max(lvl, level + 1);
 
-            costEx += op->GetCostEx();
-            costSz += op->GetCostSz();
+            if (optsEnabled)
+            {
+                // We don't need/have costs in MinOpts
+                costEx += op->GetCostEx();
+                costSz += op->GetCostSz();
+            }
         }
     }
 
-    multiOp->SetCosts(costEx, costSz);
+    if (optsEnabled)
+    {
+        multiOp->SetCosts(costEx, costSz);
+    }
     return level;
 }
 #endif
@@ -4823,6 +4836,44 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     return false;
 }
 
+static void SetIndirectStoreEvalOrder(Compiler* comp, GenTreeIndir* store, bool* allowReversal)
+{
+    assert(store->OperIs(GT_STORE_BLK, GT_STOREIND));
+
+    GenTree* addr  = store->Addr();
+    GenTree* data  = store->Data();
+    *allowReversal = true;
+
+    if (addr->IsInvariant())
+    {
+        *allowReversal = false;
+        store->SetReverseOp();
+        return;
+    }
+
+    if ((addr->gtFlags & GTF_ALL_EFFECT) != 0)
+    {
+        return;
+    }
+
+    // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
+    if (comp->gtMayHaveStoreInterference(data, addr))
+    {
+        // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
+        *allowReversal = false;
+        return;
+    }
+
+    // If op2 is simple then evaluate op1 first
+    if (data->OperIsLeaf())
+    {
+        return;
+    }
+
+    *allowReversal = false;
+    store->SetReverseOp();
+}
+
 /*****************************************************************************
  *
  *  Given a tree, figure out the order in which its sub-operands should be
@@ -4847,6 +4898,11 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 {
     assert(tree);
+
+    if (opts.OptimizationDisabled())
+    {
+        return gtSetEvalOrderMinOpts(tree);
+    }
 
 #ifdef DEBUG
     /* Clear the GTF_DEBUG_NODE_MORPHED flag as well */
@@ -5838,33 +5894,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 // TODO-ASG-Cleanup: this logic emulated the ASG case below. See how of much of it can be deleted.
                 if (!optValnumCSE_phase || optCSE_canSwap(op1, op2))
                 {
-                    if (op1->IsInvariant())
-                    {
-                        allowReversal = false;
-                        tree->SetReverseOp();
-                        break;
-                    }
-                    if ((op1->gtFlags & GTF_ALL_EFFECT) != 0)
-                    {
-                        break;
-                    }
-
-                    // In case op2 assigns to a local var that is used in op1, we have to evaluate op1 first.
-                    if (gtMayHaveStoreInterference(op2, op1))
-                    {
-                        // TODO-ASG-Cleanup: move this guard to "gtCanSwapOrder".
-                        allowReversal = false;
-                        break;
-                    }
-
-                    // If op2 is simple then evaluate op1 first
-                    if (op2->OperIsLeaf())
-                    {
-                        break;
-                    }
-
-                    allowReversal = false;
-                    tree->SetReverseOp();
+                    SetIndirectStoreEvalOrder(this, tree->AsIndir(), &allowReversal);
                 }
                 break;
 
@@ -6211,6 +6241,149 @@ DONE:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+//------------------------------------------------------------------------
+// gtSetEvalOrderMinOpts: A MinOpts specific version of gtSetEvalOrder. We don't
+//    need to set costs, but we're looking for opportunities to swap operands.
+//
+// Arguments:
+//    tree - The tree for which we are setting the evaluation order.
+//
+// Return Value:
+//    the Sethi 'complexity' estimate for this tree (the higher
+//    the number, the higher is the tree's resources requirement)
+//
+unsigned Compiler::gtSetEvalOrderMinOpts(GenTree* tree)
+{
+    assert(tree);
+    if (fgOrder == FGOrderLinear)
+    {
+        // We don't re-order operands in LIR anyway.
+        return 0;
+    }
+
+    if (tree->OperIsLeaf())
+    {
+        // Nothing to do for leaves, report as having Sethi 'complexity' of 0
+        return 0;
+    }
+
+    unsigned level = 1;
+    if (tree->OperIsSimple())
+    {
+        GenTree* op1 = tree->AsOp()->gtOp1;
+        GenTree* op2 = tree->gtGetOp2IfPresent();
+
+        // Only GT_LEA may have a nullptr op1 and a non-nullptr op2
+        if (tree->OperIs(GT_LEA) && (op1 == nullptr))
+        {
+            std::swap(op1, op2);
+        }
+
+        // Check for a nilary operator
+        if (op1 == nullptr)
+        {
+            // E.g. void GT_RETURN, GT_RETFIT
+            assert(op2 == nullptr);
+            return 0;
+        }
+
+        if (op2 == nullptr)
+        {
+            gtSetEvalOrderMinOpts(op1);
+            return 1;
+        }
+
+        level             = gtSetEvalOrderMinOpts(op1);
+        unsigned levelOp2 = gtSetEvalOrderMinOpts(op2);
+
+        bool allowSwap = true;
+        // TODO: Introduce a function to check whether we can swap the order of its operands or not.
+        switch (tree->OperGet())
+        {
+            case GT_COMMA:
+            case GT_BOUNDS_CHECK:
+            case GT_INTRINSIC:
+            case GT_QMARK:
+            case GT_COLON:
+                // We're not going to swap operands in these
+                allowSwap = false;
+                break;
+
+            case GT_STORE_BLK:
+            case GT_STOREIND:
+                SetIndirectStoreEvalOrder(this, tree->AsIndir(), &allowSwap);
+                break;
+
+            default:
+                break;
+        }
+
+        const bool shouldSwap = tree->IsReverseOp() ? level > levelOp2 : level < levelOp2;
+        if (shouldSwap && allowSwap)
+        {
+            // Can we swap the order by commuting the operands?
+            const bool canSwap = tree->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
+            if (canSwap)
+            {
+                if (tree->OperIsCmpCompare())
+                {
+                    genTreeOps oper = tree->OperGet();
+                    if (GenTree::SwapRelop(oper) != oper)
+                    {
+                        tree->SetOper(GenTree::SwapRelop(oper));
+                    }
+                    std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
+                }
+                else if (tree->OperIsCommutative())
+                {
+                    std::swap(tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
+                }
+                else
+                {
+                    // Mark the operand's evaluation order to be swapped.
+                    tree->gtFlags ^= GTF_REVERSE_OPS;
+                }
+            }
+        }
+
+        // Swap the level counts
+        if (tree->IsReverseOp())
+        {
+            std::swap(level, levelOp2);
+        }
+
+        // Compute the sethi number for this binary operator
+        if (level < 1)
+        {
+            level = levelOp2;
+        }
+        else if (level == levelOp2)
+        {
+            level++;
+        }
+    }
+    else if (tree->IsCall())
+    {
+        // We ignore late args - they don't bring any noticeable benefits
+        // according to asmdiffs/tpdiff
+        for (CallArg& arg : tree->AsCall()->gtArgs.EarlyArgs())
+        {
+            gtSetEvalOrderMinOpts(arg.GetEarlyNode());
+        }
+        level = 3;
+    }
+#if defined(FEATURE_HW_INTRINSICS)
+    else if (tree->OperIsHWIntrinsic())
+    {
+        return gtSetMultiOpOrder(tree->AsMultiOp());
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    // NOTE: we skip many operators here in order to maintain a good trade-off between CQ and TP.
+
+    return level;
+}
 
 //------------------------------------------------------------------------
 // gtMayHaveStoreInterference: Check if two trees may interfere because of a
@@ -7451,7 +7624,11 @@ GenTreeIntCon* Compiler::gtNewFalse()
 // return a new node representing the value in a physical register
 GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {
+#ifdef TARGET_ARM64
+    assert(genIsValidIntReg(reg) || (reg == REG_SPBASE) || (reg == REG_FFR));
+#else
     assert(genIsValidIntReg(reg) || (reg == REG_SPBASE));
+#endif
     GenTree* result = new (this, GT_PHYSREG) GenTreePhysReg(reg, type);
     return result;
 }
@@ -11536,6 +11713,14 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilKind = "cse";
             ilNum  = lclNum - optCSEstart;
         }
+#ifdef TARGET_ARM64
+        else if (lclNum == lvaFfrRegister)
+        {
+            // We introduce this LclVar in lowering, hence special case the printing of
+            // it instead of handling it in "rationalizer" below.
+            ilName = "FFReg";
+        }
+#endif
         else if (lclNum >= optCSEstart)
         {
             // Currently any new LclVar's introduced after the CSE phase
@@ -13340,10 +13525,7 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         return tree;
     }
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
@@ -13402,9 +13584,15 @@ GenTree* Compiler::gtFoldExpr(GenTree* tree)
         }
         else if (op1->OperIsConst() || op2->OperIsConst())
         {
-            /* at least one is a constant - see if we have a
-             * special operator that can use only one constant
-             * to fold - e.g. booleans */
+            // At least one is a constant - see if we have a
+            // special operator that can use only one constant
+            // to fold - e.g. booleans
+
+            if (opts.OptimizationDisabled())
+            {
+                // Too heavy for tier0
+                return tree;
+            }
 
             return gtFoldExprSpecial(tree);
         }
@@ -15191,10 +15379,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2IfPresent();
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
@@ -27119,15 +27304,6 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_SetFfr:
-            case NI_Sve_GetFfrByte:
-            case NI_Sve_GetFfrInt16:
-            case NI_Sve_GetFfrInt32:
-            case NI_Sve_GetFfrInt64:
-            case NI_Sve_GetFfrSByte:
-            case NI_Sve_GetFfrUInt16:
-            case NI_Sve_GetFfrUInt32:
-            case NI_Sve_GetFfrUInt64:
             {
                 return true;
             }
@@ -27318,15 +27494,6 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
             case NI_Sve_GatherPrefetch32Bit:
             case NI_Sve_GatherPrefetch64Bit:
             case NI_Sve_GatherPrefetch8Bit:
-            case NI_Sve_SetFfr:
-            case NI_Sve_GetFfrByte:
-            case NI_Sve_GetFfrInt16:
-            case NI_Sve_GetFfrInt32:
-            case NI_Sve_GetFfrInt64:
-            case NI_Sve_GetFfrSByte:
-            case NI_Sve_GetFfrUInt16:
-            case NI_Sve_GetFfrUInt32:
-            case NI_Sve_GetFfrUInt64:
             {
                 // Mark as a call and global reference, much as is done for GT_KEEPALIVE
                 gtFlags |= (GTF_CALL | GTF_GLOB_REF);
@@ -29400,37 +29567,29 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
-
-#ifdef TARGET_LOONGARCH64
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-#else
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
-#endif
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
-
-            if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+            if (!lowering->byIntegerCallConv)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] =
-                    (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] =
-                    (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                assert(lowering->numLoweredElements == MAX_RET_REG_COUNT);
+                var_types types[MAX_RET_REG_COUNT] = {JITtype2varType(lowering->loweredElements[0]),
+                                                      JITtype2varType(lowering->loweredElements[1])};
+                assert(varTypeIsFloating(types[0]) || varTypeIsFloating(types[1]));
+                assert((structSize > 8) == ((genTypeSize(types[0]) == 8) || (genTypeSize(types[1]) == 8)));
+                for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
+                {
+                    if (varTypeIsFloating(types[i]))
+                    {
+                        m_regType[i] = types[i];
+                    }
+                    else
+                    {
+                        assert(varTypeIsIntegralOrI(types[i]));
+                        m_regType[i] = (genTypeSize(types[i]) == 8) ? comp->getJitGCType(gcPtrs[i]) : TYP_INT;
+                    }
+                }
             }
             else
             {
@@ -30302,10 +30461,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(tree->OperIsHWIntrinsic());
 
-    // NOTE: MinOpts() is always true for Tier0 so we have to check explicit flags instead.
-    // To be fixed in https://github.com/dotnet/runtime/pull/77465
-    const bool tier0opts = !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
-    if (!tier0opts)
+    if (!opts.Tier0OptimizationEnabled())
     {
         return tree;
     }
@@ -30395,8 +30551,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
                     DEBUG_DESTROY_NODE(op, tree);
-                    INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
+                    if (fgGlobalMorph)
+                    {
+                        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    }
                     return vectorNode;
                 }
             }

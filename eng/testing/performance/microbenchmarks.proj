@@ -5,7 +5,7 @@
     <HelixPreCommands>$(HelixPreCommands) &amp;&amp; robocopy /np /nfl /e %HELIX_CORRELATION_PAYLOAD%\performance $(PerformanceDirectory) /XD %HELIX_CORRELATION_PAYLOAD%\performance\.git</HelixPreCommands>
     <WorkItemCommand>$(PerformanceDirectory)\scripts\benchmarks_ci.py --csproj $(PerformanceDirectory)\$(TargetCsproj)</WorkItemCommand>
     <CliArguments>--dotnet-versions %DOTNET_VERSION% --cli-source-info args --cli-branch %PERFLAB_BRANCH% --cli-commit-sha %PERFLAB_HASH% --cli-repository https://github.com/%PERFLAB_REPO% --cli-source-timestamp %PERFLAB_BUILDTIMESTAMP%</CliArguments>
-    <Python>py -3</Python>
+    <Python>python</Python>
     <CoreRun>%HELIX_CORRELATION_PAYLOAD%\Core_Root\CoreRun.exe</CoreRun>
     <BaselineCoreRun>%HELIX_CORRELATION_PAYLOAD%\Baseline_Core_Root\CoreRun.exe</BaselineCoreRun>
     <HelixPreCommands>$(HelixPreCommands);call $(PerformanceDirectory)\tools\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%</HelixPreCommands>
