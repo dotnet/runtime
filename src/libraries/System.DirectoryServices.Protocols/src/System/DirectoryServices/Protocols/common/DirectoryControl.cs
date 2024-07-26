@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -97,12 +98,6 @@ namespace System.DirectoryServices.Protocols
     public class DirectoryControl
     {
         // Scratch buffer allocations with sizes which are below this threshold should be made on the stack.
-        // This is partially based on RFC1035, which specifies that a label in a domain name should be < 64 characters.
-        // If a server name is specified as an FQDN, this will be at least three labels in an AD environment - up to
-        // 192 characters. Doubling this to allow for Unicode encoding, then rounding to the nearest power of two
-        // yields 512.
-        internal const int ServerNameStackAllocationThreshold = 512;
-        // Scratch buffer allocations with sizes which are below this threshold should be made on the stack.
         // This is based on the Active Directory schema. The largest attribute name here is msDS-FailedInteractiveLogonCountAtLastSuccessfulLogon,
         // which is 53 characters long. This is rounded up to the nearest power of two.
         internal const int AttributeNameStackAllocationThreshold = 64;
@@ -112,20 +107,11 @@ namespace System.DirectoryServices.Protocols
         internal byte[] _directoryControlValue;
 
         [ThreadStatic]
-        private static AsnWriter t_smallWriter;
-        [ThreadStatic]
-        private static AsnWriter t_mediumWriter;
-        [ThreadStatic]
-        private static AsnWriter t_largeWriter;
+        private static AsnWriter? t_writer;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static AsnWriter GetWriter(int expectedSize)
-            => expectedSize switch
-            {
-                > 0 and <= 32 => t_smallWriter ??= new AsnWriter(AsnEncodingRules.BER, 32),
-                > 32 and <= 128 => t_mediumWriter ??= new AsnWriter(AsnEncodingRules.BER, 128),
-                _ => t_largeWriter ??= new AsnWriter(AsnEncodingRules.BER, 256)
-            };
+        [MemberNotNull(nameof(t_writer))]
+        internal static AsnWriter GetWriter()
+            => t_writer ??= new AsnWriter(AsnEncodingRules.BER);
 
         public DirectoryControl(string type, byte[] value, bool isCritical, bool serverSide)
         {
@@ -249,7 +235,8 @@ namespace System.DirectoryServices.Protocols
 
                             if (asnSpan.Length <= AttributeNameStackAllocationThreshold)
                             {
-                                asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, attributeNameScratchSpace, AsnEncodingRules.BER, out bytesConsumed, out int octetStringLength);
+                                asnReadSuccessful = AsnDecoder.TryReadOctetString(asnSpan, attributeNameScratchSpace,
+                                    AsnEncodingRules.BER, out bytesConsumed, out int octetStringLength, SortResponseControl.AttributeNameTag);
                                 Debug.Assert(asnReadSuccessful);
                                 attributeNameBuffer = attributeNameScratchSpace.Slice(0, octetStringLength);
                             }
@@ -307,6 +294,10 @@ namespace System.DirectoryServices.Protocols
             {
                 throw new BerConversionException(SR.BerConversionError, asnEx);
             }
+            catch (DecoderFallbackException decEx)
+            {
+                throw new BerConversionException(SR.BerConversionError, decEx);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -334,8 +325,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 4 + (AttributeName?.Length ?? 0);
-            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.18.
@@ -344,19 +334,7 @@ namespace System.DirectoryServices.Protocols
              */
             using (writer.PushSequence())
             {
-                if (!string.IsNullOrEmpty(AttributeName))
-                {
-                    int octetStringLength = s_utf8Encoding.GetByteCount(AttributeName);
-                    // This trades slightly increased stack usage for the improved codegen which comes from a constant value.
-                    Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? stackalloc byte[AttributeNameStackAllocationThreshold].Slice(0, octetStringLength) : new byte[octetStringLength];
-
-                    s_utf8Encoding.GetBytes(AttributeName, tmpValue);
-                    writer.WriteOctetString(tmpValue);
-                }
-                else
-                {
-                    writer.WriteOctetString([]);
-                }
+                writer.WriteLdapString(AttributeName, s_utf8Encoding);
             }
             _directoryControlValue = writer.Encode();
             writer.Reset();
@@ -434,14 +412,16 @@ namespace System.DirectoryServices.Protocols
             set
             {
                 if (value < ExtendedDNFlag.HexString || value > ExtendedDNFlag.StandardString)
+                {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ExtendedDNFlag));
+                }
 
                 _flag = value;
             }
         }
         public override byte[] GetValue()
         {
-            AsnWriter writer = GetWriter(expectedSize: 8);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.5.
@@ -489,7 +469,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = GetWriter(expectedSize: 8);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.11.
@@ -523,7 +503,9 @@ namespace System.DirectoryServices.Protocols
             set
             {
                 if (value < SearchOption.DomainScope || value > SearchOption.PhantomRoot)
+                {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SearchOption));
+                }
 
                 _searchOption = value;
             }
@@ -531,7 +513,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            AsnWriter writer = GetWriter(expectedSize: 8);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.12.
@@ -586,8 +568,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 10 + 2 * (ServerName?.Length ?? 0);
-            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.16.
@@ -599,20 +580,7 @@ namespace System.DirectoryServices.Protocols
             {
                 writer.WriteInteger(Flag);
 
-                if (!string.IsNullOrEmpty(ServerName))
-                {
-                    int serverNameLength = Encoding.Unicode.GetByteCount(ServerName);
-                    // This differs from AsqRequest - it doesn't allocate ServerNameStackAllocationThreshold and provide a slice into it, because the size of this
-                    // constant is such that the larger stack allocation would outweigh the benefit of a constant-value stackalloc.
-                    Span<byte> tmpValue = serverNameLength <= ServerNameStackAllocationThreshold ? stackalloc byte[serverNameLength] : new byte[serverNameLength];
-
-                    Encoding.Unicode.GetBytes(ServerName, tmpValue);
-                    writer.WriteOctetString(tmpValue);
-                }
-                else
-                {
-                    writer.WriteOctetString([]);
-                }
+                writer.WriteLdapString(ServerName, Encoding.Unicode);
             }
             _directoryControlValue = writer.Encode();
             writer.Reset();
@@ -676,8 +644,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 16 + (_dirsyncCookie?.Length ?? 0);
-            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.3.
@@ -775,8 +742,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 6 + (_pageCookie?.Length ?? 1);
-            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in RFC2696.
@@ -824,10 +790,9 @@ namespace System.DirectoryServices.Protocols
 
     public class SortRequestControl : DirectoryControl
     {
-        private static readonly Asn1Tag s_orderingRuleTag = new(TagClass.ContextSpecific, 0, false);
-        private static readonly Asn1Tag s_reverseOrderTag = new(TagClass.ContextSpecific, 1, false);
+        private static readonly Asn1Tag s_orderingRuleTag = new(TagClass.ContextSpecific, 0);
+        private static readonly Asn1Tag s_reverseOrderTag = new(TagClass.ContextSpecific, 1);
 
-        private int _keysAsnLength;
         private SortKey[] _keys = Array.Empty<SortKey>();
         public SortRequestControl(params SortKey[] sortKeys) : base("1.2.840.113556.1.4.473", null, true, true)
         {
@@ -841,12 +806,10 @@ namespace System.DirectoryServices.Protocols
                 }
             }
 
-            _keysAsnLength = 0;
             _keys = new SortKey[sortKeys.Length];
             for (int i = 0; i < sortKeys.Length; i++)
             {
                 _keys[i] = new SortKey(sortKeys[i].AttributeName, sortKeys[i].MatchingRule, sortKeys[i].ReverseOrder);
-                _keysAsnLength += 13 + (sortKeys[i].AttributeName?.Length ?? 0) + (sortKeys[i].MatchingRule?.Length ?? 0);
             }
         }
 
@@ -858,7 +821,6 @@ namespace System.DirectoryServices.Protocols
         {
             SortKey key = new SortKey(attributeName, matchingRule, reverseOrder);
             _keys = new SortKey[] { key };
-            _keysAsnLength = 13 + (attributeName?.Length ?? 0) + (matchingRule?.Length ?? 0);
         }
 
         public SortKey[] SortKeys
@@ -892,20 +854,17 @@ namespace System.DirectoryServices.Protocols
                     }
                 }
 
-                _keysAsnLength = 0;
                 _keys = new SortKey[value.Length];
                 for (int i = 0; i < value.Length; i++)
                 {
                     _keys[i] = new SortKey(value[i].AttributeName, value[i].MatchingRule, value[i].ReverseOrder);
-                    _keysAsnLength += 13 + (value[i].AttributeName?.Length ?? 0) + (value[i].MatchingRule?.Length ?? 0);
                 }
             }
         }
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 12 + _keysAsnLength;
-            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in RFC2891.
@@ -916,39 +875,14 @@ namespace System.DirectoryServices.Protocols
              * */
             using (writer.PushSequence())
             {
-                // This scratch space is used for storing attribute names and matching rule OIDs.
-                // Active Directory's valid matching rule OIDs are listed in MS-ADTS 3.1.1.3.4.1.13,
-                // with a maximum length of 23 characters - within the attribute name stack allocation
-                // threshold.
-                Span<byte> scratchSpace = stackalloc byte[AttributeNameStackAllocationThreshold];
-
                 for (int i = 0; i < _keys.Length; i++)
                 {
                     SortKey key = _keys[i];
 
                     using (writer.PushSequence())
                     {
-                        if (!string.IsNullOrEmpty(key.AttributeName))
-                        {
-                            int octetStringLength = s_utf8Encoding.GetByteCount(key.AttributeName);
-                            Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
-
-                            s_utf8Encoding.GetBytes(key.AttributeName, tmpValue);
-                            writer.WriteOctetString(tmpValue);
-                        }
-                        else
-                        {
-                            writer.WriteOctetString([]);
-                        }
-
-                        if (!string.IsNullOrEmpty(key.MatchingRule))
-                        {
-                            int octetStringLength = s_utf8Encoding.GetByteCount(key.MatchingRule);
-                            Span<byte> tmpValue = octetStringLength <= AttributeNameStackAllocationThreshold ? scratchSpace.Slice(0, octetStringLength) : new byte[octetStringLength];
-
-                            s_utf8Encoding.GetBytes(key.MatchingRule, tmpValue);
-                            writer.WriteOctetString(tmpValue, s_orderingRuleTag);
-                        }
+                        writer.WriteLdapString(key.AttributeName, s_utf8Encoding, mandatory: true);
+                        writer.WriteLdapString(key.MatchingRule, s_utf8Encoding, mandatory: false, tag: s_orderingRuleTag);
 
                         if (key.ReverseOrder)
                         {
@@ -966,6 +900,8 @@ namespace System.DirectoryServices.Protocols
 
     public class SortResponseControl : DirectoryControl
     {
+        internal static readonly Asn1Tag AttributeNameTag = new(TagClass.ContextSpecific, 0);
+
         internal SortResponseControl(ResultCode result, string attributeName, bool critical, byte[] value) : base("1.2.840.113556.1.4.474", value, critical, true)
         {
             Result = result;
@@ -1101,8 +1037,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 16 + (_target?.Length ?? 12) + (_context?.Length ?? 1);
-            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.17.
@@ -1196,8 +1131,7 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            int sizeEstimate = 4 + (_sid?.Length ?? 0);
-            AsnWriter writer = GetWriter(expectedSize: sizeEstimate);
+            AsnWriter writer = GetWriter();
 
             writer.Reset();
             /* This is as laid out in MS-ADTS, 3.1.1.3.4.1.19.

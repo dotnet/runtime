@@ -26,6 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
+    <Compile Include="System\DirectoryServices\Protocols\common\AsnWriterExtensions.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />
