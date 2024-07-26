@@ -692,6 +692,9 @@
 
     <!-- NativeAOT specific -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(TestBuildMode)' == 'nativeaot' and '$(RuntimeFlavor)' == 'coreclr'">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventlistener/EventListenerThreadPool/**">
+            <Issue>https://github.com/dotnet/runtime/issues/105556</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/regressions/beta2/437017/**">
             <Issue>https://github.com/dotnet/runtime/issues/102544</Issue>
         </ExcludeList>
