@@ -27,9 +27,9 @@
         <target state="translated">不支援集合元素類型: '{0}'。</target>
         <note />
       </trans-unit>
-      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+      <trans-unit id="LanguageVersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 12'.</source>
-        <target state="translated">專案的語言版本必須至少為 'C# 12'。</target>
+        <target state="new">The project's language version has to be at least 'C# 12'.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
