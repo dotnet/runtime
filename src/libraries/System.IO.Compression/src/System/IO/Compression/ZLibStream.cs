@@ -46,7 +46,7 @@ namespace System.IO.Compression
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream, compression options, and whether to leave the <paramref name="stream"/> open.
+        /// Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream, compression options, and optionally leaves the stream open.
         /// </summary>
         /// <param name="stream">The stream to which compressed data is written.</param>
         /// <param name="compressionOptions">The ZLib options for fine tuning the compression stream.</param>

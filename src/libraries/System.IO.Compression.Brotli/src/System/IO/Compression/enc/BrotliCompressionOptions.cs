@@ -13,9 +13,9 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets or sets the compression quality for a Brotli compression stream.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException" accessor="set">Thrown when the value is less than 0 or greater than 11.</exception>
+        /// <exception cref="ArgumentOutOfRangeException" accessor="set">The value is less than 0 or greater than 11.</exception>
         /// <remarks>
-        /// The higher the quality, the slower the compression. Range is from 0 to 11.
+        /// The higher the quality, the slower the compression. Range is from 0 to 11. The default value is 4.
         /// </remarks>
         public int Quality
         {

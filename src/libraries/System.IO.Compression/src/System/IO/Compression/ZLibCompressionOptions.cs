@@ -14,10 +14,10 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets or sets the compression level for a compression stream.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">Thrown when the value is less than -1 or greater than 9.</exception>"
+        /// <exception cref="ArgumentOutOfRangeException">The value is less than -1 or greater than 9.</exception>
         /// <remarks>
         /// Can accept any value between -1 and 9 (inclusive), 0 gives no compression,  1 gives best speed, 9 gives best compression.
-        /// and -1 requests the default compression level which is currently equivalent to 6.
+        /// and -1 requests the default compression level which is currently equivalent to 6. The default value is -1.
         /// </remarks>
         public int CompressionLevel
         {
@@ -33,7 +33,7 @@ namespace System.IO.Compression
         /// <summary>
         /// Gets or sets the compression algorithm for a compression stream.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException" >Thrown when the value is not a valid <see cref="ZLibCompressionStrategy"/> value.</exception>"
+        /// <exception cref="ArgumentOutOfRangeException" >The value is not a valid <see cref="ZLibCompressionStrategy"/> value.</exception>
         public ZLibCompressionStrategy CompressionStrategy
         {
             get => _strategy;
@@ -55,7 +55,7 @@ namespace System.IO.Compression
     public enum ZLibCompressionStrategy
     {
         /// <summary>
-        /// Used for normal data
+        /// Used for normal data.
         /// </summary>
         Default = 0,
         /// <summary>
