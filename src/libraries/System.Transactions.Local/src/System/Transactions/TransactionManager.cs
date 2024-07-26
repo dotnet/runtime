@@ -325,7 +325,12 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.set_DefaultTimeout");
                 }
 
-                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(value).Ticks);
+                lock (ClassSyncObject)
+                {
+                    s_defaultTimeoutTicks = ValidateTimeout(value).Ticks;
+                    s_defaultTimeoutValidated = true;
+                }
+
                 if (Interlocked.Read(ref s_defaultTimeoutTicks) != value.Ticks)
                 {
                     if (etwLog.IsEnabled())
@@ -333,8 +338,6 @@ namespace System.Transactions
                         etwLog.ConfiguredDefaultTimeoutAdjusted();
                     }
                 }
-
-                s_defaultTimeoutValidated = true;
 
                 if (etwLog.IsEnabled())
                 {
@@ -380,7 +383,11 @@ namespace System.Transactions
                 LazyInitializer.EnsureInitialized(ref s_defaultTimeoutTicks, ref s_defaultTimeoutValidated, ref s_classSyncObject, () => DefaultSettingsSection.Timeout.Ticks);
 
                 long defaultTimeoutTicks = Interlocked.Read(ref s_defaultTimeoutTicks);
-                Interlocked.Exchange(ref s_defaultTimeoutTicks, ValidateTimeout(new TimeSpan(defaultTimeoutTicks)).Ticks);
+                lock (ClassSyncObject)
+                {
+                    s_defaultTimeoutTicks = ValidateTimeout(new TimeSpan(defaultTimeoutTicks)).Ticks;
+                }
+
                 if (Interlocked.Read(ref s_defaultTimeoutTicks) != defaultTimeoutTicks)
                 {
                     if (etwLog.IsEnabled())
