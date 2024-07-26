@@ -118,16 +118,23 @@ enum gtCallTypes : BYTE
 
 enum class ExceptionSetFlags : uint32_t
 {
-    None                     = 0x0,
-    OverflowException        = 0x1,
-    DivideByZeroException    = 0x2,
-    ArithmeticException      = 0x4,
-    NullReferenceException   = 0x8,
-    IndexOutOfRangeException = 0x10,
-    StackOverflowException   = 0x20,
+    None                        = 0x0,
+    OverflowException           = 0x1,
+    DivideByZeroException       = 0x2,
+    ArithmeticException         = 0x4,
+    NullReferenceException      = 0x8,
+    IndexOutOfRangeException    = 0x10,
+    StackOverflowException      = 0x20,
+#ifdef TARGET_ARM64
+    ArgumentOutOfRangeException = 0x40,
+#endif // TARGET_ARM64
 
     All = OverflowException | DivideByZeroException | ArithmeticException | NullReferenceException |
-          IndexOutOfRangeException | StackOverflowException,
+          IndexOutOfRangeException | StackOverflowException
+#ifdef TARGET_ARM64
+          | ArgumentOutOfRangeException
+#endif // TARGET_ARM64
+
 };
 
 inline constexpr ExceptionSetFlags operator~(ExceptionSetFlags a)

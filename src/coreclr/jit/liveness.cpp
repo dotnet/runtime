@@ -1475,6 +1475,13 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     // or have a behavioral semantic that is undesirable to remove
                     break;
                 }
+#if defined(TARGET_ARM64)
+                else if (HWIntrinsicInfo::HasImmediateOperandRange(intrinsicId))
+                {
+                    // Never remove these nodes, as they will throw ArgumentOutOfRange exceptions.
+                    break;
+                }
+#endif // TARGET_ARM64
 
                 fgTryRemoveNonLocal(node, &blockRange);
                 break;

@@ -7211,6 +7211,13 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 return ExceptionSetFlags::NullReferenceException;
             }
 
+#ifdef TARGET_ARM64
+            if (HWIntrinsicInfo::HasImmediateOperandRange(hwIntrinsicNode->GetHWIntrinsicId()))
+            {
+                return ExceptionSetFlags::ArgumentOutOfRangeException;
+            }
+#endif // TARGET_ARM64
+
             return ExceptionSetFlags::None;
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -27281,6 +27288,13 @@ bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
         }
     }
 
+#if defined(TARGET_ARM64)
+    if (HWIntrinsicInfo::HasImmediateOperandRange(intrinsicId))
+    {
+        return true;
+    }
+#endif // TARGET_ARM64
+
     return IsUserCall();
 }
 
@@ -27422,6 +27436,12 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
     {
         gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
     }
+#if defined(TARGET_ARM64)
+    else if (HWIntrinsicInfo::HasImmediateOperandRange(intrinsicId))
+    {
+        gtFlags |= GTF_EXCEPT;
+    }
+#endif // TARGET_ARM64
     else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
     {
         switch (intrinsicId)
