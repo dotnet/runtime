@@ -13506,6 +13506,8 @@ bool CordbProcess::IsSpecialStackOverflowCase(CordbUnmanagedThread *pUThread, co
 #ifdef FEATURE_INTEROP_DEBUGGING
 bool CordbProcess::IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread)
 {
+    PUBLIC_REENTRANT_API_ENTRY_FOR_SHIM(this);
+
     if (GetShim() == NULL || !IsInteropDebugging())
     {
         return false;
