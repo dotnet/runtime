@@ -58,5 +58,7 @@ namespace Microsoft.Interop.Analyzers
         {
             return ImmutableDictionary<string, Option>.Empty;
         }
+
+        protected override ImmutableDictionary<string, Option> CombineOptions(ImmutableDictionary<string, Option> fixAllOptions, ImmutableDictionary<string, Option> diagnosticOptions) => fixAllOptions;
     }
 }
