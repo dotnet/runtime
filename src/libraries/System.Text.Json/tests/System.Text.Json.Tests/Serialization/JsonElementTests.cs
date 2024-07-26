@@ -3,7 +3,8 @@
 
 using System.Buffers;
 using System.IO;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -219,13 +220,41 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(10)]
-        [InlineData(100)]
-        [InlineData(1000)]
+        [InlineData(5)]
+        [InlineData(50)]
         public static void DeepEquals_DeepJsonDocument(int depth)
         {
+            using JsonDocument jDoc = CreateDeepJsonDocument(depth);
+            JsonElement element = jDoc.RootElement;
+            Assert.True(JsonElement.DeepEquals(element, element));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static async Task DeepEquals_TooDeepJsonDocument_ThrowsInsufficientExecutionStackException()
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            new Thread(() =>
+            {
+                try
+                {
+                    using JsonDocument jDoc = CreateDeepJsonDocument(10_000);
+                    JsonElement element = jDoc.RootElement;
+                    Assert.Throws<InsufficientExecutionStackException>(() => JsonElement.DeepEquals(element, element));
+                    tcs.SetResult(true);
+                }
+                catch (Exception e)
+                {
+                    tcs.SetException(e);
+                }
+            }, maxStackSize: 128 * 1024) { IsBackground = true }.Start();
+
+            await tcs.Task;
+        }
+
+        private static JsonDocument CreateDeepJsonDocument(int depth)
+        {
             ArrayBufferWriter<byte> bufferWriter = new();
-            using Utf8JsonWriter writer = new(bufferWriter);
+            using Utf8JsonWriter writer = new(bufferWriter, new() { MaxDepth = depth + 1 });
 
             for (int i = 0; i < depth; i++)
             {
@@ -257,10 +286,7 @@ namespace System.Text.Json.Serialization.Tests
             writer.Flush();
 
             JsonDocumentOptions options = new JsonDocumentOptions { MaxDepth = depth };
-            using JsonDocument jDoc = JsonDocument.Parse(bufferWriter.WrittenSpan.ToArray(), options);
-            JsonElement element = jDoc.RootElement;
-
-            Assert.True(JsonElement.DeepEquals(element, element));
+            return JsonDocument.Parse(bufferWriter.WrittenSpan.ToArray(), options);
         }
     }
 }

@@ -158,7 +158,7 @@
 {
   "items": {
     "WasmOptConfigurationFlags": [@(WasmOptConfigurationFlags -> '%22%(Identity)%22', ',')],
-    "BoolPropertiesThatTriggerRelinking": [
+    "PropertiesThatTriggerRelinking": [
       { "identity": "InvariantTimezone",      "defaultValueInRuntimePack": "$(InvariantTimezone)" },
       { "identity": "InvariantGlobalization", "defaultValueInRuntimePack": "$(InvariantGlobalization)" },
       { "identity": "WasmNativeStrip",        "defaultValueInRuntimePack": "$(WasmNativeStrip)" },

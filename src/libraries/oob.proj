@@ -18,6 +18,8 @@
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
     <ProjectReference Include="oob-all.proj" SkipGetTargetFrameworkProperties="true" />
+    <!-- Skip building all source generators when building from source as that would bring new prebuilts in. -->
+    <ProjectReference Include="oob-gen.proj" Condition="'$(DotNetBuildSourceOnly)' != 'true'" />
   </ItemGroup>
 
   <!-- Support building reference projects only. -->

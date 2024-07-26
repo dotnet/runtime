@@ -892,12 +892,7 @@ namespace System.Reflection
                     && arrayTag is CustomAttributeEncoding.Enum))
             {
                 // We cannot determine the underlying type without loading the enum.
-                string? enumTypeMaybe = parser.GetString();
-                if (enumTypeMaybe is null)
-                {
-                    throw new BadImageFormatException();
-                }
-
+                string enumTypeMaybe = parser.GetString() ?? throw new BadImageFormatException();
                 enumType = TypeNameResolver.GetTypeReferencedByCustomAttribute(enumTypeMaybe, module);
                 if (!enumType.IsEnum)
                 {
@@ -1580,14 +1575,8 @@ namespace System.Reflection
 
                             RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
                                 attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, Type.EmptyTypes));
-
-                            // Did we get a valid property reference?
-                            if (property is null)
-                            {
+                                attributeType.GetProperty(name, type, Type.EmptyTypes)) ??
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
-                            }
-
                             RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
 
                             // Public properties may have non-public setter methods

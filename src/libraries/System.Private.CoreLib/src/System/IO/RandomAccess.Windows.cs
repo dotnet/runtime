@@ -206,17 +206,15 @@ namespace System.IO
                         resetEvent.ReleaseRefCount(overlapped);
                     }
 
-                    switch (errorCode)
+                    throw errorCode switch
                     {
-                        case Interop.Errors.ERROR_INVALID_PARAMETER:
-                            // ERROR_INVALID_PARAMETER may be returned for writes
-                            // where the position is too large or for synchronous writes
-                            // to a handle opened asynchronously.
-                            throw new IOException(SR.IO_FileTooLong);
+                        // ERROR_INVALID_PARAMETER may be returned for writes
+                        // where the position is too large or for synchronous writes
+                        // to a handle opened asynchronously.
+                        Interop.Errors.ERROR_INVALID_PARAMETER => new IOException(SR.IO_FileTooLong),
 
-                        default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
-                    }
+                        _ => Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path),
+                    };
                 }
             }
             finally

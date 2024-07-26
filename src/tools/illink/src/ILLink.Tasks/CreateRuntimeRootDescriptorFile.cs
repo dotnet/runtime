@@ -471,7 +471,10 @@ namespace ILLink.Tasks
 				Log.LogError ($"Unknown namespace '{classNamespace}'.");
 			}
 
-			return namespaceDictionary[classNamespace] + "." + className;
+			// Convert from the System.Reflection/CoreCLR nested type name format to the IL/Cecil format.
+			string classNameWithCecilNestedFormat = className.Replace ('+', '/');
+
+			return namespaceDictionary[classNamespace] + "." + classNameWithCecilNestedFormat;
 		}
 
 		void InitializeDefineConstants ()
