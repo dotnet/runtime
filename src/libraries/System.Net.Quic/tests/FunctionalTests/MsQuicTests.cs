@@ -352,14 +352,10 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [ConditionalFact]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/99074", typeof(PlatformDetection), nameof(PlatformDetection.IsNotAlpine))]
         public async Task CertificateCallbackThrowPropagates()
         {
-            if (!PlatformDetection.IsAlpine)
-            {
-                throw new SkipTestException("On other platforms - ActiveIssue: https://github.com/dotnet/runtime/issues/99074");
-            }
-
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
             bool validationResult = false;
 
