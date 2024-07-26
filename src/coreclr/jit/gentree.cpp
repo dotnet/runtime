@@ -11742,12 +11742,6 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             {
                 ilName = "GsCookie";
             }
-#ifdef TARGET_ARM64
-            else if (lclNum == lvaFfrRegister)
-            {
-                ilName = "FFReg";
-            }
-#endif
             else if (lclNum == lvaRetAddrVar)
             {
                 ilName = "ReturnAddress";
