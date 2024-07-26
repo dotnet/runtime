@@ -442,9 +442,9 @@ extends:
           buildConfig: release
           platforms:
           - linux_x64
-          - linux_musl_x64
+          # - linux_musl_x64
           - linux_arm64
-          - linux_musl_arm64
+          # - linux_musl_arm64
           jobParameters:
             templatePath: 'templates-official'
             buildArgs: -s mono+packs -c $(_BuildConfig)
