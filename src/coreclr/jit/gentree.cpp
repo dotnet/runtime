@@ -7624,7 +7624,11 @@ GenTreeIntCon* Compiler::gtNewFalse()
 // return a new node representing the value in a physical register
 GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {
+#ifdef TARGET_ARM64
+    assert(genIsValidIntReg(reg) || (reg == REG_SPBASE) || (reg == REG_FFR));
+#else
     assert(genIsValidIntReg(reg) || (reg == REG_SPBASE));
+#endif
     GenTree* result = new (this, GT_PHYSREG) GenTreePhysReg(reg, type);
     return result;
 }
@@ -11709,6 +11713,14 @@ void Compiler::gtGetLclVarNameInfo(unsigned lclNum, const char** ilKindOut, cons
             ilKind = "cse";
             ilNum  = lclNum - optCSEstart;
         }
+#ifdef TARGET_ARM64
+        else if (lclNum == lvaFfrRegister)
+        {
+            // We introduce this LclVar in lowering, hence special case the printing of
+            // it instead of handling it in "rationalizer" below.
+            ilName = "FFReg";
+        }
+#endif
         else if (lclNum >= optCSEstart)
         {
             // Currently any new LclVar's introduced after the CSE phase
@@ -29532,37 +29544,29 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
-
-#ifdef TARGET_LOONGARCH64
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
-#else
-            uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
-#endif
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
-
-            if (floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_TWO)
+            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+            if (!lowering->byIntegerCallConv)
             {
                 comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_FIRST)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] = (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
-                m_regType[1] =
-                    (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[1]) : TYP_INT;
-            }
-            else if (floatFieldFlags & STRUCT_FLOAT_FIELD_SECOND)
-            {
-                comp->compFloatingPointUsed = true;
-                assert((structSize > 8) == ((floatFieldFlags & STRUCT_HAS_8BYTES_FIELDS_MASK) > 0));
-                m_regType[0] =
-                    (floatFieldFlags & STRUCT_FIRST_FIELD_SIZE_IS8) ? comp->getJitGCType(gcPtrs[0]) : TYP_INT;
-                m_regType[1] = (floatFieldFlags & STRUCT_SECOND_FIELD_SIZE_IS8) ? TYP_DOUBLE : TYP_FLOAT;
+                assert(lowering->numLoweredElements == MAX_RET_REG_COUNT);
+                var_types types[MAX_RET_REG_COUNT] = {JITtype2varType(lowering->loweredElements[0]),
+                                                      JITtype2varType(lowering->loweredElements[1])};
+                assert(varTypeIsFloating(types[0]) || varTypeIsFloating(types[1]));
+                assert((structSize > 8) == ((genTypeSize(types[0]) == 8) || (genTypeSize(types[1]) == 8)));
+                for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
+                {
+                    if (varTypeIsFloating(types[i]))
+                    {
+                        m_regType[i] = types[i];
+                    }
+                    else
+                    {
+                        assert(varTypeIsIntegralOrI(types[i]));
+                        m_regType[i] = (genTypeSize(types[i]) == 8) ? comp->getJitGCType(gcPtrs[i]) : TYP_INT;
+                    }
+                }
             }
             else
             {
@@ -30524,8 +30528,11 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
                     DEBUG_DESTROY_NODE(op, tree);
-                    INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
+                    if (fgGlobalMorph)
+                    {
+                        INDEBUG(vectorNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                    }
                     return vectorNode;
                 }
             }

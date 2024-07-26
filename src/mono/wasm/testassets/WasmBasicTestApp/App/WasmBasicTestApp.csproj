@@ -19,6 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <BlazorWebAssemblyLazyLoad Include="Json$(LazyAssemblyExtension)" />
+    <BlazorWebAssemblyLazyLoad Include="Json$(WasmAssemblyExtension)" />
   </ItemGroup>
 </Project>

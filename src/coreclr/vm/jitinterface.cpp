@@ -9502,13 +9502,13 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     return result;
 }
 
-// Now the implementation is only focused on the float fields info,
+// Now the implementation is only focused on the float and int fields info,
 // while a struct-arg has no more than two fields and total size is no larger than two-pointer-size.
 // These depends on the platform's ABI rules.
 //
-// The returned value's encoding details how a struct argument uses float registers:
-// see the enum `StructFloatFieldInfoFlags`.
-uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+// The returned value's encoding details how a struct argument uses float and int registers:
+// see the struct `CORINFO_FPSTRUCT_LOWERING`.
+void CEEInfo::getFpStructLowering(CORINFO_CLASS_HANDLE structHnd, CORINFO_FPSTRUCT_LOWERING* pLowering)
 {
     CONTRACTL {
         NOTHROW;
@@ -9516,38 +9516,43 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION_LEAF();
+    JIT_TO_EE_TRANSITION();
 
-    uint32_t size = STRUCT_NO_FLOAT_FIELD;
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    FpStructInRegistersInfo info = MethodTable::GetFpStructInRegistersInfo(TypeHandle(structHnd));
+    if (info.flags != FpStruct::UseIntCallConv)
+    {
+        pLowering->byIntegerCallConv = false;
+        pLowering->offsets[0] = info.offset1st;
+        pLowering->offsets[1] = info.offset2nd;
+        pLowering->numLoweredElements = (info.flags & FpStruct::OnlyOne) ? 1ul : 2ul;
 
-#if defined(TARGET_LOONGARCH64)
-    size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(TypeHandle(cls));
-#endif
+        if (info.flags & (FpStruct::BothFloat | FpStruct::FloatInt | FpStruct::OnlyOne))
+            pLowering->loweredElements[0] = (info.SizeShift1st() == 3) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
-    EE_TO_JIT_TRANSITION_LEAF();
+        if (info.flags & (FpStruct::BothFloat | FpStruct::IntFloat))
+            pLowering->loweredElements[1] = (info.SizeShift2nd() == 3) ? CORINFO_TYPE_DOUBLE : CORINFO_TYPE_FLOAT;
 
-    return size;
-}
+        if (info.flags & (FpStruct::FloatInt | FpStruct::IntFloat))
+        {
+            size_t index = ((info.flags & FpStruct::FloatInt) != 0) ? 1 : 0;
+            unsigned sizeShift = (index == 0) ? info.SizeShift1st() : info.SizeShift2nd();
+            pLowering->loweredElements[index] = (CorInfoType)(CORINFO_TYPE_BYTE + sizeShift * 2);
 
-uint32_t CEEInfo::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+            // unittests
+            static_assert(CORINFO_TYPE_BYTE + 0 * 2 == CORINFO_TYPE_BYTE, "");
+            static_assert(CORINFO_TYPE_BYTE + 1 * 2 == CORINFO_TYPE_SHORT, "");
+            static_assert(CORINFO_TYPE_BYTE + 2 * 2 == CORINFO_TYPE_INT, "");
+            static_assert(CORINFO_TYPE_BYTE + 3 * 2 == CORINFO_TYPE_LONG, "");
+        }
+    }
+    else
+    {
+        pLowering->byIntegerCallConv = true;
+    }
+#endif // TARGET_RISCV64 || TARGET_LOONGARCH64
 
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    uint32_t size = STRUCT_NO_FLOAT_FIELD;
-
-#if defined(TARGET_RISCV64)
-    size = (uint32_t)MethodTable::GetRiscV64PassStructInRegisterFlags(TypeHandle(cls));
-#endif // TARGET_RISCV64
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return size;
+    EE_TO_JIT_TRANSITION();
 }
 
 /*********************************************************************/
