@@ -1342,7 +1342,6 @@ emit_vector_create_elementwise (
 	// optimizations can be enabled. This includes recognizing partial constants
 	// and only performing the minimal number of inserts required
 
-	gboolean all_const = false;
 	gboolean some_const = false;
 
 	guint8 cns_vec[16];
@@ -1350,14 +1349,10 @@ emit_vector_create_elementwise (
 
 	int vector_size = mono_class_value_size (vklass, NULL);
 	if (vector_size == 16) {
-		all_const = true;
-
 		for (int i = 0; i < param_count; ++i) {
 			if (!is_const (args[i])) {
-				all_const = false;
-				break;
+				continue;
 			}
-
 			some_const = true;
 
 			if (type_enum_is_float (etype->type)) {
@@ -1420,10 +1415,6 @@ emit_vector_create_elementwise (
 		}
 	}
 
-	if (all_const) {
-		return emit_xconst_v128 (cfg, vklass, (guint8*)cns_vec);
-	}
-
 	MonoInst *ins;
 
 	if (some_const) {
@@ -1433,11 +1424,11 @@ emit_vector_create_elementwise (
 	}
 
 	for (int i = 0; i < param_count; ++i) {
-		if (!is_const (args[i]) || (vector_size != 16)) {
-			ins = emit_vector_insert_element (cfg, vklass, ins, etype->type, args[i], i, TRUE);
+		if (some_const && is_const (args[i])) {
+			continue;
 		}
+		ins = emit_vector_insert_element (cfg, vklass, ins, etype->type, args[i], i, TRUE);
 	}
-
 	return ins;
 }
 
@@ -1486,8 +1477,7 @@ emit_vector_create_scalar (
 				} else {
 					g_assert (arg0->opcode == OP_I8CONST);
 					cns_val = arg0->inst_l;
-				
-}
+				}
 				switch (etype->type) {
 				case MONO_TYPE_I1:
 				case MONO_TYPE_U1: {
