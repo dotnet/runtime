@@ -9651,7 +9651,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         dprintf (GC_TABLE_LOG, ("card table: %zx(translated: %zx), seg map: %zx, mark array: %zx",
             (size_t)ct, (size_t)translated_ct, (size_t)new_seg_mapping_table, (size_t)card_table_mark_array (ct)));
 
-        if (hp->is_bgc_in_progress())
+        if (is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("new low: %p, new high: %p, latest mark array is %p(translate: %p)",
                                     saved_g_lowest_address, saved_g_highest_address,
@@ -9778,7 +9778,7 @@ fail:
     else
     {
 #ifdef BACKGROUND_GC
-        if (hp->is_bgc_in_progress())
+        if (is_bgc_in_progress())
         {
             dprintf (GC_TABLE_LOG, ("in range new seg %p, mark_array is %p", new_seg, hp->mark_array));
             if (!commit_mark_array_new_seg (hp, new_seg))
@@ -13621,7 +13621,9 @@ void gc_heap::distribute_free_regions()
 void gc_heap::age_free_regions(const char* label)
 {
 #ifdef USE_REGIONS
-    bool age_all_region_kinds = settings.condemned_generation == max_generation;
+    // If we are doing an ephemeral GC as a precursor to a BGC, then we will age all of the region
+    // kinds during the ephemeral GC and skip the call to age_free_regions during the BGC itself.
+    bool age_all_region_kinds = (settings.condemned_generation == max_generation) || is_bgc_in_progress();
     if (age_all_region_kinds)
     {
         global_free_huge_regions.age_free_regions();
@@ -38057,8 +38059,13 @@ void gc_heap::background_mark_phase ()
     if (bgc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-        distribute_free_regions ();
-        age_free_regions ("BGC");
+        // There's no need to distribute a second time if we just did an ephemeral GC, and we don't want to
+        // age the free regions twice.
+        if (!do_ephemeral_gc_p)
+        {
+            distribute_free_regions ();
+            age_free_regions ("BGC");
+        }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         // Resetting write watch for software write watch is pretty fast, much faster than for hardware write watch. Reset

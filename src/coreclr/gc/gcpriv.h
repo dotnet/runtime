@@ -3188,7 +3188,7 @@ private:
     // Restores BGC settings if necessary.
     PER_HEAP_ISOLATED_METHOD void recover_bgc_settings();
 
-    PER_HEAP_METHOD BOOL is_bgc_in_progress();
+    PER_HEAP_ISOLATED_METHOD BOOL is_bgc_in_progress();
 
     PER_HEAP_METHOD void clear_commit_flag();
 
