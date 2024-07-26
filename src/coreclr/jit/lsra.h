@@ -1994,8 +1994,8 @@ private:
 #ifdef TARGET_ARM64
     int BuildDelayFreeUses(GenTree* node, GenTree* rmwNode1, GenTree* rmwNode2, SingleTypeRegSet candidates = RBM_NONE);
 #endif
-    int  BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
-    int  BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
+    int BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
+    int BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
 
     RefPosition* BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates = RBM_NONE, int multiRegIdx = 0);
     void         BuildDefs(GenTree* tree, int dstCount, SingleTypeRegSet dstCandidates = RBM_NONE);

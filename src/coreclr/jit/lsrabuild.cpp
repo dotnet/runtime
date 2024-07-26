@@ -3896,7 +3896,7 @@ int LinearScan::BuildDelayFreeUses(GenTree*         node,
 int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode1, GenTree* rmwNode2, SingleTypeRegSet candidates)
 {
     RefPosition* useRefPosition = nullptr;
-    int srcCount = BuildDelayFreeUses(node, rmwNode1, candidates, &useRefPosition);
+    int          srcCount       = BuildDelayFreeUses(node, rmwNode1, candidates, &useRefPosition);
 
     if ((useRefPosition != nullptr) && !useRefPosition->delayRegFree)
     {
