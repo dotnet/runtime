@@ -1667,7 +1667,7 @@ namespace System.Runtime.InteropServices
         {
             using (_lock.EnterScope())
             {
-                int bucket = GetBucket(handle);
+                int bucket = GetBucket(handle, _buckets.Length);
                 Entry? prev = null;
                 Entry? entry = _buckets[bucket];
                 while (entry != null)
@@ -1710,44 +1710,38 @@ namespace System.Runtime.InteropServices
 
         private void ExpandBuckets()
         {
-            try
+            int newNumBuckets = _buckets.Length * 2 + 1;
+            Entry?[] newBuckets = new Entry[newNumBuckets];
+            for (int i = 0; i < _buckets.Length; i++)
             {
-                int newNumBuckets = _buckets.Length * 2 + 1;
-                Entry?[] newBuckets = new Entry[newNumBuckets];
-                for (int i = 0; i < _buckets.Length; i++)
+                Entry? entry = _buckets[i];
+                while (entry != null)
                 {
-                    Entry? entry = _buckets[i];
-                    while (entry != null)
+                    Entry? nextEntry = entry.m_next;
+
+                    int bucket = GetBucket(entry.m_value, newNumBuckets);
+
+                    // We are allocating new entries for the bucket to ensure that
+                    // if there is an enumeration already in progress, we don't
+                    // modify what it observes by changing next in existing instances.
+                    Entry newEntry = new Entry()
                     {
-                        Entry? nextEntry = entry.m_next;
+                        m_value = entry.m_value,
+                        m_next = newBuckets[bucket],
+                    };
+                    newBuckets[bucket] = newEntry;
 
-                        int bucket = GetBucket(entry.m_value, newNumBuckets);
-
-                        // We are allocating new entries for the bucket to ensure that
-                        // if there is an enumeration already in progress, we don't
-                        // modify what it observes by changing next in existing instances.
-                        Entry newEntry = new Entry()
-                        {
-                            m_value = entry.m_value,
-                            m_next = newBuckets[bucket],
-                        };
-                        newBuckets[bucket] = newEntry;
-
-                        entry = nextEntry;
-                    }
+                    entry = nextEntry;
                 }
-                _buckets = newBuckets;
             }
-            catch (OutOfMemoryException)
-            {
-            }
+            _buckets = newBuckets;
         }
 
         public void Remove(GCHandle handle)
         {
             using (_lock.EnterScope())
             {
-                int bucket = GetBucket(handle);
+                int bucket = GetBucket(handle, _buckets.Length);
                 Entry? prev = null;
                 Entry? entry = _buckets[bucket];
                 while (entry != null)
@@ -1772,11 +1766,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        private int GetBucket(GCHandle handle, int numBuckets = 0)
+        private static int GetBucket(GCHandle handle, int numBuckets)
         {
             int h = handle.GetHashCode();
-            h &= 0x7fffffff;
-            return (h % (numBuckets == 0 ? _buckets.Length : numBuckets));
+            return (int)((uint)h % (uint)numBuckets);
         }
 
         public Enumerator GetEnumerator() => new Enumerator(this);
