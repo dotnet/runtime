@@ -3152,6 +3152,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                              (info.compCompHnd->isNullableType(unboxResolvedToken.hClass) == TypeCompareState::Must) &&
                              (info.compCompHnd->getTypeForBox(unboxResolvedToken.hClass) == pResolvedToken->hClass))
                     {
+                        impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("spilling side-effects"));
                         GenTree* result = impStoreNullableFields(unboxResolvedToken.hClass, impPopStack().val);
                         impPushOnStack(result, typeInfo(result->TypeGet()));
                         optimize = true;
