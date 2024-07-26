@@ -24,7 +24,7 @@ namespace System.Diagnostics.Metrics
 
         public static void EnsureInitialized()
         {
-            // Dummy method to ensure that the static constructor have run and created the meters
+            // Dummy method to ensure that the static constructor run and created the meters
         }
 
         static RuntimeMetrics()
