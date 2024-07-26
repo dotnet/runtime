@@ -738,7 +738,7 @@ MONO_RESTORE_WARNING
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
 			if (TARGET_SIZEOF_VOID_P == 8) {
-				opcode = OP_XMOVE;
+				opcode = OP_XCAST;
 				tto_stack = STACK_VTYPE;
 			} else {
 				return NULL;
