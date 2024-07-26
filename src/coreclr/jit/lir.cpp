@@ -1872,6 +1872,22 @@ GenTree* LIR::LastNode(GenTree** nodes, size_t numNodes)
     return lastNode;
 }
 
+//------------------------------------------------------------------------
+// LIR::FirstNode:
+//    Given two nodes in the same block range, find which node appears first.
+//
+// Arguments:
+//    node1 - The first node
+//    node2 - The second node
+//
+// Returns:
+//    Node that appears first.
+//
+GenTree* LIR::FirstNode(GenTree* node1, GenTree* node2)
+{
+    return LastNode(node1, node2) == node1 ? node2 : node1;
+}
+
 #ifdef DEBUG
 void GenTree::dumpLIRFlags()
 {
