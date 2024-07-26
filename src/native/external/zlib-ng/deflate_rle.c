@@ -58,7 +58,7 @@ Z_INTERNAL block_state deflate_rle(deflate_state *s, int flush) {
 
         /* Emit match if have run of STD_MIN_MATCH or longer, else emit literal */
         if (match_len >= STD_MIN_MATCH) {
-            Assert((s->strstart - 1) <= UINT16_MAX, "strstart should fit in uint16_t");
+            Assert(s->strstart  <= UINT16_MAX, "strstart should fit in uint16_t");
             check_match(s, (Pos)s->strstart, (Pos)(s->strstart - 1), match_len);
 
             bflush = zng_tr_tally_dist(s, 1, match_len - STD_MIN_MATCH);
