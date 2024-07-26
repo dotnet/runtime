@@ -113,4 +113,3 @@ ThreadPoolWorkingThreadCount
 ThreadRunning
 WaitHandleWaitStart
 WaitHandleWaitStop
-YieldProcessorMeasurement

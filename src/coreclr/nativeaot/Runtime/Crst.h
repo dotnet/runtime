@@ -20,6 +20,7 @@ enum CrstType
     CrstRestrictedCallouts,
     CrstGcStressControl,
     CrstThreadStore,
+    CrstYieldProcessorNormalized,
     CrstEventPipe,
     CrstEventPipeConfig,
     CrstGcEvent,
