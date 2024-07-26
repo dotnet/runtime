@@ -1991,9 +1991,6 @@ private:
                             GenTree*         rmwNode        = nullptr,
                             SingleTypeRegSet candidates     = RBM_NONE,
                             RefPosition**    useRefPosition = nullptr);
-#ifdef TARGET_ARM64
-    int BuildDelayFreeUses(GenTree* node, GenTree* rmwNode1, GenTree* rmwNode2, SingleTypeRegSet candidates = RBM_NONE);
-#endif
     int BuildIndirUses(GenTreeIndir* indirTree, SingleTypeRegSet candidates = RBM_NONE);
     int BuildAddrUses(GenTree* addr, SingleTypeRegSet candidates = RBM_NONE);
 

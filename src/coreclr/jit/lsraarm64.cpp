@@ -1979,9 +1979,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             tgtPrefUse = BuildUse(emitOp1);
             srcCount += 1;
-            srcCount += BuildDelayFreeUses(emitOp2, emitOp1, intrinsicTree);
-            srcCount += BuildDelayFreeUses(emitOp3, emitOp1, intrinsicTree);
-            srcCount += BuildDelayFreeUses(intrin.op3, emitOp1, intrinsicTree);
+            srcCount += BuildDelayFreeUses(emitOp2, emitOp1);
+            srcCount += BuildDelayFreeUses(emitOp3, emitOp1);
+            srcCount += BuildDelayFreeUses(intrin.op3, emitOp1);
         }
         else
         {
