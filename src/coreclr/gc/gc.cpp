@@ -13620,6 +13620,13 @@ void gc_heap::distribute_free_regions()
 
 void gc_heap::age_free_regions(const char* label)
 {
+#ifdef USE_REGIONS
+    bool age_all_region_kinds = settings.condemned_generation == max_generation;
+    if (age_all_region_kinds)
+    {
+        global_free_huge_regions.age_free_regions();
+    }
+
 #ifdef MULTIPLE_HEAPS
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
@@ -13630,15 +13637,9 @@ void gc_heap::age_free_regions(const char* label)
         const int i = 0;
 #endif //MULTIPLE_HEAPS
 
-        hp->descr_generations (label);
-#ifdef USE_REGIONS
-        if (settings.condemned_generation == max_generation)
+        if (age_all_region_kinds)
         {
             // age and print all kinds of free regions
-            if (i == 0)
-            {
-                global_free_huge_regions.age_free_regions();
-            }
             region_free_list::age_free_regions (hp->free_regions);
             region_free_list::print (hp->free_regions, i, label);
         }
@@ -13648,8 +13649,8 @@ void gc_heap::age_free_regions(const char* label)
             hp->free_regions[basic_free_region].age_free_regions();
             hp->free_regions[basic_free_region].print (i, label);
         }
-#endif //USE_REGIONS
     }
+#endif //USE_REGIONS
 }
 
 #ifdef WRITE_WATCH
@@ -22826,6 +22827,10 @@ void gc_heap::gc1()
                 }
             }
 
+            for (int i = 0; i < gc_heap::n_heaps; i++)
+            {
+                g_heaps[i]->descr_generations ("END");
+            }
             age_free_regions ("END");
 
 #ifdef DYNAMIC_HEAP_COUNT
