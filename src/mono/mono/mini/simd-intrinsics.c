@@ -1342,7 +1342,7 @@ emit_vector_create_elementwise (
 	// optimizations can be enabled. This includes recognizing partial constants
 	// and only performing the minimal number of inserts required
 
-	gboolean all_const = true;
+	gboolean all_const = false;
 	gboolean some_const = false;
 
 	guint8 cns_vec[16];
@@ -1350,6 +1350,8 @@ emit_vector_create_elementwise (
 
 	int vector_size = mono_class_value_size (vklass, NULL);
 	if (vector_size == 16) {
+		all_const = true;
+
 		for (int i = 0; i < param_count; ++i) {
 			if (!is_const (args[i])) {
 				all_const = false;
