@@ -715,6 +715,12 @@ mono_wasm_each_root (void *_start, void *_end, MonoGCRootSource source, int root
 
     size_t *current = _start, *end = _end;
     while (current < end) {
+        // the runtime is allowed to use the spare bits (due to object alignment) for any purpose, so we need to
+        //  mask those off, otherwise we'll get random garbage pointers instead of object pointers
+        // once we do this all the pointers we find should be pointers into the gc heap
+        // note that explicitly checking whether these pointers are live can crash for some reason, but that's ok
+        //  since the heap snapshot loader will be checking these "rooted objects" against the objects from the
+        //  heap walk that was performed earlier to serialize the class and object info
         MonoObject *obj = (MonoObject *)(*current & ~((size_t)7));
         if (obj) {
             if (buf_count >= 63) {
