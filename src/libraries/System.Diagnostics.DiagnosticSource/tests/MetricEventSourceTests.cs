@@ -1516,37 +1516,68 @@ namespace System.Diagnostics.Metrics.Tests
             AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
         }
 
-        private static string FormatScopeHash(object? scope) =>
-            scope is null ? string.Empty : RuntimeHelpers.GetHashCode(scope).ToString(CultureInfo.InvariantCulture);
-
-        private static string FormatTags(IEnumerable<KeyValuePair<string, object?>>? tags)
+        public static IEnumerable<object[]> DifferentMetersAndInstrumentsData()
         {
-            if (tags is null)
+            yield return new object[] { new Meter("M1").CreateCounter<int>("C1"), new Meter("M1").CreateCounter<int>("C1"), false};
+
+            var counter = new Meter("M1").CreateCounter<int>("C1");
+            yield return new object[] { counter, counter.Meter.CreateCounter<int>("C1"), false };
+
+            // Same counters
+            counter = new Meter("M1").CreateCounter<int>("C1");
+            yield return new object[] { counter, counter, true };
+
+            var scope = new object();
+            yield return new object[]
             {
-                return string.Empty;
+                new Meter("M1", "v1", new TagList { { "k1", "v1" } }, scope).CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ),
+                new Meter("M1", "v1", new TagList { { "k1", "v1" } }, scope).CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ),
+                false, // Same Instrument
+            };
+
+            Meter meter = new Meter("M1", "v1", new TagList { { "k1", "v1" } }, scope);
+            yield return new object[] { meter.CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ), meter.CreateCounter<int>("C1", "u1", "d1", new TagList { { "k2", "v2" } } ), false };
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [OuterLoop("Slow and has lots of console spew")]
+        [MemberData(nameof(DifferentMetersAndInstrumentsData))]
+        public void TestDifferentMetersAndInstruments(Counter<int> counter1, Counter<int> counter2, bool isSameCounters)
+        {
+            Assert.Equal(object.ReferenceEquals(counter1, counter2), isSameCounters);
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, isShared: true, IntervalSecs, counter1.Meter.Name, counter2.Meter.Name))
+            {
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+                counter1.Add(1);
+                counter2.Add(1);
+                listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+                events = listener.Events.ToArray();
             }
 
-            StringBuilder sb = new StringBuilder();
-            bool first = true;
-            foreach (KeyValuePair<string, object?> tag in tags)
+            var counterEvents = events.Where(e => e.EventName == "CounterRateValuePublished").Select(e =>
+                new
+                {
+                    MeterName = e.Payload[1].ToString(),
+                    MeterVersion = e.Payload[2].ToString(),
+                    InstrumentName = e.Payload[3].ToString(),
+                    Unit = e.Payload[4].ToString(),
+                    Tags = e.Payload[5].ToString(),
+                    Rate = e.Payload[6].ToString(),
+                    Value = e.Payload[7].ToString(),
+                    InstrumentId = (int)(e.Payload[8])
+                }).ToArray();
+
+            if (isSameCounters)
             {
-                if (first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    sb.Append(',');
-                }
-
-                sb.Append(tag.Key).Append('=');
-
-                if (tag.Value is not null)
-                {
-                    sb.Append(tag.Value.ToString());
-                }
+                Assert.Equal(1, counterEvents.Length);
             }
-            return sb.ToString();
+            else
+            {
+                Assert.Equal(2, counterEvents.Length);
+                Assert.NotEqual(counterEvents[0].InstrumentId, counterEvents[1].InstrumentId);
+            }
         }
 
         private static void AssertBeginInstrumentReportingEventsPresent(EventWrittenEventArgs[] events, params Instrument[] expectedInstruments)
@@ -1562,7 +1593,8 @@ namespace System.Diagnostics.Metrics.Tests
                     Description = e.Payload[6].ToString(),
                     InstrumentTags = e.Payload[7].ToString(),
                     MeterTags = e.Payload[8].ToString(),
-                    ScopeHash = e.Payload[9].ToString()
+                    ScopeHash = e.Payload[9].ToString(),
+                    InstrumentId = (int)(e.Payload[10]),
                 }).ToArray();
 
             foreach(Instrument i in expectedInstruments)
@@ -1573,9 +1605,10 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(i.GetType().Name, e.InstrumentType);
                 Assert.Equal(i.Unit ?? "", e.Unit);
                 Assert.Equal(i.Description ?? "", e.Description);
-                Assert.Equal(FormatTags(i.Tags), e.InstrumentTags);
-                Assert.Equal(FormatTags(i.Meter.Tags), e.MeterTags);
-                Assert.Equal(FormatScopeHash(i.Meter.Scope), e.ScopeHash);
+                Assert.Equal(Helpers.FormatTags(i.Tags), e.InstrumentTags);
+                Assert.Equal(Helpers.FormatTags(i.Meter.Tags), e.MeterTags);
+                Assert.Equal(Helpers.FormatObjectHash(i.Meter.Scope), e.ScopeHash);
+                Assert.True(e.InstrumentId > 0);
             }
 
             Assert.Equal(expectedInstruments.Length, beginReportEvents.Length);
@@ -1594,7 +1627,8 @@ namespace System.Diagnostics.Metrics.Tests
                     Description = e.Payload[6].ToString(),
                     InstrumentTags = e.Payload[7].ToString(),
                     MeterTags = e.Payload[8].ToString(),
-                    ScopeHash = e.Payload[9].ToString()
+                    ScopeHash = e.Payload[9].ToString(),
+                    InstrumentId = (int)(e.Payload[10]),
                 }).ToArray();
 
             foreach (Instrument i in expectedInstruments)
@@ -1605,9 +1639,10 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(i.GetType().Name, e.InstrumentType);
                 Assert.Equal(i.Unit ?? "", e.Unit);
                 Assert.Equal(i.Description ?? "", e.Description);
-                Assert.Equal(FormatTags(i.Tags), e.InstrumentTags);
-                Assert.Equal(FormatTags(i.Meter.Tags), e.MeterTags);
-                Assert.Equal(FormatScopeHash(i.Meter.Scope), e.ScopeHash);
+                Assert.Equal(Helpers.FormatTags(i.Tags), e.InstrumentTags);
+                Assert.Equal(Helpers.FormatTags(i.Meter.Tags), e.MeterTags);
+                Assert.Equal(Helpers.FormatObjectHash(i.Meter.Scope), e.ScopeHash);
+                Assert.True(e.InstrumentId > 0);
             }
 
             Assert.Equal(expectedInstruments.Length, beginReportEvents.Length);
@@ -1646,7 +1681,8 @@ namespace System.Diagnostics.Metrics.Tests
                     Description = e.Payload[6].ToString(),
                     InstrumentTags = e.Payload[7].ToString(),
                     MeterTags = e.Payload[8].ToString(),
-                    ScopeHash = e.Payload[9].ToString()
+                    ScopeHash = e.Payload[9].ToString(),
+                    InstrumentId = (int)(e.Payload[10]),
                 }).ToArray();
 
             foreach (Instrument i in expectedInstruments)
@@ -1657,9 +1693,10 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal(i.GetType().Name, e.InstrumentType);
                 Assert.Equal(i.Unit ?? "", e.Unit);
                 Assert.Equal(i.Description ?? "", e.Description);
-                Assert.Equal(FormatTags(i.Tags), e.InstrumentTags);
-                Assert.Equal(FormatTags(i.Meter.Tags), e.MeterTags);
-                Assert.Equal(FormatScopeHash(i.Meter.Scope), e.ScopeHash);
+                Assert.Equal(Helpers.FormatTags(i.Tags), e.InstrumentTags);
+                Assert.Equal(Helpers.FormatTags(i.Meter.Tags), e.MeterTags);
+                Assert.Equal(Helpers.FormatObjectHash(i.Meter.Scope), e.ScopeHash);
+                Assert.True(e.InstrumentId > 0);
             }
 
             Assert.Equal(expectedInstruments.Length, publishEvents.Length);
@@ -1689,15 +1726,18 @@ namespace System.Diagnostics.Metrics.Tests
                     Unit = e.Payload[4].ToString(),
                     Tags = e.Payload[5].ToString(),
                     Rate = e.Payload[6].ToString(),
-                    Value = e.Payload[7].ToString()
+                    Value = e.Payload[7].ToString(),
+                    InstrumentId = (int)(e.Payload[7]),
                 }).ToArray();
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
             Assert.True(filteredEvents.Length >= expected.Length);
+
             for (int i = 0; i < expected.Length; i++)
             {
                 Assert.Equal(expectedUnit, filteredEvents[i].Unit);
                 Assert.Equal(expected[i].Item1, filteredEvents[i].Rate);
                 Assert.Equal(expected[i].Item2, filteredEvents[i].Value);
+                Assert.True(filteredEvents[i].InstrumentId > 0);
             }
         }
 
@@ -1727,13 +1767,16 @@ namespace System.Diagnostics.Metrics.Tests
                     Unit = e.Payload[4].ToString(),
                     Tags = e.Payload[5].ToString(),
                     Value = e.Payload[6].ToString(),
+                    InstrumentId = (int)(e.Payload[7]),
                 }).ToArray();
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
             Assert.True(filteredEvents.Length >= expectedValues.Length);
+
             for (int i = 0; i < expectedValues.Length; i++)
             {
                 Assert.Equal(expectedUnit, filteredEvents[i].Unit);
                 Assert.Equal(expectedValues[i], filteredEvents[i].Value);
+                Assert.True(filteredEvents[i].InstrumentId > 0);
             }
         }
 
@@ -1750,16 +1793,19 @@ namespace System.Diagnostics.Metrics.Tests
                     Tags = e.Payload[5].ToString(),
                     Quantiles = (string)e.Payload[6],
                     Count = e.Payload[7].ToString(),
-                    Sum = e.Payload[8].ToString()
+                    Sum = e.Payload[8].ToString(),
+                    InstrumentId = (int)(e.Payload[9])
                 }).ToArray();
             var filteredEvents = counterEvents.Where(e => e.MeterName == meterName && e.InstrumentName == instrumentName && e.Tags == tags).ToArray();
             Assert.True(filteredEvents.Length >= expected.Length);
+
             for (int i = 0; i < expected.Length; i++)
             {
                 Assert.Equal(filteredEvents[i].Unit, expectedUnit);
                 Assert.Equal(expected[i].Item1, filteredEvents[i].Quantiles);
                 Assert.Equal(expected[i].Item2, filteredEvents[i].Count);
                 Assert.Equal(expected[i].Item3, filteredEvents[i].Sum);
+                Assert.True(filteredEvents[i].InstrumentId > 0);
             }
         }
 

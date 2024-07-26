@@ -54,7 +54,7 @@ namespace System.IO.Strategies
             // e is SecurityException ||
             e is UnauthorizedAccessException ||
             e is NotSupportedException ||
-            (e is ArgumentException && !(e is ArgumentNullException));
+            (e is ArgumentException && e is not ArgumentNullException);
 
         internal static void ValidateArguments(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize)
         {

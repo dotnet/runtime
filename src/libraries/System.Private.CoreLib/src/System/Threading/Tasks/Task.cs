@@ -3516,7 +3516,7 @@ namespace System.Threading.Tasks
                             stc.Run(this, canInlineContinuationTask: false);
                         }
                     }
-                    else if (!(currentContinuation is ITaskCompletionAction))
+                    else if (currentContinuation is not ITaskCompletionAction)
                     {
                         if (forceContinuationsAsync)
                         {
@@ -4483,7 +4483,7 @@ namespace System.Threading.Tasks
                 //    activity, we ensure we at least create a correlation from the current activity to
                 //    the continuation that runs when the promise completes.
                 if ((this.Options & (TaskCreationOptions)InternalTaskOptions.PromiseTask) != 0 &&
-                    !(this is ITaskCompletionAction))
+                    this is not ITaskCompletionAction)
                 {
                     TplEventSource log = TplEventSource.Log;
                     if (log.IsEnabled())
@@ -6996,7 +6996,7 @@ namespace System.Threading.Tasks
             {
                 if (continuationObject is Action singleAction)
                 {
-                    return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction) };
+                    return [AsyncMethodBuilderCore.TryGetStateMachineForDebugger(singleAction)];
                 }
 
                 if (continuationObject is TaskContinuation taskContinuation)
@@ -7015,7 +7015,7 @@ namespace System.Threading.Tasks
                 // the VS debugger is more interested in the continuation than the internal invoke()
                 if (continuationObject is ITaskCompletionAction singleCompletionAction)
                 {
-                    return new Delegate[] { new Action<Task>(singleCompletionAction.Invoke) };
+                    return [new Action<Task>(singleCompletionAction.Invoke)];
                 }
 
                 if (continuationObject is List<object?> continuationList)

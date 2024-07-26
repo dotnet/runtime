@@ -34,7 +34,11 @@ namespace System.Linq.Tests
         {
             int[] source = { };
 
-            Assert.Throws<InvalidOperationException>(() => source.RunOnce().Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Throws<InvalidOperationException>(() => source.Aggregate((x, y) => x + y));
+                Assert.Throws<InvalidOperationException>(() => source.RunOnce().Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
@@ -43,7 +47,10 @@ namespace System.Linq.Tests
             int[] source = { 5 };
             int expected = 5;
 
-            Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
@@ -52,7 +59,10 @@ namespace System.Linq.Tests
             int[] source = { 5 };
             int expected = 5;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
@@ -61,7 +71,10 @@ namespace System.Linq.Tests
             int[] source = { 5, 6 };
             int expected = 11;
 
-            Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
@@ -70,7 +83,10 @@ namespace System.Linq.Tests
             int[] source = { 5, 6, 0, -4 };
             int expected = 7;
 
-            Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
@@ -79,7 +95,10 @@ namespace System.Linq.Tests
             int[] source = { 5, 6, 0, -4 };
             int expected = 7;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate((x, y) => x + y));
+            });
         }
 
         [Fact]
@@ -89,7 +108,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = 2;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
@@ -99,7 +121,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = 10;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
@@ -109,7 +134,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = 60;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
@@ -119,7 +147,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = -480;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
@@ -129,7 +160,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = -480;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y));
+            });
         }
 
         [Fact]
@@ -139,7 +173,10 @@ namespace System.Linq.Tests
             long seed = 2;
             double expected = 7;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
@@ -149,7 +186,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = 15;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
@@ -159,7 +199,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = 65;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
@@ -169,7 +212,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = -475;
 
-            Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]
@@ -179,7 +225,10 @@ namespace System.Linq.Tests
             long seed = 2;
             long expected = -475;
 
-            Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            Assert.All(CreateSources(source), source =>
+            {
+                Assert.Equal(expected, source.RunOnce().Aggregate(seed, (x, y) => x * y, x => x + 5.0));
+            });
         }
 
         [Fact]

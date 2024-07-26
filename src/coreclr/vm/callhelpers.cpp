@@ -474,10 +474,15 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
                             *((INT64*)pDest) = (INT16)pArguments[arg];
                         break;
                     case 4:
+#ifdef TARGET_RISCV64
+                        // RISC-V integer calling convention requires to sign-extend `uint` arguments as well
+                        *((INT64*)pDest) = (INT32)pArguments[arg];
+#else // TARGET_LOONGARCH64
                         if (m_argIt.GetArgType() == ELEMENT_TYPE_U4)
                             *((INT64*)pDest) = (UINT32)pArguments[arg];
                         else
                             *((INT64*)pDest) = (INT32)pArguments[arg];
+#endif // TARGET_RISCV64
                         break;
 #else
                     case 1:
@@ -534,7 +539,13 @@ void MethodDescCallSite::CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *
 #ifdef CALLDESCR_REGTYPEMAP
     callDescrData.dwRegTypeMap = dwRegTypeMap;
 #endif
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    // Temporary conversion to old flags, CallDescrWorker needs to be overhauled anyway
+    // to work with arbitrary field offsets and sizes, and support struct size > 16 on RISC-V.
+    callDescrData.fpReturnSize = FpStructInRegistersInfo{FpStruct::Flags(fpReturnSize)}.ToOldFlags();
+#else
     callDescrData.fpReturnSize = fpReturnSize;
+#endif
     callDescrData.pTarget = m_pCallTarget;
 
 #ifdef FEATURE_INTERPRETER
