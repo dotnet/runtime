@@ -12,7 +12,7 @@ namespace System.Runtime.Intrinsics.Arm
     /// This class provides access to the ARM SVE hardware instructions via intrinsics
     /// </summary>
     [CLSCompliant(false)]
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Sve is in preview. Debugger scenario is not supported.")]
+    [Experimental(Experimentals.ArmSveDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
