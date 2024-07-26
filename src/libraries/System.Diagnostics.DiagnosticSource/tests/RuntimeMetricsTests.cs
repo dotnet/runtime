@@ -112,48 +112,47 @@ namespace System.Diagnostics.Metrics.Tests
             }
         }
 
-        // TODO - Uncomment once an implementation for https://github.com/dotnet/runtime/issues/104844 is available.
-        //[Fact]
-        //public void CpuTime()
-        //{
-        //    using InstrumentRecorder<double> instrumentRecorder = new("dotnet.process.cpu.time");
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public void CpuTime()
+        {
+           using InstrumentRecorder<double> instrumentRecorder = new("dotnet.process.cpu.time");
 
-        //    instrumentRecorder.RecordObservableInstruments();
+           instrumentRecorder.RecordObservableInstruments();
 
-        //    bool[] foundCpuModes = [false, false];
+           bool[] foundCpuModes = [false, false];
 
-        //    foreach (Measurement<double> measurement in instrumentRecorder.GetMeasurements().Where(m => m.Value >= 0))
-        //    {
-        //        var tags = measurement.Tags.ToArray();
-        //        var tag = tags.SingleOrDefault(k => k.Key == "cpu.mode");
+           foreach (Measurement<double> measurement in instrumentRecorder.GetMeasurements().Where(m => m.Value >= 0))
+           {
+               var tags = measurement.Tags.ToArray();
+               var tag = tags.SingleOrDefault(k => k.Key == "cpu.mode");
 
-        //        if (tag.Key is not null)
-        //        {
-        //            Assert.True(tag.Value is string, "Expected CPU mode tag to be a string.");
+               if (tag.Key is not null)
+               {
+                   Assert.True(tag.Value is string, "Expected CPU mode tag to be a string.");
 
-        //            string tagValue = (string)tag.Value;
+                   string tagValue = (string)tag.Value;
 
-        //            switch (tagValue)
-        //            {
-        //                case "user":
-        //                    foundCpuModes[0] = true;
-        //                    break;
-        //                case "system":
-        //                    foundCpuModes[1] = true;
-        //                    break;
-        //                default:
-        //                    Assert.Fail($"Unexpected CPU mode tag value '{tagValue}'.");
-        //                    break;
-        //            }
-        //        }
-        //    }
+                   switch (tagValue)
+                   {
+                       case "user":
+                           foundCpuModes[0] = true;
+                           break;
+                       case "system":
+                           foundCpuModes[1] = true;
+                           break;
+                       default:
+                           Assert.Fail($"Unexpected CPU mode tag value '{tagValue}'.");
+                           break;
+                   }
+               }
+           }
 
-        //    for (int i = 0; i < foundCpuModes.Length; i++)
-        //    {
-        //        var mode = i == 0 ? "user" : "system";
-        //        Assert.True(foundCpuModes[i], $"Expected to find a measurement for '{mode}' CPU mode.");
-        //    }
-        //}
+           for (int i = 0; i < foundCpuModes.Length; i++)
+           {
+               var mode = i == 0 ? "user" : "system";
+               Assert.True(foundCpuModes[i], $"Expected to find a measurement for '{mode}' CPU mode.");
+           }
+        }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
         public void ExceptionsCount()

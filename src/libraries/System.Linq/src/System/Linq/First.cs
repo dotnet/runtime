@@ -114,12 +114,26 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
-            foreach (TSource element in source)
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
             {
-                if (predicate(element))
+                foreach (TSource element in span)
                 {
-                    found = true;
-                    return element;
+                    if (predicate(element))
+                    {
+                        found = true;
+                        return element;
+                    }
+                }
+            }
+            else
+            {
+                foreach (TSource element in source)
+                {
+                    if (predicate(element))
+                    {
+                        found = true;
+                        return element;
+                    }
                 }
             }
 

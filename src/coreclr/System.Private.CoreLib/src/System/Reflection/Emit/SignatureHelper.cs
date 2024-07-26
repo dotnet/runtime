@@ -276,9 +276,7 @@ namespace System.Reflection.Emit
             {
                 for (int i = 0; i < optionalCustomModifiers.Length; i++)
                 {
-                    Type t = optionalCustomModifiers[i];
-
-                    if (t == null)
+                    Type t = optionalCustomModifiers[i] ??
                         throw new ArgumentNullException(nameof(optionalCustomModifiers));
 
                     if (t.HasElementType)

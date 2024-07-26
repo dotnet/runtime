@@ -2403,11 +2403,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_LoadVectorFirstFaulting:
             {
-                assert(op3Reg == REG_NA);
-                if (unspilledFfr)
+                if (intrin.numOperands == 3)
                 {
-                    // We have unspilled the FFR in op1Reg. Restore it back in FFR register.
-                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op1Reg, opt);
+                    // We have extra argument which means there is a "use" of FFR here. Restore it back in FFR register.
+                    assert(op3Reg != REG_NA);
+                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op3Reg, opt);
                 }
 
                 insScalableOpts sopt = (opt == INS_OPTS_SCALABLE_B) ? INS_SCALABLE_OPTS_NONE : INS_SCALABLE_OPTS_LSL_N;
@@ -2415,31 +2415,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Sve_GetFfrByte:
-            case NI_Sve_GetFfrInt16:
-            case NI_Sve_GetFfrInt32:
-            case NI_Sve_GetFfrInt64:
-            case NI_Sve_GetFfrSByte:
-            case NI_Sve_GetFfrUInt16:
-            case NI_Sve_GetFfrUInt32:
-            case NI_Sve_GetFfrUInt64:
-            {
-                if (unspilledFfr)
-                {
-                    // We have unspilled the FFR in op1Reg. Restore it back in FFR register.
-                    GetEmitter()->emitIns_R(INS_sve_wrffr, emitSize, op1Reg, opt);
-                }
-
-                GetEmitter()->emitIns_R(ins, emitSize, targetReg, INS_OPTS_SCALABLE_B);
-                break;
-            }
             case NI_Sve_SetFfr:
             {
                 assert(targetReg == REG_NA);
                 GetEmitter()->emitIns_R(ins, emitSize, op1Reg, opt);
                 break;
             }
-
             case NI_Sve_ConditionalExtractAfterLastActiveElementScalar:
             case NI_Sve_ConditionalExtractLastActiveElementScalar:
             {

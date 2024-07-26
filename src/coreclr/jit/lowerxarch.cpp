@@ -43,7 +43,10 @@ void Lowering::LowerRotate(GenTree* tree)
 //    - Handling of contained immediates.
 //    - Widening some small stores.
 //
-void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
+// Returns:
+//   Next tree to lower.
+//
+GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     // Most small locals (the exception is dependently promoted fields) have 4 byte wide stack slots, so
     // we can widen the store, if profitable. The widening is only (largely) profitable for 2 byte stores.
@@ -64,6 +67,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 
     ContainCheckStoreLoc(storeLoc);
+    return storeLoc->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -1564,6 +1568,21 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
                                 else
                                 {
                                     op2->SetUnusedValue();
+                                }
+
+                                // Since we have a double negation, it's possible that gtNext
+                                // is op1 or user. If it is op1, then it's also possible the
+                                // subsequent gtNext is user. We need to make sure to skip both
+                                // in such a scenario since we're removing them.
+
+                                if (nextNode == op1)
+                                {
+                                    nextNode = nextNode->gtNext;
+                                }
+
+                                if (nextNode == user)
+                                {
+                                    nextNode = nextNode->gtNext;
                                 }
 
                                 BlockRange().Remove(op3);
