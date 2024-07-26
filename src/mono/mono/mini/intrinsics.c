@@ -721,7 +721,7 @@ MONO_RESTORE_WARNING
 					tto_stack = STACK_I4;
 				}
 			} else if (size == 8) {
-				if (TARGET_SIZEOF_VOID_P == 8) {
+#if TARGET_SIZEOF_VOID_P == 8
 					if ((tfrom_type == MONO_TYPE_R8) && ((tto_type == MONO_TYPE_I8) || (tto_type == MONO_TYPE_U8))) {
 						opcode = OP_MOVE_F_TO_I8;
 						tto_stack = STACK_I8;
@@ -732,17 +732,17 @@ MONO_RESTORE_WARNING
 						opcode = OP_MOVE;
 						tto_stack = STACK_I8;
 					}
-				} else {
+#else
 					return NULL;
-				}
+#endif
 			}
 		} else if (mini_class_is_simd (cfg, tfrom_klass) && mini_class_is_simd (cfg, tto_klass)) {
-			if (TARGET_SIZEOF_VOID_P == 8) {
+#if TARGET_SIZEOF_VOID_P == 8
 				opcode = OP_XCAST;
 				tto_stack = STACK_VTYPE;
-			} else {
+#else
 				return NULL;
-			}
+#endif
 		}
 
 		if (opcode == OP_LDADDR) {
