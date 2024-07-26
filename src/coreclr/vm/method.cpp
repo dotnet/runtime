@@ -2626,15 +2626,22 @@ MethodDesc* MethodDesc::GetMethodDescFromStubAddr(PCODE addr, BOOL fSpeculative 
 
     MethodDesc *  pMD = NULL;
 
-    // Otherwise this must be some kind of precode
-    //
-    PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
-    PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
-    if (pPrecode != NULL)
+    EX_TRY
     {
-        pMD = pPrecode->GetMethodDesc(fSpeculative);
-        RETURN(pMD);
+        // Otherwise this must be some kind of precode
+        //
+        PTR_Precode pPrecode = Precode::GetPrecodeFromEntryPoint(addr, fSpeculative);
+        PREFIX_ASSUME(fSpeculative || (pPrecode != NULL));
+        if (pPrecode != NULL)
+        {
+            pMD = pPrecode->GetMethodDesc(fSpeculative);
+            RETURN(pMD);
+        }
     }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions)
 
     RETURN(NULL); // Not found
 }
