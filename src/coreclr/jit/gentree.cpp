@@ -7211,13 +7211,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
                 return ExceptionSetFlags::NullReferenceException;
             }
 
-#ifdef TARGET_ARM64
-            if (HWIntrinsicInfo::HasImmediateOperandRange(hwIntrinsicNode->GetHWIntrinsicId()))
-            {
-                return ExceptionSetFlags::ArgumentOutOfRangeException;
-            }
-#endif // TARGET_ARM64
-
             return ExceptionSetFlags::None;
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -7246,6 +7239,16 @@ bool GenTree::OperMayThrow(Compiler* comp)
         helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
         return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
     }
+#ifdef FEATURE_HW_INTRINSICS
+    else if (OperIsHWIntrinsic())
+    {
+        if ((gtFlags & (GTF_HW_USER_CALL | GTF_EXCEPT)) == (GTF_HW_USER_CALL | GTF_EXCEPT))
+        {
+            return true;
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
+
 
     return OperExceptions(comp) != ExceptionSetFlags::None;
 }
@@ -20113,7 +20116,7 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          com
                                           CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
 {
     assert(OperIsHWIntrinsic() && !IsUserCall());
-    gtFlags |= GTF_HW_USER_CALL;
+    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT);
 
     size_t operandCount = GetOperandCount();
 
@@ -27429,12 +27432,6 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
     {
         gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
     }
-#if defined(TARGET_ARM64)
-    else if (HWIntrinsicInfo::HasImmediateOperandRange(intrinsicId))
-    {
-        gtFlags |= GTF_EXCEPT;
-    }
-#endif // TARGET_ARM64
     else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
     {
         switch (intrinsicId)

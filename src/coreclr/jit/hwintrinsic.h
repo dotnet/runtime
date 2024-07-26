@@ -895,14 +895,6 @@ struct HWIntrinsicInfo
     }
 
 #ifdef TARGET_ARM64
-    static bool HasImmediateOperandRange(NamedIntrinsic id)
-    {
-        auto category = lookupCategory(id);
-        return HasImmediateOperand(id) &&
-               ((category == HW_Category_ShiftLeftByImmediate) || (category == HW_Category_ShiftRightByImmediate) ||
-                (category == HW_Category_SIMDByIndexedElement));
-    }
-
     static bool SIMDScalar(NamedIntrinsic id)
     {
         const HWIntrinsicFlag flags = lookupFlags(id);
