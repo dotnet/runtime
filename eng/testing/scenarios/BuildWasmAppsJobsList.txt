@@ -43,3 +43,5 @@ Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.WorkloadTests
 Wasm.Build.Tests.TestAppScenarios.ModuleConfigTests
 Wasm.Build.Tests.MT.Blazor.SimpleMultiThreadedTests
+Wasm.Build.Tests.TestAppScenarios.WasmSdkDebugLevelTests
+Wasm.Build.Tests.TestAppScenarios.WasmAppBuilderDebugLevelTests

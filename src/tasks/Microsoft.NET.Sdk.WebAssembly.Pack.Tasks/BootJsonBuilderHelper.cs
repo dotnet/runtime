@@ -10,7 +10,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.NET.Sdk.WebAssembly
 {
-    public class BootJsonBuilderHelper(TaskLoggingHelper Log)
+    public class BootJsonBuilderHelper(TaskLoggingHelper Log, string DebugLevel, bool IsPublish)
     {
         public void ComputeResourcesHash(BootJsonData bootConfig)
         {
@@ -72,6 +72,36 @@ namespace Microsoft.NET.Sdk.WebAssembly
                 Log.LogError($"The resource '{resourceName}' is not recognized as any native asset");
 
             return null;
+        }
+
+        public int GetDebugLevel(bool hasPdb)
+        {
+            int? debugLevel = ParseOptionalInt(DebugLevel);
+
+            // If user didn't give us a value, check if we have any PDB.
+            if (debugLevel == null && hasPdb)
+                debugLevel = -1;
+
+            // Fallback to -1 for build, or 0 for publish
+            debugLevel ??= IsPublish ? 0 : -1;
+
+            return debugLevel.Value;
+        }
+
+        public bool? ParseOptionalBool(string value)
+        {
+            if (string.IsNullOrEmpty(value) || !bool.TryParse(value, out var boolValue))
+                return null;
+
+            return boolValue;
+        }
+
+        public int? ParseOptionalInt(string value)
+        {
+            if (string.IsNullOrEmpty(value) || !int.TryParse(value, out var intValue))
+                return null;
+
+            return intValue;
         }
     }
 }
