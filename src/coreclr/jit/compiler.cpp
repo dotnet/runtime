@@ -927,37 +927,24 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
     if (structSize <= (TARGET_POINTER_SIZE * 2))
     {
-        uint32_t floatFieldFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(clsHnd);
-
-        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+        const CORINFO_FPSTRUCT_LOWERING* lowering = GetFpStructLowering(clsHnd);
+        if (!lowering->byIntegerCallConv)
         {
-            howToReturnStruct = SPK_PrimitiveType;
-            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
-        }
-        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
-        {
-            howToReturnStruct = SPK_ByValue;
-            useType           = TYP_STRUCT;
-        }
-    }
-
-#elif defined(TARGET_RISCV64)
-    if (structSize <= (TARGET_POINTER_SIZE * 2))
-    {
-        uint32_t floatFieldFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(clsHnd);
-
-        if ((floatFieldFlags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
-        {
-            howToReturnStruct = SPK_PrimitiveType;
-            useType           = (structSize > 4) ? TYP_DOUBLE : TYP_FLOAT;
-        }
-        else if (floatFieldFlags & (STRUCT_HAS_FLOAT_FIELDS_MASK ^ STRUCT_FLOAT_FIELD_ONLY_ONE))
-        {
-            howToReturnStruct = SPK_ByValue;
-            useType           = TYP_STRUCT;
+            if (lowering->numLoweredElements == 1)
+            {
+                useType = JITtype2varType(lowering->loweredElements[0]);
+                assert(varTypeIsFloating(useType));
+                howToReturnStruct = SPK_PrimitiveType;
+            }
+            else
+            {
+                assert(lowering->numLoweredElements == 2);
+                howToReturnStruct = SPK_ByValue;
+                useType           = TYP_STRUCT;
+            }
         }
     }
 
@@ -1998,11 +1985,13 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #ifdef SWIFT_SUPPORT
     m_swiftLoweringCache = nullptr;
 #endif
+#if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    m_fpStructLoweringCache = nullptr;
+#endif
 
     // check that HelperCallProperties are initialized
 
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
-    assert(!s_helperCallProperties.IsPure(CORINFO_HELP_GETFIELDOBJ)); // quick sanity check
 
     // We start with the flow graph in tree-order
     fgOrder = FGOrderTree;
@@ -5066,7 +5055,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
         doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
-        doOptimizeIVs             = doValueNum && (JitConfig.JitDoOptimizeIVs() != 0);
+        doOptimizeIVs             = doAssertionProp && (JitConfig.JitDoOptimizeIVs() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 #endif // defined(OPT_CONFIG)
 
@@ -5274,7 +5263,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
 #ifdef DEBUG
     // Stash the current estimate of the function's size if necessary.
-    if (verbose)
+    if (verbose && opts.OptimizationEnabled())
     {
         compSizeEstimate  = 0;
         compCycleEstimate = 0;
@@ -5322,6 +5311,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Set stack levels and analyze throw helper usage.
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
+    m_pLowering->FinalizeOutgoingArgSpace();
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -8301,6 +8291,53 @@ void Compiler::GetStructTypeOffset(
     GetStructTypeOffset(structDesc, type0, type1, offset0, offset1);
 }
 
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+//------------------------------------------------------------------------
+// GetFpStructLowering: Gets the information on passing of a struct according to hardware floating-point
+// calling convention, i.e. the types and offsets of struct fields lowered for passing.
+//
+// Arguments:
+//      structHandle - type handle
+//
+// Return value:
+//      Lowering info for the struct fields
+const CORINFO_FPSTRUCT_LOWERING* Compiler::GetFpStructLowering(CORINFO_CLASS_HANDLE structHandle)
+{
+    if (m_fpStructLoweringCache == nullptr)
+        m_fpStructLoweringCache = new (this, CMK_CallArgs) FpStructLoweringMap(getAllocator(CMK_CallArgs));
+
+    CORINFO_FPSTRUCT_LOWERING* lowering;
+    if (!m_fpStructLoweringCache->Lookup(structHandle, &lowering))
+    {
+        lowering = new (this, CMK_CallArgs) CORINFO_FPSTRUCT_LOWERING;
+        info.compCompHnd->getFpStructLowering(structHandle, lowering);
+        m_fpStructLoweringCache->Set(structHandle, lowering);
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+                   eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
+
+            if (lowering->byIntegerCallConv)
+            {
+                printf("        pass by integer calling convention\n");
+            }
+            else
+            {
+                printf("        may be passed by floating-point calling convention (%zu fields):\n",
+                       lowering->numLoweredElements);
+                for (size_t i = 0; i < lowering->numLoweredElements; ++i)
+                {
+                    const char* type = varTypeName(JITtype2varType(lowering->loweredElements[i]));
+                    printf("         * field[%zu]: type %s at offset %u\n", i, type, lowering->offsets[i]);
+                }
+            }
+        }
+#endif // DEBUG
+    }
+    return lowering;
+}
+
 #endif // defined(UNIX_AMD64_ABI)
 
 /*****************************************************************************/
@@ -10391,15 +10428,10 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[SPILLED_OPER]");
         }
-#if FEATURE_SET_FLAGS
         if (tree->gtFlags & GTF_SET_FLAGS)
         {
-            if ((op != GT_IND) && (op != GT_STOREIND))
-            {
-                chars += printf("[ZSF_SET_FLAGS]");
-            }
+            chars += printf("[SET_FLAGS]");
         }
-#endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
             if (tree->OperIsIndirOrArrMetaData())
@@ -10414,10 +10446,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_DONT_CSE)
         {
             chars += printf("[DONT_CSE]");
-        }
-        if (tree->gtFlags & GTF_BOOLEAN)
-        {
-            chars += printf("[BOOLEAN]");
         }
         if (tree->gtFlags & GTF_UNSIGNED)
         {

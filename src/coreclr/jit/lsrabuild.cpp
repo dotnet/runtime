@@ -2841,10 +2841,7 @@ void LinearScan::buildIntervals()
 #ifdef HAS_MORE_THAN_64_REGISTERS
     else if (availableRegCount < (sizeof(regMaskTP) * 8))
     {
-        // Mask out the bits that are between (8 * regMaskTP) ~ availableRegCount
-        // Subtract one extra for stack.
-        unsigned topRegCount = availableRegCount - sizeof(regMaskSmall) * 8 - 1;
-        actualRegistersMask  = regMaskTP(~RBM_NONE, (1ULL << topRegCount) - 1);
+        actualRegistersMask = regMaskTP(~RBM_NONE, availableMaskRegs);
     }
 #endif
     else
@@ -3152,7 +3149,85 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, SingleTypeRegSet dstCandidates,
 }
 
 //------------------------------------------------------------------------
-// BuildDef: Build one or more RefTypeDef RefPositions for the given call node
+// BuildCallArgUses: Build uses of arguments.
+//
+// Arguments:
+//    call - The call node
+//
+int LinearScan::BuildCallArgUses(GenTreeCall* call)
+{
+    int srcCount = 0;
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        // By this point, lowering has ensured that all call arguments are one of the following:
+        // - a field list
+        // - a put arg
+        //
+        // Note that this property is statically checked by LinearScan::CheckBlock.
+        GenTree* argNode = arg.GetLateNode();
+
+        // For most of this code there is no need to access the ABI info since
+        // we assign it in gtNewPutArgReg during lowering, so we can get it
+        // from there.
+#if FEATURE_MULTIREG_ARGS
+        if (argNode->OperIs(GT_FIELD_LIST))
+        {
+            for (GenTreeFieldList::Use& use : argNode->AsFieldList()->Uses())
+            {
+                assert(use.GetNode()->OperIsPutArgReg());
+                srcCount++;
+                BuildUse(use.GetNode(), genSingleTypeRegMask(use.GetNode()->GetRegNum()));
+            }
+
+            continue;
+        }
+#endif
+
+#if FEATURE_ARG_SPLIT
+        if (argNode->OperIs(GT_PUTARG_SPLIT))
+        {
+            unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
+            for (unsigned int i = 0; i < regCount; i++)
+            {
+                BuildUse(argNode, genSingleTypeRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
+            }
+            srcCount += regCount;
+            continue;
+        }
+#endif
+
+        // Each register argument corresponds to one source.
+        if (argNode->OperIsPutArgReg())
+        {
+            srcCount++;
+            BuildUse(argNode, genSingleTypeRegMask(argNode->GetRegNum()));
+            continue;
+        }
+
+        assert(!arg.NewAbiInfo.HasAnyRegisterSegment());
+        assert(argNode->OperIs(GT_PUTARG_STK));
+    }
+
+#ifdef DEBUG
+    // Validate stack arguments.
+    // Note that these need to be computed into a register, but then
+    // they're just stored to the stack - so the reg doesn't
+    // need to remain live until the call.  In fact, it must not
+    // because the code generator doesn't actually consider it live,
+    // so it can't be spilled.
+
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
+    {
+        assert(arg.GetEarlyNode()->OperIs(GT_PUTARG_STK));
+        assert(arg.GetLateNode() == nullptr);
+    }
+#endif // DEBUG
+
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildCallDefs: Build one or more RefTypeDef RefPositions for the given call node
 //
 // Arguments:
 //    tree          - The node that defines a register
@@ -4441,36 +4516,6 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     }
 
     return srcCount;
-}
-
-//------------------------------------------------------------------------
-// HandleFloatVarArgs: Handle additional register requirements for a varargs call
-//
-// Arguments:
-//    call    - The call node of interest
-//    argNode - The current argument
-//
-// Return Value:
-//    None.
-//
-// Notes:
-//    In the case of a varargs call, the ABI dictates that if we have floating point args,
-//    we must pass the enregistered arguments in both the integer and floating point registers.
-//    Since the integer register is not associated with the arg node, we will reserve it as
-//    an internal register on the call so that it is not used during the evaluation of the call node
-//    (e.g. for the target).
-void LinearScan::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs)
-{
-    if (compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
-    {
-        *callHasFloatRegArgs = true;
-
-        // We'll have to return the internal def and then later create a use for it.
-        regNumber argReg    = argNode->GetRegNum();
-        regNumber targetReg = compiler->getCallArgIntRegister(argReg);
-
-        buildInternalIntRegisterDefForNode(call, genSingleTypeRegMask(targetReg));
-    }
 }
 
 //------------------------------------------------------------------------

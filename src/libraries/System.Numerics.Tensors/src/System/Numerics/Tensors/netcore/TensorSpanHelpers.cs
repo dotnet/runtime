@@ -4,14 +4,15 @@
 using System.Buffers;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable 8500 // sizeof of managed types
-
 namespace System.Numerics.Tensors
 {
+
+    [Experimental(Experimentals.TensorTDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     internal static partial class TensorSpanHelpers
     {
         internal static bool AreShapesTheSame<T>(ReadOnlyTensorSpan<T> tensor1, ReadOnlyTensorSpan<T> tensor2)

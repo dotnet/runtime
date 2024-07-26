@@ -167,8 +167,7 @@ namespace System.Runtime.CompilerServices
         [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
-            RuntimeType rt = type.GetRuntimeType();
-            if (rt is null)
+            RuntimeType rt = type.GetRuntimeType() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(type));
 
             RunClassConstructor(new QCallTypeHandle(ref rt));
@@ -187,8 +186,7 @@ namespace System.Runtime.CompilerServices
 
         public static void RunModuleConstructor(ModuleHandle module)
         {
-            RuntimeModule rm = module.GetRuntimeModule();
-            if (rm is null)
+            RuntimeModule rm = module.GetRuntimeModule() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(module));
 
             RunModuleConstructor(new QCallModule(ref rm));
@@ -204,8 +202,7 @@ namespace System.Runtime.CompilerServices
 
         public static unsafe void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
-            IRuntimeMethodInfo methodInfo = method.GetMethodInfo();
-            if (methodInfo == null)
+            IRuntimeMethodInfo methodInfo = method.GetMethodInfo() ??
                 throw new ArgumentException(SR.InvalidOperation_HandleIsNotInitialized, nameof(method));
 
             // defensive copy of user-provided array, per CopyRuntimeTypeHandles contract

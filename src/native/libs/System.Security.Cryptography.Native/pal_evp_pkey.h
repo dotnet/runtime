@@ -13,12 +13,6 @@ Returns the new EVP_PKEY instance.
 PALEXPORT EVP_PKEY* CryptoNative_EvpPkeyCreate(void);
 
 /*
-Create a new EVP_PKEY that has the same interior key as currentKey,
-optionally verifying that the key has the correct algorithm.
-*/
-PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyDuplicate(EVP_PKEY* currentKey, int32_t algId);
-
-/*
 Cleans up and deletes a EVP_PKEY instance.
 
 Implemented by calling EVP_PKEY_free.
@@ -27,12 +21,12 @@ No-op if pkey is null.
 The given EVP_PKEY pointer is invalid after this call.
 Always succeeds.
 */
-PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
+PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle);
 
 /*
-Returns the maximum size, in bytes, of an operation with the provided key.
+Returns the cryptographic length of the cryptosystem to which the key belongs, in bits.
 */
-PALEXPORT int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey);
+PALEXPORT int32_t CryptoNative_EvpPKeyBits(EVP_PKEY* pkey);
 
 /*
 Used by System.Security.Cryptography.X509Certificates' OpenSslX509CertificateReader when
@@ -41,7 +35,16 @@ duplicating a private key context as part of duplicating the Pal object.
 Returns the number (as of this call) of references to the EVP_PKEY. Anything less than
 2 is an error, because the key is already in the process of being freed.
 */
-PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
+PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle);
+
+/*
+Returns one of the following 4 values for the given EVP_PKEY:
+    0 - unknown
+    EVP_PKEY_RSA - RSA
+    EVP_PKEY_EC - EC
+    EVP_PKEY_DSA - DSA
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key);
 
 /*
 Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
@@ -93,12 +96,29 @@ PALEXPORT int32_t CryptoNative_EncodeSubjectPublicKeyInfo(EVP_PKEY* pkey, uint8_
 Load a named key, via ENGINE_load_private_key, from the named engine.
 
 Returns a valid EVP_PKEY* on success, NULL on failure.
+haveEngine is 1 if OpenSSL ENGINE's are supported, otherwise 0.
 */
-PALEXPORT EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName, const char* keyName);
+PALEXPORT EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName, const char* keyName, int32_t* haveEngine);
 
 /*
 Load a named key, via ENGINE_load_public_key, from the named engine.
 
 Returns a valid EVP_PKEY* on success, NULL on failure.
+haveEngine is 1 if OpenSSL ENGINE's are supported, otherwise 0.
 */
-PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName);
+PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName, int32_t* haveEngine);
+
+/*
+Load a key by URI from a specified OSSL_PROVIDER.
+
+Returns a valid EVP_PKEY* on success, NULL on failure.
+On success extraHandle may be non-null value which we need to keep alive
+until the EVP_PKEY is destroyed.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle);
+
+/*
+It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
+which handles extraHandle.
+*/
+EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);

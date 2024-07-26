@@ -633,6 +633,14 @@ struct Agnostic_GetSwiftLowering
     DWORD numLoweredElements;
 };
 
+struct Agnostic_GetFpStructLowering
+{
+    DWORD byIntegerCallConv;
+    DWORD loweredElements[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    DWORD offsets[MAX_FPSTRUCT_LOWERED_ELEMENTS];
+    DWORD numLoweredElements;
+};
+
 struct Agnostic_ResolveVirtualMethodKey
 {
     DWORDLONG                       virtualMethod;
