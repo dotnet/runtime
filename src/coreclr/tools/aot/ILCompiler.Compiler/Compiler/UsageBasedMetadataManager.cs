@@ -65,8 +65,6 @@ namespace ILCompiler
         private readonly HashSet<string> _trimmedAssemblies;
         private readonly List<string> _satelliteAssemblyFiles;
 
-        internal FlowAnnotations FlowAnnotations { get; }
-
         internal Logger Logger { get; }
 
         public UsageBasedMetadataManager(
@@ -86,12 +84,11 @@ namespace ILCompiler
             IEnumerable<string> additionalRootedAssemblies,
             IEnumerable<string> trimmedAssemblies,
             IEnumerable<string> satelliteAssemblyFilePaths)
-            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options)
+            : base(typeSystemContext, blockingPolicy, resourceBlockingPolicy, logFile, stackTracePolicy, invokeThunkGenerationPolicy, options, flowAnnotations)
         {
             _compilationModuleGroup = group;
             _generationOptions = generationOptions;
 
-            FlowAnnotations = flowAnnotations;
             Logger = logger;
 
             _linkAttributesHashTable = new LinkAttributesHashTable(Logger, featureSwitchValues);
@@ -896,7 +893,7 @@ namespace ILCompiler
             }
 
             return new AnalysisBasedMetadataManager(
-                _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy,
+                _typeSystemContext, _blockingPolicy, _resourceBlockingPolicy, _metadataLogFile, _stackTraceEmissionPolicy, _dynamicInvokeThunkGenerationPolicy, FlowAnnotations,
                 _modulesWithMetadata, _typesWithForcedEEType, reflectableTypes.ToEnumerable(), reflectableMethods.ToEnumerable(),
                 reflectableFields.ToEnumerable(), _customAttributesWithMetadata, _options);
         }
