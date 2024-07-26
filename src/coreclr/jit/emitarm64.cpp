@@ -14362,12 +14362,12 @@ void emitter::emitDispInsHelp(
 
     if (id->idIsLclVar())
     {
-        printf("\t// ");
+        INDEBUG(printf("\t// "));
         emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                          id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
         if (id->idIsLclVarPair())
         {
-            printf(", ");
+            INDEBUG(printf(", "));
             emitLclVarAddr* iiaLclVar2 = emitGetLclVarPairLclVar2(id);
             emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs2,
                              asmfm);
