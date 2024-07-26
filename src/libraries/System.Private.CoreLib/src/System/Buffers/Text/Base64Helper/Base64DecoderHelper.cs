@@ -200,7 +200,7 @@ namespace System.Buffers.Text
 
                     i0 |= i2;
 
-                    if ((i0 & 0x800000c0) != 0) // if negative or 4 unused bits are not 0.
+                    if ((i0 & 0x800000c0) != 0) // if negative or 2 unused bits are not 0.
                     {
                         goto InvalidDataExit;
                     }
@@ -415,7 +415,7 @@ namespace System.Buffers.Text
 
                     i0 |= i2;
 
-                    if ((i0 & 0x800000c0) != 0) // if negative or 4 unused bits are not 0.
+                    if ((i0 & 0x800000c0) != 0) // if negative or 2 unused bits are not 0.
                     {
                         goto InvalidExit;
                     }

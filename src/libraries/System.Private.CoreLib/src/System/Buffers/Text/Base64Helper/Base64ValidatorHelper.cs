@@ -28,7 +28,7 @@ namespace System.Buffers.Text
                     }
 
                     length += index;
-                    if (index > 0)
+                    if (index != 0)
                     {
                         lastChar = base64Text[index - 1];
                     }
