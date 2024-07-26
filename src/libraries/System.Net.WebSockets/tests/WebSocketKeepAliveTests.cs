@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,8 +14,10 @@ namespace System.Net.WebSockets.Tests
     {
         public static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(10);
         public static readonly TimeSpan KeepAliveInterval = TimeSpan.FromMilliseconds(100);
-        public static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromMilliseconds(500);
+        public static readonly TimeSpan KeepAliveTimeout = TimeSpan.FromSeconds(1);
         public const int FramesToTestCount = 3;
+
+#region Frame format helper constants
 
         public const int MinHeaderLength = 2;
         public const int MaskLength = 4;
@@ -46,25 +50,32 @@ namespace System.Net.WebSockets.Tests
         public const int Server_FrameHeaderLength = MinHeaderLength;
         public const int Client_FrameHeaderLength = MinHeaderLength + MaskLength;
 
+#endregion
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task UnsolicitedPong_NoReadOrWrite_Success(bool isServer)
+        public async Task WebSocket_NoUserReadOrWrite_SendsUnsolicitedPong(bool isServer)
         {
             var cancellationToken = new CancellationTokenSource(TestTimeout).Token;
 
-            using WebSocketTestStream stream = new();
-            using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            using WebSocketTestStream testStream = new();
+            Stream localEndpointStream = testStream;
+            Stream remoteEndpointStream = testStream.Remote;
+
+            using WebSocket webSocket = WebSocket.CreateFromStream(localEndpointStream, new WebSocketCreationOptions
             {
                 IsServer = isServer,
                 KeepAliveInterval = KeepAliveInterval
             });
 
+            // --- "remote endpoint" side ---
+
             int pongFrameLength = isServer ? Server_FrameHeaderLength : Client_FrameHeaderLength;
             var pongBuffer = new byte[pongFrameLength];
             for (int i = 0; i < FramesToTestCount; i++) // WS should be sending pongs "indefinitely", let's check a few
             {
-                await stream.ReadExactlyAsync(pongBuffer, cancellationToken);
+                await remoteEndpointStream.ReadExactlyAsync(pongBuffer, cancellationToken);
 
                 Assert.Equal(FirstByte_PongFrame, pongBuffer[0]);
                 Assert.Equal(
@@ -74,12 +85,15 @@ namespace System.Net.WebSockets.Tests
         }
 
         [Fact]
-        public async Task Server_KeepAlivePing_NoReadOrWrite_Success()
+        public async Task WebSocketServer_NoUserReadOrWrite_SendsPingAndReadsPongResponse()
         {
             var cancellationToken = new CancellationTokenSource(TestTimeout).Token;
 
-            using WebSocketTestStream stream = new();
-            using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            using WebSocketTestStream testStream = new();
+            Stream serverStream = testStream;
+            Stream clientStream = testStream.Remote;
+
+            using WebSocket webSocketServer = WebSocket.CreateFromStream(serverStream, new WebSocketCreationOptions
             {
                 IsServer = true,
                 KeepAliveInterval = KeepAliveInterval,
@@ -92,7 +106,7 @@ namespace System.Net.WebSockets.Tests
 
             for (int i = 0; i < FramesToTestCount; i++) // WS should be sending pings "indefinitely", let's check a few
             {
-                await stream.ReadExactlyAsync(
+                await clientStream.ReadExactlyAsync(
                     buffer.AsMemory(0, Server_FrameHeaderLength + PingPayloadLength),
                     cancellationToken);
 
@@ -117,17 +131,20 @@ namespace System.Net.WebSockets.Tests
                 // sending the same payload back
                 BinaryPrimitives.WriteInt64BigEndian(buffer.AsSpan().Slice(Client_FrameHeaderLength), pingCounter);
 
-                await stream.WriteAsync(buffer, cancellationToken);
+                await clientStream.WriteAsync(buffer, cancellationToken);
             }
         }
 
         [Fact]
-        public async Task Client_KeepAlivePing_NoReadOrWrite_Success()
+        public async Task WebSocketClient_NoUserReadOrWrite_SendsPingAndReadsPongResponse()
         {
             var cancellationToken = new CancellationTokenSource(TestTimeout).Token;
 
-            using WebSocketTestStream stream = new();
-            using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            using WebSocketTestStream testStream = new();
+            Stream clientStream = testStream;
+            Stream serverStream = testStream.Remote;
+
+            using WebSocket webSocketClient = WebSocket.CreateFromStream(clientStream, new WebSocketCreationOptions
             {
                 IsServer = false,
                 KeepAliveInterval = KeepAliveInterval,
@@ -140,7 +157,7 @@ namespace System.Net.WebSockets.Tests
 
             for (int i = 0; i < FramesToTestCount; i++) // WS should be sending pings "indefinitely", let's check a few
             {
-                await stream.ReadExactlyAsync(buffer, cancellationToken);
+                await serverStream.ReadExactlyAsync(buffer, cancellationToken);
 
                 Assert.Equal(FirstByte_PingFrame, buffer[0]);
 
@@ -160,7 +177,7 @@ namespace System.Net.WebSockets.Tests
                 // sending the same payload back
                 BinaryPrimitives.WriteInt64BigEndian(buffer.AsSpan().Slice(Server_FrameHeaderLength), pingCounter);
 
-                await stream.WriteAsync(
+                await serverStream.WriteAsync(
                     buffer.AsMemory(0, Server_FrameHeaderLength + PingPayloadLength),
                     cancellationToken);
             }
@@ -179,6 +196,47 @@ namespace System.Net.WebSockets.Tests
                 {
                     buffer[i] ^= mask[i % MaskLength];
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task WebSocket_NoPongResponseWithinTimeout_Aborted(bool outstandingUserRead)
+        {
+            //TODO: fix
+
+            var cancellationToken = new CancellationTokenSource(TestTimeout).Token;
+
+            using WebSocketTestStream testStream = new();
+            Stream localEndpointStream = testStream;
+            Stream remoteEndpointStream = testStream.Remote;
+
+            using WebSocket webSocket = WebSocket.CreateFromStream(localEndpointStream, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                KeepAliveInterval = KeepAliveInterval,
+                KeepAliveTimeout = KeepAliveTimeout
+            });
+
+            Debug.Assert(webSocket.State == WebSocketState.Open);
+
+            ValueTask<ValueWebSocketReceiveResult> userReadTask = default;
+            if (outstandingUserRead)
+            {
+                userReadTask = webSocket.ReceiveAsync(Memory<byte>.Empty, cancellationToken);
+            }
+
+            await Task.Delay(2 * (KeepAliveInterval + KeepAliveTimeout), cancellationToken).ConfigureAwait(false);
+
+            Assert.Equal(WebSocketState.Aborted, webSocket.State);
+
+            if (outstandingUserRead)
+            {
+                var oce = await Assert.ThrowsAsync<OperationCanceledException>(async () => await userReadTask);
+                var wse = Assert.IsType<WebSocketException>(oce.InnerException);
+                Assert.Equal(WebSocketError.Faulted, wse.WebSocketErrorCode);
+                Assert.Contains("KeepAliveTimeout", wse.Message);
             }
         }
     }

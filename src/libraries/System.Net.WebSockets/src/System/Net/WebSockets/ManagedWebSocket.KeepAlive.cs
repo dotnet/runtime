@@ -29,6 +29,8 @@ namespace System.Net.WebSockets
 
         private void UnsolicitedPongHeartBeat()
         {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+
             // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
             // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
             // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
@@ -44,6 +46,8 @@ namespace System.Net.WebSockets
 
             if (!IsValidSendState(_state))
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Cannot send keep-alive frame in state: " + _state);
+
                 // we can't send any frames, but no need to throw as we are not observing errors anyway
                 return ValueTask.CompletedTask;
             }
@@ -55,6 +59,8 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_keepAlivePingState != null);
             Debug.Assert(_keepAlivePingState.Exception == null);
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
             try
             {
@@ -79,6 +85,8 @@ namespace System.Net.WebSockets
             Debug.Assert(_keepAlivePingState != null);
             Debug.Assert(_keepAlivePingState.AwaitingPong);
 
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+
             long now = Environment.TickCount64;
 
             if (now > Interlocked.Read(ref _keepAlivePingState.WillTimeoutTimestamp))
@@ -92,6 +100,8 @@ namespace System.Net.WebSockets
         private void TryIssueReadAhead()
         {
             Debug.Assert(_readAheadState != null);
+
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
 
             if (!_receiveMutex.TryEnter())
             {
@@ -296,7 +306,7 @@ namespace System.Net.WebSockets
             internal ArrayBuffer Buffer;
             internal ValueWebSocketReceiveResult BufferedResult;
             internal Task? ReadAheadTask;
-            internal bool IsDisposed => Buffer.DangerousGetUnderlyingBuffer() is null;
+            private bool IsDisposed => Buffer.DangerousGetUnderlyingBuffer() is null;
 
             private readonly AsyncMutex _receiveMutex; // for Debug.Asserts
 
@@ -311,7 +321,6 @@ namespace System.Net.WebSockets
 
             internal ValueWebSocketReceiveResult ConsumeResult(Span<byte> destination)
             {
-                Debug.Assert(destination.Length > 0);
                 Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
                 Debug.Assert(ReadAheadTask is not null);
 
@@ -361,14 +370,9 @@ namespace System.Net.WebSockets
             {
                 Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
 
-                if (IsDisposed)
-                {
-                    return;
-                }
-
                 if (ReadAheadTask is not null)
                 {
-                    FireAndForgetHelper.ObserveException(ReadAheadTask);
+                    FireAndForgetHelper.Observe(ReadAheadTask);
                     ReadAheadTask = null;
                 }
                 BufferedResult = default;

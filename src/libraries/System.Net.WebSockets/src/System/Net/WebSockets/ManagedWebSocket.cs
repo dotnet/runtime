@@ -154,6 +154,8 @@ namespace System.Net.WebSockets
             Debug.Assert(stream.CanWrite, $"Expected writeable {nameof(stream)}");
             Debug.Assert(keepAliveInterval == Timeout.InfiniteTimeSpan || keepAliveInterval >= TimeSpan.Zero, $"Invalid {nameof(keepAliveInterval)}: {keepAliveInterval}");
 
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Associate(this, stream);
+
             _stream = stream;
             _isServer = isServer;
             _subprotocol = subprotocol;
@@ -170,12 +172,25 @@ namespace System.Net.WebSockets
             if (keepAliveInterval > TimeSpan.Zero)
             {
                 long heartBeatIntervalMs = (long)keepAliveInterval.TotalMilliseconds;
-                if (keepAliveTimeout > TimeSpan.Zero) // keep-alive Ping/Pong strategy
+                if (keepAliveTimeout > TimeSpan.Zero)
                 {
                     _readAheadState = new ReadAheadState(_receiveMutex);
                     _keepAlivePingState = new KeepAlivePingState(keepAliveInterval, keepAliveTimeout);
                     heartBeatIntervalMs = _keepAlivePingState.HeartBeatIntervalMs;
-                } // else: keep-alive Unsolicited Pong strategy
+
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.Associate(this, _readAheadState);
+                        NetEventSource.Associate(this, _keepAlivePingState);
+
+                        NetEventSource.Trace(this,
+                            $"Enabling Keep-Alive Ping/Pong strategy; ping delay={_keepAlivePingState.DelayMs}ms, timeout={_keepAlivePingState.TimeoutMs}ms, heartbeat={heartBeatIntervalMs}ms");
+                    }
+                }
+                else if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Trace(this, $"Enabling Keep-Alive Unsolicited Pong strategy; heartbeat={heartBeatIntervalMs}ms");
+                }
 
                 // We use a weak reference from the timer to the web socket to avoid a cycle
                 // that could keep the web socket rooted in erroneous cases.
@@ -235,32 +250,10 @@ namespace System.Net.WebSockets
                     _state = WebSocketState.Closed;
                 }
 
-                DisposeSafe(_inflater, _receiveMutex);
-                DisposeSafe(_deflater, _sendMutex);
+                _inflater?.DisposeSafe(_receiveMutex);
+                _deflater?.DisposeSafe(_sendMutex);
 
-                DisposeSafe(_readAheadState, _receiveMutex);
-            }
-        }
-
-        private static void DisposeSafe(IDisposable? resource, AsyncMutex mutex)
-        {
-            if (resource is not null)
-            {
-                Task lockTask = mutex.EnterAsync(CancellationToken.None);
-
-                if (lockTask.IsCompleted)
-                {
-                    resource.Dispose();
-                    mutex.Exit();
-                }
-                else
-                {
-                    lockTask.GetAwaiter().UnsafeOnCompleted(() =>
-                    {
-                        resource.Dispose();
-                        mutex.Exit();
-                    });
-                }
+                _readAheadState?.DisposeSafe(_receiveMutex);
             }
         }
 
