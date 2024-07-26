@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netstandard2.1;$(NetFrameworkMinimum);$(NetCoreAppMinimum);$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);MICROSOFT_BCL_MEMORY</DefineConstants>
     <IsPackable>true</IsPackable>
-    <DefineConstants>MICROSOFT_BCL_MEMORY;$(DefineConstants)</DefineConstants>
     <!-- Disabling baseline validation since this is a brand new package.
          Once this package has shipped a stable version, the following line
          should be removed in order to re-enable validation. -->
@@ -27,51 +27,30 @@
     <OmitResources Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">true</OmitResources>
   </PropertyGroup>
 
-  <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
-    <Compile Include="..\ref\Microsoft.Bcl.Memory.Forwards.cs" />
-  </ItemGroup>
-
-  <!-- Targetting NetCOreApp & Netstandard 2.1 -->
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
-    <Compile Include="..\ref\Microsoft.Bcl.Memory.Forwards.netstandard21.cs" />
+    <Compile Include="Microsoft.Bcl.Memory.Forwards.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net9.0'))">
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64Helper.cs">
-      <Link>System\Buffers\Text\Base64Helper\Base64Helper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64DecoderHelper.cs">
-      <Link>System\Buffers\Text\Base64Helper\Base64DecoderHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64EncoderHelper.cs">
-      <Link>System\Buffers\Text\Base64Helper\Base64EncoderHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Helper\Base64ValidatorHelper.cs">
-      <Link>System\Buffers\Text\Base64Helper\Base64ValidatorHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Url\Base64UrlDecoder.cs">
-      <Link>System\Buffers\Text\Base64Url\Base64UrlDecoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Url\Base64UrlEncoder.cs">
-      <Link>System\Buffers\Text\Base64Url\Base64UrlEncoder.cs</Link>
-    </Compile>
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Buffers\Text\Base64Url\Base64UrlValidator.cs">
-      <Link>System\Buffers\Text\Base64Url\Base64UrlValidator.cs</Link>
-    </Compile>
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Helper\Base64Helper.cs" Link="System\Buffers\Text\Base64Helper\Base64Helper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Helper\Base64DecoderHelper.cs" Link="System\Buffers\Text\Base64Helper\Base64DecoderHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Helper\Base64EncoderHelper.cs" Link="System\Buffers\Text\Base64Helper\Base64EncoderHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Helper\Base64ValidatorHelper.cs" Link="System\Buffers\Text\Base64Helper\Base64ValidatorHelper.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlDecoder.cs" Link="System\Buffers\Text\Base64Url\Base64UrlDecoder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlEncoder.cs" Link="System\Buffers\Text\Base64Url\Base64UrlEncoder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\Base64Url\Base64UrlValidator.cs" Link="System\Buffers\Text\Base64Url\Base64UrlValidator.cs" />
   </ItemGroup>
 
-  <!-- Targetting  NetFramework & Netstandard 2.0 -->
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Index.cs" />
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Range.cs" />
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Index.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Range.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
-    <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
-  </ItemGroup>
 </Project>

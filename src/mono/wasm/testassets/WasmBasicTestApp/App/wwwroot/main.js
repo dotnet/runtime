@@ -16,7 +16,6 @@ function testOutput(msg) {
 
 function countChars(str) {
     const length = str.length;
-    testOutput(`JS received str of ${length} length`);
     return length;
 }
 
@@ -30,6 +29,9 @@ dotnet
 switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        break;
+    case "LazyLoadingTest":
+        dotnet.withDiagnosticTracing(true);
         break;
     case "DownloadResourceProgressTest":
         if (params.get("failAssemblyDownload") === "true") {
@@ -124,7 +126,7 @@ switch (testCase) {
 const { setModuleImports, getAssemblyExports, getConfig, INTERNAL } = await dotnet.create();
 const config = getConfig();
 const exports = await getAssemblyExports(config.mainAssemblyName);
-const assemblyExtension = config.resources.coreAssembly['System.Private.CoreLib.wasm'] !== undefined ? ".wasm" : ".dll";
+const assemblyExtension = Object.keys(config.resources.coreAssembly)[0].endsWith('.wasm') ? ".wasm" : ".dll";
 
 // Run the test case
 try {
@@ -135,7 +137,23 @@ try {
             break;
         case "LazyLoadingTest":
             if (params.get("loadRequiredAssembly") !== "false") {
-                await INTERNAL.loadLazyAssembly(`Json${assemblyExtension}`);
+                let lazyAssemblyExtension = assemblyExtension;
+                switch (params.get("lazyLoadingTestExtension")) {
+                    case "wasm":
+                        lazyAssemblyExtension = ".wasm";
+                        break;
+                    case "dll":
+                        lazyAssemblyExtension = ".dll";
+                        break;
+                    case "NoExtension":
+                        lazyAssemblyExtension = "";
+                        break;
+                    default:
+                        lazyAssemblyExtension = assemblyExtension;
+                        break;
+                }
+
+                await INTERNAL.loadLazyAssembly(`Json${lazyAssemblyExtension}`);
             }
             exports.LazyLoadingTest.Run();
             exit(0);

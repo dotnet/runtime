@@ -1103,7 +1103,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                     // TODO-CQ: handle HWI/SIMD/COMMA nodes in multi-reg morphing.
                     SetNeedsTemp(&arg);
                 }
-                else
+                else if (comp->opts.OptimizationEnabled())
                 {
                     // Finally, we call gtPrepareCost to measure the cost of evaluating this tree.
                     comp->gtPrepareCost(argx);
@@ -1476,7 +1476,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                     assert(begTab == endTab);
                     break;
                 }
-                else
+                else if (comp->opts.OptimizationEnabled())
                 {
                     if (!costsPrepared)
                     {
@@ -1491,6 +1491,12 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                         expensiveArgIndex = curInx;
                         expensiveArg      = arg;
                     }
+                }
+                else
+                {
+                    // We don't have cost information in MinOpts
+                    expensiveArgIndex = curInx;
+                    expensiveArg      = arg;
                 }
             }
         }
