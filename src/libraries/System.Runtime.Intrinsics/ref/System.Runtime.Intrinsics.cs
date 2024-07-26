@@ -5288,7 +5288,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<float> ReciprocalSqrtStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
         public static System.Numerics.Vector<double> ReciprocalStep(System.Numerics.Vector<double> left, System.Numerics.Vector<double> right) { throw null; }
         public static System.Numerics.Vector<float> ReciprocalStep(System.Numerics.Vector<float> left, System.Numerics.Vector<float> right) { throw null; }
-        
+
         public static System.Numerics.Vector<byte> ReverseBits(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<short> ReverseBits(System.Numerics.Vector<short> value) { throw null; }
         public static System.Numerics.Vector<int> ReverseBits(System.Numerics.Vector<int> value) { throw null; }
@@ -8211,7 +8211,6 @@ namespace System.Runtime.Intrinsics.X86
         }
     }
     [System.CLSCompliantAttribute(false)]
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("AvxVnni is in preview.")]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
     {
         internal AvxVnni() { }
