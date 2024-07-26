@@ -354,3 +354,48 @@ extern "C" DLLEXPORT PackedEmptyFloatLong Echo_PackedEmptyFloatLong_OnStack_Risc
 	stack0_stack1.Float0 += (float)stack2 + stack3;
 	return stack0_stack1;
 }
+
+
+#pragma pack(push, 1)
+struct PackedFloatEmptyByte
+{
+	float Float0;
+	Empty Empty0;
+	uint8_t Byte0;
+};
+#pragma pack(pop)
+static_assert(sizeof(PackedFloatEmptyByte) == 6, "");
+
+extern "C" DLLEXPORT PackedFloatEmptyByte Echo_PackedFloatEmptyByte_RiscV(int a0, float fa0,
+	PackedFloatEmptyByte fa1_a1, int a2, float fa2)
+{
+	fa1_a1.Float0 += (float)a2 + fa2;
+	return fa1_a1;
+}
+
+extern "C" DLLEXPORT PackedFloatEmptyByte Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV(
+	int a0,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+	PackedFloatEmptyByte a1, int a2, float a3)
+{
+	a1.Float0 += (float)a2 + a3;
+	return a1;
+}
+
+extern "C" DLLEXPORT PackedFloatEmptyByte Echo_PackedFloatEmptyByte_Split_RiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+	PackedFloatEmptyByte a7_stack0, int stack1, float stack2)
+{
+	a7_stack0.Float0 += (float)stack1 + stack2;
+	return a7_stack0;
+}
+
+extern "C" DLLEXPORT PackedFloatEmptyByte Echo_PackedFloatEmptyByte_OnStack_RiscV(
+	int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+	float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+	PackedFloatEmptyByte stack0, int stack1, float stack2)
+{
+	stack0.Float0 += (float)stack1 + stack2;
+	return stack0;
+}

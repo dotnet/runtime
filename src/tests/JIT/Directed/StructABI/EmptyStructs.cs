@@ -998,4 +998,108 @@ public static class Program
 		Assert.Equal(expected, managed);
 	}
 #endregion
+
+
+#region PackedFloatEmptyByte_RiscVTests
+	[StructLayout(LayoutKind.Sequential, Pack=1)]
+	public struct PackedFloatEmptyByte
+	{
+		public float Float0;
+		public Empty Empty0;
+		public byte Byte0;
+
+		public static PackedFloatEmptyByte Get()
+			=> new PackedFloatEmptyByte { Float0 = 2.71828f, Byte0 = 0xba };
+
+		public bool Equals(PackedFloatEmptyByte other)
+			=> Float0 == other.Float0 && Byte0 == other.Byte0;
+
+		public override string ToString()
+			=> $"{{Float0:{Float0}, Byte0:{Byte0}}}";
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern PackedFloatEmptyByte Echo_PackedFloatEmptyByte_RiscV(int a0, float fa0,
+		PackedFloatEmptyByte fa1_a1, int a2, float fa2);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static PackedFloatEmptyByte Echo_PackedFloatEmptyByte_RiscV_Managed(int a0, float fa0,
+		PackedFloatEmptyByte fa1_a1, int a2, float fa2)
+	{
+		fa1_a1.Float0 += (float)a2 + fa2;
+		return fa1_a1;
+	}
+
+	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
+	public static void Test_PackedFloatEmptyByte_RiscV()
+	{
+		PackedFloatEmptyByte expected = PackedFloatEmptyByte.Get();
+		PackedFloatEmptyByte native = Echo_PackedFloatEmptyByte_RiscV(0, 0f, expected, 1, -1f);
+		PackedFloatEmptyByte managed = Echo_PackedFloatEmptyByte_RiscV_Managed(0, 0f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern PackedFloatEmptyByte Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		PackedFloatEmptyByte a1, int a2, float a3);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static PackedFloatEmptyByte Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV_Managed(
+		int a0,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		PackedFloatEmptyByte a1, int a2, float a3)
+	{
+		a1.Float0 += (float)a2 + a3;
+		return a1;
+	}
+
+	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
+	public static void Test_PackedFloatEmptyByte_InIntegerRegs_RiscV()
+	{
+		PackedFloatEmptyByte expected = PackedFloatEmptyByte.Get();
+		PackedFloatEmptyByte native = Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+		PackedFloatEmptyByte managed = Echo_PackedFloatEmptyByte_InIntegerRegs_RiscV_Managed(
+			0, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+
+	[DllImport("EmptyStructsLib")]
+	public static extern PackedFloatEmptyByte Echo_PackedFloatEmptyByte_OnStack_RiscV(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		PackedFloatEmptyByte stack0, int stack1, float stack2);
+
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static PackedFloatEmptyByte Echo_PackedFloatEmptyByte_OnStack_RiscV_Managed(
+		int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7,
+		float fa0, float fa1, float fa2, float fa3, float fa4, float fa5, float fa6, float fa7,
+		PackedFloatEmptyByte stack0, int stack1, float stack2)
+	{
+		stack0.Float0 += (float)stack1 + stack2;
+		return stack0;
+	}
+
+	[Fact]
+	[ActiveIssue(ProblemsWithEmptyStructPassing, typeof(Program), nameof(IsArm64Or32))]
+	public static void Test_PackedFloatEmptyByte_OnStack_RiscV()
+	{
+		PackedFloatEmptyByte expected = PackedFloatEmptyByte.Get();
+		PackedFloatEmptyByte native = Echo_PackedFloatEmptyByte_OnStack_RiscV(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+		PackedFloatEmptyByte managed = Echo_PackedFloatEmptyByte_OnStack_RiscV_Managed(
+			0, 1, 2, 3, 4, 5, 6, 7, 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, expected, 1, -1f);
+
+		Assert.Equal(expected, native);
+		Assert.Equal(expected, managed);
+	}
+#endregion
 }

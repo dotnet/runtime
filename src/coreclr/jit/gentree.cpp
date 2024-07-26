@@ -29552,7 +29552,8 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             }
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-            assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
+            assert(structSize > sizeof(float));
+            assert(structSize <= (2 * TARGET_POINTER_SIZE));
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
             const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
