@@ -1759,6 +1759,7 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> SpanSpanDestinationFunctionsToTest()
         {
             yield return Create(TensorPrimitives.BitwiseAnd, (x, y) => x & y);
+            yield return Create(TensorPrimitives.BitwiseAndNot, (x, y) => x & ~y);
             yield return Create(TensorPrimitives.BitwiseOr, (x, y) => x | y);
             yield return Create(TensorPrimitives.Xor, (x, y) => x ^ y);
 
@@ -1847,6 +1848,7 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<object[]> SpanScalarDestinationFunctionsToTest()
         {
             yield return Create(TensorPrimitives.BitwiseAnd, (x, y) => x & y);
+            yield return Create(TensorPrimitives.BitwiseAndNot, (x, y) => x & ~y);
             yield return Create(TensorPrimitives.BitwiseOr, (x, y) => x | y);
             yield return Create(TensorPrimitives.Max, T.Max);
             yield return Create(TensorPrimitives.MaxNumber, T.MaxNumber);
