@@ -16,7 +16,8 @@ namespace Microsoft.Interop.JavaScript
     {
         private readonly BoundGenerators _marshallers;
 
-        private readonly JSExportCodeContext _context;
+        private readonly StubCodeContext _context;
+        private readonly JSExportData _jsExportData;
         private readonly JSSignatureContext _signatureContext;
 
         public JSExportCodeGenerator(
@@ -27,11 +28,11 @@ namespace Microsoft.Interop.JavaScript
             IMarshallingGeneratorResolver generatorResolver)
         {
             _signatureContext = signatureContext;
-            NativeToManagedStubCodeContext innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier)
+            _jsExportData = attributeData;
+            _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnIdentifier)
             {
                 CodeEmitOptions = new(SkipInit: true)
             };
-            _context = new JSExportCodeContext(attributeData, innerContext);
 
             _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new EmptyJSGenerator(), out var bindingFailures);
 
@@ -40,11 +41,10 @@ namespace Microsoft.Interop.JavaScript
             if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
+                _context = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
                 {
                     CodeEmitOptions = new(SkipInit: true)
                 };
-                _context = new JSExportCodeContext(attributeData, innerContext);
             }
 
             // validate task + span mix

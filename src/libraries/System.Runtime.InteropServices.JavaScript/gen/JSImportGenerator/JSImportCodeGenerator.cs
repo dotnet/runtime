@@ -23,7 +23,8 @@ namespace Microsoft.Interop.JavaScript
     {
         private readonly BoundGenerators _marshallers;
 
-        private readonly JSImportCodeContext _context;
+        private readonly StubCodeContext _context;
+        private readonly JSImportData _jsImportData;
         private readonly JSSignatureContext _signatureContext;
 
         public JSImportCodeGenerator(
@@ -33,12 +34,12 @@ namespace Microsoft.Interop.JavaScript
             GeneratorDiagnosticsBag diagnosticsBag,
             IMarshallingGeneratorResolver generatorResolver)
         {
+            _jsImportData = attributeData;
             _signatureContext = signatureContext;
-            ManagedToNativeStubCodeContext innerContext = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier)
+            _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnIdentifier)
             {
                 CodeEmitOptions = new(SkipInit: true)
             };
-            _context = new JSImportCodeContext(attributeData, innerContext);
             _marshallers = BoundGenerators.Create(argTypes, generatorResolver, _context, new EmptyJSGenerator(), out var bindingFailures);
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
@@ -46,11 +47,10 @@ namespace Microsoft.Interop.JavaScript
             if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                innerContext = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
+                _context = new ManagedToNativeStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
                 {
                     CodeEmitOptions = new(SkipInit: true)
                 };
-                _context = new JSImportCodeContext(attributeData, innerContext);
             }
 
             // validate task + span mix
@@ -132,11 +132,11 @@ namespace Microsoft.Interop.JavaScript
         {
             var bindingParameters =
                 (new ArgumentSyntax[] {
-                    Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_context.AttributeData.FunctionName))),
+                    Argument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_jsImportData.FunctionName))),
                     Argument(
-                        _context.AttributeData.ModuleName == null
+                        _jsImportData.ModuleName == null
                         ? LiteralExpression(SyntaxKind.NullLiteralExpression)
-                        : LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_context.AttributeData.ModuleName))),
+                        : LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(_jsImportData.ModuleName))),
                     CreateSignaturesSyntax(),
                 });
 

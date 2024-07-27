@@ -33,7 +33,7 @@ namespace Microsoft.Interop.JavaScript
                     NotSupportedDetails = failReason
                 });
             }
-            bool isToJs = info.ManagedIndex != TypePositionInfo.ReturnIndex ^ context is JSExportCodeContext;
+            bool isToJs = info.ManagedIndex != TypePositionInfo.ReturnIndex ^ context.Direction == MarshalDirection.UnmanagedToManaged;
 
             switch (jsMarshalingInfo)
             {
