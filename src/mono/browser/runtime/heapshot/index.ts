@@ -35,11 +35,11 @@ if (tabChannel)
     tabChannel.addEventListener("message", tabChannel_message);
 
 function channel_message (evt: MessageEvent) {
-    console.log("channel_message", evt, evt.data);
     const data = evt.data;
     if ((typeof (data) !== "object") || (typeof (data.sender) !== "string") || (typeof (data.cmd) !== "string"))
         return;
 
+    console.log("channel_message", data.cmd);
     switch (data.cmd) {
         case "whosThere":
             globalChannel!.postMessage({ cmd: "iAmHere", sender: tabId, version: ProductVersion, running: loaderHelpers.is_runtime_running() });
@@ -48,11 +48,11 @@ function channel_message (evt: MessageEvent) {
 }
 
 function tabChannel_message (evt: MessageEvent) {
-    console.log("tabChannel_message", evt, evt.data);
     const data = evt.data;
     if ((typeof (data) !== "object") || (typeof (data.sender) !== "string") || (typeof (data.cmd) !== "string"))
         return;
 
+    console.log("tabChannel_message", data.cmd);
     switch (data.cmd) {
         case "takeSnapshot":
             cwraps.mono_wasm_perform_heapshot();
@@ -224,7 +224,8 @@ function heapshotPacket (chunkId: string, chunk: Uint8Array) {
 
 function heapshotCounter (name: string, value: number) {
     const builder = getBuilder("CNTR");
-    builder.appendULeb(getStringTableIndex(name));
+    // Using the stringtable here would just make the format harder to decode.
+    builder.appendName(name);
     builder.appendF64(value);
 }
 
@@ -246,8 +247,9 @@ export function mono_wasm_heapshot_stats (
 }
 
 export function mono_wasm_heapshot_end (): void {
-    heapshotCounter("snapshot/total-objects", totalObjects);
-    heapshotCounter("snapshot/total-refs", totalRefs);
+    heapshotCounter("snapshot/num-strings", stringTable.size);
+    heapshotCounter("snapshot/num-objects", totalObjects);
+    heapshotCounter("snapshot/num-refs", totalRefs);
     flush();
     const elapsedMs = performance.now() - heapshotStartedWhen;
     heapshotLog(`heapshot finished after ${elapsedMs.toFixed(1)}msec`);

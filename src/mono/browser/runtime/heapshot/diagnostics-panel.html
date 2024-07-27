@@ -18,11 +18,11 @@
             const tabList = [];
 
             function tab_message (evt) {
-                console.log("tab_message", evt, evt.data);
                 const data = evt.data;
                 if ((typeof (data) !== "object") || (typeof (data.cmd) !== "string"))
                     return;
 
+                console.log("tab_message", data.cmd, data.text, data.chunkId, data.chunk ? data.chunk.length : 0);
                 switch (data.cmd) {
                     case "heapshotStart":
                         this.log = "";
@@ -43,11 +43,11 @@
             }
 
             function channel_message (evt) {
-                console.log("channel_message", evt, evt.data);
                 const data = evt.data;
                 if ((typeof (data) !== "object") || (typeof (data.sender) !== "string") || (typeof (data.cmd) !== "string"))
                     return;
 
+                console.log("channel_message", data.cmd);
                 switch (data.cmd) {
                     case "whosThere":
                         break;
