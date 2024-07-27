@@ -7141,6 +7141,8 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         }
 
         case GT_INTRINSIC:
+            assert((gtFlags & GTF_HW_USER_CALL) == 0);
+
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
             // Currently, this is the only intrinsic that can throw an exception.
             if (AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
@@ -7242,7 +7244,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
 #ifdef FEATURE_HW_INTRINSICS
     else if (OperIsHWIntrinsic())
     {
-        if ((gtFlags & (GTF_HW_USER_CALL | GTF_EXCEPT)) == (GTF_HW_USER_CALL | GTF_EXCEPT))
+        if ((gtFlags & GTF_HW_USER_CALL) != 0)
         {
             return true;
         }
@@ -20115,7 +20117,7 @@ void GenTreeJitIntrinsic::SetMethodHandle(Compiler*                          com
                                           CORINFO_METHOD_HANDLE methodHandle R2RARG(CORINFO_CONST_LOOKUP entryPoint))
 {
     assert(OperIsHWIntrinsic() && !IsUserCall());
-    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT);
+    gtFlags |= (GTF_HW_USER_CALL | GTF_EXCEPT | GTF_CALL);
 
     size_t operandCount = GetOperandCount();
 
