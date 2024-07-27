@@ -146,22 +146,26 @@ private:
     };
 
     unsigned m_numElements = 0;
-    bool     m_heap        = false;
+
+    bool IsOnHeap() const
+    {
+        // After we switch to the heap, we never switch back and
+        // m_numElements is only used to determine if we are on the heap
+        return m_numElements > ArrLen(m_inlineElements);
+    }
 
 public:
     template <typename TArrayStackAllocator>
     void Push(TItem vn, TArrayStackAllocator allocator)
     {
         // We already switched to the heap
-        if (m_heap)
+        if (IsOnHeap())
         {
             m_ArrayStack->Push(vn);
-            return;
         }
-
-        // It's time to switch to the heap
-        if (m_numElements == ArrLen(m_inlineElements))
+        else if (m_numElements == ArrLen(m_inlineElements))
         {
+            // It's time to switch to the heap
             ArrayStack<TItem>* arrayStack = allocator();
             for (unsigned i = 0; i < m_numElements; i++)
             {
@@ -169,7 +173,9 @@ public:
             }
             arrayStack->Push(vn);
             m_ArrayStack = arrayStack;
-            m_heap       = true;
+
+            // IsOnHeap() will return true from now on:
+            m_numElements++;
         }
         else
         {
@@ -180,12 +186,12 @@ public:
 
     int Height() const
     {
-        return m_heap ? m_ArrayStack->Height() : m_numElements;
+        return IsOnHeap() ? m_ArrayStack->Height() : static_cast<int>(m_numElements);
     }
 
     ValueNum Pop()
     {
-        if (m_heap)
+        if (IsOnHeap())
         {
             return m_ArrayStack->Pop();
         }
