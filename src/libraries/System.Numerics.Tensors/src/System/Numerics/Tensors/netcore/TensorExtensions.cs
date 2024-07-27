@@ -4093,6 +4093,68 @@ namespace System.Numerics.Tensors
         }
         #endregion
 
+        #region BitwiseAndNot
+        /// <summary>
+        /// Computes the element-wise bitwise and not of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        public static Tensor<T> BitwiseAndNot<T>(in ReadOnlyTensorSpan<T> x, in ReadOnlyTensorSpan<T> y)
+            where T : IBitwiseOperators<T, T, T>
+        {
+            Tensor<T> output;
+            if (x.Lengths.SequenceEqual(y.Lengths))
+            {
+                output = Tensor.Create<T>(x.Lengths);
+            }
+            else
+            {
+                output = Tensor.Create<T>(GetSmallestBroadcastableLengths(x.Lengths, y.Lengths));
+            }
+
+            BitwiseAndNot(x, y, output);
+            return output;
+        }
+
+        /// <summary>
+        /// Computes the element-wise bitwise and not of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="y">The right <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="destination"></param>
+        public static ref readonly TensorSpan<T> BitwiseAndNot<T>(scoped in ReadOnlyTensorSpan<T> x, scoped in ReadOnlyTensorSpan<T> y, in TensorSpan<T> destination)
+            where T : IBitwiseOperators<T, T, T>
+        {
+            return ref TensorPrimitivesHelperTwoSpanInSpanOut(x, y, destination, TensorPrimitives.BitwiseAndNot);
+        }
+
+        /// <summary>
+        /// Computes the element-wise bitwise and not of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
+        /// </summary>
+        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="y">The second value.</param>
+        public static Tensor<T> BitwiseAndNot<T>(in ReadOnlyTensorSpan<T> x, T y)
+            where T : IBitwiseOperators<T, T, T>
+        {
+            Tensor<T> output = Tensor.Create<T>(x.Lengths);
+
+            BitwiseAndNot(x, y, output);
+            return output;
+        }
+
+        /// <summary>
+        /// Computes the element-wise bitwise and not of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="TensorSpan{T}"/> with the result.
+        /// </summary>
+        /// <param name="x">The left <see cref="ReadOnlyTensorSpan{T}"/>.</param>
+        /// <param name="y">The second value.</param>
+        /// <param name="destination"></param>
+        public static ref readonly TensorSpan<T> BitwiseAndNot<T>(scoped in ReadOnlyTensorSpan<T> x, T y, in TensorSpan<T> destination)
+            where T : IBitwiseOperators<T, T, T>
+        {
+            return ref TensorPrimitivesHelperSpanInTInSpanOut(x, y, destination, TensorPrimitives.BitwiseAndNot);
+        }
+        #endregion
+
         #region BitwiseOr
         /// <summary>
         /// Computes the element-wise bitwise of of the two input <see cref="ReadOnlyTensorSpan{T}"/> and returns a new <see cref="Tensor{T}"/> with the result.
