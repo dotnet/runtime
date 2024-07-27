@@ -1793,7 +1793,7 @@ namespace System.Threading
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
             if (ReferenceEquals(callBack, s_invokeAsyncStateMachineBox))
             {
-                if (!(state is IAsyncStateMachineBox))
+                if (state is not IAsyncStateMachineBox)
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
                     ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
