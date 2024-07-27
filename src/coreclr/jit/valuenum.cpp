@@ -3280,6 +3280,11 @@ ValueNum ValueNumStore::VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum)
     return m_pComp->lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaArgs[ssaArgNum])->m_vnPair.Get(VNK_Conservative);
 }
 
+ArrayStack<ValueNum>* ValueNumStore::VNArrayStackAllocator()
+{
+    return new (m_pComp, CMK_ValueNumber) ArrayStack<ValueNum>(m_pComp->getAllocator(CMK_ValueNumber));
+}
+
 //------------------------------------------------------------------------------
 // VNForMapSelectInner: Select value from a map and record loop memory dependencies.
 //

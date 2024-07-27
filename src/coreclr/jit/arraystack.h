@@ -134,3 +134,62 @@ private:
     // initial allocation
     char builtinData[builtinSize * sizeof(T)];
 };
+
+template <class TItem>
+class SmallArrayStack
+{
+private:
+    union
+    {
+        TItem              m_inlineElements[4];
+        ArrayStack<TItem>* m_ArrayStack;
+    };
+
+    unsigned m_numElements = 0;
+    bool     m_heap        = false;
+
+public:
+    template <typename TArrayStackAllocator>
+    void Push(TItem vn, TArrayStackAllocator allocator)
+    {
+        // We already switched to the heap
+        if (m_heap)
+        {
+            m_ArrayStack->Push(vn);
+            return;
+        }
+
+        // It's time to switch to the heap
+        if (m_numElements == ArrLen(m_inlineElements))
+        {
+            ArrayStack<TItem>* arrayStack = allocator();
+            for (unsigned i = 0; i < m_numElements; i++)
+            {
+                arrayStack->Push(m_inlineElements[i]);
+            }
+            arrayStack->Push(vn);
+            m_ArrayStack = arrayStack;
+            m_heap       = true;
+        }
+        else
+        {
+            // Use the inline array
+            m_inlineElements[m_numElements++] = vn;
+        }
+    }
+
+    int Height() const
+    {
+        return m_heap ? m_ArrayStack->Height() : m_numElements;
+    }
+
+    ValueNum Pop()
+    {
+        if (m_heap)
+        {
+            return m_ArrayStack->Pop();
+        }
+        assert(m_numElements > 0);
+        return m_inlineElements[--m_numElements];
+    }
+};
