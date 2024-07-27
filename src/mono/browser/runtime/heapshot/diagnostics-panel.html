@@ -24,12 +24,22 @@
                     return;
 
                 switch (data.cmd) {
+                    case "heapshotStart":
+                        this.log = "";
+                        break;
                     case "heapshotText":
                         this.log += data.text + "\r\n";
-                        if (getSelectedTab() === this)
-                            document.querySelector("#log").textContent = this.log;
+                        break;
+                    case "heapshotEnd":
                         break;
                 }
+
+                this.refresh();
+            }
+
+            function refreshTab () {
+                if (getSelectedTab() === this)
+                    document.querySelector("#log").textContent = this.log;
             }
 
             function channel_message (evt) {
@@ -55,9 +65,12 @@
                             }
                         }
                         elt.textContent = `.NET Runtime ${data.version} | tab ${data.sender}`;
+                        if (!data.running)
+                            elt.textContent += " (exited)";
                         elt.removeAttribute("disabled");
                         const tabChannel = new BroadcastChannel(`.NET Runtime Diagnostics|${data.sender}`);
                         const tabObj = { tabId: data.sender, elt, origin: evt.origin, channel: tabChannel, log: "" };
+                        tabObj.refresh = refreshTab.bind(tabObj);
                         tabChannel.addEventListener("message", tab_message.bind(tabObj));
                         elt.setAttribute("tabListIndex", tabList.length);
                         tabList.push(tabObj);
@@ -111,7 +124,7 @@
                     document.querySelector("#takeSnapshot").setAttribute("disabled", true);
 
                 if (tabObj)
-                    document.querySelector("#log").textContent = tabObj.log;
+                    tabObj.refresh();
             }
 
             function snapshots_change () {

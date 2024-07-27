@@ -246,6 +246,12 @@ acquire_new_pages_initialized (uint32_t page_count) {
 	if (bytes >= UINT32_MAX)
 		return NULL;
 
+	if (first_controlled_page_index == UINT32_MAX) {
+		// HACK: Ensure we never allocate the zero page. It's important for it to be reserved.
+		if (sbrk (0) == 0)
+			sbrk (MWPM_PAGE_SIZE);
+	}
+
 	// We know that on WASM, sbrk grows the heap as necessary in order to return,
 	//  a region of N zeroed bytes, which isn't necessarily aligned or page-sized
 	uint8_t *allocation = sbrk ((uint32_t)bytes);
