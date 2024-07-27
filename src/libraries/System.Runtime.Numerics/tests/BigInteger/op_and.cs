@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Numerics.Tests
@@ -117,6 +120,26 @@ namespace System.Numerics.Tests
             }
         }
 
+        [Fact]
+        public static void RunAndTestsForSampleSet1()
+        {
+            var s = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 2);
+            var t = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 3);
+
+            foreach (var i in s)
+            {
+                foreach (var j in t)
+                {
+                    var a = MemoryMarshal.AsBytes(i.Span);
+                    var b = MemoryMarshal.AsBytes(j.Span);
+
+                    VerifyAndString(Print(a) + Print(b) + "b&");
+
+                    VerifyAndString(Print(b) + Print(a) + "b&");
+                }
+            }
+        }
+
         private static void VerifyAndString(string opstring)
         {
             StackCalc sc = new StackCalc(opstring);
@@ -136,6 +159,11 @@ namespace System.Numerics.Tests
         }
 
         private static string Print(byte[] bytes)
+        {
+            return MyBigIntImp.Print(bytes);
+        }
+
+        private static string Print(ReadOnlySpan<byte> bytes)
         {
             return MyBigIntImp.Print(bytes);
         }
