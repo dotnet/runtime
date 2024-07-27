@@ -878,6 +878,11 @@ namespace System.Numerics.Tests
 
         public static string Print(byte[] bytes)
         {
+            return Print(bytes.AsSpan());
+        }
+
+        public static string Print(ReadOnlySpan<byte> bytes)
+        {
             string ret = "make ";
 
             for (int i = 0; i < bytes.Length; i++)
