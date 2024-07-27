@@ -117,7 +117,6 @@ namespace Microsoft.Interop
         /// </remarks>
         IEnumerable<StatementSyntax> Generate(StubCodeContext context);
 
-
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
         /// to an identifier for the managed value.
@@ -143,10 +142,20 @@ namespace Microsoft.Interop
         /// <returns>If the provided <paramref name="marshalKind"/> is supported and if it is required to specify the requested behavior.</returns>
         ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic);
 
+        /// <summary>
+        /// Create a new instance of this generator bound to a different <see cref="TypePositionInfo"/>.
+        /// </summary>
+        /// <param name="info">The new info to bind to.</param>
+        /// <returns>A new instance of this marshaller bound to <paramref name="info"/>.</returns>
         IBoundMarshallingGenerator Rebind(TypePositionInfo info);
     }
 
-    public sealed class BoundMarshallingGenerator(TypePositionInfo info, IUnboundMarshallingGenerator unbound) : IBoundMarshallingGenerator
+    /// <summary>
+    /// A bound generator that binds an <see cref="IUnboundMarshallingGenerator"/> to a specific <see cref="TypePositionInfo"/>.
+    /// </summary>
+    /// <param name="info">The element info.</param>
+    /// <param name="unbound">The unbound generator</param>
+    internal sealed class BoundMarshallingGenerator(TypePositionInfo info, IUnboundMarshallingGenerator unbound) : IBoundMarshallingGenerator
     {
         internal bool IsForwarder => unbound is Forwarder;
 
