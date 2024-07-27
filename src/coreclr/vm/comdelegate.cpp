@@ -2138,7 +2138,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
 
     DelegateEEClass* delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
     Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
-    return (pStub != NULL) ? pStub->GetEntryPoint() : NULL;
+    return (pStub != NULL) ? pStub->GetEntryPoint() : (PCODE)NULL;
 }
 FCIMPLEND
 
@@ -2147,7 +2147,7 @@ extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegat
     QCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
 
-    PCODE fptr = NULL;
+    PCODE fptr = (PCODE)NULL;
 
     BEGIN_QCALL;
 
