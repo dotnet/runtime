@@ -8467,17 +8467,21 @@ DONE_MORPHING_CHILDREN:
                 assert(op2 == tree->AsOp()->gtGetOp2());
             }
 
-            if (opts.OptimizationEnabled() && fgGlobalMorph)
+            if (opts.OptimizationEnabled() && fgGlobalMorph && tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
             {
+                // Normalize unsigned comparisons to signed if both operands a known to be never negative.
+                if (tree->IsUnsigned() && varTypeIsIntegral(op1) && op1->IsNeverNegative(this) &&
+                    op2->IsNeverNegative(this))
+                {
+                    tree->ClearUnsigned();
+                }
+
                 if (op2->IsIntegralConst() || op1->IsIntegralConst())
                 {
-                    if (tree->OperIs(GT_GT, GT_LT, GT_LE, GT_GE))
+                    tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
+                    if (tree->OperIs(GT_CNS_INT))
                     {
-                        tree = fgOptimizeRelationalComparisonWithFullRangeConst(tree->AsOp());
-                        if (tree->OperIs(GT_CNS_INT))
-                        {
-                            return tree;
-                        }
+                        return tree;
                     }
                 }
             }
