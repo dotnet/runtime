@@ -58,9 +58,10 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
                                                   ClassLayout* structLayout,
                                                   WellKnownArg /*wellKnownParam*/)
 {
-    StructFloatFieldInfoFlags flags     = STRUCT_NO_FLOAT_FIELD;
-    unsigned                  intFields = 0, floatFields = 0;
-    unsigned                  passedSize;
+    const CORINFO_FPSTRUCT_LOWERING* lowering = nullptr;
+
+    unsigned intFields = 0, floatFields = 0;
+    unsigned passedSize;
 
     if (varTypeIsStruct(type))
     {
@@ -71,22 +72,19 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         }
         else if (!structLayout->IsBlockLayout())
         {
-            flags = (StructFloatFieldInfoFlags)comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(
-                structLayout->GetClassHandle());
-
-            if ((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0)
+            lowering = comp->GetFpStructLowering(structLayout->GetClassHandle());
+            if (!lowering->byIntegerCallConv)
             {
-                floatFields = 1;
-            }
-            else if ((flags & STRUCT_FLOAT_FIELD_ONLY_TWO) != 0)
-            {
-                floatFields = 2;
-            }
-            else if (flags != STRUCT_NO_FLOAT_FIELD)
-            {
-                assert((flags & (STRUCT_FLOAT_FIELD_FIRST | STRUCT_FLOAT_FIELD_SECOND)) != 0);
-                floatFields = 1;
-                intFields   = 1;
+                assert((lowering->numLoweredElements == 1) || (lowering->numLoweredElements == 2));
+                INDEBUG(unsigned debugIntFields = 0;)
+                for (size_t i = 0; i < lowering->numLoweredElements; ++i)
+                {
+                    var_types type = JITtype2varType(lowering->loweredElements[i]);
+                    floatFields += (unsigned)varTypeIsFloating(type);
+                    INDEBUG(debugIntFields += (unsigned)varTypeIsIntegralOrI(type);)
+                }
+                intFields = lowering->numLoweredElements - floatFields;
+                assert(debugIntFields == intFields);
             }
         }
     }
@@ -104,11 +102,15 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         // Hardware floating-point calling convention
         if ((floatFields == 1) && (intFields == 0))
         {
-            if (flags == STRUCT_NO_FLOAT_FIELD)
+            if (lowering == nullptr)
+            {
                 assert(varTypeIsFloating(type)); // standalone floating-point real
+            }
             else
-                assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) != 0); // struct containing just one FP real
-
+            {
+                assert(lowering->numLoweredElements == 1); // struct containing just one FP real
+                assert(varTypeIsFloating(JITtype2varType(lowering->loweredElements[0])));
+            }
             return ABIPassingInformation::FromSegment(comp, ABIPassingSegment::InRegister(m_floatRegs.Dequeue(), 0,
                                                                                           passedSize));
         }
@@ -116,15 +118,20 @@ ABIPassingInformation RiscV64Classifier::Classify(Compiler*    comp,
         {
             assert(varTypeIsStruct(type));
             assert((floatFields + intFields) == 2);
-            assert(flags != STRUCT_NO_FLOAT_FIELD);
-            assert((flags & STRUCT_FLOAT_FIELD_ONLY_ONE) == 0);
+            assert(lowering != nullptr);
+            assert(!lowering->byIntegerCallConv);
+            assert(lowering->numLoweredElements == 2);
 
-            unsigned firstSize  = ((flags & STRUCT_FIRST_FIELD_SIZE_IS8) != 0) ? 8 : 4;
-            unsigned secondSize = ((flags & STRUCT_SECOND_FIELD_SIZE_IS8) != 0) ? 8 : 4;
+            var_types types[] = {
+                JITtype2varType(lowering->loweredElements[0]),
+                JITtype2varType(lowering->loweredElements[1]),
+            };
+            unsigned firstSize  = (genTypeSize(types[0]) == 8) ? 8 : 4;
+            unsigned secondSize = (genTypeSize(types[1]) == 8) ? 8 : 4;
             unsigned offset = max(firstSize, secondSize); // TODO: cover empty fields and custom offsets / alignments
 
-            bool isFirstFloat  = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_FIRST)) != 0;
-            bool isSecondFloat = (flags & (STRUCT_FLOAT_FIELD_ONLY_TWO | STRUCT_FLOAT_FIELD_SECOND)) != 0;
+            bool isFirstFloat  = varTypeIsFloating(types[0]);
+            bool isSecondFloat = varTypeIsFloating(types[1]);
             assert(isFirstFloat || isSecondFloat);
 
             regNumber firstReg  = (isFirstFloat ? m_floatRegs : m_intRegs).Dequeue();
