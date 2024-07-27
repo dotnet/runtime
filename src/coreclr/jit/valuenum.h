@@ -580,7 +580,7 @@ public:
 
     ValueNum VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum);
 
-    ArrayStack<ValueNum>* VNArrayStackAllocator();
+    CompAllocator VNDefaultAllocator() const;
 
     //--------------------------------------------------------------------------------
     // VNVisitReachingVNs: given a VN, call the specified callback function on it and all the VNs that reach it
@@ -597,14 +597,14 @@ public:
     template <typename TArgVisitor>
     VNVisit VNVisitReachingVNs(ValueNum vn, TArgVisitor argVisitor)
     {
-        auto allocator = [this] {
-            return VNArrayStackAllocator();
-        };
-        SmallArrayStack<ValueNum> toVisit;
-        toVisit.Push(vn, allocator);
+        // We use ArrayStack to do a BFS walk of the VN graph to avoid recursive calls.
+        ArrayStack<ValueNum> toVisit(VNDefaultAllocator());
+        toVisit.Push(vn);
 
+        // And a hash set to keep track of visited VNs to detect cycles.
         SmallValueNumSet visited;
         visited.Add(m_pComp, vn);
+
         while (toVisit.Height() > 0)
         {
             ValueNum vnToVisit = toVisit.Pop();
@@ -619,7 +619,7 @@ public:
                     ValueNum childVN = VNPhiDefToVN(phiDef, ssaArgNum);
                     if (visited.Add(m_pComp, childVN))
                     {
-                        toVisit.Push(childVN, allocator);
+                        toVisit.Push(childVN);
                     }
                 }
             }

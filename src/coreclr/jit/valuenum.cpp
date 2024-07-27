@@ -3280,9 +3280,12 @@ ValueNum ValueNumStore::VNPhiDefToVN(const VNPhiDef& phiDef, unsigned ssaArgNum)
     return m_pComp->lvaGetDesc(phiDef.LclNum)->GetPerSsaData(phiDef.SsaArgs[ssaArgNum])->m_vnPair.Get(VNK_Conservative);
 }
 
-ArrayStack<ValueNum>* ValueNumStore::VNArrayStackAllocator()
+//------------------------------------------------------------------------------
+// VNDefaultAllocator: Returns the generic allocator for VN related allocations.
+//
+CompAllocator ValueNumStore::VNDefaultAllocator() const
 {
-    return new (m_pComp, CMK_ValueNumber) ArrayStack<ValueNum>(m_pComp->getAllocator(CMK_ValueNumber));
+    return m_pComp->getAllocator(CMK_ValueNumber);
 }
 
 //------------------------------------------------------------------------------
