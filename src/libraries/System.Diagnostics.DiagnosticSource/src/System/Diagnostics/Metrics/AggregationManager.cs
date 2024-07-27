@@ -88,7 +88,17 @@ namespace System.Diagnostics.Metrics
 
         public void Include(string meterName)
         {
-            Include(i => meterName == "*" || i.Meter.Name == meterName);
+            Include(i => i.Meter.Name == meterName);
+        }
+
+        public void IncludeAll()
+        {
+            Include(i => true);
+        }
+
+        public void IncludePrefix(string meterNamePrefix)
+        {
+            Include(i => i.Meter.Name.StartsWith(meterNamePrefix, StringComparison.OrdinalIgnoreCase));
         }
 
         public void Include(string meterName, string instrumentName)

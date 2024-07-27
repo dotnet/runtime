@@ -653,6 +653,22 @@ namespace System.Diagnostics.Metrics
                     {
                         _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
                     }
+                    else if (
+#if NET8_0_OR_GREATER
+                        spec.MeterName.EndsWith('*'))
+#else
+                        spec.MeterName.EndsWith("*", StringComparison.Ordinal))
+#endif
+                    {
+                        if (spec.MeterName.Length == 1)
+                        {
+                            _aggregationManager!.IncludeAll();
+                        }
+                        else
+                        {
+                            _aggregationManager!.IncludePrefix(spec.MeterName.Substring(0, spec.MeterName.Length - 1));
+                        }
+                    }
                     else
                     {
                         _aggregationManager!.Include(spec.MeterName);
