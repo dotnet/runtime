@@ -150,7 +150,8 @@ private:
     bool IsOnHeap() const
     {
         // After we switch to the heap, we never switch back and
-        // m_numElements is only used to determine if we are on the heap
+        // m_numElements is only used for IsOnHeap check and doesn't
+        // longer represent the number of elements.
         return m_numElements > ArrLen(m_inlineElements);
     }
 
@@ -158,7 +159,6 @@ public:
     template <typename TArrayStackAllocator>
     void Push(TItem vn, TArrayStackAllocator allocator)
     {
-        // We already switched to the heap
         if (IsOnHeap())
         {
             m_ArrayStack->Push(vn);
