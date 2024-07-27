@@ -37,7 +37,7 @@ namespace Microsoft.Interop.JavaScript
 
             diagnosticsBag.ReportGeneratorDiagnostics(bindingFailures);
 
-            if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, null))
+            if (_marshallers.ManagedReturnMarshaller.UsesNativeIdentifier(_context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
                 innerContext = new NativeToManagedStubCodeContext(ReturnIdentifier, ReturnNativeIdentifier)
@@ -50,7 +50,7 @@ namespace Microsoft.Interop.JavaScript
             // validate task + span mix
             if (_marshallers.ManagedReturnMarshaller.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSTaskTypeInfo))
             {
-                BoundGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
+                IBoundMarshallingGenerator spanArg = _marshallers.SignatureMarshallers.FirstOrDefault(m => m.TypeInfo.MarshallingAttributeInfo is JSMarshallingInfo(_, JSSpanTypeInfo));
                 if (spanArg != default)
                 {
                     diagnosticsBag.ReportGeneratorDiagnostic(new GeneratorDiagnostic.NotSupported(spanArg.TypeInfo, _context)
@@ -160,8 +160,9 @@ namespace Microsoft.Interop.JavaScript
 
         private ArgumentSyntax CreateSignaturesSyntax()
         {
-            var types = ((IJSMarshallingGenerator)_marshallers.ManagedReturnMarshaller.Generator).GenerateBind(_marshallers.ManagedReturnMarshaller.TypeInfo, _context)
-                .Concat(_marshallers.NativeParameterMarshallers.SelectMany(p => ((IJSMarshallingGenerator)p.Generator).GenerateBind(p.TypeInfo, _context)));
+            IEnumerable<ExpressionSyntax> types = _marshallers.ManagedReturnMarshaller is IJSMarshallingGenerator jsGen ? jsGen.GenerateBind(_context) : [];
+            types = types
+                .Concat(_marshallers.NativeParameterMarshallers.OfType<IJSMarshallingGenerator>().SelectMany(p => p.GenerateBind(_context)));
 
             return Argument(ArrayCreationExpression(ArrayType(IdentifierName(Constants.JSMarshalerTypeGlobal))
                 .WithRankSpecifiers(SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(OmittedArraySizeExpression())))))
@@ -170,7 +171,7 @@ namespace Microsoft.Interop.JavaScript
 
         private void SetupSyntax(List<StatementSyntax> statementsToUpdate)
         {
-            foreach (BoundGenerator marshaller in _marshallers.NativeParameterMarshallers)
+            foreach (IBoundMarshallingGenerator marshaller in _marshallers.NativeParameterMarshallers)
             {
                 statementsToUpdate.Add(LocalDeclarationStatement(VariableDeclaration(marshaller.TypeInfo.ManagedType.Syntax)
                     .WithVariables(SingletonSeparatedList(VariableDeclarator(marshaller.TypeInfo.InstanceIdentifier)))));
@@ -195,10 +196,10 @@ namespace Microsoft.Interop.JavaScript
             var arguments = new List<ArgumentSyntax>();
 
             // Generate code for each parameter for the current stage
-            foreach (BoundGenerator marshaller in _marshallers.NativeParameterMarshallers)
+            foreach (IBoundMarshallingGenerator marshaller in _marshallers.NativeParameterMarshallers)
             {
                 // convert arguments for invocation
-                statements.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, _context));
+                statements.AddRange(marshaller.Generate(_context));
                 arguments.Add(Argument(IdentifierName(marshaller.TypeInfo.InstanceIdentifier)));
             }
 
