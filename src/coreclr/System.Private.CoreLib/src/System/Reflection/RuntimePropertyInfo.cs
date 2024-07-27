@@ -333,9 +333,7 @@ namespace System.Reflection
         [DebuggerHidden]
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            RuntimeMethodInfo? m = GetGetMethod(true);
-            if (m == null)
-                throw new ArgumentException(SR.Arg_GetMethNotFnd);
+            RuntimeMethodInfo m = GetGetMethod(true) ?? throw new ArgumentException(SR.Arg_GetMethNotFnd);
             return m.Invoke(obj, invokeAttr, binder, index, null);
         }
 
@@ -355,11 +353,7 @@ namespace System.Reflection
         [DebuggerHidden]
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
-            RuntimeMethodInfo? m = GetSetMethod(true);
-
-            if (m == null)
-                throw new ArgumentException(SR.Arg_SetMethNotFnd);
-
+            RuntimeMethodInfo m = GetSetMethod(true) ?? throw new ArgumentException(SR.Arg_SetMethNotFnd);
             if (index is null)
             {
                 m.InvokePropertySetter(obj, invokeAttr, binder, value, culture);
