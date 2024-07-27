@@ -16,6 +16,29 @@
             channel.addEventListener("message", channel_message);
             const tabId = (Math.random() * 100000).toFixed(0);
             const tabList = [];
+            const headerArray = new Uint8Array(8);
+            const headerView = new DataView(headerArray.buffer);
+
+            function writePacket (tabObj, chunkId, chunk) {
+                for (let i = 0; i < 4; i++)
+                    headerArray[i] = chunkId.charCodeAt(i);
+                headerView.setUint32(4, chunk.length, true);
+                tabObj.blobParts.push(headerArray.slice());
+                tabObj.blobParts.push(chunk);
+            }
+
+            function downloadBlob (blob, name) {
+                const url = URL.createObjectURL(blob);
+                const elt = document.createElement("a");
+                elt.href = url;
+                elt.download = name;
+                document.body.appendChild(elt);
+                elt.click();
+                window.setTimeout(() => {
+                    URL.revokeObjectURL(url);
+                    document.body.removeChild(elt);
+                }, 10000);
+            }
 
             function tab_message (evt) {
                 const data = evt.data;
@@ -30,7 +53,12 @@
                     case "heapshotText":
                         this.log += data.text + "\r\n";
                         break;
+                    case "heapshotPacket":
+                        writePacket(this, data.chunkId || "", data.chunk);
+                        break;
                     case "heapshotEnd":
+                        var blob = new Blob(this.blobParts, { type: "application/octet-stream" });
+                        downloadBlob(blob, `${this.tabId}_${Date.now()}.mono-heap`);
                         break;
                 }
 
@@ -64,12 +92,12 @@
                                 tabListElt.selectedOptions[0] = elt;
                             }
                         }
-                        elt.textContent = `.NET Runtime ${data.version} | tab ${data.sender}`;
+                        elt.textContent = `${data.sender} | ${data.title} | ${data.version}`;
                         if (!data.running)
                             elt.textContent += " (exited)";
                         elt.removeAttribute("disabled");
                         const tabChannel = new BroadcastChannel(`.NET Runtime Diagnostics|${data.sender}`);
-                        const tabObj = { tabId: data.sender, elt, origin: evt.origin, channel: tabChannel, log: "" };
+                        const tabObj = { tabId: data.sender, elt, origin: evt.origin, channel: tabChannel, log: "", blobParts: [] };
                         tabObj.refresh = refreshTab.bind(tabObj);
                         tabChannel.addEventListener("message", tab_message.bind(tabObj));
                         elt.setAttribute("tabListIndex", tabList.length);

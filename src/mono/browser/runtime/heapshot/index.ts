@@ -41,9 +41,13 @@ function channel_message (evt: MessageEvent) {
 
     console.log("channel_message", data.cmd);
     switch (data.cmd) {
-        case "whosThere":
-            globalChannel!.postMessage({ cmd: "iAmHere", sender: tabId, version: ProductVersion, running: loaderHelpers.is_runtime_running() });
+        case "whosThere": {
+            let title = "unknown";
+            if (globalThis["document"] && globalThis["document"]["title"])
+                title = globalThis.document.title;
+            globalChannel!.postMessage({ cmd: "iAmHere", sender: tabId, version: ProductVersion, running: loaderHelpers.is_runtime_running(), title });
             break;
+        }
     }
 }
 
@@ -85,6 +89,7 @@ export function mono_wasm_heapshot_object (pObj: ManagedPointer, klass: VoidPtr,
         if (autoFlush("OBJH"))
             flush("REFS");
 
+        totalObjects += 1;
         const objBuilder = getBuilder("OBJH");
         objBuilder.appendU32(<any>pObj);
         objBuilder.appendU32(<any>klass);
@@ -92,6 +97,7 @@ export function mono_wasm_heapshot_object (pObj: ManagedPointer, klass: VoidPtr,
         mostRecentObjectPointer = pObj;
     }
 
+    totalRefs += numRefs;
     if (numRefs < 1)
         return;
 
@@ -218,6 +224,10 @@ function heapshotPacket (chunkId: string, chunk: Uint8Array) {
     mono_log_info(`heapshot packet ${chunkId} ${chunk.length}b`);
     if (!tabChannel)
         return;
+
+    // HACK: Workaround for bug in Chromium structured clone algorithm that copies the whole arraybuffer
+    if (chunk.buffer.byteLength !== (chunk.BYTES_PER_ELEMENT * chunk.length))
+        chunk = chunk.slice();
 
     tabChannel.postMessage({ cmd: "heapshotPacket", chunkId: chunkId, chunk: chunk });
 }
