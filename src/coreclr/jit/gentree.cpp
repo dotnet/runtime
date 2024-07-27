@@ -7141,8 +7141,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         }
 
         case GT_INTRINSIC:
-            assert((gtFlags & GTF_HW_USER_CALL) == 0);
-
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
             // Currently, this is the only intrinsic that can throw an exception.
             if (AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType)
@@ -7203,6 +7201,8 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
         {
+            assert((gtFlags & GTF_HW_USER_CALL) == 0);
+
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
 
             if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
