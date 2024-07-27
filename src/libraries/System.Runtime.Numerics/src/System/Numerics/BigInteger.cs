@@ -714,7 +714,6 @@ namespace System.Numerics
         public static BigInteger Abs(BigInteger value)
         {
             value.AssertValid();
-
             return new BigInteger(unchecked((int)NumericsHelpers.Abs(value._sign)), value._bits, true);
         }
 
