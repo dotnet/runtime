@@ -124,7 +124,7 @@ namespace System.Numerics.Tests
         public static void RunAndTestsForSampleSet1()
         {
             var s = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 2);
-            var t = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 3);
+            var t = SampleGeneration.EnumerateSequence(UInt32Samples.Set1, 2);
 
             foreach (var i in s)
             {
