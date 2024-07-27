@@ -141,7 +141,7 @@ class SmallArrayStack
 private:
     union
     {
-        TItem              m_inlineElements[4];
+        TItem              m_inlineElements[5];
         ArrayStack<TItem>* m_ArrayStack;
     };
 
