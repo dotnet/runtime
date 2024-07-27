@@ -2131,12 +2131,12 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, MethodTable* pDelegateMT)
 }
 FCIMPLEND
 
-FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable *pDelegateMT)
+FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, MethodTable* pDelegateMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pDelegateMT != NULL);
 
-    DelegateEEClass *delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
+    DelegateEEClass* delegateEEClass = (DelegateEEClass*)pDelegateMT->GetClass();
     Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
     return (pStub != NULL) ? pStub->GetEntryPoint() : NULL;
 }

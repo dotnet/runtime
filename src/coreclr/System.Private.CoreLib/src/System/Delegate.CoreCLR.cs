@@ -497,7 +497,7 @@ namespace System
                 Debug.Assert(ptr != null);
                 Debug.Assert(ptr == GetMulticastInvoke(pMT));
             }
-            GC.KeepAlive(this);
+            // No GC.KeepAlive() since the caller must keep instance alive to use returned pointer.
             return (IntPtr)ptr;
         }
 
@@ -508,7 +508,7 @@ namespace System
         {
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(this);
             void* ptr = GetInvokeMethod(pMT);
-            GC.KeepAlive(this);
+            // No GC.KeepAlive() since the caller must keep instance alive to use returned pointer.
             return (IntPtr)ptr;
         }
 
