@@ -12,7 +12,6 @@ namespace System.Numerics.Tests
 {
     public static partial class SampleGeneration
     {
-
         public static IEnumerable<ReadOnlyMemory<T>> EnumerateSequence<T>(IEnumerable<T> elementSource, int minLength, int maxLengthExclusive)
         {
             return EnumerateSequence(elementSource.ToArray(), minLength, maxLengthExclusive);
