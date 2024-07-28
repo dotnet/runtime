@@ -230,14 +230,59 @@ namespace System.Buffers
             public const int PROT_READ = 0x1;
             public const int PROT_WRITE = 0x2;
 
-            [DllImport("libc", SetLastError = true)]
-            public static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
+            private static class Linux
+            {
+                [DllImport("libc", SetLastError = true)]
+                public static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
 
-            [DllImport("libc", SetLastError = true)]
-            public static extern IntPtr munmap(IntPtr address, ulong length);
+                [DllImport("libc", SetLastError = true)]
+                public static extern IntPtr munmap(IntPtr address, ulong length);
 
-            [DllImport("libc", SetLastError = true)]
-            public static extern int mprotect(IntPtr address, ulong length, int prot);
+                [DllImport("libc", SetLastError = true)]
+                public static extern int mprotect(IntPtr address, ulong length, int prot);
+            }
+
+            private static class Osx
+            {
+                [DllImport("libSystem", SetLastError = true)]
+                public static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
+
+                [DllImport("libSystem", SetLastError = true)]
+                public static extern IntPtr munmap(IntPtr address, ulong length);
+
+                [DllImport("libSystem", SetLastError = true)]
+                public static extern int mprotect(IntPtr address, ulong length, int prot);
+            }
+
+            public static IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset)
+            {
+                if (OperatingSystem.IsLinux())
+                {
+                    return Linux.mmap(address, length, prot, flags, fd, offset);
+                }
+
+                return Osx.mmap(address, length, prot, flags, fd, offset);
+            }
+
+            public static IntPtr munmap(IntPtr address, ulong length)
+            {
+                if (OperatingSystem.IsLinux())
+                {
+                    return Linux.munmap(address, length);
+                }
+
+                return Osx.munmap(address, length);
+            }
+
+            public static int mprotect(IntPtr address, ulong length, int prot)
+            {
+                if (OperatingSystem.IsLinux())
+                {
+                    return Linux.mprotect(address, length, prot);
+                }
+
+                return Osx.mprotect(address, length, prot);
+            }
         }
     }
 }
