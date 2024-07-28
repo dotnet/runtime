@@ -11,7 +11,7 @@ namespace System.Buffers
     public static partial class BoundedMemory
     {
         private static readonly int SystemPageSize = Environment.SystemPageSize;
-        
+
         /// <summary>
         /// Allocates a new <see cref="BoundedMemory{T}"/> region which is immediately preceded by
         /// or immediately followed by a poison (MEM_NOACCESS) page. If <paramref name="placement"/>
@@ -84,9 +84,13 @@ namespace System.Buffers
             {
                 return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
             }
-            else
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
+            }
+            else
+            {
+                return AllocateWithoutDataPopulationDefault<T>(elementCount, placement);
             }
         }
     }
