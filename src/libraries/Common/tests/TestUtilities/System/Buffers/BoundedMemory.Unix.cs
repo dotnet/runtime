@@ -94,7 +94,7 @@ namespace System.Buffers
                     try
                     {
                         _handle.DangerousAddRef(ref refAdded);
-                        if (UnsafeNativeMethods.mprotect(_handle.DangerousGetHandle(), _handle.Length, _prot) != 0)
+                        if (UnsafeNativeMethods.mprotect(_handle.DangerousGetHandle(), _handle.Length, value) != 0)
                         {
                             throw new InvalidOperationException($"mprotected failed with {Marshal.GetLastPInvokeError()}.");
                         }
