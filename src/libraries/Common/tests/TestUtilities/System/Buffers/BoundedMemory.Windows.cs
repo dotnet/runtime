@@ -7,8 +7,6 @@ namespace System.Buffers
 {
     public static unsafe partial class BoundedMemory
     {
-        private static readonly int SystemPageSize = Environment.SystemPageSize;
-
         private static WindowsImplementation<T> AllocateWithoutDataPopulationWindows<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
         {
             long cb, totalBytesToAllocate;
@@ -297,7 +295,7 @@ namespace System.Buffers
                 UnsafeNativeMethods.VirtualFree(handle, IntPtr.Zero, VirtualAllocAllocationType.MEM_RELEASE) != 0;
         }
 
-        private static class UnsafeNativeMethods
+        private static partial class UnsafeNativeMethods
         {
             private const string KERNEL32_LIB = "kernel32.dll";
 

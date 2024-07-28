@@ -7,8 +7,6 @@ namespace System.Buffers
 {
     public static unsafe partial class BoundedMemory
     {
-        private static readonly int SystemPageSize = Environment.SystemPageSize;
-
         private static UnixImplementation<T> AllocateWithoutDataPopulationUnix<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
         {
             long cb, totalBytesToAllocate;
@@ -223,7 +221,7 @@ namespace System.Buffers
                 UnsafeNativeMethods.munmap(handle, Length) == 0;
         }
 
-        private static class UnsafeNativeMethods
+        private static partial class UnsafeNativeMethods
         {
             // Defined in <sys/mman.h>
             public const int MAP_PRIVATE = 0x2;
