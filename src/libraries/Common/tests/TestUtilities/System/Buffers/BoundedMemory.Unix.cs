@@ -41,7 +41,7 @@ namespace System.Buffers
             {
                 int lastError = Marshal.GetLastPInvokeError();
                 handle?.Dispose();
-                throw new InvalidOperationException($"mmap failed unexpectedly with {lastError}.");
+                throw new InvalidOperationException($"mmap failed unexpectedly with errno: {lastError}.");
             }
 
             // Done allocating! Now carve out a READWRITE section bookended by the NOACCESS
@@ -96,7 +96,7 @@ namespace System.Buffers
                         _handle.DangerousAddRef(ref refAdded);
                         if (UnsafeNativeMethods.mprotect(_handle.DangerousGetHandle(), _handle.Length, value) != 0)
                         {
-                            throw new InvalidOperationException($"mprotected failed with {Marshal.GetLastPInvokeError()}.");
+                            throw new InvalidOperationException($"mprotect failed with errno: {Marshal.GetLastPInvokeError()}. Length: {_handle.Length}, Value: {value}");
                         }
                         _prot = value;
                     }
