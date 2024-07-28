@@ -175,7 +175,7 @@ namespace Microsoft.Interop
         }
 
         public ValueBoundaryBehavior GetValueBoundaryBehavior(StubCodeContext context) => inner.GetValueBoundaryBehavior(context);
-        public IBoundMarshallingGenerator Rebind(TypePositionInfo info) => throw new NotImplementedException();
+        public IBoundMarshallingGenerator Rebind(TypePositionInfo info) => new FreeAlwaysOwnedOriginalValueGenerator(inner.Rebind(info));
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
             => inner.SupportsByValueMarshalKind(marshalKind, context, out diagnostic);
         public bool UsesNativeIdentifier(StubCodeContext context) => inner.UsesNativeIdentifier(context);
