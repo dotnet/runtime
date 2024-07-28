@@ -448,7 +448,24 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (IsRequired)
             {
-                EnsureRequiredPropertyIsDeserializable();
+                if (!CanDeserialize &&
+                    !(AssociatedParameter?.IsRequiredParameter is true &&
+                      Options.RespectRequiredConstructorParameters))
+                {
+                    if ((EffectiveConverter.ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) != 0 &&
+                        Set != null && !_isUserSpecifiedSetter)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndCollectionPropertyMissingGetter(this);
+                    }
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
+                }
+
+                if (IsExtensionData)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(this);
+                }
+
+                Debug.Assert(!IgnoreNullTokensOnRead);
             }
 
             IsConfigured = true;
@@ -459,31 +476,6 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal abstract void DetermineReflectionPropertyAccessors(MemberInfo memberInfo, bool useNonPublicAccessors);
-
-        private void EnsureRequiredPropertyIsDeserializable()
-        {
-            if (!CanDeserialize)
-            {
-                bool isCollectionProperty = (EffectiveConverter.ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) != 0;
-                bool isRequiredParameterRespected = AssociatedParameter?.IsRequiredParameter is true && Options.RespectRequiredConstructorParameters;
-
-                if (isCollectionProperty)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndCollectionPropertyMissingGetter(this);
-                }
-                else if (!isRequiredParameterRespected)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
-                }
-            }
-
-            if (IsExtensionData)
-            {
-                ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndExtensionData(this);
-            }
-
-            Debug.Assert(!IgnoreNullTokensOnRead);
-        }
 
         private void CacheNameAsUtf8BytesAndEscapedNameSection()
         {

@@ -564,7 +564,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task RequiredPropertyWithoutSetterThrows()
+        public async Task RequiredNonDeserializablePropertyThrows()
         {
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static ti =>
             {
