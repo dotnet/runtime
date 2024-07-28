@@ -89,7 +89,7 @@ namespace System.Net
 
                 if (scopeIdSpan.Length > 1)
                 {
-                    uint interfaceIndex;
+                    bool parsedNumericScope = false;
                     scopeIdSpan = scopeIdSpan.Slice(1);
 
                     // scopeId is a numeric value
@@ -97,33 +97,28 @@ namespace System.Net
                     {
                         ReadOnlySpan<byte> castScopeIdSpan = MemoryMarshal.Cast<TChar, byte>(scopeIdSpan);
 
-                        if (uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope))
-                        {
-                            return true;
-                        }
-
-                        interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(castScopeIdSpan);
+                        parsedNumericScope = uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope);
                     }
                     else if (typeof(TChar) == typeof(char))
                     {
                         ReadOnlySpan<char> castScopeIdSpan = MemoryMarshal.Cast<TChar, char>(scopeIdSpan);
 
-                        if (uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope))
-                        {
-                            return true;
-                        }
+                        parsedNumericScope = uint.TryParse(castScopeIdSpan, NumberStyles.None, CultureInfo.InvariantCulture, out scope);
+                    }
 
-                        interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(castScopeIdSpan);
+                    if (parsedNumericScope)
+                    {
+                        return true;
                     }
                     else
                     {
-                        interfaceIndex = 0;
-                    }
+                        uint interfaceIndex = InterfaceInfoPal.InterfaceNameToIndex(scopeIdSpan);
 
-                    if (interfaceIndex > 0)
-                    {
-                        scope = interfaceIndex;
-                        return true; // scopeId is a known interface name
+                        if (interfaceIndex > 0)
+                        {
+                            scope = interfaceIndex;
+                            return true; // scopeId is a known interface name
+                        }
                     }
 
                     // scopeId is an unknown interface name

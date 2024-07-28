@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -9,50 +10,54 @@ namespace System.Net.NetworkInformation
 {
     internal static class InterfaceInfoPal
     {
+        // Measured in bytes (the native data type for this platform's API.)
+        // Selected to occupy as much stack space as Windows' threshold (which is 256 two-byte characters.)
         private const int StackAllocationThreshold = 512;
 
-        public static unsafe uint InterfaceNameToIndex(ReadOnlySpan<char> interfaceName)
+        public static unsafe uint InterfaceNameToIndex<TChar>(ReadOnlySpan<TChar> interfaceName)
+            where TChar : unmanaged, IBinaryNumber<TChar>
         {
-            int byteCount = Encoding.UTF8.GetByteCount(interfaceName);
+            Debug.Assert(typeof(TChar) == typeof(byte) || typeof(TChar) == typeof(char));
 
-            Debug.Assert(byteCount <= int.MaxValue - 1);
-            // Includes null terminator.
-            int bufferSize = byteCount + 1;
-            byte* nativeMemory = bufferSize <= StackAllocationThreshold ? null : (byte*)NativeMemory.Alloc((nuint)bufferSize);
+            // Measured in bytes, including null terminator.
+            int bufferSize = 0;
+            byte* nativeMemory = null;
+
+            // The underlying API for this method accepts a null-terminated UTF8 string containing the interface name.
+            // If TChar is byte, the only work required is a byte copy. If TChar is char, there's a transcoding step from Unicode
+            // to UTF8.
+            // Notably: the encoding passed to the underlying API is different between Linux and Windows.
+            if (typeof(TChar) == typeof(byte))
+            {
+                bufferSize = interfaceName.Length + 1;
+            }
+            else if (typeof(TChar) == typeof(char))
+            {
+                ReadOnlySpan<char> castInterfaceName = MemoryMarshal.Cast<TChar, char>(interfaceName);
+
+                bufferSize = Encoding.UTF8.GetByteCount(castInterfaceName) + 1;
+            }
+            Debug.Assert(bufferSize <= int.MaxValue - 1);
 
             try
             {
-                Span<byte> buffer = nativeMemory == null ? stackalloc byte[bufferSize] : new Span<byte>(nativeMemory, bufferSize);
+                nativeMemory = bufferSize <= StackAllocationThreshold ? null : (byte*)NativeMemory.Alloc((nuint)bufferSize);
 
-                Encoding.UTF8.GetBytes(interfaceName, buffer);
-                buffer[byteCount] = 0;
+                Span<byte> buffer = nativeMemory == null ? stackalloc byte[StackAllocationThreshold].Slice(0, bufferSize) : new Span<byte>(nativeMemory, bufferSize);
 
-                return Interop.Sys.InterfaceNameToIndex(buffer);
-            }
-            finally
-            {
-                if (nativeMemory != null)
+                if (typeof(TChar) == typeof(byte))
                 {
-                    NativeMemory.Free(nativeMemory);
+                    ReadOnlySpan<byte> castInterfaceName = MemoryMarshal.Cast<TChar, byte>(interfaceName);
+
+                    castInterfaceName.CopyTo(buffer);
                 }
-            }
-        }
+                else if (typeof(TChar) == typeof(char))
+                {
+                    ReadOnlySpan<char> castInterfaceName = MemoryMarshal.Cast<TChar, char>(interfaceName);
 
-        public static unsafe uint InterfaceNameToIndex(ReadOnlySpan<byte> interfaceName)
-        {
-            int byteCount = interfaceName.Length;
-
-            Debug.Assert(byteCount <= int.MaxValue - 1);
-            // Includes null terminator.
-            int bufferSize = byteCount + 1;
-            byte* nativeMemory = bufferSize <= StackAllocationThreshold ? null : (byte*)NativeMemory.Alloc((nuint)bufferSize);
-
-            try
-            {
-                Span<byte> buffer = nativeMemory == null ? stackalloc byte[bufferSize] : new Span<byte>(nativeMemory, bufferSize);
-
-                interfaceName.CopyTo(buffer);
-                buffer[byteCount] = 0;
+                    Encoding.UTF8.GetBytes(castInterfaceName, buffer);
+                }
+                buffer[buffer.Length - 1] = 0;
 
                 return Interop.Sys.InterfaceNameToIndex(buffer);
             }

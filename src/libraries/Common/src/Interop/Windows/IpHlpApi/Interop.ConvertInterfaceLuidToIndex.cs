@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
-        [LibraryImport(Interop.Libraries.IpHlpApi, SetLastError = true)]
-        internal static partial uint if_nametoindex(ReadOnlySpan<byte> ansiNullTerminatedName);
+        [LibraryImport(Libraries.IpHlpApi, SetLastError = true)]
+        internal static partial uint ConvertInterfaceLuidToIndex(in ulong interfaceLuid, ref uint ifIndex);
     }
 }
