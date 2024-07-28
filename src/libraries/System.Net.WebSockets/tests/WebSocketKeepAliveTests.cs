@@ -199,13 +199,12 @@ namespace System.Net.WebSockets.Tests
             }
         }
 
+        [OuterLoop("Uses Task.Delay")]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task WebSocket_NoPongResponseWithinTimeout_Aborted(bool outstandingUserRead)
         {
-            //TODO: fix
-
             var cancellationToken = new CancellationTokenSource(TestTimeout).Token;
 
             using WebSocketTestStream testStream = new();
@@ -227,7 +226,7 @@ namespace System.Net.WebSockets.Tests
                 userReadTask = webSocket.ReceiveAsync(Memory<byte>.Empty, cancellationToken);
             }
 
-            await Task.Delay(2 * (KeepAliveInterval + KeepAliveTimeout), cancellationToken).ConfigureAwait(false);
+            await Task.Delay(2 * (KeepAliveTimeout + KeepAliveInterval), cancellationToken);
 
             Assert.Equal(WebSocketState.Aborted, webSocket.State);
 

@@ -14,6 +14,10 @@ namespace System.Net
         private const int KeepAliveFrameSentId = NextAvailableEventId;
         private const int KeepAliveAckReceivedId = KeepAliveFrameSentId + 1;
         private const int WebSocketTraceId = KeepAliveAckReceivedId + 1;
+        private const int AsyncProcessingTraceId = WebSocketTraceId + 1;
+        private const int MutexEnteredId = AsyncProcessingTraceId + 1;
+        private const int MutexExitedId = MutexEnteredId + 1;
+        private const int MutexContendedId = MutexExitedId + 1;
 
         private const string Ping = "PING";
         private const string Pong = "PONG";
@@ -46,6 +50,50 @@ namespace System.Net
             Log.WebSocketTrace(IdOf(obj), memberName ?? MissingMember, message ?? string.Empty);
         }
 
+        [NonEvent]
+        public static void AsyncProcessingSuccess(object? obj, string? schedulingMemberName, [CallerMemberName] string? memberName = null)
+        {
+            Debug.Assert(Log.IsEnabled());
+            AsyncProcessingTrace(obj, $"Task issued by {schedulingMemberName ?? MissingMember} has completed successfully", memberName ?? MissingMember);
+        }
+
+        [NonEvent]
+        public static void AsyncProcessingFailure(object? obj, string? schedulingMemberName, Exception e, [CallerMemberName] string? memberName = null)
+        {
+            Debug.Assert(Log.IsEnabled());
+            AsyncProcessingTrace(obj, $"Task issued by {schedulingMemberName ?? MissingMember} has completed with an error: {e}", memberName ?? MissingMember);
+        }
+
+        [NonEvent]
+        public static void AsyncProcessingTrace(object? obj, string message, [CallerMemberName] string? memberName = null)
+        {
+            Debug.Assert(Log.IsEnabled());
+            Log.AsyncProcessingTrace(IdOf(obj), memberName ?? MissingMember, message);
+        }
+
+        [NonEvent]
+        public static void MutexEntered(object? obj, string? message = null, [CallerMemberName] string? memberName = null)
+        {
+            Debug.Assert(Log.IsEnabled());
+            Log.MutexEntered(IdOf(obj), memberName ?? MissingMember, message ?? string.Empty);
+        }
+
+        [NonEvent]
+        public static void MutexExited(object? obj, string? message = null, [CallerMemberName] string? memberName = null)
+        {
+            Debug.Assert(Log.IsEnabled());
+            Log.MutexExited(IdOf(obj), memberName ?? MissingMember, message ?? string.Empty);
+        }
+
+        [NonEvent]
+        public static void MutexContended(object? obj, int gateValue, [CallerMemberName] string? memberName = null)
+        {
+            Debug.Assert(Log.IsEnabled());
+            Log.MutexContended(IdOf(obj), memberName ?? MissingMember, -gateValue);
+        }
+
+        #region Events
+
         [Event(KeepAliveFrameSentId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
         private void KeepAliveFrameSent(string objName, string opcode, long payload) =>
             WriteEvent(KeepAliveFrameSentId, objName, opcode, payload);
@@ -57,6 +105,24 @@ namespace System.Net
         [Event(WebSocketTraceId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
         private void WebSocketTrace(string objName, string memberName, string message) =>
             WriteEvent(WebSocketTraceId, objName, memberName, message);
+
+        [Event(AsyncProcessingTraceId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        private void AsyncProcessingTrace(string objName, string memberName, string message) =>
+            WriteEvent(AsyncProcessingTraceId, objName, memberName, message);
+
+        [Event(MutexEnteredId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        private void MutexEntered(string objName, string memberName, string message) =>
+            WriteEvent(MutexEnteredId, objName, memberName, message);
+
+        [Event(MutexExitedId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        private void MutexExited(string objName, string memberName, string message) =>
+            WriteEvent(MutexExitedId, objName, memberName, message);
+
+        [Event(MutexContendedId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
+        private void MutexContended(string objName, string memberName, int queueLength) =>
+            WriteEvent(MutexContendedId, objName, memberName, queueLength);
+
+        #endregion
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]

@@ -36,7 +36,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         //TODO: remove
-        private static IsAutobahnTestRun => false;
+        /*private static IsAutobahnTestRun => false;
 
         [ConditionalFact(nameof(IsAutobahnTestRun))]
         public async Task Test()
@@ -116,6 +116,6 @@ namespace System.Net.WebSockets.Client.Tests
             ValueWebSocketReceiveResult result = await client.ReceiveAsync(Memory<byte>.Empty, CancellationToken.None);
 
             await client.CloseAsync(WebSocketCloseStatus.NormalClosure, client.CloseStatusDescription, CancellationToken.None);
-        }
+        }*/
     }
 }

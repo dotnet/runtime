@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -71,6 +72,8 @@ namespace System.Threading
 
             Task Contended(CancellationToken cancellationToken)
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+
                 var w = new Waiter(this);
 
                 // We need to register for cancellation before storing the waiter into the list.
@@ -191,6 +194,8 @@ namespace System.Threading
 
             void Contended()
             {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexContended(this, _gate);
+
                 Waiter? w;
                 lock (SyncObj)
                 {

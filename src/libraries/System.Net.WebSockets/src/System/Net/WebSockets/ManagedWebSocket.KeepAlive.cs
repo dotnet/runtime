@@ -34,7 +34,7 @@ namespace System.Net.WebSockets
             // This exists purely to keep the connection alive; don't wait for the result, and ignore any failures.
             // The call will handle releasing the lock.  We send a pong rather than ping, since it's allowed by
             // the RFC as a unidirectional heartbeat and we're not interested in waiting for a response.
-            FireAndForgetHelper.Observe(
+            this.Observe(
                 TrySendKeepAliveFrameAsync(MessageOpcode.Pong));
         }
 
@@ -46,7 +46,7 @@ namespace System.Net.WebSockets
 
             if (!IsValidSendState(_state))
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Cannot send keep-alive frame in state: " + _state);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Cannot send keep-alive frame in {nameof(_state)}={_state}");
 
                 // we can't send any frames, but no need to throw as we are not observing errors anyway
                 return ValueTask.CompletedTask;
@@ -60,7 +60,7 @@ namespace System.Net.WebSockets
             Debug.Assert(_keepAlivePingState != null);
             Debug.Assert(_keepAlivePingState.Exception == null);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"{nameof(_keepAlivePingState.AwaitingPong)}={_keepAlivePingState.AwaitingPong}");
 
             try
             {
@@ -75,8 +75,14 @@ namespace System.Net.WebSockets
             }
             catch (Exception e)
             {
-                Interlocked.CompareExchange(ref _keepAlivePingState.Exception, e, null);
-                Abort(); // this will also dispose the timer
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Exception occurred during KeepAlive: {e}");
+
+                if (TryTransitionToAborted())
+                {
+                    // We only save the exception in the keep-alive state if we actually triggered the abort
+                    Interlocked.Exchange(ref _keepAlivePingState.Exception, e);
+                    Abort(); // this will also dispose the timer
+                }
             }
         }
 
@@ -84,13 +90,17 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(_keepAlivePingState != null);
             Debug.Assert(_keepAlivePingState.AwaitingPong);
-
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+            Debug.Assert(_keepAlivePingState.WillTimeoutTimestamp != Timeout.Infinite);
 
             long now = Environment.TickCount64;
 
             if (now > Interlocked.Read(ref _keepAlivePingState.WillTimeoutTimestamp))
             {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Trace(this, $"Keep-alive ping timed out after {_keepAlivePingState.TimeoutMs}ms. Expected pong with payload {_keepAlivePingState.PingPayload}");
+                }
+
                 throw new WebSocketException(WebSocketError.Faulted, SR.net_Websockets_KeepAlivePingTimeout);
             }
 
@@ -109,21 +119,24 @@ namespace System.Net.WebSockets
                 // is already in progress, so there's no need to issue a read-ahead.
                 // If that read will not end up processing the pong response,
                 // we'll try again on the next heartbeat
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead not started: other read already in progress");
                 return;
             }
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_receiveMutex);
 
             bool shouldExitMutex = true;
 
             try
             {
-                if (!IsValidReceiveState(_state))
+                if (!IsValidReceiveState(_state)) // we can't receive any frames, but no need to throw as we are not observing errors anyway
                 {
-                    // we can't receive any frames, but no need to throw as we are not observing errors anyway
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Cannot start read-ahead in {nameof(_state)}={_state}");
                     return;
                 }
 
                 if (_readAheadState!.ReadAheadTask is not null) // previous read-ahead is not consumed yet
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead not started: previous read-ahead is not consumed yet");
                     return;
                 }
 
@@ -135,6 +148,7 @@ namespace System.Net.WebSockets
                 if (shouldExitMutex)
                 {
                     _receiveMutex.Exit();
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(_receiveMutex);
                 }
             }
         }
@@ -149,6 +163,9 @@ namespace System.Net.WebSockets
                 // Issue a zero-byte read first.
                 // Note that if the other side never sends any data frames at all, this single call
                 // will continue draining all the (upcoming) pongs until the connection is closed
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Starting zero-byte read-ahead");
+
                 ValueWebSocketReceiveResult result = await ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(
                     Array.Empty<byte>(),
                     shouldEnterMutex: false, // we are already in the mutex
@@ -157,9 +174,13 @@ namespace System.Net.WebSockets
 
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Zero-byte read-ahead received close frame");
+
                     _readAheadState!.BufferedResult = result;
                     return;
                 }
+
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Zero-byte read-ahead completed");
 
                 Debug.Assert(IsValidReceiveState(_state));
 
@@ -181,6 +202,8 @@ namespace System.Net.WebSockets
                 // the buffer is returned to pool after read-ahead data is consumed by the user
                 _readAheadState!.Buffer.EnsureAvailableSpace(bufferSize);
 
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Starting read-ahead with buffer length={bufferSize}");
+
                 _readAheadState.BufferedResult = await ReceiveAsyncPrivate<ValueWebSocketReceiveResult>(
                     _readAheadState.Buffer.ActiveMemory,
                     shouldEnterMutex: false, // we are already in the mutex
@@ -190,6 +213,7 @@ namespace System.Net.WebSockets
             finally
             {
                 _receiveMutex.Exit();
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexExited(_receiveMutex);
             }
         }
 
@@ -209,7 +233,7 @@ namespace System.Net.WebSockets
 
                 long pingPayload = Interlocked.Increment(ref _keepAlivePingState.PingPayload);
 
-                FireAndForgetHelper.Observe(
+                this.Observe(
                     SendPingAsync(pingPayload));
             }
         }
@@ -228,6 +252,8 @@ namespace System.Net.WebSockets
                     pingPayloadBuffer.AsMemory(0, sizeof(long)))
                     .ConfigureAwait(false);
 
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.KeepAlivePingSent(this, pingPayload);
+
                 TryIssueReadAhead();
             }
             finally
@@ -238,6 +264,8 @@ namespace System.Net.WebSockets
 
         private void OnDataReceived(int bytesRead)
         {
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+
             if (_keepAlivePingState != null && bytesRead > 0)
             {
                 _keepAlivePingState.OnDataReceived();
@@ -264,11 +292,11 @@ namespace System.Net.WebSockets
                 DelayMs = TimeSpanToMs(keepAliveInterval);
                 TimeoutMs = TimeSpanToMs(keepAliveTimeout);
                 NextPingTimestamp = Environment.TickCount64 + DelayMs;
-                WillTimeoutTimestamp = long.MaxValue;
+                WillTimeoutTimestamp = Timeout.Infinite;
 
-                HeartBeatIntervalMs = (long)Math.Max(1000, Math.Min(keepAliveInterval.TotalMilliseconds, keepAliveTimeout.TotalMilliseconds) / 4); // similar to HTTP/2
+                HeartBeatIntervalMs = Math.Min(DelayMs, TimeoutMs) / 4;
 
-                static long TimeSpanToMs(TimeSpan value) // similar to HTTP/2
+                static long TimeSpanToMs(TimeSpan value)
                 {
                     double milliseconds = value.TotalMilliseconds;
                     return (long)(milliseconds > int.MaxValue ? int.MaxValue : milliseconds);
@@ -276,18 +304,29 @@ namespace System.Net.WebSockets
             }
 
             internal void OnDataReceived()
-                => Interlocked.Exchange(ref NextPingTimestamp, Environment.TickCount64 + DelayMs);
+            {
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+                Interlocked.Exchange(ref NextPingTimestamp, Environment.TickCount64 + DelayMs);
+            }
 
             internal void OnPongResponseReceived(Span<byte> pongPayload)
             {
                 Debug.Assert(AwaitingPong);
                 Debug.Assert(pongPayload.Length == sizeof(long));
 
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+
                 long pongPayloadValue = BinaryPrimitives.ReadInt64BigEndian(pongPayload);
                 if (pongPayloadValue == Interlocked.Read(ref PingPayload))
                 {
-                    Interlocked.Exchange(ref WillTimeoutTimestamp, long.MaxValue);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.PongResponseReceived(this, pongPayloadValue);
+
+                    Interlocked.Exchange(ref WillTimeoutTimestamp, Timeout.Infinite);
                     AwaitingPong = false;
+                }
+                else if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Trace(this, $"Received pong with unexpected payload {pongPayloadValue}. Expected {Interlocked.Read(ref PingPayload)}. Skipping.");
                 }
             }
 
@@ -295,7 +334,9 @@ namespace System.Net.WebSockets
             {
                 if (Interlocked.Exchange(ref Exception, null) is Exception e)
                 {
-                    throw e;
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Throwing Keep-Alive exception {e.GetType().Name}: {e.Message}");
+
+                    throw new OperationCanceledException(nameof(WebSocketState.Aborted), e);
                 }
             }
         }
@@ -324,6 +365,8 @@ namespace System.Net.WebSockets
                 Debug.Assert(_receiveMutex.IsHeld, $"Caller should hold the {nameof(_receiveMutex)}");
                 Debug.Assert(ReadAheadTask is not null);
 
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this);
+
                 ObjectDisposedException.ThrowIf(IsDisposed, nameof(ReadAheadState));
 
                 try
@@ -346,6 +389,8 @@ namespace System.Net.WebSockets
 
                     if (Buffer.ActiveLength == 0) // we've consumed all of the data
                     {
+                        if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"All read-ahead data consumed. Last read: {count} bytes");
+
                         result = BufferedResult;
                         BufferedResult = default;
                         Buffer.ClearAndReturnBuffer();
@@ -355,6 +400,8 @@ namespace System.Net.WebSockets
                     // If we have more data in the read-ahead buffer, we need to construct a new result for the next read to consume it.
                     result = new ValueWebSocketReceiveResult(count, BufferedResult.MessageType, endOfMessage: false);
                     BufferedResult = new ValueWebSocketReceiveResult(Buffer.ActiveLength, BufferedResult.MessageType, BufferedResult.EndOfMessage);
+
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, $"Read-ahead data partially consumed. Last read: {count} bytes, remaining: {Buffer.ActiveLength} bytes");
 
                     ReadAheadTask = Task.CompletedTask;
                     return result;
@@ -372,7 +419,9 @@ namespace System.Net.WebSockets
 
                 if (ReadAheadTask is not null)
                 {
-                    FireAndForgetHelper.Observe(ReadAheadTask);
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.Trace(this, "Read-ahead task is left unconsumed on dispose");
+
+                    this.Observe(ReadAheadTask);
                     ReadAheadTask = null;
                 }
                 BufferedResult = default;
