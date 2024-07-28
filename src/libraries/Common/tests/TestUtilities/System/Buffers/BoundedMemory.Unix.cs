@@ -7,27 +7,110 @@ namespace System.Buffers
 {
     public static unsafe partial class BoundedMemory
     {
+        private static readonly int SystemPageSize = Environment.SystemPageSize;
+
         private static UnixImplementation<T> AllocateWithoutDataPopulationUnix<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
         {
-            return new UnixImplementation<T>(elementCount, placement);
+            long cb, totalBytesToAllocate;
+            checked
+            {
+                cb = elementCount * sizeof(T);
+                totalBytesToAllocate = cb;
+
+                // We only need to round the count up if it's not an exact multiple
+                // of the system page size.
+
+                long leftoverBytes = totalBytesToAllocate % SystemPageSize;
+                if (leftoverBytes != 0)
+                {
+                    totalBytesToAllocate += SystemPageSize - leftoverBytes;
+                }
+
+                // Finally, account for the poison pages at the front and back.
+
+                totalBytesToAllocate += 2 * SystemPageSize;
+            }
+
+            // Reserve and commit the entire range as NOACCESS.
+
+            MMapHandle handle = MMapHandle.Allocate(
+                address: IntPtr.Zero, 
+                length: checked((nuint)totalBytesToAllocate),
+                prot: UnsafeNativeMethods.PROT_NONE,
+                flags: UnsafeNativeMethods.MAP_PRIVATE | UnsafeNativeMethods.MAP_ANONYMOUS);
+
+            if (handle == null || handle.IsInvalid)
+            {
+                int lastError = Marshal.GetLastPInvokeError();
+                handle?.Dispose();
+                throw new InvalidOperationException($"mmap failed unexpectedly with {lastError}.");
+            }
+
+            // Done allocating! Now carve out a READWRITE section bookended by the NOACCESS
+            // pages and return that carved-out section to the caller. Since memory protection
+            // flags only apply at page-level granularity, we need to "left-align" or "right-
+            // align" the section we carve out so that it's guaranteed adjacent to one of
+            // the NOACCESS bookend pages.
+
+            return new UnixImplementation<T>(
+                handle: handle,
+                byteOffsetIntoHandle: (placement == PoisonPagePlacement.Before)
+                    ? SystemPageSize /* just after leading poison page */
+                    : checked((int)(totalBytesToAllocate - SystemPageSize - cb)) /* just before trailing poison page */,
+                elementCount: elementCount)
+            {
+                Protection = UnsafeNativeMethods.PROT_WRITE | UnsafeNativeMethods.PROT_READ
+            };
         }
 
         private sealed class UnixImplementation<T> : BoundedMemory<T> where T : unmanaged
         {
-            private readonly AllocHGlobalHandle _handle;
+            private readonly MMapHandle _handle;
+            private readonly int _byteOffsetIntoHandle;
             private readonly int _elementCount;
             private readonly BoundedMemoryManager _memoryManager;
+            private int _prot;
 
-            public UnixImplementation(int elementCount, PoisonPagePlacement placement)
+            internal UnixImplementation(MMapHandle handle, int byteOffsetIntoHandle, int elementCount)
             {
-                _handle = AllocHGlobalHandle.Allocate(checked(elementCount * (nint)sizeof(T)), placement);
+                _handle = handle;
+                _byteOffsetIntoHandle = byteOffsetIntoHandle;
                 _elementCount = elementCount;
                 _memoryManager = new BoundedMemoryManager(this);
+                _prot = UnsafeNativeMethods.PROT_NONE;
             }
 
-            public override bool IsReadonly => false;
+            public override bool IsReadonly => (Protection != (UnsafeNativeMethods.PROT_WRITE | UnsafeNativeMethods.PROT_READ));
 
             public override int Length => _elementCount;
+
+            internal int Protection
+            {
+                get
+                {
+                    return _prot;
+                }
+                set
+                {
+                    bool refAdded = false;
+                    try
+                    {
+                        _handle.DangerousAddRef(ref refAdded);
+                        if (UnsafeNativeMethods.mprotect(_handle.DangerousGetHandle(), _handle.Length, _prot) != 0)
+                        {
+                            throw new InvalidOperationException($"mprotected failed with {Marshal.GetLastPInvokeError()}.");
+                        }
+                        _prot = value;
+                    }
+                    finally
+                    {
+                        if (refAdded)
+                        {
+                            _handle.DangerousRelease();
+                        }
+                    }
+                }
+            }
 
             public override Memory<T> Memory => _memoryManager.Memory;
 
@@ -39,7 +122,7 @@ namespace System.Buffers
                     try
                     {
                         _handle.DangerousAddRef(ref refAdded);
-                        return new Span<T>((void*)_handle.DangerousGetHandle(), _elementCount);
+                        return new Span<T>((void*)(_handle.DangerousGetHandle() + _byteOffsetIntoHandle), _elementCount);
                     }
                     finally
                     {
@@ -58,12 +141,12 @@ namespace System.Buffers
 
             public override void MakeReadonly()
             {
-                // no-op
+                Protection = UnsafeNativeMethods.PROT_READ;
             }
 
             public override void MakeWriteable()
             {
-                // no-op
+                Protection = UnsafeNativeMethods.PROT_WRITE | UnsafeNativeMethods.PROT_READ;
             }
 
             private sealed class BoundedMemoryManager : MemoryManager<T>
@@ -95,7 +178,7 @@ namespace System.Buffers
                     try
                     {
                         _impl._handle.DangerousAddRef(ref refAdded);
-                        return new MemoryHandle((T*)_impl._handle.DangerousGetHandle() + elementIndex);
+                        return new MemoryHandle((T*)(_impl._handle.DangerousGetHandle() + _impl._byteOffsetIntoHandle) + elementIndex);
                     }
                     finally
                     {
@@ -113,89 +196,50 @@ namespace System.Buffers
             }
         }
 
-        private sealed class AllocHGlobalHandle : SafeHandle
+        private sealed class MMapHandle : SafeHandle
         {
-            private IntPtr buffer;
-            private ulong allocationSize;
+            public nuint Length { get; private set; }
 
             // Called by P/Invoke when returning SafeHandles
-            private AllocHGlobalHandle(IntPtr buffer, ulong allocationSize)
+            public MMapHandle(nuint length)
                 : base(IntPtr.Zero, ownsHandle: true)
             {
-                this.buffer = buffer;
-                this.allocationSize = allocationSize;
+                Length = length;
             }
 
-            internal static AllocHGlobalHandle Allocate(nint byteLength, PoisonPagePlacement placement)
+            internal static MMapHandle Allocate(IntPtr address, nuint length, int prot, int flags)
             {
-                int flags = 0;
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    flags = MAP_PRIVATE | MAP_ANONYMOUS_OSX;
-                }
-                else
-                {
-                    flags = MAP_PRIVATE | MAP_ANONYMOUS;
-                }
-
-                // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
-                int pageSize = Environment.SystemPageSize;
-                int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
-                IntPtr buffer = mmap(IntPtr.Zero, (ulong)allocationSize, PROT_READ | PROT_WRITE, flags, -1, 0);
-
-                if (buffer == IntPtr.Zero)
-                {
-                    throw new InvalidOperationException($"Memory allocation failed with error {Marshal.GetLastPInvokeError()}.");
-                }
-
-                // Depending on the PoisonPagePlacement requirement (before/after) initialise the baseAddress and poisonPageAddress to point to the location
-                // in the buffer. Here the baseAddress points to the first valid allocation and poisonPageAddress points to the first invalid location.
-                // For `PoisonPagePlacement.Before` the first page is made inaccessible using mprotect and baseAddress points to the start of the second page.
-                // The allocation and protection is at the granularity of a page. Thus, `PoisonPagePlacement.Before` configuration has an additional accessible
-                // memory at the end of the page (bytes equivalent to `pageSize - (byteLength % pageSize)`).
-                // For `PoisonPagePlacement.After`, we adjust the baseAddress so that inaccessible memory is at the `byteLength` offset from the baseAddress.
-                IntPtr baseAddress = buffer + pageSize;
-                IntPtr poisonPageAddress = buffer;
-                if (placement == PoisonPagePlacement.After)
-                {
-                    baseAddress = buffer + (allocationSize - pageSize - byteLength);
-                    poisonPageAddress = buffer + (allocationSize - pageSize);
-                }
-
-                // Protect the page before/after based on the poison page placement.
-                if (mprotect(poisonPageAddress, (ulong) pageSize, PROT_NONE) == -1)
-                {
-                    throw new InvalidOperationException($"Failed to mark page as a poison page using mprotect with error :{Marshal.GetLastPInvokeError()}.");
-                }
-
-                AllocHGlobalHandle retVal = new AllocHGlobalHandle(buffer, (ulong)allocationSize);
-                retVal.SetHandle(baseAddress); // this base address would be used as the start of Span that is used during unit testing.
+                MMapHandle retVal = new MMapHandle(length);
+                retVal.SetHandle(UnsafeNativeMethods.mmap(address, length, prot, flags, -1, 0));
                 return retVal;
             }
 
+            // Do not provide a finalizer - SafeHandle's critical finalizer will
+            // call ReleaseHandle for you.
+
             public override bool IsInvalid => (handle == IntPtr.Zero);
 
-            protected override bool ReleaseHandle()
-            {
-                return munmap(buffer, allocationSize) == 0;
-            }
+            protected override bool ReleaseHandle() =>
+                UnsafeNativeMethods.munmap(handle, Length) == 0;
+        }
 
-             // Defined in <sys/mman.h>
-            const int MAP_PRIVATE = 0x2;
-            const int MAP_ANONYMOUS = 0x20;
-            const int MAP_ANONYMOUS_OSX = 0x1000;
-            const int PROT_NONE = 0x0;
-            const int PROT_READ = 0x1;
-            const int PROT_WRITE = 0x2;
-
-            [DllImport("libc", SetLastError = true)]
-            static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
+        private static class UnsafeNativeMethods
+        {
+            // Defined in <sys/mman.h>
+            public const int MAP_PRIVATE = 0x2;
+            public static readonly int MAP_ANONYMOUS = OperatingSystem.IsLinux() ? 0x20 : 0x1000;
+            public const int PROT_NONE = 0x0;
+            public const int PROT_READ = 0x1;
+            public const int PROT_WRITE = 0x2;
 
             [DllImport("libc", SetLastError = true)]
-            static extern IntPtr munmap(IntPtr address, ulong length);
+            public static extern IntPtr mmap(IntPtr address, ulong length, int prot, int flags, int fd, int offset);
 
             [DllImport("libc", SetLastError = true)]
-            static extern int mprotect(IntPtr address, ulong length, int prot);
+            public static extern IntPtr munmap(IntPtr address, ulong length);
+
+            [DllImport("libc", SetLastError = true)]
+            public static extern int mprotect(IntPtr address, ulong length, int prot);
         }
     }
 }
