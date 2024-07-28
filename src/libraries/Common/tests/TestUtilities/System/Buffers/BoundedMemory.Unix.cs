@@ -128,11 +128,20 @@ namespace System.Buffers
 
             internal static AllocHGlobalHandle Allocate(nint byteLength, PoisonPagePlacement placement)
             {
+                int flags = 0;
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    flags = MAP_PRIVATE | MAP_ANONYMOUS_OSX;
+                }
+                else
+                {
+                    flags = MAP_PRIVATE | MAP_ANONYMOUS;
+                }
 
                 // Allocate number of pages to incorporate required (byteLength bytes of) memory and an additional page to create a poison page.
                 int pageSize = Environment.SystemPageSize;
                 int allocationSize = (int)(((byteLength / pageSize) + ((byteLength % pageSize) == 0 ? 0 : 1) + 1) * pageSize);
-                IntPtr buffer = mmap(IntPtr.Zero, (ulong)allocationSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+                IntPtr buffer = mmap(IntPtr.Zero, (ulong)allocationSize, PROT_READ | PROT_WRITE, flags, -1, 0);
 
                 if (buffer == IntPtr.Zero)
                 {
@@ -174,6 +183,7 @@ namespace System.Buffers
              // Defined in <sys/mman.h>
             const int MAP_PRIVATE = 0x2;
             const int MAP_ANONYMOUS = 0x20;
+            const int MAP_ANONYMOUS_OSX = 0x1000;
             const int PROT_NONE = 0x0;
             const int PROT_READ = 0x1;
             const int PROT_WRITE = 0x2;
