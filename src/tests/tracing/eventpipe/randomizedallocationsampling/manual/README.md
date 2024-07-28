@@ -3,7 +3,9 @@
 This folder has a test app (Allocate sub-folder) and a profiler (AllocationProfiler sub-folder) that together can be used to experimentally
 observe the distribution of sampling events that are generated for different allocation scenarios. To run it:
 
-1. Build both projects
+1. Build both projects. These projects are just vanilla .NET 8 console apps and don't align with all the expectations of an in-repo automated test.
+   Copy the manual folder somewhere outside the repo directory hierarchy and remove the underscore on the end of the two csproj files, then use VS
+   or dotnet build to build them.
 2. Run the Allocate app with corerun and use the --scenario argument to select an allocation scenario you want to validate
 3. The Allocate app will print its own PID to the console and wait.
 4. Run the AllocationProfiler passing in the allocate app PID as an argument
