@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
 namespace System.Buffers
@@ -31,11 +33,21 @@ namespace System.Buffers
 
             // Reserve and commit the entire range as NOACCESS.
 
+            var flags = UnsafeNativeMethods.MAP_PRIVATE | UnsafeNativeMethods.MAP_ANONYMOUS_1;
+
+            var nativeHandle = UnsafeNativeMethods.mmap(IntPtr.Zero, checked((nuint)totalBytesToAllocate), UnsafeNativeMethods.PROT_NONE, flags, -1, 0);
+            if (UnsafeNativeMethods.mprotect(nativeHandle, (ulong)totalBytesToAllocate, UnsafeNativeMethods.PROT_NONE) != 0)
+            {
+                // If 'mprotect' failed, it is most likely due to MAP_ANONYMOUS being the wrong value on Linux, so use the other value.
+                flags = UnsafeNativeMethods.MAP_PRIVATE | UnsafeNativeMethods.MAP_ANONYMOUS;
+            }
+            UnsafeNativeMethods.munmap(nativeHandle, (ulong)totalBytesToAllocate);
+
             MMapHandle handle = MMapHandle.Allocate(
                 address: IntPtr.Zero, 
                 length: checked((nuint)totalBytesToAllocate),
                 prot: UnsafeNativeMethods.PROT_NONE,
-                flags: UnsafeNativeMethods.MAP_PRIVATE | UnsafeNativeMethods.MAP_ANONYMOUS);
+                flags: flags);
 
             if (handle == null || handle.IsInvalid)
             {
@@ -225,7 +237,8 @@ namespace System.Buffers
         {
             // Defined in <sys/mman.h>
             public const int MAP_PRIVATE = 0x2;
-            public static readonly int MAP_ANONYMOUS = OperatingSystem.IsLinux() ? 0x20 : 0x1000;
+            public const int MAP_ANONYMOUS_1 = 0x1000;
+            public static readonly int MAP_ANONYMOUS = OperatingSystem.IsLinux() ? 0x20 : MAP_ANONYMOUS_1;
             public const int PROT_NONE = 0x0;
             public const int PROT_READ = 0x1;
             public const int PROT_WRITE = 0x2;
