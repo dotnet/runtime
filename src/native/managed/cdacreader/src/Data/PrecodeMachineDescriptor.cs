@@ -17,11 +17,11 @@ internal sealed class PrecodeMachineDescriptor : IData<PrecodeMachineDescriptor>
         ShiftOfPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(ShiftOfPrecodeType)].Offset);
         InvalidPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(InvalidPrecodeType)].Offset);
         StubPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(StubPrecodeType)].Offset);
-        if (target.ReadGlobal<byte>(HasNDirectImportPrecode) == 1)
+        if (target.Read<byte>(address + (ulong)type.Fields[nameof(HasNDirectImportPrecode)].Offset) == 1)
         {
             NDirectImportPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(NDirectImportPrecodeType)].Offset);
         }
-        if (target.ReadGlobal<byte>(HasFixupPrecode) == 1)
+        if (target.Read<byte>(address + (ulong)type.Fields[nameof(HasFixupPrecode)].Offset) == 1)
         {
             FixupPrecodeType = target.Read<byte>(address + (ulong)type.Fields[nameof(FixupPrecodeType)].Offset);
         }
