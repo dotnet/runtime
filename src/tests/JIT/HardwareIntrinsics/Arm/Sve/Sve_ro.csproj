@@ -6,7 +6,6 @@
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Include="Program.Sve.cs" />
     <Compile Include="..\Shared\Helpers.cs" />
@@ -17,5 +16,6 @@
     <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Windows.cs" />
     <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Default.cs" />
     <Compile Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/PoisonPagePlacement.cs" />
+    <CMakeProjectReference Include="$(RepoRoot)src/libraries/Common/tests/TestUtilities/System/Buffers/CMakeLists.txt" />
   </ItemGroup>
 </Project>
