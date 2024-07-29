@@ -431,13 +431,18 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                     return false;
                 }
             }
-            // TODO: request.cpp
-            // TODO[cdac]: needs MethodDesc::GetNativeCode and MethodDesc::GetMethodEntryPoint()
+
             if (HasNativeCode(methodDescPointer, umd) && !umd.IsFCall)
             {
                 TargetCodePointer jitCodeAddr = GetCodePointer(methodDescPointer, umd);
-                TargetPointer methodDescCheckAddress = _target.Contracts.NativeCodePointers.MethodDescFromStubAddress(jitCodeAddr);
-                if (methodDescCheckAddress == TargetPointer.Null || methodDescCheckAddress != methodDescPointer)
+                //FIXME: this is the wrong code.
+
+                TargetPointer methodDesc = _target.Contracts.NativeCodePointers.ExecutionManagerGetCodeMethodDesc(jitCodeAddr);
+                if (methodDesc == TargetPointer.Null)
+                {
+                    return false;
+                }
+                if (methodDesc != methodDescPointer)
                 {
                     return false;
                 }

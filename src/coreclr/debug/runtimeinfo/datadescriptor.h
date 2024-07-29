@@ -410,6 +410,7 @@ CDAC_GLOBAL_POINTER(SyncTableEntries, &::g_pSyncTable)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffAddress, &::g_MiniMetaDataBuffAddress)
 CDAC_GLOBAL_POINTER(MiniMetaDataBuffMaxSize, &::g_MiniMetaDataBuffMaxSize)
 CDAC_GLOBAL_POINTER(PrecodeMachineDescriptor, &::g_PrecodeMachineDescriptor)
+CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_offsets<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBALS_END()
 
 #undef CDAC_BASELINE

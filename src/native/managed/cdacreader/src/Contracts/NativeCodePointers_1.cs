@@ -172,4 +172,47 @@ internal readonly struct NativeCodePointers_1 : INativeCodePointers
 
         return precode.GetMethodDesc(_target, _precodeMachineDescriptor);
     }
+
+
+    private class EECodeInfo
+    {
+        public TargetCodePointer CodeAddress { get; }
+        public TargetPointer MethodDescAddress { get; }
+        public EECodeInfo(TargetCodePointer jittedCodeAdderss, TargetPointer methodDescAddress)
+        {
+            CodeAddress = jittedCodeAdderss;
+            MethodDescAddress = methodDescAddress;
+        }
+
+        bool Valid => CodeAddress != default && MethodDescAddress != default;
+    }
+
+    private sealed class RangeSection
+    {
+
+    }
+
+    private EECodeInfo GetEECodeInfo(TargetCodePointer jittedCodeAddress)
+    {
+        RangeSection range = ExecutionManagerFindCodeRange(jittedCodeAddress);
+        if (!range.JitCodeToMethodInfo(jittedCodeAddress, out TargetPointer methodDescAddress))
+        {
+            return default(EECodeInfo);
+        }
+        return new EECodeInfo(jittedCodeAddress, methodDescAddress);
+    }
+
+    private RangeSection ExecutionManagerFindCodeRange(TargetCodePointer jittedCodeAddress)
+    {
+        // GetCodeRangeMap()->LookupRangeSection(addr, pLockState);
+
+        throw new NotImplementedException(); // TODO(cdac)
+    }
+
+    TargetPointer INativeCodePointers.ExecutionManagerGetCodeMethodDesc(TargetCodePointer jittedCodeAddress)
+    {
+        EECodeInfo info = GetEECodeInfo(jittedCodeAddress);
+        return info.MethodDescAddress;
+    }
+
 }
